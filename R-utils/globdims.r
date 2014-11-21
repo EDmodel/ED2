@@ -1,6 +1,6 @@
 #----- Some dimensions based on ED-2.2 default. -------------------------------------------#
 npft       <<- 17 # Number of plant functional types
-nlu        <<-  3 # Number of land use types.
+nlu        <<-  6 # Number of land use types.
 nstyp      <<- 17 # Number of default soil types
 #------------------------------------------------------------------------------------------#
 
@@ -67,16 +67,44 @@ igbp.val <<- seq_along(igbp.col)-1
 
 
 
-#----- Define some default legend colours and names. --------------------------------------#
-lunames   <<- c("Agricultural","Secondary","Primary","Total")
-lucols    <<- c("goldenrod","chartreuse","darkgreen",all.colour)
+#------ Define the colours and labels for ASPRS (LAS/LiDAR) classes. ----------------------#
+asprs.col <<- c( CNC = RGB( 222, 222, 222)
+               , UND = RGB( 202, 202, 202)
+               , GND = RGB( 144,   3,   2)
+               , LVG = RGB( 166, 131,   0)
+               , MVG = RGB(   0, 100, 164)
+               , HVG = RGB(   0,  63,   0)
+               , BLD = RGB(  96,  96,  96)
+               , MKP = RGB( 233, 198,   9)
+               , H2O = RGB(   0,  20,  82)
+               , RSV = RGB( 192, 192, 192)
+               , R11 = RGB( 192, 192, 192)
+               , OLP = RGB(   0, 222, 255)
+               )#end asprs.col
+asprs.leg <<- names(asprs.col)
+asprs.val <<- seq_along(asprs.col)-1
+#------------------------------------------------------------------------------------------#
 
-distnames <<- c("Agr->Agr" ,"2nd->Agr" ,"Prim->Agr"
-               ,"Agr->2nd" ,"2nd->2nd" ,"Prim->2nd"
-               ,"Agr->Prim","2nd->Prim","Prim->Prim")
-distcols  <<- c("gold","darkorange2","firebrick"
-               ,"lightskyblue","turquoise","steelblue"
-               ,"palegreen","chartreuse","forestgreen")
+
+
+
+#----- Define some default legend colours and names. --------------------------------------#
+lunames   <<- c("Agricultural","Plantation","Tree fall"
+               ,"Burnt","Abandoned","Logged","Total")
+lucols    <<- c("#E65C17","#2996CC","#306614","#990F0F","#2996CC","#A3CC52",all.colour)
+
+distnames <<- c("AGR->AGR" ,"FPL->AGR" ,"TFL->AGR","BRN->AGR","ABN->AGR","LOG->AGR"
+               ,"AGR->FPL" ,"FPL->FPL" ,"TFL->FPL","BRN->FPL","ABN->FPL","LOG->FPL"
+               ,"AGR->TFL" ,"FPL->TFL" ,"TFL->TFL","BRN->TFL","ABN->TFL","LOG->TFL"
+               ,"AGR->BRN" ,"FPL->BRN" ,"TFL->BRN","BRN->BRN","ABN->BRN","LOG->BRN"
+               ,"AGR->ABN" ,"FPL->ABN" ,"TFL->ABN","BRN->ABN","ABN->ABN","LOG->ABN"
+               ,"AGR->LOG" ,"FPL->LOG" ,"TFL->LOG","BRN->LOG","ABN->LOG","LOG->LOG")
+distcols  <<- c("#66005A","#A80095","#E500CB","#FF4CEA","#FF998F","#FFCCF9"
+               ,"#005A66","#00889A","#00B3CB","#00D3EF","#96F3FF","#CBF9FF"
+               ,"#DEDEDE","#DEDEDE","#596500","#A0B310","#D1ED00","#F2FF91"
+               ,"#DEDEDE","#DEDEDE","#983A2E","#D64F3D","#F29C91","#FFD1CB"
+               ,"#007F0F","#00BE16","#DEDEDE","#DEDEDE","#DEDEDE","#DEDEDE"
+               ,"#DEDEDE","#DEDEDE","#4C3FB2","#6E5AFF","#B0A6FF","#DED9FF")
 #------------------------------------------------------------------------------------------#
 
 
@@ -114,8 +142,8 @@ stext.cols  <<- c("gold","chartreuse","limegreen","darkgreen","purple3"
 stext.names <<- c("Sand","Loamy Sand","Sandy loam","Silt loam","Loam","Sandy clay loam"
                  ,"Silty clay loam","Clayey loam","Sandy clay","Silty clay","Clay","Peat"
                  ,"Bedrock","Silt","Heavy clay","Clayey sand","Clayey silt")
-stext.acron <<- c("Sa","LoSa","SaLo","SiLo","Lo","SaClLo","SiClLo","ClLo"
-                 ,"SaCl","SiCl","Cl","Pe","Br","Si","HCl","ClSa","ClSi")
+stext.acron <<- c("Sa","LSa","SaL","SiL","L","SaCL","SiCL","CL"
+                 ,"SaC","SiC","C","Pe","BR","Si","CC","CSa","CSi")
 #------------------------------------------------------------------------------------------#
 
 
@@ -219,8 +247,8 @@ if (idbh.type == 1){
                        , c(classdbh[-1],classdbh[ndbh]),"cm"
                        , sep=""
                        )#end paste
-   dbhcols    <<- c(      "royalblue3",     "chartreuse3"
-                   ,         "yellow3",     "darkorange1",         all.colour
+   dbhcols    <<- c(         "#3B24B3",     "#2996CC"
+                   ,         "#FF9466",     "#990F0F",         all.colour
                    )#end c
 }else if (idbh.type == 4){
    ndbh       <<-  6

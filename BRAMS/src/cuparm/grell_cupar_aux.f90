@@ -618,7 +618,9 @@ subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dz
       end do
       areadn = max(1.e-5,dnmf * etad_cld(klod) / (rhod_cld(klod) * wdndraft))
    end if
-   
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !   Updraft. We know that the minimum vertical velocity required at the level of free   !
    ! convection is 0, so we can actually estimate a reference updraft velocity             !
@@ -634,12 +636,12 @@ subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dz
 
 
    !---------------------------------------------------------------------------------------!
-   !      If there is no convective inhibition, then the FC80 method does not do so hot    !
+   !      If there is no convective inhibition, then the FC80 method does not do very well !
    ! because the necessary velocities are so low.  Use use the normalized wind-speed       !
    ! method instead.                                                                       !
    !---------------------------------------------------------------------------------------!
-   areaup = min(1.000,max(1.e-5,upmf / (rhou_cld(klou) * wupdraft)))
-   ! areaup   = max(1.e-5,1. - cdf(wnorm))
+   !areaup = min(1.000,max(1.e-5,upmf / (rhou_cld(klou) * wupdraft)))
+   areaup  = min(1.000,max(1.e-5,1. - cdf(wnorm)))
    !---------------------------------------------------------------------------------------!
 
 

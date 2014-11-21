@@ -332,3 +332,63 @@ subroutine find_walcek_densities(dtime,m1,m2,m3,ia,iz,ja,jz,ka,kz,uavg,vavg,wavg
 end subroutine find_walcek_densities
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the momentum fluxes for Lagrangian particle dispersion      !
+! models.                                                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine find_momentum_fluxes(m1,m2,m3,uavg,vavg,wavg,densu,densv,densw,flxu,flxv,flxw)
+   use mem_grid, only : dtlt  ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: m1
+   integer                          , intent(in)  :: m2
+   integer                          , intent(in)  :: m3
+   real(kind=4), dimension(m1,m2,m3), intent(in)  :: uavg
+   real(kind=4), dimension(m1,m2,m3), intent(in)  :: vavg
+   real(kind=4), dimension(m1,m2,m3), intent(in)  :: wavg
+   real(kind=4), dimension(m1,m2,m3), intent(in)  :: densu
+   real(kind=4), dimension(m1,m2,m3), intent(in)  :: densv
+   real(kind=4), dimension(m1,m2,m3), intent(in)  :: densw
+   real(kind=4), dimension(m1,m2,m3), intent(out) :: flxu
+   real(kind=4), dimension(m1,m2,m3), intent(out) :: flxv
+   real(kind=4), dimension(m1,m2,m3), intent(out) :: flxw
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: k
+   integer                                        :: i
+   integer                                        :: j
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Initialise the output arrays with zeroes. ---------------------------------------!
+   flxu(:,:,:) = 0.0
+   flxv(:,:,:) = 0.0
+   flxw(:,:,:) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the horizontal fluxes.                                                       !
+   !---------------------------------------------------------------------------------------!
+   jloop: do j=1,m3
+      iloop: do i=1,m2
+         kloop: do k=1,m2
+            flxu(k,i,j) = uavg(k,i,j) * densu(k,i,j) * dtlt
+            flxv(k,i,j) = vavg(k,i,j) * densv(k,i,j) * dtlt
+            flxw(k,i,j) = wavg(k,i,j) * densw(k,i,j) * dtlt
+         end do kloop
+      end do iloop
+   end do jloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine find_momentum_fluxes
+!==========================================================================================!
+!==========================================================================================!

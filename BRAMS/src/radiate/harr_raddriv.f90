@@ -68,7 +68,6 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
                          , toodry                ! ! intent(in)
    use micphys    , only : ncat                  & ! intent(inout)
                          , rxmin                 ! ! intent(inout)
-   use mem_leaf   , only : isfcl                 ! ! intent(in)
    use mem_radiate, only : rad_cosz_min          ! ! intent(in)
    use harr_coms  , only : rl                    & ! intent(inout)
                          , dzl                   & ! intent(inout)

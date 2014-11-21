@@ -470,32 +470,56 @@ end subroutine tabmelt
 !------------------------------------------------------------------------------------------!
 subroutine mkcoltb
 
-   use micphys, only: &
-           nhcat      & ! intent(in)
-          ,gnu        & ! intent(in)
-          ,pwmas      & ! intent(in)
-          ,emb0       & ! intent(in)
-          ,cfmas      & ! intent(in)
-          ,emb1       & ! intent(in)
-          ,ipairc     & ! intent(in)
-          ,ipairr     & ! intent(in)
-          ,pwvt       & ! intent(in)
-          ,nembc      & ! intent(in)
-          ,cfvt       & ! intent(in)
-          ,coltabc    & ! intent(out)
-          ,coltabr    ! ! intent(out)
-   use micro_coms, only : lcat_lhcat
+   use micphys   , only : nhcat      & ! intent(in)
+                        , gnu        & ! intent(in)
+                        , pwmas      & ! intent(in)
+                        , emb0       & ! intent(in)
+                        , cfmas      & ! intent(in)
+                        , emb1       & ! intent(in)
+                        , ipairc     & ! intent(in)
+                        , ipairr     & ! intent(in)
+                        , pwvt       & ! intent(in)
+                        , nembc      & ! intent(in)
+                        , cfvt       & ! intent(in)
+                        , coltabc    & ! intent(out)
+                        , coltabr    ! ! intent(out)
+   use micro_coms, only : lcat_lhcat ! ! intent(in)
    implicit none
 
    !----- Local Constant: -----------------------------------------------------------------!
-   integer, parameter :: ndx=20
+   integer     , parameter      :: ndx = 20
    !----- Local Variables: ----------------------------------------------------------------!
-   integer              :: ihx,ix,ihy,iy,iemby,iembx,idx
-   real                 :: gxm,dnminx,dnmaxx,dxlo,dxhi,gyn,gyn1,gyn2,gynp,gynp1,gynp2,gym
-   real                 :: dnminy,dnmaxy,dny,vny,dnx,ans
-   real, dimension(ndx) :: dx,fx,gx
-   !----- Function ------------------------------------------------------------------------!
-   real, external       :: gammln,xj
+   integer                      :: ihx
+   integer                      :: ix
+   integer                      :: ihy
+   integer                      :: iy
+   integer                      :: iemby
+   integer                      :: iembx
+   integer                      :: idx
+   real(kind=4)                 :: gxm
+   real(kind=4)                 :: dnminx
+   real(kind=4)                 :: dnmaxx
+   real(kind=4)                 :: dxlo
+   real(kind=4)                 :: dxhi
+   real(kind=4)                 :: gyn
+   real(kind=4)                 :: gyn1
+   real(kind=4)                 :: gyn2
+   real(kind=4)                 :: gynp
+   real(kind=4)                 :: gynp1
+   real(kind=4)                 :: gynp2
+   real(kind=4)                 :: gym
+   real(kind=4)                 :: dnminy
+   real(kind=4)                 :: dnmaxy
+   real(kind=4)                 :: dny
+   real(kind=4)                 :: vny
+   real(kind=4)                 :: dnx
+   real(kind=4)                 :: ans
+   real(kind=4), dimension(ndx) :: dx
+   real(kind=4), dimension(ndx) :: fx
+   real(kind=4), dimension(ndx) :: gx
+   !----- Functions -----------------------------------------------------------------------!
+   real(kind=4), external       :: gammln
+   real(kind=4), external       :: xj
    !---------------------------------------------------------------------------------------!
 
    do ihx = 1,nhcat
@@ -530,12 +554,9 @@ subroutine mkcoltb
 
                   dnx = dnminx * (dnmaxx / dnminx) ** (real(iembx-1)/ real(nembc-1))
                   do idx = 1,ndx
-                     dx(idx) = dxlo * (dxhi / dxlo)** (real(idx-1) / real(ndx-1))
-
-                     fx(idx) = xj(dx(idx),cfvt(ihx),pwvt(ihx),cfvt(ihy),pwvt(ihy),vny,dnx  &
-                                 ,dny,gnu(ix),gnu(iy),gyn1,gyn2,gynp,gynp1,gynp2)
-                     gx(idx) = fx(idx) * cfmas(ihx)* dx(idx) ** pwmas(ihx)
-
+                     call dxfxgx(idx,ndx,dxlo,dxhi,cfvt(ihx),pwvt(ihx),cfvt(ihy),pwvt(ihy) &
+                                ,vny,dnx,dny,gnu(ix),gnu(iy),gyn1,gyn2,gynp,gynp1,gynp2    &
+                                ,cfmas(ihx),pwmas(ihx),dx(idx),fx(idx),gx(idx))
                   end do
                   if (ipairc(ihx,ihy) > 0) then
                      call avint(dx,fx,ndx,dxlo,dxhi,ans)
@@ -552,6 +573,8 @@ subroutine mkcoltb
    end do
    return
 end subroutine mkcoltb
+!==========================================================================================!
+!==========================================================================================!
 
 
 
@@ -560,26 +583,97 @@ end subroutine mkcoltb
 
 !==========================================================================================!
 !==========================================================================================!
-real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2)
-   use rconstants, only : lnexp_max
+subroutine dxfxgx(idx,ndx,dxlo,dxhi,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp     &
+                 ,gynp1,gynp2,cfmas,pwmas,dx,fx,gx)
+   use rconstants, only : lnexp_max8   ! ! intent(in)
    implicit none
 
    !----- Arguments: ----------------------------------------------------------------------!
-   real, intent(in) :: dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2
+   integer     , intent(in)  :: idx
+   integer     , intent(in)  :: ndx
+   real(kind=4), intent(in)  :: dxlo
+   real(kind=4), intent(in)  :: dxhi
+   real(kind=4), intent(in)  :: cvx
+   real(kind=4), intent(in)  :: pvx
+   real(kind=4), intent(in)  :: cvy
+   real(kind=4), intent(in)  :: pvy
+   real(kind=4), intent(in)  :: vny
+   real(kind=4), intent(in)  :: dnx
+   real(kind=4), intent(in)  :: dny
+   real(kind=4), intent(in)  :: xnu
+   real(kind=4), intent(in)  :: ynu
+   real(kind=4), intent(in)  :: gyn1
+   real(kind=4), intent(in)  :: gyn2
+   real(kind=4), intent(in)  :: gynp
+   real(kind=4), intent(in)  :: gynp1
+   real(kind=4), intent(in)  :: gynp2
+   real(kind=4), intent(in)  :: cfmas
+   real(kind=4), intent(in)  :: pwmas
+   real(kind=4), intent(out) :: dx
+   real(kind=4), intent(out) :: fx
+   real(kind=4), intent(out) :: gx
    !----- Local Variables: ----------------------------------------------------------------!
-   real(kind=8) :: dx8,cvx8,pvx8,cvy8,pvy8,vny8,dnx8,dny8,xnu8,ynu8,gyn18,gyn28,gynp8
-   real(kind=8) :: gynp18,gynp28
-   real(kind=8) :: dnxi8,rdx8,vx8,xj8
-   real         :: dxy,ynup
-   real(kind=8) :: glxnu8,glynu8,gpynu8,gqynu8,gpynua18,gqynua18,gpynua28,gqynua28
-   real(kind=8) :: gpynup8,gqynup8,gpynupa18,gqynupa18,gpynupa28,gqynupa28
+   real(kind=4)             :: dxy
+   real(kind=4)             :: ynup
+   real(kind=8)             :: idx8
+   real(kind=8)             :: ndx8
+   real(kind=8)             :: dxlo8
+   real(kind=8)             :: dxhi8
+   real(kind=8)             :: cvx8
+   real(kind=8)             :: pvx8
+   real(kind=8)             :: cvy8
+   real(kind=8)             :: pvy8
+   real(kind=8)             :: vny8
+   real(kind=8)             :: dnx8
+   real(kind=8)             :: dny8
+   real(kind=8)             :: xnu8
+   real(kind=8)             :: ynu8
+   real(kind=8)             :: gyn18
+   real(kind=8)             :: gyn28
+   real(kind=8)             :: gynp8
+   real(kind=8)             :: gynp18
+   real(kind=8)             :: gynp28
+   real(kind=8)             :: cfmas8
+   real(kind=8)             :: pwmas8
+   real(kind=8)             :: dnxi8
+   real(kind=8)             :: rdx8
+   real(kind=8)             :: vx8
+   real(kind=8)             :: glxnu8
+   real(kind=8)             :: glynu8
+   real(kind=8)             :: gpynu8
+   real(kind=8)             :: gqynu8
+   real(kind=8)             :: gpynua18
+   real(kind=8)             :: gqynua18
+   real(kind=8)             :: gpynua28
+   real(kind=8)             :: gqynua28
+   real(kind=8)             :: gpynup8
+   real(kind=8)             :: gqynup8
+   real(kind=8)             :: gpynupa18
+   real(kind=8)             :: gqynupa18
+   real(kind=8)             :: gpynupa28
+   real(kind=8)             :: gqynupa28
+   real(kind=8)             :: dx8
+   real(kind=8)             :: fx8
+   real(kind=8)             :: gx8
    !----- External functions --------------------------------------------------------------!
-   real, external :: gammln,gammp,gammq,sngloff
+   real(kind=4), external   :: gammln
+   real(kind=4), external   :: gammp
+   real(kind=4), external   :: gammq
+   real(kind=4), external   :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
-   real(kind=8), parameter :: tiny_offset = 1.d-30
+   real(kind=8), parameter  :: tiny_offset8 = 1.d-30
    !---------------------------------------------------------------------------------------!
 
-   dx8     = dble(dx   )
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Double precision aliases to several input variables.                             !
+   !---------------------------------------------------------------------------------------!
+   idx8    = dble(idx  )
+   ndx8    = dble(ndx  )
+   dxlo8   = dble(dxlo )
+   dxhi8   = dble(dxhi )
    cvx8    = dble(cvx  )
    pvx8    = dble(pvx  )
    cvy8    = dble(cvy  )
@@ -587,23 +681,41 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
    vny8    = dble(vny  )
    dnx8    = dble(dnx  )
    dny8    = dble(dny  )
-   xnu8    = dble(xnu  ) 
-   ynu8    = dble(ynu  ) 
-   gyn18   = dble(gyn1 ) 
-   gyn28   = dble(gyn2 ) 
+   xnu8    = dble(xnu  )
+   ynu8    = dble(ynu  )
+   gyn18   = dble(gyn1 )
+   gyn28   = dble(gyn2 )
    gynp8   = dble(gynp )
    gynp18  = dble(gynp1)
    gynp28  = dble(gynp2)
-           
+   cfmas8  = dble(cfmas)
+   pwmas8  = dble(pwmas)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Find dx.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   dx8 = dxlo8 * ( dxhi8 / dxlo8 ) ** ( (idx8 - 1.d0) / (ndx8-1.d0) )
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Find fx.                                                                           !
+   !---------------------------------------------------------------------------------------!
    dnxi8 = 1.d0 / dnx8
    rdx8  = dx8 * dnxi8
    vx8   = cvx8 * dx8 ** pvx8
-   dxy   = sngloff((vx8/cvy8)**(1.d0/pvy8)/dny8,tiny_offset)
+   dxy   = sngloff((vx8/cvy8)**(1.d0/pvy8)/dny8,tiny_offset8)
 
    ynup  = ynu + pvy 
-   
 
-   if (rdx8 < lnexp_max) then
+
+   if (rdx8 < lnexp_max8) then
       glxnu8    = dble(gammln(xnu))
       glynu8    = dble(gammln(ynu))
       gpynu8    = dble(gammp(ynu,dxy))
@@ -620,22 +732,35 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
       gqynupa28 = dble(gammq(ynup+2,dxy))
      
       
-      xj8 = exp(-rdx8-glxnu8-glynu8) * rdx8**(xnu8-1.d0) * dnxi8                           &
+      fx8 = exp(-rdx8-glxnu8-glynu8) * rdx8**(xnu8-1.d0) * dnxi8                           &
           * (vx8 * ( dx8*dx8*(gpynu8-gqynu8))                                              &
                    + 2.d0*dx8*dny8*gyn18*(gpynua18-gqynua18)                               &
                    + dny8*dny8*gyn28*(gpynua28-gqynua28)                                   &
                    - vny8 * (dx8*dx8*gynp8*(gpynup8-gqynup8)                               &
                             + 2.d0*dx8*dny8*gynp18*(gpynupa18-gqynupa18)                   &
                             + dny8*dny8*gynp28*(gpynupa28-gqynupa28)))
-      !----- Make sure underflow won't happen.  If overflow happens, let it complain... ---!
-      if (abs(xj8) < tiny_offset)  xj8 = sign(tiny_offset,xj8)
    else
-      xj8 = 0.
+      fx8 = 0.d0
    end if
-   
-   xj = sngl(xj8)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Find gx.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   gx8 = fx8 * cfmas8 * dx8 ** pwmas8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the single precision numbers.                                                !
+   !---------------------------------------------------------------------------------------!
+   dx = sngloff(dx8,tiny_offset8)
+   fx = sngloff(fx8,tiny_offset8)
+   gx = sngloff(gx8,tiny_offset8)
+   !---------------------------------------------------------------------------------------!
    return
-end function xj
+end subroutine dxfxgx
 !==========================================================================================!
 !==========================================================================================!
 

@@ -298,11 +298,11 @@ subroutine rams_mem_alloc(proc_type)
    do ng=1,ngrids
       call nullify_micro(micro_g(ng))
       call nullify_micro(microm_g(ng))
-      call alloc_micro(micro_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,isfcl)
+      call alloc_micro(micro_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
       if (imean == 1) then
-         call alloc_micro(microm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,isfcl)
+         call alloc_micro(microm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
       elseif (imean == 0) then
-         call alloc_micro(microm_g(ng),1,1,1,ng,isfcl)
+         call alloc_micro(microm_g(ng),1,1,1,ng)
       end if
       call zero_micro(micro_g(ng))
       call zero_micro(microm_g(ng))

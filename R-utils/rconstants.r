@@ -20,7 +20,9 @@ pio6i     <<- 6.  / pi          # 6/Pi                                          
 #------------------------------------------------------------------------------------------#
 srtwo     <<- sqrt(2.)          # Square root of 2.                            [       ---]
 srthree   <<- sqrt(3.)          # Square root of 3.                            [       ---]
-sqrt2o2   <<- 0.5 * srtwo       # Half of srtwo                                [       ---]
+sqrt2o2   <<- srtwo / 2.        # Half of srtwo                                [       ---]
+sqrt2o4   <<- srtwo / 4.        # Quarter of srtwo                             [       ---]
+sqrt2o6   <<- srtwo / 6.        # One-sixth of srtwo                           [       ---]
 srtwoi    <<- 1./srtwo          # 1./ Square root of 2.                        [       ---]
 srthreei  <<- 1./srthree        # 1./ Square root of 3.                        [       ---]
 onethird  <<- 1./3.             # 1/3                                          [       ---]

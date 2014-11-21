@@ -214,13 +214,16 @@ for (place in myplaces){
       cat("   - Loading previous session...","\n")
       load(ed22.rdata)
       tresume = datum$ntimes + 1
-      datum   = update.monthly( new.ntimes = ntimes 
-                              , old.datum  = datum
-                              , montha     = monthbeg
-                              , yeara      = yeara
-                              , inpref     = inpref
-                              , slz.min    = slz.min
-                              )#end update.monthly
+      if (ntimes > datum$ntimes){
+         datum   = update.monthly( new.ntimes = ntimes
+                                 , old.datum  = datum
+                                 , montha     = monthbeg
+                                 , yeara      = yeara
+                                 , inpref     = inpref
+                                 , slz.min    = slz.min
+                                 )#end update.monthly
+      }#end if
+      #------------------------------------------------------------------------------------#
    }else{
       cat("   - Starting new session...","\n")
       tresume    = 1
@@ -1246,8 +1249,11 @@ for (place in myplaces){
          axis(side=1)
          axis(side=2,las=1)
          box()
-         title(main=letitre,xlab="Year",ylab="Disturbance rate [1/yr]"
-              ,cex.main=cex.main,log=xylog)
+         title( main     = letitre
+              , xlab     = "Year"
+              , ylab     = desc.unit(desc="Disturbance rate",unit=untab$oneoyr)
+              , cex.main = 0.7
+              )#end title
          if (drought.mark){
             for (n in 1:ndrought){
                rect(xleft  = drought[[n]][1],ybottom = ydrought[1]

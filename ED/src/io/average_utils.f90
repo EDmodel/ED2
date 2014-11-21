@@ -57,11 +57,7 @@ module average_utils
       integer                        :: isi
       integer                        :: ipa
       integer                        :: ico
-      integer                        :: p
-      integer                        :: d
       integer                        :: k
-      integer                        :: ksn
-      integer                        :: lai_index
       integer                        :: nsoil
       real                           :: site_area_i
       real                           :: poly_area_i
@@ -74,10 +70,7 @@ module average_utils
       real                           :: skin_water
       real                           :: skin_hcap
       real                           :: skin_fliq
-      real                           :: snowarea
       real                           :: dslzsum_i
-      real                           :: rdepth
-      real                           :: soil_mstpot
       real                           :: can_exner
       real                           :: atm_exner
       !------------------------------------------------------------------------------------!
@@ -737,8 +730,6 @@ module average_utils
       type(met_driv_state), pointer :: cmet
       integer                       :: ipy
       integer                       :: isi
-      integer                       :: ipa
-      integer                       :: ico
       !----- Locally saved variables. -----------------------------------------------------!
       real              , save      :: dtlsm_o_frqsum = 1.e34
       logical           , save      :: first_time     = .true.
@@ -2292,7 +2283,6 @@ module average_utils
                                , patchtype     ! ! structure
       use ed_max_dims   , only : n_pft         & ! intent(in)
                                , n_age         & ! intent(in)
-                               , n_dist_types  & ! intent(in)
                                , n_dbh         ! ! intent(in)
       use ed_misc_coms  , only : writing_long  & ! intent(in)
                                , writing_eorq  & ! intent(in)
@@ -2311,10 +2301,6 @@ module average_utils
       integer                       :: isi
       integer                       :: ipa
       integer                       :: ico
-      integer                       :: ipft
-      integer                       :: ilu
-      integer                       :: idbh
-      integer                       :: iage
       real                          :: dtlsm_o_daysec
       !------------------------------------------------------------------------------------!
 
@@ -3386,8 +3372,7 @@ module average_utils
                               , sitetype      & ! structure
                               , patchtype     ! ! structure
       use ed_max_dims  , only : n_dbh         & ! intent(in)
-                              , n_pft         & ! intent(in) 
-                              , n_dist_types  ! ! intent(in)
+                              , n_pft         ! ! intent(in)
       use consts_coms  , only : yr_day        ! ! intent(in)
       use ed_misc_coms , only : current_time  & ! intent(in)
                               , simtime       ! ! structure

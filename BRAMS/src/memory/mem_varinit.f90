@@ -19,7 +19,7 @@ module mem_varinit
      real, pointer, dimension(:,:,:) :: &
           varup,varvp,varpp,vartp,varrp,varop  &
           ,varuf,varvf,varpf,vartf,varrf,varof  &
-          ,varwts &
+          ,varwts_uv,varwts_th,varwts_pi,varwts_rt,varwts_co2,varwts_rc &
           ,varrph,varrfh,varcph,varcfh
 
   end type varinit_vars
@@ -37,6 +37,7 @@ module mem_varinit
   character(len=str_len) :: nud_hfile
   real :: tnudlat,tnudcent,tnudtop,znudtop
   real :: wt_nudge_uv,wt_nudge_th,wt_nudge_pi,wt_nudge_rt,wt_nudge_co2
+  real :: zb_nudge_uv,zb_nudge_th,zb_nudge_pi,zb_nudge_rt,zb_nudge_co2
   real :: wt_nudge_grid(maxgrds)
   real(kind=8) :: htime1, htime2
 
@@ -48,7 +49,7 @@ module mem_varinit
   character(len=14) , dimension(maxnudfiles) :: itotdate_cond
   real(kind=8), dimension(maxnudfiles) :: cond_times
   character(len=str_len) :: cond_hfile 
-  real :: tcond_beg, tcond_end, wt_nudgec_grid(maxgrds),t_nudge_rc
+  real :: tcond_beg, tcond_end, wt_nudgec_grid(maxgrds),wt_nudge_rc,zb_nudge_rc
   real(kind=8) :: condtime1, condtime2
 
   !----------------------------------------------------------------------------
@@ -89,8 +90,13 @@ contains
        allocate (varinit%varvf(n1,n2,n3))
        allocate (varinit%varpf(n1,n2,n3))
        allocate (varinit%vartf(n1,n2,n3))
-       allocate (varinit%varrf(n1,n2,n3))                      
-       allocate (varinit%varwts(n1,n2,n3))
+       allocate (varinit%varrf(n1,n2,n3))
+       allocate (varinit%varwts_uv (n1,n2,n3))
+       allocate (varinit%varwts_th (n1,n2,n3))
+       allocate (varinit%varwts_pi (n1,n2,n3))
+       allocate (varinit%varwts_rt (n1,n2,n3))
+       allocate (varinit%varwts_co2(n1,n2,n3))
+       allocate (varinit%varwts_rc (n1,n2,n3))
        if (co2_on) then
           allocate (varinit%varop(n1,n2,n3))
           allocate (varinit%varof(n1,n2,n3))
@@ -99,9 +105,9 @@ contains
 
     if (nud_cond == 1) then
        allocate (varinit%varcph(n1,n2,n3))
-       allocate (varinit%varcfh(n1,n2,n3))                      
+       allocate (varinit%varcfh(n1,n2,n3))
        allocate (varinit%varrph(n1,n2,n3))
-       allocate (varinit%varrfh(n1,n2,n3))                      
+       allocate (varinit%varrfh(n1,n2,n3))
     endif
 
     return
@@ -126,7 +132,12 @@ contains
     nullify (varinit%vartf)
     nullify (varinit%varrf)
     nullify (varinit%varof)
-    nullify (varinit%varwts)
+    nullify (varinit%varwts_uv )
+    nullify (varinit%varwts_th )
+    nullify (varinit%varwts_pi )
+    nullify (varinit%varwts_rt )
+    nullify (varinit%varwts_co2)
+    nullify (varinit%varwts_rc )
 
     nullify (varinit%varcph)
     nullify (varinit%varcfh)
@@ -142,24 +153,29 @@ contains
     type (varinit_vars) :: varinit
 
 
-    if (associated(varinit%varup))     deallocate (varinit%varup)
-    if (associated(varinit%varvp))     deallocate (varinit%varvp)
-    if (associated(varinit%varpp))     deallocate (varinit%varpp)
-    if (associated(varinit%vartp))     deallocate (varinit%vartp)
-    if (associated(varinit%varrp))     deallocate (varinit%varrp)
-    if (associated(varinit%varop))     deallocate (varinit%varop)
-    if (associated(varinit%varuf))     deallocate (varinit%varuf)
-    if (associated(varinit%varvf))     deallocate (varinit%varvf)
-    if (associated(varinit%varpf))     deallocate (varinit%varpf)
-    if (associated(varinit%vartf))     deallocate (varinit%vartf)
-    if (associated(varinit%varrf))     deallocate (varinit%varrf)
-    if (associated(varinit%varof))     deallocate (varinit%varof)
-    if (associated(varinit%varwts))    deallocate (varinit%varwts)
+    if (associated(varinit%varup))       deallocate (varinit%varup     )
+    if (associated(varinit%varvp))       deallocate (varinit%varvp     )
+    if (associated(varinit%varpp))       deallocate (varinit%varpp     )
+    if (associated(varinit%vartp))       deallocate (varinit%vartp     )
+    if (associated(varinit%varrp))       deallocate (varinit%varrp     )
+    if (associated(varinit%varop))       deallocate (varinit%varop     )
+    if (associated(varinit%varuf))       deallocate (varinit%varuf     )
+    if (associated(varinit%varvf))       deallocate (varinit%varvf     )
+    if (associated(varinit%varpf))       deallocate (varinit%varpf     )
+    if (associated(varinit%vartf))       deallocate (varinit%vartf     )
+    if (associated(varinit%varrf))       deallocate (varinit%varrf     )
+    if (associated(varinit%varof))       deallocate (varinit%varof     )
+    if (associated(varinit%varwts_uv ))  deallocate (varinit%varwts_uv )
+    if (associated(varinit%varwts_th ))  deallocate (varinit%varwts_th )
+    if (associated(varinit%varwts_pi ))  deallocate (varinit%varwts_pi )
+    if (associated(varinit%varwts_rt ))  deallocate (varinit%varwts_rt )
+    if (associated(varinit%varwts_co2))  deallocate (varinit%varwts_co2)
+    if (associated(varinit%varwts_rc ))  deallocate (varinit%varwts_rc )
 
-    if (associated(varinit%varcph))     deallocate (varinit%varcph)
-    if (associated(varinit%varcfh))     deallocate (varinit%varcfh)
-    if (associated(varinit%varrph))     deallocate (varinit%varrph)
-    if (associated(varinit%varrfh))     deallocate (varinit%varrfh)
+    if (associated(varinit%varcph    ))  deallocate (varinit%varcph    )
+    if (associated(varinit%varcfh    ))  deallocate (varinit%varcfh    )
+    if (associated(varinit%varrph    ))  deallocate (varinit%varrph    )
+    if (associated(varinit%varrfh    ))  deallocate (varinit%varrfh    )
 
     return
   end subroutine dealloc_varinit
@@ -227,10 +243,31 @@ contains
          call vtables2 (varinit%varof,varinitm%varof  &
          ,ng, npts, imean,  &
          'VAROF :3:mpti')
-    if (associated(varinit%varwts))  &
-         call vtables2 (varinit%varwts,varinitm%varwts  &
+
+    if (associated(varinit%varwts_uv))  &
+         call vtables2 (varinit%varwts_uv,varinitm%varwts_uv  &
          ,ng, npts, imean,  &
-         'VARWTS :3:mpti')
+         'VARWTS_UV :3:mpti')
+    if (associated(varinit%varwts_th))  &
+         call vtables2 (varinit%varwts_th,varinitm%varwts_th  &
+         ,ng, npts, imean,  &
+         'VARWTS_TH :3:mpti')
+    if (associated(varinit%varwts_pi))  &
+         call vtables2 (varinit%varwts_pi,varinitm%varwts_pi  &
+         ,ng, npts, imean,  &
+         'VARWTS_PI :3:mpti')
+    if (associated(varinit%varwts_rt))  &
+         call vtables2 (varinit%varwts_rt,varinitm%varwts_rt  &
+         ,ng, npts, imean,  &
+         'VARWTS_RT :3:mpti')
+    if (associated(varinit%varwts_co2))  &
+         call vtables2 (varinit%varwts_co2,varinitm%varwts_co2  &
+         ,ng, npts, imean,  &
+         'VARWTS_CO2 :3:mpti')
+    if (associated(varinit%varwts_rc))  &
+         call vtables2 (varinit%varwts_rc,varinitm%varwts_rc  &
+         ,ng, npts, imean,  &
+         'VARWTS_RC :3:mpti')
 
     if (nud_cond == 1) then               ! Inc. by ALF
        if (associated(varinit%varcph))  &

@@ -455,6 +455,11 @@ Module rconstants
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
    real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
+   real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )
+   real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )
+   real(kind=8), parameter :: umol_2_kgC8     = dble(umol_2_kgC    )
+   real(kind=8), parameter :: Watts_2_Ein8    = dble(Watts_2_Ein   )
+   real(kind=8), parameter :: Ein_2_Watts8    = dble(Ein_2_Watts   )
    !---------------------------------------------------------------------------------------!
 
 

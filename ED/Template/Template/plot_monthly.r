@@ -1820,7 +1820,11 @@ for (place in myplaces){
          axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
          axis(side=2,las=1)
          box()
-         title(main=letitre,xlab="Year",ylab="Disturbance rate [1/yr]",cex.main=cex.main)
+         title( main     = letitre
+              , xlab     = "Year"
+              , ylab     = desc.unit(desc="Disturbance rate",unit=untab$oneoyr)
+              , cex.main = 0.7
+              )#end title
          if (drought.mark){
             for (n in 1:ndrought){
                rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
@@ -1834,8 +1838,8 @@ for (place in myplaces){
          }#end if
          #----- Plot lines. ---------------------------------------------------------------#
          n = 0
-         for (jlu in 1:nlu){
-            for (ilu in 1:nlu){
+         for (jlu in sequence(nlu)){
+            for (ilu in sequence(nlu)){
                n = n + 1
                if (seldist[ilu,jlu]){
                   lines(datum$tomonth,lu$dist[,ilu,jlu],type="l"

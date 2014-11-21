@@ -576,20 +576,24 @@ subroutine sfcinit_hstart()
 
                !----- Compute NDVI and LAI. -----------------------------------------------!
                if (ipat >= 2) then
-                  call vegndvi(ifm                                                         &
-                              ,leaf_g(ifm)%patch_area                  (i,j,ipat)          &
-                              ,leaf_g(ifm)%leaf_class                  (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_fracarea                (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_lai                     (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_tai                     (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_rough                   (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_height                  (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_displace                (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_albedo                  (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_ndvip                   (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_ndvic                   (i,j,ipat)          &
-                              ,leaf_g(ifm)%veg_ndvif                   (i,j,ipat)          &
-                              ,leaf_g(ifm)%psibar_10d                  (i,j,ipat) )
+                  call veg_misc_update( ifm                                                &
+                                      , leaf_g(ifm)%patch_area         (i,j,ipat)          &
+                                      , leaf_g(ifm)%leaf_class         (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_fracarea       (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_lai            (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_tai            (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_rough          (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_height         (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_displace       (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_albedo         (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_ndvip          (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_ndvic          (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_ndvif          (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_agb            (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_energy         (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_water          (i,j,ipat)          &
+                                      , leaf_g(ifm)%veg_hcap           (i,j,ipat)          &
+                                      , leaf_g(ifm)%psibar_10d         (i,j,ipat) )
                end if
 
                !----- Find the surface saturation mixing ratio. ---------------------------!

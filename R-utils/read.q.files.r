@@ -627,6 +627,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                              , FUN    = weighted.mean
                              , w      = areasi
                              )#end apply
+#                             browser()
       #------------------------------------------------------------------------------------#
 
 
@@ -1560,12 +1561,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          }#end if
          
          if (any(sel)){
-            lu$lai    [m,l] = sum( laiconow[sel] * areaconow    [sel] )
-            lu$ba     [m,l] = sum( w.nplant[sel] * baconow      [sel] )
-            lu$agb    [m,l] = sum( w.nplant[sel] * agbconow     [sel] )
-            lu$biomass[m,l] = sum( w.nplant[sel] * biomassconow [sel] )
-            lu$gpp    [m,l] = sum( w.nplant[sel] * gppconow     [sel] )
-            lu$npp    [m,l] = sum( w.nplant[sel] * nppconow     [sel] )
+            arealu.i          = 1. / sum(areapa[selpa])
+            lu$lai      [m,l] = sum( w.lai   [sel]                      )
+            lu$ba       [m,l] = sum( w.nplant[sel] * baconow      [sel] )
+            lu$agb      [m,l] = sum( w.nplant[sel] * agbconow     [sel] )
+            lu$biomass  [m,l] = sum( w.nplant[sel] * biomassconow [sel] )
+            lu$gpp      [m,l] = sum( w.nplant[sel] * gppconow     [sel] )
+            lu$npp      [m,l] = sum( w.nplant[sel] * nppconow     [sel] )
+            lu$f.lai    [m,l] = sum( w.lai   [sel]                      ) * arealu.i
+            lu$f.ba     [m,l] = sum( w.nplant[sel] * baconow      [sel] ) * arealu.i
+            lu$f.agb    [m,l] = sum( w.nplant[sel] * agbconow     [sel] ) * arealu.i
+            lu$f.biomass[m,l] = sum( w.nplant[sel] * biomassconow [sel] ) * arealu.i
+            lu$f.gpp    [m,l] = sum( w.nplant[sel] * gppconow     [sel] ) * arealu.i
+            lu$f.npp    [m,l] = sum( w.nplant[sel] * nppconow     [sel] ) * arealu.i
          }#end if
          lu$area      [m,l] = lu$area [m,l] + sum(areapa[selpa])
       }#end for

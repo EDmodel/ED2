@@ -43,7 +43,6 @@ subroutine structural_growth(cgrid, month)
    integer                       :: isi
    integer                       :: ipa
    integer                       :: ico
-   integer                       :: ilu
    integer                       :: ipft
    integer                       :: prev_month
    real                          :: salloc
@@ -60,6 +59,9 @@ subroutine structural_growth(cgrid, month)
    real                          :: cbr_light
    real                          :: cbr_moist
    real                          :: cbr_now
+   real                          :: cb12_act
+   real                          :: cb12_lightmax
+   real                          :: cb12_moistmax
    real                          :: f_bseeds
    real                          :: f_bdead
    real                          :: balive_mort_litter
@@ -71,6 +73,8 @@ subroutine structural_growth(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: old_leaf_hcap
    real                          :: old_wood_hcap
+   !------ Parameter to decide which method to use. ---------------------------------------!
+   logical          , parameter  :: ed20_method = .false.
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -85,7 +89,6 @@ subroutine structural_growth(cgrid, month)
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
-            ilu = csite%dist_type(ipa)
 
             cohortloop: do ico = 1,cpatch%ncohorts
                !----- Assigning an alias for PFT type. ------------------------------------!
@@ -298,61 +301,139 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
                !     Find the relative carbon balance for the imediate previous month.     !
                !---------------------------------------------------------------------------!
-               !----- Light-related carbon balance. ---------------------------------------!
-               if (ddmort_const == 0.) then
-                  cbr_light = 1.0
-               elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
-                  cbr_light = min(1.0, cpatch%cb          (prev_month,ico)                 &
-                                     / cpatch%cb_lightmax (prev_month,ico) )
-               else
-                  cbr_light = cbr_severe_stress(ipft)
-               end if
-               !----- Soil moisture-related carbon balance. -------------------------------!
-               if (ddmort_const == 1.) then
-                  cbr_moist = 1.0
-               elseif (cpatch%cb_moistmax(prev_month,ico) > 0.0) then
-                  cbr_moist = min(1.0, cpatch%cb          (prev_month,ico)                 &
-                                     / cpatch%cb_moistmax (prev_month,ico) )
-               else
-                  cbr_moist = cbr_severe_stress(ipft)
-               end if
-               !----- Relative carbon balance: a linear combination of the two factors. ---!
-               if ( cbr_light == cbr_severe_stress(ipft) .and.                             &
-                    cbr_moist == cbr_severe_stress(ipft)       ) then
-                  cbr_now = cbr_severe_stress(ipft)
-               else
-                  cbr_now = cbr_severe_stress(ipft)                                        &
-                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
-                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
-                          / (        ddmort_const  * cbr_moist                             &
-                            + (1.0 - ddmort_const) * cbr_light                             &
-                            - cbr_severe_stress(ipft) )
-               end if
-               !---------------------------------------------------------------------------!
+               if (ed20_method) then
+                  !------------------------------------------------------------------------!
+                  !      ED-2.0 method, sum the carbon balance then find the relative.     !
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Check which type of plant this cohort is.                          !
+                  !------------------------------------------------------------------------!
+                  if (is_grass(ipft) .and. igrass == 1) then
+                     !---------------------------------------------------------------------!
+                     !      New grasses.  Only the imediate past month is considered.      !
+                     !---------------------------------------------------------------------!
+                     cb12_act      = cpatch%cb         (prev_month,ico)
+                     cb12_lightmax = cpatch%cb_lightmax(prev_month,ico)
+                     cb12_moistmax = cpatch%cb_moistmax(prev_month,ico)
+                     !---------------------------------------------------------------------!
+                  else
+                     !---------------------------------------------------------------------!
+                     !      Trees or old grasses.  Update the running average.             !
+                     !---------------------------------------------------------------------!
+                     cb12_act      = sum(cpatch%cb         (1:12,ico))
+                     cb12_lightmax = sum(cpatch%cb_lightmax(1:12,ico))
+                     cb12_moistmax = sum(cpatch%cb_moistmax(1:12,ico))
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
 
 
 
-               !---------------------------------------------------------------------------!
-               !     Check which type of plant this cohort is.                             !
-               !---------------------------------------------------------------------------!
-               if (is_grass(ipft) .and. igrass == 1) then
+                  !----- Light-related carbon balance. ------------------------------------!
+                  if (ddmort_const == 0.) then
+                     cbr_light = 1.0
+                  elseif (cb12_lightmax > 0.0) then
+                     cbr_light = min(1.0, cb12_act / cb12_lightmax )
+                  else
+                     cbr_light = cbr_severe_stress(ipft)
+                  end if
+                  !----- Soil moisture-related carbon balance. ----------------------------!
+                  if (ddmort_const == 1.) then
+                     cbr_moist = 1.0
+                  elseif (cb12_moistmax > 0.0) then
+                     cbr_moist = min(1.0, cb12_act / cb12_moistmax )
+                  else
+                     cbr_moist = cbr_severe_stress(ipft)
+                  end if
+                  !----- Relative carbon balance: linear combination of the two factors. --!
+                  if     (ddmort_const == 0.) then
+                     cpatch%cbr_bar(ico) = cbr_moist
+                  elseif (ddmort_const == 1.) then
+                     cpatch%cbr_bar(ico) = cbr_light
+                  elseif ( cbr_light == cbr_severe_stress(ipft) .and.                      &
+                           cbr_moist == cbr_severe_stress(ipft)       ) then
+                     cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)
+                  else
+                     cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)                         &
+                                         + ( cbr_light - cbr_severe_stress(ipft) )         &
+                                         * ( cbr_moist - cbr_severe_stress(ipft) )         &
+                                         / (        ddmort_const  * cbr_moist              &
+                                           + (1.0 - ddmort_const) * cbr_light              &
+                                           - cbr_severe_stress(ipft) )
+                  end if
                   !------------------------------------------------------------------------!
-                  !      New grasses.  Only the imediate past month is considered.         !
-                  !------------------------------------------------------------------------!
-                  cpatch%cbr_bar(ico) = cbr_now
-                  !------------------------------------------------------------------------!
+
+
                else
                   !------------------------------------------------------------------------!
-                  !      Trees or old grasses.  Update the running average.                !
+                  !      ED-1.0 method, exponential smoothing of relative CB.              !
                   !------------------------------------------------------------------------!
-                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
+
+
+
+                  !----- Light-related carbon balance. ------------------------------------!
+                  if (ddmort_const == 0.) then
+                     cbr_light = 1.0
+                  elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
+                     cbr_light = min(1.0, cpatch%cb          (prev_month,ico)              &
+                                        / cpatch%cb_lightmax (prev_month,ico) )
+                  else
+                     cbr_light = cbr_severe_stress(ipft)
+                  end if
+                  !----- Soil moisture-related carbon balance. ----------------------------!
+                  if (ddmort_const == 1.) then
+                     cbr_moist = 1.0
+                  elseif (cpatch%cb_moistmax(prev_month,ico) > 0.0) then
+                     cbr_moist = min(1.0, cpatch%cb          (prev_month,ico)              &
+                                        / cpatch%cb_moistmax (prev_month,ico) )
+                  else
+                     cbr_moist = cbr_severe_stress(ipft)
+                  end if
+                  !----- Relative carbon balance: linear combination of the two factors. --!
+                  if     (ddmort_const == 0.) then
+                     cbr_now = cbr_moist
+                  elseif (ddmort_const == 1.) then
+                     cbr_now = cbr_light
+                  elseif ( cbr_light == cbr_severe_stress(ipft) .and.                      &
+                           cbr_moist == cbr_severe_stress(ipft)       ) then
+                     cbr_now = cbr_severe_stress(ipft)
+                  else
+                     cbr_now = cbr_severe_stress(ipft)                                     &
+                             + ( cbr_light - cbr_severe_stress(ipft) )                     &
+                             * ( cbr_moist - cbr_severe_stress(ipft) )                     &
+                             / (        ddmort_const  * cbr_moist                          &
+                               + (1.0 - ddmort_const) * cbr_light                          &
+                               - cbr_severe_stress(ipft) )
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Check which type of plant this cohort is.                          !
+                  !------------------------------------------------------------------------!
+                  if (is_grass(ipft) .and. igrass == 1) then
+                     !---------------------------------------------------------------------!
+                     !      New grasses.  Only the imediate past month is considered.      !
+                     !---------------------------------------------------------------------!
+                     cpatch%cbr_bar(ico) = cbr_now
+                     !---------------------------------------------------------------------!
+                  else
+                     !---------------------------------------------------------------------!
+                     !      Trees or old grasses.  Update the running average.             !
+                     !---------------------------------------------------------------------!
+                     cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
+                     !---------------------------------------------------------------------!
+                  end if
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
 
 
                !----- Update interesting output quantities. -------------------------------!
-               call update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in    &
+               call update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in        &
                                       ,bstorage_in,nplant_in,agb_in,ba_in,mort_litter      &
                                       ,csite%area(ipa),cpoly%basal_area(:,:,isi)           &
                                       ,cpoly%agb(:,:,isi),cpoly%basal_area_growth(:,:,isi) &
@@ -360,18 +441,19 @@ subroutine structural_growth(cgrid, month)
                                       ,cpoly%basal_area_mort(:,:,isi)                      &
                                       ,cpoly%agb_mort(:,:,isi))
                !---------------------------------------------------------------------------!
-
             end do cohortloop
+            !------------------------------------------------------------------------------!
 
             !----- Age the patch if this is not agriculture. ------------------------------!
             if (csite%dist_type(ipa) /= 1) csite%age(ipa) = csite%age(ipa) + 1.0/12.0
             !------------------------------------------------------------------------------!
 
          end do patchloop
+         !---------------------------------------------------------------------------------!
       end do siteloop
+      !------------------------------------------------------------------------------------!
    end do polyloop
-
-
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine structural_growth
 !==========================================================================================!
@@ -426,7 +508,6 @@ subroutine structural_growth_eq_0(cgrid, month)
    integer                       :: isi
    integer                       :: ipa
    integer                       :: ico
-   integer                       :: ilu
    integer                       :: ipft
    integer                       :: prev_month
    real                          :: salloc
@@ -476,7 +557,6 @@ subroutine structural_growth_eq_0(cgrid, month)
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
-            ilu = csite%dist_type(ipa)
 
             cohortloop: do ico = 1,cpatch%ncohorts
                !----- Assigning an alias for PFT type. ------------------------------------!
@@ -696,7 +776,7 @@ subroutine structural_growth_eq_0(cgrid, month)
 
 
                !----- Update interesting output quantities. -------------------------------!
-               call update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in    &
+               call update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in        &
                                       ,bstorage_in,nplant_in,agb_in,ba_in,mort_litter      &
                                       ,csite%area(ipa),cpoly%basal_area(:,:,isi)           &
                                       ,cpoly%agb(:,:,isi),cpoly%basal_area_growth(:,:,isi) &
@@ -932,14 +1012,12 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    use pft_coms      , only : phenology           & ! intent(in)
                             , q                   & ! intent(in)
                             , qsw                 & ! intent(in)
-                            , is_grass            & ! intent(in)
-                            , hgt_min
+                            , is_grass            ! ! intent(in)
    use allometry     , only : bd2dbh              & ! function
                             , dbh2h               & ! function
                             , dbh2krdepth         & ! function
                             , bl2dbh              & ! function
                             , bl2h                & ! function
-                            , h2dbh               & ! function
                             , size2bl             & ! function
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
@@ -982,12 +1060,12 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !----- Get DBH and height --------------------------------------------------------------!
    if (is_grass(ipft) .and. igrass == 1) then 
        !---- New grasses get dbh_effective and height from bleaf. -------------------------!
-      cpatch%hite(ico) = max( hgt_min(ipft), bl2h(cpatch%bleaf(ico),ipft))
-      cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico),ipft)
+       cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
+       cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
    else 
-      !---- Trees and old grasses get dbh from bdead. ------------------------------------!
-      cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
-      cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
+       !---- Trees and old grasses get dbh from bdead. ------------------------------------!
+       cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
+       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1052,14 +1130,13 @@ end subroutine update_derived_cohort_props
 !==========================================================================================!
 !    This subroutine will compute the growth and mortality rates.                          !
 !------------------------------------------------------------------------------------------!
-subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,bstorage_in &
+subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstorage_in     &
                              ,nplant_in,agb_in,ba_in,mort_litter,area,basal_area,agb       &
                              ,basal_area_growth,agb_growth,basal_area_mort,agb_mort)
    
    use ed_state_vars , only : patchtype    ! ! structure
    use ed_max_dims   , only : n_pft        & ! intent(in)
-                            , n_dbh        & ! intent(in)
-                            , n_dist_types ! ! intent(in)
+                            , n_dbh        ! ! intent(in)
    use ed_misc_coms  , only : ddbhi        ! ! intent(in)
    use consts_coms   , only : pio4         ! ! intent(in)
    use pft_coms      , only : agf_bs       & ! intent(in)
@@ -1081,7 +1158,6 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    real                         , intent(in)    :: mort_litter
    real                         , intent(in)    :: area
    integer                      , intent(in)    :: ico
-   integer                      , intent(in)    :: ilu
    real, dimension(n_pft, n_dbh), intent(inout) :: basal_area
    real, dimension(n_pft, n_dbh), intent(inout) :: agb
    real, dimension(n_pft, n_dbh), intent(inout) :: basal_area_growth

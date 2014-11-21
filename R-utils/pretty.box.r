@@ -2,7 +2,7 @@
 #    This function splits the number into number of rows and columns that will make the    #
 # prettiest (prettiest here means the closest to a golden ratio rectangle).                #
 #------------------------------------------------------------------------------------------#
-pretty.box = function(n,horizontal=TRUE,byrow=TRUE
+pretty.box = function(n,horizontal=TRUE,byrow=TRUE,f.ncol=NULL,f.nrow=NULL
                      ,angle.crit=atan2((1.+sqrt(5))/2.,1)*180./pi){
 
 
@@ -142,18 +142,18 @@ pretty.box = function(n,horizontal=TRUE,byrow=TRUE
       mar.left  = 2.1 + 2 * left
       mar.right = 0.1 + 2 * right
    }else{
-      mar.left  = 2.1 + 2 * left   - 2 * right
-      mar.right = 0.1 + 2 * centre + 4 * right
+      mar.left  = 3.1 + 0 * left
+      mar.right = 0.6 + 0. * right
    }#end if
    if (nbrow == 1){
       mar.bottom = rep(5.1,times=n)
       mar.top    = rep(4.1,times=n)
    }else if (nbrow == 2){
-      mar.bottom = 2.1 + 2 * bottom
-      mar.top    = 2.1 + 2 * top
+      mar.bottom = 2.1 + 2. * bottom
+      mar.top    = 2.1 + 2. * top
    }else{
-      mar.bottom = 2.1 + 2 * bottom - 2 * top
-      mar.top    = 1.1 + 2 * middle + 4 * top
+      mar.bottom = 3.1 + 0. * bottom
+      mar.top    = 2.1 + 0. * bottom
    }#end if
    mar                = cbind(mar.bottom,mar.left,mar.top,mar.right)
    dimnames(mar)[[2]] = c("bottom","left","top","right")

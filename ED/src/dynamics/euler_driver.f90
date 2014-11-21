@@ -108,7 +108,7 @@ subroutine euler_timestep(cgrid)
             !    Update roughness and canopy depth.                                        !
             !------------------------------------------------------------------------------!
             call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
-            call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            call update_patch_derived_props(csite,ipa)
             !------------------------------------------------------------------------------!
 
 

@@ -18,7 +18,7 @@ module rout_coms
       integer, pointer, dimension(:,:)        :: jinf
       real   , pointer, dimension(:,:,:)      :: rmi
       real   , pointer, dimension(:,:)        :: topo
-      real   , pointer, dimension(:,:)        :: exner
+      real   , pointer, dimension(:,:,:)      :: exner
       real   , pointer, dimension(:,:)        :: rlon
       real   , pointer, dimension(:,:)        :: rlat
       real   , pointer, dimension(:,:,:)      :: zplev
@@ -84,7 +84,7 @@ module rout_coms
       allocate (this%jinf (nx,ny)          )
       allocate (this%rmi  (nx,ny,4)        )
       allocate (this%topo (nx,ny)          )
-      allocate (this%exner(nx,ny)          )
+      allocate (this%exner(nx,ny,nz)       )
       allocate (this%rlon (nx,ny)          )
       allocate (this%rlat (nx,ny)          )
       allocate (this%zplev(nx,ny,npl)      )

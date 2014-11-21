@@ -407,7 +407,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
                ! LEAF-3 or ED-2.                                                           !
                !---------------------------------------------------------------------------!
                select case (isfcl)
-               case (1,2)
+               case (1,2,4)
                   !------------------------------------------------------------------------!
                   !     LEAF-3.   In this case we select the commonest soil class for each !
                   ! vegetation type, as they may be correlated.                            !
@@ -634,7 +634,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat,ivegtflg,ivegtfn,isoilflg,isoilfn
                   if (patch_area(ir,jr,ipat) >= min_patch_area) then
 
                      select case (isfcl)
-                     case (1,2)
+                     case (1,2,4)
                         datq_pat = nint(leaf_class(ir,jr,ipat))
                      case (5)
                         datq_pat = nint(soil_text(mzg,ir,jr,ipat))

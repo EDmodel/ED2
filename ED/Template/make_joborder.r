@@ -211,6 +211,8 @@ default = list( run           = "unnamed"
               , ibigleaf      = 0
               , irepro        = 2
               , treefall      = 0.0125
+              , ianth.disturb = 0
+              , ianth.dataset = "glu-331"
               ) #end list
 #------------------------------------------------------------------------------------------#
 
@@ -243,12 +245,19 @@ for (n in 1:nvars) joborder[[names(myruns)[n]]] = myruns[[names(myruns)[n]]]
 
 
 #------------------------------------------------------------------------------------------#
-#     Remove forbidden combinations.                                                       #
+#     Remove forbidden combinations.   Big leaf cannot be run with a single patch, because #
+# each PFT is allocated to one patch.  Also, if ianthropogenic disturbance is turned off,  #
+# we only need to run with one land use data set, since they would be always the same.     #
 #------------------------------------------------------------------------------------------#
 forbidden = joborder$iage == 1 & joborder$ibigleaf == 1
-joborder  = joborder[! forbidden,]
-myruns    = myruns[! forbidden,]
-nruns     = nrow(myruns)
+if ( "ianth.dataset" %in% names(varrun)){
+   lu.1st    = varrun$ianth.dataset[1]
+   redundant = joborder$ianth.disturb == 0 & joborder$ianth.dataset != lu.1st
+   forbidden = forbiden | redundant
+}#end if ( "ianth.dataset" %in% names(varrun))
+joborder     = joborder[! forbidden,]
+myruns       = myruns[! forbidden,]
+nruns        = nrow(myruns)
 #------------------------------------------------------------------------------------------#
 
 

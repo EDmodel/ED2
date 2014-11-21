@@ -335,7 +335,6 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
    integer                  , intent(in)    :: n1
    integer                  , intent(in)    :: n2
    integer                  , intent(in)    :: n3
-   !----- Local variables. ----------------------------------------------------------------!
    real, dimension(n1,n2,n3), intent(in)    :: thp
    real, dimension(n1,n2,n3), intent(in)    :: pc
    real, dimension(n1,n2,n3), intent(in)    :: rtp
@@ -354,13 +353,24 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
    real, dimension(n1,n2,n3), intent(inout) :: dn0
    real, dimension(n1,n2,n3), intent(inout) :: dn0u
    real, dimension(n1,n2,n3), intent(inout) :: dn0v
-   !----- Local constants. ----------------------------------------------------------------!
+   !----- Local variables. ----------------------------------------------------------------!
    integer                                  :: i
    integer                                  :: j
    integer                                  :: k
+   real                                     :: nxypi
+   real                                     :: dummy
    !---------------------------------------------------------------------------------------!
 
-   !----- Reference sounding is point with lowest topography. -----------------------------!
+
+   !----- Weighting factor for grid points. -----------------------------------------------!
+   nxypi = 1. / (nxp * nyp)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Now iref and jref are dummy variables... Reference sounding is point with lowest !
+   ! topography.                                                                           !
+   !---------------------------------------------------------------------------------------!
    topref = 1.e10
    do j=1,nyp
       do i=1,nxp
@@ -371,72 +381,166 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
          end if
       end do
    end do
+   !---------------------------------------------------------------------------------------!
 
-   !-----  Set up 1-D reference state, depending on the coordinate. -----------------------!
-   select case (if_adap)
-   case (0) !----- Sigma-z, terrain following coordinate. ---------------------------------!
-      do k=1,nzp
-         vctr2(k) = ztn(k,ngrid) * (1. - topref/ztop) + topref
+   !---------------------------------------------------------------------------------------!
+   !     Reference state now is the average for the domain.                                !
+   !---------------------------------------------------------------------------------------!
+   call azero(nzp, th01dn(:,ngrid))
+   call azero(nzp,  u01dn(:,ngrid))
+   call azero(nzp,  v01dn(:,ngrid))
+   call azero(nzp, rt01dn(:,ngrid))
+   call azero(nzp,co201dn(:,ngrid))
+   call azero(nzp, pi01dn(:,ngrid))
+   call azero(nzp, pi01dn(:,ngrid))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Loop over grid domain.                                                           !
+   !---------------------------------------------------------------------------------------!
+   do j=1,nyp
+      do i=1,nxp
+         !---------------------------------------------------------------------------------!
+         !      Load variables, and regrid them in case we are using terrain-following.    !
+         !---------------------------------------------------------------------------------!
+         select case (if_adap)
+         case (0)
+            !------------------------------------------------------------------------------!
+            !      Sigma-z, terrain following coordinate.                                  !
+            !------------------------------------------------------------------------------!
+
+
+            !------ Corrected height. -----------------------------------------------------!
+            do k=1,nzp
+               vctr2(k) = ztn(k,ngrid) * (1. - topta(i,j)/ztop) + topta(i,j)
+            end do
+            !------------------------------------------------------------------------------!
+
+            call htint2(nzp,thp(:,i,j),vctr2,nzp,vctr10,zt)
+            call htint2(nzp,uc (:,i,j),vctr2,nzp,vctr11,zt)
+            call htint2(nzp,vc (:,i,j),vctr2,nzp,vctr12,zt)
+            if (vapour_on) then
+               call htint2(nzp,rtp(:,i,j),vctr2,nzp,vctr13,zt)
+            else
+               vctr13(1:nzp) = 0.
+            end if
+            if (co2_on) then
+               call htint2(nzp,co2p(:,i,j),vctr2,nzp,vctr14,zt)
+            else
+               vctr14(1:nzp) = co2con(1)
+            end if
+
+         case (1)
+            !------------------------------------------------------------------------------!
+            !     Shaved eta.                                                              !
+            !------------------------------------------------------------------------------!
+            vctr2 (1:nzp) = ztn(1:nzp,ngrid)
+            vctr10(1:nzp) = thp(1:nzp,i,j)
+            vctr11(1:nzp) = uc (1:nzp,i,j)
+            vctr12(1:nzp) = vc (1:nzp,i,j)
+            if (vapour_on) then
+               vctr13(1:nzp) = rtp(1:nzp,i,j)
+            else
+               vctr13(1:nzp) = 0.
+            end if
+            if (co2_on) then
+               vctr14(1:nzp) = co2p(1:nzp,i,j)
+            else
+               vctr14(1:nzp) = co2con(1)
+            end if
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+
+         !------ We now compute the reference theta, which will indeed be theta_v. --------!
+         do k = 1,nzp
+            vctr15(k) = virtt(vctr10(k),vctr13(k))
+         end do
+         !---------------------------------------------------------------------------------!
+
+         !----- Boundary condition. -------------------------------------------------------!
+         vctr11(1)   = vctr11(2)
+         vctr12(1)   = vctr12(2)
+         vctr13(1)   = vctr13(2)
+         vctr14(1)   = vctr14(2)
+         vctr15(1)   = vctr15(2)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Hydrostatic adjustment for pressure.                                         !
+         !---------------------------------------------------------------------------------!
+         if (vapour_on) then
+            vctr16(1) = pc(1,i,j) + grav * (vctr2(1) - zt(1))                              &
+                                  / (0.5 * (vctr15(1) + virtt(thp(1,i,j),rtp(1,i,j)) ) )
+         else
+            vctr16(1) = pc(1,i,j)                                                          &
+                      + grav * (vctr2(1) - zt(1)) / (0.5 * (vctr15(1) + thp(1,i,j) ) )
+         end if
+
+         do k = 2,nzp
+            vctr16(k) = vctr16(k-1) - grav / (dzm(k-1) * .5 * (vctr15(k) + vctr15(k-1)))
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the density.                                                           !
+         !---------------------------------------------------------------------------------!
+         do k=1,nzp
+            vctr17(k) = exner2press(vctr16(k)) / (rdry * extheta2temp(vctr16(k),vctr15(k)))
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Add the variables to the average.                                           !
+         !---------------------------------------------------------------------------------!
+         do k=1,nzp
+            th01dn (k,ngrid) = th01dn (k,ngrid) + vctr15(k) * nxypi
+            u01dn  (k,ngrid) = u01dn  (k,ngrid) + vctr11(k) * nxypi
+            v01dn  (k,ngrid) = v01dn  (k,ngrid) + vctr12(k) * nxypi
+            rt01dn (k,ngrid) = rt01dn (k,ngrid) + vctr13(k) * nxypi
+            co201dn(k,ngrid) = co201dn(k,ngrid) + vctr14(k) * nxypi
+            pi01dn (k,ngrid) = pi01dn (k,ngrid) + vctr16(k) * nxypi
+            dn01dn (k,ngrid) = dn01dn (k,ngrid) + vctr17(k) * nxypi
+         end do
+         !---------------------------------------------------------------------------------!
       end do
-      call htint2(nzp,thp(:,iref,jref),vctr2,nzp,vctr1         ,zt)
-      call htint2(nzp,uc (:,iref,jref),vctr2,nzp,u01dn(:,ngrid),zt)
-      call htint2(nzp,vc (:,iref,jref),vctr2,nzp,v01dn(:,ngrid),zt)
-      if (vapour_on) then
-         call htint2(nzp,rtp(:,iref,jref),vctr2,nzp,rt01dn(:,ngrid),zt)
-      else
-         rt01dn(1:nzp,ngrid) = 0.
-      end if
-      if (co2_on) then
-         call htint2(nzp,co2p(:,iref,jref),vctr2,nzp,co201dn(:,ngrid),zt)
-      else
-         co201dn(1:nzp,ngrid) = co2con(1)
-      end if
-   case (1)
-      vctr2(1:nzp)       = ztn(1:nzp,ngrid)
-      vctr1(1:nzp)       = thp(1:nzp,iref,jref)
-      u01dn(1:nzp,ngrid) = uc(1:nzp,iref,jref)
-      v01dn(1:nzp,ngrid) = vc(1:nzp,iref,jref)
-      if (vapour_on) then
-         rt01dn(1:nzp,ngrid) = rtp(1:nzp,iref,jref)
-      else
-         rt01dn(1:nzp,ngrid) = 0.
-      end if
-      if (co2_on) then
-         co201dn(1:nzp,ngrid) = co2p(1:nzp,iref,jref)
-      else
-         co201dn(1:nzp,ngrid) = co2con(1)
-      end if
-   end select
-
-   !------ We now compute the reference theta, which will indeed be theta_v. --------------!
-   do k = 1,nzp
-      th01dn(k,ngrid) = virtt(vctr1(k),rt01dn(k,ngrid))
+      !------------------------------------------------------------------------------------!
    end do
 
-   !----- Boundary condition. -------------------------------------------------------------!
-   u01dn(1,ngrid)   = u01dn(2,ngrid)
-   v01dn(1,ngrid)   = v01dn(2,ngrid)
-   rt01dn(1,ngrid)  = rt01dn(2,ngrid)
-   th01dn(1,ngrid)  = th01dn(2,ngrid)
-   co201dn(1,ngrid) = co201dn(1,ngrid)
-
-   !----- Hydrostatic adjustment for pressure. --------------------------------------------!
-   pi01dn(1,ngrid) = pc(1,iref,jref) + grav * (vctr2(1) - zt(1))                           &
-                                     / (.5 * ( th01dn(1,ngrid)                             &
-                                             + virtt(thp(1,iref,jref),rtp(1,iref,jref)) ))
-   do k = 2,nzp
-     pi01dn(k,ngrid) = pi01dn(k-1,ngrid)                                                   &
-                     - grav / (dzm(k-1) * .5 * (th01dn(k,ngrid) + th01dn(k-1,ngrid)))
+   !---------------------------------------------------------------------------------------!
+   !      Write the profile on screen.                                                     !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)') ' '
+   write (unit=*,fmt='(81a)') ('=',i=1,81)
+   write (unit=*,fmt='(a,1x,i5)')  ' REFERENCE STATE, GRID ',ngrid
+   write (unit=*,fmt='(81a)') ('-',i=1,81)
+   write (unit=*,fmt='(a,7(1x,a))')  '  K','     PRESS','     THETA','       RTP'          &
+                                          ,'       CO2','      DENS','      USPD'          &
+                                          ,'      VSPD'
+   write (unit=*,fmt='(a,7(1x,a))')  '   ','     [hPa]','       [K]','    [g/kg]'          &
+                                          ,'[umol/mol]','   [kg/m3]','     [m/s]'          &
+                                          ,'     [m/s]'
+   write (unit=*,fmt='(81a)') ('-',i=1,81)
+   do k=1,nzp
+       dummy = exner2press(pi01dn(k,ngrid))
+       write(unit=*,fmt='(i3,7(1x,f10.3))') k,dummy*0.01,th01dn(k,ngrid)                   &
+                                             ,1000.*rt01dn(k,ngrid),co201dn(k,ngrid)       &
+                                             ,dn01dn(k,ngrid),u01dn(k,ngrid),v01dn(k,ngrid)
    end do
-
-   !----- Finding the density. ------------------------------------------------------------!
-   do k = 1,nzp
-     vctr4(k)        = exner2press(pi01dn(k,ngrid))
-     dn01dn(k,ngrid) = vctr4(k) / (rdry * extheta2temp(pi01dn(k,ngrid),th01dn(k,ngrid)) )
-   end do
+   write (unit=*,fmt='(81a)') ('=',i=1,81)
+   write (unit=*,fmt='(a)') ' '
+   !---------------------------------------------------------------------------------------!
 
    !------ Compute 3-D reference state from 1-D reference state. --------------------------!
    call refs3d(nzp,nxp,nyp,pi0,dn0,dn0u,dn0v,th0,topt,rtgt)
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine varref

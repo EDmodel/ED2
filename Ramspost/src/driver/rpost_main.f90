@@ -36,6 +36,7 @@ program ramspost
    character(len=15)                                                 :: chdate
    character(len=15)                                                 :: chstep
    character(len=15)                                                 :: xchstep
+   character(len=20)                                                 :: cvar
    integer                                                           :: nvp
    integer                                                           :: nfiles
    integer               , dimension(maxvars)                        :: nzvp
@@ -66,7 +67,6 @@ program ramspost
    integer                                                           :: nfn
    integer                                                           :: n
    integer                                                           :: imon
-   integer                                                           :: inplevsef
    integer                                                           :: nxpg
    integer                                                           :: nypg
    integer                                                           :: nzpg
@@ -256,9 +256,8 @@ program ramspost
                    ,rlonmax,nxgrads(ng),nygrads(ng),proj)
       call alloc_rout(routgrads(ng),nxgrads(ng),nygrads(ng),iep_nz(ng),iep_ng,iep_np       &
                      ,iep_nc,inplevs)
-      call array_interpol(ng,nxgrads(ng),nygrads(ng),iep_nx(ng),iep_ny(ng),dep_glat(1,ng)  &
-                         ,dep_glat(2,ng),dep_glon(1,ng),dep_glon(2,ng),routgrads(ng)%iinf  &
-                         ,routgrads(ng)%jinf,routgrads(ng)%rmi,proj)
+      call array_interpol(ng,nxgrads(ng),nygrads(ng),iep_nx(ng),iep_ny(ng)                 &
+                         ,routgrads(ng)%iinf,routgrads(ng)%jinf,routgrads(ng)%rmi,proj)
       call define_lim(ng,nxgrads(ng),nygrads(ng),dep_glat(1,ng),dep_glat(2,ng)             &
                      ,dep_glon(1,ng),dep_glon(2,ng),lati(ng),latf(ng),loni(ng),lonf(ng)    &
                      ,nxa(ng),nxb(ng),nya(ng),nyb(ng),proj,iep_nx(ng),iep_ny(ng)           &
@@ -305,7 +304,7 @@ program ramspost
             !----- Load topography. -------------------------------------------------------!
             write(unit=*,fmt='(a)') ' '
             write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','topo'
-            call ep_getvar('topo',iep_nx(ng),iep_ny(ng),1,ng,cfln,vpln(iv),vpun(iv),n      &
+            call ep_getvar('topo',iep_nx(ng),iep_ny(ng),iep_nz(ng),ng,cfln,vpln(iv),vpun(iv),n      &
                           ,iep_np,iep_nc,iep_ng)
             call atob(iep_nx(ng)*iep_ny(ng),rout(ng)%r2,rout(ng)%topo)
             write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
@@ -316,6 +315,7 @@ program ramspost
             write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','pi'
             call ep_getvar('pi',iep_nx(ng),iep_ny(ng),iep_nz(ng),ng,cfln,vpln(iv),vpun(iv) &
                           ,n,iep_np,iep_nc,iep_ng)
+            write(unit=*,fmt='(a)')       '       # Got variable.  Entering atob...'
             call atob(iep_nx(ng)*iep_ny(ng)*iep_nz(ng),rout(ng)%r3,rout(ng)%exner)
             write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
             !------------------------------------------------------------------------------!
@@ -349,6 +349,7 @@ program ramspost
 
                !----- Set the number of levels. -------------------------------------------!
                nzvp(iv) = 1
+               cvar     = trim(vp(iv))
                !---------------------------------------------------------------------------!
 
 
@@ -356,13 +357,13 @@ program ramspost
                call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
                                       ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi           &
                                       ,routgrads(ng)%iinf,routgrads(ng)%jinf,rout(ng)%r2   &
-                                      ,routgrads(ng)%r2,rout(ng)%rlat,rout(ng)%rlon,proj)
+                                      ,routgrads(ng)%r2,proj)
                !---------------------------------------------------------------------------!
 
 
                !----- Dump array to output file. ------------------------------------------!
                call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng),nya(ng)  &
-                             ,nyb(ng),1,1,routgrads(ng)%r2,nrec)
+                             ,nyb(ng),1,1,routgrads(ng)%r2,nrec,cvar)
                !---------------------------------------------------------------------------!
             case (3)
                !---------------------------------------------------------------------------!
@@ -370,8 +371,8 @@ program ramspost
                !---------------------------------------------------------------------------!
 
 
-               !----- Set the number of levels. -------------------------------------------!
-               nzvp(iv) = iep_nz(ng)
+               !----- Alias for variable names. -------------------------------------------!
+               cvar     = trim(vp(iv))
                !---------------------------------------------------------------------------!
 
 
@@ -384,58 +385,69 @@ program ramspost
                   !      Native coordinates.                                               !
                   !------------------------------------------------------------------------!
 
+
+                  !----- Set the number of levels. ----------------------------------------!
+                  nzvp(iv) = iep_nz(ng)
+                  !------------------------------------------------------------------------!
+
+
                   !----- Adjust projection to GrADS. --------------------------------------!
                   call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
                                          ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi        &
                                          ,routgrads(ng)%iinf,routgrads(ng)%jinf            &
-                                         ,rout(ng)%r3,routgrads(ng)%r3,rout(ng)%rlat       &
-                                         ,rout(ng)%rlon,proj)
+                                         ,rout(ng)%r3,routgrads(ng)%r3,proj)
                   !------------------------------------------------------------------------!
 
                   !----- Dump array to output file. ---------------------------------------!
                   call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
-                                ,nya(ng),nyb(ng),2,zlevmax(ng)+1,routgrads(ng)%r3,nrec)
+                                ,nya(ng),nyb(ng),2,zlevmax(ng)+1,routgrads(ng)%r3,nrec,cvar)
                   !------------------------------------------------------------------------!
                case (1)
                   !------------------------------------------------------------------------!
                   !      Pressure levels.                                                  !
                   !------------------------------------------------------------------------!
 
+
                   !----- Set the number of levels. ----------------------------------------!
-                  inplevsef = inplevs
+                  nzvp(iv) = inplevs
                   !------------------------------------------------------------------------!
 
+
                   !----- Interpolate to pressure levels. ----------------------------------!
-                  call  ptransvar(rout(ng)%r3,iep_nx(ng),iep_ny(ng),nzvp(iv),inplevs       &
+                  write(unit=*,fmt='(a)') "        - PTRANSVAR"
+                  call  ptransvar(rout(ng)%r3,iep_nx(ng),iep_ny(ng),iep_nz(ng),nzvp(iv)    &
                                  ,iplevs,rout(ng)%exner,dep_zlev(:,ng),rout(ng)%zplev      &
                                  ,rout(ng)%topo)
                   !------------------------------------------------------------------------!
 
 
                   !----- Adjust projection to GrADS. --------------------------------------!
+                  write(unit=*,fmt='(a)') "        - PROJ_RAMS_TO_GRADS"
                   call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
                                          ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi        &
                                          ,routgrads(ng)%iinf,routgrads(ng)%jinf            &
-                                         ,rout(ng)%r3,routgrads(ng)%r3,rout(ng)%rlat       &
-                                         ,rout(ng)%rlon,proj)
+                                         ,rout(ng)%r3,routgrads(ng)%r3,proj)
                   !------------------------------------------------------------------------!
 
                   !----- Dump array to output file. ---------------------------------------!
-                  call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)      &
-                                ,nya(ng),nyb(ng),1,inplevsef,routgrads(ng)%r3,nrec)
+                  write(unit=*,fmt='(a)') "        - ED_PUTVAR"
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r3,nrec,cvar)
                   !------------------------------------------------------------------------!
                case (2)
                   !------------------------------------------------------------------------!
                   !      Height levels.                                                    !
                   !------------------------------------------------------------------------!
 
+
                   !----- Set the number of levels. ----------------------------------------!
-                  inplevsef = inplevs
+                  nzvp(iv) = inplevs
                   !------------------------------------------------------------------------!
+
 
                   !----- Interpolate to height levels. ------------------------------------!
                   call  ctransvar(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout(ng)%r3             &
-                                 ,rout(ng)%topo,inplevs,iplevs,myztn(:,ng)                 &
+                                 ,rout(ng)%topo,nzvp(iv),iplevs,myztn(:,ng)                &
                                  ,myzmn(mynnzp(1)-1,1))
                   !------------------------------------------------------------------------!
 
@@ -444,23 +456,24 @@ program ramspost
                   call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
                                          ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi        &
                                          ,routgrads(ng)%iinf,routgrads(ng)%jinf            &
-                                         ,rout(ng)%r3,routgrads(ng)%r3,rout(ng)%rlat       &
-                                         ,rout(ng)%rlon,proj)
+                                         ,rout(ng)%r3,routgrads(ng)%r3,proj)
                   !------------------------------------------------------------------------!
 
 
                   !----- Dump array to output file. ---------------------------------------!
-                  call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)      &
-                                ,nya(ng),nyb(ng),1,inplevsef,routgrads(ng)%r3,nrec)
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r3,nrec,cvar)
                   !------------------------------------------------------------------------!
                case (3)
                   !------------------------------------------------------------------------!
                   !      Selected sigma-z levels.                                          !
                   !------------------------------------------------------------------------!
 
+
                   !----- Set the number of levels. ----------------------------------------!
-                  inplevsef = inplevs
+                  nzvp(iv) = inplevs
                   !------------------------------------------------------------------------!
+
 
                   !----- Pick only the levels we are interested in. -----------------------!
                   call  select_sigmaz(iep_nx(ng),iep_ny(ng),iep_nz(ng),rout(ng)%r3         &
@@ -472,14 +485,13 @@ program ramspost
                   call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
                                          ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi        &
                                          ,routgrads(ng)%iinf,routgrads(ng)%jinf            &
-                                         ,rout(ng)%r3,routgrads(ng)%r3,rout(ng)%rlat       &
-                                         ,rout(ng)%rlon,proj)
+                                         ,rout(ng)%r3,routgrads(ng)%r3,proj)
                   !------------------------------------------------------------------------!
 
 
                   !----- Dump array to output file. ---------------------------------------!
-                  call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)      &
-                                ,nya(ng),nyb(ng),1,inplevsef,routgrads(ng)%r3,nrec)
+                  call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
+                                ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r3,nrec,cvar)
                   !------------------------------------------------------------------------!
 
                end select
@@ -496,11 +508,6 @@ program ramspost
                !---------------------------------------------------------------------------!
 
 
-               !----- Set the number of levels. -------------------------------------------!
-               nzvp(iv) = iep_nz(ng)
-               !---------------------------------------------------------------------------!
-
-
                !---------------------------------------------------------------------------!
                !     Decide which vertical levels to use.                                  !
                !---------------------------------------------------------------------------!
@@ -511,12 +518,19 @@ program ramspost
                   !------------------------------------------------------------------------!
 
 
+                  !----- Set the number of levels. ----------------------------------------!
+                  nzvp(iv) = iep_nz(ng)
+                  !------------------------------------------------------------------------!
+
+
                   !------------------------------------------------------------------------!
                   !    Loop over clouds.                                                   !
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
+                     write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ic
+
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic               &
+                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),iep_nz(ng),iep_nc,ic             &
                                    ,rout(ng)%r6,rout(ng)%r3)
                      !---------------------------------------------------------------------!
 
@@ -526,13 +540,13 @@ program ramspost
                                             ,nzvp(iv),nxgrads(ng),nygrads(ng)              &
                                             ,routgrads(ng)%rmi,routgrads(ng)%iinf          &
                                             ,routgrads(ng)%jinf,rout(ng)%r3                &
-                                            ,routgrads(ng)%r3,rout(ng)%rlat,rout(ng)%rlon  &
-                                            ,proj)
+                                            ,routgrads(ng)%r3,proj)
                      !---------------------------------------------------------------------!
 
                      !----- Dump array to output file. ------------------------------------!
                      call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)    &
-                                   ,nya(ng),nyb(ng),2,zlevmax(ng)+1,routgrads(ng)%r3,nrec)
+                                   ,nya(ng),nyb(ng),2,zlevmax(ng)+1,routgrads(ng)%r3,nrec  &
+                                   ,cvar)
                      !---------------------------------------------------------------------!
                   end do
                   !------------------------------------------------------------------------!
@@ -542,8 +556,9 @@ program ramspost
                   !      Pressure levels.                                                  !
                   !------------------------------------------------------------------------!
 
+
                   !----- Set the number of levels. ----------------------------------------!
-                  inplevsef = inplevs
+                  nzvp(iv) = inplevs
                   !------------------------------------------------------------------------!
 
 
@@ -551,13 +566,15 @@ program ramspost
                   !    Loop over clouds.                                                   !
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
+                     write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ic
+
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic               &
+                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),iep_nz(ng),iep_nc,ic             &
                                    ,rout(ng)%r6,rout(ng)%r3)
                      !---------------------------------------------------------------------!
 
                      !----- Interpolate to pressure levels. -------------------------------!
-                     call  ptransvar(rout(ng)%r3,iep_nx(ng),iep_ny(ng),nzvp(iv),inplevs    &
+                     call  ptransvar(rout(ng)%r3,iep_nx(ng),iep_ny(ng),iep_nz(ng),inplevs  &
                                     ,iplevs,rout(ng)%exner,dep_zlev(:,ng),rout(ng)%zplev   &
                                     ,rout(ng)%topo)
                      !---------------------------------------------------------------------!
@@ -568,13 +585,12 @@ program ramspost
                                             ,nzvp(iv),nxgrads(ng),nygrads(ng)              &
                                             ,routgrads(ng)%rmi,routgrads(ng)%iinf          &
                                             ,routgrads(ng)%jinf,rout(ng)%r3                &
-                                            ,routgrads(ng)%r3,rout(ng)%rlat,rout(ng)%rlon  &
-                                            ,proj)
+                                            ,routgrads(ng)%r3,proj)
                      !---------------------------------------------------------------------!
 
                      !----- Dump array to output file. ------------------------------------!
-                     call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)   &
-                                   ,nya(ng),nyb(ng),1,inplevsef,routgrads(ng)%r3,nrec)
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)    &
+                                   ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r3,nrec,cvar)
                      !---------------------------------------------------------------------!
                   end do
                   !------------------------------------------------------------------------!
@@ -584,8 +600,9 @@ program ramspost
                   !      Height levels.                                                    !
                   !------------------------------------------------------------------------!
 
+
                   !----- Set the number of levels. ----------------------------------------!
-                  inplevsef = inplevs
+                  nzvp(iv) = inplevs
                   !------------------------------------------------------------------------!
 
 
@@ -593,8 +610,10 @@ program ramspost
                   !    Loop over clouds.                                                   !
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
+                     write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ic
+
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic               &
+                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),iep_nz(ng),iep_nc,ic             &
                                    ,rout(ng)%r6,rout(ng)%r3)
                      !---------------------------------------------------------------------!
 
@@ -610,14 +629,13 @@ program ramspost
                                             ,nzvp(iv),nxgrads(ng),nygrads(ng)              &
                                             ,routgrads(ng)%rmi,routgrads(ng)%iinf          &
                                             ,routgrads(ng)%jinf,rout(ng)%r3                &
-                                            ,routgrads(ng)%r3,rout(ng)%rlat,rout(ng)%rlon  &
-                                            ,proj)
+                                            ,routgrads(ng)%r3,proj)
                      !---------------------------------------------------------------------!
 
 
                      !----- Dump array to output file. ------------------------------------!
-                     call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)   &
-                                   ,nya(ng),nyb(ng),1,inplevsef,routgrads(ng)%r3,nrec)
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)    &
+                                   ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r3,nrec,cvar)
                      !---------------------------------------------------------------------!
                   end do
                   !------------------------------------------------------------------------!
@@ -626,8 +644,9 @@ program ramspost
                   !      Selected sigma-z levels.                                          !
                   !------------------------------------------------------------------------!
 
+
                   !----- Set the number of levels. ----------------------------------------!
-                  inplevsef = inplevs
+                  nzvp(iv) = inplevs
                   !------------------------------------------------------------------------!
 
 
@@ -635,8 +654,10 @@ program ramspost
                   !    Loop over clouds.                                                   !
                   !------------------------------------------------------------------------!
                   do ic = 1,iep_nc
+                     write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ic
+
                      !----- Convert the 4D array into a 3D. -------------------------------!
-                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_nc,ic               &
+                     call s4d_to_3d(iep_nx(ng),iep_ny(ng),iep_nz(ng),iep_nc,ic             &
                                    ,rout(ng)%r6,rout(ng)%r3)
                      !---------------------------------------------------------------------!
 
@@ -651,14 +672,13 @@ program ramspost
                                             ,nzvp(iv),nxgrads(ng),nygrads(ng)              &
                                             ,routgrads(ng)%rmi,routgrads(ng)%iinf          &
                                             ,routgrads(ng)%jinf,rout(ng)%r3                &
-                                            ,routgrads(ng)%r3,rout(ng)%rlat,rout(ng)%rlon  &
-                                            ,proj)
+                                            ,routgrads(ng)%r3,proj)
                      !---------------------------------------------------------------------!
 
 
                      !----- Dump array to output file. ------------------------------------!
-                     call ep_putvar(19,nxgrads(ng),nygrads(ng),inplevsef,nxa(ng),nxb(ng)   &
-                                   ,nya(ng),nyb(ng),1,inplevsef,routgrads(ng)%r3,nrec)
+                     call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)    &
+                                   ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r3,nrec,cvar)
                      !---------------------------------------------------------------------!
                   end do
                   !------------------------------------------------------------------------!
@@ -683,7 +703,7 @@ program ramspost
                call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
                                       ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi           &
                                       ,routgrads(ng)%iinf,routgrads(ng)%jinf,rout(ng)%r7   &
-                                      ,routgrads(ng)%r7,rout(ng)%rlat,rout(ng)%rlon,proj)
+                                      ,routgrads(ng)%r7,proj)
                !---------------------------------------------------------------------------!
 
 
@@ -691,8 +711,10 @@ program ramspost
                !    Loop over all patches, and write the 2-D arrays.                       !
                !---------------------------------------------------------------------------!
                do ip=1,iep_np
+                  write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ip
+
                   call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
-                                ,nya(ng),nyb(ng),ip,ip,routgrads(ng)%r7,nrec)
+                                ,nya(ng),nyb(ng),ip,ip,routgrads(ng)%r7,nrec,cvar)
                end do
                !---------------------------------------------------------------------------!
 
@@ -716,6 +738,8 @@ program ramspost
                !    Loop over patches.                                                     !
                !---------------------------------------------------------------------------!
                do ip = 1,iep_np
+                  write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ip
+
                   !----- Convert the 4D array into a 3D. ----------------------------------!
                   call s4d_to_3d(iep_nx(ng),iep_ny(ng),nzvp(iv),iep_np,ip                  &
                                 ,rout(ng)%r8,rout(ng)%r10)
@@ -726,14 +750,13 @@ program ramspost
                   call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)   &
                                          ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi        &
                                          ,routgrads(ng)%iinf,routgrads(ng)%jinf            &
-                                         ,rout(ng)%r10,routgrads(ng)%r10,rout(ng)%rlat     &
-                                         ,rout(ng)%rlon,proj)
+                                         ,rout(ng)%r10,routgrads(ng)%r10,proj)
                   !------------------------------------------------------------------------!
 
 
                   !----- Dump array to output file. ---------------------------------------!
                   call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
-                                ,nya(ng),nyb(ng),1,iep_ng,routgrads(ng)%r10,nrec)
+                                ,nya(ng),nyb(ng),1,iep_ng,routgrads(ng)%r10,nrec,cvar)
                   !------------------------------------------------------------------------!
                end do
                !---------------------------------------------------------------------------!
@@ -759,7 +782,7 @@ program ramspost
                call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
                                       ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi           &
                                       ,routgrads(ng)%iinf,routgrads(ng)%jinf,rout(ng)%r9   &
-                                      ,routgrads(ng)%r9,rout(ng)%rlat,rout(ng)%rlon,proj)
+                                      ,routgrads(ng)%r9,proj)
                !---------------------------------------------------------------------------!
 
 
@@ -767,8 +790,10 @@ program ramspost
                !    Loop over all clouds, and write the 2-D arrays.                        !
                !---------------------------------------------------------------------------!
                do ic=1,iep_nc
+                  write(cvar,fmt='(a,i2.2)') trim(vp(iv)),ic
+
                   call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)       &
-                                ,nya(ng),nyb(ng),ic,ic,routgrads(ng)%r9,nrec)
+                                ,nya(ng),nyb(ng),ic,ic,routgrads(ng)%r9,nrec,cvar)
                end do
                !---------------------------------------------------------------------------!
 
@@ -776,6 +801,9 @@ program ramspost
                !---------------------------------------------------------------------------!
                !    Soil variable that has layers but no patches.                          !
                !---------------------------------------------------------------------------!
+               cvar=trim(vp(iv))
+
+
                !----- Set the number of levels. -------------------------------------------!
                nzvp(iv) = iep_ng
                !---------------------------------------------------------------------------!
@@ -785,13 +813,13 @@ program ramspost
                call proj_rams_to_grads(vp(iv),ndim(iv),iep_nx(ng),iep_ny(ng),nzvp(iv)      &
                                       ,nxgrads(ng),nygrads(ng),routgrads(ng)%rmi           &
                                       ,routgrads(ng)%iinf,routgrads(ng)%jinf,rout(ng)%r10  &
-                                      ,routgrads(ng)%r10,rout(ng)%rlat,rout(ng)%rlon,proj)
+                                      ,routgrads(ng)%r10,proj)
                !---------------------------------------------------------------------------!
 
 
                !----- Dump array to output file. ------------------------------------------!
                call ep_putvar(19,nxgrads(ng),nygrads(ng),nzvp(iv),nxa(ng),nxb(ng)          &
-                             ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r10,nrec)
+                             ,nya(ng),nyb(ng),1,nzvp(iv),routgrads(ng)%r10,nrec,cvar)
                !---------------------------------------------------------------------------!
 
             case default
@@ -986,475 +1014,3 @@ program ramspost
 end program ramspost
 !==========================================================================================!
 !==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine ep_getvar(cvar,nx,ny,nz,ng,fn,cdname,cdunits,itype,npatch,nclouds,nzg)
-   use rout_coms, only : rout      & ! intent(inout)
-                       , rout_vars ! ! variable type
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   character(len=*)            , intent(in)    :: cvar
-   character(len=*)            , intent(in)    :: fn
-   character(len=*)            , intent(out)   :: cdname
-   character(len=*)            , intent(out)   :: cdunits
-   integer                     , intent(in)    :: nx
-   integer                     , intent(in)    :: ny
-   integer                     , intent(in)    :: nz
-   integer                     , intent(in)    :: ng
-   integer                     , intent(out)   :: itype
-   integer                     , intent(in)    :: npatch
-   integer                     , intent(in)    :: nzg
-   integer                     , intent(in)    :: nclouds
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Load the variable. --------------------------------------------------------------!
-   call RAMS_varlib(cvar,nx,ny,nz,nzg,npatch,nclouds,ng,fn,cdname,cdunits,itype            &
-                   ,rout(ng)%abuff,rout(ng)%bbuff)
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Copy to the appropriate scratch. ------------------------------------------------!
-   select case (itype)
-   case (2)
-      call atob(nx*ny,rout(ng)%abuff,rout(ng)%r2)
-   case (3)
-      call atob(nx*ny*nz,rout(ng)%abuff,rout(ng)%r3)
-   case (6)
-      call atob(nx*ny*nz*nclouds,rout(ng)%abuff,rout(ng)%r6)
-   case (7)
-      call atob(nx*ny*npatch,rout(ng)%abuff,rout(ng)%r7)
-   case (8)
-      call atob(nx*ny*nzg*npatch,rout(ng)%abuff,rout(ng)%r8)
-   case (9)
-      call atob(nx*ny*nclouds,rout(ng)%abuff,rout(ng)%r9)
-   case (10)
-      call atob(nx*ny*nzg,rout(ng)%abuff,rout(ng)%r10)
-   end select
-   return
-end subroutine ep_getvar
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine ep_setdate(iyear1,imonth1,idate1,strtim,itrec)
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   integer              , intent(in)  :: iyear1
-   integer              , intent(in)  :: imonth1
-   integer              , intent(in)  :: idate1
-   real                 , intent(in)  :: strtim
-   integer, dimension(6), intent(out) :: itrec
-   !---------------------------------------------------------------------------------------!
-
-   itrec(1) = iyear1
-   itrec(2) = imonth1
-   itrec(3) = idate1
-   itrec(4) = int(mod(strtim,24.))
-   itrec(5) = int(mod(strtim,1.)*60)
-   itrec(6) = int(mod( (strtim) *3600.,60.))
-
-   return
-end subroutine ep_setdate
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!      This subroutine dumps the array to the output binary file (gra file).               !
-!------------------------------------------------------------------------------------------!
-subroutine ep_putvar(iunit,nxp,nyp,nzp,xa,xz,ya,yz,za,zz,array3d,irec)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer                     , intent(in)    :: iunit
-   integer                     , intent(in)    :: nxp
-   integer                     , intent(in)    :: nyp
-   integer                     , intent(in)    :: nzp
-   integer                     , intent(in)    :: xa
-   integer                     , intent(in)    :: xz
-   integer                     , intent(in)    :: ya
-   integer                     , intent(in)    :: yz
-   integer                     , intent(in)    :: za
-   integer                     , intent(in)    :: zz
-   real, dimension(nxp,nyp,nzp), intent(in)    :: array3d
-   integer                     , intent(inout) :: irec
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                                     :: x
-   integer                                     :: y
-   integer                                     :: z
-   real, dimension(nxp,nyp)                    :: mat
-   !---------------------------------------------------------------------------------------!
-   do z=za,zz
-      do y=1,nyp
-         do x=1,nxp
-            mat(x,y) = array3d(x,y,z)
-         end do
-      end do
-
-      irec=irec+1
-      write (unit=iunit,rec=irec) ((mat(x,y),x=xa,xz),y=ya,yz)
-   end do
-
-   return
-end subroutine ep_putvar
-!==========================================================================================!
-!==========================================================================================!
-
-!-------------------------------------------------------------------
-!
-Subroutine array_interpol(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
-     rlon1,dlon,iinf,jinf,rmi,proj)
-  use rpost_coms
-  use rout_coms, only : undefflg
-  use brams_data
-  use misc_coms, only : glong, glatg
-
-  Dimension rmi(nxg,nyg,4),iinf(nxg,nyg),jinf(nxg,nyg)
-  character(len=*) :: proj
-  !
-  if(trim(proj) == 'no') RETURN
-
-  !       Construcao da matriz de interpolacao.
-  !       Flag para pontos do grads fora do dominio do modelo
-  do i=1,nxg
-     do j=1,nyg
-        iinf(i,j)=1
-        jinf(i,j)=1
-        do l=1,4
-           rmi(i,j,l)=undefflg
-        enddo
-     enddo
-  enddo
-  do i=1,nxg
-     do j=1,nyg
-        !       Encontra posicao do ponto de grade do GRADS na grade do RAMS
-        !
-        !        glatg(i)=-37.113
-        !        glong(j)=-79.128
-        !        xlat=glatg(i)
-        !        xlon= glong(j)
-        !        Call ll_xy(glatg(i),glong(j),polelat,polelon,x,y)
-        !       call getops(pla,plo,xlat,xlon,polelat,polelon)
-        !       call pstoxy(x,y,pla,plo,6376000.)
-        !
-        call ge_to_xy(polelat,polelon,glong(i),glatg(j),x,y)
-        !
-        !        print*,x,y,glong(i),glatg(j),polelat,polelon
-
-        !       Elimina pontos fora:
-        if(x.lt.xtn(1,ng).or.x.gt.xtn(nxr,ng)) go to 777
-        if(y.lt.ytn(1,ng).or.y.gt.ytn(nyr,ng)) go to 777
-        !        
-        do ix=1,nxr
-           if(x.le.xtn(ix,ng)) go to 555
-        enddo
-555     continue
-        i1=ix-1
-        i2=ix
-        iinf(i,j)=i1         
-
-        do iy=1,nyr
-           if(y.le.ytn(iy,ng)) go to 666
-        enddo
-666     continue
-        j1=iy-1
-        j2=iy                
-        jinf(i,j)=j1
-        !        
-        rmi(i,j,1)=(x-xtn(i1,ng))/deltaxn(ng)
-        rmi(i,j,2)=1.-rmi(i,j,1)
-        !         
-        rmi(i,j,3)=(y-ytn(j1,ng))/deltayn(ng)
-        rmi(i,j,4)=1.-rmi(i,j,3)
-777     continue
-        !
-        !         print*,i,j,rmi(i,j,1),rmi(i,j,2),rmi(i,j,3),rmi(i,j,4)
-        !
-        !        
-     enddo
-  enddo
-  return
-end Subroutine array_interpol
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine proj_rams_to_grads(vp,n,nxr,nyr,nzz,nxg,nyg,rmi,iinf,jinf,this,thisgrads        &
-                             ,rlat,rlon,proj)
-   use rout_coms, only : maxnormal  & ! intent(in)
-                       , undefflg   ! ! intent(in)
-
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   character(len=*)                        , intent(in)    :: vp
-   integer                                 , intent(in)    :: n
-   integer                                 , intent(in)    :: nxr
-   integer                                 , intent(in)    :: nyr
-   integer                                 , intent(in)    :: nzz
-   integer                                 , intent(in)    :: nxg
-   integer                                 , intent(in)    :: nyg
-   real            , dimension(nxg,nyg,4)  , intent(in)    :: rmi
-   integer         , dimension(nxg,nyg)    , intent(in)    :: iinf
-   integer         , dimension(nxg,nyg)    , intent(in)    :: jinf
-   real            , dimension(nxr,nyr,nzz), intent(in)    :: this
-   real            , dimension(nxg,nyg,nzz), intent(inout) :: thisgrads
-   real            , dimension(nxr,nyr)    , intent(in)    :: rlat
-   real            , dimension(nxr,nyr)    , intent(in)    :: rlon
-   character(len=*)                        , intent(in)    :: proj
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                                                 :: i
-   integer                                                 :: j
-   integer                                                 :: k
-   integer                                                 :: i1
-   integer                                                 :: i2
-   integer                                                 :: j1
-   integer                                                 :: j2
-   real                                                    :: r1
-   real                                                    :: r2
-   real                                                    :: r3
-   real                                                    :: r4
-   real                                                    :: rr1
-   real                                                    :: rr2
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Check whether to use lon-lat projection or not.                                   !
-   !---------------------------------------------------------------------------------------!
-   select case(trim(proj))
-   case ('no')
-      !----- Ensure that the grads domain is exactly the same as the RAMS one. ------------!
-      if (nxg /= nxr .or. nyg /= nyr) then
-         call abort_run  ('Projection with problems...','proj_rams_to_grads'               &
-                         ,'rpost_main.f90')
-      end if
-      call atob(nxr*nyr*nzz,this,thisgrads)
-      !------------------------------------------------------------------------------------!
-
-   case default
-
-      do i=1,nxg
-         do j=1,nyg
-            r1 = rmi(i,j,1)
-            r2 = rmi(i,j,2)
-            r3 = rmi(i,j,3)
-            r4 = rmi(i,j,4)
-            i1 = iinf(i,j)
-            i2 = i1+1
-            j1 = jinf(i,j)
-            j2 = j1+1
-
-
-            do k=1,nzz
-               rr1              =   this(i1,j1,k) * (1. - r1) + this(i2,j1,k) * (1. - r2) 
-               rr2              =   this(i1,j2,k) * (1. - r1) + this(i2,j2,k) * (1. - r2) 
-               thisgrads(i,j,k) =   rr1           * (1. - r3) + rr2           * (1. - r4)
-            end do
-         end do
-      end do
-
-      where (abs(thisgrads) > maxnormal)
-         thisgrads = undefflg
-      end where
-
-   end select
-   return
-end subroutine proj_rams_to_grads
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine ge_to_xy(polelat,polelon,xlon,xlat,x,y)
-   use rconstants, only : erad   & ! intent(in)
-                        , pio180 ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)  :: polelat
-   real, intent(in)  :: polelon
-   real, intent(in)  :: xlon
-   real, intent(in)  :: xlat
-   real, intent(out) :: x
-   real, intent(out) :: y
-   !----- Local variables. ----------------------------------------------------------------!
-   real              :: b
-   real              :: f
-   real              :: xlonrad
-   real              :: xlatrad
-   real              :: plonrad
-   real              :: platrad
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Convert coordinates to radians. -------------------------------------------------!
-   xlonrad = pio180 * xlon
-   xlatrad = pio180 * xlat
-   plonrad = pio180 * polelon
-   platrad = pio180 * polelat
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Horizontal transform. -----------------------------------------------------------!
-   b = 1.0 + sin(xlatrad)*sin(platrad) + cos(platrad)*cos(platrad)*cos(xlonrad- plonrad)
-   !---------------------------------------------------------------------------------------!
-
-   f = 2.00 * erad /b
-
-
-   y = f * (cos(platrad)*sin(xlatrad) - sin(platrad)*cos(xlatrad)*cos(xlonrad-plonrad))
-
-   x = f * (cos(xlatrad)*sin(xlonrad - plonrad))
-
-   return
-end subroutine ge_to_xy
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-Subroutine geo_grid(nx,ny,rlat,rlon,dep_glon1,dep_glon2,  &
-     dep_glat1,dep_glat2,		         &
-     rlatmin,rlatmax,rlonmin,rlonmax,  	 &
-     nxg,nyg,proj)
-  use rpost_dims
-  use misc_coms, only : glong, glatg
-  Dimension rlat(nx,ny),rlon(nx,ny)
-  character*(*) proj
-
-  dep_glon1=rlon(1,1)
-  dep_glon2=rlon(nx,1)
-  do n=1,ny
-     if(rlon(1,n).gt.dep_glon1)  dep_glon1=rlon(1,n)
-     if(rlon(nx,n).lt.dep_glon2) dep_glon2=rlon(nx,n)
-  enddo
-  dep_glon2= (dep_glon2-dep_glon1)/(nx-1)
-
-
-  dep_glat1=rlat(1,1)
-  dep_glat2=rlat(1,ny)
-  do n=1,nx
-     if(rlat(n,1).gt.dep_glat1)  dep_glat1=rlat(n,1)
-     if(rlat(n,ny).lt.dep_glat2) dep_glat2=rlat(n,ny)
-  enddo
-  dep_glat2= (dep_glat2-dep_glat1)/(ny-1)
-
-  !10/08/98
-  x=0
-  xx=0
-  do n=1,ny
-     x=x+rlon(1,n)
-     xx=xx+ (rlon(nx,n)-rlon(1,n))/(nx-1)
-  enddo
-  dep_glon1= x/ny
-  dep_glon2=xx/ny
-
-
-  x=0
-  xx=0
-  do n=1,nx
-     x=x+rlat(n,1)
-     xx=xx+ (rlat(n,ny)-rlat(n,1))/(ny-1)
-  enddo
-  dep_glat1= x/nx
-  dep_glat2=xx/nx
-
-  if(proj == 'no') then
-     nxg=nx
-     nyg=ny
-
-  elseif (proj == 'yes') then
-
-     !...... Grade para o GRADS:
-
-     rlatmin=rlat(1,1)
-     rlatmax=rlat(1,1)
-     rlonmin=rlon(1,1)
-     rlonmax=rlon(1,1)
-     do i=1,nx
-        do j=1,ny
-           rlatmin=min(rlatmin,rlat(i,j))
-           rlatmax=max(rlatmax,rlat(i,j))
-           rlonmin=min(rlonmin,rlon(i,j))
-           rlonmax=max(rlonmax,rlon(i,j))
-        enddo
-     enddo
-
-     !...... Definicao da grade do GRADS 
-     !
-     ! Para testar dependencia com a resolucao da grade
-     !
-     !            dep_glon2=0.5*dep_glon2
-     !            dep_glat2=0.5*dep_glat2
-
-     nxg=int((rlonmax-rlonmin)/dep_glon2+0.5)+4
-     nyg=int((rlatmax-rlatmin)/dep_glat2+0.5)+4
-     rlon1=rlonmin-(nxg-nx-1)*dep_glon2
-     rlat1=rlatmin-(nyg-ny-1)*dep_glat2
-
-     !            rlon1=rlonmin-2*dep_glon2
-     !            rlat1=rlatmin-2*dep_glat2
-
-     rlon1=rlonmin-dep_glon2
-     rlat1=rlatmin-dep_glat2
-     dep_glat1= rlat1
-     dep_glon1= rlon1
-
-     !            print*,rlonmin,rlonmax,rlatmin,rlatmax
-     !            print*,nxg,nyg,dep_glon2,dep_glat2,dep_glat1,dep_glon1
-     !            stop
-  else 
-     call abort_run   ('Invalid value for iproj: '//trim(proj)//'...' &
-                      ,'geo_grid','rpost_main.f90')
-  endif
-
-
-
-
-  !	Define	grade do GRADS
-
-  do i=1,nxg
-     glong(i)=dep_glon1+float(i-1)*dep_glon2
-     !        print*,' i lon=',i,glong(i)
-  enddo
-
-  do j=1,nyg
-     glatg(j)=dep_glat1+float(j-1)*dep_glat2
-     !        print*,' j lat=',j,glatg(j)
-  enddo
-
-  return
-end Subroutine geo_grid

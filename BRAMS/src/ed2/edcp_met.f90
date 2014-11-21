@@ -53,7 +53,8 @@ subroutine copy_atm2lsm(ifm,init)
    use canopy_radiation_coms, only : fvis_beam_def & ! intent(in)
                                    , fvis_diff_def & ! intent(in)
                                    , fnir_beam_def & ! intent(in)
-                                   , fnir_diff_def ! ! intent(in)
+                                   , fnir_diff_def & ! intent(in)
+                                   , cosz_min      ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in)  :: ifm
@@ -163,36 +164,78 @@ subroutine copy_atm2lsm(ifm,init)
             else
                co2p_mean(i,j) = co2con(1)
             end if
-            if (iswrtyp == 3) then
-               !----- We obtain the diffuse radiation straight from Harrington. -----------!
-               rshortd(i,j)  = radiate_g(ifm)%rshort_diffuse(i,j)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Decide how to obtain the radiation components.  Option 0 is supposed to !
+            ! be BRAMS as is, but this is true only when ISWRTYP = 4 (CARMA), otherwise it !
+            ! is the Weiss and Norman (1985) method.  In case you are a radiation expert   !
+            ! and are outraged and horrified by this chunk of code, please help us.  Go to !
+            ! BRAMS/src/radiate/rad_driv.f90 and other routines, populate the components   !
+            ! with the correct values and share the code!                                  !
+            !------------------------------------------------------------------------------!
+            select case (imetrad)
+            case (0)
+               !----- Use BRAMS radiation as is. ------------------------------------------!
+               rshortd (i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+               nir_beam(i,j) = radiate_g(ifm)%nir_beam      (i,j)
+               nir_diff(i,j) = radiate_g(ifm)%nir_diffuse   (i,j)
+               par_beam(i,j) = radiate_g(ifm)%par_beam      (i,j)
+               par_diff(i,j) = radiate_g(ifm)%par_diffuse   (i,j)
+               !---------------------------------------------------------------------------!
+            case (1)
+               !----- Split radiation according to SiB. -----------------------------------!
+               call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)     &
+                                  ,rshortd(i,j))
                nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
                nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
                par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
                par_diff(i,j) = fvis_diff_def * rshortd(i,j)
-
-            else
                !---------------------------------------------------------------------------!
-               !      The following subroutine estimates the diffuse shortwave radiation.  !
-               ! This is a gross approximation that uses constant scattering coefficients. !
+            case (2)
+               !----- Split radiation according to Weiss and Norman (1985). ---------------!
+               press = exner2press(pi0_mean(i,j))
+               call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press       &
+                                           ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)         &
+                                           ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)      &
+                                           ,rshortd(i,j) )
                !---------------------------------------------------------------------------!
-               select case (imetrad)
-               case (0,1)
-                  call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)  &
-                                     ,rshortd(i,j))
-                  nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
-                  nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
-                  par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
-                  par_diff(i,j) = fvis_diff_def * rshortd(i,j)
-               case (2)
-                  press = exner2press(pi0_mean(i,j))
-
-                  call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
-                                              ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
-                                              ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
-                                              ,rshortd(i,j) )
-               end select
-            end if
+            case (3)
+               !----- All is doom and gloom, even when the sun is out there. --------------!
+               rshortd (i,j) = radiate_g(ifm)%rshort        (i,j)
+               nir_beam(i,j) = 0.0
+               nir_diff(i,j) = ( radiate_g(ifm)%nir_diffuse (i,j)                          &
+                               + radiate_g(ifm)%nir_beam    (i,j) )
+               par_beam(i,j) = 0.0
+               par_diff(i,j) = ( radiate_g(ifm)%par_diffuse (i,j)                          &
+                               + radiate_g(ifm)%par_beam    (i,j) )
+               !---------------------------------------------------------------------------!
+            case (4)
+               !---------------------------------------------------------------------------!
+               !     Sesame street during the day.  ED doesn't like sun glare during the   !
+               ! night, so we allow diffuse radiation during twilight times.               !
+               !---------------------------------------------------------------------------!
+               if (radiate_g(ifm)%cosz(i,j) > cosz_min) then
+                  rshortd (i,j) = radiate_g(ifm)%rshort        (i,j)
+                  nir_beam(i,j) = ( radiate_g(ifm)%nir_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%nir_beam    (i,j) )
+                  nir_diff(i,j) = 0.0
+                  par_beam(i,j) = ( radiate_g(ifm)%par_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%par_beam    (i,j) )
+                  par_diff(i,j) = 0.0
+               else
+                  rshortd (i,j) = radiate_g(ifm)%rshort        (i,j)
+                  nir_beam(i,j) = 0.0
+                  nir_diff(i,j) = ( radiate_g(ifm)%nir_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%nir_beam    (i,j) )
+                  par_beam(i,j) = 0.0
+                  par_diff(i,j) = ( radiate_g(ifm)%par_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%par_beam    (i,j) )
+               end if
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
          end do
       end do
    case (1)
@@ -277,39 +320,85 @@ subroutine copy_atm2lsm(ifm,init)
             end if
 
 
-            if (iswrtyp == 3) then
-               !----- We obtain the diffuse radiation straight from Harrington. -----------!
-               rshortd(i,j)  = radiate_g(ifm)%rshort_diffuse(i,j)
+
+
+            !------------------------------------------------------------------------------!
+            !      Decide how to obtain the radiation components.  Option 0 is supposed to !
+            ! be BRAMS as is, but this is true only when ISWRTYP = 4 (CARMA), otherwise it !
+            ! is the Weiss and Norman (1985) method.  In case you are a radiation expert   !
+            ! and are outraged and horrified by this chunk of code, please help us.  Go to !
+            ! BRAMS/src/radiate/rad_driv.f90 and other routines, populate the components   !
+            ! with the correct values and share the code!                                  !
+            !------------------------------------------------------------------------------!
+            select case (imetrad)
+            case (0)
+               !----- Use BRAMS radiation as is. ------------------------------------------!
+               rshortd (i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+               nir_beam(i,j) = radiate_g(ifm)%nir_beam      (i,j)
+               nir_diff(i,j) = radiate_g(ifm)%nir_diffuse   (i,j)
+               par_beam(i,j) = radiate_g(ifm)%par_beam      (i,j)
+               par_diff(i,j) = radiate_g(ifm)%par_diffuse   (i,j)
+               !---------------------------------------------------------------------------!
+            case (1)
+               !----- Split radiation according to SiB. -----------------------------------!
+               call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)     &
+                                  ,rshortd(i,j))
                nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
                nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
                par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
                par_diff(i,j) = fvis_diff_def * rshortd(i,j)
-
-            else
                !---------------------------------------------------------------------------!
-               !      The following subroutine estimates the diffuse shortwave radiation.  !
-               ! This is a gross approximation that uses constant scattering coefficients. !
+            case (2)
+               !----- Split radiation according to Weiss and Norman (1985). ---------------!
+               press = exner2press(pi0_mean(i,j))
+               call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press       &
+                                           ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)         &
+                                           ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)      &
+                                           ,rshortd(i,j) )
                !---------------------------------------------------------------------------!
-               select case (imetrad)
-               case (0,1)
-                  call short2diff_sib(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)  &
-                                     ,rshortd(i,j))
-                  nir_beam(i,j) = fnir_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
-                  nir_diff(i,j) = fnir_diff_def * rshortd(i,j)
-                  par_beam(i,j) = fvis_beam_def * (radiate_g(ifm)%rshort(i,j)-rshortd(i,j))
-                  par_diff(i,j) = fvis_diff_def * rshortd(i,j)
-               case (2)
-                  press = exner2press(pi0_mean(i,j))
-               
-                  call short_bdown_weissnorman(radiate_g(ifm)%rshort_diffuse(i,j),press    &
-                                              ,radiate_g(ifm)%cosz(i,j),par_beam(i,j)      &
-                                              ,par_diff(i,j),nir_beam(i,j),nir_diff(i,j)   &
-                                              ,rshortd(i,j) )
-               end select
-            end if
-        end do
+            case (3)
+               !----- All is doom and gloom, even when the sun is out there. --------------!
+               rshortd (i,j) = radiate_g(ifm)%rshort        (i,j)
+               nir_beam(i,j) = 0.0
+               nir_diff(i,j) = ( radiate_g(ifm)%nir_diffuse (i,j)                          &
+                               + radiate_g(ifm)%nir_beam    (i,j) )
+               par_beam(i,j) = 0.0
+               par_diff(i,j) = ( radiate_g(ifm)%par_diffuse (i,j)                          &
+                               + radiate_g(ifm)%par_beam    (i,j) )
+               !---------------------------------------------------------------------------!
+            case (4)
+               !---------------------------------------------------------------------------!
+               !     Sesame street during the day.  ED doesn't like sun glare during the   !
+               ! night, so we allow diffuse radiation during twilight times.               !
+               !---------------------------------------------------------------------------!
+               if (radiate_g(ifm)%cosz(i,j) > cosz_min) then
+                  rshortd (i,j) = radiate_g(ifm)%rshort        (i,j)
+                  nir_beam(i,j) = ( radiate_g(ifm)%nir_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%nir_beam    (i,j) )
+                  nir_diff(i,j) = 0.0
+                  par_beam(i,j) = ( radiate_g(ifm)%par_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%par_beam    (i,j) )
+                  par_diff(i,j) = 0.0
+               else
+                  rshortd (i,j) = radiate_g(ifm)%rshort        (i,j)
+                  nir_beam(i,j) = 0.0
+                  nir_diff(i,j) = ( radiate_g(ifm)%nir_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%nir_beam    (i,j) )
+                  par_beam(i,j) = 0.0
+                  par_diff(i,j) = ( radiate_g(ifm)%par_diffuse (i,j)                          &
+                                  + radiate_g(ifm)%par_beam    (i,j) )
+               end if
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
    end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     With these averages, we can start copying the values to the ED structures.        !
@@ -1096,14 +1185,35 @@ subroutine initialize_ed2leaf(ifm)
          leaf_g(ifm)%can_theiv   (i,j,1) = thetaeiv(thil_mean(i,j),atm_prss,atm_temp       &
                                                    ,rtp_mean(i,j),rtp_mean(i,j))
          leaf_g(ifm)%can_vpdef   (i,j,1) = vpdefil(atm_prss,atm_temp,atm_shv,.true.)
-         leaf_g(ifm)%gpp         (i,j,1) = 0.0
-         leaf_g(ifm)%resphet     (i,j,1) = 0.0
-         leaf_g(ifm)%plresp      (i,j,1) = 0.0
-         leaf_g(ifm)%sensible_gc (i,j,1) = 0.0
-         leaf_g(ifm)%sensible_vc (i,j,1) = 0.0
-         leaf_g(ifm)%evap_gc     (i,j,1) = 0.0
-         leaf_g(ifm)%evap_vc     (i,j,1) = 0.0
+
+
+         leaf_g(ifm)%hflxac      (i,j,1) = 0.0
+         leaf_g(ifm)%wflxac      (i,j,1) = 0.0
+         leaf_g(ifm)%qwflxac     (i,j,1) = 0.0
+         leaf_g(ifm)%eflxac      (i,j,1) = 0.0
+         leaf_g(ifm)%cflxac      (i,j,1) = 0.0
+         leaf_g(ifm)%hflxgc      (i,j,1) = 0.0
+         leaf_g(ifm)%wflxgc      (i,j,1) = 0.0
+         leaf_g(ifm)%qwflxgc     (i,j,1) = 0.0
+         leaf_g(ifm)%hflxvc      (i,j,1) = 0.0
+         leaf_g(ifm)%wflxvc      (i,j,1) = 0.0
+         leaf_g(ifm)%qwflxvc     (i,j,1) = 0.0
          leaf_g(ifm)%transp      (i,j,1) = 0.0
+         leaf_g(ifm)%qtransp     (i,j,1) = 0.0
+         leaf_g(ifm)%intercepted (i,j,1) = 0.0
+         leaf_g(ifm)%qintercepted(i,j,1) = 0.0
+         leaf_g(ifm)%wshed       (i,j,1) = 0.0
+         leaf_g(ifm)%qwshed      (i,j,1) = 0.0
+         leaf_g(ifm)%throughfall (i,j,1) = 0.0
+         leaf_g(ifm)%qthroughfall(i,j,1) = 0.0
+         leaf_g(ifm)%gpp         (i,j,1) = 0.0
+         leaf_g(ifm)%plresp      (i,j,1) = 0.0
+         leaf_g(ifm)%resphet     (i,j,1) = 0.0
+         leaf_g(ifm)%growresp    (i,j,1) = 0.0
+         leaf_g(ifm)%runoff      (i,j,1) = 0.0
+         leaf_g(ifm)%qrunoff     (i,j,1) = 0.0
+         leaf_g(ifm)%drainage    (i,j,1) = 0.0
+         leaf_g(ifm)%qdrainage   (i,j,1) = 0.0
 
          do ilp=2,npatch
             leaf_g(ifm)%can_theta   (i,j,ilp) = leaf_g(ifm)%can_theta(i,j,1)
@@ -1111,14 +1221,33 @@ subroutine initialize_ed2leaf(ifm)
             leaf_g(ifm)%can_vpdef   (i,j,ilp) = leaf_g(ifm)%can_vpdef(i,j,1)
             leaf_g(ifm)%can_rvap    (i,j,ilp) = leaf_g(ifm)%can_rvap (i,j,1)
             leaf_g(ifm)%can_prss    (i,j,ilp) = leaf_g(ifm)%can_prss (i,j,1)
-            leaf_g(ifm)%gpp         (i,j,ilp) = 0.0
-            leaf_g(ifm)%resphet     (i,j,ilp) = 0.0
-            leaf_g(ifm)%plresp      (i,j,ilp) = 0.0
-            leaf_g(ifm)%sensible_gc (i,j,ilp) = 0.0
-            leaf_g(ifm)%sensible_vc (i,j,ilp) = 0.0
-            leaf_g(ifm)%evap_gc     (i,j,ilp) = 0.0
-            leaf_g(ifm)%evap_vc     (i,j,ilp) = 0.0
+            leaf_g(ifm)%hflxac      (i,j,ilp) = 0.0
+            leaf_g(ifm)%wflxac      (i,j,ilp) = 0.0
+            leaf_g(ifm)%qwflxac     (i,j,ilp) = 0.0
+            leaf_g(ifm)%eflxac      (i,j,ilp) = 0.0
+            leaf_g(ifm)%cflxac      (i,j,ilp) = 0.0
+            leaf_g(ifm)%hflxgc      (i,j,ilp) = 0.0
+            leaf_g(ifm)%wflxgc      (i,j,ilp) = 0.0
+            leaf_g(ifm)%qwflxgc     (i,j,ilp) = 0.0
+            leaf_g(ifm)%hflxvc      (i,j,ilp) = 0.0
+            leaf_g(ifm)%wflxvc      (i,j,ilp) = 0.0
+            leaf_g(ifm)%qwflxvc     (i,j,ilp) = 0.0
             leaf_g(ifm)%transp      (i,j,ilp) = 0.0
+            leaf_g(ifm)%qtransp     (i,j,ilp) = 0.0
+            leaf_g(ifm)%intercepted (i,j,ilp) = 0.0
+            leaf_g(ifm)%qintercepted(i,j,ilp) = 0.0
+            leaf_g(ifm)%wshed       (i,j,ilp) = 0.0
+            leaf_g(ifm)%qwshed      (i,j,ilp) = 0.0
+            leaf_g(ifm)%throughfall (i,j,ilp) = 0.0
+            leaf_g(ifm)%qthroughfall(i,j,ilp) = 0.0
+            leaf_g(ifm)%gpp         (i,j,ilp) = 0.0
+            leaf_g(ifm)%plresp      (i,j,ilp) = 0.0
+            leaf_g(ifm)%resphet     (i,j,ilp) = 0.0
+            leaf_g(ifm)%growresp    (i,j,ilp) = 0.0
+            leaf_g(ifm)%runoff      (i,j,ilp) = 0.0
+            leaf_g(ifm)%qrunoff     (i,j,ilp) = 0.0
+            leaf_g(ifm)%drainage    (i,j,ilp) = 0.0
+            leaf_g(ifm)%qdrainage   (i,j,ilp) = 0.0
          end do
       end do
    end do
@@ -1574,12 +1703,14 @@ subroutine copy_avgvars_to_leaf(ifm)
    use rconstants    , only : t3ple              & ! intent(in)
                             , wdns               & ! intent(in)
                             , umols_2_kgCyr      ! ! intent(in)
-   use therm_lib     , only : alvl               & ! intent(in)
-                            , alvi               & ! intent(in)
-                            , uint2tl            & ! intent(in)
-                            , uextcm2tl          & ! intent(in)
-                            , press2exner        & ! intent(in)
-                            , extheta2temp       ! ! intent(in)
+   use therm_lib     , only : alvl               & ! function
+                            , alvi               & ! function
+                            , uint2tl            & ! function
+                            , uextcm2tl          & ! function
+                            , cmtl2uext          & ! function
+                            , press2exner        & ! function
+                            , extheta2temp       & ! function
+                            , tq2enthalpy        ! ! function
    use soil_coms     , only : soil               & ! intent(in)
                             , tiny_sfcwater_mass ! ! intent(in)
    use ed_misc_coms  , only : frqsum             ! ! intent(in)
@@ -1687,14 +1818,33 @@ subroutine copy_avgvars_to_leaf(ifm)
          leaf_g(ifm)%can_vpdef        (ix,iy,ilp) = 0.0
          leaf_g(ifm)%can_co2          (ix,iy,ilp) = 0.0
          leaf_g(ifm)%can_prss         (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%sensible_gc      (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%sensible_vc      (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%evap_gc          (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%evap_vc          (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%transp           (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%gpp              (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%plresp           (ix,iy,ilp) = 0.0
-         leaf_g(ifm)%resphet          (ix,iy,ilp) = 0.0
+         leaf_g(ifm)%hflxac           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%wflxac           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qwflxac          (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%eflxac           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%cflxac           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%hflxgc           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%wflxgc           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qwflxgc          (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%hflxvc           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%wflxvc           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qwflxvc          (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%transp           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qtransp          (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%intercepted      (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qintercepted     (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%wshed            (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qwshed           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%throughfall      (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qthroughfall     (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%runoff           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qrunoff          (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%drainage         (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%qdrainage        (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%gpp              (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%plresp           (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%resphet          (ix,iy,ilp) = 0.0 
+         leaf_g(ifm)%growresp         (ix,iy,ilp) = 0.0 
          can_shv                                  = 0.0
          !---------------------------------------------------------------------------------!
 
@@ -1781,14 +1931,31 @@ subroutine copy_avgvars_to_leaf(ifm)
             !     Copy the fluxes, which will be used for output only.  We must convert    !
             ! the water flux to energy-equivalent.                                         !
             !------------------------------------------------------------------------------!
-            leaf_g(ifm)%sensible_gc(ix,iy,ilp) = leaf_g(ifm)%sensible_gc(ix,iy,ilp)        &
-                                               + csite%fmean_sensible_gc(ipa) * patch_wgt
-            leaf_g(ifm)%evap_gc    (ix,iy,ilp) = leaf_g(ifm)%evap_gc    (ix,iy,ilp)        &
-                                               + csite%fmean_vapor_gc   (ipa)              &
-                                               * (       ground_fliq  * alvl(ground_temp)  &
-                                                 + (1. - ground_fliq) * alvi(ground_temp)) &
-                                               * patch_wgt
+            leaf_g(ifm)%hflxgc (ix,iy,ilp) = leaf_g(ifm)%hflxgc (ix,iy,ilp)                &
+                                           + csite%fmean_sensible_gc(ipa)      * patch_wgt
+            leaf_g(ifm)%wflxgc (ix,iy,ilp) = leaf_g(ifm)%wflxgc (ix,iy,ilp)                &
+                                           + csite%fmean_vapor_gc(ipa)         * patch_wgt
+            if (csite%fmean_vapor_gc(ipa) > 0.0) then
+               leaf_g(ifm)%qwflxgc(ix,iy,ilp) = leaf_g(ifm)%qwflxgc(ix,iy,ilp)             &
+                         + csite%fmean_vapor_gc(ipa)                                       &
+                         * tq2enthalpy(csite%fmean_soil_water (nzg,ipa),1.0,.true.)        &
+                         * patch_wgt
+            else
+               leaf_g(ifm)%qwflxgc(ix,iy,ilp) = leaf_g(ifm)%qwflxgc(ix,iy,ilp)             &
+                         + csite%fmean_vapor_gc(ipa)                                       &
+                         * tq2enthalpy(csite%fmean_can_temp (ipa),1.0,.true.)              &
+                         * patch_wgt
+            end if
+            leaf_g(ifm)%runoff   (ix,iy,ilp)  = leaf_g(ifm)%runoff(ix,iy,ilp)              &
+                                              + csite%fmean_runoff(ipa)       * patch_wgt
+            leaf_g(ifm)%qrunoff  (ix,iy,ilp)  = leaf_g(ifm)%qrunoff(ix,iy,ilp)             &
+                                              + csite%fmean_qrunoff(ipa)      * patch_wgt
+            leaf_g(ifm)%drainage (ix,iy,ilp)  = leaf_g(ifm)%drainage(ix,iy,ilp)            &
+                                              + csite%fmean_drainage(ipa)     * patch_wgt
+            leaf_g(ifm)%qdrainage(ix,iy,ilp)  = leaf_g(ifm)%qdrainage(ix,iy,ilp)           &
+                                              + csite%fmean_qdrainage(ipa)    * patch_wgt
             !------------------------------------------------------------------------------!
+
 
 
 
@@ -1857,33 +2024,72 @@ subroutine copy_avgvars_to_leaf(ifm)
                !---------------------------------------------------------------------------!
                !     Integrate the fluxes.                                                 !
                !---------------------------------------------------------------------------!
-               leaf_g(ifm)%sensible_vc(ix,iy,ilp) = leaf_g(ifm)%sensible_vc(ix,iy,ilp)     &
-                                                  + ( cpatch%fmean_sensible_lc(ico)        &
-                                                    + cpatch%fmean_sensible_wc(ico) )      &
-                                                  * patch_wgt
-               leaf_g(ifm)%evap_vc    (ix,iy,ilp) = leaf_g(ifm)%evap_vc    (ix,iy,ilp)     &
-                                                  + ( cpatch%fmean_vapor_lc(ico)           &
-                                                    + cpatch%fmean_vapor_wc(ico) )         &
-                                                  * (        veg_fliq  * alvl(veg_temp)    &
-                                                    + (1.0 - veg_fliq) * alvi(veg_temp) )  &
-                                                  * patch_wgt
+               leaf_g(ifm)%hflxvc (ix,iy,ilp) = leaf_g(ifm)%hflxvc(ix,iy,ilp)              &
+                     + ( cpatch%fmean_sensible_lc(ico) + cpatch%fmean_sensible_wc(ico) )   &
+                     * patch_wgt
+               leaf_g(ifm)%wflxvc (ix,iy,ilp) = leaf_g(ifm)%wflxvc(ix,iy,ilp)              &
+                     + ( cpatch%fmean_vapor_lc(ico)    + cpatch%fmean_vapor_wc(ico) )      &
+                     * patch_wgt
+               if ( cpatch%fmean_vapor_lc(ico) > 0.0 ) then
+                  leaf_g(ifm)%qwflxvc(ix,iy,ilp) = leaf_g(ifm)%qwflxvc(ix,iy,ilp)          &
+                     + cpatch%fmean_vapor_lc(ico) * tq2enthalpy(veg_temp,1.0,.true.)       &
+                     * patch_wgt
+               else
+                  leaf_g(ifm)%qwflxvc(ix,iy,ilp) = leaf_g(ifm)%qwflxvc(ix,iy,ilp)          &
+                     + cpatch%fmean_vapor_lc(ico)                                          &
+                     * tq2enthalpy(csite%can_temp(ico),1.0,.true.) * patch_wgt
+               end if
+               if ( cpatch%fmean_vapor_wc(ico) > 0.0 ) then
+                  leaf_g(ifm)%qwflxvc(ix,iy,ilp) = leaf_g(ifm)%qwflxvc(ix,iy,ilp)          &
+                     + cpatch%fmean_vapor_wc(ico) * tq2enthalpy(veg_temp,1.0,.true.)       &
+                     * patch_wgt
+               else
+                  leaf_g(ifm)%qwflxvc(ix,iy,ilp) = leaf_g(ifm)%qwflxvc(ix,iy,ilp)          &
+                     + cpatch%fmean_vapor_wc(ico)                                          &
+                     * tq2enthalpy(csite%can_temp(ipa),1.0,.true.) * patch_wgt
+               end if
                !----- Transpiration only happens from liquid phase to vapour. -------------!
-               leaf_g(ifm)%transp     (ix,iy,ilp) = leaf_g(ifm)%transp     (ix,iy,ilp)     &
-                                                  + cpatch%fmean_transp(ico)               &
-                                                  * alvl(veg_temp) * patch_wgt
+               leaf_g(ifm)%transp      (ix,iy,ilp) = leaf_g(ifm)%transp     (ix,iy,ilp)    &
+                                                   + cpatch%fmean_transp(ico) * patch_wgt
+               leaf_g(ifm)%qtransp     (ix,iy,ilp) = leaf_g(ifm)%qtransp    (ix,iy,ilp)    &
+                                                   + cpatch%fmean_transp(ico)              &
+                                                   * tq2enthalpy(veg_temp,1.0,.true.)      &
+                                                   * patch_wgt
+               !----- Shedding and interception. ------------------------------------------!
+               leaf_g(ifm)%intercepted (ix,iy,ilp) = leaf_g(ifm)%intercepted (ix,iy,ilp)   &
+                   + ( cpatch%fmean_intercepted_al(ico)                                    &
+                     + cpatch%fmean_intercepted_aw(ico) ) * patch_wgt
+               leaf_g(ifm)%wshed       (ix,iy,ilp) = leaf_g(ifm)%wshed       (ix,iy,ilp)   &
+                   + ( cpatch%fmean_wshed_lg(ico) + cpatch%fmean_wshed_wg(ico) )           &
+                   * patch_wgt
+               leaf_g(ifm)%qwshed      (ix,iy,ilp) = leaf_g(ifm)%qwshed      (ix,iy,ilp)   &
+                   * cmtl2uext(0.,cpatch%fmean_wshed_lg(ico)+cpatch%fmean_wshed_wg(ico)    &
+                              ,veg_temp,veg_fliq)                                          &
+                   * patch_wgt
+               if ( cpoly%fmean_pcpg(isi) > 0.0 ) then
+                  leaf_g(ifm)%qintercepted(ix,iy,ilp) =                                    &
+                     leaf_g(ifm)%qintercepted(ix,iy,ilp)                                   &
+                     + ( cpatch%fmean_intercepted_al(ico)                                  &
+                       + cpatch%fmean_intercepted_aw(ico) )                                &
+                     * cpoly%fmean_qpcpg(isi) / cpoly%fmean_pcpg(isi)* patch_wgt
+               end if
                !---------------------------------------------------------------------------!
 
 
 
                !------ Carbon fluxes.  Switch units to umol/m2/s. -------------------------!
-               leaf_g(ifm)%gpp    (ix,iy,ilp) = leaf_g(ifm)%gpp    (ix,iy,ilp)             &
-                                              + cpatch%fmean_gpp   (ico)                   &
-                                              * cpatch%nplant      (ico)                   &
-                                              * patch_wgt / umols_2_kgCyr
-               leaf_g(ifm)%plresp (ix,iy,ilp) = leaf_g(ifm)%plresp (ix,iy,ilp)             &
-                                              + cpatch%fmean_plresp(ico)                   &
-                                              * cpatch%nplant      (ico)                   &
-                                              * patch_wgt / umols_2_kgCyr
+               leaf_g(ifm)%gpp     (ix,iy,ilp) = leaf_g(ifm)%gpp         (ix,iy,ilp)       &
+                                               + cpatch%fmean_gpp        (ico)             &
+                                               * cpatch%nplant           (ico)             &
+                                               * patch_wgt / umols_2_kgCyr
+               leaf_g(ifm)%plresp  (ix,iy,ilp) = leaf_g(ifm)%plresp      (ix,iy,ilp)       &
+                                               + cpatch%fmean_plresp     (ico)             &
+                                               * cpatch%nplant           (ico)             &
+                                               * patch_wgt / umols_2_kgCyr
+               leaf_g(ifm)%growresp(ix,iy,ilp) = leaf_g(ifm)%growresp    (ix,iy,ilp)       &
+                                               + cpatch%fmean_growth_resp(ico)             &
+                                               * cpatch%nplant           (ico)             &
+                                               * patch_wgt / umols_2_kgCyr
                !---------------------------------------------------------------------------!
             end do cohortloop
             !------------------------------------------------------------------------------!

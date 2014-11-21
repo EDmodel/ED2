@@ -1,35 +1,33 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here=`pwd`                            # ! Main path
-myself=`whoami`                       # ! You
-diskthere=''                          # ! Disk where the output files are
-thisqueue='moorcroft_6100b'           # ! Queue where jobs should be submitted
-lonlat=${here}'/joborder.txt'         # ! File with the job instructions
+here=$(pwd)                            # ! Main path
+myself=$(whoami)                       # ! You
+diskthere=""                          # ! Disk where the output files are
+thisqueue="moorcroft_6100b"           # ! Queue where jobs should be submitted
+lonlat="${here}/joborder.txt"         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot='/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX'
-submit='y'       # y = Submit the script; n = Copy the script
+outroot="/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX"
+submit="y"       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod='t'    # Which bounds should I use? (Ignored by plot_eval_ed.r)
-                 # 'a' -- All period
-                 # 't' -- One eddy flux tower met cycle
-                 # 'u' -- User defined period, defined by the variables below.
-                 # 'f' -- Force the tower cycle.  You may need to edit the script, though
-                 # 'b' -- Force one biometry cycle.
+useperiod="t"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+                 # "a" -- All period
+                 # "t" -- One eddy flux tower met cycle
+                 # "u" -- User defined period, defined by the variables below.
+                 # "f" -- Force the tower cycle.  You may need to edit the script, though
+                 # "b" -- Force one biometry cycle.
 yusera=1972      # First year to use
 yuserz=2011      # Last year to use
-#----- Check whether to use openlava or typical job submission. ---------------------------#
-openlava='n'
 #----- Yearly comparison . ----------------------------------------------------------------#
 seasonmona=1
 #----- Census comparison. -----------------------------------------------------------------#
-varcycle='TRUE'  # Find the average mortality for various cycles (TRUE/FALSE).
+varcycle="TRUE"  # Find the average mortality for various cycles (TRUE/FALSE).
 #----- Hourly comparison. -----------------------------------------------------------------#
-usedistrib='edf' # Which distribution to plot on top of histograms:
+usedistrib="edf" # Which distribution to plot on top of histograms:
                  #   norm -- Normal distribution
                  #   sn   -- Skewed normal distribution      (requires package sn)
                  #   edf  -- Empirical distribution function (function density)
 #----- Output format. ---------------------------------------------------------------------#
-outform='c("pdf")'             # x11 - On screen (deprecated on shell scripts)
+outform="c(\"pdf\")"           # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
@@ -120,16 +118,6 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#    If this is an openlava run, load the openlava stuff.                                  #
-#------------------------------------------------------------------------------------------#
-if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
-then
-   . /opt/openlava-2.0/etc/openlava-client.sh
-fi
-#------------------------------------------------------------------------------------------#
-
-
 
 #------------------------------------------------------------------------------------------#
 #    Make sure that the directory there exists, if not, create all parent directories      #
@@ -141,28 +129,28 @@ then
 else
    while [ ! -s ${outroot} ]
    do
-      namecheck=`basename ${outroot}`
-      dircheck=`dirname ${outroot}`
-      while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
+      namecheck=$(basename ${outroot})
+      dircheck=$(dirname ${outroot})
+      while [ ! -s ${dircheck} ] && [ ${namecheck} != "/" ]
       do
-         namecheck=`basename ${dircheck}`
-         dircheck=`dirname ${dircheck}`
+         namecheck=$(basename ${dircheck})
+         dircheck=$(dirname ${dircheck})
       done
 
-      if [ ${namecheck} == '/' ]
+      if [ ${namecheck} == "/" ]
       then
-         echo 'Invalid disk for variable outroot:'
-         echo ' DISK ='${diskhere}
+         echo "Invalid disk for variable outroot:"
+         echo " DISK = ${diskhere}"
          exit 58
-      elif [ ${namecheck} == 'xxxxxxxx' ] || [ ${namecheck} == 'xxx_XXX' ] ||
-           [ ${namecheck} == 'XXXXXXXXXXX' ]
+      elif [ ${namecheck} == "xxxxxxxx" ] || [ ${namecheck} == "xxx_XXX" ] ||
+           [ ${namecheck} == "XXXXXXXXXXX" ]
       then
          echo " - Found this directory in your path: ${namecheck} ..."
          echo " - Outroot given: ${outroot} ..."
          echo " - It looks like you forgot to set up your outroot path, check it!"
          exit 92
       else
-         echo 'Making directory: '${dircheck}/${namecheck}
+         echo "Making directory: ${dircheck}/${namecheck}"
          mkdir ${dircheck}/${namecheck}
       fi
    done
@@ -171,26 +159,26 @@ fi
 
 
 #----- Find the disk here to create the "there" path. -------------------------------------#
-moi=`whoami`
-namehere=`basename ${here}`
-diskhere=`dirname ${here}`
+moi=$(whoami)
+namehere=$(basename ${here})
+diskhere=$(dirname ${here})
 while [ ${namehere} != ${moi} ]
 do
-   namehere=`basename ${diskhere}`
-   diskhere=`dirname ${diskhere}`
+   namehere=$(basename ${diskhere})
+   diskhere=$(dirname ${diskhere})
 done
-if [ 'x'${diskthere} == 'x' ]
+if [ "x${diskthere}" == "x" ]
 then
    there=${here}
 else
-   there=`echo ${here} | sed s@${diskhere}@${diskthere}@g`
+   there=$(echo ${here} | sed s@${diskhere}@${diskthere}@g)
 fi
 #------------------------------------------------------------------------------------------#
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
-let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
-echo 'Number of polygons: '${npolys}'...'
+let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
+echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 
 
@@ -212,115 +200,117 @@ do
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=`head -${line} ${lonlat} | tail -1`
-   polyname=`echo ${oi}     | awk '{print $1 }'`
-   polyiata=`echo ${oi}     | awk '{print $2 }'`
-   polylon=`echo ${oi}      | awk '{print $3 }'`
-   polylat=`echo ${oi}      | awk '{print $4 }'`
-   yeara=`echo ${oi}        | awk '{print $5 }'`
-   montha=`echo ${oi}       | awk '{print $6 }'`
-   datea=`echo ${oi}        | awk '{print $7 }'`
-   timea=`echo ${oi}        | awk '{print $8 }'`
-   yearz=`echo ${oi}        | awk '{print $9 }'`
-   monthz=`echo ${oi}       | awk '{print $10}'`
-   datez=`echo ${oi}        | awk '{print $11}'`
-   timez=`echo ${oi}        | awk '{print $12}'`
-   initmode=`echo ${oi}     | awk '{print $13}'`
-   iscenario=`echo ${oi}    | awk '{print $14}'`
-   isizepft=`echo ${oi}     | awk '{print $15}'`
-   iage=`echo ${oi}         | awk '{print $16}'`
-   polyisoil=`echo ${oi}    | awk '{print $17}'`
-   polyntext=`echo ${oi}    | awk '{print $18}'`
-   polysand=`echo ${oi}     | awk '{print $19}'`
-   polyclay=`echo ${oi}     | awk '{print $20}'`
-   polydepth=`echo ${oi}    | awk '{print $21}'`
-   polysoilbc=`echo ${oi}   | awk '{print $22}'`
-   polysldrain=`echo ${oi}  | awk '{print $23}'`
-   polycol=`echo ${oi}      | awk '{print $24}'`
-   slzres=`echo ${oi}       | awk '{print $25}'`
-   queue=`echo ${oi}        | awk '{print $26}'`
-   metdriver=`echo ${oi}    | awk '{print $27}'`
-   dtlsm=`echo ${oi}        | awk '{print $28}'`
-   vmfactc3=`echo ${oi}     | awk '{print $29}'`
-   vmfactc4=`echo ${oi}     | awk '{print $30}'`
-   mphototrc3=`echo ${oi}   | awk '{print $31}'`
-   mphototec3=`echo ${oi}   | awk '{print $32}'`
-   mphotoc4=`echo ${oi}     | awk '{print $33}'`
-   bphotoblc3=`echo ${oi}   | awk '{print $34}'`
-   bphotonlc3=`echo ${oi}   | awk '{print $35}'`
-   bphotoc4=`echo ${oi}     | awk '{print $36}'`
-   kwgrass=`echo ${oi}      | awk '{print $37}'`
-   kwtree=`echo ${oi}       | awk '{print $38}'`
-   gammac3=`echo ${oi}      | awk '{print $39}'`
-   gammac4=`echo ${oi}      | awk '{print $40}'`
-   d0grass=`echo ${oi}      | awk '{print $41}'`
-   d0tree=`echo ${oi}       | awk '{print $42}'`
-   alphac3=`echo ${oi}      | awk '{print $43}'`
-   alphac4=`echo ${oi}      | awk '{print $44}'`
-   klowco2=`echo ${oi}      | awk '{print $45}'`
-   decomp=`echo ${oi}       | awk '{print $46}'`
-   rrffact=`echo ${oi}      | awk '{print $47}'`
-   growthresp=`echo ${oi}   | awk '{print $48}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $49}'`
-   lwidthbltree=`echo ${oi} | awk '{print $50}'`
-   lwidthnltree=`echo ${oi} | awk '{print $51}'`
-   q10c3=`echo ${oi}        | awk '{print $52}'`
-   q10c4=`echo ${oi}        | awk '{print $53}'`
-   h2olimit=`echo ${oi}     | awk '{print $54}'`
-   imortscheme=`echo ${oi}  | awk '{print $55}'`
-   ddmortconst=`echo ${oi}  | awk '{print $56}'`
-   isfclyrm=`echo ${oi}     | awk '{print $57}'`
-   icanturb=`echo ${oi}     | awk '{print $58}'`
-   ubmin=`echo ${oi}        | awk '{print $59}'`
-   ugbmin=`echo ${oi}       | awk '{print $60}'`
-   ustmin=`echo ${oi}       | awk '{print $61}'`
-   gamm=`echo ${oi}         | awk '{print $62}'`
-   gamh=`echo ${oi}         | awk '{print $63}'`
-   tprandtl=`echo ${oi}     | awk '{print $64}'`
-   ribmax=`echo ${oi}       | awk '{print $65}'`
-   atmco2=`echo ${oi}       | awk '{print $66}'`
-   thcrit=`echo ${oi}       | awk '{print $67}'`
-   smfire=`echo ${oi}       | awk '{print $68}'`
-   ifire=`echo ${oi}        | awk '{print $69}'`
-   fireparm=`echo ${oi}     | awk '{print $70}'`
-   ipercol=`echo ${oi}      | awk '{print $71}'`
-   runoff=`echo ${oi}       | awk '{print $72}'`
-   imetrad=`echo ${oi}      | awk '{print $73}'`
-   ibranch=`echo ${oi}      | awk '{print $74}'`
-   icanrad=`echo ${oi}      | awk '{print $75}'`
-   crown=`echo   ${oi}      | awk '{print $76}'`
-   ltransvis=`echo ${oi}    | awk '{print $77}'`
-   lreflectvis=`echo ${oi}  | awk '{print $78}'`
-   ltransnir=`echo ${oi}    | awk '{print $79}'`
-   lreflectnir=`echo ${oi}  | awk '{print $80}'`
-   orienttree=`echo ${oi}   | awk '{print $81}'`
-   orientgrass=`echo ${oi}  | awk '{print $82}'`
-   clumptree=`echo ${oi}    | awk '{print $83}'`
-   clumpgrass=`echo ${oi}   | awk '{print $84}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $85}'`
-   igndvap=`echo ${oi}      | awk '{print $86}'`
-   iphen=`echo ${oi}        | awk '{print $87}'`
-   iallom=`echo ${oi}       | awk '{print $88}'`
-   ibigleaf=`echo ${oi}     | awk '{print $89}'`
-   irepro=`echo ${oi}       | awk '{print $90}'`
-   treefall=`echo ${oi}     | awk '{print $91}'`
+   oi=$(head -${line} ${lonlat} | tail -1)
+   polyname=$(echo ${oi}     | awk '{print $1 }')
+   polyiata=$(echo ${oi}     | awk '{print $2 }')
+   polylon=$(echo ${oi}      | awk '{print $3 }')
+   polylat=$(echo ${oi}      | awk '{print $4 }')
+   yeara=$(echo ${oi}        | awk '{print $5 }')
+   montha=$(echo ${oi}       | awk '{print $6 }')
+   datea=$(echo ${oi}        | awk '{print $7 }')
+   timea=$(echo ${oi}        | awk '{print $8 }')
+   yearz=$(echo ${oi}        | awk '{print $9 }')
+   monthz=$(echo ${oi}       | awk '{print $10}')
+   datez=$(echo ${oi}        | awk '{print $11}')
+   timez=$(echo ${oi}        | awk '{print $12}')
+   initmode=$(echo ${oi}     | awk '{print $13}')
+   iscenario=$(echo ${oi}    | awk '{print $14}')
+   isizepft=$(echo ${oi}     | awk '{print $15}')
+   iage=$(echo ${oi}         | awk '{print $16}')
+   polyisoil=$(echo ${oi}    | awk '{print $17}')
+   polyntext=$(echo ${oi}    | awk '{print $18}')
+   polysand=$(echo ${oi}     | awk '{print $19}')
+   polyclay=$(echo ${oi}     | awk '{print $20}')
+   polydepth=$(echo ${oi}    | awk '{print $21}')
+   polysoilbc=$(echo ${oi}   | awk '{print $22}')
+   polysldrain=$(echo ${oi}  | awk '{print $23}')
+   polycol=$(echo ${oi}      | awk '{print $24}')
+   slzres=$(echo ${oi}       | awk '{print $25}')
+   queue=$(echo ${oi}        | awk '{print $26}')
+   metdriver=$(echo ${oi}    | awk '{print $27}')
+   dtlsm=$(echo ${oi}        | awk '{print $28}')
+   vmfactc3=$(echo ${oi}     | awk '{print $29}')
+   vmfactc4=$(echo ${oi}     | awk '{print $30}')
+   mphototrc3=$(echo ${oi}   | awk '{print $31}')
+   mphototec3=$(echo ${oi}   | awk '{print $32}')
+   mphotoc4=$(echo ${oi}     | awk '{print $33}')
+   bphotoblc3=$(echo ${oi}   | awk '{print $34}')
+   bphotonlc3=$(echo ${oi}   | awk '{print $35}')
+   bphotoc4=$(echo ${oi}     | awk '{print $36}')
+   kwgrass=$(echo ${oi}      | awk '{print $37}')
+   kwtree=$(echo ${oi}       | awk '{print $38}')
+   gammac3=$(echo ${oi}      | awk '{print $39}')
+   gammac4=$(echo ${oi}      | awk '{print $40}')
+   d0grass=$(echo ${oi}      | awk '{print $41}')
+   d0tree=$(echo ${oi}       | awk '{print $42}')
+   alphac3=$(echo ${oi}      | awk '{print $43}')
+   alphac4=$(echo ${oi}      | awk '{print $44}')
+   klowco2=$(echo ${oi}      | awk '{print $45}')
+   decomp=$(echo ${oi}       | awk '{print $46}')
+   rrffact=$(echo ${oi}      | awk '{print $47}')
+   growthresp=$(echo ${oi}   | awk '{print $48}')
+   lwidthgrass=$(echo ${oi}  | awk '{print $49}')
+   lwidthbltree=$(echo ${oi} | awk '{print $50}')
+   lwidthnltree=$(echo ${oi} | awk '{print $51}')
+   q10c3=$(echo ${oi}        | awk '{print $52}')
+   q10c4=$(echo ${oi}        | awk '{print $53}')
+   h2olimit=$(echo ${oi}     | awk '{print $54}')
+   imortscheme=$(echo ${oi}  | awk '{print $55}')
+   ddmortconst=$(echo ${oi}  | awk '{print $56}')
+   isfclyrm=$(echo ${oi}     | awk '{print $57}')
+   icanturb=$(echo ${oi}     | awk '{print $58}')
+   ubmin=$(echo ${oi}        | awk '{print $59}')
+   ugbmin=$(echo ${oi}       | awk '{print $60}')
+   ustmin=$(echo ${oi}       | awk '{print $61}')
+   gamm=$(echo ${oi}         | awk '{print $62}')
+   gamh=$(echo ${oi}         | awk '{print $63}')
+   tprandtl=$(echo ${oi}     | awk '{print $64}')
+   ribmax=$(echo ${oi}       | awk '{print $65}')
+   atmco2=$(echo ${oi}       | awk '{print $66}')
+   thcrit=$(echo ${oi}       | awk '{print $67}')
+   smfire=$(echo ${oi}       | awk '{print $68}')
+   ifire=$(echo ${oi}        | awk '{print $69}')
+   fireparm=$(echo ${oi}     | awk '{print $70}')
+   ipercol=$(echo ${oi}      | awk '{print $71}')
+   runoff=$(echo ${oi}       | awk '{print $72}')
+   imetrad=$(echo ${oi}      | awk '{print $73}')
+   ibranch=$(echo ${oi}      | awk '{print $74}')
+   icanrad=$(echo ${oi}      | awk '{print $75}')
+   crown=$(echo   ${oi}      | awk '{print $76}')
+   ltransvis=$(echo ${oi}    | awk '{print $77}')
+   lreflectvis=$(echo ${oi}  | awk '{print $78}')
+   ltransnir=$(echo ${oi}    | awk '{print $79}')
+   lreflectnir=$(echo ${oi}  | awk '{print $80}')
+   orienttree=$(echo ${oi}   | awk '{print $81}')
+   orientgrass=$(echo ${oi}  | awk '{print $82}')
+   clumptree=$(echo ${oi}    | awk '{print $83}')
+   clumpgrass=$(echo ${oi}   | awk '{print $84}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $85}')
+   igndvap=$(echo ${oi}      | awk '{print $86}')
+   iphen=$(echo ${oi}        | awk '{print $87}')
+   iallom=$(echo ${oi}       | awk '{print $88}')
+   ibigleaf=$(echo ${oi}     | awk '{print $89}')
+   irepro=$(echo ${oi}       | awk '{print $90}')
+   treefall=$(echo ${oi}     | awk '{print $91}')
+   ianthdisturb=$(echo ${oi} | awk '{print $92}')
+   ianthdataset=$(echo ${oi} | awk '{print $93}')
    #---------------------------------------------------------------------------------------#
 
 
    #----- Find time and minute. -----------------------------------------------------------#
-   houra=`echo ${timea}  | awk '{print substr($1,1,2)}'`
-   minua=`echo ${timea}  | awk '{print substr($1,3,2)}'`
-   hourz=`echo ${timez}  | awk '{print substr($1,1,2)}'`
-   minuz=`echo ${timez}  | awk '{print substr($1,3,2)}'`
+   houra=$(echo ${timea}  | awk '{print substr($1,1,2)}')
+   minua=$(echo ${timea}  | awk '{print substr($1,3,2)}')
+   hourz=$(echo ${timez}  | awk '{print substr($1,1,2)}')
+   minuz=$(echo ${timez}  | awk '{print substr($1,3,2)}')
    #---------------------------------------------------------------------------------------#
 
 
    #----- Retrieve some information from ED2IN. -------------------------------------------#
-   iphysiol=`grep -i NL%IPHYSIOL     ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   iallom=`grep   -i NL%IALLOM       ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   metcyca=`grep  -i NL%METCYC1      ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   metcycz=`grep  -i NL%METCYCF      ${here}/${polyname}/ED2IN | awk '{print $3}'`
-   klight=`grep   -i NL%DDMORT_CONST ${here}/${polyname}/ED2IN | awk '{print $3}'`
+   iphysiol=$(grep -i NL%IPHYSIOL     ${here}/${polyname}/ED2IN | awk '{print $3}')
+   iallom=$(grep   -i NL%IALLOM       ${here}/${polyname}/ED2IN | awk '{print $3}')
+   metcyca=$(grep  -i NL%METCYC1      ${here}/${polyname}/ED2IN | awk '{print $3}')
+   metcycz=$(grep  -i NL%METCYCF      ${here}/${polyname}/ED2IN | awk '{print $3}')
+   klight=$(grep   -i NL%DDMORT_CONST ${here}/${polyname}/ED2IN | awk '{print $3}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -459,10 +449,10 @@ do
    for script in ${rscripts}
    do
       #----- Print a banner. --------------------------------------------------------------#
-      if [ ${script} == 'plot_census.r' ] && [ ${subcens} -eq 0 ]
+      if [ ${script} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
       then
          echo "${fflab} - Skipping submission of ${script} for polygon: ${polyname}..."
-      elif [ 'x'${submit} == 'xy' ] || [ 'x'${submit} == 'xY' ]
+      elif [ "x${submit}" == "xy" ] || [ "x${submit}" == "xY" ]
       then
          echo "${fflab} - Submitting script ${script} for polygon: ${polyname}..."
       else
@@ -482,18 +472,18 @@ do
          # difference is in the output names.                                              #
          #---------------------------------------------------------------------------------#
          #------ Check which period to use. -----------------------------------------------#
-         if [ ${useperiod} == 't' ]
+         if [ ${useperiod} == "t" ]
          then
             #------ One meteorological cycle.  Check the type of meteorological driver. ---#
-            if [ ${metdriver} != 'Sheffield' ]
+            if [ ${metdriver} != "Sheffield" ]
             then
                thisyeara=${metcyca}
                thisyearz=${metcycz}
                for i in ${shiftiata}
                do
-                  if [ 'x'${i} == 'x'${polyiata} ]
+                  if [ "x${i}" == "x${polyiata}" ]
                   then
-                     echo '     -> Shifting met cycle'
+                     echo "     -> Shifting met cycle"
                      let metcycle=${metcycz}-${metcyca}+1
                      let deltayr=${shiftcycle}*${metcycle}
                      let thisyeara=${metcyca}+${deltayr}
@@ -503,24 +493,24 @@ do
             else
                thisyeara=${metcyca}
                thisyearz=${metcycz}
-            fi # end [ ${metdriver} != 'Sheffield' ]
+            fi # end [ ${metdriver} != "Sheffield" ]
             #------------------------------------------------------------------------------#
 
-         elif [ ${useperiod} == 'u' ]
+         elif [ ${useperiod} == "u" ]
          then
             #----- The user said which period to use. -------------------------------------#
             thisyeara=${yusera}
             thisyearz=${yuserz}
             #------------------------------------------------------------------------------#
 
-         elif [ ${useperiod} == 'f' ]
+         elif [ ${useperiod} == "f" ]
          then
             #----- The user said to use the eddy flux period. -----------------------------#
             thisyeara=${eftyeara}
             thisyearz=${eftyearz}
             #------------------------------------------------------------------------------#
 
-         elif [ ${useperiod} == 'b' ]
+         elif [ ${useperiod} == "b" ]
          then
             #----- The user said to use the eddy flux period. -----------------------------#
             thisyeara=${bioyeara}
@@ -532,7 +522,7 @@ do
             thisyeara=${yeara}
             thisyearz=${yearz}
             #------------------------------------------------------------------------------#
-         fi # end [ ${useperiod} == 't' ]
+         fi # end [ ${useperiod} == "t" ]
          #---------------------------------------------------------------------------------#
 
 
@@ -549,46 +539,46 @@ do
          #---------------------------------------------------------------------------------#
          case ${script} in
          read_monthly.r)
-            epostout='rmon_epost.out'
-            epostsh='rmon_epost.sh'
-            epostlsf='rmon_epost.lsf'
-            epostjob='eb-rmon-'${polyname}
+            epostout="rmon_epost.out"
+            epostsh="rmon_epost.sh"
+            epostlsf="rmon_epost.lsf"
+            epostjob="eb-rmon-${polyname}"
             ;;
          r10_monthly.r)
-            epostout='rm10_epost.out'
-            epostsh='rm10_epost.sh'
-            epostlsf='rm10_epost.lsf'
-            epostjob='eb-rm10-'${polyname}
+            epostout="rm10_epost.out"
+            epostsh="rm10_epost.sh"
+            epostlsf="rm10_epost.lsf"
+            epostjob="eb-rm10-${polyname}"
             ;;
          plot_monthly.r)
-            epostout='pmon_epost.out'
-            epostsh='pmon_epost.sh'
-            epostlsf='pmon_epost.lsf'
-            epostjob='eb-pmon-'${polyname}
+            epostout="pmon_epost.out"
+            epostsh="pmon_epost.sh"
+            epostlsf="pmon_epost.lsf"
+            epostjob="eb-pmon-${polyname}"
             ;;
          plot_yearly.r)
-            epostout='pyrs_epost.out'
-            epostsh='pyrs_epost.sh'
-            epostlsf='pyrs_epost.lsf'
-            epostjob='eb-pyrs-'${polyname}
+            epostout="pyrs_epost.out"
+            epostsh="pyrs_epost.sh"
+            epostlsf="pyrs_epost.lsf"
+            epostjob="eb-pyrs-${polyname}"
             ;;
          plot_ycomp.r)
-            epostout='pycp_epost.out'
-            epostsh='pycp_epost.sh'
-            epostlsf='pycp_epost.lsf'
-            epostjob='eb-pycp-'${polyname}
+            epostout="pycp_epost.out"
+            epostsh="pycp_epost.sh"
+            epostlsf="pycp_epost.lsf"
+            epostjob="eb-pycp-${polyname}"
             ;;
          plot_census.r)
-            epostout='pcen_epost.out'
-            epostsh='pcen_epost.sh'
-            epostlsf='pcen_epost.lsf'
-            epostjob='eb-pcen-'${polyname}
+            epostout="pcen_epost.out"
+            epostsh="pcen_epost.sh"
+            epostlsf="pcen_epost.lsf"
+            epostjob="eb-pcen-${polyname}"
             ;;
          plot_povray.r)
-            epostout='ppov_epost.out'
-            epostsh='ppov_epost.sh'
-            epostlsf='ppov_epost.lsf'
-            epostjob='eb-ppov-'${polyname}
+            epostout="ppov_epost.out"
+            epostsh="ppov_epost.sh"
+            epostlsf="ppov_epost.lsf"
+            epostjob="eb-ppov-${polyname}"
             ;;
          esac
          #---------------------------------------------------------------------------------#
@@ -621,10 +611,10 @@ do
          thisyearz=${thismetcycz}
          for i in ${shiftiata}
          do
-            if [ 'x'${i} == 'x'${polyiata} ]
+            if [ "x${i}" == "x${polyiata}" ]
             then
                #----- Always use the true met driver to find the cycle shift. -------------#
-               echo '     -> Shifting met cycle'
+               echo "     -> Shifting met cycle"
                let metcycle=${metcycz}-${metcyca}+1
                let deltayr=${shiftcycle}*${metcycle}
                let thisyeara=${thismetcyca}+${deltayr}
@@ -644,10 +634,10 @@ do
 
 
          #----- Define the job name, and the names of the output files. -------------------#
-         epostout='peed_epost.out'
-         epostsh='peed_epost.sh'
-         epostlsf='peed_epost.lsf'
-         epostjob='eb-peed-'${polyname}
+         epostout="peed_epost.out"
+         epostsh="peed_epost.sh"
+         epostlsf="peed_epost.lsf"
+         epostjob="eb-peed-${polyname}"
          #---------------------------------------------------------------------------------#
 
          ;;
@@ -659,7 +649,7 @@ do
          # at the first time step), so we normally skip the first day.                     #
          #---------------------------------------------------------------------------------#
          #----- Check whether to use the user choice of year or the default. --------------#
-         if [ ${useperiod} == 'u' ]
+         if [ ${useperiod} == "u" ]
          then
             thisyeara=${yusera}
             thisyearz=${yuserz}
@@ -682,34 +672,34 @@ do
          #----- Define the job name, and the names of the output files. -------------------#
          case ${script} in 
          plot_budget.r)
-            epostout='pbdg_epost.out'
-            epostsh='pbdg_epost.sh'
-            epostlsf='pbdg_epost.lsf'
-            epostjob='eb-pbdg-'${polyname}
+            epostout="pbdg_epost.out"
+            epostsh="pbdg_epost.sh"
+            epostlsf="pbdg_epost.lsf"
+            epostjob="eb-pbdg-${polyname}"
             ;;
          plot_rk4.r)
-            epostout='prk4_epost.out'
-            epostsh='prk4_epost.sh'
-            epostlsf='prk4_epost.lsf'
-            epostjob='eb-prk4-'${polyname}
+            epostout="prk4_epost.out"
+            epostsh="prk4_epost.sh"
+            epostlsf="prk4_epost.lsf"
+            epostjob="eb-prk4-${polyname}"
             ;;
          plot_rk4pc.r)
-            epostout='prpc_epost.out'
-            epostsh='prpc_epost.sh'
-            epostlsf='prpc_epost.lsf'
-            epostjob='eb-prpc-'${polyname}
+            epostout="prpc_epost.out"
+            epostsh="prpc_epost.sh"
+            epostlsf="prpc_epost.lsf"
+            epostjob="eb-prpc-${polyname}"
             ;;
          plot_photo.r)
-            epostout='ppht_epost.out'
-            epostsh='ppht_epost.sh'
-            epostlsf='ppht_epost.lsf'
-            epostjob='eb-ppht-'${polyname}
+            epostout="ppht_epost.out"
+            epostsh="ppht_epost.sh"
+            epostlsf="ppht_epost.lsf"
+            epostjob="eb-ppht-${polyname}"
             ;;
          reject_ed.r)
-            epostout='prej_epost.out'
-            epostsh='prej_epost.sh'
-            epostlsf='prej_epost.lsf'
-            epostjob='eb-prej-'${polyname}
+            epostout="prej_epost.out"
+            epostsh="prej_epost.sh"
+            epostlsf="prej_epost.lsf"
+            epostjob="eb-prej-${polyname}"
             ;;
          esac
          #---------------------------------------------------------------------------------#
@@ -721,7 +711,7 @@ do
          #     Script with time-independent patch properties.  No need to skip anything.   #
          #---------------------------------------------------------------------------------#
          #----- Check whether to use the user choice of year or the default. --------------#
-         if [ ${useperiod} == 'u' ]
+         if [ ${useperiod} == "u" ]
          then
             thisyeara=${yusera}
             thisyearz=${yuserz}
@@ -744,16 +734,16 @@ do
          #----- Define the job name, and the names of the output files. -------------------#
          case ${script} in
          patchprops.r)
-           epostout='ppro_epost.out'
-           epostsh='ppro_epost.sh'
-           epostlsf='ppro_epost.lsf'
-           epostjob='eb-ppro-'${polyname}
+           epostout="ppro_epost.out"
+           epostsh="ppro_epost.sh"
+           epostlsf="ppro_epost.lsf"
+           epostjob="eb-ppro-${polyname}"
            ;;
          whichrun.r)
-           epostout='pwhr_epost.out'
-           epostsh='pwhr_epost.sh'
-           epostlsf='pwhr_epost.lsf'
-           epostjob='eb-pwhr-'${polyname}
+           epostout="pwhr_epost.out"
+           epostsh="pwhr_epost.sh"
+           epostlsf="pwhr_epost.lsf"
+           epostjob="eb-pwhr-${polyname}"
            ;;
          esac
          #---------------------------------------------------------------------------------#
@@ -763,7 +753,7 @@ do
          #     Script with daily means.  No need to skip anything.                         #
          #---------------------------------------------------------------------------------#
          #----- Check whether to use the user choice of year or the default. --------------#
-         if [ ${useperiod} == 'u' ]
+         if [ ${useperiod} == "u" ]
          then
             thisyeara=${yusera}
             thisyearz=${yuserz}
@@ -784,10 +774,10 @@ do
 
 
          #----- Define the job name, and the names of the output files. -------------------#
-         epostout='pday_epost.out'
-         epostsh='pday_epost.sh'
-         epostlsf='pday_epost.lsf'
-         epostjob='eb-pday-'${polyname}
+         epostout="pday_epost.out"
+         epostsh="pday_epost.sh"
+         epostlsf="pday_epost.lsf"
+         epostjob="eb-pday-${polyname}"
          #---------------------------------------------------------------------------------#
          ;;
 
@@ -796,7 +786,7 @@ do
          #     Script with short-term averages (usually hourly).  No need to skip any-     #
          # thing.                                                                          #
          #---------------------------------------------------------------------------------#
-         if [ ${useperiod} == 'u' ]
+         if [ ${useperiod} == "u" ]
          then
             thisyeara=${yusera}
             thisyearz=${yuserz}
@@ -817,10 +807,10 @@ do
 
 
          #----- Define the job name, and the names of the output files. -------------------#
-         epostout='pfst_epost.out'
-         epostsh='pfst_epost.sh'
-         epostlsf='pfst_epost.lsf'
-         epostjob='eb-pfst-'${polyname}
+         epostout="pfst_epost.out"
+         epostsh="pfst_epost.sh"
+         epostlsf="pfst_epost.lsf"
+         epostjob="eb-pfst-${polyname}"
          #---------------------------------------------------------------------------------#
 
          ;;
@@ -902,7 +892,7 @@ do
       case ${script} in
       plot_eval_ed.r)
          complete="${here}/${polyname}/eval_load_complete.txt"
-         echo '#!/bin/bash'                >  ${here}/${polyname}/${epostsh}
+         echo "#!/bin/bash"                >  ${here}/${polyname}/${epostsh}
          echo "/bin/rm -fr ${complete}"    >> ${here}/${polyname}/${epostsh}
          echo "while [ ! -s ${complete} ]" >> ${here}/${polyname}/${epostsh}
          echo "do"                         >> ${here}/${polyname}/${epostsh}
@@ -912,7 +902,7 @@ do
          chmod +x ${here}/${polyname}/${epostsh}
          ;;
       *)
-         echo '#!/bin/bash' > ${here}/${polyname}/${epostsh}
+         echo "#!/bin/bash" > ${here}/${polyname}/${epostsh}
          echo ${comm} >> ${here}/${polyname}/${epostsh}
          chmod +x ${here}/${polyname}/${epostsh}
          ;;
@@ -924,7 +914,7 @@ do
       #----- Make sure this is not the census script for a site we don't have census. -----#
       if [ ${script} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
       then
-         submitnow='n'
+         submitnow="n"
       else
          submitnow=${submit}
       fi
@@ -933,20 +923,12 @@ do
 
 
       #------------------------------------------------------------------------------------#
-      #     Submit the job according to the style (LSF or openlava).                       #
+      #     Submit the job.                                                                #
       #------------------------------------------------------------------------------------#
-      if [ 'x'${submitnow} == 'xy' ] || [ 'x'${submitnow} == 'xY' ]
+      if [ "x${submitnow}" == "xy" ] || [ "x${submitnow}" == "xY" ]
       then
-         #------ Check whether to use openlava or LSF. ------------------------------------#
-         if [ 'x'${openlava} == 'xy' ] || [ 'x'${openlava} == 'xY' ]
-         then
-            bsub="iobsub -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
-            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
-         else
-            bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf}"
-            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
-         fi
-         #---------------------------------------------------------------------------------#
+         bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf}"
+         bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
          ${bsub}
       fi
       #------------------------------------------------------------------------------------#

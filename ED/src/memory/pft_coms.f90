@@ -99,19 +99,27 @@ module pft_coms
    !    This is the list of PFTs that are included.  0 means off, 1 means on.              !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft) :: include_pft
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !    This is the list of grass PFTs that may be included in agricultural patches.  Only !
-   ! PFTs included here and at the include_these_pft will be used for agricultural         !
-   ! patches.                                                                              !
-   !---------------------------------------------------------------------------------------!
-   integer, dimension(n_pft) :: grass_pft
-
-   !---------------------------------------------------------------------------------------!
-   !    This flag specifies what non-agricutural PFTs (i.e., grass)  can grow on agri-     !
-   ! culture patches.  Set to 1 if you want to include this PFT on agriculture patches     !
+   !    This flag specifies which PFTs are allowed to grow on agriculture patches.         !
+   ! Zero means the PFT is forbidden, 1 means that the PFT is allowed.                     !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft) :: include_pft_ag
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This flag specifies which PFTs are allowed to grow on forest plantation patches.   !
+   ! Zero means the PFT is forbidden, 1 means that the PFT is allowed.                     !
+   !---------------------------------------------------------------------------------------!
+   logical, dimension(n_pft) :: include_pft_fp
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    The following logical flags will tell whether the PFTs are tropical and also       !
@@ -120,6 +128,9 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft)    :: is_tropical
    logical, dimension(n_pft)    :: is_grass
+   !---------------------------------------------------------------------------------------!
+
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -275,6 +286,11 @@ module pft_coms
    !=======================================================================================!
    !   Mortality and survivorship parameters.                                              !
    !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     This variable shifts the inflection point for the relative carbon balance curve.  !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: mort0
 
    !---------------------------------------------------------------------------------------!
    !     This variable controls the time scale at which plants out of carbon balance       !

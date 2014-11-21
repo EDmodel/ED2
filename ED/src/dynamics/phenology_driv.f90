@@ -1048,28 +1048,39 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    !----- Initialize variables. -----------------------------------------------------------!
    drop_cold     = .false.
    leaf_out_cold = .false.
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check which phenology scheme to use.                                              !
+   !---------------------------------------------------------------------------------------!
    select case (iphen_scheme)
-   !---------------------------------------------------------------------------------------!
-   !     In case we use the prescribed phenology, we skip this and fill with the prescrib- !
-   ! ed phenology.                                                                         !
-   !---------------------------------------------------------------------------------------!
    case (1)
+      !------------------------------------------------------------------------------------!
+      !     Prescribed phenology, skip this and fill with the prescribed phenology.        !
+      !------------------------------------------------------------------------------------!
       drop_cold     = .false.
       leaf_out_cold = .false.
+      !------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     Otherwise, we are solving the phenology, determine whether or not it´s time to    !
-   ! drop leaves or start flushing.                                                        !
-   !---------------------------------------------------------------------------------------!
    case default
+      !------------------------------------------------------------------------------------!
+      !    Predicted phenology, check if this is the time to drop leaves or to start       !
+      ! flushing.                                                                          !
+      !------------------------------------------------------------------------------------!
+
       !----- Too cold or too dark, time to shed leaves... ---------------------------------!
       drop_cold = (daylight <= dl_tr .and. soil_temp < st_tr1) .or.  soil_temp < st_tr2
+      !------------------------------------------------------------------------------------!
 
-      !----- Getting warmer again, time for leaves to come out again... -------------------!
+
+      !----- Warm again, time to flush leaves. --------------------------------------------!
       gdd_threshold = phen_a + phen_b * exp(phen_c * sum_chd)
       leaf_out_cold = sum_dgd >= gdd_threshold
+      !------------------------------------------------------------------------------------!
    end select
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine phenology_thresholds

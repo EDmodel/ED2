@@ -1,34 +1,34 @@
-#!/bin/sh
+#!/bin/bash
 
 #==========================================================================================#
 #==========================================================================================#
 #    Main settings:                                                                        #
 #------------------------------------------------------------------------------------------#
-#----- Main path, usually set by `pwd` so you don't need to change it. --------------------#
-here=`pwd`
-#----- User name, usually set by `whoami` so you don't need to change it. -----------------#
-moi=`whoami`
+#----- Main path, usually set by $(pwd) so you don't need to change it. -------------------#
+here=$(pwd)
+#----- User name, usually set by $(whoami) so you don't need to change it. ----------------#
+moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
-desc=`basename ${here}`
+desc=$(basename ${here})
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
-restart='/x/xxxxxx/xxxxxx/xxxxxxxxx/xxxx/ed2_data/restarts_XXX'
+restart='/n/home00/mlongo/data/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
-lonlat=${here}'/joborder.txt'
+lonlat="${here}/joborder.txt"
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
-outthere='n'
+outthere="n"
 #----- Disk name (usually just the path until right before your own directory). -----------#
-diskthere='/n/moorcroftfs2'
-#----- This is the default path with the met driver. --------------------------------------#
-sitemetdef='/n/home00/mlongo/data/ed2_data/site_met_driver'
+diskthere="/n/moorcroftfs2"
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with drivers for each scenario. -----------------------------------------------#
-metmaindef='/n/home00/mlongo/data/ed2_data'
-packdatasrc='/n/home00/mlongo/data/2scratch'
+metmaindef="/n/home00/mlongo/data/ed2_data"
+packdatasrc="/n/home00/mlongo/data/2scratch"
+#----- Path with land use scenarios. ------------------------------------------------------#
+lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
-copy2scratch='y'
+copy2scratch="n"
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -54,11 +54,9 @@ callunpa=${here}'/callunpa.sh'
 unparun=${here}'/unparun.sh'
 
 #----- Executable names. ------------------------------------------------------------------#
-optname='ed_2.1-opt'               # Normal executable, for most queues
-cs6name='ed_2.1-cs6'               # Executable compiled in CentOS 6
+execname="ed_2.1-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
-optinit="${HOME}/.bashrc"          # Initialisation script for most nodes
-cs6init="${HOME}/util/centos6.rc"  # Initialisation script for CentOS 6 nodes
+initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #------------------------------------------------------------------------------------------#
 #==========================================================================================#
 #==========================================================================================#
@@ -80,9 +78,9 @@ cs6init="${HOME}/util/centos6.rc"  # Initialisation script for CentOS 6 nodes
 
 
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
-if [ ${copy2scratch} == 'y' -o ${copy2scratch} == 'Y' ]
+if [ "x${copy2scratch}" == "xy" ]  || [ "x${copy2scratch}" == "xY" ]
 then
-   metmain='/scratch/mlongo'
+   metmain="/scratch/mlongo"
 else
    metmain=${metmaindef}
 fi
@@ -92,7 +90,7 @@ fi
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
-let npolys=`wc -l ${lonlat} | awk '{print $1 }'`-3
+let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
 echo 'Number of polygons: '${npolys}'...'
 #------------------------------------------------------------------------------------------#
 
@@ -124,26 +122,26 @@ fi
 if [ ${outthere} == 'y' ] || [ ${outthere} == 'Y' ]
 then
 
-   basehere=`basename ${here}`
-   dirhere=`dirname ${here}`
+   basehere=$(basename ${here})
+   dirhere=$(dirname ${here})
    while [ ${basehere} != ${moi} ]
    do
-      basehere=`basename ${dirhere}`
-      dirhere=`dirname ${dirhere}`
+      basehere=$(basename ${dirhere})
+      dirhere=$(dirname ${dirhere})
    done
    diskhere=${dirhere}
    echo '-------------------------------------------------------------------------------'
    echo ' - Simulation control on disk: '${diskhere}
    echo ' - Output on disk:             '${diskthere}
    echo '-------------------------------------------------------------------------------'
-   there=`echo ${here} | sed s@${diskhere}@${diskthere}@g`
+   there=$(echo ${here} | sed s@${diskhere}@${diskthere}@g)
 else
-   basehere=`basename ${here}`
-   dirhere=`dirname ${here}`
+   basehere=$(basename ${here})
+   dirhere=$(dirname ${here})
    while [ ${basehere} != ${moi} ]
    do
-      basehere=`basename ${dirhere}`
-      dirhere=`dirname ${dirhere}`
+      basehere=$(basename ${dirhere})
+      dirhere=$(dirname ${dirhere})
    done
    diskhere=${dirhere}
    diskthere=${dirhere}
@@ -163,12 +161,12 @@ fi
 #------------------------------------------------------------------------------------------#
 while [ ! -s ${there} ]
 do
-   namecheck=`basename ${there}`
-   dircheck=`dirname ${there}`
+   namecheck=$(basename ${there})
+   dircheck=$(dirname ${there})
    while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
    do
-      namecheck=`basename ${dircheck}`
-      dircheck=`dirname ${dircheck}`
+      namecheck=$(basename ${dircheck})
+      dircheck=$(dirname ${dircheck})
    done
    
    if [ ${namecheck} == '/' ]
@@ -205,10 +203,10 @@ do
    then
       let wtime=${ff}%8
       let wtime=${wtime}*20
-      nudge=`date +%S`
+      nudge=$(date +%S)
       if [ ${nudge} -lt 10 ]
       then 
-         nudge=`echo ${nudge} | awk '{print substr($1,2,1)}'`
+         nudge=$(echo ${nudge} | awk '{print substr($1,2,1)}')
       fi
       let nudge=${nudge}%15
       let wtime=${wtime}+${nudge}
@@ -223,98 +221,100 @@ do
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=`head -${line} ${lonlat} | tail -1`
-   polyname=`echo ${oi}     | awk '{print $1 }'`
-   polyiata=`echo ${oi}     | awk '{print $2 }'`
-   polylon=`echo ${oi}      | awk '{print $3 }'`
-   polylat=`echo ${oi}      | awk '{print $4 }'`
-   yeara=`echo ${oi}        | awk '{print $5 }'`
-   montha=`echo ${oi}       | awk '{print $6 }'`
-   datea=`echo ${oi}        | awk '{print $7 }'`
-   timea=`echo ${oi}        | awk '{print $8 }'`
-   yearz=`echo ${oi}        | awk '{print $9 }'`
-   monthz=`echo ${oi}       | awk '{print $10}'`
-   datez=`echo ${oi}        | awk '{print $11}'`
-   timez=`echo ${oi}        | awk '{print $12}'`
-   initmode=`echo ${oi}     | awk '{print $13}'`
-   iscenario=`echo ${oi}    | awk '{print $14}'`
-   isizepft=`echo ${oi}     | awk '{print $15}'`
-   iage=`echo ${oi}         | awk '{print $16}'`
-   polyisoil=`echo ${oi}    | awk '{print $17}'`
-   polyntext=`echo ${oi}    | awk '{print $18}'`
-   polysand=`echo ${oi}     | awk '{print $19}'`
-   polyclay=`echo ${oi}     | awk '{print $20}'`
-   polydepth=`echo ${oi}    | awk '{print $21}'`
-   polysoilbc=`echo ${oi}   | awk '{print $22}'`
-   polysldrain=`echo ${oi}  | awk '{print $23}'`
-   polycol=`echo ${oi}      | awk '{print $24}'`
-   slzres=`echo ${oi}       | awk '{print $25}'`
-   queue=`echo ${oi}        | awk '{print $26}'`
-   metdriver=`echo ${oi}    | awk '{print $27}'`
-   dtlsm=`echo ${oi}        | awk '{print $28}'`
-   vmfactc3=`echo ${oi}     | awk '{print $29}'`
-   vmfactc4=`echo ${oi}     | awk '{print $30}'`
-   mphototrc3=`echo ${oi}   | awk '{print $31}'`
-   mphototec3=`echo ${oi}   | awk '{print $32}'`
-   mphotoc4=`echo ${oi}     | awk '{print $33}'`
-   bphotoblc3=`echo ${oi}   | awk '{print $34}'`
-   bphotonlc3=`echo ${oi}   | awk '{print $35}'`
-   bphotoc4=`echo ${oi}     | awk '{print $36}'`
-   kwgrass=`echo ${oi}      | awk '{print $37}'`
-   kwtree=`echo ${oi}       | awk '{print $38}'`
-   gammac3=`echo ${oi}      | awk '{print $39}'`
-   gammac4=`echo ${oi}      | awk '{print $40}'`
-   d0grass=`echo ${oi}      | awk '{print $41}'`
-   d0tree=`echo ${oi}       | awk '{print $42}'`
-   alphac3=`echo ${oi}      | awk '{print $43}'`
-   alphac4=`echo ${oi}      | awk '{print $44}'`
-   klowco2=`echo ${oi}      | awk '{print $45}'`
-   decomp=`echo ${oi}       | awk '{print $46}'`
-   rrffact=`echo ${oi}      | awk '{print $47}'`
-   growthresp=`echo ${oi}   | awk '{print $48}'`
-   lwidthgrass=`echo ${oi}  | awk '{print $49}'`
-   lwidthbltree=`echo ${oi} | awk '{print $50}'`
-   lwidthnltree=`echo ${oi} | awk '{print $51}'`
-   q10c3=`echo ${oi}        | awk '{print $52}'`
-   q10c4=`echo ${oi}        | awk '{print $53}'`
-   h2olimit=`echo ${oi}     | awk '{print $54}'`
-   imortscheme=`echo ${oi}  | awk '{print $55}'`
-   ddmortconst=`echo ${oi}  | awk '{print $56}'`
-   isfclyrm=`echo ${oi}     | awk '{print $57}'`
-   icanturb=`echo ${oi}     | awk '{print $58}'`
-   ubmin=`echo ${oi}        | awk '{print $59}'`
-   ugbmin=`echo ${oi}       | awk '{print $60}'`
-   ustmin=`echo ${oi}       | awk '{print $61}'`
-   gamm=`echo ${oi}         | awk '{print $62}'`
-   gamh=`echo ${oi}         | awk '{print $63}'`
-   tprandtl=`echo ${oi}     | awk '{print $64}'`
-   ribmax=`echo ${oi}       | awk '{print $65}'`
-   atmco2=`echo ${oi}       | awk '{print $66}'`
-   thcrit=`echo ${oi}       | awk '{print $67}'`
-   smfire=`echo ${oi}       | awk '{print $68}'`
-   ifire=`echo ${oi}        | awk '{print $69}'`
-   fireparm=`echo ${oi}     | awk '{print $70}'`
-   ipercol=`echo ${oi}      | awk '{print $71}'`
-   runoff=`echo ${oi}       | awk '{print $72}'`
-   imetrad=`echo ${oi}      | awk '{print $73}'`
-   ibranch=`echo ${oi}      | awk '{print $74}'`
-   icanrad=`echo ${oi}      | awk '{print $75}'`
-   crown=`echo   ${oi}      | awk '{print $76}'`
-   ltransvis=`echo ${oi}    | awk '{print $77}'`
-   lreflectvis=`echo ${oi}  | awk '{print $78}'`
-   ltransnir=`echo ${oi}    | awk '{print $79}'`
-   lreflectnir=`echo ${oi}  | awk '{print $80}'`
-   orienttree=`echo ${oi}   | awk '{print $81}'`
-   orientgrass=`echo ${oi}  | awk '{print $82}'`
-   clumptree=`echo ${oi}    | awk '{print $83}'`
-   clumpgrass=`echo ${oi}   | awk '{print $84}'`
-   ivegtdyn=`echo ${oi}     | awk '{print $85}'`
-   igndvap=`echo ${oi}      | awk '{print $86}'`
-   iphen=`echo ${oi}        | awk '{print $87}'`
-   iallom=`echo ${oi}       | awk '{print $88}'`
-   ibigleaf=`echo ${oi}     | awk '{print $89}'`
-   irepro=`echo ${oi}       | awk '{print $90}'`
-   treefall=`echo ${oi}     | awk '{print $91}'`
+   oi=$(head -${line} ${lonlat} | tail -1)
+   polyname=$(echo ${oi}     | awk '{print $1 }')
+   polyiata=$(echo ${oi}     | awk '{print $2 }')
+   polylon=$(echo ${oi}      | awk '{print $3 }')
+   polylat=$(echo ${oi}      | awk '{print $4 }')
+   yeara=$(echo ${oi}        | awk '{print $5 }')
+   montha=$(echo ${oi}       | awk '{print $6 }')
+   datea=$(echo ${oi}        | awk '{print $7 }')
+   timea=$(echo ${oi}        | awk '{print $8 }')
+   yearz=$(echo ${oi}        | awk '{print $9 }')
+   monthz=$(echo ${oi}       | awk '{print $10}')
+   datez=$(echo ${oi}        | awk '{print $11}')
+   timez=$(echo ${oi}        | awk '{print $12}')
+   initmode=$(echo ${oi}     | awk '{print $13}')
+   iscenario=$(echo ${oi}    | awk '{print $14}')
+   isizepft=$(echo ${oi}     | awk '{print $15}')
+   iage=$(echo ${oi}         | awk '{print $16}')
+   polyisoil=$(echo ${oi}    | awk '{print $17}')
+   polyntext=$(echo ${oi}    | awk '{print $18}')
+   polysand=$(echo ${oi}     | awk '{print $19}')
+   polyclay=$(echo ${oi}     | awk '{print $20}')
+   polydepth=$(echo ${oi}    | awk '{print $21}')
+   polysoilbc=$(echo ${oi}   | awk '{print $22}')
+   polysldrain=$(echo ${oi}  | awk '{print $23}')
+   polycol=$(echo ${oi}      | awk '{print $24}')
+   slzres=$(echo ${oi}       | awk '{print $25}')
+   queue=$(echo ${oi}        | awk '{print $26}')
+   metdriver=$(echo ${oi}    | awk '{print $27}')
+   dtlsm=$(echo ${oi}        | awk '{print $28}')
+   vmfactc3=$(echo ${oi}     | awk '{print $29}')
+   vmfactc4=$(echo ${oi}     | awk '{print $30}')
+   mphototrc3=$(echo ${oi}   | awk '{print $31}')
+   mphototec3=$(echo ${oi}   | awk '{print $32}')
+   mphotoc4=$(echo ${oi}     | awk '{print $33}')
+   bphotoblc3=$(echo ${oi}   | awk '{print $34}')
+   bphotonlc3=$(echo ${oi}   | awk '{print $35}')
+   bphotoc4=$(echo ${oi}     | awk '{print $36}')
+   kwgrass=$(echo ${oi}      | awk '{print $37}')
+   kwtree=$(echo ${oi}       | awk '{print $38}')
+   gammac3=$(echo ${oi}      | awk '{print $39}')
+   gammac4=$(echo ${oi}      | awk '{print $40}')
+   d0grass=$(echo ${oi}      | awk '{print $41}')
+   d0tree=$(echo ${oi}       | awk '{print $42}')
+   alphac3=$(echo ${oi}      | awk '{print $43}')
+   alphac4=$(echo ${oi}      | awk '{print $44}')
+   klowco2=$(echo ${oi}      | awk '{print $45}')
+   decomp=$(echo ${oi}       | awk '{print $46}')
+   rrffact=$(echo ${oi}      | awk '{print $47}')
+   growthresp=$(echo ${oi}   | awk '{print $48}')
+   lwidthgrass=$(echo ${oi}  | awk '{print $49}')
+   lwidthbltree=$(echo ${oi} | awk '{print $50}')
+   lwidthnltree=$(echo ${oi} | awk '{print $51}')
+   q10c3=$(echo ${oi}        | awk '{print $52}')
+   q10c4=$(echo ${oi}        | awk '{print $53}')
+   h2olimit=$(echo ${oi}     | awk '{print $54}')
+   imortscheme=$(echo ${oi}  | awk '{print $55}')
+   ddmortconst=$(echo ${oi}  | awk '{print $56}')
+   isfclyrm=$(echo ${oi}     | awk '{print $57}')
+   icanturb=$(echo ${oi}     | awk '{print $58}')
+   ubmin=$(echo ${oi}        | awk '{print $59}')
+   ugbmin=$(echo ${oi}       | awk '{print $60}')
+   ustmin=$(echo ${oi}       | awk '{print $61}')
+   gamm=$(echo ${oi}         | awk '{print $62}')
+   gamh=$(echo ${oi}         | awk '{print $63}')
+   tprandtl=$(echo ${oi}     | awk '{print $64}')
+   ribmax=$(echo ${oi}       | awk '{print $65}')
+   atmco2=$(echo ${oi}       | awk '{print $66}')
+   thcrit=$(echo ${oi}       | awk '{print $67}')
+   smfire=$(echo ${oi}       | awk '{print $68}')
+   ifire=$(echo ${oi}        | awk '{print $69}')
+   fireparm=$(echo ${oi}     | awk '{print $70}')
+   ipercol=$(echo ${oi}      | awk '{print $71}')
+   runoff=$(echo ${oi}       | awk '{print $72}')
+   imetrad=$(echo ${oi}      | awk '{print $73}')
+   ibranch=$(echo ${oi}      | awk '{print $74}')
+   icanrad=$(echo ${oi}      | awk '{print $75}')
+   crown=$(echo   ${oi}      | awk '{print $76}')
+   ltransvis=$(echo ${oi}    | awk '{print $77}')
+   lreflectvis=$(echo ${oi}  | awk '{print $78}')
+   ltransnir=$(echo ${oi}    | awk '{print $79}')
+   lreflectnir=$(echo ${oi}  | awk '{print $80}')
+   orienttree=$(echo ${oi}   | awk '{print $81}')
+   orientgrass=$(echo ${oi}  | awk '{print $82}')
+   clumptree=$(echo ${oi}    | awk '{print $83}')
+   clumpgrass=$(echo ${oi}   | awk '{print $84}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $85}')
+   igndvap=$(echo ${oi}      | awk '{print $86}')
+   iphen=$(echo ${oi}        | awk '{print $87}')
+   iallom=$(echo ${oi}       | awk '{print $88}')
+   ibigleaf=$(echo ${oi}     | awk '{print $89}')
+   irepro=$(echo ${oi}       | awk '{print $90}')
+   treefall=$(echo ${oi}     | awk '{print $91}')
+   ianthdisturb=$(echo ${oi} | awk '{print $92}')
+   ianthdataset=$(echo ${oi} | awk '{print $93}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -325,7 +325,7 @@ do
       echo 'Order: '${ff}', updating a couple of files on '${here}/${polyname}'...'
       
       #----- Save the last tolerance in case we are going to make it more strict. ---------#
-      oldtol=`grep NL%RK4_TOLERANCE ${here}/${polyname}/ED2IN | awk '{print $3}'`
+      oldtol=$(grep NL%RK4_TOLERANCE ${here}/${polyname}/ED2IN | awk '{print $3}')
       rm -f ${here}/${polyname}/ED2IN 
       rm -f ${here}/${polyname}/callserial.sh
       rm -f ${here}/${polyname}/callunpa.sh 
@@ -376,20 +376,20 @@ do
       #      This step is necessary because we may have killed the run while it was        #
       # writing, and as a result, the file may be corrupt.                                 #
       #------------------------------------------------------------------------------------#
-      nhdf5=`ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l`
+      nhdf5=$(ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l)
       if [ ${nhdf5} -gt 0 ]
       then
          h5fine=0
 
          while [ ${h5fine} -eq 0 ]
          do
-            lasthdf5=`ls -1 ${there}/${polyname}/histo/* | tail -1`
+            lasthdf5=$(ls -1 ${there}/${polyname}/histo/* | tail -1)
             h5dump -H ${lasthdf5} 1> /dev/null 2> ${here}/badfile.txt
 
             if [ -s ${here}/badfile.txt ]
             then
                /bin/rm -fv ${lasthdf5}
-               nhdf5=`ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l`
+               nhdf5=$(ls -1 ${there}/${polyname}/histo/* 2> /dev/null | wc -l)
                if [ ${nhdf5} -eq 0 ]
                then
                   h5fine=1
@@ -434,11 +434,11 @@ do
    do
       sleep 0.5
    done
-   year=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}'`
-   month=`cat ${here}/${polyname}/statusrun.txt | awk '{print $3}'`
-   date=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}'`
-   time=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}'`
-   runt=`cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}'`
+   year=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}')
+   month=$(cat ${here}/${polyname}/statusrun.txt | awk '{print $3}')
+   date=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}')
+   time=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}')
+   runt=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}')
    if [ ${runt} != 'INITIAL' ]
    then
       runt='HISTORY'
@@ -719,6 +719,82 @@ do
       metcycf=2012
       imetavg=1
    fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Set the land use data set.                                                        #
+   #---------------------------------------------------------------------------------------#
+   case ${ianthdataset} in
+   glu-331)
+      case ${polyiata} in
+      tzi|zmh|nqn|hvd|wch|tqh)
+         ludatabase="${lumain}/glu/outglu/glu-"
+         ;;
+      *)
+         ludatabase="${lumain}/glu-3.3.1/one/glu-3.3.1-"
+         ;;
+      esac
+      ;;
+   glu-sa1)
+      case ${polyiata} in
+      tzi|zmh|nqn|hvd|wch|tqh)
+         ludatabase="${lumain}/glu/outglu/glu-"
+         ;;
+      *)
+         ludatabase="${lumain}/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-"
+         ;;
+      esac
+      ;;
+   glu-sag)
+      case ${polyiata} in
+      tzi|zmh|nqn|hvd|wch|tqh)
+         ludatabase="${lumain}/glu/outglu/glu-"
+         ;;
+      *)
+         ludatabase="${lumain}/glu-3.3.1+sa1.gov/one/glu-3.3.1+sa1.gov-"
+         ;;
+      esac
+      ;;
+   glu-sa2)
+      case ${polyiata} in
+      tzi|zmh|nqn|hvd|wch|tqh)
+         ludatabase="${lumain}/glu/outglu/glu-"
+         ;;
+      *)
+         ludatabase="${lumain}/glu-3.3.1+sa2.bau/one/glu-3.3.1+sa2.bau-"
+         ;;
+      esac
+      ;;
+   lurcp26)
+      ludatabase="${lumain}/luha-v1/luh-1.1+rcp26_image/half/luh-1.1+rcp26_image-"
+      ;;
+   lurcp45)
+      ludatabase="${lumain}/luha-v1/luh-1.1+rcp45_minicam/half/luh-1.1+rcp45_minicam-"
+      ;;
+   lurcp60)
+      ludatabase="${lumain}/luha-v1/luh-1.1+rcp60_aim/half/luh-1.1+rcp60_aim-"
+      ;;
+   lurcp85)
+      ludatabase="${lumain}/luha-v1/luh-1.1+rcp85_message/half/luh-1.1+rcp85_message-"
+      ;;
+   *)
+      #------------------------------------------------------------------------------------#
+      #     Stop the script if anthropogenic dataset is invalid and this is a simulation   #
+      # with anthropogenic disturbance.                                                    #
+      #------------------------------------------------------------------------------------#
+      if [ ${ianthdisturb} -eq 1 ]
+      then
+         echo " Polygon:       ${polyname}"
+         echo " IATA:          ${polyiata}"
+         echo " IANTH_DATASET: ${iage}"
+         echo 'Invalid anthropogenic disturbance data set!'
+         exit 53
+      fi
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
    #---------------------------------------------------------------------------------------#
 
 
@@ -1026,7 +1102,7 @@ do
    then
       sed -i s@CRASHED@HISTORY@g ${here}/${polyname}/statusrun.txt
       runt='HISTORY'
-      # toler=`calc.sh ${toler}/10`
+      # toler=$(calc.sh ${toler}/10)
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -1087,7 +1163,7 @@ do
       #      Check whether the site has the PFT and age structure.                         #
       #------------------------------------------------------------------------------------#
       case ${polyiata} in
-      hvd|s77|fns)
+      hvd|s77|fns|cau|and|par|tap)
          thissfilin="${bioinit}/${polyiata}_default."
          ;;
       cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
@@ -1107,7 +1183,6 @@ do
       thissfilin=${there}/${polyname}/histo/${polyname}
    fi
    #---------------------------------------------------------------------------------------#
-
 
 
 
@@ -1219,6 +1294,8 @@ do
    sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
    sed -i s@mytreefall@${treefall}@g            ${ED2IN}
    sed -i s@mymaxpatch@${iage}@g                ${ED2IN}
+   sed -i s@myanthdisturb@${ianthdisturb}@g    ${ED2IN}
+   sed -i s@myludatabase@${ludatabase}@g        ${ED2IN}
 
    #------ Soil variables. ----------------------------------------------------------------#
    sed -i s@myslz1@"${polyslz1}"@g           ${ED2IN}
@@ -1312,7 +1389,7 @@ do
             bsub='bsub -q unrestricted_parallel'
             bsub=${bsub}' -J '${polyname}
             bsub=${bsub}' -o '${here}'/'${polyname}'/serial_lsf.out -n '${unpa}
-            bsub=${bsub}' < '${here}'/'${polyname}'/'`basename ${callunpa}`
+            bsub=${bsub}' < '${here}'/'${polyname}'/'$(basename ${callunpa})
             echo ${bsub} >> ${unparun}
             chmod u+x ${unparun}
             mv ${unparun} ${here}/${polyname}
@@ -1347,7 +1424,7 @@ else
    bsub='bsub -q unrestricted_parallel'
    bsub=${bsub}' -J '${polyname}
    bsub=${bsub}' -o '${here}'/'${lastunpa}'/serial_lsf.out -n '${unpa}
-   bsub=${bsub}' < '${here}'/'${lastunpa}'/'`basename ${callunpa}`
+   bsub=${bsub}' < '${here}'/'${lastunpa}'/'$(basename ${callunpa})
    echo ${bsub} >> ${unparun}
    chmod u+x ${unparun}
    mv ${unparun} ${here}/${lastunpa}

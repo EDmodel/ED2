@@ -100,14 +100,33 @@ Module mem_leaf
       !------------------------------------------------------------------------------------!
       !     Surface fluxes, dimensioned by (nxp,nyp,npatch).                               !
       !------------------------------------------------------------------------------------!
-      real, dimension(:,:,:), pointer :: gpp         & ! Gross primary prod.    [µmol/m²/s]
-                                       , resphet     & ! Heterotrophic resp.    [µmol/m²/s]
-                                       , plresp      & ! Plant respiration      [µmol/m²/s]
-                                       , evap_gc     & ! Evaporation (Gnd->Can) [     W/m²]
-                                       , evap_vc     & ! Evaporation (Veg->Can) [     W/m²]
-                                       , transp      & ! Transpiration          [     W/m²]
-                                       , sensible_gc & ! Sens. heat (Gnd->Can)  [     W/m²]
-                                       , sensible_vc ! ! Sens. heat (Veg->Can)  [     W/m²]
+      real, dimension(:,:,:), pointer :: gpp          & ! Gross primary prod.   [µmol/m²/s]
+                                       , resphet      & ! Heterotrophic resp.   [µmol/m²/s]
+                                       , plresp       & ! Plant respiration     [µmol/m²/s]
+                                       , growresp     & ! Growth respiration    [µmol/m²/s]
+                                       , hflxac       & ! Sens. heat (Atm->Can) [     W/m²]
+                                       , wflxac       & ! Water flux (Atm->Can) [  kg/m²/s]
+                                       , qwflxac      & ! Water flux (Atm->Can) [  kg/m²/s]
+                                       , eflxac       & ! Enth. flux (Atm->Can) [     W/m²]
+                                       , cflxac       & ! CO2 flux (Atm->Can)   [µmol/m²/s]
+                                       , hflxgc       & ! Sens. heat (Gnd->Can) [     W/m²]
+                                       , wflxgc       & ! Evap. (Gnd->Can)      [  kg/m²/s]
+                                       , qwflxgc      & ! Evap. (Gnd->Can)      [  kg/m²/s]
+                                       , hflxvc       & ! Sens. heat (Veg->Can) [     W/m²]
+                                       , wflxvc       & ! Evap. (Veg->Can)      [  kg/m²/s]
+                                       , qwflxvc      & ! Evap. (Veg->Can)      [  kg/m²/s]
+                                       , transp       & ! Transpiration         [  kg/m²/s]
+                                       , qtransp      & ! Transpiration         [  kg/m²/s]
+                                       , intercepted  & ! Water interception    [  kg/m²/s]
+                                       , qintercepted & ! Water interception    [     W/m²]
+                                       , wshed        & ! Water shedding        [  kg/m²/s]
+                                       , qwshed       & ! Water shedding        [     W/m²]
+                                       , throughfall  & ! Throughfall           [  kg/m²/s]
+                                       , qthroughfall & ! Throughfall           [     W/m²]
+                                       , runoff       & ! Surface runoff        [  kg/m²/s]
+                                       , qrunoff      & ! Surface runoff        [     W/m²]
+                                       , drainage     & ! Sub-surface runoff    [  kg/m²/s]
+                                       , qdrainage    ! ! Sub-surface runoff    [     W/m²]
 
       !------------------------------------------------------------------------------------!
       !     This is based on a 10-day running average of the relative soil moisture        !
@@ -189,6 +208,7 @@ Module mem_leaf
    real                    :: dtleaf      ! LEAF-3 target time step.  It will be either this
                                           !    this or the actual BRAMS time step (which-
                                           !    ever is the lowest).
+   integer                 :: ndtveg      ! LEAF-3 nesting for vegetation time step.
 
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain
@@ -287,11 +307,31 @@ Module mem_leaf
       allocate (leaf%gpp              (    nx,ny,np))
       allocate (leaf%resphet          (    nx,ny,np))
       allocate (leaf%plresp           (    nx,ny,np))
-      allocate (leaf%evap_gc          (    nx,ny,np))
-      allocate (leaf%evap_vc          (    nx,ny,np))
+      allocate (leaf%growresp         (    nx,ny,np))
+      allocate (leaf%hflxac           (    nx,ny,np))
+      allocate (leaf%wflxac           (    nx,ny,np))
+      allocate (leaf%qwflxac          (    nx,ny,np))
+      allocate (leaf%eflxac           (    nx,ny,np))
+      allocate (leaf%cflxac           (    nx,ny,np))
+      allocate (leaf%hflxgc           (    nx,ny,np))
+      allocate (leaf%wflxgc           (    nx,ny,np))
+      allocate (leaf%qwflxgc          (    nx,ny,np))
+      allocate (leaf%hflxvc           (    nx,ny,np))
+      allocate (leaf%wflxvc           (    nx,ny,np))
+      allocate (leaf%qwflxvc          (    nx,ny,np))
       allocate (leaf%transp           (    nx,ny,np))
-      allocate (leaf%sensible_gc      (    nx,ny,np))
-      allocate (leaf%sensible_vc      (    nx,ny,np))
+      allocate (leaf%qtransp          (    nx,ny,np))
+      allocate (leaf%intercepted      (    nx,ny,np))
+      allocate (leaf%qintercepted     (    nx,ny,np))
+      allocate (leaf%wshed            (    nx,ny,np))
+      allocate (leaf%qwshed           (    nx,ny,np))
+      allocate (leaf%throughfall      (    nx,ny,np))
+      allocate (leaf%qthroughfall     (    nx,ny,np))
+      allocate (leaf%runoff           (    nx,ny,np))
+      allocate (leaf%qrunoff          (    nx,ny,np))
+      allocate (leaf%drainage         (    nx,ny,np))
+      allocate (leaf%qdrainage        (    nx,ny,np))
+
       allocate (leaf%psibar_10d       (    nx,ny,np))
 
       allocate (leaf%rshort_gnd       (    nx,ny,np))
@@ -386,11 +426,30 @@ Module mem_leaf
       nullify(leaf%gpp              )
       nullify(leaf%resphet          )
       nullify(leaf%plresp           )
-      nullify(leaf%evap_gc          )
-      nullify(leaf%evap_vc          )
+      nullify(leaf%growresp         )
+      nullify(leaf%hflxac           )
+      nullify(leaf%wflxac           )
+      nullify(leaf%qwflxac          )
+      nullify(leaf%eflxac           )
+      nullify(leaf%cflxac           )
+      nullify(leaf%hflxgc           )
+      nullify(leaf%wflxgc           )
+      nullify(leaf%qwflxgc          )
+      nullify(leaf%hflxvc           )
+      nullify(leaf%wflxvc           )
+      nullify(leaf%qwflxvc          )
       nullify(leaf%transp           )
-      nullify(leaf%sensible_gc      )
-      nullify(leaf%sensible_vc      )
+      nullify(leaf%qtransp          )
+      nullify(leaf%intercepted      )
+      nullify(leaf%qintercepted     )
+      nullify(leaf%wshed            )
+      nullify(leaf%qwshed           )
+      nullify(leaf%throughfall      )
+      nullify(leaf%qthroughfall     )
+      nullify(leaf%runoff           )
+      nullify(leaf%qrunoff          )
+      nullify(leaf%drainage         )
+      nullify(leaf%qdrainage        )
       nullify(leaf%psibar_10d       )
 
       nullify(leaf%rshort_gnd       )
@@ -484,11 +543,30 @@ Module mem_leaf
       if (associated(leaf%gpp              ))  leaf%gpp              = 0.0
       if (associated(leaf%resphet          ))  leaf%resphet          = 0.0
       if (associated(leaf%plresp           ))  leaf%plresp           = 0.0
-      if (associated(leaf%evap_gc          ))  leaf%evap_gc          = 0.0
-      if (associated(leaf%evap_vc          ))  leaf%evap_vc          = 0.0
+      if (associated(leaf%growresp         ))  leaf%growresp         = 0.0
+      if (associated(leaf%hflxac           ))  leaf%hflxac           = 0.0
+      if (associated(leaf%wflxac           ))  leaf%wflxac           = 0.0
+      if (associated(leaf%qwflxac          ))  leaf%qwflxac          = 0.0
+      if (associated(leaf%eflxac           ))  leaf%eflxac           = 0.0
+      if (associated(leaf%cflxac           ))  leaf%cflxac           = 0.0
+      if (associated(leaf%hflxgc           ))  leaf%hflxgc           = 0.0
+      if (associated(leaf%wflxgc           ))  leaf%wflxgc           = 0.0
+      if (associated(leaf%qwflxgc          ))  leaf%qwflxgc          = 0.0
+      if (associated(leaf%hflxvc           ))  leaf%hflxvc           = 0.0
+      if (associated(leaf%wflxvc           ))  leaf%wflxvc           = 0.0
+      if (associated(leaf%qwflxvc          ))  leaf%qwflxvc          = 0.0
       if (associated(leaf%transp           ))  leaf%transp           = 0.0
-      if (associated(leaf%sensible_gc      ))  leaf%sensible_gc      = 0.0
-      if (associated(leaf%sensible_vc      ))  leaf%sensible_vc      = 0.0
+      if (associated(leaf%qtransp          ))  leaf%qtransp          = 0.0
+      if (associated(leaf%intercepted      ))  leaf%intercepted      = 0.0
+      if (associated(leaf%qintercepted     ))  leaf%qintercepted     = 0.0
+      if (associated(leaf%wshed            ))  leaf%wshed            = 0.0
+      if (associated(leaf%qwshed           ))  leaf%qwshed           = 0.0
+      if (associated(leaf%throughfall      ))  leaf%throughfall      = 0.0
+      if (associated(leaf%qthroughfall     ))  leaf%qthroughfall     = 0.0
+      if (associated(leaf%runoff           ))  leaf%runoff           = 0.0
+      if (associated(leaf%qrunoff          ))  leaf%qrunoff          = 0.0
+      if (associated(leaf%drainage         ))  leaf%drainage         = 0.0
+      if (associated(leaf%qdrainage        ))  leaf%qdrainage        = 0.0
       if (associated(leaf%psibar_10d       ))  leaf%psibar_10d       = 0.0
 
       if (associated(leaf%rshort_gnd       ))  leaf%rshort_gnd       = 0.0
@@ -577,15 +655,34 @@ Module mem_leaf
       if (associated(leaf%patch_wetind     ))  deallocate(leaf%patch_wetind     )
 
 
-      if (associated(leaf%gpp              ))  deallocate(leaf%gpp              )
-      if (associated(leaf%resphet          ))  deallocate(leaf%resphet          )
-      if (associated(leaf%plresp           ))  deallocate(leaf%plresp           )
-      if (associated(leaf%evap_vc          ))  deallocate(leaf%evap_vc          )
-      if (associated(leaf%evap_gc          ))  deallocate(leaf%evap_gc          )
-      if (associated(leaf%transp           ))  deallocate(leaf%transp           )
-      if (associated(leaf%sensible_gc      ))  deallocate(leaf%sensible_gc      )
-      if (associated(leaf%sensible_vc      ))  deallocate(leaf%sensible_vc      )
-      if (associated(leaf%psibar_10d       ))  deallocate(leaf%psibar_10d       )
+      if (associated(leaf%gpp              )) deallocate(leaf%gpp               )
+      if (associated(leaf%resphet          )) deallocate(leaf%resphet           )
+      if (associated(leaf%plresp           )) deallocate(leaf%plresp            )
+      if (associated(leaf%growresp         )) deallocate(leaf%growresp          )
+      if (associated(leaf%hflxac           )) deallocate(leaf%hflxac            )
+      if (associated(leaf%wflxac           )) deallocate(leaf%wflxac            )
+      if (associated(leaf%qwflxac          )) deallocate(leaf%qwflxac           )
+      if (associated(leaf%eflxac           )) deallocate(leaf%eflxac            )
+      if (associated(leaf%cflxac           )) deallocate(leaf%cflxac            )
+      if (associated(leaf%hflxgc           )) deallocate(leaf%hflxgc            )
+      if (associated(leaf%wflxgc           )) deallocate(leaf%wflxgc            )
+      if (associated(leaf%qwflxgc          )) deallocate(leaf%qwflxgc           )
+      if (associated(leaf%hflxvc           )) deallocate(leaf%hflxvc            )
+      if (associated(leaf%wflxvc           )) deallocate(leaf%wflxvc            )
+      if (associated(leaf%qwflxvc          )) deallocate(leaf%qwflxvc           )
+      if (associated(leaf%transp           )) deallocate(leaf%transp            )
+      if (associated(leaf%qtransp          )) deallocate(leaf%qtransp           )
+      if (associated(leaf%intercepted      )) deallocate(leaf%intercepted       )
+      if (associated(leaf%qintercepted     )) deallocate(leaf%qintercepted      )
+      if (associated(leaf%wshed            )) deallocate(leaf%wshed             )
+      if (associated(leaf%qwshed           )) deallocate(leaf%qwshed            )
+      if (associated(leaf%throughfall      )) deallocate(leaf%throughfall       )
+      if (associated(leaf%qthroughfall     )) deallocate(leaf%qthroughfall      )
+      if (associated(leaf%runoff           )) deallocate(leaf%runoff            )
+      if (associated(leaf%qrunoff          )) deallocate(leaf%qrunoff           )
+      if (associated(leaf%drainage         )) deallocate(leaf%drainage          )
+      if (associated(leaf%qdrainage        )) deallocate(leaf%qdrainage         )
+      if (associated(leaf%psibar_10d       )) deallocate(leaf%psibar_10d        )
 
       if (associated(leaf%rshort_gnd       ))  deallocate(leaf%rshort_gnd       )
       if (associated(leaf%rlong_gnd        ))  deallocate(leaf%rlong_gnd        )
@@ -852,25 +949,103 @@ Module mem_leaf
          call vtables2(leaf%plresp,leafm%plresp,ng,npts,imean                              &
                       ,'PLRESP :6:hist:anal:mpti:mpt3')
 
-      if (associated(leaf%evap_gc))                                                        &
-         call vtables2(leaf%evap_gc,leafm%evap_gc,ng,npts,imean                            &
-                      ,'EVAP_GC :6:hist:anal:mpti:mpt3')
+      !----- Growth respiration is excluded from analysis because it is not averaged. -----!
+      if (associated(leaf%growresp))                                                       &
+         call vtables2(leaf%growresp,leafm%plresp,ng,npts,imean                            &
+                      ,'GROWRESP :6:hist:mpti:mpt3')
+      !------------------------------------------------------------------------------------!
 
-      if (associated(leaf%evap_vc))                                                        &
-         call vtables2(leaf%evap_vc,leafm%evap_vc,ng,npts,imean                            &
-                      ,'EVAP_VC :6:hist:anal:mpti:mpt3')
+      if (associated(leaf%hflxac))                                                         &
+         call vtables2(leaf%hflxac,leafm%hflxac,ng,npts,imean                              &
+                      ,'HFLXAC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%wflxac))                                                         &
+         call vtables2(leaf%wflxac,leafm%wflxac,ng,npts,imean                              &
+                      ,'WFLXAC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qwflxac))                                                        &
+         call vtables2(leaf%qwflxac,leafm%qwflxac,ng,npts,imean                            &
+                      ,'QWFLXAC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%eflxac))                                                         &
+         call vtables2(leaf%eflxac,leafm%eflxac,ng,npts,imean                              &
+                      ,'EFLXAC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%cflxac))                                                         &
+         call vtables2(leaf%cflxac,leafm%cflxac,ng,npts,imean                              &
+                      ,'CFLXAC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%hflxgc))                                                         &
+         call vtables2(leaf%hflxgc,leafm%hflxgc,ng,npts,imean                              &
+                      ,'HFLXGC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%wflxgc))                                                         &
+         call vtables2(leaf%wflxgc,leafm%wflxgc,ng,npts,imean                              &
+                      ,'WFLXGC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qwflxgc))                                                        &
+         call vtables2(leaf%qwflxgc,leafm%qwflxgc,ng,npts,imean                            &
+                      ,'QWFLXGC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%hflxvc))                                                         &
+         call vtables2(leaf%hflxvc,leafm%hflxvc,ng,npts,imean                              &
+                      ,'HFLXVC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%wflxvc))                                                         &
+         call vtables2(leaf%wflxvc,leafm%wflxvc,ng,npts,imean                              &
+                      ,'WFLXVC :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qwflxvc))                                                        &
+         call vtables2(leaf%qwflxvc,leafm%qwflxvc,ng,npts,imean                            &
+                      ,'QWFLXVC :6:hist:anal:mpti:mpt3')
 
       if (associated(leaf%transp))                                                         &
          call vtables2(leaf%transp,leafm%transp,ng,npts,imean                              &
                       ,'TRANSP :6:hist:anal:mpti:mpt3')
 
-      if (associated(leaf%sensible_gc))                                                    &
-         call vtables2(leaf%sensible_gc,leafm%sensible_gc,ng,npts,imean                    &
-                      ,'SENSIBLE_GC :6:hist:anal:mpti:mpt3')
+      if (associated(leaf%qtransp))                                                        &
+         call vtables2(leaf%qtransp,leafm%qtransp,ng,npts,imean                            &
+                      ,'QTRANSP :6:hist:anal:mpti:mpt3')
 
-      if (associated(leaf%sensible_vc))                                                    &
-         call vtables2(leaf%sensible_vc,leafm%sensible_vc,ng,npts,imean                    &
-                      ,'SENSIBLE_VC :6:hist:anal:mpti:mpt3')
+      if (associated(leaf%intercepted))                                                    &
+         call vtables2(leaf%intercepted,leafm%intercepted,ng,npts,imean                    &
+                      ,'INTERCEPTED :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qintercepted))                                                   &
+         call vtables2(leaf%qintercepted,leafm%qintercepted,ng,npts,imean                  &
+                      ,'QINTERCEPTED :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%wshed))                                                          &
+         call vtables2(leaf%wshed,leafm%wshed,ng,npts,imean                                &
+                      ,'WSHED :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qwshed))                                                         &
+         call vtables2(leaf%qwshed,leafm%qwshed,ng,npts,imean                              &
+                      ,'QWSHED :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%throughfall))                                                    &
+         call vtables2(leaf%throughfall,leafm%throughfall,ng,npts,imean                    &
+                      ,'THROUGHFALL :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qthroughfall))                                                   &
+         call vtables2(leaf%qthroughfall,leafm%qthroughfall,ng,npts,imean                  &
+                      ,'QTHROUGHFALL :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%runoff))                                                         &
+         call vtables2(leaf%runoff,leafm%runoff,ng,npts,imean                              &
+                      ,'RUNOFF :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qrunoff))                                                        &
+         call vtables2(leaf%qrunoff,leafm%qrunoff,ng,npts,imean                            &
+                      ,'QRUNOFF :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%drainage))                                                       &
+         call vtables2(leaf%drainage,leafm%drainage,ng,npts,imean                          &
+                      ,'DRAINAGE :6:hist:anal:mpti:mpt3')
+
+      if (associated(leaf%qdrainage))                                                      &
+         call vtables2(leaf%qdrainage,leafm%qdrainage,ng,npts,imean                        &
+                      ,'QDRAINAGE :6:hist:anal:mpti:mpt3')
 
       if (associated(leaf%psibar_10d))                                                     &
          call vtables2(leaf%psibar_10d,leafm%psibar_10d,ng,npts,imean                      &

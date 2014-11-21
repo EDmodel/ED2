@@ -45,8 +45,6 @@ subroutine init_full_history_restart()
                                , chnkdims              & ! intent(inout)
                                , chnkoffs              ! ! intent(inout)
    implicit none
-   !------ Standard common block. ---------------------------------------------------------!
-   include 'mpif.h'
    !------ Local variables. ---------------------------------------------------------------!
    type(edtype)                        , pointer     :: cgrid
    type(polygontype)                   , pointer     :: cpoly
@@ -62,15 +60,14 @@ subroutine init_full_history_restart()
    integer               , dimension(:), allocatable :: paco_id
    integer                                           :: ngr
    integer                                           :: ifpy
-   integer                                           :: ipft
    integer                                           :: ipy
    integer                                           :: isi
    integer                                           :: ipa
-   integer                                           :: ico
    integer                                           :: py_index
    integer                                           :: si_index
    integer                                           :: pa_index
    integer                                           :: hdferr
+   logical               , dimension(:), allocatable :: is_burnt
    logical                                           :: exists
    real                  , dimension(:), allocatable :: file_lats
    real                  , dimension(:), allocatable :: file_lons
@@ -306,7 +303,10 @@ subroutine init_full_history_restart()
             !     Get all necessary site variables associated with this index for the      !
             ! current polygon.                                                             !
             !------------------------------------------------------------------------------!
-            call fill_history_polygon(cpoly,pysi_id(py_index),cgrid%nsites_global)
+            allocate (is_burnt(pysi_n(py_index)))
+            is_burnt(:) = .false.
+            call fill_history_polygon(cpoly,pysi_id(py_index),cgrid%nsites_global          &
+                                     ,pysi_n(py_index),is_burnt)
             
             siteloop: do isi = 1,cpoly%nsites
                csite => cpoly%site(isi)
@@ -322,7 +322,8 @@ subroutine init_full_history_restart()
                   !     Get all necessary site variables associated with this index for    !
                   ! the current site.                                                      !
                   !------------------------------------------------------------------------!
-                  call fill_history_site(csite,sipa_id(si_index),cgrid%npatches_global)
+                  call fill_history_site(csite,sipa_id(si_index),cgrid%npatches_global     &
+                                        ,is_burnt(isi))
 
                   patchloop: do ipa = 1,csite%npatches
                      cpatch => csite%patch(ipa)
@@ -337,8 +338,8 @@ subroutine init_full_history_restart()
                         ! for the current patch.                                           !
                         !------------------------------------------------------------------!
                         call fill_history_patch(cpatch,paco_id(pa_index)                   &
-                                               ,cgrid%ncohorts_global                      &
-                                               ,cpoly%green_leaf_factor(:,isi))
+                                               ,cgrid%ncohorts_global)
+                        !------------------------------------------------------------------!
                      else
                         cpatch%ncohorts = 0
                      endif
@@ -358,6 +359,7 @@ subroutine init_full_history_restart()
                end if
 
             end do siteloop
+            deallocate (is_burnt)
             
          else
             write (unit=*,fmt='(a)'          ) '------------------------------------'
@@ -465,12 +467,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    type(edtype)   , target      :: cgrid
    integer        , intent(in)  :: ipy
    integer        , intent(in)  :: py_index
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                      :: iparallel
-   integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
-   logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
    if (cgrid%npolygons == 0) return
@@ -583,8 +579,6 @@ subroutine fill_history_grid_p11(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -825,8 +819,6 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -1224,8 +1216,6 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -1702,8 +1692,6 @@ subroutine fill_history_grid_p12(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -1897,8 +1885,6 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -2325,8 +2311,6 @@ subroutine fill_history_grid_p19(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -2487,8 +2471,6 @@ subroutine fill_history_grid_m12(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -2669,8 +2651,6 @@ subroutine fill_history_grid_p146(cgrid,ipy,py_index)
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: iparallel
    integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
    logical                      :: foundvar
    !---------------------------------------------------------------------------------------!
 
@@ -2824,7 +2804,7 @@ end subroutine fill_history_grid_p146
 !==========================================================================================!
 !      This sub-routine loads all site-level variables from the history file.              !
 !------------------------------------------------------------------------------------------!
-subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
+subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_burnt)
    use ed_state_vars, only : polygontype   ! ! structure
    use grid_coms    , only : nzg           ! ! intent(in)
    use ed_max_dims  , only : n_pft         & ! intent(in)
@@ -2897,15 +2877,24 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
    !---------------------------------------------------------------------------------------!
 
    !----- Arguments. ----------------------------------------------------------------------!
-   type(polygontype), target     :: cpoly
-   integer          , intent(in) :: pysi_index
-   integer          , intent(in) :: nsites_global
+   type(polygontype)             , target        :: cpoly
+   integer                       , intent(in)    :: pysi_index
+   integer                       , intent(in)    :: nsites_global
+   integer                       , intent(in)    :: nsites_now
+   logical, dimension(nsites_now), intent(inout) :: is_burnt
    !----- Local variables. ----------------------------------------------------------------!
-   integer                      :: iparallel
-   integer                      :: dsetrank
-   integer(SIZE_T)              :: sz
-   integer                      :: hdferr
-   logical                      :: foundvar
+   integer                                       :: iparallel
+   integer                                       :: dsetrank
+   integer                                       :: isi
+   logical                                       :: foundvar
+   integer                                       :: pidx
+   integer                                       :: sidx
+   integer, dimension(:)         , allocatable   :: nat_dist_type
+   real, dimension(:,:,:)        , allocatable   :: tmp_dist_memory
+   real, dimension(:,:,:)        , allocatable   :: tmp_dist_rates
+   logical                                       :: old_histo
+   !----- Local constants. ----------------------------------------------------------------!
+   integer               , parameter   :: n_lu_old = 3
    !---------------------------------------------------------------------------------------!
 
 
@@ -2969,8 +2958,6 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
                      ,'HYDRO_PREV              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%plantation                                                     &
                      ,'PLANTATION_SI           ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_i(cpoly%nat_dist_type                                                  &
-                     ,'NAT_DIST_TYPE           ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%agri_stocking_pft                                              &
                      ,'AGRI_STOCKING_PFT       ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%plantation_stocking_pft                                        &
@@ -2996,6 +2983,24 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
 
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Test whether this is a new or an old history.                                     !
+   ! MLO. Variable NAT_DIST_TYPE was deleted because now burnt patches are distinguished   !
+   !      from tree fall patches.   Thus, if NAT_DIST_TYPE exists in the file, then it     !
+   !      must be and old history file.                                                    !
+   !---------------------------------------------------------------------------------------!
+   allocate(nat_dist_type(cpoly%nsites))
+   call hdf_getslab_i(nat_dist_type                                                        &
+                     ,'NAT_DIST_TYPE           ',dsetrank,iparallel,.false.,foundvar)
+   old_histo = foundvar
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -3042,16 +3047,16 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
                       ,'AGRI_STOCKING_DENSITY      ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%plantation_stocking_density                                    &
                       ,'PLANTATION_STOCKING_DENSITY' ,dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpoly%primary_harvest_target                                         &
+                      ,'PRIMARY_HARVEST_TARGET     ' ,dsetrank,iparallel,.false.,foundvar)
+   call hdf_getslab_r(cpoly%secondary_harvest_target                                       &
+                      ,'SECONDARY_HARVEST_TARGET   ' ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cpoly%primary_harvest_memory                                         &
                       ,'PRIMARY_HARVEST_MEMORY     ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%secondary_harvest_memory                                       &
                       ,'SECONDARY_HARVEST_MEMORY   ' ,dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpoly%fire_disturbance_rate                                          &
-                      ,'FIRE_DISTURBANCE_RATE      ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%ignition_rate                                                  &
                       ,'IGNITION_RATE              ' ,dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpoly%nat_disturbance_rate                                           &
-                      ,'NAT_DISTURBANCE_RATE       ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%rad_avg                                                        &
                       ,'RAD_AVG                    ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%daylight                                                       &
@@ -3310,34 +3315,147 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
-   !      3-D variables, dimensions: (n_dist_types;n_dist_types;nsites).                   !
+   !      3-D variables, dimensions: (n_dist_types;n_dist_types;nsites).  Because the      !
+   ! number of land use types has changed, we must check whether this history file is old  !
+   ! or new.                                                                               !
    !---------------------------------------------------------------------------------------!
-   dsetrank       = 3
-   globdims(1:2)  = int(n_dist_types,8)
-   chnkdims(1:2)  = int(n_dist_types,8)
-   memdims (1:2)  = int(n_dist_types,8)
-   memsize (1:2)  = int(n_dist_types,8)
-   chnkoffs(1:2)  = 0_8
-   memoffs (1:2)  = 0_8
-   globdims(3)    = int(nsites_global ,8)
-   chnkdims(3)    = int(cpoly%nsites  ,8)
-   chnkoffs(3)    = int(pysi_index - 1,8)
-   memdims(3)     = int(cpoly%nsites  ,8)
-   memsize(3)     = int(cpoly%nsites  ,8)
-   memoffs(3)     = 0_8
+   if (old_histo) then
+      !------------------------------------------------------------------------------------!
+      !     Old history file, read the information to a temporary array.                   !
+      !------------------------------------------------------------------------------------!
+      dsetrank       = 3
+      globdims(1:2)  = int(n_lu_old,8)
+      chnkdims(1:2)  = int(n_lu_old,8)
+      memdims (1:2)  = int(n_lu_old,8)
+      memsize (1:2)  = int(n_lu_old,8)
+      chnkoffs(1:2)  = 0_8
+      memoffs (1:2)  = 0_8
+      globdims(3)    = int(nsites_global ,8)
+      chnkdims(3)    = int(cpoly%nsites  ,8)
+      chnkoffs(3)    = int(pysi_index - 1,8)
+      memdims(3)     = int(cpoly%nsites  ,8)
+      memsize(3)     = int(cpoly%nsites  ,8)
+      memoffs(3)     = 0_8
+      !------------------------------------------------------------------------------------!
 
-   call hdf_getslab_r(cpoly%disturbance_memory                                             &
-                     ,'DISTURBANCE_MEMORY ',dsetrank,iparallel,.true.,foundvar)
-   !---------------------------------------------------------------------------------------!
-   !       The _SI extension has been dropped as disturbance rate is no longer a polygon   !
-   !  variable.  In case the history is from an old file, they may still exist, so we try  !
-   !  it first and if it doesn't work we try the one without extension.                    !
-   !---------------------------------------------------------------------------------------!
-   call hdf_getslab_r(cpoly%disturbance_rates                                              &
-                     ,'DISTURBANCE_RATES_SI ',dsetrank,iparallel,.false.,foundvar)
-   if (.not. foundvar) then
+      !------------------------------------------------------------------------------------!
+      !     Allocate temporary variable, we must translate the transition rates to the     !
+      ! new matrix.                                                                        !
+      !------------------------------------------------------------------------------------!
+      allocate(tmp_dist_memory(n_lu_old,n_lu_old,cpoly%nsites))
+      allocate(tmp_dist_rates (n_lu_old,n_lu_old,cpoly%nsites))
+      cpoly%disturbance_memory(:,:,:) = 0.0
+      cpoly%disturbance_rates (:,:,:) = 0.0
+
+      call hdf_getslab_r(tmp_dist_memory                                                   &
+                        ,'DISTURBANCE_MEMORY ',dsetrank,iparallel,.true.,foundvar)
+      !------------------------------------------------------------------------------------!
+      !       The _SI extension has been dropped as disturbance rate is no longer a        !
+      ! polygon variable.  In case the history is from an old file, they may still exist,  !
+      ! so we try it first and if it doesn't work we try the one without extension.        !
+      !------------------------------------------------------------------------------------!
+      call hdf_getslab_r(tmp_dist_rates                                                    &
+                        ,'DISTURBANCE_RATES_SI ',dsetrank,iparallel,.false.,foundvar)
+      if (.not. foundvar) then
+         call hdf_getslab_r(tmp_dist_rates                                                 &
+                           ,'DISTURBANCE_RATES ',dsetrank,iparallel,.true.,foundvar)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      do isi=1,cpoly%nsites
+         !------ Save information on whether the site has been burnt. ---------------------!
+         is_burnt(isi) = nat_dist_type(isi) == 1
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Find the indices for disturbance transitions based on the last fire regime  !
+         ! and whether it is a forest plantation of an explored stand.  The translation    !
+         ! won't be perfect, because we cannot retrieve all information needed.            !
+         !---------------------------------------------------------------------------------!
+         !----- "Primary forest index", tree fall or burnt. -------------------------------!
+         select case (nat_dist_type(isi))
+         case (0)
+            pidx = 3
+         case (1)
+            pidx = 4
+         end select
+         !----- "Secondary forest index", logged or plantation. ---------------------------!
+         select case (nat_dist_type(isi))
+         case (0)
+            pidx = 3
+         case (1)
+            pidx = 4
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Translate the memory transition matrix. -----------------------------------!
+         cpoly%disturbance_memory(   1,   1,isi) = tmp_dist_memory(1,1,isi)
+         cpoly%disturbance_memory(   1,sidx,isi) = tmp_dist_memory(1,2,isi)
+         cpoly%disturbance_memory(   1,pidx,isi) = tmp_dist_memory(1,3,isi)
+         cpoly%disturbance_memory(   5,   1,isi) = tmp_dist_memory(2,1,isi)
+         cpoly%disturbance_memory(sidx,sidx,isi) = tmp_dist_memory(2,2,isi)
+         cpoly%disturbance_memory(sidx,pidx,isi) = tmp_dist_memory(2,3,isi)
+         cpoly%disturbance_memory(pidx,sidx,isi) = tmp_dist_memory(3,2,isi)
+         cpoly%disturbance_memory(pidx,pidx,isi) = tmp_dist_memory(3,3,isi)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !----- Translate the current transition matrix. ----------------------------------!
+         cpoly%disturbance_rates (   1,   1,isi) = tmp_dist_rates (1,1,isi)
+         cpoly%disturbance_rates (   1,sidx,isi) = tmp_dist_rates (1,2,isi)
+         cpoly%disturbance_rates (   1,pidx,isi) = tmp_dist_rates (1,3,isi)
+         cpoly%disturbance_rates (   5,   1,isi) = tmp_dist_rates (2,1,isi)
+         cpoly%disturbance_rates (sidx,sidx,isi) = tmp_dist_rates (2,2,isi)
+         cpoly%disturbance_rates (sidx,pidx,isi) = tmp_dist_rates (2,3,isi)
+         cpoly%disturbance_rates (pidx,sidx,isi) = tmp_dist_rates (3,2,isi)
+         cpoly%disturbance_rates (pidx,pidx,isi) = tmp_dist_rates (3,3,isi)
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Free memory. -----------------------------------------------------------------!
+      deallocate(tmp_dist_memory)
+      deallocate(tmp_dist_rates )
+      !------------------------------------------------------------------------------------!
+
+   else
+      !------------------------------------------------------------------------------------!
+      !     Compatible history file, just read the information.                            !
+      !------------------------------------------------------------------------------------!
+      dsetrank       = 3
+      globdims(1:2)  = int(n_dist_types,8)
+      chnkdims(1:2)  = int(n_dist_types,8)
+      memdims (1:2)  = int(n_dist_types,8)
+      memsize (1:2)  = int(n_dist_types,8)
+      chnkoffs(1:2)  = 0_8
+      memoffs (1:2)  = 0_8
+      globdims(3)    = int(nsites_global ,8)
+      chnkdims(3)    = int(cpoly%nsites  ,8)
+      chnkoffs(3)    = int(pysi_index - 1,8)
+      memdims(3)     = int(cpoly%nsites  ,8)
+      memsize(3)     = int(cpoly%nsites  ,8)
+      memoffs(3)     = 0_8
+      !------------------------------------------------------------------------------------!
+
+      call hdf_getslab_r(cpoly%disturbance_memory                                          &
+                        ,'DISTURBANCE_MEMORY ',dsetrank,iparallel,.true.,foundvar)
+      !------------------------------------------------------------------------------------!
+      !       The _SI extension has been dropped as disturbance rate is no longer a        !
+      ! polygon variable.  In case the history is from an old file, they may still exist,  !
+      ! so we try it first and if it doesn't work we try the one without extension.        !
+      !------------------------------------------------------------------------------------!
       call hdf_getslab_r(cpoly%disturbance_rates                                           &
-                        ,'DISTURBANCE_RATES ',dsetrank,iparallel,.true.,foundvar)
+                        ,'DISTURBANCE_RATES_SI ',dsetrank,iparallel,.false.,foundvar)
+      if (.not. foundvar) then
+         call hdf_getslab_r(cpoly%disturbance_rates                                        &
+                           ,'DISTURBANCE_RATES ',dsetrank,iparallel,.true.,foundvar)
+      end if
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -3392,6 +3510,9 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global)
                      ,'AGB_CUT           ',dsetrank,iparallel,.true. ,foundvar)
 
 
+   !----- Free memory. --------------------------------------------------------------------!
+   deallocate(nat_dist_type)
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine fill_history_polygon
 !==========================================================================================!
@@ -3404,7 +3525,7 @@ end subroutine fill_history_polygon
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine fill_history_site(csite,sipa_index,npatches_global)
+subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    use ed_state_vars      , only : sitetype      ! ! structure
    use grid_coms          , only : nzg           & ! intent(in)
                                  , nzs           ! ! intent(in)
@@ -3483,14 +3604,14 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
    type(sitetype)             , target       :: csite
    integer                    , intent(in)   :: sipa_index
    integer                    , intent(in)   :: npatches_global
+   logical                    , intent(in)   :: is_burnt
    !----- Local variables. ----------------------------------------------------------------!
    integer                                   :: iparallel
    integer                                   :: dsetrank
-   integer                                   :: hdferr
    logical                                   :: foundvar
    integer                                   :: ipa
-   integer                                   :: ipft
-   real(kind=8), dimension(:,:), allocatable ::  buff
+   ! real(kind=8), dimension(:,:), allocatable :: buff
+   integer     , dimension(:)  , allocatable :: plantation
    !---------------------------------------------------------------------------------------!
 
 
@@ -3544,8 +3665,6 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
    memoffs (1)  = 0_8
    call hdf_getslab_i(csite%dist_type                                                      &
                      ,'DIST_TYPE                   ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_i(csite%plantation                                                     &
-                     ,'PLANTATION                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(csite%nlev_sfcwater                                                  &
                      ,'NLEV_SFCWATER               ',dsetrank,iparallel,.true. ,foundvar)
    !---------------------------------------------------------------------------------------!
@@ -3554,6 +3673,40 @@ subroutine fill_history_site(csite,sipa_index,npatches_global)
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      Check whether this is an old history file (back when there were only 3 types).   !
+   ! If this is the case, we must translate the indices to the new disturbance table.      !
+   ! This is not going to be perfect because the number of disturbance types increased,    !
+   ! but this should be rarely needed, as it is not a good idea to switch versions then    !
+   ! continue to run the model using binary-history.                                       !
+   !---------------------------------------------------------------------------------------!
+   allocate(plantation(csite%npatches))
+   call hdf_getslab_i(plantation                                                           &
+                     ,'PLANTATION                  ',dsetrank,iparallel,.false. ,foundvar)
+
+   !----- Old history files have variable plantation.  If so, check disturbance types. ----!
+   if (foundvar) then
+      !----- Go through all patches and decide whether to change the disturbance type. ----!
+      do ipa=1,csite%npatches
+         select case(csite%dist_type(ipa))
+         case (2)
+            if (plantation(ipa) == 0) csite%dist_type(ipa) = 6
+         case (3)
+            if (is_burnt            ) csite%dist_type(ipa) = 4
+         end select
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   deallocate(plantation)
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -4534,7 +4687,7 @@ end subroutine fill_history_site
 !     This sub-routine loads all state variables and partial integrations at the cohort    !
 ! level.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_factor)
+subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    use ed_state_vars      , only : patchtype     ! ! structure
    use grid_coms          , only : nzg           & ! intent(in)
                                  , nzs           ! ! intent(in)
@@ -4615,14 +4768,11 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    type(patchtype)                  , target       :: cpatch
    integer                          , intent(in)   :: paco_index
    integer                          , intent(in)   :: ncohorts_global
-   real           , dimension(n_pft), intent(in)   :: green_leaf_factor
    !----- Local variables. ----------------------------------------------------------------!
    integer                                         :: iparallel
    integer                                         :: dsetrank
-   integer                                         :: hdferr
    logical                                         :: foundvar
    integer                                         :: ico
-   integer                                         :: ipft
    !---------------------------------------------------------------------------------------!
 
 

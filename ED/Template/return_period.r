@@ -40,6 +40,7 @@ verbose.optim  = FALSE                       # Dump optimisation progress on scr
                                              # 1 or TRUE  -- Optimiser main step
                                              # 2 or > 2   -- Optimiser step and sub-step
 save.every     = 2880                        # Save the partially loaded data every...
+pch.return.type = FALSE                      # PCH to denote the return period type?
 #------------------------------------------------------------------------------------------#
 
 
@@ -188,7 +189,7 @@ scenario$stext = list( key     = c("stext02","stext06","stext08","stext16","stex
                      , default = stext.default
                      , value   = c(1,2,3,4,5)
                      , label   = c("LSa","SaCL","CL","CSa","C")
-                     , colour  = c("#FED164","#FDA531","#FF5308","#D90B00","#6E0500")
+                     , colour  = c("#3B24B3","#2996CC","#A3CC52","#E65C17","#990F0F")
                      , pch     = c(12L,13L,5L,6L,8L)
                      , alabel  = c("Soil texture")
                      )#end list
@@ -486,7 +487,11 @@ dbh.suffix    = paste("dbh",tolower(dbh.key),sep="-")
 #------------------------------------------------------------------------------------------#
 #      This is the R object that has the simulation information.                           #
 #------------------------------------------------------------------------------------------#
-rdata.siminfo = file.path(rdata.path,paste(comp.prefix,"SimInfo.RData",sep="_"))
+rdata.siminfo = file.path( rdata.path
+                         , paste( comp.prefix,stext.default,drain.default,"SimInfo.RData"
+                                , sep = "_"
+                                )#end paste
+                         )#end file.path
 #------------------------------------------------------------------------------------------#
 
 
@@ -595,8 +600,7 @@ for (g in loop.global){
 
    #----- File name for this global scenario. ---------------------------------------------#
    return.global = file.path( rdata.path
-                            , paste("return_sim_",simul$global$level[g],".RData"
-                                   ,sep="")
+                            , paste("return_sim_",simul$global$level[g],".RData",sep="")
                             )#end file.path
    #---------------------------------------------------------------------------------------#
 
@@ -653,9 +657,11 @@ for (g in loop.global){
          #---------------------------------------------------------------------------------#
          #     Load the data set.                                                          #
          #---------------------------------------------------------------------------------#
-         rdata.simul = paste(here,"/",sim.name,"/rdata_month/",sim.name,".RData",sep="")
+         rdata.simul = file.path( here,sim.name,"rdata_month"
+                                , paste(sim.name,".RData",sep="")
+                                )#end file.path
 
-         cat  ("     * Load data from file ",paste("(",jr,"/",n.total,")",sep="")
+         cat  ("     * Load data from file ",paste("(",rj,"/",n.total,")",sep="")
                                             ,basename(rdata.simul),"...","\n")
          dummy = load (rdata.simul)
          emean = datum$emean
@@ -846,12 +852,21 @@ for (g in loop.global){
       #       Randomly sample rainfall to estimate the probabilities.  We then aggregate   #
       # by the number of years and the sample size.                                        #
       #------------------------------------------------------------------------------------#
-      random = mapply( FUN      = rsn
-                     , location = dry.location
-                     , scale    = dry.scale
-                     , shape    = dry.shape
-                     , MoreArgs = list(n=drought.use[d]*n.sample)
-                     )#end mapply
+      if (R.major <= 2){
+         random = mapply( FUN      = rsn
+                        , location = dry.location
+                        , scale    = dry.scale
+                        , shape    = dry.shape
+                        , MoreArgs = list(n=drought.use[d]*n.sample)
+                        )#end mapply
+      }else{
+         random = mapply( FUN      = rsn
+                        , xi       = dry.location
+                        , omega    = dry.scale
+                        , alpha    = dry.shape
+                        , MoreArgs = list(n=drought.use[d]*n.sample)
+                        )#end mapply
+      }#end if (R.major <= 2)
       random = array(data=random,dim=c(n.sample,drought.use[d],n.simul))
       random = aperm(a = random,perm=c(3,1,2))
       random = apply(X = random, MARGIN=c(1,2),FUN=sum)
@@ -1172,16 +1187,25 @@ for (g in loop.global){
    }else{
       form.fit = expression(paste("MLE Fit: ",delta[A*G*B] == delta[0] + a / tau[D*1]^b))
    }#end if
-   
-   leg.fit = c( expression(paste("MLE Fit: "
-                                ,delta[A*G*B] == delta[0] + a / tau[D*1]^b))
-              , expression(paste("Predicted Critical value: ("
-                                ,tau[c],";",delta[c],")"))
-              , expression(" ")
-              , expression(paste("Event based (",N[D*1] > 0,")"))
-              , expression(paste("Probability based (",N[D*1] == 0,")"))
-              , expression(" ")
-              )#end c
+
+   if (pch.return.type){
+      leg.fit = c( expression(paste("MLE Fit: "
+                                   ,delta[A*G*B] == delta[0] + a / tau[D*1]^b))
+                 , expression(paste("Predicted Critical value: ("
+                                   ,tau[c],";",delta[c],")"))
+                 , expression(" ")
+                 , expression(paste("Event based (",N[D*1] > 0,")"))
+                 , expression(paste("Probability based (",N[D*1] == 0,")"))
+                 , expression(" ")
+                 )#end c
+   }else{
+      leg.fit = c( expression(paste("MLE Fit: "
+                                   ,delta[A*G*B] == delta[0] + a / tau[D*1]^b))
+                 , expression(paste("Predicted Critical value: ("
+                                   ,tau[c],";",delta[c],")"))
+                 , expression(" ")
+                 )#end c
+   }#end if
 
    for (d in loop.drought){
       cat("   - ",drought.desc[d],"...","\n",sep="")
@@ -1256,17 +1280,31 @@ for (g in loop.global){
          par(mar=c(0.1,4.1,0.1,0.1))
          plot.new()
          plot.window(xlim=c(0,1),ylim=c(0,1))
-         legend( x      = "center"
-               , inset  = 0.0
-               , legend = paste(scenario$stext$desc," (",scenario$stext$label,")"
-                               ,sep="")
-               , fill   = scenario$stext$colour
-               , border = foreground
-               , title  = expression(bold("Soil texture classes"))
-               , ncol   = min(2,pretty.box(n.stext)$ncol)
-               , xpd    = TRUE
-               , cex    = 0.8*cex.ptsz
-               )#end legend
+         if (pch.return.type){
+             legend( x      = "center"
+                   , inset  = 0.0
+                   , legend = paste(scenario$stext$desc," (",scenario$stext$label,")"
+                                   ,sep="")
+                   , fill   = scenario$stext$colour
+                   , border = foreground
+                   , title  = expression(bold("Soil texture classes"))
+                   , ncol   = min(2,pretty.box(n.stext)$ncol)
+                   , xpd    = TRUE
+                   , cex    = 0.8*cex.ptsz
+                   )#end legend
+         }else{
+             legend( x      = "center"
+                   , inset  = 0.0
+                   , legend = paste(scenario$stext$desc," (",scenario$stext$label,")"
+                                   ,sep="")
+                   , col    = scenario$stext$colour
+                   , pch    = scenario$stext$pch
+                   , title  = expression(bold("Soil texture classes"))
+                   , ncol   = min(2,pretty.box(n.stext)$ncol)
+                   , xpd    = TRUE
+                   , cex    = 0.8*cex.ptsz
+                   )#end legend
+         }#end if
          #---------------------------------------------------------------------------------#
 
 
@@ -1285,7 +1323,7 @@ for (g in loop.global){
                , pt.lwd = 2
                , lty    = c(1,4,0,0,0,0)
                , title  = expression(bold("Description"))
-               , ncol   = 2
+               , ncol   = ifelse(pch.return.type,2,1)
                , xpd    = TRUE
                , cex    = 0.8*cex.ptsz
                )#end legend
@@ -1301,11 +1339,11 @@ for (g in loop.global){
             lacle = paste(panel$iphen$desc[p])
 
             #----- Find out where the box goes, and set up axes and margins. --------------#
-            left    = (p %% lo.iphen$ncol) == 1
-            right   = (p %% lo.iphen$ncol) == 0
-            top     = p <= lo.iphen$ncol
-            bottom  = p > (lo.iphen$nrow - 1) * lo.iphen$ncol
-            mar.now = c(2 + 2 * bottom,1 + 2 * left,0 + 2 * top,0 + 2 * right) + 0.1
+            left    = lo.iphen$left  [p]
+            right   = lo.iphen$right [p]
+            top     = lo.iphen$top   [p]
+            bottom  = lo.iphen$bottom[p]
+            mar.now = lo.iphen$mar   [p,] # c(2 + 2 * bottom,1 + 2 * left,0 + 2 * top,0 + 2 * right) + 0.1
             #------------------------------------------------------------------------------#
 
 
@@ -1324,9 +1362,14 @@ for (g in loop.global){
                pred  = dry$pred
                datum = dry$data
                s.col = scenario$stext$colour[s]
-               abline (v=summ.tab[s,p,"x.crit",d] ,col=s.col,lwd=1        ,lty="dotdash")
-               lines  (x=pred$pret ,y=pred$change ,col=s.col,lwd=2        ,lty="solid"  )
-               points (x=datum$pret,y=datum$change,col=s.col,pch=datum$pch,cex=0.8      )
+               if (pch.return.type){
+                  pch.now = datum$pch
+               }else{
+                  pch.now = scenario$stext$pch   [s]
+               }#end if
+               abline (v=summ.tab[s,p,"x.crit",d] ,col=s.col,lwd=1      ,lty="dotdash")
+               lines  (x=pred$pret ,y=pred$change ,col=s.col,lwd=2      ,lty="solid"  )
+               points (x=datum$pret,y=datum$change,col=s.col,pch=pch.now,cex=0.8      )
             }#end for
             title  (main=lacle,cex.main=0.9*cex.main)
             box()
@@ -1369,7 +1412,7 @@ for (g in loop.global){
 
    #------ Re-format table for easy display. ----------------------------------------------#
    summ.tab = signif(summ.tab[,,,1],4)
-   idx      = arrayInd( ind       = seq.len(summ.tab)
+   idx      = arrayInd( ind       = seq_along(summ.tab)
                       , .dim      = dim(summ.tab)
                       , .dimnames = dimnames(summ.tab)
                       )#end arrayInd

@@ -209,107 +209,239 @@ deallocate(vctr1,vctr2,vctr3)
 
 return
 end
-!     ****************************************************************
+!==========================================================================================!
+!==========================================================================================!
 
-subroutine varfile_refstate(n1,n2,n3,thp,pc,pi0,th0,rtp,dn0  &
-                 ,dn0u,dn0v,topt,rtgt,zt,ztop,piref,thref,dnref,rtref)
 
-use rconstants
-use therm_lib, only: virtt
-                 
-implicit none
 
-integer :: n1,n2,n3
-real, dimension(n1,n2,n3) :: thp,pc,pi0,rtp,dn0,th0,dn0u,dn0v
-real, dimension(n2,n3)    :: topt,topu,topv,rtgt,rtgu,rtgv
-real, dimension(n1)       :: zt
-real, dimension(n1)        :: piref,thref,rtref,dnref
-real :: ztop
 
-real :: topref,c1,c2,c3
-real, allocatable :: vctr1(:),vctr2(:)
-integer :: ir,jr,i,j,k,i1,j1
 
-!                Reference sounding is point with lowest topography
 
-allocate(vctr1(n1),vctr2(n1))
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will compute the reference sounding for the isentropic analysis.     !
+!------------------------------------------------------------------------------------------!
+subroutine varfile_refstate(n1,n2,n3,thp,pc,pi0,th0,rtp,dn0,dn0u,dn0v,topt,rtgt,zt,ztop    &
+                           ,piref,thref,dnref,rtref)
+   use rconstants
+   use therm_lib , only : virtt        & ! function
+                        , exner2press  & ! function
+                        , extheta2temp & ! function
+                        , vapour_on    ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                  , intent(in)    :: n1
+   integer                  , intent(in)    :: n2
+   integer                  , intent(in)    :: n3
+   real, dimension(n1,n2,n3), intent(in)    :: thp
+   real, dimension(n1,n2,n3), intent(in)    :: pc
+   real, dimension(n1,n2,n3), intent(in)    :: rtp
+   real, dimension(n2,n3)   , intent(in)    :: topt
+   real, dimension(n2,n3)   , intent(in)    :: rtgt
+   real, dimension(n1,n2,n3), intent(inout) :: pi0
+   real, dimension(n1,n2,n3), intent(inout) :: th0
+   real, dimension(n1,n2,n3), intent(inout) :: dn0
+   real, dimension(n1,n2,n3), intent(inout) :: dn0u
+   real, dimension(n1,n2,n3), intent(inout) :: dn0v
+   real, dimension(n1)      , intent(in)    :: zt
+   real, dimension(n1)      , intent(inout) :: piref
+   real, dimension(n1)      , intent(inout) :: thref
+   real, dimension(n1)      , intent(inout) :: rtref
+   real, dimension(n1)      , intent(inout) :: dnref
+   real                     , intent(in)    :: ztop
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: i
+   integer                                  :: j
+   integer                                  :: k
+   integer                                  :: i1
+   integer                                  :: j1
+   real                                     :: nxypi
+   real, dimension(:)       , allocatable   :: znow
+   real, dimension(:)       , allocatable   :: thpnow
+   real, dimension(:)       , allocatable   :: thvnow
+   real, dimension(:)       , allocatable   :: rtnow
+   real, dimension(:)       , allocatable   :: pinow
+   real, dimension(:)       , allocatable   :: dnnow
+   real                                     :: dummy
+   !---------------------------------------------------------------------------------------!
 
-topref=1.e10
-do j=1,n3
-   do i=1,n2
-      if(topt(i,j).lt.topref) then
-         ir=i
-         jr=j
-         topref=topt(i,j)
-      endif
-   enddo
-enddo
 
-do k=1,n1
-   vctr2(k)=zt(k)*(1.-topref/ztop)+topref
-enddo
+   !----- Weighting factor for grid points. -----------------------------------------------!
+   nxypi = 1. / (n2 * n3)
+   !---------------------------------------------------------------------------------------!
 
-call htint2(n1,thp(1,ir,jr),vctr2,n1,vctr1,zt)
-call htint2(n1,rtp(1,ir,jr),vctr2,n1,rtref(1),zt)
 
-do k = 1,n1
-   thref(k) = virtt(vctr1(k),rtref(k))
-enddo
-rtref(1) = rtref(2)
-thref(1) = thref(2)
+   !---------------------------------------------------------------------------------------!
+   !      Allocate scratch arrays.                                                         !
+   !---------------------------------------------------------------------------------------!
+   allocate (znow  (n1))
+   allocate (thpnow(n1))
+   allocate (thvnow(n1))
+   allocate (rtnow (n1))
+   allocate (pinow (n1))
+   allocate (dnnow (n1))
+   !---------------------------------------------------------------------------------------!
 
-piref(1) = pc(1,ir,jr) + grav * (vctr2(1) - zt(1))  &
-                / (.5 * (thref(1)  &
-                + virtt(thp(1,ir,jr),rtp(1,ir,jr))))
-do k = 2,n1
-   piref(k) = piref(k-1) - grav * (zt(k)-zt(k-1))  &
-             / ( .5 * (thref(k) + thref(k-1)))
-enddo
 
-do k = 1,n1
-  vctr1(k) = (piref(k) / cpdry) ** cpor * p00
-  dnref(k) = cpdry * vctr1(k)  &
-     / (rdry * thref(k) * piref(k))
-enddo
+   !---------------------------------------------------------------------------------------!
+   !     Reset reference variables.                                                        !
+   !---------------------------------------------------------------------------------------!
+   call azero(n1,thref)
+   call azero(n1,rtref)
+   call azero(n1,piref)
+   call azero(n1,dnref)
+   !---------------------------------------------------------------------------------------!
 
-!        Compute 3-D reference state from 1-D reference state
 
-do j=1,n3
-  do i=1,n2
 
-    do k=1,n1
-      vctr2(k)=zt(k)*rtgt(i,j)+topt(i,j)
-    enddo
-    call htint(n1,piref(1),zt,n1,pi0(1,i,j),vctr2)
-    call htint(n1,thref(1),zt,n1,th0(1,i,j),vctr2)
+   !---------------------------------------------------------------------------------------!
+   !      Loop over grid domain.                                                           !
+   !---------------------------------------------------------------------------------------!
+   do j=1,n3
+      do i=1,n2
+         !------ Corrected height. --------------------------------------------------------!
+         do k=1,n1
+            znow(k) = zt(k) * (1. - topt(i,j)/ztop) + topt(i,j)
+         end do
+         !---------------------------------------------------------------------------------!
 
-    c1=grav*2.*(1.-topt(i,j)/ztop)
-    c2=(1-cpor)
-    c3=cpdry**c2
-    do k=n1-1,1,-1
-      pi0(k,i,j)=pi0(k+1,i,j)  &
-                +c1*(zt(k+1)-zt(k))/(th0(k,i,j)+th0(k+1,i,j))
-    enddo
 
-    do k=1,n1
-      dn0(k,i,j)=(c3*p00)/(rdry*th0(k,i,j)*pi0(k,i,j)**c2)
-    enddo
 
-  enddo
-enddo
+         !------ Interpolated fields. -----------------------------------------------------!
+         call htint2(n1,thp(:,i,j),znow,n1,thpnow,zt)
+         call htint2(n1,rtp(:,i,j),znow,n1,rtnow ,zt)
+         !---------------------------------------------------------------------------------!
 
-do j = 1,n3
-   j1 = min(j+1,n3)
-   do i = 1,n2
-      i1 = min(i+1,n2)
-      do k = 1,n1
-         dn0u(k,i,j) = .5 * (dn0(k,i,j) + dn0(k,i1,j))
-         dn0v(k,i,j) = .5 * (dn0(k,i,j) + dn0(k,i,j1))
-      enddo
-   enddo
-enddo
 
-deallocate(vctr1,vctr2)
+         !---------------------------------------------------------------------------------!
+         !      Virtual potential temperature.                                             !
+         !---------------------------------------------------------------------------------!
+         do k=1,n1
+            thvnow(k) = virtt(thpnow(k),rtnow(k))
+         end do
+         rtnow (1) = rtnow (2)
+         thvnow(1) = thvnow(2)
+         !---------------------------------------------------------------------------------!
 
-return
-end
+         !---------------------------------------------------------------------------------!
+         !      Hydrostatic adjustment for pressure.                                       !
+         !---------------------------------------------------------------------------------!
+         pinow(1) = pc(1,i,j) + grav * (znow(1) - zt(1))                                   &
+                              / ( 0.5 * (thvnow(1) + virtt(thp(1,i,j),rtp(1,i,j))) )
+         do k=2,n1
+            pinow(k) = pinow(k-1) - grav * (zt(k)-zt(k-1)) / (0.5 * (thvnow(k)+thvnow(k-1)))
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the density.                                                           !
+         !---------------------------------------------------------------------------------!
+         do k=1,n1
+            dnnow(k) = exner2press(pinow(k)) / (rdry * extheta2temp(pinow(k),thvnow(k)))
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Add the variables to the average.                                           !
+         !---------------------------------------------------------------------------------!
+         do k=1,n1
+            thref(k) = thref(k) + thvnow(k) * nxypi
+            rtref(k) = rtref(k) + rtnow (k) * nxypi
+            piref(k) = piref(k) + pinow (k) * nxypi
+            dnref(k) = dnref(k) + dnnow (k) * nxypi
+         end do
+         !---------------------------------------------------------------------------------!
+
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Write the profile on screen.                                                     !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)')   ' '
+   write (unit=*,fmt='(47a)') ('=',i=1,47)
+   write (unit=*,fmt='(a)')   ' REFERENCE STATE (varfile_refstate)'
+   write (unit=*,fmt='(47a)') ('-',i=1,47)
+   write (unit=*,fmt='(a,4(1x,a))')  '  K','     PRESS','     THETA','       RTP'          &
+                                          ,'      DENS'
+   write (unit=*,fmt='(a,4(1x,a))')  '   ','     [hPa]','       [K]','    [g/kg]'          &
+                                          ,'   [kg/m3]'
+   write (unit=*,fmt='(47a)') ('-',i=1,47)
+   do k=1,n1
+       dummy = exner2press(piref(k))
+       write(unit=*,fmt='(i3,4(1x,f10.3))') k,dummy*0.01,thref(k),1000.*rtref(k),dnref(k)
+   end do
+   write (unit=*,fmt='(47a)') ('=',i=1,47)
+   write (unit=*,fmt='(a)') ' '
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute 3-D reference state from 1-D reference state.                             !
+   !---------------------------------------------------------------------------------------!
+   do j=1,n3
+      do i=1,n2
+
+         do k=1,n1
+            znow(k) = zt(k) * rtgt(i,j) + topt(i,j)
+         end do
+
+         call htint(n1,piref,zt,n1,pi0(:,i,j),znow)
+         call htint(n1,thref,zt,n1,th0(:,i,j),znow)
+
+         do k=n1-1,1,-1
+            pi0(k,i,j)= pi0(k+1,i,j) + grav * ( 1. - topt(i,j) / ztop )                    &
+                                     / ( 0.5 * ( th0(k,i,j) + th0(k+1,i,j) ) )
+         end do
+
+         do k=1,n1
+            dn0(k,i,j) = exner2press(pi0(k,i,j))                                           &
+                       / ( rdry * extheta2temp(pi0(k,i,j),th0(k,i,j)) )
+         end do
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find staggered density fields.                                                    !
+   !---------------------------------------------------------------------------------------!
+   do j = 1,n3
+      j1 = min(j+1,n3)
+      do i = 1,n2
+         i1 = min(i+1,n2)
+         do k = 1,n1
+            dn0u(k,i,j) = .5 * (dn0(k,i,j) + dn0(k,i1,j))
+            dn0v(k,i,j) = .5 * (dn0(k,i,j) + dn0(k,i,j1))
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Allocate scratch arrays.                                                         !
+   !---------------------------------------------------------------------------------------!
+   deallocate (znow  )
+   deallocate (thpnow)
+   deallocate (thvnow)
+   deallocate (rtnow )
+   deallocate (pinow )
+   deallocate (dnnow )
+   !---------------------------------------------------------------------------------------!
+   return
+end subroutine varfile_refstate
+!==========================================================================================!
+!==========================================================================================!

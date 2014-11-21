@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 rm -fv adap_init.o                adap_init.mod
 rm -fv altera_dia.o               altera_dia.mod
 rm -fv an_header.o                an_header.mod
@@ -78,6 +78,10 @@ rm -fv leaf3_can.o                leaf3_can.mod
 rm -fv leaf3_hyd.o                leaf3_hyd.mod
 rm -fv leaf3_init.o               leaf3_init.mod
 rm -fv leaf3_ocean.o              leaf3_ocean.mod
+rm -fv leaf3_photo.o              leaf3_photo.mod
+rm -fv leaf3_physiol.o            leaf3_physiol.mod
+rm -fv leaf3_radiate.o            leaf3_radiate.mod
+rm -fv leaf3_respiration.o        leaf3_respiration.mod
 rm -fv leaf3_teb.o                leaf3_teb.mod
 rm -fv leaf3_tw.o                 leaf3_tw.mod
 rm -fv leaf3_utils.o              leaf3_utils.mod

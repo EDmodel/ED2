@@ -5,7 +5,10 @@
 #   This function reads the ctl file, and writes all needed information into a variable of #
 # kind list (info).                                                                        #
 #------------------------------------------------------------------------------------------#
-readctl <<- function(ctlfile,size=4){
+readctl <<- function( ctlfile    # CTL file name.  It may be a template ctl
+                    , size = 4   # Size.  Normally this is 4, only Unix/Sun may require
+                                 # different settings.
+                    ){
   library(chron)
   ctl0 = scan(file=ctlfile,what="character",sep=(c("\n")),multi.line=TRUE)
   ctl  = strsplit(x=ctl0,split=" ")

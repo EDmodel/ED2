@@ -132,6 +132,7 @@ LOADER=mpif90
 USE_INTERF=1
 F_OPTS= -O3 -ffree-line-length-none
 C_OPTS= -O3 -DLITTLE
+F_LOWO_OPTS= -O3 -ffree-line-length-none
 LOADER_OPTS= -O3 -ffixed-line-length-none
 #------------------------------------------------------------------------------------------#
 

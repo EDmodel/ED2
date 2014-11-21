@@ -77,7 +77,9 @@ subroutine ed_init_atm()
    real                           :: can_exner
    real                           :: rvaux
    !----- Add the MPI common block. -------------------------------------------------------!
+#if defined(RAMS_MPI)
    include 'mpif.h'
+#endif
    !---------------------------------------------------------------------------------------!
 
    !----- This is just any integer used to control the MPI sending/receiving tools. -------!
@@ -112,7 +114,7 @@ subroutine ed_init_atm()
                ! compute the initial canopy pressure...  It must be called again to have   !
                ! the storage right.                                                        !
                !---------------------------------------------------------------------------!
-               call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               call update_patch_derived_props(csite,ipa)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -222,16 +224,20 @@ subroutine ed_init_atm()
          !      Initialize soil moisture, temperature, etc. from file specified in the     !
          ! namelist (the ED2 specific file.)                                               !
          !---------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
          if (mynum /= 1) then
             call MPI_Recv(ping,1,MPI_INTEGER,recvnum,92,MPI_COMM_WORLD,MPI_STATUS_IGNORE   &
                          ,ierr)
          end if
+#endif
 
-         call read_soil_moist_temp(cgrid,igr)
+         call read_soil_moist_temp(cgrid)
 
+#if defined(RAMS_MPI)
          if (mynum < nnodetot) then
             call MPI_Send(ping,1,MPI_INTEGER,sendnum,92,MPI_COMM_WORLD,ierr)
          end if
+#endif
 
       case (2)
 #if defined(COUPLED)
@@ -308,7 +314,7 @@ subroutine ed_init_atm()
                   end do snowloop2
                
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
-                  call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+                  call update_patch_derived_props(csite,ipa)
 
                   nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
@@ -323,7 +329,7 @@ subroutine ed_init_atm()
                                  ,csite%ggsoil(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
-                  call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+                  call update_patch_derived_props(csite,ipa)
 
                   nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
@@ -357,8 +363,6 @@ subroutine ed_init_atm()
       !----- Fuse similar patches to speed up the run. ------------------------------------!
       select case(ibigleaf)
       case (0)
-
-
          !---------------------------------------------------------------------------------!
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!

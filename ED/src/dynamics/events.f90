@@ -291,8 +291,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h, bl2dbh,                   &
-                        h2dbh,bl2h, area_indices, ed_biomass,bl2h
+  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
   use budget_utils     , only : update_budget
@@ -392,9 +391,9 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
                     if(is_grass(cpatch%pft(ico)) .and. igrass==1) then 
                        cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft))
-                       cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico),pft)
+                       cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
                     else
-                       cpatch%dbh(ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
+                       cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
                        cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
                     end if
                  else
@@ -434,7 +433,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               !! remove small cohorts
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
+              call update_patch_derived_props(csite,ipa)
               call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
            end if  !! check to make sure there ARE cohorts
 
@@ -498,7 +497,7 @@ subroutine event_planting(pft,density8)
               call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
               call plant_patch(csite,ipa,nzg,pft,density,cpoly%ntext_soil(:,isi) &
                               ,cpoly%green_leaf_factor(:,isi),planting_ht,cpoly%lsl(isi))
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
+              call update_patch_derived_props(csite,ipa)
               call new_patch_sfc_props(csite, ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
               call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
 
@@ -572,7 +571,7 @@ subroutine event_fertilize(rval8)
               csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa) + nh4 + no3)
              
               !! update patch properties
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
+              call update_patch_derived_props(csite,ipa)
               call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
            enddo
 
@@ -801,7 +800,7 @@ subroutine event_till(rval8)
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               !! update patch properties
-              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)
+              call update_patch_derived_props(csite,ipa)
               call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
               endif
            enddo
@@ -865,6 +864,6 @@ end subroutine event_till
 !!$
 !!$              call sort_cohorts(cpatch)           
 !!$   
-!!$!              call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss, ipa)
+!!$!              call update_patch_derived_props(csite, ipa)
 !!$!              call update_budget(csite, cpoly%lsl(isi), ipa, ipa)
 !!$          

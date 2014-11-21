@@ -1,12 +1,15 @@
 module somevars
+  implicit none
   integer :: myngrids,myn1,myn2,myn3,myjdim,myihtran,mynbig,myistar,co2_on
   integer :: myiyear1,myimonth1,myidate1,myitime1
+  integer :: mynzg,mynzs,mynclouds
+  real    :: mypolelat, mypolelon
   integer, allocatable, dimension(:) :: mynnxp,mynnyp,mynnzp
   real   , allocatable, dimension (:)   :: myplatn,myplonn,mydeltaxn,mydeltayn,mydeltazn
   real   , allocatable, dimension(:,:)  :: mydzmn,mydztn
   real   , allocatable, dimension(:,:)  :: myxmn,myxtn,myymn,myytn,myzmn,myztn
   real   , allocatable, dimension(:,:)  :: myu01dn,myv01dn,mypi01dn,myth01dn,mydn01dn,myrt01dn
-
+  real   , allocatable, dimension(:)    :: myco2con
   contains 
   
   subroutine alloc_somevars(ngrids,n1,n2,n3)
@@ -37,6 +40,8 @@ module somevars
      if (.not. allocated(myth01dn  )) allocate(myth01dn  (n3,ngrids))
      if (.not. allocated(mydn01dn  )) allocate(mydn01dn  (n3,ngrids))
      if (.not. allocated(myrt01dn  )) allocate(myrt01dn  (n3,ngrids))
+     
+     if (.not. allocated(myco2con  )) allocate(myco2con         (n3))
      return
   end subroutine alloc_somevars
 end module somevars

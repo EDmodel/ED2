@@ -5,8 +5,12 @@
 !  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
 !  Regional Atmospheric Modeling System - RAMS
 !###########################################################################
+module file_inv
 
-subroutine ISAN_file_inv (iyear1,imonth1,idate1,itime1,timmax)
+contains
+
+
+subroutine isan_file_inv (iyear1,imonth1,idate1,itime1,timmax)
 
 use isan_coms
 use grid_dims, only : str_len
@@ -378,4 +382,6 @@ if (isan_err_flag.ne.0) then
 endif
 
 return
-end
+end subroutine ISAN_file_inv
+
+end module file_inv

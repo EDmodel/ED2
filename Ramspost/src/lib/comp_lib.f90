@@ -1,499 +1,497 @@
-
-!*******************************************************************************
-!############################# Change Log ##################################
-! 2.3.0.1
-!
-! 000830 CJT rams_comp ##
-!            Corrected reference to "cpr" and "r" to "cpor" and "rgas" ##
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!  Mission Research Corporation / *ASTeR Division
-!###########################################################################
-
-subroutine RAMS_comp(n1,n2,n3,n4,n5,n6)
-
-use somevars
-use rconstants
-use rpost_coms
-use rout_coms, only : undefflg
-use therm_lib, only : uint2tl        & ! function
-                    , dewfrostpoint  & ! function
-                    , rslif          & ! function
-                    , virtt          & ! function
-                    , thetaeiv       & ! function
-                    , rehuil         & ! function
-                    , exner2press    & ! function
-                    , extheta2temp   ! ! function
-
-dimension a(n1,n2,n3),b(n1,n2,n3),c(n1,n2,n3),d(n1,n2,n3),e(n1,n2,n3),o(n1,n2,n3),topt(n1,n2)
-dimension a2(n1,n2,n4,n5),a6(n1,n2,n3,n6)
-real f1(n1,n2,n3),f2(n1,n2,n3)
-dimension theta(n1,n2,n3),pp(n1,n2,n3),slp(n1,n2),z(n1,n2,n3)
-real :: temptemp,fracliq
-integer :: nsoil
-
-entry RAMS_transf_ppb_day(n1,n2,n3,a)
-!  TRANSFORMACAO DE kg[CO]/kg[AR] para ppb (PARTE POR BILHAO)
-     do k=1,n3
- 	do j=1,n2
- 	   do i=1,n1
-
-     a(i,j,k)=a(i,j,k)*(mmdry/mmco2)*1.E+9*1.e-6*day_sec
-
- 	   enddo
- 	enddo
-     enddo
-return
-
-entry RAMS_transf_ppb(n1,n2,n3,a)
-!  TRANSFORMACAO DE kg[CO]/kg[AR] para ppb (PARTE POR BILHAO)
-     do k=1,n3
- 	do j=1,n2
- 	   do i=1,n1
-
-     a(i,j,k)=a(i,j,k)*(mmdry/mmco)*1.E+9
-
- 	   enddo
- 	enddo
-     enddo
-return
-
-entry RAMS_transf_ppm(n1,n2,n3,a)
-!  TRANSFORMACAO DE kg[CO2]/kg[AR] para ppm (PARTE POR MILHAO)
-     do k=1,n3
- 	do j=1,n2
- 	   do i=1,n1
- 	      a(i,j,k)=a(i,j,k)*(mmdry/mmco2)*1.E+6
- 	   enddo
- 	enddo
-     enddo
-return
-
-entry RAMS_transf_ugm3(n1,n2,n3,a,b)
-!   Transformacao de conc  de kg/kg para ug/m3
-    do k=1,n3
-      do j=1,n2
-    	do i=1,n1
-        !print*,a(i,j,k),b(i,j,k)
-	a(i,j,k)=a(i,j,k)*b(i,j,k)*1.e+9
-    
-    	enddo
-      enddo
-    enddo
-return
-
-entry get_ZI(n1,n2,n3,a,c,ngrd)
-tkemin =1.E-2
-      
-      do i=1,n1
-         do j=1,n2
-          a(i,j,1) = (myztn(2,ngrd)+ myztn(1,ngrd))
-         enddo
-      enddo
-
-      do i=1,n1
-        do j=1,n2
-         do k = 2,n3-1
-!
-!         print*,k,c(i,j,k),ztn(k,ngrd)
-         if(c(i,j,k).lt.tkemin) then
-            kzi = k
-            a(i,j,1)=0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
-	    go to 500
-	 endif
-	 enddo
- 500     continue
-!         print*,i,j,a(i,j,1)	  
-        enddo
-      enddo
-return
-
-entry RAMS_comp_nebulosidade(n1,n2,n3,a,b,c,e,ngrd)
-!
-! b=cloud
-! c=dn0
-! e=topo
-       do j=1,n2
-           do i=1,n1
-         rnebu=0.
-         rodzint=0
-         do k=2,n3-1
-          dz=(myztn(k,ngrd)-myztn(k-1,ngrd))*(1.-e(i,j,1)/myzmn(mynnzp(1)-1,1))
-          rnebu   = rnebu   + b(i,j,k)*c(i,j,k)*dz	  
-          rodzint = rodzint +	       c(i,j,k)*dz	  
-         enddo
-              a(i,j,1) = 1000.*rnebu/(rodzint+1.e-5)
-	 enddo
-       enddo
-return
-
-!entry RAMS_get_leaf(n1,n2,n5,a)
-!       do j=1,n2
-!        do i=1,n1
-!         do ip=1,n5
-!            a(i,j,ip)=a(i,j,ip)
-!         enddo
-!        enddo
-!       enddo
-!return
-
-entry RAMS_comp_vegclass2(n1,n2,n3,a)
-      do i=1,n1
-      a(i,1,1) = a(i,1,1) + .5
-      enddo
-return
-
-!entry RAMS_comp_vegclass(n1,n2,n5,a)
-!       do j=1,n2
-!        do i=1,n1
-!         do ip=1,n5
-!!            print*,i,j,ip,' veg=',a(i,j,ip)
-!            a(i,j,ip)=float(int(a(i,j,ip)+0.5))
-!!            print*,i,j,ip,' veg=',a(i,j,ip)
-!         enddo
-!        enddo
-!       enddo
-!return
-
-entry D3toD2(n1,n2,n3,klevel,a,c)
-  do j=1,n2
-      do i=1,n1
-	a(i,j,1)=c(i,j,klevel)
-!	print*,i,j,klevel,c(i,j,klevel)
-      enddo
-  enddo
-return
-
-
-entry up_to_tp(n1,n2,n3,a,b)
-         do k=1,n3
-            do j=1,n2
-               a(1,j,k)=b(1,j,k)
-               do i=2,n1
-               a(i,j,k)=0.5* (b(i,j,k) + b(i-1,j,k))
-               enddo
-            enddo
-         enddo
-return
-
-entry vp_to_tp(n1,n2,n3,a,b)
-         do k=1,n3
-            do i=1,n1
-               a(i,1,k)=b(i,1,k)
-               do j=2,n2
-               a(i,j,k)=0.5* (b(i,j,k) + b(i,j-1,k))
-               enddo
-            enddo
-         enddo
-return
-
-entry wp_to_tp(n1,n2,n3,a,b)
-         do j=1,n2
-           do i=1,n1
-              a(i,j,1)=b(i,j,1)
-              do k=2,n3
-               a(i,j,k)=0.5* (b(i,j,k) + b(i,j,k-1))
-              enddo
-            enddo
-         enddo
-return
-
-entry set_undef(n1,n2,n3,a,c)
-  do j=1,n2
-      do i=1,n1
-	a(i,j,1)=c(i,j,1)
-!        if(a(i,j,1) .lt. 0.0001) a(i,j,1) = undefflg
-!	print*,i,j,klevel,c(i,j,klevel)
-      enddo
-  enddo
-return
-!SRF
-!***********************************************************
-
-entry RAMS_comp_vals(n1,n2,n3,a)
-   print*,'==================== values =========================='
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            if(a(i,j,k).ne.0.) write(*,'(3i3,e14.6)') i,j,k  &
-                                                     ,a(i,j,k)
-         enddo
-      enddo
-   enddo
-   print*,'======================================================'
-return
-
-entry RAMS_comp_tot(n1,n2,n3,a)
-   tot=0.
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            tot=tot+a(i,j,k)
-         enddo
-      enddo
-   enddo
-   write(*,'(a,e12.6)') '-> total- ',tot
-return
-
-entry RAMS_comp_maxval(n1,n2,n3,a)
-   zmax=-1.0e30
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            if(a(i,j,k).gt.zmax) then
-               zmax=a(i,j,k)
-               maxx=i
-               maxy=j
-               maxz=k
-            endif
-         enddo
-      enddo
-   enddo
-   write(*,'(a,e12.6,a,3i3)') '-> max- ',zmax,' at i,j,k-',maxx  &
-                              ,maxy,maxz
-return
-
-entry RAMS_comp_minval(n1,n2,n3,a)
-   zmin=1.0e30
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            if(a(i,j,k).lt.zmin) then
-               zmin=a(i,j,k)
-               minx=i
-               miny=j
-               minz=k
-            endif
-         enddo
-      enddo
-   enddo
-   write(*,'(a,e12.6,a,3i3)') '-> min- ',zmin,' at i,j,k-',minx  &
-                              ,miny,minz
-return
-
-entry RAMS_comp_zero(n1,n2,n3,a)
+!==========================================================================================!
+!==========================================================================================!
+!     The following subroutines used to be "entries", which is deprecated.  They have been !
+! superseded  by subroutines.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_zero(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=0.
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_zero
+!..........................................................................................!
 
-entry RAMS_comp_1minus(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_1minus(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=1.-a(i,j,k)
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_1minus
+!..........................................................................................!
 
-entry RAMS_comp_mults(n1,n2,n3,a,s)
+
+!..........................................................................................!
+subroutine RAMS_comp_mults(n1,n2,n3,a,s)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4)                     , intent(in)    :: s
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=a(i,j,k) * s
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+   return
+end subroutine RAMS_comp_mults
+!..........................................................................................!
 
 
-entry RAMS_comp_accum(n1,n2,n3,a,b)
+!..........................................................................................!
+subroutine RAMS_comp_adds(n1,n2,n3,a,s)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4)                     , intent(in)    :: s
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
+   do k=1,n3
+      do j=1,n2
+         do i=1,n1
+            a(i,j,k)=a(i,j,k) + s
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_adds
+!..........................................................................................!
+
+
+!..........................................................................................!
+subroutine RAMS_comp_accum(n1,n2,n3,a,b)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: b
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=a(i,j,k)+b(i,j,k)
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_accum
+!..........................................................................................!
 
-entry RAMS_comp_noneg(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_noneg(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=max(a(i,j,k),0.)
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_noneg
+!..........................................................................................!
 
-entry RAMS_comp_nopos(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_nopos(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=min(a(i,j,k),0.)
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_nopos
+!..........................................................................................!
 
-entry RAMS_comp_subt(n1,n2,n3,a,b)
+
+!..........................................................................................!
+subroutine RAMS_comp_subt(n1,n2,n3,a,b)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: b
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=a(i,j,k)-b(i,j,k)
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_subt
+!..........................................................................................!
 
-entry RAMS_comp_mult(n1,n2,n3,a,b)
+
+!..........................................................................................!
+subroutine RAMS_comp_mult(n1,n2,n3,a,b)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: b
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=a(i,j,k)*b(i,j,k)
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_mult
+!..........................................................................................!
 
-entry RAMS_comp_z(n1,n2,n3,a,c,ngrd)
+
+!..........................................................................................!
+subroutine RAMS_comp_z(n1,n2,n3,geo,topt,ngrd)
+   use somevars, only : myztn  & ! intent(in)
+                      , myzmn  & ! intent(in)
+                      , mynnzp ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: geo
+   real(kind=4), dimension(n1,n2)   , intent(in)    :: topt
+   integer                          , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=c(i,j,1)  &
-                 +myztn(k,ngrd)*(1.-c(i,j,1)/myzmn(mynnzp(1)-1,1))
-         enddo
-      enddo
-   enddo
-return
+            geo(i,j,k) = topt(i,j) + myztn(k,ngrd)*(1.-topt(i,j)/myzmn(mynnzp(1)-1,1))
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_z
+!..........................................................................................!
 
-entry RAMS_comp_rotate(n1,n2,n3,a,b,ngrd)
+
+!..........................................................................................!
+subroutine RAMS_comp_tempk(n1,n2,n3,inth_outt,exner)
+   use therm_lib, only : extheta2temp ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: inth_outt
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: exner
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            call xy_ll(qlat,qlon,platn(ngrd),plonn(ngrd)  &
-               ,xtn(i,ngrd),ytn(j,ngrd))
-            u=a(i,j,k)
-            v=b(i,j,k)
-            call uvtoueve(u,v,a(i,j,k),b(i,j,k)  &
-                         ,qlat,qlon,platn(ngrd),plonn(ngrd))
-         enddo
-      enddo
-   enddo
-return
+            inth_outt(i,j,k)= extheta2temp(exner(i,j,k),inth_outt(i,j,k))
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_tempk
+!..........................................................................................!
 
-entry RAMS_comp_tempK(n1,n2,n3,a,b)
+
+!..........................................................................................!
+subroutine RAMS_comp_press(n1,n2,n3,inex_outp)
+   use therm_lib, only : exner2press ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: inex_outp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=a(i,j,k)*b(i,j,k)/cpdry
-         enddo
-      enddo
-   enddo
-return
+            inex_outp(i,j,k) = exner2press(inex_outp(i,j,k)) * .01
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_press
+!..........................................................................................!
 
-entry RAMS_comp_press(n1,n2,n3,a)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=exner2press(a(i,j,k)) * .01
-         enddo
-      enddo
-   enddo
-return
 
-entry RAMS_comp_wcms(n1,n2,n3,a)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=a(i,j,k)*100.
-         enddo
-      enddo
-   enddo
-return
-
-entry RAMS_comp_avgw(n1,n2,n3,a)
+!..........................................................................................!
+subroutine RAMS_comp_avgw(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
    do k=n3,2,-1
       do j=1,n2
          do i=1,n1
             a(i,j,k)=0.5*(a(i,j,k)+a(i,j,k-1))
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_avgw
+!..........................................................................................!
 
-entry RAMS_comp_avgu(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_avgu(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=n1,2,-1
             a(i,j,k)=0.5*(a(i,j,k)+a(i-1,j,k))
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_avgu
+!..........................................................................................!
 
-entry RAMS_comp_avgv(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_avgv(n1,n2,n3,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=n2,2,-1
          do i=1,n1
             a(i,j,k)=0.5*(a(i,j,k)+a(i,j-1,k))
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_avgv
+!..........................................................................................!
 
-entry RAMS_comp_sfcdiv(n1,n2,n3,a,ngrd)
-   do j=1,n2
-      do i=1,n1
-         a(i,j,1)=-(a(i,j,2)-a(i,j,1))*mydztn(2,ngrd)
-      enddo
-   enddo
-return
 
-entry RAMS_comp_rt(n1,n2,n3,a)
+!..........................................................................................!
+subroutine RAMS_comp_speed(n1,n2,n3,inu_outmag,v)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: inu_outmag
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: v
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=max(0.,a(i,j,k))*1000.
-         enddo
-      enddo
-   enddo
-return
+            inu_outmag(i,j,k)=sqrt(inu_outmag(i,j,k)**2+v(i,j,k)**2)
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_speed
+!..........................................................................................!
 
-entry RAMS_comp_hr_pcprate(n1,n2,n3,a,b,c)
+
+!..........................................................................................!
+subroutine RAMS_comp_dir(n1,n2,n3,inu_outdir,v,ngrd)
+   use somevars, only : myplatn & ! intent(in)
+                      , myplonn & ! intent(in)
+                      , myxtn   & ! intent(in)
+                      , myytn   ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: inu_outdir
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: v
+   integer                          , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: qlat
+   real                                             :: qlon
+   real                                             :: ff
+   real                                             :: unow
+   real                                             :: vnow
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            a(i,j,k)=(b(i,j,k)-c(i,j,k))
-         enddo
-      enddo
-   enddo
-return
+            call xy_ll(qlat,qlon,myplatn(ngrd),myplonn(ngrd),myxtn(i,ngrd),myytn(j,ngrd))
+            unow = inu_outdir(i,j,k)
+            vnow = v(i,j,k)
+            call uvtoueve(unow,vnow,inu_outdir(i,j,k),v(i,j,k),qlat,qlon                   &
+                         ,myplatn(ngrd),myplonn(ngrd))
+            call winddf(inu_outdir(i,j,k),ff,inu_outdir(i,j,k),v(i,j,k))
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_dir
+!..........................................................................................!
 
-entry RAMS_comp_speed(n1,n2,n3,a,b)
-   do k=1,n3   
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=sqrt(a(i,j,k)**2+b(i,j,k)**2)
-         enddo
-      enddo
-   enddo
-return
 
-entry RAMS_comp_dir(n1,n2,n3,a,b,ngrd)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            call xy_ll(qlat,qlon,platn(ngrd),plonn(ngrd)  &
-               ,xtn(i,ngrd),ytn(j,ngrd))
-            u=a(i,j,k)
-            v=b(i,j,k)
-            call uvtoueve(u,v,a(i,j,k),b(i,j,k)  &
-                         ,qlat,qlon,platn(ngrd),plonn(ngrd))
-            call winddf(a(i,j,k),ff,a(i,j,k),b(i,j,k))
-         enddo
-      enddo
-   enddo
-return
+!..........................................................................................!
+subroutine RAMS_comp_dewk(n1,n2,n3,a,b,c)
+   use therm_lib, only : exner2press   & ! function
+                       , extheta2temp  & ! function
+                       , rslif         & ! function
+                       , dewfrostpoint ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: b
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: c
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: xpress
+   real                                             :: xtemp
+   real                                             :: xwatsat
+   !---------------------------------------------------------------------------------------!
 
-entry RAMS_comp_dewK(n1,n2,n3,a,b,c)
    do k=1,n3
       do j=1,n2
          do i=1,n1
@@ -501,89 +499,113 @@ entry RAMS_comp_dewK(n1,n2,n3,a,b,c)
             xtemp=extheta2temp(b(i,j,k),c(i,j,k))
             xwatsat=rslif(xpress,xtemp)
             a(i,j,k)=dewfrostpoint(xpress,min(a(i,j,k),xwatsat) )
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_dewk
+!..........................................................................................!
 
-!<Demerval
-entry RAMS_comp_thete(n1,n2,n3,a,e,f1,f2)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-         TL=55.+1./( 1./(f1(i,j,k)-55.) -  &
-            log(f2(i,j,k)/100.)/2840.)
-            a(i,j,k)=a(i,j,k)*exp((alvl3*e(i,j,k))/(cpdry*TL))
-         enddo
-      enddo
-   enddo
-return
-!Demerval>
 
-entry RAMS_comp_thetv(n1,n2,n3,a,b,c)
+!..........................................................................................!
+subroutine RAMS_comp_thetv(n1,n2,n3,a,b,c)
+   use therm_lib, only : virtt   ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: b
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: c
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=virtt(a(i,j,k),b(i,j,k),c(i,j,k))
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_thetv
+!..........................................................................................!
 
-entry RAMS_comp_bowen(n1,n2,n3,a,b)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=a(i,j,k)/max(1.e-12,b(i,j,k))*1004./2.5e6
-         enddo
-      enddo
-   enddo
-return
 
-entry RAMS_comp_rh(n1,n2,n3,a,b,c)
+!..........................................................................................!
+subroutine RAMS_comp_rh(n1,n2,n3,a,b,c)
+   use therm_lib, only : extheta2temp   & ! function
+                       , exner2press    & ! function
+                       , rehuil         ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: b
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: c
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: xpress
+   real                                             :: xtemp
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
             xtemp    = extheta2temp(b(i,j,k),c(i,j,k))
             xpress   = exner2press(b(i,j,k))
             a(i,j,k) = 100. * min(1.,rehuil(xpress,xtemp,a(i,j,k),.false.))
-         enddo
-      enddo
-   enddo
-return
-
-
-entry RAMS_comp_vegclass(n1,n2,n3,a)
-   do i=1,n1
-      a(i,1,1) = float(nint(a(i,1,1)))
-!      print*,i,int(a(i,1,1)) 
-   enddo
+         end do
+      end do
+   end do
    return
+end subroutine RAMS_comp_rh
+!..........................................................................................!
 
-entry RAMS_comp_horizdiv(n1,n2,n3,a)
-   do k=2,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=-(a(i,j,k)-a(i,j,k-1))*mydztn(k,ngrd)
-         enddo
-      enddo
-   enddo
-return
 
-entry RAMS_comp_vertint(n1,n2,n3,a,topt,ngrd)
-   ztop = myzmn(mynnzp(1)-1,1)
-   do j = 1,n2
-      do i = 1,n1
-         rtgt = 1. - topt(i,j) / ztop
-         a(i,j,1) = 0.
-         do k = 2,n3-1
-            a(i,j,1) = a(i,j,1) + a(i,j,k) * (myzmn(k,ngrd)-myzmn(k-1,ngrd)) * rtgt
-         enddo
-      enddo
-   enddo
-return
+!..........................................................................................!
+subroutine RAMS_comp_vegclass(nmax,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                      , intent(in)    :: nmax
+   real(kind=4), dimension(nmax), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                      :: n
+   !---------------------------------------------------------------------------------------!
+   do n=1,nmax
+      a(n) = real(nint(a(n)))
+   end do
+   return
+end subroutine RAMS_comp_vegclass
+!..........................................................................................!
 
-entry RAMS_comp_raintemp(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_raintemp(n1,n2,n3,a)
+   use rconstants, only : tsupercool_liq   & ! intent(in)
+                        , cliqi            & ! intent(in)
+                        , t00              ! ! intent(in)
+   use rout_coms , only : undefflg         ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: xpress
+   real                                             :: xtemp
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
@@ -592,12 +614,32 @@ entry RAMS_comp_raintemp(n1,n2,n3,a)
             else
                a(i,j,k) = undefflg
             end if
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_raintemp
+!..........................................................................................!
 
-entry RAMS_comp_qtcpcp(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_qtcpcp(n1,n2,n3,a)
+   use therm_lib , only : uint2tl  ! ! function
+   use rconstants, only : t00      ! ! intent(in)
+   use rout_coms , only : undefflg ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: temptemp
+   real                                             :: fracliq
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
@@ -610,9 +652,27 @@ entry RAMS_comp_qtcpcp(n1,n2,n3,a)
          end do
       end do
    end do
-return
+   return
+end subroutine RAMS_comp_qtcpcp
+!..........................................................................................!
 
-entry RAMS_comp_fracliq(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_fracliq(n1,n2,n3,a)
+   use therm_lib , only : uint2tl  ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: temptemp
+   real                                             :: fracliq
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
@@ -620,240 +680,201 @@ entry RAMS_comp_fracliq(n1,n2,n3,a)
             a(i,j,k) = fracliq
          end do
       end do
-   enddo
+   end do
 return
+end subroutine RAMS_comp_fracliq
+!..........................................................................................!
 
-entry RAMS_comp_fracice(n1,n2,n3,a)
+
+!..........................................................................................!
+subroutine RAMS_comp_fracice(n1,n2,n3,a)
+   use therm_lib , only : uint2tl  ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: temptemp
+   real                                             :: fracliq
+   !---------------------------------------------------------------------------------------!
    do k=1,n3
       do j=1,n2
          do i=1,n1
             call uint2tl(a(i,j,k),temptemp,fracliq)
             a(i,j,k) = 1.0 - fracliq
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_fracice
+!..........................................................................................!
 
-entry RAMS_comp_hydrodiam(n1,n2,n3,a,c,ccfmas,ppwmas)
+
+!..........................................................................................!
+subroutine RAMS_comp_iceliq(n1,n2,n3,energy,mass,m_ice,m_liq)
+   use therm_lib , only : uint2tl  ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: energy
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: mass
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: m_ice
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: m_liq
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: temptemp
+   real                                             :: fracliq
+   !---------------------------------------------------------------------------------------!
+   do k=1,n3
+      do j=1,n2
+         do i=1,n1
+            call uint2tl(energy(i,j,k),temptemp,fracliq)
+            m_ice(i,j,k) = ( 1.0 - fracliq ) * mass(i,j,k)
+            m_liq(i,j,k) =         fracliq   * mass(i,j,k)
+         end do
+      end do
+   end do
+return
+end subroutine RAMS_comp_iceliq
+!..........................................................................................!
+
+
+!..........................................................................................!
+subroutine RAMS_comp_hydrodiam(n1,n2,n3,a,c,ccfmas,ppwmas)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: c
+   real                             , intent(in)    :: ccfmas
+   real                             , intent(in)    :: ppwmas
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real                                             :: rpwmas
+   !----- Local constants. ----------------------------------------------------------------!
+   real                             , parameter     :: negligible = 1.e-10
+   !---------------------------------------------------------------------------------------!
    rpwmas = 1. / ppwmas
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            if(a(i,j,k) .gt. 1.e-10 .and. c(i,j,k).gt.1.e-10)then
+            if(a(i,j,k) > negligible .and. c(i,j,k) > negligible)then
                a(i,j,k) = (a(i,j,k) / (c(i,j,k) * ccfmas))**rpwmas
             else
                a(i,j,k) = 0.
             endif
-         enddo
-      enddo
-   enddo
-return
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_hydrodiam
+!..........................................................................................!
 
-entry rams_sum_snowlayers(n1,n2,n3,a)
-   do ip=1,n3
-      do k=2,n2
-         do ij=1,n1
-            a(ij,1,ip) = a(ij,1,ip) + a(ij,k,ip)
-         enddo
-      enddo
-   enddo
-return
 
-entry rams_fill_sst(n1,n2,n3,kp,a,c)
+!..........................................................................................!
+subroutine rams_sum_snowlayers(nx,ny,nz,np,a)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                             , intent(in)    :: nx
+   integer                             , intent(in)    :: ny
+   integer                             , intent(in)    :: nz
+   integer                             , intent(in)    :: np
+   real(kind=4), dimension(nx,ny,nz,np), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                             :: i
+   integer                                             :: j
+   integer                                             :: k
+   integer                                             :: p
+   !---------------------------------------------------------------------------------------!
+   do i=1,nx
+      do j=1,ny
+         do k=2,nz
+            do p=1,np
+               a(i,j,1,p) = a(i,j,1,p) + a(i,j,k,p)
+            end do
+         end do
+      end do
+   end do
+   return
+end subroutine rams_sum_snowlayers
+!..........................................................................................!
+
+
+!..........................................................................................!
+subroutine rams_fill_sst(n1,n2,n3,kp,a,c)
+   use therm_lib , only : uint2tl ! ! function
+   use rconstants, only : t00     ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2)   , intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: c
+   integer                          , intent(in)    :: kp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   real                                             :: temptemp
+   real                                             :: fracliq
+   !---------------------------------------------------------------------------------------!
    do j=1,n2
       do i = 1,n1
          call uint2tl(c(i,j,kp),temptemp,fracliq)
-         a(i,j,1) = temptemp-t00
-      enddo
-   enddo
-return
-
-entry rams_comp_pcpgnorm(n1,n2,n3,a,c)
-return
-
-entry rams_comp_vapnorm(n1,n2,n3,a,c)
-return
-
-entry rams_comp_snownorm(n1,n2,n3,a,c)
-return
-
-entry rams_comp_vegnorm(n1,n2,n3,a,c)
-return
-
-entry rams_comp_cannorm(n1,n2,n3,a,c)
-return
-
-
-entry acha_ztropop(n1,n2,n3,a,c,ngrd)
-  a(1:n1,1:n2,1)=0.
-  estratosfera=0.018 ! 15 K/Km
-  do i=1,n1
-    do j=1,n2
-      malhakz: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
-        if (dtheta.gt.estratosfera) exit malhakz
-      end do malhakz
-      a(i,j,1)=0.5*(myztn(k,ngrd)+myztn(k-1,ngrd))
-    end do
-  end do
-return
-
-entry acha_ttropop(n1,n2,n3,a,c,e,ngrd)
-  a(1:n1,1:n2,1)=0.
-  estratosfera=0.018 ! 15 K/Km
-  do i=1,n1
-    do j=1,n2
-      malhakt: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
-        if (dtheta.gt.estratosfera) exit malhakt
-      end do malhakt
-      a(i,j,1)=0.5*(e(i,j,k)+e(i,j,k-1))
-    end do
-  end do
-return
-
-entry acha_ptropop(n1,n2,n3,a,c,e,ngrd)
-  a(1:n1,1:n2,1)=0.
-  estratosfera=0.018 ! 15 K/Km
-  do i=1,n1
-    do j=1,n2
-      malhakp: do k=3,n3
-        dtheta  = (c(i,j,k)-c(i,j,k-1))/(myztn(k,ngrd)-myztn(k-1,ngrd))
-        if (dtheta.gt.estratosfera) exit malhakp
-      end do malhakp
-      a(i,j,1)=exp(0.5*(log(e(i,j,k))+log(e(i,j,k-1))))
-    end do
-  end do
-return
-
-
-entry get_ZItheta(n1,n2,n3,a,c,e,ngrd)
-      do i=1,n1
-        do j=1,n2
-          a(i,j,1) = 0.
-        enddo
-      enddo
-
-      do i=1,n1
-        do j=1,n2
-
-          do k=3,n3-5            
-            dtheta=c(i,j,k)-c(i,j,k-1)
-            x=0.6
-            if(dtheta.gt.x.or.abs(e(i,j,k)).gt.1.e-5) go to 1881
-          enddo
- 1881     continue
-          kzi = k
-          if(abs(e(i,j,k)).gt.1.e-5) then
-
-            a(i,j,1) =0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
-
-          else
-        
-            a(i,j,1) =0.5*(myztn(kzi,ngrd)+ myztn(kzi-1,ngrd))
-          endif
-
-          if(a(i,j,1).lt.0..or.kzi.le.2) a(i,j,1)=0.
-       enddo
-     enddo
-
-   return
-
-
-
-entry RAMS_comp_pbl (n1,n2,n3,a,c,ngrd)
-
-tkethrsh=0.001   ! tke threshold for PBL height in m2/s2
-do j=1,n2
-   do i=1,n1
-      do k=1,n3
-        a(i,j,k)=0.
-      enddo
-   enddo
-enddo
-
-do j=1,n2
-   do i=1,n1
-      pblht=0.
-      do k=2,n3
-         pblht=myztn(k,ngrd)*(1.-c(i,j,1)/myzmn(mynnzp(1)-1,1))
-!DSM         if(a(i,j,k).le.tkethrsh) goto 10
-      enddo
-      10 continue
-      do k=1,n3
-        a(i,j,k)=pblht
-      enddo
-   enddo
-enddo
-
-return
-
-entry RAMS_comp_slpress(n1,n2,n3,theta,pp,z,slp)
-!
-!     This subroutine calculates the pressure at level zlev. it
-!       is hardwired here to calculate mean sea level pressure,
-!       but can be easily changed to calculate pressure at any level
-!       by just changing zlev.
-!     a standard atmosphere lapse rate of 6.5 c/km is used to
-!       interpolate temperature down from level 2 in the model.
-!
-
-!c      rlap=-.0065  ! standard temp lapse rate
-   rlap=.0025     ! approx standard theta lapse rate
-   zlev=0.
-
-   do j=1,n2
-      do i=1,n1
-         levloop: do k=2,n3
-            if(z(i,j,k).ge.zlev) then
-               ktop=k
-               kbot=k-1
-               exit levloop
-            endif
-         end do levloop
-
-         ddz=zlev-z(i,j,kbot)
-         if(zlev.lt.z(i,j,kbot))then
-            thbar=(theta(i,j,kbot)-.5*ddz*rlap)
-         else
-            thbar=.5*(theta(i,j,kbot)+theta(i,j,ktop))
-         endif
-         slp(i,j)=pp(i,j,kbot)-ddz*sl_g/thbar
-         slp(i,j)=(slp(i,j) * cpdryi)**cpor*p00
+         a(i,j) = temptemp-t00
       end do
    end do
-return
-
-entry RAMS_comp_ctprof(n1,n2,n3,a,b,ngrd)
-   do i=1,n1
-      do j=1,n2
-         kmax=0
-         do k=1,n3
-            if(a(i,j,k).ge.0.0001.and.b(i,j,k).ge.0.99)kmax=k
-         enddo
-         if(kmax.gt.2)then
-            a(i,j,1)=myztn(kmax,ngrd)
-         else
-            a(i,j,1)=0.0
-         endif
-      enddo
-   enddo
-return
-
-end
+   return
+end subroutine rams_fill_sst
+!==========================================================================================!
+!==========================================================================================!
 
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     Patch multiplication.                                                                !
+!------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_multap(n1,n2,n3,n4,a,b)
-dimension a(n1,n2,n4),b(n1,n2,n3)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   integer                          , intent(in)    :: n4
+   real(kind=4), dimension(n1,n2,n4), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: b
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   !---------------------------------------------------------------------------------------!
+
    do k=1,n4
       do j=1,n2
          do i=1,n1
             a(i,j,k)=a(i,j,k)*b(i,j,1)
-         enddo
-      enddo
-   enddo
-return
-end
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_multap
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1027,65 +1048,126 @@ end subroutine RAMS_comp_dn0
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_relvortx(n1,n2,n3,a,b,c,topt,ngrd)
+!     This sub-routine calculates the zonal component of the relative vorticity.           !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_relvortx(nx,ny,nz,curlx,vwnd,wwnd,dwdy,dvdz,aux,topt,ngrd)
 
-   use somevars
-   use rconstants
-   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
+   use somevars  , only : myxmn       & ! intent(in)
+                        , myxtn       & ! intent(in)
+                        , myymn       & ! intent(in)
+                        , myytn       & ! intent(in)
+                        , myzmn       & ! intent(in)
+                        , myztn       & ! intent(in)
+                        , mydeltayn   & ! intent(in)
+                        , mydzmn      & ! intent(in)
+                        , mydztn      & ! intent(in)
+                        , mynnzp      & ! intent(in)
+                        , myjdim      & ! intent(in)
+                        , myihtran    ! ! intent(in)
    implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
-   real   , dimension(n1,n2)   , intent(in)    :: topt
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: curlx
+   real   , dimension(nx,ny,nz), intent(inout) :: vwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: wwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: dvdz
+   real   , dimension(nx,ny,nz), intent(inout) :: dwdy
+   real   , dimension(nx,ny,nz), intent(inout) :: aux
+   real   , dimension(nx,ny)   , intent(in)    :: topt
    integer                     , intent(in)    :: ngrd
-   integer                                     :: i,j,k,j1,j2,k1,k2
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: y1
+   integer                                     :: y2
+   integer                                     :: z1
+   integer                                     :: z2
    real                                        :: factor
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !----- Bottom boundary condition for meridional wind. ----------------------------------!
    factor = myztn(1,ngrd) / myztn(2,ngrd)
-   do j=1,n2
-      do i=1,n1
-         a(i,j,1) = a(i,j,2) * factor
-      enddo
-   enddo
+   do y=1,ny
+      do x=1,nx
+         vwnd(x,y,1) = vwnd(x,y,2) * factor
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
 
-   call gradr(n1,n2,n3,2,n1-1,1,n2-1,b,c,'ydir','wpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   call gradr(n1,n2,n3,2,n1-1,1,n2-1,a,b,'zdir','vpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
 
-   do k=1,n3
-      do j=2,n2-1
-         do i=1,n1
-            b(i,j,k) = c(i,j,k) - b(i,j,k)
-         enddo
-      enddo
-   enddo
-   do j = 1,n2
-      do i =1,n1
-         do k =1,n3
-            a(i,j,k) = 0.
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initialise the auxiliary and the output variables.                                 !
+   !---------------------------------------------------------------------------------------!
+   do y=1,ny
+      do x=1,nx
+         do z=1,nz
+            dwdy (x,y,z) = 0.
+            dvdz (x,y,z) = 0.
+            aux  (x,y,z) = 0.
+            curlx(x,y,z) = 0.
          end do
       end do
    end do
-   do j = 2,n2-1
-      j1 = max(j-1,2)
-      j2 = min(j,n2-2)
-      do i = 2,n1-1
-         do k = 1,n3
-            k1 = max(k-1,1)
-            k2 = min(k,n3-1)
-            a(i,j,k) =0.25 * (b(i,j1,k1) + b(i,j1,k2)  &
-                            + b(i,j2,k1) + b(i,j2,k2))
-         enddo
-      enddo
-   enddo
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the derivatives of wind components.                                          !
+   !---------------------------------------------------------------------------------------!
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,wwnd,dwdy,'ydir','wpnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,vwnd,dvdz,'zdir','vpnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the curl in the staggered coordinates.                                       !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            aux(x,y,z) = dwdy(x,y,z) - dvdz(x,y,z)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Update the relative vorticity at the thermodynamic points.                         !
+   !---------------------------------------------------------------------------------------!
+   do y = 2,ny-1
+      y1 = max(y-1,2)
+      y2 = min(y,ny-1)
+      do x = 2,nx-1
+         do z = 1,nz
+            z1           = max(z-1,1)
+            z2           = min(z,nz-1)
+            curlx(x,y,z) = 0.25 * ( aux(x,y1,z1) + aux(x,y1,z2)                            &
+                                  + aux(x,y2,z1) + aux(x,y2,z2) )
+         end do
+      end do
+   end do
+
   return
 end subroutine RAMS_comp_relvortx
 !==========================================================================================!
@@ -1098,69 +1180,127 @@ end subroutine RAMS_comp_relvortx
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_relvorty(n1,n2,n3,a,b,c,topt,ngrd)
-
-   use somevars
-   use rconstants
-   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
-   implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
-   real   , dimension(n1,n2)   , intent(in)    :: topt
+!     This sub-routine calculates the meridional component of the relative vorticity.      !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_relvorty(nx,ny,nz,curly,uwnd,wwnd,dudz,dwdx,aux,topt,ngrd)
+   use somevars  , only : myxmn       & ! intent(in)
+                        , myxtn       & ! intent(in)
+                        , myymn       & ! intent(in)
+                        , myytn       & ! intent(in)
+                        , myzmn       & ! intent(in)
+                        , myztn       & ! intent(in)
+                        , mydeltayn   & ! intent(in)
+                        , mydzmn      & ! intent(in)
+                        , mydztn      & ! intent(in)
+                        , mynnzp      & ! intent(in)
+                        , myjdim      & ! intent(in)
+                        , myihtran    ! ! intent(in)
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: curly
+   real   , dimension(nx,ny,nz), intent(inout) :: uwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: wwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: dudz
+   real   , dimension(nx,ny,nz), intent(inout) :: dwdx
+   real   , dimension(nx,ny,nz), intent(inout) :: aux
+   real   , dimension(nx,ny)   , intent(in)    :: topt
    integer                     , intent(in)    :: ngrd
-   integer                                     :: i,j,k,i1,i2,k1,k2
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: x1
+   integer                                     :: x2
+   integer                                     :: z1
+   integer                                     :: z2
    real                                        :: factor
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
 
-   factor = myztn(2,ngrd) / myztn(3,ngrd)
-   do j=1,n2
-      do i=1,n1
-         a(i,j,1) = a(i,j,2) * factor
-      enddo
-   enddo
 
-   call gradr(n1,n2,n3,1,n1-1,2,n2-1,b,c,'xdir','wpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   call gradr(n1,n2,n3,1,n1-1,2,n2-1,a,b,'zdir','upnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
 
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            b(i,j,k) = b(i,j,k) - c(i,j,k)
-         enddo
-      enddo
-   enddo
+   !----- Bottom boundary condition for meridional wind. ----------------------------------!
+   factor = myztn(1,ngrd) / myztn(2,ngrd)
+   do y=1,ny
+      do x=1,nx
+         uwnd(x,y,1) = uwnd(x,y,2) * factor
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
 
-   do j = 1,n2
-      do i =1,n1
-         do k =1,n3
-            a(i,j,k) = 0.
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initialise the auxiliary and the output variables.                                 !
+   !---------------------------------------------------------------------------------------!
+   do y=1,ny
+      do x=1,nx
+         do z=1,nz
+            dwdx (x,y,z) = 0.
+            dudz (x,y,z) = 0.
+            aux  (x,y,z) = 0.
+            curly(x,y,z) = 0.
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the derivatives of wind components.                                          !
+   !---------------------------------------------------------------------------------------!
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,wwnd,dwdx,'xdir','wpnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,uwnd,dudz,'zdir','upnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the curl in the staggered coordinates.                                       !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            aux(x,y,z) = dudz(x,y,z) - dwdx(x,y,z)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Update the relative vorticity at the thermodynamic points.                         !
+   !---------------------------------------------------------------------------------------!
+   do y = 2,ny-1
+      do x = 2,nx-1
+         x1 = max(x-1,2)
+         x2 = min(x,nx-1)
+         do z = 1,nz
+            z1 = max(z-1,1)
+            z2 = min(z,nz-1)
+            curly(x,y,z) = 0.25 * ( aux(x1,y,z1) + aux(x1,y,z2)                            &
+                                  + aux(x2,y,z1) + aux(x2,y,z2) )
          end do
       end do
    end do
 
-   do j = 2,n2-1
-      do i = 2,n1-1
-         i1 = max(i-1,2)
-         i2 = min(i,n1-2)
-         do k = 1,n3
-            k1 = max(k-1,1)
-            k2 = min(k,n3-1)
-            a(i,j,k) = 0.25 * (b(i1,j,k1) + b(i1,j,k2)  &
-                             + b(i2,j,k1) + b(i2,j,k2))
-         enddo
-      enddo
-   enddo
-
-
-   return
+  return
 end subroutine RAMS_comp_relvorty
 !==========================================================================================!
 !==========================================================================================!
@@ -1172,60 +1312,132 @@ end subroutine RAMS_comp_relvorty
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_relvortz(n1,n2,n3,a,b,c,topt,ngrd)
-
-   use somevars
-   use rconstants
-   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
-   implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
-   real   , dimension(n1,n2)   , intent(in)    :: topt
+!     This sub-routine calculates the vertical component of the relative vorticity.        !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_relvortz(nx,ny,nz,curlz,uwnd,vwnd,dudy,dvdx,aux,topt,ngrd)
+   use somevars  , only : myxmn       & ! intent(in)
+                        , myxtn       & ! intent(in)
+                        , myymn       & ! intent(in)
+                        , myytn       & ! intent(in)
+                        , myzmn       & ! intent(in)
+                        , myztn       & ! intent(in)
+                        , mydeltayn   & ! intent(in)
+                        , mydzmn      & ! intent(in)
+                        , mydztn      & ! intent(in)
+                        , mynnzp      & ! intent(in)
+                        , myjdim      & ! intent(in)
+                        , myihtran    ! ! intent(in)
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: curlz
+   real   , dimension(nx,ny,nz), intent(inout) :: uwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: vwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: dudy
+   real   , dimension(nx,ny,nz), intent(inout) :: dvdx
+   real   , dimension(nx,ny,nz), intent(inout) :: aux
+   real   , dimension(nx,ny)   , intent(in)    :: topt
    integer                     , intent(in)    :: ngrd
-   integer                                     :: i,j,k,i1,i2,j1,j2
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: x1
+   integer                                     :: x2
+   integer                                     :: y1
+   integer                                     :: y2
    real                                        :: factor
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
 
+
+
+   !----- Bottom boundary condition for meridional wind. ----------------------------------!
    factor = myztn(1,ngrd) / myztn(2,ngrd)
-   do j=1,n2
-      do i=1,n1
-         a(i,j,1) = a(i,j,2) * factor
-         b(i,j,1) = b(i,j,2) * factor
-      enddo
-   enddo
+   do y=1,ny
+      do x=1,nx
+         uwnd(x,y,1) = uwnd(x,y,2) * factor
+         vwnd(x,y,1) = vwnd(x,y,2) * factor
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
 
-   call gradr(n1,n2,n3,1,n1-1,1,n2-1,b,c,'xdir','vpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
 
-   call gradr(n1,n2,n3,1,n1-1,1,n2-1,a,b,'ydir','upnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
 
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            b(i,j,k) = c(i,j,k) - b(i,j,k)
-         enddo
-      enddo
-   enddo
 
-   do j = 1,n2
-      j1 = max(j-1,1)
-      j2 = min(j,n2-1)
-      do i = 1,n1
-         i1 = max(i-1,1)
-         i2 = min(i,n1-1)
-         do k = 1,n3
-            a(i,j,k) = 0.25 * (b(i1,j1,k) + b(i1,j2,k)  &
-                             + b(i2,j1,k) + b(i2,j2,k))
-         enddo
-      enddo
-   enddo
+   !---------------------------------------------------------------------------------------!
+   !    Initialise the auxiliary and the output variables.                                 !
+   !---------------------------------------------------------------------------------------!
+   do y=1,ny
+      do x=1,nx
+         do z=1,nz
+            dvdx (x,y,z) = 0.
+            dudy (x,y,z) = 0.
+            aux  (x,y,z) = 0.
+            curlz(x,y,z) = 0.
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the derivatives of wind components.                                          !
+   !---------------------------------------------------------------------------------------!
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,vwnd,dvdx,'xdir','vpnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,uwnd,dudy,'ydir','upnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the curl in the staggered coordinates.                                       !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            aux(x,y,z) = dvdx(x,y,z) - dudy(x,y,z)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Update the relative vorticity at the thermodynamic points.                         !
+   !---------------------------------------------------------------------------------------!
+   do y = 2,ny-1
+      y1 = max(y-1,2)
+      y2 = min(y,ny-1)
+      do x = 2,nx-1
+         x1 = max(x-1,2)
+         x2 = min(x,nx-1)
+         do z = 1,nz
+            curlz(x,y,z) = 0.25 * ( aux(x1,y1,z) + aux(x1,y2,z)                            &
+                                  + aux(x2,y1,z) + aux(x2,y2,z) )
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine RAMS_comp_relvortz
 !==========================================================================================!
@@ -1238,70 +1450,37 @@ end subroutine RAMS_comp_relvortz
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_totvortz(n1,n2,n3,a,b,c,topt,ngrd)
+!     Sub-routine for absolute vorticity.                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_totvortz(nx,ny,nz,curlz,glat)
+   use rconstants, only : omega   & ! intent(in)
+                        , pio180  ! ! intent(in)
+   implicit none 
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: curlz
+   real   , dimension(nx,ny)   , intent(in)    :: glat
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real                                        :: fcor
+   !---------------------------------------------------------------------------------------!
 
-   use somevars
-   use rconstants
-   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
-   implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,c
-   real   , dimension(n1,n2)   , intent(in)    :: topt
-   integer                     , intent(in)    :: ngrd
-   integer                                     :: i,j,k,i1,i2,j1,j2
-   real                                        :: factor,omega2,fcor,xlon,xlat
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
 
-   factor = myztn(1,ngrd) / myztn(2,ngrd)
-   do j=1,n2
-      do i=1,n1
-         a(i,j,1) = a(i,j,2) * factor
-         b(i,j,1) = b(i,j,2) * factor
-      enddo
-   enddo
 
-   call gradr(n1,n2,n3,1,n1-1,1,n2-1,b,c,'xdir','vpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   call gradr(n1,n2,n3,1,n1-1,1,n2-1,a,b,'ydir','upnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
+   yloop: do y = 1,ny
+      xloop: do x = 1,nx
+         fcor = 2. * omega * sin(glat(x,y) * pio180)
+         zloop: do z = 1,nz
+            curlz(x,y,z) = curlz(x,y,z) + fcor
+         end do zloop
+      end do xloop
+   end do yloop
 
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            b(i,j,k) = c(i,j,k) - b(i,j,k)
-         enddo
-      enddo
-   enddo
 
-   do j = 1,n2
-      j1 = max(j-1,1)
-      j2 = min(j,n2-1)
-      do i = 1,n1
-         i1 = max(i-1,1)
-         i2 = min(i,n1-1)
-         do k = 1,n3
-            a(i,j,k) = 0.25 * (b(i1,j1,k) + b(i1,j2,k)  &
-                             + b(i2,j1,k) + b(i2,j2,k))
-         enddo
-      enddo
-   enddo
-
-   omega2 = 2. * omega
-   do j = 1,n2
-      do i = 1,n1
-         call xy_ll(xlat,xlon,myplatn(ngrd),myplonn(ngrd),myxtn(i,ngrd),myytn(j,ngrd))
-         fcor = omega2 * sin(xlat * pio180)
-         do k = 1,n3
-            a(i,j,k) = a(i,j,k) + fcor
-         enddo
-      enddo
-   enddo
    return
 end subroutine RAMS_comp_totvortz
 !==========================================================================================!
@@ -1314,33 +1493,212 @@ end subroutine RAMS_comp_totvortz
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_potvortz(n1,n2,n3,a,b,c,e,topt,ngrd)
+subroutine RAMS_comp_potvort(nx,ny,nz,pvort,curlx,curly,curlz,theta,dens,dthdx,dthdy,dthdz &
+                            ,topt,ngrd)
+   use somevars
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: pvort
+   real   , dimension(nx,ny,nz), intent(inout) :: curlx
+   real   , dimension(nx,ny,nz), intent(inout) :: curly
+   real   , dimension(nx,ny,nz), intent(inout) :: curlz
+   real   , dimension(nx,ny,nz), intent(inout) :: theta
+   real   , dimension(nx,ny,nz), intent(in)    :: dens
+   real   , dimension(nx,ny,nz), intent(inout) :: dthdx
+   real   , dimension(nx,ny,nz), intent(inout) :: dthdy
+   real   , dimension(nx,ny,nz), intent(inout) :: dthdz
+   real   , dimension(nx,ny)   , intent(in)    :: topt
+   integer                     , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise the gradients.                                                         !
+   !---------------------------------------------------------------------------------------!
+   do x=1,nx
+      do y=1,ny
+         do z=1,nz
+            dthdx(x,y,z) = 0.
+            dthdy(x,y,z) = 0.
+            dthdz(x,y,z) = 0.
+            pvort(x,y,z) = 0.
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the gradient components.                                                     !
+   !---------------------------------------------------------------------------------------!
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,theta,dthdx,'xdir','tpnt',topt,myxmn(:,ngrd)          &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,theta,dthdy,'ydir','tpnt',topt,myxmn(:,ngrd)          &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,theta,dthdz,'zdir','tpnt',topt,myxmn(:,ngrd)          &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Find the potential vorticity.  Currently all components are considered.          !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+           pvort(x,y,z) = ( curlx(x,y,z) * dthdx(x,y,z)                                    &
+                          + curly(x,y,z) * dthdy(x,y,z)                                    &
+                          + curlz(x,y,z) * dthdz(x,y,z) ) / dens(x,y,z)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine RAMS_comp_potvort
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_xydiv(nx,ny,nz,dive,uwnd,vwnd,dudx,dvdy,aux,topt,ngrd)
+
    use somevars
    use rconstants
-   use therm_lib, only : uint2tl, uextcm2tl, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,c,e
-   real   , dimension(n1,n2)   , intent(in)    :: topt
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: dive
+   real   , dimension(nx,ny,nz), intent(inout) :: uwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: vwnd
+   real   , dimension(nx,ny,nz), intent(inout) :: dudx
+   real   , dimension(nx,ny,nz), intent(inout) :: dvdy
+   real   , dimension(nx,ny,nz), intent(inout) :: aux
+   real   , dimension(nx,ny)   , intent(in)    :: topt
    integer                     , intent(in)    :: ngrd
-   integer                                     :: i,j,k
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: x1
+   integer                                     :: x2
+   integer                                     :: y1
+   integer                                     :: y2
+   real                                        :: factor
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
 
-   call gradr(n1,n2,n3,1,n1-1,1,n2-1,b,e,'zdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
 
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k) = a(i,j,k) * e(i,j,k) / (grav * c(i,j,k))
-         enddo
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Scale down the wind direction to make boundary conditions.                        !
+   !---------------------------------------------------------------------------------------!
+   factor = myztn(1,ngrd) / myztn(2,ngrd)
+   do y=1,ny
+      do x=1,nx
+         uwnd(x,y,1) = uwnd(x,y,2) * factor
+         vwnd(x,y,1) = vwnd(x,y,2) * factor
       enddo
    enddo
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Reset divergence and wind gradients.                                               !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            dudx(x,y,z) = 0.
+            dvdy(x,y,z) = 0.
+            dive(x,y,z) = 0.
+            aux (x,y,z) = 0.
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the wind gradients.                                                          !
+   !---------------------------------------------------------------------------------------!
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,uwnd,dudx,'xdir','upnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,vwnd,dvdy,'ydir','vpnt',topt,myxmn(:,ngrd)            &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the divergence in the XY plane.                                              !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            aux(x,y,z) = dudx(x,y,z) + dvdy(x,y,z)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Update the divergence at the XY plane at the thermodynamic points.                 !
+   !---------------------------------------------------------------------------------------!
+   do y = 2,ny-1
+      y1 = max(y-1,2)
+      y2 = min(y,ny-1)
+      do x = 2,nx-1
+         x1 = max(x-1,2)
+         x2 = min(x,nx-1)
+         do z = 1,nz
+            dive(x,y,z) = 0.25 * ( aux(x1,y1,z) + aux(x1,y2,z)                             &
+                                 + aux(x2,y1,z) + aux(x2,y2,z) )
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
    return
-end subroutine RAMS_comp_potvortz
+end subroutine RAMS_comp_xydiv
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1596,11 +1954,24 @@ end subroutine RAMS_comp_sfcwmeantemp
 !==========================================================================================!
 !==========================================================================================!
 subroutine RAMS_comp_thetaeiv(n1,n2,n3,xxx,temp,pres,rv,rtp)
-   use therm_lib, only: thetaeiv
+   use therm_lib, only: thetaeiv ! ! function
    implicit none
-   integer, intent(in) :: n1, n2, n3
-   real, dimension(n1,n2,n3), intent(inout) :: xxx,temp,pres,rv,rtp
-   integer :: i,j,k
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                     , intent(in)    :: n1
+   integer                     , intent(in)    :: n2
+   integer                     , intent(in)    :: n3
+   real   , dimension(n1,n2,n3), intent(inout) :: xxx
+   real   , dimension(n1,n2,n3), intent(inout) :: temp
+   real   , dimension(n1,n2,n3), intent(inout) :: pres
+   real   , dimension(n1,n2,n3), intent(inout) :: rv
+   real   , dimension(n1,n2,n3), intent(inout) :: rtp
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   !---------------------------------------------------------------------------------------!
+
+
    !----- xxx comes as thil, gets out as theta_e_iv. --------------------------------------!
    do k=1,n3
       do j=1,n2
@@ -1613,6 +1984,48 @@ subroutine RAMS_comp_thetaeiv(n1,n2,n3,xxx,temp,pres,rv,rtp)
    end do
    return
 end subroutine RAMS_comp_thetaeiv
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_thetaeivs(n1,n2,n3,xxx,temp,pres,rliq,rice)
+   use therm_lib, only : thetaeivs  & ! function
+                       , rslif      ! ! function
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                     , intent(in)    :: n1
+   integer                     , intent(in)    :: n2
+   integer                     , intent(in)    :: n3
+   real   , dimension(n1,n2,n3), intent(inout) :: xxx
+   real   , dimension(n1,n2,n3), intent(inout) :: temp
+   real   , dimension(n1,n2,n3), intent(inout) :: pres
+   real   , dimension(n1,n2,n3), intent(inout) :: rliq
+   real   , dimension(n1,n2,n3), intent(inout) :: rice
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   real                                        :: rsat
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- xxx comes as thil, gets out as theta_e_ivs. -------------------------------------!
+   do k=1,n3
+      do j=1,n2
+         do i=1,n1
+            rsat       = rslif(pres(i,j,k),temp(i,j,k))
+            xxx(i,j,k) = thetaeivs(xxx(i,j,k),temp(i,j,k),rsat,rliq(i,j,k),rice(i,j,k))
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_thetaeivs
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1872,29 +2285,44 @@ end subroutine RAMS_comp_bigpatch
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routines finds the vegetation temperature.                                  !
+!                                                                                          !
+! Input:  a = Veg. Energy        in     J/m2                                               !
+!         b = Veg. Water         in    kg/m2                                               !
+!         c = Veg. Heat capacity in   J/m2/K                                               !
+!         e = Canopy Theta       in  Celsius                                               !
+! Output: a = Temperature in Celsius                                                       !
+!         b = Fraction in liquid phase                                                     !
+!------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_tvegc(n1,n2,n3,a,b,c,e)
-   use rconstants, only : t00
-   use therm_lib , only : uextcm2tl
+   use rconstants, only : t00       ! ! intent(in)
+   use therm_lib , only : uextcm2tl ! ! function
    implicit none
-   integer, intent(in) :: n1,n2,n3
-   real, dimension(n1,n2,n3), intent(in)    :: c,e
-   real, dimension(n1,n2,n3), intent(inout) :: a,b
-   integer :: i,j,k
-   real :: temptemp,fracliq
-!MLO: Input:  a = Veg. Energy        in     J/m2
-!             b = Veg. Water         in    kg/m2
-!             c = Veg. Heat capacity in   J/m2/K
-!             e = Canopy Theta       in  Celsius
-!     Output: a = Temperature in Celsius
-!             b = Fraction in liquid phase
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: n1
+   integer                          , intent(in)    :: n2
+   integer                          , intent(in)    :: n3
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: c
+   real(kind=4), dimension(n1,n2,n3), intent(in)    :: e
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: a
+   real(kind=4), dimension(n1,n2,n3), intent(inout) :: b
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: i
+   integer                                          :: j
+   integer                                          :: k
+   real(kind=4)                                     :: temptemp
+   real(kind=4)                                     :: fracliq
+   !---------------------------------------------------------------------------------------!
+
+
 
    do k=1,n3
       do j=1,n2
          do i=1,n1
-            !------------------------------------------------------------------------ 
-            !   Compute tveg only if there is enough heat capacity, otherwise assign
-            ! canopy temperature.
-            !------------------------------------------------------------------------ 
+            !------------------------------------------------------------------------------!
+            !   Compute tveg only if there is enough heat capacity, otherwise assign       !
+            ! canopy temperature.                                                          !
+            !------------------------------------------------------------------------------!
             if (c(i,j,k) > 10.) then
                call uextcm2tl(a(i,j,k),b(i,j,k),c(i,j,k),temptemp,fracliq)
                a(i,j,k) = temptemp-t00
@@ -1903,85 +2331,12 @@ subroutine RAMS_comp_tvegc(n1,n2,n3,a,b,c,e)
                a(i,j,k) = e(i,j,k)
                b(i,j,k) = 0.5
             end if
+            !------------------------------------------------------------------------------!
          end do
       end do
    end do
    return
 end subroutine RAMS_comp_tvegc
-
-subroutine RAMS_comp_5050(n1,n2,n3,a,d)
-real a(n1,n2),d(n1,n2,n3)
-
-do j = 1,n2
-   do i = 1,n1
-      a(i,j) = .5 * (a(i,j) + d(i,j,2))
-   enddo
-enddo
-
-return
-end subroutine RAMS_comp_5050
-!------------------subroutine to calculate cloud fraction
-subroutine cldfraction(n1,n2,n3,frac,pi,rh)
-use rconstants
-implicit none
-
-integer :: i,j,k,kmax,n1,n2,n3
-real :: frac(n1,n2),pi(n1,n2,n3),rh(n1,n2,n3)
-real, allocatable::rhc(:), cs(:)
-real :: kappai,c_1,c_2,c_junk,pop2,csmax
-
-c_1     = 2.
-c_junk  = 3.
-c_2     = c_junk**0.5
-kappai = (1./.286)
-
-
-allocate (rhc(n3),cs(n3) )
-      print*,'+++++++:',n1,n2,n3
-
-do j=1,n2
-   do i=1,n1
-      frac(i,j) = 0.
-      csmax = 0.
-      kmax  = 0
-      do k = 1, n3
-         rhc(k)= 0.
-         cs(k)= 0.
-      enddo
-
-      do k = 1, n3
-         pop2 = (pi(i,j,k)/pi(i,j,2))**kappai
-
-         rhc(k) = 100. - (100.*c_1*pop2)*  &
-               (1.-pop2)*(1.+c_2*(pop2-0.5))
-
-         if(rh(i,j,k) .ge. rhc(k))then
-            if(rhc(k).eq.100.)rhc(k)=rhc(k)+0.0000001
-            cs(k) = ( (rh(i,j,k)-rhc(k))/(100.-rhc(k)) ) **2. 
-         else
-            cs(k) = 0.
-         endif
-         if(cs(k).gt.csmax)then
-            csmax=cs(k)
-            kmax = k
-         endif
-         frac(i,j) = frac(i,j) + cs(k)*(1./float(k))
-      if(i==20.and.j==20) print*,'+++++++:',k,pi(i,j,k),rh(i,j,k),frac(i,j)
-      enddo
-      
-      csmax=max(csmax,0.)
-
-!      frac(i,j) = 1.-min(1.,max(0.,csmax))
-      frac(i,j) = 1.-min(1.,max(0.,frac(i,j)))  ! actually returns 
-                                                ! clear sky fraction
-
-   enddo
-enddo
-
-deallocate (rhc,cs)
-
-return
-end
 !==========================================================================================!
 !==========================================================================================!
 
@@ -2036,7 +2391,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                         , toodry         ! ! intent(in)
    use therm_lib , only : virtt          & ! function
                         , eslif          & ! function
-                        , tslif          ! ! function
+                        , rslif          & ! function
+                        , tslif          & ! function
+                        , thetaeiv       ! ! function
    use leaf_coms , only : ustmin         & ! intent(in)
                         , ubmin          & ! intent(in)
                         , bl79           & ! intent(in)
@@ -2100,6 +2457,8 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
    real              :: lnzooz0h     ! ln[zout/rough(heat)]
    real              :: uref         ! Reference wind speed.
    real              :: ured         ! Wind reduced to the level of interest.
+   real              :: rvapp        ! Output variable for this patch.
+   real              :: thetap        ! Output variable for this patch.
    real              :: redp         ! Output variable for this patch.
    real              :: validarea    ! Total area where we have results.
    !----- Local variables, used by L79. ---------------------------------------------------!
@@ -2121,6 +2480,8 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
    real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
    real              :: zeta0h       ! roughness(heat)/(Obukhov length).
    real              :: ribold       ! Bulk richardson number.
+   real              :: tdmax        ! Maximum dew point temperature.
+   real              :: rvmax        ! Maximum mixing ratio.
    !----- External functions. -------------------------------------------------------------!
    real, external    :: cbrt         ! Cubic root
    !---------------------------------------------------------------------------------------!
@@ -2206,6 +2567,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                !----- Compute the a-square factor and the coefficient to find theta*. -----!
                a2r  = (vonk / lnzroz0m) ** 2.
                a2o  = (vonk / lnzooz0m) ** 2.
+               !---------------------------------------------------------------------------!
 
                if (stable) then
                   !------------------------------------------------------------------------!
@@ -2215,6 +2577,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   fhr = 1.0 / (1.0 + (3.0*bl79 * rib(x,y,p) * sqrt(1.0 + dl79*rib(x,y,p))))
                   fmo = fmr
                   fho = fhr
+                  !------------------------------------------------------------------------!
 
                else
                   !------------------------------------------------------------------------!
@@ -2234,7 +2597,9 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                   ch  = csh * c2
                   fmo = (1.0 - 2.0 * bl79 * rib(x,y,p) / (1.0 + 2.0 * cm))
                   fho = (1.0 - 3.0 * bl79 * rib(x,y,p) / (1.0 + 3.0 * ch))
+                  !------------------------------------------------------------------------!
                end if
+               !---------------------------------------------------------------------------!
 
                if (is_ed2) then
                   !----- Re-compute the stars if this is an ED-2 run. ---------------------!
@@ -2251,7 +2616,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                                / (thetav_atm * ustar(x,y,p) * ustar(x,y,p))
                end if
 
-               ured  = max(0., ustar(x,y,p) * lnzooz0m / (vonk * sqrt(fmo)))
+               ured  = max(ubmin, ustar(x,y,p) * lnzooz0m / (vonk * sqrt(fmo)))
                multh = tprandtl * ustar(x,y,p) * lnzooz0m / (vonk * ured * fho)
 
             case default
@@ -2309,6 +2674,15 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
             end select
             !------------------------------------------------------------------------------!
 
+            !------------------------------------------------------------------------------!
+            !      Find the temperature and saturation mixing ratio.  Both will be used to !
+            ! constrain humidity under 100%.                                               !
+            !------------------------------------------------------------------------------!
+            tdmax = (theta_can(x,y,p) + tstar(x,y,p) * multh)                              &
+                  * (p00i * prss_can(x,y,p)) ** rocp
+            rvmax = rslif(prss_can(x,y,p),tdmax)
+            !------------------------------------------------------------------------------!
+
 
             !----- We now compute the reference variable for this patch. ------------------!
             select case (which)
@@ -2317,17 +2691,23 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
             case('THET')
                redp = theta_can(x,y,p) + tstar(x,y,p) * multh
             case('TEMP')
-               !----- Find the potential temperature. -------------------------------------!
-               redp = theta_can(x,y,p) + tstar(x,y,p) * multh
-               !----- Convert it to temperature. ------------------------------------------!
-               redp = redp * (p00i * prss_can(x,y,p)) ** rocp
+               !----- Tdmax is the reduced temperature above. -----------------------------!
+               redp = tdmax
             case('RVAP')
-               redp = max(toodry,rvap_can(x,y,p)  + rstar(x,y,p) * multh)
+               redp = max(toodry,min(rvmax,rvap_can(x,y,p)  + rstar(x,y,p) * multh))
+            case('THEE')
+               !----- Find the potential temperature. -------------------------------------!
+               thetap = theta_can(x,y,p) + tstar(x,y,p) * multh
+               rvapp  = max(toodry,min(rvmax,rvap_can(x,y,p)  + rstar(x,y,p) * multh))
+               !----- Convert it to temperature. ------------------------------------------!
+               redp   = thetap * (p00i * prss_can(x,y,p)) ** rocp
+               !----- Find thetae_iv. -----------------------------------------------------!
+               redp   = thetaeiv(thetap,prss_can(x,y,p),redp,rvapp,rvapp)
             case('CO_2')
                redp = max(toodry,co2_can(x,y,p)   + cstar(x,y,p) * multh)
             case('TDEW')
                !----- Find the mixing ratio. ----------------------------------------------!
-               redp = max(toodry,rvap_can(x,y,p)  + rstar(x,y,p) * multh)
+               redp = max(toodry,min(rvmax,rvap_can(x,y,p)  + rstar(x,y,p) * multh))
                !----- Convert it to vapour partial pressure. ------------------------------!
                redp = prss_can(x,y,p) * redp / (ep + redp)
                !----- Find the dew/frost point. -------------------------------------------!
@@ -2736,6 +3116,66 @@ end subroutine RAMS_comp_slmstf
 
 
 
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the soil matric potential.                                  !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_smpot(nx,ny,nz,np,inwoutf,soil_text)
+   use soil_coms , only : soil  ! ! intent(in)
+   use rconstants, only : wdnsi & ! intent(in)
+                        , grav  ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: np
+   real, dimension(nx,ny,nz,np), intent(inout) :: inwoutf
+   real, dimension(nx,ny,nz,np), intent(in)    :: soil_text
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: p
+   integer                                     :: nsoil
+   real                                        :: soil_water
+   real                                        :: smpot
+   !---------------------------------------------------------------------------------------!
+   
+   do p=2,np
+      do z=1,nz
+         do y=1,ny
+            do x=1,nx
+               !----- Copy point to temporary variable. -----------------------------------!
+               soil_water = inwoutf(x,y,z,p)
+
+               !----- Find the soil class. ------------------------------------------------!
+               nsoil = nint(soil_text(x,y,z,p))
+
+               select case (nsoil)
+               case (0) ! Water
+                  smpot = 0.
+               case default ! Soil
+                  smpot = grav * wdnsi * soil(nsoil)%slpots                                &
+                          * (soil(nsoil)%slmsts / soil_water) ** soil(nsoil)%slbs
+               end select
+
+               !----- Copy the result back to the array. ----------------------------------!
+               inwoutf(x,y,z,p) = smpot
+            end do
+         end do
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_smpot
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
 
 !==========================================================================================!
 !==========================================================================================!
@@ -3079,3 +3519,873 @@ end subroutine RAMS_comp_wflx2latent
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine clones an array.                                                     !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_clone(nx,ny,nz,dest,src)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: dest
+   real   , dimension(nx,ny,nz), intent(in)    :: src
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            dest(x,y,z) = src(x,y,z)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine RAMS_comp_clone
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine computes the rotated versions of zonal and meridional components.   !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_rotate(nx,ny,nz,uwnd,vwnd,ngrd)
+   use somevars, only : myplatn & ! intent(in)
+                      , myplonn & ! intent(in)
+                      , myxtn   & ! intent(in)
+                      , myytn   ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: nx
+   integer                          , intent(in)    :: ny
+   integer                          , intent(in)    :: nz
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: uwnd
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: vwnd
+   integer                          , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: x
+   integer                                          :: y
+   integer                                          :: z
+   real                                             :: qlat
+   real                                             :: qlon
+   real                                             :: utmp
+   real                                             :: vtmp
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Main loop.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            call xy_ll(qlat,qlon,myplatn(ngrd),myplonn(ngrd),myxtn(x,ngrd),myytn(y,ngrd))
+            utmp = uwnd(x,y,z)
+            vtmp = vwnd(x,y,z)
+            call uvtoueve(utmp,vtmp,uwnd(x,y,z),vwnd(x,y,z),qlat,qlon,myplatn(ngrd)        &
+                         ,myplonn(ngrd))
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+   return
+end subroutine RAMS_comp_rotate
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine clones an array.                                                     !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_uvsfc(nx,ny,uorv,uvsfc,u,v)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                           , intent(in)    :: nx
+   integer                           , intent(in)    :: ny
+   character(len=1)                  , intent(in)    :: uorv
+   real            , dimension(nx,ny), intent(inout) :: uvsfc
+   real            , dimension(nx,ny), intent(in)    :: u
+   real            , dimension(nx,ny), intent(in)    :: v
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: x
+   integer                                  :: y
+   real                                     :: angle
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Select which component is sought.                                                  !
+   !---------------------------------------------------------------------------------------!
+   select case(uorv)
+   case ('U','u','X','x')
+      do y=1,ny
+         do x=1,nx
+            uvsfc(x,y) = uvsfc(x,y) * cos(atan2(v(x,y),u(x,y)))
+         end do
+      end do
+
+   case('V','v','Y','y')
+      do y=1,ny
+         do x=1,nx
+            uvsfc(x,y) = uvsfc(x,y) * sin(atan2(v(x,y),u(x,y)))
+         end do
+      end do
+
+   case default
+      write(unit=*,fmt="(a)")      " Invalid UORV entry!"
+      write(unit=*,fmt="(a,1x,a)") "UORV =",uorv
+      stop 
+
+   end select
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine RAMS_comp_uvsfc
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the precipitable water.                                     !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_prwtr(nx,ny,nz,a,rtp,dn0,topt,ngrd)
+   use somevars, only : myzmn  & ! intent(in)
+                      , mynnzp ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                              , intent(in)    :: nx
+   integer                              , intent(in)    :: ny
+   integer                              , intent(in)    :: nz
+   real            , dimension(nx,ny)   , intent(inout) :: a
+   real            , dimension(nx,ny,nz), intent(in)    :: rtp
+   real            , dimension(nx,ny,nz), intent(in)    :: dn0
+   real            , dimension(nx,ny)   , intent(in)    :: topt
+   integer                              , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                              :: x
+   integer                                              :: y
+   integer                                              :: z
+   real                                                 :: ztop
+   real                                                 :: rtgt
+   real                                                 :: qtp
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define grid bottom and top. -----------------------------------------------------!
+   ztop = myzmn(mynnzp(1)-1,1)
+
+   yloop: do y = 1,ny
+      xloop: do x = 1,nx
+         rtgt = 1. - topt(x,y) / ztop
+         a(x,y) = 0.
+         zloop: do z = 2,nz
+             qtp    = rtp(x,y,z) / ( rtp(x,y,z) + 1.0 )
+             a(x,y) = a(x,y) + qtp * dn0(x,y,z) * (myzmn(z,ngrd)-myzmn(z-1,ngrd)) * rtgt
+         end do zloop
+      end do xloop
+   end do yloop
+
+   return
+end subroutine RAMS_comp_prwtr
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_cine_cape(nx,ny,nz,zref,which,energy,press,exner,theiv,rtp,rv,tempk   &
+                              ,topt,ngrd)
+   use therm_lib , only : thetaeiv2thil & ! function
+                        , thil2tqall    & ! subroutine
+                        , idealdens     ! ! function
+   use somevars  , only : myzmn         & ! intent(in)
+                        , mynnzp        ! ! intent(in)
+   use rconstants, only : grav          & ! intent(in)
+                        , cpdryi        ! ! intent(in)
+   use rout_coms , only : undefflg      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                              , intent(in)    :: nx
+   integer                              , intent(in)    :: ny
+   integer                              , intent(in)    :: nz
+   integer                              , intent(in)    :: zref
+   character(len=4)                     , intent(in)    :: which
+   real            , dimension(nx,ny)   , intent(inout) :: energy
+   real            , dimension(nx,ny,nz), intent(in)    :: press
+   real            , dimension(nx,ny,nz), intent(in)    :: exner
+   real            , dimension(nx,ny,nz), intent(in)    :: theiv
+   real            , dimension(nx,ny,nz), intent(in)    :: rtp
+   real            , dimension(nx,ny,nz), intent(in)    :: rv
+   real            , dimension(nx,ny,nz), intent(in)    :: tempk
+   real            , dimension(nx,ny)   , intent(in)    :: topt
+   integer                              , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                              :: x
+   integer                                              :: y
+   integer                                              :: z
+   real                                                 :: dz
+   real                                                 :: ztop
+   real                                                 :: rtgt
+   real                                                 :: cine
+   real                                                 :: cape
+   real                                                 :: theiv_p
+   real                                                 :: rtp_p
+   real                                                 :: thil_p
+   real                                                 :: tempk_p
+   real                                                 :: rvap_p
+   real                                                 :: rliq_p
+   real                                                 :: rice_p
+   real                                                 :: rsat_p
+   real                                                 :: rho_p
+   real                                                 :: rho_e
+   logical                                              :: lfc
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Define top of the grid. ---------------------------------------------------------!
+   ztop = myzmn(mynnzp(1)-1,1)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over domain.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   yloop: do y=1,ny
+      xloop: do x=1,nx
+         !------ Initiliase the properties for this layer. --------------------------------!
+         rtgt = 1. - topt(x,y) / ztop
+         lfc  = .false.
+         cine = 0.
+         cape = 0.
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     A parcel retains its theta_Eiv and rtp.                                     !
+         !---------------------------------------------------------------------------------!
+         theiv_p = theiv(x,y,zref)
+         rtp_p   = rtp  (x,y,zref)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Loop over this layer.                                                       !
+         !---------------------------------------------------------------------------------!
+         zloop: do z = zref+1,nz
+            dz = ( myzmn(z,ngrd) - myzmn(z-1,ngrd) ) * rtgt
+
+            !----- Find the parcel temperature and vapour mixing ratio. -------------------!
+            thil_p  = thetaeiv2thil(theiv_p,press(x,y,z),rtp_p)
+            tempk_p = exner(x,y,z) * thil_p * cpdryi
+            call thil2tqall(thil_p,exner(x,y,z),press(x,y,z),rtp_p,rliq_p,rice_p,tempk_p   &
+                           ,rvap_p,rsat_p)
+            rho_p = idealdens(press(x,y,z),tempk_p,rvap_p,rtp_p)
+            rho_e = idealdens(press(x,y,z),tempk(x,y,z),rv(x,y,z),rtp(x,y,z))
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find out whether to add to CINE or CAPE. -------------------------------!
+            if (rho_p < rho_e) then
+               !----- Buoyant.  Add energy to CAPE. ---------------------------------------!
+               lfc  = .true.
+               cape = cape + grav * (1. - rho_p / rho_e) * dz
+               !---------------------------------------------------------------------------!
+            else if (lfc) then
+               !----- No longer buoyant, reached LNB, move on. ----------------------------!
+               exit zloop
+               !---------------------------------------------------------------------------!
+            else
+               !----- Beneath LFC, add to inhibition. -------------------------------------!
+               cine = cine + grav * (rho_p / rho_e - 1.) * dz
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+         end do zloop
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Make CAPE and CINE undefined in case LFC was never found. -----------------!
+         if (.not. lfc) then
+            cine = undefflg
+            cape = undefflg
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find out which energy goes to output. -------------------------------------!
+         select case(which)
+         case ('cape')
+            energy(x,y) = cape
+         case ('cine')
+            energy(x,y) = cine
+         end select
+         !---------------------------------------------------------------------------------!
+      end do xloop
+   end do yloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine  RAMS_comp_cine_cape
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine calculates the SHOWALTER index.                                     !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_showalter(nx,ny,nz,showalter,press,exner,theiv,rtp,rv,tempk,topt,ngrd)
+   use therm_lib , only : thetaeiv2thil & ! function
+                        , thil2tqall    & ! subroutine
+                        , idealdens     & ! function
+                        , press2exner   ! ! function
+   use rconstants, only : grav          & ! intent(in)
+                        , cpdryi        ! ! intent(in)
+   use rout_coms , only : undefflg      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                              , intent(in)    :: nx
+   integer                              , intent(in)    :: ny
+   integer                              , intent(in)    :: nz
+   real            , dimension(nx,ny)   , intent(inout) :: showalter
+   real            , dimension(nx,ny,nz), intent(in)    :: press
+   real            , dimension(nx,ny,nz), intent(in)    :: exner
+   real            , dimension(nx,ny,nz), intent(in)    :: theiv
+   real            , dimension(nx,ny,nz), intent(in)    :: rtp
+   real            , dimension(nx,ny,nz), intent(in)    :: rv
+   real            , dimension(nx,ny,nz), intent(in)    :: tempk
+   real            , dimension(nx,ny)   , intent(in)    :: topt
+   integer                              , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                              :: x
+   integer                                              :: y
+   integer                                              :: z
+   real                                                 :: rtgt
+   real                                                 :: theiv_p
+   real                                                 :: rtp_p
+   real                                                 :: thil_p
+   real                                                 :: tempk_p
+   real                                                 :: rvap_p
+   real                                                 :: rliq_p
+   real                                                 :: rice_p
+   real                                                 :: rsat_p
+   real                                                 :: tamb_500
+   real                                                 :: epress
+   real                                                 :: exn500
+   !----- Constants. ----------------------------------------------------------------------!
+   real                                 , parameter     :: p850 = 85000.
+   real                                 , parameter     :: p500 = 50000.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Exner function at 500hPa. -------------------------------------------------------!
+   exn500 = press2exner(p500)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over domain.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   yloop: do y=1,ny
+      xloop: do x=1,nx
+
+         showalter(x,y) = undefflg
+
+         !----- The Showalter index can't be determined at places above 850hPa. -----------!
+         if (press(x,y,2) >= p850) then
+
+            !------------------------------------------------------------------------------!
+            !     Loop over height coordinates.                                            !
+            !------------------------------------------------------------------------------!
+            zloop: do z=3,nz
+               if (press(x,y,z-1) >= p850 .and. press(x,y,z) < p850) then
+                  if (press(x,y,z-1) == p850) then
+                     !------ Grab data from 850hPa. ---------------------------------------!
+                     theiv_p = theiv(x,y,z-1)
+                     rtp_p   = rtp  (x,y,z-1)
+                     !---------------------------------------------------------------------!
+                  else
+                     !------ Interpolate thetae and rtp to 850hPa. ------------------------!
+                     epress  = log(p850/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     theiv_p = theiv(x,y,z-1) * (theiv(x,y,z)/theiv(x,y,z-1))**epress
+                     rtp_p   = rtp  (x,y,z-1) * (rtp  (x,y,z)/rtp  (x,y,z-1))**epress
+                     !---------------------------------------------------------------------!
+                  end if
+
+
+
+                  !------ Find the values at 500 hPa. -------------------------------------!
+                  thil_p  = thetaeiv2thil(theiv_p,p500,rtp_p)
+                  tempk_p = exn500 * thil_p * cpdryi
+                  call thil2tqall(thil_p,exn500,p500,rtp_p,rliq_p,rice_p,tempk_p,rvap_p    &
+                                 ,rsat_p)
+                  !------------------------------------------------------------------------!
+               elseif (press(x,y,z-1) >= p500 .and. press(x,y,z) < p500) then
+                  !----- Interpolate temperature to 500 hPa. ------------------------------!
+                  if (press(x,y,z-1) == p500) then
+                     tamb_500 = tempk(x,y,z-1)
+                  else
+                     !------ Interpolate temperature to 850hPa. ---------------------------!
+                     epress   = log(p500/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     tamb_500 = tempk(x,y,z-1) * (tempk(x,y,z)/tempk(x,y,z-1))**epress
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !----- Find the Showalter index. ----------------------------------------!
+                  showalter(x,y) = tamb_500 - tempk_p
+                  exit zloop
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            end do zloop
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do xloop
+   end do yloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine  RAMS_comp_showalter
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine computes the SWEAT index.                                           !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_sweat(nx,ny,nz,sweat,press,tempk,tdewk,uwnd,vwnd,uvel)
+   use rout_coms , only : undefflg      ! ! intent(in)
+   use rconstants, only : t00           ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: nx
+   integer                          , intent(in)    :: ny
+   integer                          , intent(in)    :: nz
+   real(kind=4), dimension(nx,ny)   , intent(inout) :: sweat
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: press
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: tempk
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: tdewk
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: uwnd
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: vwnd
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: uvel
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: x
+   integer                                          :: y
+   integer                                          :: z
+   real(kind=4)                                     :: temp_850
+   real(kind=4)                                     :: temp_500
+   real(kind=4)                                     :: tdew_850
+   real(kind=4)                                     :: tdew_500
+   real(kind=4)                                     :: uvel_850
+   real(kind=4)                                     :: uvel_500
+   real(kind=4)                                     :: uwnd_850
+   real(kind=4)                                     :: uwnd_500
+   real(kind=4)                                     :: vwnd_850
+   real(kind=4)                                     :: vwnd_500
+   real(kind=4)                                     :: udir_850
+   real(kind=4)                                     :: udir_500
+   real(kind=4)                                     :: ttotals
+   real(kind=4)                                     :: wshear
+   real(kind=4)                                     :: epress
+   !----- Constants. ----------------------------------------------------------------------!
+   real                             , parameter     :: p850 = 85000.
+   real                             , parameter     :: p500 = 50000.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     First loop, wind magnitude.                                                       !
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            uvel(x,y,z) = sqrt(uwnd(x,y,z)*uwnd(x,y,z)+vwnd(x,y,z)*vwnd(x,y,z))
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Second loop, find interpolated data.                                              !
+   !---------------------------------------------------------------------------------------!
+   do y=1,ny
+      do x=1,nx
+         !----- Initialise SWEAT with missing value at higher locations. ------------------!
+         sweat(x,y) = undefflg
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Skip points when the surface is above 850hPa.                               !
+         !---------------------------------------------------------------------------------!
+         if (press(x,y,2) >= p850) then
+            zloop: do z=1,nz
+               if (press(x,y,z-1) >= p850 .and. press(x,y,z) < p850) then
+                  if (press(x,y,z-1) == p850) then
+                     !------ Grab data from 850hPa. ---------------------------------------!
+                     temp_850 = tempk(x,y,z-1)
+                     tdew_850 = tdewk(x,y,z-1)
+                     uwnd_850 = uwnd (x,y,z-1)
+                     vwnd_850 = vwnd (x,y,z-1)
+                     uvel_850 = uvel (x,y,z-1)
+                     !---------------------------------------------------------------------!
+                  else
+                     !------ Interpolate thetae and rtp to 850hPa. ------------------------!
+                     epress  = log(p850/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     temp_850 = tempk(x,y,z-1) * ( tempk(x,y,z) / tempk(x,y,z-1) )**epress
+                     tdew_850 = tdewk(x,y,z-1) * ( tdewk(x,y,z) / tdewk(x,y,z-1) )**epress
+                     uvel_850 = uvel (x,y,z-1) * ( uvel (x,y,z) / uvel (x,y,z-1) )**epress
+                     uwnd_850 = uwnd (x,y,z-1) * ( uwnd (x,y,z) - uwnd (x,y,z-1) ) *epress
+                     vwnd_850 = vwnd (x,y,z-1) * ( vwnd (x,y,z) - vwnd (x,y,z-1) ) *epress
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !----- Wind direction at 850 hPa. ---------------------------------------!
+                  udir_850 = atan2(vwnd_850,uwnd_850)
+                  !------------------------------------------------------------------------!
+               elseif (press(x,y,z-1) >= p500 .and. press(x,y,z) < p500) then
+                  if (press(x,y,z-1) == p500) then
+                     !------ Grab data from 850hPa. ---------------------------------------!
+                     temp_500 = tempk(x,y,z-1)
+                     tdew_500 = tdewk(x,y,z-1)
+                     uwnd_500 = uwnd (x,y,z-1)
+                     vwnd_500 = vwnd (x,y,z-1)
+                     uvel_500 = uvel (x,y,z-1)
+                     !---------------------------------------------------------------------!
+                  else
+                     !------ Interpolate thetae and rtp to 850hPa. ------------------------!
+                     epress   = log(p500/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     temp_500 = tempk(x,y,z-1) * ( tempk(x,y,z) / tempk(x,y,z-1) )**epress
+                     tdew_500 = tdewk(x,y,z-1) * ( tdewk(x,y,z) / tdewk(x,y,z-1) )**epress
+                     uvel_500 = uvel (x,y,z-1) * ( uvel (x,y,z) / uvel (x,y,z-1) )**epress
+                     uwnd_500 = uwnd (x,y,z-1) * ( uwnd (x,y,z) - uwnd (x,y,z-1) ) *epress
+                     vwnd_500 = vwnd (x,y,z-1) * ( vwnd (x,y,z) - vwnd (x,y,z-1) ) *epress
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !----- Wind direction at 850 hPa. ---------------------------------------!
+                  udir_500 = atan2(vwnd_500,uwnd_500)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Everything has been found, leave the zloop. ----------------------!
+                  exit zloop
+                  !------------------------------------------------------------------------!
+
+               end if
+               !---------------------------------------------------------------------------!
+            end do zloop
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the Total totals. -------------------------------------------------!
+            ttotals = max(49., temp_850 + tdew_850 - 2. * temp_500)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the shear term. ---------------------------------------------------!
+            wshear  = max(0., sin((udir_500-udir_850) + 0.2))
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the SWEAT index. --------------------------------------------------!
+            sweat(x,y) =  12. * max(0., (tdew_850 - t00)) +  20. * (ttotals - 49.)         &
+                       +   2. * uvel_850 * 1.94384 + uvel_500 * 1.94384 + 125. * wshear
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine RAMS_comp_sweat
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine computes the SWEAT index.                                           !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_kindex(nx,ny,nz,kindex,press,tempk,tdewk)
+   use rout_coms , only : undefflg      ! ! intent(in)
+   use rconstants, only : t00           ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: nx
+   integer                          , intent(in)    :: ny
+   integer                          , intent(in)    :: nz
+   real(kind=4), dimension(nx,ny)   , intent(inout) :: kindex
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: press
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: tempk
+   real(kind=4), dimension(nx,ny,nz), intent(inout) :: tdewk
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: x
+   integer                                          :: y
+   integer                                          :: z
+   real(kind=4)                                     :: temp_850
+   real(kind=4)                                     :: temp_700
+   real(kind=4)                                     :: temp_500
+   real(kind=4)                                     :: tdew_850
+   real(kind=4)                                     :: tdew_700
+   real(kind=4)                                     :: tdew_500
+   real(kind=4)                                     :: epress
+   !----- Constants. ----------------------------------------------------------------------!
+   real                             , parameter     :: p850 = 85000.
+   real                             , parameter     :: p700 = 70000.
+   real                             , parameter     :: p500 = 50000.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Second loop, find interpolated data.                                              !
+   !---------------------------------------------------------------------------------------!
+   do y=1,ny
+      do x=1,nx
+         !----- Initialise K-index with missing value at higher locations. ----------------!
+         kindex(x,y) = undefflg
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Skip points when the surface is above 850hPa.                               !
+         !---------------------------------------------------------------------------------!
+         if (press(x,y,2) >= p850) then
+            zloop: do z=1,nz
+               if (press(x,y,z-1) >= p850 .and. press(x,y,z) < p850) then
+                  if (press(x,y,z-1) == p850) then
+                     !------ Grab data from 850hPa. ---------------------------------------!
+                     temp_850 = tempk(x,y,z-1)
+                     tdew_850 = tdewk(x,y,z-1)
+                     !---------------------------------------------------------------------!
+                  else
+                     !------ Interpolate thetae and rtp to 850hPa. ------------------------!
+                     epress  = log(p850/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     temp_850 = tempk(x,y,z-1) * ( tempk(x,y,z) / tempk(x,y,z-1) )**epress
+                     tdew_850 = tdewk(x,y,z-1) * ( tdewk(x,y,z) / tdewk(x,y,z-1) )**epress
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+               elseif (press(x,y,z-1) >= p700 .and. press(x,y,z) < p700) then
+                  if (press(x,y,z-1) == p700) then
+                     !------ Grab data from 700hPa. ---------------------------------------!
+                     temp_700 = tempk(x,y,z-1)
+                     tdew_700 = tdewk(x,y,z-1)
+                     !---------------------------------------------------------------------!
+                  else
+                     !------ Interpolate thetae and rtp to 850hPa. ------------------------!
+                     epress   = log(p700/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     temp_700 = tempk(x,y,z-1) * ( tempk(x,y,z) / tempk(x,y,z-1) )**epress
+                     tdew_700 = tdewk(x,y,z-1) * ( tdewk(x,y,z) / tdewk(x,y,z-1) )**epress
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+               elseif (press(x,y,z-1) >= p500 .and. press(x,y,z) < p500) then
+                  if (press(x,y,z-1) == p500) then
+                     !------ Grab data from 850hPa. ---------------------------------------!
+                     temp_500 = tempk(x,y,z-1)
+                     tdew_500 = tdewk(x,y,z-1)
+                     !---------------------------------------------------------------------!
+                  else
+                     !------ Interpolate thetae and rtp to 850hPa. ------------------------!
+                     epress   = log(p500/press(x,y,z-1))/log(press(x,y,z)/press(x,y,z-1))
+                     temp_500 = tempk(x,y,z-1) * ( tempk(x,y,z) / tempk(x,y,z-1) )**epress
+                     tdew_500 = tdewk(x,y,z-1) * ( tdewk(x,y,z) / tdewk(x,y,z-1) )**epress
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !----- Everything has been found, leave the zloop. ----------------------!
+                  exit zloop
+                  !------------------------------------------------------------------------!
+
+               end if
+               !---------------------------------------------------------------------------!
+            end do zloop
+            !------------------------------------------------------------------------------!
+
+
+            !----- Find the Total totals. -------------------------------------------------!
+            kindex(x,y) = temp_850 - temp_500 + tdew_850 - temp_700 + tdew_700 - t00
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine RAMS_comp_kindex
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_massint(nx,ny,nz,nc,mass,rho,rmix,beneath,aloft,topt,ngrd)
+   use somevars, only : myzmn   & ! intent(in)
+                      , mynnzp  ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                                 , intent(in)    :: nx
+   integer                                 , intent(in)    :: ny
+   integer                                 , intent(in)    :: nz
+   integer                                 , intent(in)    :: nc
+   real            , dimension(nx,ny,nc)   , intent(inout) :: mass
+   real            , dimension(nx,ny,nz)   , intent(in)    :: rho
+   real            , dimension(nx,ny,nz,nc), intent(in)    :: rmix
+   real            , dimension(nx,ny)      , intent(in)    :: beneath
+   real            , dimension(nx,ny)      , intent(in)    :: aloft
+   real            , dimension(nx,ny)      , intent(in)    :: topt
+   integer                                 , intent(in)    :: ngrd
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                                 :: x
+   integer                                                 :: y
+   integer                                                 :: z
+   integer                                                 :: c
+   real                                                    :: dz
+   real                                                    :: ztop
+   real                                                    :: rtgt
+   real                                                    :: zlow
+   real                                                    :: zhigh
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Define top of the grid. ---------------------------------------------------------!
+   ztop = myzmn(mynnzp(1)-1,1)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over x and y.                                                                !
+   !---------------------------------------------------------------------------------------!
+   yloop: do y=1,ny
+      xloop: do x=1,nx
+         !------ Initiliase the properties for this layer. --------------------------------!
+         rtgt = 1. - topt(x,y) / ztop
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Cloud loop.                                                                 !
+         !---------------------------------------------------------------------------------!
+         cloop: do c=1,nc
+
+            !------------------------------------------------------------------------------!
+            !       Initialise integral, loop over height and add the layers of interest.  !
+            !------------------------------------------------------------------------------!
+            mass(x,y,c) = 0.
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Loop over this layer.                                                    !
+            !------------------------------------------------------------------------------!
+            zloop: do z = 2,nz
+               zlow  = myzmn(z-1,ngrd) * rtgt
+               zhigh = myzmn(  z,ngrd) * rtgt
+
+               !---------------------------------------------------------------------------!
+               !     Check whether to add this layer.                                      !
+               !---------------------------------------------------------------------------!
+               if (zlow >= beneath(x,y) .and. zhigh <= aloft(x,y)) then
+                  dz          = min(zhigh,aloft(x,y)) - max(zlow,beneath(x,y))
+                  mass(x,y,c) = mass(x,y,c) + rho(x,y,z) * rmix(x,y,z,c) * dz
+               else if (zlow > aloft(x,y)) then
+                  exit zloop
+               end if
+               !---------------------------------------------------------------------------!
+            end do zloop
+            mass(x,y,c) = max(0.,mass(x,y,c))
+            !------------------------------------------------------------------------------!
+         end do cloop
+         !---------------------------------------------------------------------------------!
+      end do xloop
+      !------------------------------------------------------------------------------------!
+   end do yloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine RAMS_comp_massint
+!==========================================================================================!
+!==========================================================================================!

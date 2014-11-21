@@ -8,8 +8,9 @@
 #  ~ x.obs          -- the observed values of x                                            #
 #  ~ n.parameters   -- number of parameters (if the number of parameters is unknown, we    #
 #                      don't assume any parameters).                                       #
+#  ~ out.dfr        -- output as a data frame? (FALSE returns a list).                     #
 #------------------------------------------------------------------------------------------#
-test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
+test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
 
 
    #---- Crash if the x.mod and x.obs don't have the same size and class. -----------------#
@@ -36,7 +37,7 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
    if (is.null(n.parameters)){
       df.err = n.ok - 1
    }else{
-      df.err = n.ok - n.parameters - 1
+      df.err = n.ok - n.parameters
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -159,26 +160,60 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL){
    #---------------------------------------------------------------------------------------#
    #     Return everything to the user.                                                    #
    #---------------------------------------------------------------------------------------#
-   ans = list ( n            = n.ok 
-              , df.tot       = df.tot
-              , df.err       = df.err
-              , obs.moment   = obs.moment
-              , mod.moment   = mod.moment
-              , res.moment   = res.moment
-              , bias         = bias
-              , sigma        = sigma
-              , lsq.lnlike   = lsq.lnlike
-              , mse          = mse
-              , rmse         = rmse
-              , ss.tot       = ss.tot
-              , ss.err       = ss.err
-              , r.squared    = r.squared
-              , fvue         = fvue
-              , sw.statistic = sw.statistic
-              , sw.p.value   = sw.p.value
-              , ks.statistic = ks.statistic
-              , ks.p.value   = ks.p.value
-              )#end list
+   if (out.dfr){
+      ans = data.frame( n            = n.ok
+                      , p            = n.ok - df.err
+                      , df.tot       = df.tot
+                      , df.err       = df.err
+                      , obs.mean     = obs.moment[1]
+                      , obs.sdev     = sqrt(obs.moment[2])
+                      , obs.skew     = obs.moment[3]
+                      , obs.kurt     = obs.moment[4]
+                      , mod.mean     = mod.moment[1]
+                      , mod.sdev     = sqrt(mod.moment[2])
+                      , mod.skew     = mod.moment[3]
+                      , mod.kurt     = mod.moment[4]
+                      , res.mean     = res.moment[1]
+                      , res.sdev     = sqrt(res.moment[2])
+                      , res.skew     = res.moment[3]
+                      , res.kurt     = res.moment[4]
+                      , bias         = bias
+                      , sigma        = sigma
+                      , lsq.lnlike   = lsq.lnlike
+                      , mse          = mse
+                      , rmse         = rmse
+                      , ss.tot       = ss.tot
+                      , ss.err       = ss.err
+                      , r.squared    = r.squared
+                      , fvue         = fvue
+                      , sw.statistic = sw.statistic
+                      , sw.p.value   = sw.p.value
+                      , ks.statistic = ks.statistic
+                      , ks.p.value   = ks.p.value
+                      )#end list
+   }else{
+      ans = list ( n            = n.ok 
+                 , p            = n.ok - df.err
+                 , df.tot       = df.tot
+                 , df.err       = df.err
+                 , obs.moment   = obs.moment
+                 , mod.moment   = mod.moment
+                 , res.moment   = res.moment
+                 , bias         = bias
+                 , sigma        = sigma
+                 , lsq.lnlike   = lsq.lnlike
+                 , mse          = mse
+                 , rmse         = rmse
+                 , ss.tot       = ss.tot
+                 , ss.err       = ss.err
+                 , r.squared    = r.squared
+                 , fvue         = fvue
+                 , sw.statistic = sw.statistic
+                 , sw.p.value   = sw.p.value
+                 , ks.statistic = ks.statistic
+                 , ks.p.value   = ks.p.value
+                 )#end list
+   }#end if
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end function

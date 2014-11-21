@@ -217,7 +217,6 @@ subroutine fire_frequency(cgrid)
          else
             cpoly%ignition_rate (isi) = 0.0
          end if
-         cpoly%fire_disturbance_rate(isi) = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
          !---------------------------------------------------------------------------------!
       end do siteloop
       !------------------------------------------------------------------------------------!

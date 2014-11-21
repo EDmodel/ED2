@@ -146,8 +146,9 @@ elseif (ivflag == 1) then   ! Fill nudging arrays and compute weights
    endif
 
    ! Compute weighting factors for grid 1
-   call varweight(nnzp(1),nnxp(1),nnyp(1),varinit_g(1)%varwts  &
-                 ,grid_g(1)%topt,grid_g(1)%rtgt)
+   call varweight(nnzp(1),nnxp(1),nnyp(1),varinit_g(1)%varwts_uv,varinit_g(1)%varwts_th    &
+                 ,varinit_g(1)%varwts_pi,varinit_g(1)%varwts_rt,varinit_g(1)%varwts_co2    &
+                 ,varinit_g(1)%varwts_rc,grid_g(1)%topt,grid_g(1)%rtgt)
 
 
    ! Read files

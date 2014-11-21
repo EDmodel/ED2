@@ -19,7 +19,7 @@
 !        yet highly accurate monotonic calculation of tracer advection.  J. Geophys. Res., !
 !        105(D7), 9335-9348.                                                               !
 !------------------------------------------------------------------------------------------!
-subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
+subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,izu,jzv,mynum)
 
    use grid_dims    , only : maxgrds        ! ! intent(in)
    use mem_grid     , only : ngrid          & ! intent(in)
@@ -36,7 +36,8 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
                            , vctr14         & ! Scratch for den(i)_wal
                            , vctr15         & ! Scratch for  densu, densv, densw
                            , vctr16         & ! Scratch for dxtw
-                           , vctr17         ! ! Scratch for scal_out
+                           , vctr17         & ! Scratch for scal_out
+                           , scratch        ! ! Scratch for mass fluxes
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -47,6 +48,8 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
    integer                    , intent(in) :: iz
    integer                    , intent(in) :: ja
    integer                    , intent(in) :: jz
+   integer                    , intent(in) :: izu
+   integer                    , intent(in) :: jzv
    integer                    , intent(in) :: mynum
    !----- Local variables. ----------------------------------------------------------------!
    integer                                 :: nv
@@ -91,7 +94,6 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
    !---------------------------------------------------------------------------------------!
 
 
-
    !----- Find actual air densities. ------------------------------------------------------!
    call find_actual_densities( m1, m2, m3, basic_g(ngrid)%rtp   , basic_g(ngrid)%rv        &
                                          , basic_g(ngrid)%pp    , basic_g(ngrid)%pi0       &
@@ -125,6 +127,17 @@ subroutine radvc_mnt_driver(m1,m2,m3,ia,iz,ja,jz,mynum)
                              , advec_g(ngrid)%den1_wal, advec_g(ngrid)%den2_wal            &
                              , advec_g(ngrid)%den3_wal, advec_g(ngrid)%dxtw                &
                              , advec_g(ngrid)%dytw    , advec_g(ngrid)%dztw    )
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the momentum fluxes for Lagrangian model. ----------------------------------!
+   call find_momentum_fluxes( m1,m2,m3                                                     &
+                            , advec_g(ngrid)%uavg     , advec_g(ngrid)%vavg                &
+                            , advec_g(ngrid)%wavg     , advec_g(ngrid)%densu               &
+                            , advec_g(ngrid)%densv    , advec_g(ngrid)%densw               &
+                            , scratch%vt3da           , scratch%vt3db                      &
+                            , scratch%vt3dc           )
    !---------------------------------------------------------------------------------------!
 
 

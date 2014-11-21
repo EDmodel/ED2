@@ -11,6 +11,15 @@ if ("srcdir" %in% ls()){
 #------------------------------------------------------------------------------------------#
 
 
+
+#------------------------------------------------------------------------------------------#
+#      Find which major version of R is calling this script.                               #
+#------------------------------------------------------------------------------------------#
+R.major <<- as.numeric(R.version$major)
+#------------------------------------------------------------------------------------------#
+
+
+
 #------------------------------------------------------------------------------------------#
 #      Define the default colours for a white background and black foreground.             #
 #------------------------------------------------------------------------------------------#
@@ -199,25 +208,35 @@ isok[["car"       ]] = require(car       )
 isok[["chron"     ]] = require(chron     )
 isok[["compiler"  ]] = require(compiler  )
 isok[["fields"    ]] = require(fields    )
+isok[["geoR"      ]] = require(geoR      )
+isok[["glmulti"   ]] = require(glmulti   )
+isok[["grDevices" ]] = require(grDevices )
 isok[["gstat"     ]] = require(gstat     )
 isok[["hdf5"      ]] = require(hdf5      )
 isok[["klaR"      ]] = require(klaR      )
+isok[["kriging"   ]] = require(kriging   )
+isok[["leaps"     ]] = require(leaps     )
 isok[["maps"      ]] = require(maps      )
 isok[["mapdata "  ]] = require(mapdata   )
 isok[["MASS"      ]] = require(MASS      )
 isok[["MCMCpack"  ]] = require(MCMCpack  )
 isok[["ncdf"      ]] = require(ncdf      )
 isok[["numDeriv"  ]] = require(numDeriv  )
+isok[["PBSmapping"]] = require(PBSmapping)
 isok[["plotrix"   ]] = require(plotrix   )
 isok[["proto"     ]] = require(proto     )
+isok[["raster"    ]] = require(raster    )
 isok[["robustbase"]] = require(robustbase)
 isok[["rgdal"     ]] = require(rgdal     )
 isok[["rgdal"     ]] = TRUE
+isok[["rJava"     ]] = require(rJava     )
 isok[["RSEIS"     ]] = require(RSEIS     )
 isok[["R.utils"   ]] = require(R.utils   )
+isok[["shapefiles"]] = require(shapefiles)
 isok[["splancs"   ]] = require(splancs   )
 isok[["sn"        ]] = require(sn        )
 isok[["sp"        ]] = require(sp        )
+isok[["stats4"    ]] = require(stats4    )
 isok[["zoo"       ]] = require(zoo       )
 isok = unlist(isok)
 if (! all(isok)){
@@ -237,17 +256,28 @@ if (! all(isok)){
 #                     old value from rconstants.r.                                         #
 #------------------------------------------------------------------------------------------#
 envir = as.environment("package:boot")
-unlockBinding("grav",envir)
+try(unlockBinding("grav",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 
 
 
 #------------------------------------------------------------------------------------------#
-#  SHADY BUSINESS...  We must unlock trim from package R.utils and replace by our function #
-#                     that has more options than the package one.                          #
+#  SHADY BUSINESS...  We must unlock trim from package R.oo and raster and replace by our  #
+#                     function that has more options than the package one.                 #
 #------------------------------------------------------------------------------------------#
 envir = as.environment("package:R.oo")
-unlockBinding("trim",envir)
+try(unlockBinding("trim",envir),silent=TRUE)
+envir = as.environment("package:raster")
+try(unlockBinding("trim",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock RGB from package raster and replace by our function.  #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:raster")
+try(unlockBinding("RGB",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 
 
@@ -256,7 +286,7 @@ unlockBinding("trim",envir)
 #     Organise the files so we load them in the right order.                               #
 #------------------------------------------------------------------------------------------#
 at.first      = c("colour.utils.r","rconstants.r","globdims.r","unitlist.r")
-at.end        = c("pft.coms.r","pmonthly_varlist.r")
+at.end        = c("iso3166.r","pft.coms.r","pmonthly_varlist.r")
 myself        = c("load.everything.r")
 all.scripts   = sort(list.files(path=srcdir,pattern="\\.[RrSsQq]$"))
 back.up       = sort(list.files(path=srcdir,pattern="^[~]"))

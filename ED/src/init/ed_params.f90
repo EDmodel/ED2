@@ -9,12 +9,16 @@ subroutine load_ed_ecosystem_params()
 
    use ed_max_dims , only : n_pft               ! ! intent(in)
    use pft_coms    , only : include_these_pft   & ! intent(in)
+                          , agri_stock          & ! intent(in)
+                          , plantation_stock    & ! intent(in)
+                          , pft_name16          & ! intent(out)
+                          , is_tropical         & ! intent(out)
+                          , is_grass            & ! intent(out)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
+                          , include_pft_fp      & ! intent(out)
                           , C2B                 & ! intent(out)
-                          , frost_mort          & ! intent(out)
-                          , grass_pft           & ! intent(out)
-                          , pft_name16          ! ! intent(out)
+                          , frost_mort          ! ! intent(out)
    use disturb_coms, only : ianth_disturb       ! ! intent(in)
 
    implicit none
@@ -22,17 +26,7 @@ subroutine load_ed_ecosystem_params()
    integer :: p
    !---------------------------------------------------------------------------------------!
 
-   !----- Loading several parameters ------------------------------------------------------!
-   call init_decomp_params()
-   call init_ff_coms()
-   call init_disturb_params()
-   call init_physiology_params()
-   call init_met_params()
-   call init_lapse_params()
-   call init_hydro_coms()
-   call init_soil_coms()
-   call init_phen_coms()
-   call init_ed_misc_coms()
+
 
    !---------------------------------------------------------------------------------------!
    !      Main table of Plant functional types.  If you add some PFT, please make sure     !
@@ -78,40 +72,111 @@ subroutine load_ed_ecosystem_params()
    pft_name16(15) = 'C4_crop         '
    pft_name16(16) = 'Subtrop_C3_grass'
    pft_name16(17) = 'Araucaria       '
+   !---------------------------------------------------------------------------------------!
 
-   !----- Define the grass PFTs -----------------------------------------------------------!
-   grass_pft=huge(1)
-   grass_pft(1)=1
-   grass_pft(2)=5
-   grass_pft(3)=12
-   grass_pft(4)=13
-   grass_pft(5)=14
-   grass_pft(6)=15
-   grass_pft(7)=16
+
+
+   !---------------------------------------------------------------------------------------! 
+   !    This flag should be used to define whether the plant is tropical/subtropical or    !
+   ! not.                                                                                  !
+   !---------------------------------------------------------------------------------------! 
+   is_tropical(1:4)   = .true.
+   is_tropical(5:11)  = .false.
+   is_tropical(12:13) = .false.
+   is_tropical(14:15) = .true.
+   is_tropical(16)    = .true.
+   !---------------------------------------------------------------------------------------!
+   !     This uses tropical allometry for DBH->Bleaf and DBH->Bdead, but otherwise it uses !
+   ! the temperate properties.                                                             !
+   !---------------------------------------------------------------------------------------!
+   is_tropical(17)    = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------! 
+   !    This flag should be used to define whether the plant is tree or grass              !
+   !---------------------------------------------------------------------------------------! 
+   is_grass(1)     = .true.
+   is_grass(2:4)   = .false.
+   is_grass(5)     = .true.
+   is_grass(6:11)  = .false.
+   is_grass(12:15) = .true.
+   is_grass(16)    = .true.
+   is_grass(17)    = .false.
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Include_pft: flag specifying to whether you want to include a plant functional     !
    !                 type (T) or whether you want it excluded (F) from the simulation.     !
    !---------------------------------------------------------------------------------------!
    include_pft    = .false.
-   include_pft_ag = .false.
    do p=1,n_pft
       if (include_these_pft(p) >  0 .and. include_these_pft(p) <= n_pft) then
          include_pft(include_these_pft(p)) = .true.
       end if
    end do
+   !---------------------------------------------------------------------------------------!
 
-   !----- Grasses can grow anywhere, including agricultural patches -----------------------!
-   p=1
-   do while (grass_pft(p) > 0 .and. grass_pft(p) <= n_pft)
-      include_pft_ag(grass_pft(p)) = include_pft(grass_pft(p))
-      p = p+1
-   end do
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Only the PFTs listed in agri_stock are allowed in agriculture patches.  For the   !
+   ! time being this means a single PFT, but it could change in the future.                !
+   !---------------------------------------------------------------------------------------!
+   include_pft_ag             = .false.
+   include_pft_ag(agri_stock) = is_grass(agri_stock) .and. include_pft(agri_stock)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Only the PFTs listed in plantation_stock are allowed in agriculture patches.  For !
+   ! the time being this means a single PFT, but it could change in the future.            !
+   !---------------------------------------------------------------------------------------!
+   include_pft_fp                   = .false.
+   include_pft_fp(plantation_stock) = ( .not. is_grass(plantation_stock) ) .and.           &
+                                      include_pft(plantation_stock)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Warn the user in case the PFT choice for agriculture or forest plantation was    !
+   ! inconsistent.                                                                         !
+   !---------------------------------------------------------------------------------------!
    if (count(include_pft_ag) == 0 .and. ianth_disturb == 1) then
-      call warning ('No grass included in include_these_pft,'//                            &
-                    ' you should have at least one kind of grass...'                       &
+      call warning ('PFT defined in agri_stock is not included in include_these_pft,'//    &
+                    ' your croplands will be barren and not very profitable...'            &
                    ,'load_ecosystem_params','ed_params.f90')
    end if
+   if (count(include_pft_fp) == 0 .and. ianth_disturb == 1) then
+      call warning ('PFT defined in plantation_stock is not listed in include_these_pft,'//&
+                    ' your forest plantation will be barren and not very profitable ...'   &
+                   ,'load_ecosystem_params','ed_params.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Load several parameters ---------------------------------------------------------!
+   call init_decomp_params()
+   call init_ff_coms()
+   call init_disturb_params()
+   call init_physiology_params()
+   call init_met_params()
+   call init_lapse_params()
+   call init_hydro_coms()
+   call init_soil_coms()
+   call init_phen_coms()
+   call init_ed_misc_coms()
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Assign many PFT-dependent parameters.  Here the order may matter, so think twice  !
@@ -1060,8 +1125,6 @@ subroutine init_can_air_params()
                              , ggsoil08              & ! intent(out)
                              , kksoil8               ! ! intent(out)
    implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer           :: ican
    !----- External functions. -------------------------------------------------------------!
    real   , external :: cbrt
    !---------------------------------------------------------------------------------------!
@@ -1635,7 +1698,7 @@ subroutine init_pft_photo_params()
    Vm0(11)                   =  6.981875 * ssfact * vmfact_c3
    Vm0(12:13)                = 18.300000 * ssfact * vmfact_c3
    Vm0(14:15)                = 12.500000 * ssfact * vmfact_c4
-   Vm0(16)                   = 20.833333 * ssfact * vmfact_c3
+   Vm0(16)                   = 18.750000 * ssfact * vmfact_c3
    Vm0(17)                   = 15.625000 * ssfact * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
@@ -1910,7 +1973,7 @@ subroutine init_decomp_params()
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Determine the top layer to consider for fires in case include_fire is 2 or 3. ---!
+   !----- Determine the top layer to consider for heterotrophic respiration. --------------!
    select case (decomp_scheme)
    case (0,1)
       rh_active_depth = slz(nzg)
@@ -2105,7 +2168,8 @@ end subroutine init_pft_resp_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
 
-   use pft_coms    , only : mort1                      & ! intent(out)
+   use pft_coms    , only : mort0                      & ! intent(out)
+                          , mort1                      & ! intent(out)
                           , mort2                      & ! intent(out)
                           , mort3                      & ! intent(out)
                           , cbr_severe_stress          & ! intent(out)
@@ -2155,10 +2219,28 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    !     The following variables control the density-dependent mortality rates.            !
    !---------------------------------------------------------------------------------------!
-   mort1(1)  = 5.0 ! 10.0
-   mort1(2)  = 5.0 ! 10.0
-   mort1(3)  = 5.0 ! 10.0
-   mort1(4)  = 5.0 ! 10.0
+   mort0(1)  = -0.35 ! 0.0
+   mort0(2)  = -0.35 ! 0.0
+   mort0(3)  = -0.35 ! 0.0
+   mort0(4)  = -0.35 ! 0.0
+   mort0(5)  =  0.0
+   mort0(6)  =  0.0
+   mort0(7)  =  0.0
+   mort0(8)  =  0.0
+   mort0(9)  =  0.0
+   mort0(10) =  0.0
+   mort0(11) =  0.0
+   mort0(12) =  0.0
+   mort0(13) =  0.0
+   mort0(14) = -0.35 ! 0.0
+   mort0(15) = -0.35 ! 0.0
+   mort0(16) = -0.35 ! 0.0
+   mort0(17) = -0.35 ! 0.0
+
+   mort1(1)  = 2.0 ! 10.0
+   mort1(2)  = 2.0 ! 10.0
+   mort1(3)  = 2.0 ! 10.0
+   mort1(4)  = 2.0 ! 10.0
    mort1(5)  = 1.0
    mort1(6)  = 1.0
    mort1(7)  = 1.0
@@ -2168,28 +2250,31 @@ subroutine init_pft_mort_params()
    mort1(11) = 1.0
    mort1(12) = 1.0
    mort1(13) = 1.0
-   mort1(14) = 5.0 ! 10.0
-   mort1(15) = 5.0 ! 10.0
-   mort1(16) = 5.0 ! 10.0
-   mort1(17) = 5.0 ! 10.0
+   mort1(14) = 2.0 ! 10.0
+   mort1(15) = 2.0 ! 10.0
+   mort1(16) = 2.0 ! 10.0
+   mort1(17) = 2.0 ! 10.0
 
-   mort2(1)  = 10.0 ! 20.0
-   mort2(2)  = 10.0 ! 20.0
-   mort2(3)  = 10.0 ! 20.0
-   mort2(4)  = 10.0 ! 20.0
-   mort2(5)  = 20.0
-   mort2(6)  = 20.0
-   mort2(7)  = 20.0
-   mort2(8)  = 20.0
-   mort2(9)  = 20.0
-   mort2(10) = 20.0
-   mort2(11) = 20.0
-   mort2(12) = 20.0
-   mort2(13) = 20.0
-   mort2(14) = 10.0 ! 20.0
-   mort2(15) = 10.0 ! 20.0
-   mort2(16) = 10.0 ! 20.0
-   mort2(17) = 10.0 ! 20.0
+   mort2(1:17) = 15.0 ! 20.0
+   mort2(2)    = 15.0 ! 20.0
+   mort2(3)    = 15.0 ! 20.0
+   mort2(4)    = 15.0 ! 20.0
+   mort2(5)    = 20.0
+   mort2(6)    = 20.0
+   mort2(7)    = 20.0
+   mort2(8)    = 20.0
+   mort2(9)    = 20.0
+   mort2(10)   = 20.0
+   mort2(11)   = 20.0
+   mort2(12)   = 20.0
+   mort2(13)   = 20.0
+   mort2(14)   = 15.0 ! 20.0
+   mort2(15)   = 15.0 ! 20.0
+   mort2(16)   = 15.0 ! 20.0
+   mort2(17)   = 15.0 ! 20.0
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Variable mort3 controls the density-independent mortality rate due to ageing.     !
@@ -2390,8 +2475,8 @@ end subroutine init_pft_mort_params
 subroutine init_pft_alloc_params()
 
    use pft_coms     , only : leaf_turnover_rate    & ! intent(in)
-                           , is_tropical           & ! intent(out)
-                           , is_grass              & ! intent(out)
+                           , is_tropical           & ! intent(in)
+                           , is_grass              & ! intent(in)
                            , rho                   & ! intent(out)
                            , SLA                   & ! intent(out)
                            , horiz_branch          & ! intent(out)
@@ -2509,33 +2594,6 @@ subroutine init_pft_alloc_params()
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    C2B    = 2.0
    !---------------------------------------------------------------------------------------! 
-
-
-   !---------------------------------------------------------------------------------------! 
-   !    This flag should be used to define whether the plant is tropical/subtropical or    !
-   ! not.                                                                                  !
-   !---------------------------------------------------------------------------------------! 
-   is_tropical(1:4)   = .true.
-   is_tropical(5:11)  = .false.
-   is_tropical(12:13) = .false.
-   is_tropical(14:15) = .true.
-   is_tropical(16)    = .true.
-   !---------------------------------------------------------------------------------------!
-   !     This uses tropical allometry for DBH->Bleaf and DBH->Bdead, but otherwise it uses !
-   ! the temperate properties.                                                             !
-   !---------------------------------------------------------------------------------------!
-   is_tropical(17)    = .true.
-
-   !---------------------------------------------------------------------------------------! 
-   !    This flag should be used to define whether the plant is tree or grass              !
-   !---------------------------------------------------------------------------------------! 
-   is_grass(1)     = .true.
-   is_grass(2:4)   = .false.
-   is_grass(5)     = .true.
-   is_grass(6:11)  = .false.
-   is_grass(12:15) = .true.
-   is_grass(16)    = .true.
-   is_grass(17)    = .false.
 
    !---------------------------------------------------------------------------------------!
    !     Wood density.  Currently only tropical PFTs need it.  C3 grass density will be    !
@@ -3529,7 +3587,6 @@ subroutine init_pft_repro_params()
 
    use pft_coms, only : r_fract            & ! intent(out)
                       , st_fract           & ! intent(out)
-                      , seed_rain          & ! intent(out)
                       , nonlocal_dispersal & ! intent(out)
                       , repro_min_h        ! ! intent(out)
    implicit none
@@ -3550,8 +3607,6 @@ subroutine init_pft_repro_params()
    st_fract(16)            = 0.0
    st_fract(17)            = 0.0
 
-   seed_rain(1:17)         = 0.01
-
    nonlocal_dispersal(1)   =  1.000 ! 1.000
    nonlocal_dispersal(2)   =  1.000 ! 0.900
    nonlocal_dispersal(3)   =  1.000 ! 0.550
@@ -3570,13 +3625,13 @@ subroutine init_pft_repro_params()
    nonlocal_dispersal(16)  =  1.000 ! 1.000
    nonlocal_dispersal(17)  =  0.766 ! 0.600
 
-   repro_min_h(1)          = 0.0
-   repro_min_h(2:4)        = 5.0
-   repro_min_h(5)          = 0.0
-   repro_min_h(6:11)       = 5.0
-   repro_min_h(12:15)      = 0.0
-   repro_min_h(16)         = 0.0
-   repro_min_h(17)         = 5.0
+   repro_min_h(1)          =  0.0
+   repro_min_h(2:4)        = 18.0
+   repro_min_h(5)          =  0.0
+   repro_min_h(6:11)       = 18.0
+   repro_min_h(12:15)      =  0.0
+   repro_min_h(16)         =  0.0
+   repro_min_h(17)         = 18.0
 
    return
 end subroutine init_pft_repro_params
@@ -3620,7 +3675,8 @@ subroutine init_pft_derived_params()
                                    , min_cohort_size      & ! intent(out)
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
-                                   , veg_hcap_min         ! ! intent(out)
+                                   , veg_hcap_min         & ! intent(out)
+                                   , seed_rain            ! ! intent(out)
    use phenology_coms       , only : elongf_min           & ! intent(in)
                                    , elongf_flush         ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
@@ -3686,7 +3742,7 @@ subroutine init_pft_derived_params()
                                               ,'     HGT_MAX','    DBH_CRIT'               &
                                               ,' ONE_PLANT_C'
    end if
-   min_plant_dens = onesixth * minval(init_density)
+   min_plant_dens = 0.1 * minval(init_density)
    do ipft = 1,n_pft
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
@@ -3754,6 +3810,13 @@ subroutine init_pft_derived_params()
       ! a cohort.  Cohorts with less biomass than this are going to be terminated.         !
       !------------------------------------------------------------------------------------! 
       min_cohort_size(ipft)  = 0.1 * min_recruit_size(ipft)
+      !------------------------------------------------------------------------------------! 
+
+
+      !------------------------------------------------------------------------------------!
+      !    Seed_rain is the density of seedling that will be added from somewhere else.    !
+      !------------------------------------------------------------------------------------! 
+      seed_rain(ipft)  = 0.1 * init_density(ipft)
       !------------------------------------------------------------------------------------! 
 
 
@@ -3834,6 +3897,7 @@ subroutine init_disturb_params
                            , agriculture_on           & ! intent(out)
                            , plantation_year          & ! intent(out)
                            , plantation_rotation      & ! intent(out)
+                           , min_harvest_biomass      & ! intent(out)
                            , mature_harvest_age       & ! intent(out)
                            , fire_dryness_threshold   & ! intent(out)
                            , fire_smoist_depth        & ! intent(out)
@@ -3864,6 +3928,9 @@ subroutine init_disturb_params
    !----- Number of years that a plantation requires to reach maturity. -------------------!
    plantation_rotation = 25.0
 
+   !----- Minimum site biomass, below which harvest is skipped. ---------------------------!
+   min_harvest_biomass = 0.001
+
    !----- Years that a non-plantation patch requires to reach maturity. -------------------!
    mature_harvest_age = 50.0 
    
@@ -3875,7 +3942,7 @@ subroutine init_disturb_params
    !---------------------------------------------------------------------------------------!
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
-   fire_smoist_depth     = -1.0
+   fire_smoist_depth     = -0.2
    !---------------------------------------------------------------------------------------!
 
    !----- Determine the top layer to consider for fires in case include_fire is 2 or 3. ---!
@@ -4244,10 +4311,8 @@ subroutine init_physiology_params()
    !----- I should print detailed debug information. --------------------------------------!
    print_photo_debug = btest(idetailed,1)
    !----- File name prefix for the detailed information in case of debugging. -------------!
-   photo_prefix      = 'photo_state_'
+   photo_prefix      = trim(ffilout)//'_photo_state_'
    !---------------------------------------------------------------------------------------!
-
-   photo_prefix = trim(ffilout)//'_'//trim(photo_prefix)
 
    return
 end subroutine init_physiology_params
@@ -4961,35 +5026,39 @@ end subroutine init_phen_coms
 !     This subroutine assigns the fusion and splitting parameters.                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-   use fusion_fission_coms, only : niter_patfus       & ! intent(out)
-                                 , hgt_class          & ! intent(out)
-                                 , fusetol            & ! intent(out)
-                                 , fusetol_h          & ! intent(out)
-                                 , lai_fuse_tol       & ! intent(out)
-                                 , lai_tol            & ! intent(out)
-                                 , ff_nhgt            & ! intent(out)
-                                 , coh_tolerance_max  & ! intent(out)
-                                 , dark_cumlai_min    & ! intent(out)
-                                 , dark_cumlai_max    & ! intent(out)
-                                 , dark_cumlai_mult   & ! intent(out)
-                                 , sunny_cumlai_min   & ! intent(out)
-                                 , sunny_cumlai_max   & ! intent(out)
-                                 , sunny_cumlai_mult  & ! intent(out)
-                                 , light_toler_min    & ! intent(out)
-                                 , light_toler_max    & ! intent(out)
-                                 , light_toler_mult   & ! intent(out)
-                                 , fuse_relax         & ! intent(out)
-                                 , corr_patch         & ! intent(out)
-                                 , corr_cohort        & ! intent(out)
-                                 , print_fuse_details & ! intent(out)
-                                 , fuse_prefix        ! ! intent(out)
-   use consts_coms        , only : onethird           & ! intent(out)
-                                 , twothirds          & ! intent(in)
-                                 , onesixth           ! ! intent(in)
+   use fusion_fission_coms, only : niter_patfus              & ! intent(out)
+                                 , hgt_class                 & ! intent(out)
+                                 , fusetol                   & ! intent(out)
+                                 , fusetol_h                 & ! intent(out)
+                                 , lai_fuse_tol              & ! intent(out)
+                                 , lai_tol                   & ! intent(out)
+                                 , ff_nhgt                   & ! intent(out)
+                                 , min_oldgrowth             & ! intent(out)
+                                 , coh_tolerance_max         & ! intent(out)
+                                 , dark_cumlai_min           & ! intent(out)
+                                 , dark_cumlai_max           & ! intent(out)
+                                 , dark_cumlai_mult          & ! intent(out)
+                                 , sunny_cumlai_min          & ! intent(out)
+                                 , sunny_cumlai_max          & ! intent(out)
+                                 , sunny_cumlai_mult         & ! intent(out)
+                                 , light_toler_min           & ! intent(out)
+                                 , light_toler_max           & ! intent(out)
+                                 , light_toler_mult          & ! intent(out)
+                                 , fuse_relax                & ! intent(out)
+                                 , corr_patch                & ! intent(out)
+                                 , corr_cohort               & ! intent(out)
+                                 , print_fuse_details        & ! intent(out)
+                                 , fuse_prefix               ! ! intent(out)
+   use consts_coms        , only : onethird                  & ! intent(out)
+                                 , twothirds                 & ! intent(in)
+                                 , onesixth                  & ! intent(in)
+                                 , tiny_num                  & ! intent(in)
+                                 , huge_num                  ! ! intent(in)
+   use disturb_coms       , only : treefall_disturbance_rate ! ! intent(in)
+   use ed_max_dims        , only : n_dist_types              ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    real              :: exp_patfus
-   real              :: exp_hgtclass
    !---------------------------------------------------------------------------------------!
 
    fusetol           = 0.4
@@ -5040,6 +5109,23 @@ subroutine init_ff_coms
    fuse_prefix        = 'patch_fusion_'
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the minimum age above which we disregard the disturbance type because the    !
+   ! patch can be considered old growth.                                                   !
+   !---------------------------------------------------------------------------------------!
+   !----- Non-cultivated patches: use the mean age for tree fall disturbances. ------------!
+   if (abs(treefall_disturbance_rate) > tiny_num) then
+      min_oldgrowth(:) = 1. / abs(treefall_disturbance_rate)
+   else
+      min_oldgrowth(:) = huge_num
+   end if
+   !----- Cultivated lands should never be fused with non-cultivated lands. ---------------!
+   min_oldgrowth(1) = huge_num
+   min_oldgrowth(2) = huge_num
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine init_ff_coms
 !==========================================================================================!
@@ -5062,7 +5148,7 @@ subroutine init_rk4_params()
                              , tiny_sfcwater_mass     ! ! intent(in)
    use canopy_air_coms, only : leaf_drywhc            & ! intent(in)
                              , leaf_maxwhc            ! ! intent(in)
-   use ed_misc_coms,only     : ffilout
+   use ed_misc_coms,only     : ffilout                ! ! intent(in)
    use met_driver_coms, only : prss_min               & ! intent(in)
                              , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
@@ -5182,8 +5268,15 @@ subroutine init_rk4_params()
    budget_pref    = 'budget_state_'          ! File with the thermodynamic boundaries.
    !---------------------------------------------------------------------------------------!
 
+
+
+   !----- Append the same prefix used for analysis files. ---------------------------------!
    detail_pref = trim(ffilout)//'_'//trim(detail_pref)
    budget_pref = trim(ffilout)//'_'//trim(budget_pref)
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Assigning some default values for the bounds at the sanity check.  Units are      !

@@ -609,6 +609,7 @@ subroutine opspec3
           maxens_dyn,    & ! intent(in)
           maxens_cap,    & ! intent(in)
           iupmethod,     & ! intent(in)
+          ilourec,       & ! intent(in)
           radius,        & ! intent(in)
           zkbmax,        & ! intent(in)
           max_heat,      & ! intent(in)
@@ -812,6 +813,13 @@ subroutine opspec3
          IFATERR=IFATERR+1
      elseif(iupmethod == 5 .and. cap_maxs > 0.) then
          print *, 'FATAL - updraft method 5 cannot be applied when cap_maxs > 0.'
+         IFATERR=IFATERR+1
+     end if
+
+
+     if (ilourec < 0 .or. ilourec > 1) then
+         print *, 'FATAL - If Cumulus parameterization is used, ilourec must be 0 or 1.'
+         print *, 'Yours is currently set to ',ilourec
          IFATERR=IFATERR+1
      end if
 
@@ -1074,20 +1082,10 @@ subroutine opspec3
 
   ! Just adding a warning message that cumulus parameterization feedback will be ignored 
   ! because the user didn't set iswrtyp or ilwrtyp to 3 (Harrington);
-  if (iswrtyp == 4 .and. icumfdbk /= 0) then
-    print *, '------------------------------------------------------------------------'
-    print *, ' FATAL - CARMA shortwave radiation won''t work with partial cumulus     '
-    print *, '         scheme. The ice mixing ratio in cumulus clouds can be much     '
-    print *, '         larger than the resolved clouds, and bands 32-35 don''t        '
-    print *, '         give reasonable results.  This may be just a bug and it will   '
-    print *, '         be eventually revisited and addressed, but for the time being  '
-    print *, '         either use Harrington or turn off the cumulus feedback.        '
-    print *, '------------------------------------------------------------------------'
-    ifaterr = ifaterr + 1
-  elseif (iswrtyp /= 3 .and. icumfdbk /=0) then
+  if (iswrtyp /= 3 .and. iswrtyp /= 4 .and. icumfdbk /=0) then
     print *, '------------------------------------------------------------------------'
     print *, 'INFO - Shortwave radiation won''t have cumulus parameterization feedback'
-    print *, '       You should use Harrington scheme to have this effect.            '
+    print *, '       You should use Harrington scheme or CARMA to have this effect.   '
     print *, '------------------------------------------------------------------------'
     print *, ' '
     infoerr = infoerr + 1
@@ -1111,7 +1109,7 @@ subroutine opspec3
        infoerr = infoerr + 1
     end if 
     if (nnqparm(ng) == 0 .and. icumfdbk == 1 .and. & 
-        (ilwrtyp == 4)) then
+        (iswrtyp == 4 .or. ilwrtyp == 4)) then
        print *, '-------------------------------------------------------------------------'
        print *, 'INFO - Cumulus parameterization will have no effect on CARMA             '
        print *, '       on grid',ng,' because the cumulus parameterizations are off.      '
@@ -1122,16 +1120,13 @@ subroutine opspec3
   end do
 
   select case (isfcl)
-  case (0:2,5)
+  case (0:2,4:5)
      continue
   case (3)
      print*,' fatal - SSiB is not available in this version, use LEAF or ED instead...'
      ifaterr=ifaterr+1
-  case (4)
-     print*,' fatal - GEMTM is not available in this version, use LEAF or ED instead...'
-     ifaterr=ifaterr+1
   case default
-     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',isfcl,'...'
+     print*,' fatal - isfcl must be either 0, 1, 2, 4, or 5. Yours is set to ',isfcl,'...'
      ifaterr=ifaterr+1
   end select
   
@@ -1156,12 +1151,16 @@ subroutine opspec3
      print *, 'fatal - DTLEAF must be less than 30 sec, and yours is set to ',dtleaf,'...'
      ifaterr=ifaterr+1
   end if
+  if (isfcl /= 0 .and. ndtveg <= 0) then
+     print *, 'fatal - NDTVEG must be positive, and yours is set to ',ndtveg,'...'
+     ifaterr=ifaterr+1
+  end if
 
   ! check whether the soil model will be run and make sure that the
   !   number of soil levels are correct.(severity - f,i )
 
-  if(isfcl.eq.0.and.nzg.gt.1)then
-     print*,' info  - more soil levels specified than needed.'
+  if(isfcl == 0.and. nzg > 1)then
+     print*,' info  - more soil levels specified than needed when isfcl is 0.'
      infoerr=infoerr+1
   endif
 
@@ -1173,10 +1172,8 @@ subroutine opspec3
      ifaterr = ifaterr + 1
   endif
 
-  if(isfcl.gt.0.and.nzg.le.2)then
-     print*,  &
-          ' fatal  - at least 2 soil levels are needed for soil'  &
-          ,' model.'
+  if(isfcl > 0 .and. nzg <= 2)then
+     print*, ' fatal  - at least 3 soil levels are needed for soil model.'
      ifaterr=ifaterr+1
   endif
 
@@ -1184,7 +1181,7 @@ subroutine opspec3
   !     Check whether the number of patches make sense.                                    !
   !----------------------------------------------------------------------------------------!
   select case (isfcl)
-  case (1,2)
+  case (1,2,4)
      if (npatch > nvtyp+1) then
         print *, ' fatal - Running LEAF-3, and NPATCH is greater than the number of '//    &
                           'vegetation types.'
@@ -1193,7 +1190,7 @@ subroutine opspec3
   case (5)
      if (npatch > nstyp+1) then
         print *, ' fatal - Running ED-2, and NPATCH is greater than the number of '//      &
-                          'vegetation types.'
+                          'soil texture types.'
         ifaterr=ifaterr+1
      end if
      if (nvegpat /= npatch - 1) then
@@ -1281,9 +1278,8 @@ subroutine opspec3
   !   that the radiation be turned on. (severity - f )
 
   do ngr=1,ngrids
-     if(isfcl.gt.0.and.ilwrtyp+iswrtyp.eq.0)then
-        print*,' fatal  - radiation scheme must be run with soil',  &
-             ' model.'
+     if(isfcl /= 0 .and. (ilwrtyp == 0 .or. iswrtyp == 0))then
+        print*,' fatal  - radiation scheme must be run with soil model.'
         ifaterr=ifaterr+1
      endif
   enddo

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 rm -fv edmain.?90                    edmain.o                   edmain.mod
 rm -fv allometry.?90                 allometry.o                allometry.mod 
 rm -fv an_header.?90                 an_header.o                an_header.mod 

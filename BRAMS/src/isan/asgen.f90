@@ -12,6 +12,7 @@ SUBROUTINE isan_driver (name_name)
   use mem_grid
   use io_params
   use grid_dims, only : str_len
+  use file_inv , only : isan_file_inv
   implicit none
 
   character(len=*) :: name_name

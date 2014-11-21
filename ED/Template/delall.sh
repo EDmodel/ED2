@@ -194,6 +194,8 @@ do
    ibigleaf=`echo ${oi}     | awk '{print $89}'`
    irepro=`echo ${oi}       | awk '{print $90}'`
    treefall=`echo ${oi}     | awk '{print $91}'`
+   ianthdisturb=`echo ${oi} | awk '{print $92}'`
+   ianthdataset=`echo ${oi} | awk '{print $93}'`
    #---------------------------------------------------------------------------------------#
 
 

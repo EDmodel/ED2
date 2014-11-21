@@ -402,21 +402,31 @@ subroutine geonest_nofile(ngra,ngrb)
                          , leaf_g(ifm)%veg_energy         , leaf_g(ifm)%can_prss           &
                          , leaf_g(ifm)%can_theiv          , leaf_g(ifm)%can_vpdef          &
                          , leaf_g(ifm)%can_theta          , leaf_g(ifm)%can_rvap           &
-                         , leaf_g(ifm)%can_co2            , leaf_g(ifm)%sensible_gc        &
-                         , leaf_g(ifm)%sensible_vc        , leaf_g(ifm)%evap_gc            &
-                         , leaf_g(ifm)%evap_vc            , leaf_g(ifm)%transp             &
+                         , leaf_g(ifm)%can_co2            , leaf_g(ifm)%hflxac             &
+                         , leaf_g(ifm)%wflxac             , leaf_g(ifm)%qwflxac            &
+                         , leaf_g(ifm)%eflxac             , leaf_g(ifm)%cflxac             &
+                         , leaf_g(ifm)%hflxgc             , leaf_g(ifm)%wflxgc             &
+                         , leaf_g(ifm)%qwflxgc            , leaf_g(ifm)%hflxvc             &
+                         , leaf_g(ifm)%wflxvc             , leaf_g(ifm)%qwflxvc            &
+                         , leaf_g(ifm)%transp             , leaf_g(ifm)%qtransp            &
+                         , leaf_g(ifm)%intercepted        , leaf_g(ifm)%qintercepted       &
+                         , leaf_g(ifm)%wshed              , leaf_g(ifm)%qwshed             &
+                         , leaf_g(ifm)%throughfall        , leaf_g(ifm)%qthroughfall       &
+                         , leaf_g(ifm)%runoff             , leaf_g(ifm)%qrunoff            &
+                         , leaf_g(ifm)%drainage           , leaf_g(ifm)%qdrainage          &
                          , leaf_g(ifm)%gpp                , leaf_g(ifm)%plresp             &
-                         , leaf_g(ifm)%resphet            , leaf_g(ifm)%veg_ndvip          &
-                         , leaf_g(ifm)%veg_ndvic          , leaf_g(ifm)%veg_ndvif          &
-                         , leaf_g(ifm)%snow_mass          , leaf_g(ifm)%snow_depth         &
-                         , leaf_g(ifm)%rshort_gnd         , leaf_g(ifm)%rlong_gnd          &
-                         , scratch%vt2dq                  , scratch%vt2dr                  &
-                         , scratch%vt2ds                  , scratch%vt2da                  &
-                         , scratch%vt2db                  , scratch%vt2dc                  &
-                         , scratch%vt2dd                  , scratch%vt2de                  &
-                         , grid_g(ifm)%glat               , grid_g(ifm)%glon               &
-                         , grid_g(ifm)%topzo              , grid_g(ifm)%flpw               &
-                         , grid_g(ifm)%rtgt               )
+                         , leaf_g(ifm)%resphet            , leaf_g(ifm)%growresp           &
+                         , leaf_g(ifm)%veg_ndvip          , leaf_g(ifm)%veg_ndvic          &
+                         , leaf_g(ifm)%veg_ndvif          , leaf_g(ifm)%snow_mass          &
+                         , leaf_g(ifm)%snow_depth         , leaf_g(ifm)%rshort_gnd         &
+                         , leaf_g(ifm)%rlong_gnd          , scratch%vt2dq                  &
+                         , scratch%vt2dr                  , scratch%vt2ds                  &
+                         , scratch%vt2da                  , scratch%vt2db                  &
+                         , scratch%vt2dc                  , scratch%vt2dd                  &
+                         , scratch%vt2de                  , grid_g(ifm)%glat               &
+                         , grid_g(ifm)%glon               , grid_g(ifm)%topzo              &
+                         , grid_g(ifm)%flpw               , grid_g(ifm)%rtgt               &
+                         )
       !------------------------------------------------------------------------------------!
 
 
@@ -517,21 +527,31 @@ subroutine geonest_nofile(ngra,ngrb)
       !            , leaf_g(ifm)%veg_energy            , leaf_g(ifm)%can_prss              &
       !            , leaf_g(ifm)%can_theiv             , leaf_g(ifm)%can_vpdef             &
       !            , leaf_g(ifm)%can_theta             , leaf_g(ifm)%can_rvap              &
-      !            , leaf_g(ifm)%can_co2               , leaf_g(ifm)%sensible_gc           &
-      !            , leaf_g(ifm)%sensible_vc           , leaf_g(ifm)%evap_gc               &
-      !            , leaf_g(ifm)%evap_vc               , leaf_g(ifm)%transp                &
+      !            , leaf_g(ifm)%can_co2               , leaf_g(ifm)%hflxac                &
+      !            , leaf_g(ifm)%wflxac                , leaf_g(ifm)%qwflxac               &
+      !            , leaf_g(ifm)%eflxac                , leaf_g(ifm)%cflxac                &
+      !            , leaf_g(ifm)%hflxgc                , leaf_g(ifm)%wflxgc                &
+      !            , leaf_g(ifm)%qwflxgc               , leaf_g(ifm)%hflxvc                &
+      !            , leaf_g(ifm)%wflxvc                , leaf_g(ifm)%qwflxvc               &
+      !            , leaf_g(ifm)%transp                , leaf_g(ifm)%qtransp               &
+      !            , leaf_g(ifm)%intercepted           , leaf_g(ifm)%qintercepted          &
+      !            , leaf_g(ifm)%wshed                 , leaf_g(ifm)%qwshed                &
+      !            , leaf_g(ifm)%throughfall           , leaf_g(ifm)%qthroughfall          &
+      !            , leaf_g(ifm)%runoff                , leaf_g(ifm)%qrunoff               &
+      !            , leaf_g(ifm)%drainage              , leaf_g(ifm)%qdrainage             &
       !            , leaf_g(ifm)%gpp                   , leaf_g(ifm)%plresp                &
-      !            , leaf_g(ifm)%resphet               , leaf_g(ifm)%veg_ndvip             &
-      !            , leaf_g(ifm)%veg_ndvic             , leaf_g(ifm)%veg_ndvif             &
-      !            , leaf_g(ifm)%snow_mass             , leaf_g(ifm)%snow_depth            &
-      !            , leaf_g(ifm)%rshort_gnd            , leaf_g(ifm)%rlong_gnd             &
-      !            , scratch%vt2dq                     , scratch%vt2dr                     &
-      !            , scratch%vt2ds                     , scratch%vt2da                     &
-      !            , scratch%vt2db                     , scratch%vt2dc                     &
-      !            , scratch%vt2dd                     , scratch%vt2de                     &
-      !            , grid_g(ifm)%glat                  , grid_g(ifm)%glon                  &
-      !            , grid_g(ifm)%topzo                 , grid_g(ifm)%flpw                  &
-      !            , grid_g(ifm)%rtgt                  )
+      !            , leaf_g(ifm)%resphet               , leaf_g(ifm)%growresp              &
+      !            , leaf_g(ifm)%veg_ndvip             , leaf_g(ifm)%veg_ndvic             &
+      !            , leaf_g(ifm)%veg_ndvif             , leaf_g(ifm)%snow_mass             &
+      !            , leaf_g(ifm)%snow_depth            , leaf_g(ifm)%rshort_gnd            &
+      !            , leaf_g(ifm)%rlong_gnd             , scratch%vt2dq                     &
+      !            , scratch%vt2dr                     , scratch%vt2ds                     &
+      !            , scratch%vt2da                     , scratch%vt2db                     &
+      !            , scratch%vt2dc                     , scratch%vt2dd                     &
+      !            , scratch%vt2de                     , grid_g(ifm)%glat                  &
+      !            , grid_g(ifm)%glon                  , grid_g(ifm)%topzo                 &
+      !            , grid_g(ifm)%flpw                  , grid_g(ifm)%rtgt                  &
+      !            )
       !------------------------------------------------------------------------------------!
 
 

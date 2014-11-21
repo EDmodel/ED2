@@ -1,139 +1,103 @@
-!############################# Change Log ##################################
-! 2.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
-
-subroutine azerov(n1)
-implicit none
-integer :: n,n1
-real :: a1(n1),a2(n1),a3(n1),a4(n1),a5(n1)
-entry azero(n1,a1)
-   do n=1,n1
-      a1(n)=0.
-   enddo
-return
-entry azero2(n1,a1,a2)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-   enddo
-return
-entry azero3(n1,a1,a2,a3)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-   enddo
-return
-entry azero4(n1,a1,a2,a3,a4)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-      a4(n)=0.
-   enddo
-return
-entry azero5(n1,a1,a2,a3,a4,a5)
-   do n=1,n1
-      a1(n)=0.
-      a2(n)=0.
-      a3(n)=0.
-      a4(n)=0.
-      a5(n)=0.
-   enddo
-return
-end
-
-![MLO ---- Similar to azerov, but for integers.
-subroutine izerov(n1)
-  implicit none
-  integer :: n,n1
-  integer :: ijk1(n1),ijk2(n1),ijk3(n1),ijk4(n1),ijk5(n1)
-  entry izero(n1,ijk1)
-     do n=1,n1
-        ijk1(n)=0
-     enddo
-  return
-  entry izero2(n1,ijk1,ijk2)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-     enddo
-  return
-  entry izero3(n1,ijk1,ijk2,ijk3)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-     enddo
-  return
-  entry izero4(n1,ijk1,ijk2,ijk3,ijk4)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-        ijk4(n)=0
-     enddo
-  return
-  entry izero5(n1,ijk1,ijk2,ijk3,ijk4,ijk5)
-     do n=1,n1
-        ijk1(n)=0
-        ijk2(n)=0
-        ijk3(n)=0
-        ijk4(n)=0
-        ijk5(n)=0
-     enddo
-  return
-end subroutine izerov
-
-![MLO - Just to generate a matrix full of ones...
-subroutine aonev(n1)
-implicit none
-integer :: n,n1
-real :: a1(n1),a2(n1),a3(n1),a4(n1),a5(n1)
-entry aone(n1,a1)
-   do n=1,n1
-      a1(n)=1.
-   enddo
-return
-entry aone2(n1,a1,a2)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-   enddo
-return
-entry aone3(n1,a1,a2,a3)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-   enddo
-return
-entry aone4(n1,a1,a2,a3,a4)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-      a4(n)=1.
-   enddo
-return
-entry aone5(n1,a1,a2,a3,a4,a5)
-   do n=1,n1
-      a1(n)=1.
-      a2(n)=1.
-      a3(n)=1.
-      a4(n)=1.
-      a5(n)=1.
-   enddo
-return
-end subroutine aonev
-!MLO]
+!==========================================================================================!
+!==========================================================================================!
+!  Change Log                                                                              !
+!  2.0.0                                                                                   !
+!                                                                                          !
+!------------------------------------------------------------------------------------------!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
 
 
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to zero.  Legacy from the old   !
+! code, when vector operations didn't exist.                                               !
+!------------------------------------------------------------------------------------------!
+subroutine azero(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   real   , dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 0.
+   end do
+
+   return
+end subroutine azero
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to zero.  Legacy from the old   !
+! code, when vector operations didn't exist.  The only difference between this one and     !
+! azero is that the input vector here is integer.                                          !
+!------------------------------------------------------------------------------------------!
+subroutine izero(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   integer, dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 0
+   end do
+
+   return
+end subroutine izero
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine flushes all elements of this array to one.  Legacy from the old    !
+! code, when vector operations didn't exist.                                               !
+!------------------------------------------------------------------------------------------!
+subroutine aone(nmax,arr)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                 , intent(in)  :: nmax
+   real   , dimension(nmax), intent(out) :: arr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nmax
+      arr(n) = 1.
+   end do
+
+   return
+end subroutine aone
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ae1t0(n1,a,b,c)
 implicit none
 integer :: n1
@@ -841,25 +805,38 @@ subroutine sort3(a,b,c,n)
    end do
    return
 end subroutine sort3
+!==========================================================================================!
+!==========================================================================================!
 
-!******************************************************************************************!
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine sorts the elements of vector a from smallest to largest.            !
+!------------------------------------------------------------------------------------------!
 subroutine sort_up(a,n)
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                  :: n
    integer , intent(inout), dimension(n) :: a
+   !----- Local variables. ----------------------------------------------------------------!
    logical ,                dimension(n) :: unlocked
    integer                               :: atmp
-   integer                               :: imin,k
+   integer                               :: imin
+   integer                               :: k
+   !---------------------------------------------------------------------------------------!
 
-   unlocked=.true.
+   unlocked(:) = .true.
 
    do k=1,n
-      imin=minloc(a,1,unlocked)
-      atmp=a(imin)
-      a(imin)=a(k)
-      a(k)=atmp
-      unlocked(k)=.false.
+      imin        = minloc(a,1,unlocked)
+      atmp        = a(imin)
+      a(imin)     = a(k)
+      a(k)        = atmp
+      unlocked(k) = .false.
    end do
    return
 end subroutine sort_up
@@ -873,22 +850,63 @@ end subroutine sort_up
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine sorts the elements of vector a from largest to smallest.            !
+!------------------------------------------------------------------------------------------!
+subroutine sort_down(a,n)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer , intent(in)                  :: n
+   integer , intent(inout), dimension(n) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   logical ,                dimension(n) :: unlocked
+   integer                               :: atmp
+   integer                               :: imax
+   integer                               :: k
+   !---------------------------------------------------------------------------------------!
+
+   unlocked(:) = .true.
+
+   do k=1,n
+      imax        = maxloc(a,1,unlocked)
+      atmp        = a(imax)
+      a(imax)     = a(k)
+      a(k)        = atmp
+      unlocked(k) = .false.
+   end do
+   return
+end subroutine sort_down
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine ranks the elements of vector a from smallest to largest.            !
+!------------------------------------------------------------------------------------------!
 subroutine rank_up(nmax,variable,ranking)
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
    integer , intent(in)                    :: nmax
    real    , intent(in)  , dimension(nmax) :: variable
    integer , intent(out) , dimension(nmax) :: ranking
+   !----- Local variables. ----------------------------------------------------------------!
    logical ,               dimension(nmax) :: unlocked
-   integer                                 :: n,nmin
+   integer                                 :: n
+   integer                                 :: locmin
+   !---------------------------------------------------------------------------------------!
 
-   unlocked=.true.
-
-   ranking=0
+   unlocked(:) = .true.
+   ranking (:) = 0
    do n=1,nmax
-     nmin=minloc(variable,1,unlocked)
-     unlocked(nmin)=.false.
-     ranking(nmin)=n
+     locmin           = minloc(variable,1,unlocked)
+     unlocked(locmin) = .false.
+     ranking (locmin) = n
    end do
+
    return
 end subroutine rank_up
 !==========================================================================================!
@@ -901,11 +919,51 @@ end subroutine rank_up
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine ranks the elements of vector a from largest to smallest.            !
+!------------------------------------------------------------------------------------------!
+subroutine rank_down(nmax,variable,ranking)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer , intent(in)                    :: nmax
+   real    , intent(in)  , dimension(nmax) :: variable
+   integer , intent(out) , dimension(nmax) :: ranking
+   !----- Local variables. ----------------------------------------------------------------!
+   logical ,               dimension(nmax) :: unlocked
+   integer                                 :: n
+   integer                                 :: locmax
+   !---------------------------------------------------------------------------------------!
+
+   unlocked(:) = .true.
+   ranking (:) = 0
+   do n=1,nmax
+     locmax           = maxloc(variable,1,unlocked)
+     unlocked(locmax) = .false.
+     ranking (locmax) = n
+   end do
+
+   return
+end subroutine rank_down
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function finds the element of the rank array that has a given rank.             !
+!------------------------------------------------------------------------------------------!
 integer function find_rank(ranking,nmax,rankarray)
    implicit none
-   integer, intent(in)                  :: ranking,nmax
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in)                  :: ranking
+   integer, intent(in)                  :: nmax
    integer, intent(in), dimension(nmax) :: rankarray
+   !----- Local variables. ----------------------------------------------------------------!
    integer                              :: n
+   !---------------------------------------------------------------------------------------!
    find_rank=-1
    do n=1,nmax
       if (rankarray(n) == ranking) then
@@ -1427,12 +1485,17 @@ end function cdf
 real function cbrt(x)
    use rconstants, only: onethird
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
    real, intent(in) :: x
+   !---------------------------------------------------------------------------------------!
+
    if (x > 0.0) then
      cbrt=x**onethird
    else
      cbrt=-((-x)**onethird)
    end if 
+
+   return
 end function cbrt
 !==========================================================================================!
 !==========================================================================================!
@@ -1790,32 +1853,37 @@ end function check_real
 
 
 
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will solve the linear system AA . X = Y for given AA and Y, using    !
 ! the Gaussian elimination method with partial pivoting and back-substitution.             !
+!     This subroutine is based on:                                                         !
+!                                                                                          !
+! Press, W. H., S. A. Teukolsky, W. T. Vetterling, B. P. Flannery: 1992. Numerical recipes !
+!    in Fortran 77.  Cambridge University Press.                                           !
 !------------------------------------------------------------------------------------------!
 subroutine lisys_solver(nsiz,AA,Y,X,sing)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                      , intent(in)  :: nsiz  ! matrix and vector size
-   real   , dimension(nsiz,nsiz), intent(in)  :: AA    ! matrix
-   real   , dimension(nsiz)     , intent(in)  :: Y     ! right-hand side vector
-   real   , dimension(nsiz)     , intent(out) :: X     ! unknown vector
-   logical                      , intent(out) :: sing  ! The matrix was singular      [T|F]
+   integer                           , intent(in)  :: nsiz   ! matrix and vector size
+   real(kind=4), dimension(nsiz,nsiz), intent(in)  :: AA     ! matrix
+   real(kind=4), dimension(nsiz)     , intent(in)  :: Y      ! right-hand side vector
+   real(kind=4), dimension(nsiz)     , intent(out) :: X      ! unknown vector
+   logical                           , intent(out) :: sing   ! The matrix is singular [T|F]
    !----- Local variables. ----------------------------------------------------------------!
-   real   , dimension(nsiz,nsiz)              :: EE     ! Copy of AA, for elimination.
-   real   , dimension(nsiz)                   :: Z      ! Copy of Y, for scaling
-   real   , dimension(nsiz)                   :: dumvec ! Dummy vector, for row swapping
-   real                                       :: pivot  ! The pivot
-   real                                       :: multip ! Multiplier
-   integer                                    :: r      ! Row index
-   integer                                    :: b      ! Row below index
-   integer                                    :: c      ! Column index
-   integer                                    :: p      ! Pivot index
-   real                                       :: dumsca ! Dummy scalar, for row swapping
+   real(kind=4), dimension(nsiz,nsiz)              :: EE     ! Copy of AA, for elimination.
+   real(kind=4), dimension(nsiz)                   :: Z      ! Copy of Y, for scaling
+   real(kind=4), dimension(nsiz)                   :: dumvec ! Dummy vector (row swapping)
+   real(kind=4)                                    :: pivot  ! The pivot
+   real(kind=4)                                    :: multip ! Multiplier
+   integer                                         :: r      ! Row index
+   integer                                         :: b      ! Row below index
+   integer                                         :: c      ! Column index
+   integer                                         :: p      ! Pivot index
+   real(kind=4)                                    :: dumsca ! Dummy scalar (row swapping)
    !----- Local parameters. ---------------------------------------------------------------!
-   real                         , parameter   :: tinyoff=1.e-20
+   real(kind=4)                      , parameter   :: tinyoff=1.e-20
    !---------------------------------------------------------------------------------------!
    
    !----- First thing, we copy AA to EE and Y to Z. ---------------------------------------!
@@ -1898,6 +1966,120 @@ end subroutine lisys_solver
 
 
 
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine is the double precision version of the linear system solver above.   !
+! It will solve the linear system AA . X = Y for given AA and Y, using the Gaussian        !
+! elimination method with partial pivoting and back-substitution.  This subroutine is      !
+! based on:                                                                                !
+!                                                                                          !
+! Press, W. H., S. A. Teukolsky, W. T. Vetterling, B. P. Flannery: 1992. Numerical recipes !
+!    in Fortran 77.  Cambridge University Press.                                           !
+!------------------------------------------------------------------------------------------!
+subroutine lisys_solver8(nsiz,AA,Y,X,sing)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                           , intent(in)  :: nsiz  ! matrix and vector size
+   real(kind=8), dimension(nsiz,nsiz), intent(in)  :: AA    ! matrix
+   real(kind=8), dimension(nsiz)     , intent(in)  :: Y     ! right-hand side vector
+   real(kind=8), dimension(nsiz)     , intent(out) :: X     ! unknown vector
+   logical                           , intent(out) :: sing  ! The matrix was singular [T|F]
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=8), dimension(nsiz,nsiz)              :: EE     ! Copy of AA, for elimination.
+   real(kind=8), dimension(nsiz)                   :: Z      ! Copy of Y, for scaling
+   real(kind=8), dimension(nsiz)                   :: dumvec ! Dummy vector (row swapping)
+   real(kind=8)                                    :: pivot  ! The pivot
+   real(kind=8)                                    :: multip ! Multiplier
+   integer                                         :: r      ! Row index
+   integer                                         :: b      ! Row below index
+   integer                                         :: c      ! Column index
+   integer                                         :: p      ! Pivot index
+   real(kind=8)                                    :: dumsca ! Dummy scalar (row swapping)
+   !----- Local parameters. ---------------------------------------------------------------!
+   real(kind=8)                      , parameter   :: tinyoff=1.d-20
+   !---------------------------------------------------------------------------------------!
+   
+   !----- First thing, we copy AA to EE and Y to Z. ---------------------------------------!
+   EE(:,:) = AA(:,:)
+   Z (:)   = Y (:)
+   dumvec  = 0.d0
+   dumsca  = 0.d0
+   !---------------------------------------------------------------------------------------!
+   !     We initialise X with a huge, non-sense value, which will become the answer when   !
+   ! the matrix is singular.                                                               !
+   !---------------------------------------------------------------------------------------!
+   X (:)   = -huge(1.d0)
+   !----- We first assume that everything will be fine. -----------------------------------!
+   sing    = .false.
+
+   !---------------------------------------------------------------------------------------!
+   ! 1. Main elimination loop, done row by row.                                            !
+   !---------------------------------------------------------------------------------------!
+   elimloop: do r = 1, nsiz-1
+      !------ 1a. Finding the largest element, which will become our pivot ----------------!
+      p = (r-1) + maxloc(abs(EE(r:nsiz,r)),dim=1)
+      
+      pivot = maxval(abs(EE(r:nsiz,r)))
+      !------------------------------------------------------------------------------------!
+      ! 1b. Check the pivot and make sure it is a good one.  If not, then this matrix is   !
+      !     singular or almost singular, and we cannot solve it, so we switch the flag and !
+      !     return.                                                                        !
+      !------------------------------------------------------------------------------------!
+      if (pivot < tinyoff) then
+         sing = .true.
+         return
+      end if
+      
+      !----- 1c. If the best pivot is not the current row, we must swap them. -------------!
+      if (p /= r) then
+         dumvec(r:nsiz) = EE(r,r:nsiz)
+         dumsca         = Z(r)
+         EE(r,r:nsiz)   = EE(p,r:nsiz)
+         Z(r)           = Z(p)
+         EE(p,r:nsiz)   = dumvec(r:nsiz)
+         Z(p)           = dumsca
+      end if
+
+      !------------------------------------------------------------------------------------!
+      ! 1d.  Eliminate rows below, everything to the left of the (,r) column will become   !
+      !      zero (we won't compute that, but they will be.).                              !
+      !------------------------------------------------------------------------------------!
+      belowloop: do b=r+1,nsiz
+         multip = EE(b,r)/EE(r,r)
+         EE(b,r:nsiz) = EE(b,r:nsiz) - multip * EE(r,r:nsiz)
+         Z(b)         = Z(b)         - multip * Z(r)
+      end do belowloop
+   end do elimloop
+
+   !---------------------------------------------------------------------------------------!
+   ! 2. We may be unlucky and discover that the matrix is singular at the last line, so we !
+   !    check the last pivot too.                                                          ! 
+   !---------------------------------------------------------------------------------------!
+   if (abs(EE(nsiz,nsiz)) < tinyoff) then
+      sing = .true.
+      return
+   end if
+
+   !---------------------------------------------------------------------------------------!
+   ! 3. We now perform the back-substitution, to find the solution.                        !
+   !---------------------------------------------------------------------------------------!
+   X(nsiz) = Z(nsiz) / EE(nsiz,nsiz)
+   backsubloop: do r=nsiz-1,1,-1
+      b    = r+1
+      X(r) = (Z(r) - sum(EE(r,b:nsiz)*x(b:nsiz))) / EE(r,r)
+   end do backsubloop
+
+   return
+end subroutine lisys_solver8
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
 !==========================================================================================!
 !==========================================================================================!
 !     This function checks whether a number is finite or not.  This test will return true  !
@@ -1914,3 +2096,366 @@ logical function is_finite(number)
 end function is_finite
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function checks whether a number is finite or not.  This test will return true  !
+! if the number is a valid one, and false if the number is either +Infinity, -Infinity, or !
+! NaN.                                                                                     !
+!------------------------------------------------------------------------------------------!
+logical function is_finite8(number)
+   implicit none
+   real(kind=8), intent(in) :: number
+   real(kind=8), parameter  :: largeneg = -huge(1.d0)
+   real(kind=8), parameter  :: largepos =  huge(1.d0)
+   is_finite8 = number >= largeneg .and. number <= largepos
+   return
+end function is_finite8
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts the diagonal of a matrix.                                   !
+!------------------------------------------------------------------------------------------!
+subroutine diagon(nsiz,mat,vec)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                      , intent(in)  :: nsiz
+   real   , dimension(nsiz,nsiz), intent(in)  :: mat
+   real   , dimension(nsiz)     , intent(out) :: vec
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                    :: n
+   !---------------------------------------------------------------------------------------!
+
+   do n=1,nsiz
+      vec(n) = mat(n,n)
+   end do
+
+   return
+end subroutine diagon
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     EIFUN8 -- This function computes the exponential integral function, defined by       !
+!                                                                                          !
+!                        x_                                                                !
+!                        |    exp(t)                                                       !
+!              Ei(x) =   |   -------- dt                                                   !
+!                       _|      t                                                          !
+!                        0                                                                 !
+!                                                                                          !
+!     This function is based on:                                                           !
+!                                                                                          !
+! Press, W. H., S. A. Teukolsky, W. T. Vetterling, B. P. Flannery: 1992. Numerical recipes !
+!    in Fortran 77.  Cambridge University Press, section 6.3 p. 215-219.                   !
+!                                                                                          !
+! with the difference that we also solve for negative numbers.  Zero cannot be solved, so  !
+! if this happens, or if the sought number would lead to infinity, we stop the model.      !
+!------------------------------------------------------------------------------------------!
+real(kind=8) function eifun8(x)
+   use rconstants, only : euler_gam8 & ! intent(in)
+                        , lnexp_min8 & ! intent(in)
+                        , lnexp_max8 & ! intent(in)
+                        , tiny_num8  ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=8), intent(in) :: x
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=8)             :: sum
+   real(kind=8)             :: term
+   real(kind=8)             :: fact
+   real(kind=8)             :: prev
+   real(kind=8)             :: diter
+   integer                  :: iter
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8), parameter  :: powerlim  = 1.5d+01
+   real(kind=8), parameter  :: converge  = 1.0d-7
+   integer     , parameter  :: maxiter   = 100
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check what to do depending on the value of x.                                     !
+   !---------------------------------------------------------------------------------------!
+   if (x == 0.d0) then
+      !------------------------------------------------------------------------------------!
+      !     Zero.  This is a singularity and the user should never call it in this case.   !
+      ! That's sad, but we ought to quit this run and tell the user why the run crashed.   !
+      !------------------------------------------------------------------------------------!
+      call abort_run('Exponential integral cannot be solved for x = 0.'                    &
+                      ,'eifun8','numutils.f90')
+   elseif (x >= lnexp_max8) then
+      !----- Huge value, crash because this is iminent over-flow. -------------------------!
+      write(unit=*,fmt='(a,1x,es12.5)') 'Attempted X =         ',x
+      write(unit=*,fmt='(a,1x,es12.5)') 'Maximum acceptable X =',lnexp_max8
+      call abort_run('Exponential integral cannot be solved for x = 0.'                    &
+                      ,'eifun8','numutils.f90')
+   elseif (abs(x) <= lnexp_min8) then
+      !----- Huge negative number, the result can be rounded to zero. ---------------------!
+      eifun8 = 0.d0
+   elseif (abs(x) <= tiny_num8) then
+      !----- The number is too close to zero, bypass iterative methods. -------------------!
+      eifun8 = euler_gam8 + log(abs(x))
+   elseif (abs(x) <= powerlim) then
+      !------------------------------------------------------------------------------------!
+      !    Input x is small, so we use the power method.                                   !
+      !------------------------------------------------------------------------------------!
+      fact      = 1.d0
+      sum       = 0.d0
+      powerloop: do iter=1,maxiter
+         diter = dble(iter)
+         fact  = fact * x / diter
+         term  = fact / diter
+         sum   = sum + term
+         !----- If the term is tiny, we have reached convergence, quit the loop. ----------!
+         if (abs(term) < converge * abs(sum)) exit powerloop
+      end do powerloop
+      eifun8   = euler_gam8 + log(abs(x)) + sum
+   else
+      !------------------------------------------------------------------------------------!
+      !    Input x is large, so we use the asymptotic approximation.                       !
+      !------------------------------------------------------------------------------------!
+      sum       = 0.d0
+      term      = 1.d0
+      asymploop: do iter=1,maxiter
+         diter = dble(iter)
+         prev  = term
+         term  = term * diter / x
+         if (abs(term) < converge) then
+            !----- The term is tiny, we have reached convergence, quit the loop. ----------!
+            exit asymploop
+         elseif (abs(term) >= abs(prev)) then
+            !------------------------------------------------------------------------------!
+            !   Series is diverging, we are probably reaching round-off errors, we better  !
+            ! stop now.                                                                    !
+            !------------------------------------------------------------------------------!
+            sum = sum - prev
+            exit asymploop
+         else
+            sum = sum + term
+         end if
+      end do asymploop
+      eifun8 = exp(x) * (1.d0 + sum) / x
+   end if
+
+   return
+end function eifun8
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a vertical (z) column given a 3-D array, and the fixed      !
+! indices for the x and y dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2zcol(mz,mx,my,x,y,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: x
+   integer                          , intent(in)  :: y
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(mz)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: z
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,mz
+      vector(z) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2zcol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a longitudinal (x) column given a 3-D array, and the fixed  !
+! indices for the z and y dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2xcol(mz,mx,my,z,y,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: z
+   integer                          , intent(in)  :: y
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(mx)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: x
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,mx
+      vector(x) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2xcol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts a latitudinal (y) column given a 3-D array, and the fixed   !
+! indices for the z and x dimensions.                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine array2ycol(mz,mx,my,z,x,array,vector)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)  :: mz
+   integer                          , intent(in)  :: mx
+   integer                          , intent(in)  :: my
+   integer                          , intent(in)  :: z
+   integer                          , intent(in)  :: x
+   real(kind=4), dimension(mz,mx,my), intent(in)  :: array
+   real(kind=4), dimension(my)      , intent(out) :: vector
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                        :: y
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,my
+      vector(y) = array(z,x,y)
+   end do
+
+   return
+end subroutine array2ycol
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a vertical (z) column to a 3-D array, using fixed indices for !
+! the x and y dimensions.                                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine zcol2array(mz,mx,my,x,y,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: x
+   integer                          , intent(in)    :: y
+   real(kind=4), dimension(mz)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: z
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,mz
+      array(z,x,y) = vector(z)
+   end do
+
+   return
+end subroutine zcol2array
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a longitudinal (x) column to a 3-D array, using fixed indices !
+! for the z and y dimensions.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine xcol2array(mz,mx,my,z,y,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: z
+   integer                          , intent(in)    :: y
+   real(kind=4), dimension(mx)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: x
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,mx
+      array(z,x,y) = vector(x)
+   end do
+
+   return
+end subroutine xcol2array
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies a latitudinal (y) column to a 3-D array, using fixed indices  !
+! for the z and x dimensions.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine ycol2array(mz,mx,my,z,x,vector,array)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                          , intent(in)    :: mz
+   integer                          , intent(in)    :: mx
+   integer                          , intent(in)    :: my
+   integer                          , intent(in)    :: z
+   integer                          , intent(in)    :: x
+   real(kind=4), dimension(my)      , intent(in)    :: vector
+   real(kind=4), dimension(mz,mx,my), intent(inout) :: array
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                          :: y
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,my
+      array(z,x,y) = vector(y)
+   end do
+
+   return
+end subroutine ycol2array
+!==========================================================================================!
+!==========================================================================================!
+

@@ -744,12 +744,7 @@ module budget_utils
       integer                             :: idbh
       real                                :: lrresp !  Leaf and root respiration
       real                                :: sresp  !  Storage, growth, vleaf respiration.
-      logical                             :: forest
       !------------------------------------------------------------------------------------!
-
-     
-      !----- GPP by DBH is computed for forested areas only. ------------------------------!
-      forest = csite%dist_type(ipa) /= 1
 
       !----- Initializing some variables. -------------------------------------------------!
       gpp          = 0.0

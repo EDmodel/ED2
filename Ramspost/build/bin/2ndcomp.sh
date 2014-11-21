@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 rm -fv abort_run.o          abort_run.mod
 rm -fv an_header.o          an_header.mod
 rm -fv brams_data.o         brams_data.mod
@@ -27,6 +27,7 @@ rm -fv rpost_coms.o         rpost_coms.mod
 rm -fv rpost_dims.o         rpost_dims.mod
 rm -fv rpost_filelist.o     rpost_filelist.mod
 rm -fv rpost_misc.o         rpost_misc.mod
+rm -fv rpost_utils.o        rpost_utils.mod
 rm -fv rsys.o               rsys.mod
 rm -fv rutil.o              rutil.mod
 rm -fv scratch_coms.o       scratch_coms.mod

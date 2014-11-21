@@ -7,17 +7,41 @@
 include paths.mk
 include include.mk.$(OPT)
 
+
+#------------------------------------------------------------------------------------------#
+#      Double check that the "LOWO" flags have been set.  In case they have not, clone the #
+# standard options.  LOWO stands for LOWer Optimisation, and these flags are used for a    #
+# subroutines that are taking several hours to compile with ifort-13 (ed_state_vars.f90    #
+# and a few others).                                                                       #
+#------------------------------------------------------------------------------------------#
+ifeq ($(F_LOWO_OPTS),)
+   F_LOWO_OPTS = $(F_OPTS)
+endif
+#------------------------------------------------------------------------------------------#
+
+
+
 #----- Compiler commands. -----------------------------------------------------------------#
-INCLUDES    = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) 
-F90_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
-FPP_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)          \
-              -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)          \
-              -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
-CXX_COMMAND = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
+INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) 
+F90_COMMAND      = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
+F90_LOWO_COMMAND = $(F_COMP) -c $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
+FPP_COMMAND      = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
+                   -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)     \
+                   -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
+FPP_LOWO_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)     \
+                   -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)     \
+                   -DUSE_MPIWTIME=$(USE_MPIWTIME) $(F_LOWO_OPTS) $(INCLUDES) $(PAR_DEFS)
+CXX_COMMAND      = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(PAR_DEFS)
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #----- Define archive and executable names. -----------------------------------------------#
 EXE=$(BASE)/ed_$(ED_VERSION)-$(OPT)
 LIBMODEL=$(BASE)/ed_$(ED_VERSION)-$(OPT).a
+#------------------------------------------------------------------------------------------#
+
 
 include objects.mk
 
@@ -47,9 +71,9 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 
 $(MAINOBJ):  $(MAIN) 
 	@echo ""
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+	/bin/rm -f $(<F:.F90=.F90)
+	/bin/cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
 
 $(LIBMODEL): $(OBJ_MODEL)
 	$(ARCHIVE) $(LIBMODEL) $(OBJ_MODEL)

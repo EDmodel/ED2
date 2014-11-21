@@ -147,7 +147,7 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    select case (isfcl)
-   case (0:2)
+   case (0:2,4)
       call leaf3_timestep()
    case (5)
       call ed_timestep()
@@ -299,7 +299,7 @@ subroutine timestep()
    case (1)
       call advectc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
    case (2)
-      call radvc_mnt_driver(mzp,mxp,myp,ia,iz,ja,jz,mynum)
+      call radvc_mnt_driver(mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
    end select
    if (acct) call acctimes('accu',19,'ADVECTs',t1,w1)
    !---------------------------------------------------------------------------------------!

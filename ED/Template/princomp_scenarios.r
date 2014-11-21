@@ -4,6 +4,7 @@
 #------------------------------------------------------------------------------------------#
 rm(list=ls())
 graphics.off()
+options(warn=0)
 #------------------------------------------------------------------------------------------#
 
 
@@ -17,7 +18,7 @@ graphics.off()
 here          = getwd()                     # Current directory
 srcdir        = "/n/home00/mlongo/util/Rsc" # Script directory
 stext.default = "stext16"                   # Default soil texture
-drain.default = "r+000"                     # Default rainfall
+drain.default = "r-160"                     # Default rainfall
 ibackground   = 0                           # Target background colour:
                                             #    (to adjust foreground colours accordingly)
                                             # 0 -- White
@@ -319,14 +320,21 @@ if (! ( ok.global && ok.panel && ok.scenario)){
 #------------------------------------------------------------------------------------------#
 
 
-#----- Make sure that the base directory exists. ------------------------------------------#
+#----- Make sure that the all directories exist. ------------------------------------------#
 if (! file.exists(outroot)) dir.create(outroot)
-pcadbhroot = file.path(outroot,outform,"pcadbh_year")
-pcaallroot  = file.path(outroot,outform,"pcaall_year")
+pcadbhroot = rep(x=NA_character_,times=nout)
+pcaallroot = rep(x=NA_character_,times=nout)
 for (o in sequence(nout)){
-   if (! file.exists(pcadbhroot[o]) && outform[o] != "x11") dir.create(pcadbhroot[o])
-   if (! file.exists(pcaallroot[o]) && outform[o] != "x11") dir.create(pcaallroot[o])
-}#end for
+   onow.main     = file.path(outroot,outform[o])
+   pcadbhroot[o] = file.path(onow.main,"pcadbh_year")
+   pcaallroot[o] = file.path(onow.main,"pcaall_year")
+   if (! outform[o] %in% c("quartz","x11")){
+      if (! file.exists(onow.main    )) dir.create(onow.main    )
+      if (! file.exists(pcadbhroot[o])) dir.create(pcadbhroot[o])
+      if (! file.exists(pcaallroot[o])) dir.create(pcaallroot[o])
+   }#end if (! outform[o] %in% c("quartz","x11"))
+   #---------------------------------------------------------------------------------------#
+}#end for (o in sequence(nout))
 #------------------------------------------------------------------------------------------#
 
 
@@ -406,17 +414,288 @@ dbh.suffix    = paste("dbh",tolower(dbh.key),sep="-")
 #------------------------------------------------------------------------------------------#
 #      This is the R object that has the simulation information.                           #
 #------------------------------------------------------------------------------------------#
-rdata.siminfo = file.path(rdata.path,paste(comp.prefix,"SimInfo.RData",sep="_"))
+if (! file.exists(rdata.path)) dir.create(rdata.path)
+rdata.siminfo = file.path( rdata.path
+                         , paste( comp.prefix,stext.default,drain.default,"SimInfo.RData"
+                                , sep = "_"
+                                )#end paste
+                         )#end file.path
 #------------------------------------------------------------------------------------------#
 
 
 
-#----- Retrieve the data. -----------------------------------------------------------------#
-cat (" + Loading simulation information from ",basename(rdata.siminfo),"...","\n")
-load(rdata.siminfo)
-n.simul = simul$n.simul
-n.dims  = simul$n.dims
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Here we read or reload the simulations.                                              #
 #------------------------------------------------------------------------------------------#
+if (file.exists(rdata.siminfo)){
+   #----- Retrieve the data. --------------------------------------------------------------#
+   cat (" + Loading simulation information from ",basename(rdata.siminfo),"...","\n")
+   load(rdata.siminfo)
+   n.simul = simul$n.simul
+   n.dims  = simul$n.dims
+   #---------------------------------------------------------------------------------------#
+}else{
+   #---------------------------------------------------------------------------------------#
+   #     Load the simulations again.                                                       #
+   #---------------------------------------------------------------------------------------#
+   cat (" + Reloading the simulation output...","\n")
+
+
+
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #     In this block we concatenate all dimensions in a way that we can easily modify    #
+   # the dimensions later.                                                                 #
+   #---------------------------------------------------------------------------------------#
+   cat ("   - Finding the parameter space dimensions for these simulations...","\n")
+      #----- Combine all the dimensions we are going to explore. --------------------------#
+      rdims      = c("global","panel","scenario")
+      loop.rdims = seq_along(rdims)
+      simul.a    = NULL
+      simul.b    = NULL
+      dim.type   = NULL
+      pattern    = NULL
+      default    = NULL
+      alabel     = NULL
+      for (r in loop.rdims){
+         this     = get(rdims[r])
+         this.a   = lapply(X=this  ,FUN= data.frame,stringsAsFactors=FALSE)
+         this.b   = sapply(X=this.a,FUN=rbind                             )
+         this.e   = t(apply(X = sapply(X=this,FUN=c), MARGIN=1,FUN=unlist))
+         simul.a  = c    (simul.a,this.a)
+         simul.b  = cbind(simul.b,this.b)
+         dim.type = c    (dim.type,rep(rdims[r],times=length(this)))
+
+         #---------------------------------------------------------------------------------#
+         #    These variables should remain scalars.                                       #
+         #---------------------------------------------------------------------------------#
+         pattern  = unlist(c(pattern, this.e[,"pattern"]))
+         default  = unlist(c(default, this.e[,"default"]))
+         alabel   = unlist(c(alabel , this.e[,"alabel" ]))
+         #---------------------------------------------------------------------------------#
+         rm(this,this.a,this.b,this.e)
+      }#end for
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Rename the elements of the 3 simple vectors.                                   #
+      #------------------------------------------------------------------------------------#
+      names(pattern) = names(default) = names(alabel) = names(simul.a)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find all dimensions and dimension names, then we transform the internal        #
+      # vectors in arrays, so it is easier to track                                        #
+      #------------------------------------------------------------------------------------#
+      dim.simul    = sapply(X=simul.a,FUN=nrow)
+      dnames.simul = simul.b    ["key",]
+      simul        = apply(X=simul.b,FUN=expand.grid,MARGIN=1,stringsAsFactors=FALSE)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Append the dimensions to the list. -------------------------------------------#
+      simul$dim      = dim.simul
+      simul$dimnames = dnames.simul
+      simul$dim.type = dim.type
+      simul$pattern  = pattern
+      simul$default  = default
+      simul$alabel   = alabel
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Map the indices onto the dimension names. ------------------------------------#
+      simul$index = mapply(FUN= match,x= simul$key,table= simul$dimnames)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Map the default indices onto the dimension names. ----------------------------#
+      simul$def.idx = mapply(FUN= match,x= simul$default,table= simul$dimnames)
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Map the indices onto the dimension names. ------------------------------------#
+      simul$name = rep(name.template,times=nrow(simul$index))
+      for (l in 1:length(simul$key)){
+         simul$name = mapply( FUN         = gsub
+                            , replacement = simul$key[[l]]
+                            , x           = simul$name
+                            , MoreArgs    = list(pattern=simul$pattern[l])
+                            )#end mapply
+         dimnames(simul$name) = NULL
+      }#end for
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find the global number of runs and dimensions. -------------------------------#
+      simul$n.simul = length(simul$name)
+      simul$n.dims  = length(simul$dim)
+      n.simul       = simul$n.simul
+      n.dims        = simul$n.dims
+      sim.width     = nchar(n.simul)
+      sim.label     = paste( "sim"
+                           , sprintf( paste("%",sim.width,".",sim.width,"i",sep="")
+                                    , sequence(n.simul))
+                           , sep="-"
+                           )#end paste
+
+
+      #------------------------------------------------------------------------------------#
+      #     Check whether there are realisations or not.                                   #
+      #------------------------------------------------------------------------------------#
+      if (n.realisation == 0){
+         #---------------------------------------------------------------------------------#
+         #     No realisation, still make a dummy matrix.                                  #
+         #---------------------------------------------------------------------------------#
+         simul$n.real         = 1
+         n.real               = simul$n.real
+         simul$name           = matrix(simul$name,nrow=n.simul,ncol=n.real)
+         dimnames(simul$name) = list(sim.label,"real-00")
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Find the combination of all realisations. ---------------------------------#
+         simul$n.real = n.realisation
+         n.real       = simul$n.real
+         simul$name = rep   (simul$name     ,times = n.real )
+         replace.by = rep   (realisation$key,each  = n.simul)
+         simul$name = matrix( data = mapply( FUN         = gsub
+                                           , replacement = replace.by
+                                           , x           = simul$name
+                                           , MoreArgs    = list(pattern=realisation$pattern)
+                                           )#end mapply
+                            , nrow = n.simul
+                            , ncol = n.real
+                            )#end matrix
+         dimnames(simul$name) = list(sim.label,realisation$key)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #      Create all possible combinations of global and panel variables.               #
+      #------------------------------------------------------------------------------------#
+      #----- Global variables. ------------------------------------------------------------#
+      i.global              = which(simul$dim.type == "global")
+      simul$global          = list()
+      if (n.global == 1){
+         simul$global$index = unlist(simul$key [,i.global])
+         simul$global$title = unlist(simul$desc[,i.global])
+      }else{
+         simul$global$index = apply( X        = simul$key [,i.global]
+                                   , MARGIN   = 1
+                                   , FUN      = paste
+                                   , collapse = "-"
+                                   )#end apply
+         simul$global$title = apply( X        = simul$desc[,i.global]
+                                   , MARGIN   = 1
+                                   , FUN      = paste
+                                   , collapse = " - "
+                                   )#end apply
+      }#end if
+      simul$global$level      = unique(simul$global$index)
+      simul$global$title      = unique(simul$global$title)
+      simul$global$index      = match(simul$global$index,simul$global$level)
+      simul$global$n.level    = length(simul$global$level)
+      #----- Panel variables. -------------------------------------------------------------#
+      i.panel               = which(simul$dim.type == "panel")
+      simul$panel           = list()
+      if (n.panel == 0){
+         simul$panel$index  = character(0)
+         simul$panel$title  = character(0)
+      }else if (n.panel == 1){
+         simul$panel$index  = c(simul$key [,i.panel])
+         simul$panel$title  = c(simul$desc[,i.panel])
+      }else{
+         simul$panel$index  = apply( X        = simul$key [,i.panel]
+                                   , MARGIN   = 1
+                                   , FUN      = paste
+                                   , collapse = "-"
+                                   )#end apply
+         simul$panel$title  = apply( X        = simul$desc[,i.panel]
+                                   , MARGIN   = 1
+                                   , FUN      = paste
+                                   , collapse = " - "
+                                   )#end apply
+      }#end if
+      simul$panel$level         = unique(simul$panel$index)
+      simul$panel$title         = unique(simul$panel$title)
+      simul$panel$index         = match (simul$panel$index,simul$panel$level)
+      simul$panel$n.level       = length(simul$panel$level)
+      #====================================================================================#
+      #====================================================================================#
+
+
+
+
+
+
+
+      #====================================================================================#
+      #====================================================================================#
+      #    The scenario variables are done in a slightly different way because when two    #
+      # dimensions are given, we must fix one and let the other vary.                      #
+      #------------------------------------------------------------------------------------#
+      i.scenario   = which(simul$dim.type == "scenario")
+      simul$scenario = list()
+      if (n.scenario == 1){
+         simul$scenario$level  = character(0)
+         simul$scenario$title  = character(0)
+         simul$scenario$fixcol = integer(0)
+         simul$scenario$idxcol = integer(0)
+         simul$scenario$index  = list(sequence(n.simul))
+         simul$scenario$idxoff = simul$scenario$index
+      }else{
+         my.keys               = simul$key [,i.scenario]
+         my.desc               = simul$desc[,i.scenario]
+         un.level              = lapply((X = my.keys),FUN=unique)
+         un.title              = lapply((X = my.desc),FUN=unique)
+         simul$scenario$level  = unlist(un.level)
+         simul$scenario$title  = unlist(un.title)
+         simul$scenario$fixcol = rep(i.scenario,times=sapply(X=un.level,FUN=length))
+         simul$scenario$idxcol = match(simul$scenario$fixcol,unique(simul$scenario$fixcol))
+         simul$scenario$index  = mapply(match,my.keys,un.level)
+         #----- Correct the indices so they are in sequence. ------------------------------#
+         off                   = c( 0, apply( X       = simul$scenario$index
+                                            , MARGIN  = 2
+                                            , FUN     = max)[-n.scenario]
+                                  )#end c
+         names(off)            = colnames(simul$scenario$index)
+         simul$scenario$idxoff = ( mapply("+",data.frame(simul$scenario$index),off)
+                                 + 0*simul$scenario$index )
+      }#end if
+      simul$scenario$n.level   = length(simul$scenario$level)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Delete the temporary arrays. -------------------------------------------------#
+      rm(simul.a,simul.b,pattern,default,alabel,dim.simul,dnames.simul)
+      #------------------------------------------------------------------------------------#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+   #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+   #------ Save the header. ---------------------------------------------------------------#
+   cat (" + Saving simulation information from ",basename(rdata.siminfo),"...","\n")
+   save(simul,file=rdata.siminfo)
+   #---------------------------------------------------------------------------------------#
+}#end if
+#==========================================================================================#
+#==========================================================================================#
 
 
 
@@ -453,6 +732,10 @@ if (is.logical(use.global) && all(use.global)){
    loop.global = use.global
 }#end if
 loop.panel     = sequence(max(1,simul$panel$n.level))
+loop.scenario  = which(simul$scenario$level %in% simul$default)
+loop.allscen   = c(loop.scenario,0)
+
+
 #------------------------------------------------------------------------------------------#
 #     Loop over all global dimensions.                                                     #
 #------------------------------------------------------------------------------------------#
@@ -527,7 +810,7 @@ for (g in loop.global){
 
    #----- Create the list of variables. ---------------------------------------------------#
    addpftdbh = c("agb","nmon.wdef","rain","smpot","water.deficit")
-   for (a in seq.len(addpftdbh)){
+   for (a in seq_along(addpftdbh)){
       v.now                 = addpftdbh[a]
       eft[[v.now]]$tspft    = tspft.array
       eft[[v.now]]$tspftdbh = tspftdbh.array
@@ -560,99 +843,152 @@ for (g in loop.global){
       }#end if
       #------------------------------------------------------------------------------------#
 
+
+
       #------------------------------------------------------------------------------------#
-      #     Loop over all DBH classes.                                                     #
+      #     Loop over scenarios.                                                           #
       #------------------------------------------------------------------------------------#
-      pca.dbh = list()
-      for (d in sequence(n.dbh+1)){
-         if ( d == n.dbh+1 ){
-            cat("     * Community-wide...","\n")
+      for (s in loop.allscen){
+         if (s == 0){
+            idx.s         = 1
+            odx.s         = match(s,loop.allscen)
+            out.desc      = simul$global$title  [g]
+            out.suffix    = simul$global$level  [g]
+            scen.headline = "All scenarios"
          }else{
-            cat("     * DBH class: ",dbh.desc[d],"...","\n")
+            idx.s         = match(s,loop.allscen)
+            odx.s         = idx.s
+            out.desc      = paste(simul$scenario$title[s],simul$global$title  [g],sep=" - ")
+            out.suffix    = paste(simul$scenario$level[s],simul$global$level  [g],sep="-")
+            scen.headline = simul$scenario$title[s]
          }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
 
          #---------------------------------------------------------------------------------#
-         #     Loop over all explanatory variables.                                        #
+         #    Find the column with the plot information.                                   #
          #---------------------------------------------------------------------------------#
-         for (ev in sequence(npca.explain)){
-            exp.vname = pca.explain$vname [ev]
-            exp.desc  = pca.explain$desc  [ev]
-            exp.unit  = pca.explain$unit  [ev]
+         if (simul$scenario$n.level == 0){
+            now = scenario[[1]]
+         }else if (s == 0){
+            now = scenario[-simul$scenario$idxcol[1]][[1]]
+         }else{
+            now = scenario[-simul$scenario$idxcol[s]][[1]]
+         }#end if
+         n.now = length(now$key)
+         #---------------------------------------------------------------------------------#
 
-            #----- Load the data. ---------------------------------------------------------#
-            if ( d == n.dbh+1 ){
-               now      = c(eft[[exp.vname]]$ts      [p.sel,,y.sel,n.season])
+
+
+         #---------------------------------------------------------------------------------#
+         #     Select the runs that belong to this scenario.                               #
+         #---------------------------------------------------------------------------------#
+         if (simul$scenario$n.level == 0 | s == 0){
+            s.sel = rep(TRUE,times=n.gsel)
+         }else{
+            s.sel = simul$scenario$idxoff[g.sel,simul$scenario$idxcol[s]] == s
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Selection flag combines both this panel and this scenario.                  #
+         #---------------------------------------------------------------------------------#
+         sel = p.sel & s.sel
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Build the total description, and the total suffix.                         #
+         #---------------------------------------------------------------------------------#
+         if (simul$scenario$n.level == 0){
+            if (simul$panel$n.level == 0){
+               if (simul$global$n.level == 0){
+                  #----- No panels or global.  Only scenarios. ----------------------------#
+                  out.desc   = NULL
+                  out.suffix = "scencomp"
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- Scenarios and global. --------------------------------------------#
+                  out.desc   = simul$global$title[g]
+                  out.suffix = simul$global$level[g]
+                  #------------------------------------------------------------------------#
+               }#end if
+               #---------------------------------------------------------------------------#
             }else{
-               now      = c(eft[[exp.vname]]$tspftdbh[p.sel,,y.sel,n.season,d,n.pft])
-            }#end if
-            now[!is.finite(now)] = NA
-            mean.now = mean(now,na.rm=TRUE)
-            sdev.now = sd  (now,na.rm=TRUE)
-            if (! is.finite(mean.now)) mean.now = NA
-            if (! is.finite(sdev.now) | sdev.now == 0.) sdev.now = NA
-            now = ( now - mean.now ) / sdev.now
-            now[! is.finite(now)] = NA
-            if ( ev == 1 ){
-               datum              = data.frame( x = now )
-               names(datum)       = exp.vname
+               if (simul$global$n.level == 0){
+                  #----- Scenarios and panel. ---------------------------------------------#
+                  out.desc   = simul$panel$title[p]
+                  out.suffix = simul$panel$level[p]
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- Scenarios, panel, and global. ------------------------------------#
+                  out.desc   = paste(simul$panel$title[p],simul$global$title[g],sep=" - ")
+                  out.suffix = paste(simul$panel$level[p],simul$global$level[g],sep="-")
+                  #------------------------------------------------------------------------#
+               }#end if (simul$global$n.level == 0)
+               #---------------------------------------------------------------------------#
+            }#end if (simul$panel$n.level == 0)
+            #------------------------------------------------------------------------------#
+         }else{
+            #---- Select the current scenario based on the index. -------------------------#
+            if (s == 0){
+               scen.title.now = "All scenarios"
+               scen.level.now = "allscen"
             }else{
-               datum[[exp.vname]] = now
+               scen.title.now = simul$scenario$title[s]
+               scen.level.now = simul$scenario$level[s]
             }#end if
             #------------------------------------------------------------------------------#
-         }#end for (ev in sequence(npca.explain))
-         keep  = rowSums(is.na(datum)) == 0
-         datum = datum[keep,]
-         #---------------------------------------------------------------------------------#
 
-
-
-         #----- Calculate the principal component. ----------------------------------------#
-         pca.dbh[[d]] = prcomp(datum)
-         #---------------------------------------------------------------------------------#
-      }#end for (d in sequence(n.dbh+1))
-      #------------------------------------------------------------------------------------#
-
-
-
-
-
-
-
-
-
-
-
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #     Plot all PCAs with labels near the arrows.                                     #
-      #------------------------------------------------------------------------------------#
-      cat("     * Plot PCA by DBH...","\n")
-      for (o in sequence(nout)){
-         #----- Open file or display. -----------------------------------------------------#
-         fichier = file.path( pcadbhroot[o]
-                            , paste( "noleg-pcadbh-year-",simul$panel$level[p]
-                                   , ".",outform[o],sep="")
-                            )#end file.path
-         if (outform[o] == "x11"){
-            X11(width=ssize$width,height=ssize$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
-            png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
-            postscript(file=fichier,width=ssize$width,height=ssize$height,pointsize=ptsz
-                      ,paper=ssize$paper)
-         }else if(outform[o] == "pdf"){
-            pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
-               ,pointsize=ptsz,paper=ssize$paper)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Split the panel. ----------------------------------------------------------#
-         par(par.user)
-         par(oma=c(0,0,2,0))
-         layout(mat=lo.dbh$mat)
+            if (simul$panel$n.level == 0){
+               if (simul$global$n.level == 0){
+                  #----- 2-D scenarios but no panels or global variables. -----------------#
+                  out.desc   = scen.title.now
+                  out.suffix = scen.level.now
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- 2-D scenarios and global variables. ------------------------------#
+                  out.desc   = paste(scen.title.now
+                                    ,simul$global$title  [g]
+                                    ,sep=" - ")
+                  out.suffix = paste(scen.level.now
+                                    ,simul$global$level  [g]
+                                    ,sep="-")
+                  #------------------------------------------------------------------------#
+               }#end if (simul$global$n.level == 0)
+               #---------------------------------------------------------------------------#
+            }else{
+               if (simul$global$n.level == 0){
+                  #----- 2-D scenarios and panel variables. -------------------------------#
+                  out.desc   = paste(scen.title.now
+                                    ,simul$panel$title   [p]
+                                    ,sep=" - ")
+                  out.suffix = paste(scen.level.now
+                                    ,simul$panel$level   [p]
+                                    ,sep="-")
+                  #------------------------------------------------------------------------#
+               }else{
+                  #----- 2-D scenarios, panel, and global variables. ----------------------#
+                  out.desc   = paste(paste(scen.title.now
+                                          ,simul$panel$title   [p]
+                                          ,sep=" - ")
+                                    ,simul$global$title  [g]
+                                    ,sep="\n")
+                  out.suffix = paste(scen.level.now
+                                    ,simul$panel$level   [p]
+                                    ,simul$global$level  [g]
+                                    ,sep="-")
+                  #------------------------------------------------------------------------#
+               }#end if (simul$global$n.level == 0)
+               #---------------------------------------------------------------------------#
+            }#end if (simul$panel$n.level == 0)
+            #------------------------------------------------------------------------------#
+         }#end if (simul$scenario$n.level == 0)
          #---------------------------------------------------------------------------------#
 
 
@@ -660,11 +996,241 @@ for (g in loop.global){
 
 
          #---------------------------------------------------------------------------------#
-         #     Loop over DBH classes, and plot the PCA analysis.                           #
+         #     Loop over all DBH classes.                                                  #
          #---------------------------------------------------------------------------------#
-         for (d in sequence(n.dbh)){
+         pca.dbh = list()
+         for (d in sequence(n.dbh+1)){
+            if ( d == n.dbh+1 ){
+               cat("     * Community-wide...","\n")
+            }else{
+               cat("     * DBH class: ",dbh.desc[d],"...","\n")
+            }#end if
+
+            #------------------------------------------------------------------------------#
+            #     Loop over all explanatory variables.                                     #
+            #------------------------------------------------------------------------------#
+            for (ev in sequence(npca.explain)){
+               exp.vname = pca.explain$vname [ev]
+               exp.desc  = pca.explain$desc  [ev]
+               exp.unit  = pca.explain$unit  [ev]
+
+               #----- Load the data. ------------------------------------------------------#
+               if ( d == n.dbh+1 ){
+                  now      = c(eft[[exp.vname]]$ts      [sel,,y.sel,n.season])
+               }else{
+                  now      = c(eft[[exp.vname]]$tspftdbh[sel,,y.sel,n.season,d,n.pft])
+               }#end if
+               now[!is.finite(now)] = NA
+               mean.now = mean(now,na.rm=TRUE)
+               sdev.now = sd  (now,na.rm=TRUE)
+               if (! is.finite(mean.now)) mean.now = NA
+               if (! is.finite(sdev.now) | sdev.now == 0.) sdev.now = NA
+               now = ( now - mean.now ) / sdev.now
+               now[! is.finite(now)] = NA
+               if ( ev == 1 ){
+                  datum              = data.frame( x = now )
+                  names(datum)       = exp.vname
+               }else{
+                  datum[[exp.vname]] = now
+               }#end if
+               #---------------------------------------------------------------------------#
+            }#end for (ev in sequence(npca.explain))
+            keep  = rowSums(is.na(datum)) == 0
+            datum = datum[keep,]
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Calculate the principal component. -------------------------------------#
+            pca.dbh[[d]] = prcomp(datum)
+            #------------------------------------------------------------------------------#
+         }#end for (d in sequence(n.dbh+1))
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+
+
+
+
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #     Plot all PCAs with labels near the arrows.                                  #
+         #---------------------------------------------------------------------------------#
+         cat("     * Plot PCA by DBH...","\n")
+         for (o in sequence(nout)){
+            #----- Open file or display. --------------------------------------------------#
+            fichier = file.path( pcadbhroot[o]
+                               , paste( "noleg-pcadbh-year-",out.suffix
+                                      , ".",outform[o],sep="")
+                               )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=ssize$width,height=ssize$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=ssize$width,height=ssize$height,pointsize=ptsz
+                         ,paper=ssize$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
+                  ,pointsize=ptsz,paper=ssize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Split the panel. -------------------------------------------------------#
+            par(par.user)
+            par(oma=c(0,0,2,0))
+            layout(mat=lo.dbh$mat)
+            #------------------------------------------------------------------------------#
+
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over DBH classes, and plot the PCA analysis.                        #
+            #------------------------------------------------------------------------------#
+            for (d in sequence(n.dbh)){
+               #----- Load PCA. -----------------------------------------------------------#
+               pca.now  = pca.dbh[[d]]
+               summ.pca = summary(pca.now)
+               scores   = pca.now$x
+               rota     = pca.now$rotation
+               npca     = nrow(scores)
+               lam      = pca.now$sdev * sqrt(npca)
+               pca.pts  = t(t(scores) / lam)
+               pca.vec  = t(t(rota  ) * lam)
+               explain  = round(100*summ.pca$importance[2,],1)
+               sig.vec  = sqrt(rota[,1]^2+rota[,2]^2) >= 0.1
+               lwd.vec  = ifelse(sig.vec,      2,       2)
+               lty.vec  = ifelse(sig.vec,"solid","dashed")
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #   Make axes.                                                              #
+               #---------------------------------------------------------------------------#
+               pvar.explained = paste("Component",sequence(npca)
+                                     ," - ", sprintf("%.1f",explain),"%",sep="")
+               #---------------------------------------------------------------------------#
+
+
+
+               #------ Find limits. -------------------------------------------------------#
+               pxlimit  = max(abs(pca.pts[,1])) * c(-1,1)
+               pylimit  = max(abs(pca.pts[,2])) * c(-1,1)
+               vxlimit  = max(abs(pca.vec[,1])) * c(-2.0,2.0)
+               vylimit  = max(abs(pca.vec[,2])) * c(-2.0,2.0)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot the PCA points. ------------------------------------------------#
+               par(mar=c(4.1,4.1,5.1,2.1))
+               plot.new()
+               plot.window(xlim=pxlimit,ylim=pylimit)
+               abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
+               axis(side=1)
+               axis(side=2)
+               title( main = paste("DBH Class: ",dbh.desc[d],sep="")
+                    , xlab = pvar.explained[1]
+                    , ylab = pvar.explained[2]
+                    )#end title
+               points(x=pca.pts[,1],y=pca.pts[,2],col=washed.mg,cex=0.5,pch=16)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot the PCA vectors. -----------------------------------------------#
+               plot.window(xlim=vxlimit,ylim=vylimit)
+               if (plot.vec.axes){
+                  axis(side=3,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+                  axis(side=4,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+               }#end if
+               box()
+               for (u in sequence(npca.explain)){
+                  arrows(x0=0,y0=0,x1=pca.vec[u,1],y1=pca.vec[u,2]
+                        ,col=pca.explain$colour[u],length=0.10
+                        ,lwd=lwd.vec[u],lty=lty.vec[u])
+               }#end for
+               for (u in sequence(npca.explain)){
+                  rot = 180*atan2(pca.vec[u,2],pca.vec[u,1])/pi
+                  if (rot >  90 & rot <=  180) rot = rot + 180
+                  if (rot < -90 & rot >= -180) rot = rot + 180
+                  mult = 1.50 + runif(n=1,min=-0.20,max=0.20)
+                  text  (x=mult*pca.vec[u,1],y=mult*pca.vec[u,2]
+                        ,labels=parse(text=pca.explain$short[u]),col=pca.explain$colour[u]
+                        ,cex=0.9,srt=rot)
+               }#end for
+               #---------------------------------------------------------------------------#
+            }#end for (d in sequence(n.dbh))
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Main title. ------------------------------------------------------------#
+            gtitle( main = out.desc )
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for for (o in sequence(nout))
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+
+
+
+
+
+
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #     Plot all PCAs with labels near the arrows.                                  #
+         #---------------------------------------------------------------------------------#
+         cat("     * Plot community-wide PCA...","\n")
+         for (o in sequence(nout)){
+            #----- Open file or display. --------------------------------------------------#
+            fichier = file.path( pcaallroot[o]
+                               , paste( "noleg-pcaall-year-",out.suffix
+                                      , ".",outform[o],sep="")
+                               )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=ssize$width,height=ssize$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=ssize$width,height=ssize$height,pointsize=ptsz
+                         ,paper=ssize$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
+                  ,pointsize=ptsz,paper=ssize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
             #----- Load PCA. --------------------------------------------------------------#
-            pca.now  = pca.dbh[[d]]
+            pca.now  = pca.dbh[[n.dbh+1]]
             summ.pca = summary(pca.now)
             scores   = pca.now$x
             rota     = pca.now$rotation
@@ -697,18 +1263,21 @@ for (g in loop.global){
 
 
             #----- Plot the PCA points. ---------------------------------------------------#
-            par(mar=c(4.1,4.1,5.1,2.1))
+            par(par.user)
             plot.new()
             plot.window(xlim=pxlimit,ylim=pylimit)
             abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
             axis(side=1)
             axis(side=2)
-            title( main = paste("DBH Class: ",dbh.desc[d],sep="")
+            title( main = out.desc
                  , xlab = pvar.explained[1]
                  , ylab = pvar.explained[2]
                  )#end title
             points(x=pca.pts[,1],y=pca.pts[,2],col=washed.mg,cex=0.5,pch=16)
             #------------------------------------------------------------------------------#
+
+
+
 
 
             #----- Plot the PCA vectors. --------------------------------------------------#
@@ -733,228 +1302,245 @@ for (g in loop.global){
                      ,cex=0.9,srt=rot)
             }#end for
             #------------------------------------------------------------------------------#
-         }#end for (d in sequence(n.dbh))
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for for (o in sequence(nout))
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+
+
+
+
+
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #     Plot all PCAs with legends at the bottom.                                   #
          #---------------------------------------------------------------------------------#
+         cat("     * Plot PCA by DBH with legend...","\n")
+         for (o in sequence(nout)){
+            #----- Open file or display. --------------------------------------------------#
+            fichier = file.path( pcadbhroot[o]
+                               , paste( "legend-pcadbh-year-",out.suffix
+                                      , ".",outform[o],sep="")
+                               )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=psize$width,height=psize$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=psize$width*depth,height=psize$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=psize$width,height=psize$height,pointsize=ptsz
+                         ,paper=psize$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
+                  ,pointsize=ptsz,paper=psize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
 
-         #----- Main title. ---------------------------------------------------------------#
-         gtitle( main = simul$panel$title[p] )
+            #----- Split the panel. -------------------------------------------------------#
+            par(par.user)
+            par(oma=c(0,0,2,0))
+            layout( mat     = rbind(lo.dbh$mat.off,rep(1,times=lo.dbh$ncol))
+                  , heights = c(rep(5/lo.dbh$nrow,times=lo.dbh$nrow),1)
+                  )#end layout
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     First, the legend.                                                       #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x      = "center"
+                  , inset  = 0.0
+                  , legend = pca.explain$lname
+                  , fill   = pca.explain$colour
+                  , border = foreground
+                  , title  = expression(bold("Variables - Annual Means"))
+                  , xpd    = TRUE
+                  , cex    = 0.9 * cex.ptsz
+                  , ncol   = 6 # min(5,pretty.box(npca.explain)$ncol)
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #     Loop over DBH classes, and plot the PCA analysis.                        #
+            #------------------------------------------------------------------------------#
+            for (d in sequence(n.dbh)){
+               #----- Load PCA. -----------------------------------------------------------#
+               pca.now  = pca.dbh[[d]]
+               summ.pca = summary(pca.now)
+               scores   = pca.now$x
+               rota     = pca.now$rotation
+               npca     = nrow(scores)
+               lam      = pca.now$sdev * sqrt(npca)
+               pca.pts  = t(t(scores) / lam)
+               pca.vec  = t(t(rota  ) * lam)
+               explain  = round(100*summ.pca$importance[2,],1)
+               sig.vec  = sqrt(rota[,1]^2+rota[,2]^2) >= 0.1
+               lwd.vec  = ifelse(sig.vec,      2,       2)
+               lty.vec  = ifelse(sig.vec,"solid","dashed")
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #   Make axes.                                                              #
+               #---------------------------------------------------------------------------#
+               pvar.explained = paste("Component",sequence(npca)
+                                     ," - ", sprintf("%.1f",explain),"%",sep="")
+               #---------------------------------------------------------------------------#
+
+
+
+               #------ Find limits. -------------------------------------------------------#
+               pxlimit  = max(abs(pca.pts[,1])) * c(-1,1)
+               pylimit  = max(abs(pca.pts[,2])) * c(-1,1)
+               vxlimit  = max(abs(pca.vec[,1])) * c(-1,1)
+               vylimit  = max(abs(pca.vec[,2])) * c(-1,1)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot the PCA points. ------------------------------------------------#
+               par(mar=c(4.1,4.1,5.1,2.1))
+               plot.new()
+               plot.window(xlim=pxlimit,ylim=pylimit)
+               abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
+               axis(side=1)
+               axis(side=2)
+               title( main = paste("DBH Class: ",dbh.desc[d],sep="")
+                    , xlab = pvar.explained[1]
+                    , ylab = pvar.explained[2]
+                    )#end title
+               points(x=pca.pts[,1],y=pca.pts[,2],col=washed.bg,cex=0.5,pch=16)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot the PCA vectors. -----------------------------------------------#
+               plot.window(xlim=vxlimit,ylim=vylimit)
+               if (plot.vec.axes){
+                  axis(side=3,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+                  axis(side=4,col.ticks=firebrick.fg,col.axis=firebrick.mg)
+               }#end if
+               box()
+               for (u in sequence(npca.explain)){
+                  arrows(x0=0,y0=0,x1=pca.vec[u,1],y1=pca.vec[u,2]
+                        ,col=pca.explain$colour[u],length=0.10
+                        ,lwd=lwd.vec[u],lty=lty.vec[u])
+               }#end for
+               #---------------------------------------------------------------------------#
+            }#end for (d in sequence(n.dbh))
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Main title. ------------------------------------------------------------#
+            gtitle( main = out.desc )
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for for (o in sequence(nout))
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+
+
+
+
+
+
+
+
+
+
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #     Plot all PCAs with legends at the bottom.                                   #
          #---------------------------------------------------------------------------------#
+         cat("     * Plot community-wide PCA with legend...","\n")
+         for (o in sequence(nout)){
+            #----- Open file or display. --------------------------------------------------#
+            fichier = file.path( pcaallroot[o]
+                               , paste( "legend-pcaall-year-",out.suffix
+                                      , ".",outform[o],sep="")
+                               )#end file.path
+            if (outform[o] == "x11"){
+               X11(width=psize$width,height=psize$height,pointsize=ptsz)
+            }else if(outform[o] == "png"){
+               png(filename=fichier,width=psize$width*depth,height=psize$height*depth
+                  ,pointsize=ptsz,res=depth)
+            }else if(outform[o] == "eps"){
+               postscript(file=fichier,width=psize$width,height=psize$height,pointsize=ptsz
+                         ,paper=psize$paper)
+            }else if(outform[o] == "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
+                  ,pointsize=ptsz,paper=psize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
 
 
 
-         #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         clean.tmp()
-         #---------------------------------------------------------------------------------#
-      }#end for for (o in sequence(nout))
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+            #----- Split the panel. -------------------------------------------------------#
+            par(par.user)
+            par(oma=c(0,0,2,0))
+            layout(mat= rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
 
 
-
-
-
-
-
-
-
-
-
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #     Plot all PCAs with labels near the arrows.                                     #
-      #------------------------------------------------------------------------------------#
-      cat("     * Plot community-wide PCA...","\n")
-      for (o in sequence(nout)){
-         #----- Open file or display. -----------------------------------------------------#
-         fichier = file.path( pcaallroot[o]
-                            , paste( "noleg-pcaall-year-",simul$panel$level[p]
-                                   , ".",outform[o],sep="")
-                            )#end file.path
-         if (outform[o] == "x11"){
-            X11(width=ssize$width,height=ssize$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
-            png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
-            postscript(file=fichier,width=ssize$width,height=ssize$height,pointsize=ptsz
-                      ,paper=ssize$paper)
-         }else if(outform[o] == "pdf"){
-            pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
-               ,pointsize=ptsz,paper=ssize$paper)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Load PCA. -----------------------------------------------------------------#
-         pca.now  = pca.dbh[[n.dbh+1]]
-         summ.pca = summary(pca.now)
-         scores   = pca.now$x
-         rota     = pca.now$rotation
-         npca     = nrow(scores)
-         lam      = pca.now$sdev * sqrt(npca)
-         pca.pts  = t(t(scores) / lam)
-         pca.vec  = t(t(rota  ) * lam)
-         explain  = round(100*summ.pca$importance[2,],1)
-         sig.vec  = sqrt(rota[,1]^2+rota[,2]^2) >= 0.1
-         lwd.vec  = ifelse(sig.vec,      2,       2)
-         lty.vec  = ifelse(sig.vec,"solid","dashed")
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #   Make axes.                                                                    #
-         #---------------------------------------------------------------------------------#
-         pvar.explained = paste("Component",sequence(npca)
-                               ," - ", sprintf("%.1f",explain),"%",sep="")
-         #---------------------------------------------------------------------------------#
-
-
-
-         #------ Find limits. -------------------------------------------------------------#
-         pxlimit  = max(abs(pca.pts[,1])) * c(-1,1)
-         pylimit  = max(abs(pca.pts[,2])) * c(-1,1)
-         vxlimit  = max(abs(pca.vec[,1])) * c(-2.0,2.0)
-         vylimit  = max(abs(pca.vec[,2])) * c(-2.0,2.0)
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Plot the PCA points. ------------------------------------------------------#
-         par(par.user)
-         plot.new()
-         plot.window(xlim=pxlimit,ylim=pylimit)
-         abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
-         axis(side=1)
-         axis(side=2)
-         title( main = simul$panel$title[p]
-              , xlab = pvar.explained[1]
-              , ylab = pvar.explained[2]
-              )#end title
-         points(x=pca.pts[,1],y=pca.pts[,2],col=washed.mg,cex=0.5,pch=16)
-         #---------------------------------------------------------------------------------#
+            #------------------------------------------------------------------------------#
+            #     First, the legend.                                                       #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x      = "center"
+                  , inset  = 0.0
+                  , legend = pca.explain$lname
+                  , fill   = pca.explain$colour
+                  , border = foreground
+                  , title  = expression(bold("Variables - Annual Means"))
+                  , xpd    = TRUE
+                  , cex    = 0.8 * cex.ptsz
+                  , ncol   = 6 # min(5,pretty.box(npca.explain)$ncol)
+                  )#end legend
+            #------------------------------------------------------------------------------#
 
 
 
 
-
-         #----- Plot the PCA vectors. -----------------------------------------------------#
-         plot.window(xlim=vxlimit,ylim=vylimit)
-         if (plot.vec.axes){
-            axis(side=3,col.ticks=firebrick.fg,col.axis=firebrick.mg)
-            axis(side=4,col.ticks=firebrick.fg,col.axis=firebrick.mg)
-         }#end if
-         box()
-         for (u in sequence(npca.explain)){
-            arrows(x0=0,y0=0,x1=pca.vec[u,1],y1=pca.vec[u,2]
-                  ,col=pca.explain$colour[u],length=0.10
-                  ,lwd=lwd.vec[u],lty=lty.vec[u])
-         }#end for
-         for (u in sequence(npca.explain)){
-            rot = 180*atan2(pca.vec[u,2],pca.vec[u,1])/pi
-            if (rot >  90 & rot <=  180) rot = rot + 180
-            if (rot < -90 & rot >= -180) rot = rot + 180
-            mult = 1.50 + runif(n=1,min=-0.20,max=0.20)
-            text  (x=mult*pca.vec[u,1],y=mult*pca.vec[u,2]
-                  ,labels=parse(text=pca.explain$short[u]),col=pca.explain$colour[u]
-                  ,cex=0.9,srt=rot)
-         }#end for
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         clean.tmp()
-         #---------------------------------------------------------------------------------#
-      }#end for for (o in sequence(nout))
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-
-
-
-
-
-
-
-
-
-
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #     Plot all PCAs with legends at the bottom.                                      #
-      #------------------------------------------------------------------------------------#
-      cat("     * Plot PCA by DBH with legend...","\n")
-      for (o in sequence(nout)){
-         #----- Open file or display. -----------------------------------------------------#
-         fichier = file.path( pcadbhroot[o]
-                            , paste( "legend-pcadbh-year-",simul$panel$level[p]
-                                   , ".",outform[o],sep="")
-                            )#end file.path
-         if (outform[o] == "x11"){
-            X11(width=psize$width,height=psize$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
-            png(filename=fichier,width=psize$width*depth,height=psize$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
-            postscript(file=fichier,width=psize$width,height=psize$height,pointsize=ptsz
-                      ,paper=psize$paper)
-         }else if(outform[o] == "pdf"){
-            pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
-               ,pointsize=ptsz,paper=psize$paper)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Split the panel. ----------------------------------------------------------#
-         par(par.user)
-         par(oma=c(0,0,2,0))
-         layout( mat     = rbind(lo.dbh$mat.off,rep(1,times=lo.dbh$ncol))
-               , heights = c(rep(5/lo.dbh$nrow,times=lo.dbh$nrow),1)
-               )#end layout
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #     First, the legend.                                                          #
-         #---------------------------------------------------------------------------------#
-         par(mar=c(0.1,0.1,0.1,0.1))
-         plot.new()
-         plot.window(xlim=c(0,1),ylim=c(0,1))
-         legend( x      = "center"
-               , inset  = 0.0
-               , legend = pca.explain$lname
-               , fill   = pca.explain$colour
-               , border = foreground
-               , title  = expression(bold("Variables - Annual Means"))
-               , xpd    = TRUE
-               , cex    = 0.9 * cex.ptsz
-               , ncol   = 6 # min(5,pretty.box(npca.explain)$ncol)
-               )#end legend
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Loop over DBH classes, and plot the PCA analysis.                           #
-         #---------------------------------------------------------------------------------#
-         for (d in sequence(n.dbh)){
-            #----- Load PCA. --------------------------------------------------------------#
-            pca.now  = pca.dbh[[d]]
+            #------------------------------------------------------------------------------#
+            #     Load and plot the PCA analysis.                                          #
+            #------------------------------------------------------------------------------#
+            pca.now  = pca.dbh[[n.dbh+1]]
             summ.pca = summary(pca.now)
             scores   = pca.now$x
             rota     = pca.now$rotation
@@ -993,7 +1579,7 @@ for (g in loop.global){
             abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
             axis(side=1)
             axis(side=2)
-            title( main = paste("DBH Class: ",dbh.desc[d],sep="")
+            title( main = out.desc
                  , xlab = pvar.explained[1]
                  , ylab = pvar.explained[2]
                  )#end title
@@ -1014,172 +1600,23 @@ for (g in loop.global){
                      ,lwd=lwd.vec[u],lty=lty.vec[u])
             }#end for
             #------------------------------------------------------------------------------#
-         }#end for (d in sequence(n.dbh))
-         #---------------------------------------------------------------------------------#
 
 
 
-         #----- Main title. ---------------------------------------------------------------#
-         gtitle( main = simul$panel$title[p] )
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         clean.tmp()
-         #---------------------------------------------------------------------------------#
-      }#end for for (o in sequence(nout))
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-
-
-
-
-
-
-
-
-
-
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #     Plot all PCAs with legends at the bottom.                                      #
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] == "x11"){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for for (o in sequence(nout))
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+         #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
+      }#end for (s in loop.allscen)
       #------------------------------------------------------------------------------------#
-      cat("     * Plot community-wide PCA with legend...","\n")
-      for (o in sequence(nout)){
-         #----- Open file or display. -----------------------------------------------------#
-         fichier = file.path( pcaallroot[o]
-                            , paste( "legend-pcaall-year-",simul$panel$level[p]
-                                   , ".",outform[o],sep="")
-                            )#end file.path
-         if (outform[o] == "x11"){
-            X11(width=psize$width,height=psize$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
-            png(filename=fichier,width=psize$width*depth,height=psize$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
-            postscript(file=fichier,width=psize$width,height=psize$height,pointsize=ptsz
-                      ,paper=psize$paper)
-         }else if(outform[o] == "pdf"){
-            pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
-               ,pointsize=ptsz,paper=psize$paper)
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Split the panel. ----------------------------------------------------------#
-         par(par.user)
-         par(oma=c(0,0,2,0))
-         layout(mat= rbind(2,1),heights=c(5,1))
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #     First, the legend.                                                          #
-         #---------------------------------------------------------------------------------#
-         par(mar=c(0.1,0.1,0.1,0.1))
-         plot.new()
-         plot.window(xlim=c(0,1),ylim=c(0,1))
-         legend( x      = "center"
-               , inset  = 0.0
-               , legend = pca.explain$lname
-               , fill   = pca.explain$colour
-               , border = foreground
-               , title  = expression(bold("Variables - Annual Means"))
-               , xpd    = TRUE
-               , cex    = 0.8 * cex.ptsz
-               , ncol   = 6 # min(5,pretty.box(npca.explain)$ncol)
-               )#end legend
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #     Load and plot the PCA analysis.                                             #
-         #---------------------------------------------------------------------------------#
-         pca.now  = pca.dbh[[n.dbh+1]]
-         summ.pca = summary(pca.now)
-         scores   = pca.now$x
-         rota     = pca.now$rotation
-         npca     = nrow(scores)
-         lam      = pca.now$sdev * sqrt(npca)
-         pca.pts  = t(t(scores) / lam)
-         pca.vec  = t(t(rota  ) * lam)
-         explain  = round(100*summ.pca$importance[2,],1)
-         sig.vec  = sqrt(rota[,1]^2+rota[,2]^2) >= 0.1
-         lwd.vec  = ifelse(sig.vec,      2,       2)
-         lty.vec  = ifelse(sig.vec,"solid","dashed")
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #   Make axes.                                                                    #
-         #---------------------------------------------------------------------------------#
-         pvar.explained = paste("Component",sequence(npca)
-                               ," - ", sprintf("%.1f",explain),"%",sep="")
-         #---------------------------------------------------------------------------------#
-
-
-
-         #------ Find limits. -------------------------------------------------------------#
-         pxlimit  = max(abs(pca.pts[,1])) * c(-1,1)
-         pylimit  = max(abs(pca.pts[,2])) * c(-1,1)
-         vxlimit  = max(abs(pca.vec[,1])) * c(-1,1)
-         vylimit  = max(abs(pca.vec[,2])) * c(-1,1)
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Plot the PCA points. ------------------------------------------------------#
-         par(mar=c(4.1,4.1,5.1,2.1))
-         plot.new()
-         plot.window(xlim=pxlimit,ylim=pylimit)
-         abline(h=0,v=0,col=foreground,lty="solid",lwd=2)
-         axis(side=1)
-         axis(side=2)
-         title( main = simul$panel$title[p]
-              , xlab = pvar.explained[1]
-              , ylab = pvar.explained[2]
-              )#end title
-         points(x=pca.pts[,1],y=pca.pts[,2],col=washed.bg,cex=0.5,pch=16)
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Plot the PCA vectors. -----------------------------------------------------#
-         plot.window(xlim=vxlimit,ylim=vylimit)
-         if (plot.vec.axes){
-            axis(side=3,col.ticks=firebrick.fg,col.axis=firebrick.mg)
-            axis(side=4,col.ticks=firebrick.fg,col.axis=firebrick.mg)
-         }#end if
-         box()
-         for (u in sequence(npca.explain)){
-            arrows(x0=0,y0=0,x1=pca.vec[u,1],y1=pca.vec[u,2]
-                  ,col=pca.explain$colour[u],length=0.10
-                  ,lwd=lwd.vec[u],lty=lty.vec[u])
-         }#end for
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
-            locator(n=1)
-            dev.off()
-         }else{
-            dev.off()
-         }#end if
-         clean.tmp()
-         #---------------------------------------------------------------------------------#
-      }#end for for (o in sequence(nout))
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
-      #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::#
    }#end for (p in loop.panel)
    #---------------------------------------------------------------------------------------#
 }#end for (g in loop.global)

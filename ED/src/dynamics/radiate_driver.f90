@@ -283,8 +283,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real(kind=8)    , dimension(:)  , allocatable :: lai_array
    real(kind=8)    , dimension(:)  , allocatable :: wai_array
    real(kind=8)    , dimension(:)  , allocatable :: CA_array
-   real(kind=8)    , dimension(:)  , allocatable :: htop_array
-   real(kind=8)    , dimension(:)  , allocatable :: hbot_array
    real(kind=8)    , dimension(:)  , allocatable :: beam_level_array
    real(kind=8)    , dimension(:)  , allocatable :: diff_level_array
    real(kind=8)    , dimension(:)  , allocatable :: light_level_array
@@ -341,8 +339,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       allocate (lai_array                 (          maxcohort))
       allocate (wai_array                 (          maxcohort))
       allocate (CA_array                  (          maxcohort))
-      allocate (htop_array                (          maxcohort))
-      allocate (hbot_array                (          maxcohort))
       allocate (beam_level_array          (          maxcohort))
       allocate (diff_level_array          (          maxcohort))
       allocate (light_level_array         (          maxcohort))
@@ -369,8 +365,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       allocate (lai_array                 (          max_cohort_count))
       allocate (wai_array                 (          max_cohort_count))
       allocate (CA_array                  (          max_cohort_count))
-      allocate (htop_array                (          max_cohort_count))
-      allocate (hbot_array                (          max_cohort_count))
       allocate (beam_level_array          (          max_cohort_count))
       allocate (diff_level_array          (          max_cohort_count))
       allocate (light_level_array         (          max_cohort_count))
@@ -396,8 +390,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    lai_array                 (  :) = 0.d0
    wai_array                 (  :) = 0.d0
    CA_array                  (  :) = 0.d0
-   htop_array                (  :) = 0.d0
-   hbot_array                (  :) = 0.d0
    beam_level_array          (  :) = 0.d0
    diff_level_array          (  :) = 0.d0
    light_level_array         (  :) = 0.d0
@@ -1342,8 +1334,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    deallocate (lai_array                 )
    deallocate (wai_array                 )
    deallocate (CA_array                  )
-   deallocate (htop_array                )
-   deallocate (hbot_array                )
    deallocate (beam_level_array          )
    deallocate (diff_level_array          )
    deallocate (light_level_array         )

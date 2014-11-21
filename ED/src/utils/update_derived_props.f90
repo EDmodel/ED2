@@ -24,7 +24,7 @@ subroutine update_derived_props(cgrid)
         csite => cpoly%site(isi)
 
         do ipa = 1,csite%npatches
-           call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,ipa)
+           call update_patch_derived_props(csite,ipa)
         end do
 
         call update_site_derived_props(cpoly, 0, isi)
@@ -49,7 +49,7 @@ end subroutine update_derived_props
 ! depend on the results from reproduction, which in turn depends on structural growth      !
 ! results from all patches.                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine update_patch_derived_props(csite,lsl,prss,ipa)
+subroutine update_patch_derived_props(csite,ipa)
   
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
@@ -73,8 +73,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
    integer         , intent(in) :: ipa
-   integer         , intent(in) :: lsl
-   real            , intent(in) :: prss
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
    real                         :: weight
@@ -104,10 +102,9 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
    !----- Reset properties. ---------------------------------------------------------------!
-   csite%veg_height(ipa)       = 0.0
+   csite%veg_height      (ipa) = 0.0
    weight_sum                  = 0.0
-   csite%opencan_frac(ipa)     = 1.0
-   csite%plant_ag_biomass(ipa) = 0.0
+   csite%opencan_frac    (ipa) = 1.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -252,7 +249,7 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
    real                                       :: soilhcap
    real                                       :: can_exner
    !---------------------------------------------------------------------------------------!
-   
+
 
    do ipa=ipaa,ipaz
 
@@ -264,7 +261,7 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
                                         , csite%can_shv   (ipa)                            )
       !------------------------------------------------------------------------------------!
 
-      
+
       !----- Update soil temperature and liquid water fraction. ---------------------------!
       do k = 1, mzg
          nsoil    = ntext_soil(k)
@@ -338,7 +335,6 @@ subroutine update_patch_thermo_fmean(csite,ipaa,ipaz,mzg,ntext_soil)
    !----- Local variables. ----------------------------------------------------------------!
    integer                                    :: ipa
    integer                                    :: nsoil
-   integer                                    :: ksn
    integer                                    :: k
    real                                       :: soilhcap
    real                                       :: can_exner
@@ -356,7 +352,7 @@ subroutine update_patch_thermo_fmean(csite,ipaa,ipaz,mzg,ntext_soil)
                                               , csite%fmean_can_shv   (ipa)                )
       !------------------------------------------------------------------------------------!
 
-      
+
       !----- Update soil temperature and liquid water fraction. ---------------------------!
       do k = 1, mzg
          nsoil    = ntext_soil(k)
@@ -425,7 +421,6 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
    integer                        :: ipa
    integer                        :: ico
    integer                        :: ipft
-   integer                        :: ilu
    !---------------------------------------------------------------------------------------!
    
    !----- Initialise the variables before looping. ----------------------------------------!
@@ -436,7 +431,7 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
 
    !----- Loop over patches. --------------------------------------------------------------!
    do ipa = 1,csite%npatches
-      ilu = csite%dist_type(ipa)
+
       cpatch => csite%patch(ipa)
 
       !----- Loop over cohorts. -----------------------------------------------------------!
@@ -869,7 +864,7 @@ end subroutine update_polygon_derived_props
 !==========================================================================================!
 !    This subroutine will read the regular soil moisture and temperature dataset.          !
 !------------------------------------------------------------------------------------------!
-subroutine read_soil_moist_temp(cgrid,igr)
+subroutine read_soil_moist_temp(cgrid)
 
    use ed_state_vars , only : edtype       & ! structure
                             , polygontype  & ! structure
@@ -888,7 +883,6 @@ subroutine read_soil_moist_temp(cgrid,igr)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)      , target     :: cgrid         ! Alias for current ED grid
-   integer           , intent(in) :: igr           ! The grid number
    !----- Local variables -----------------------------------------------------------------!
    type(polygontype) , pointer    :: cpoly          ! Alias for current polygon
    type(sitetype)    , pointer    :: csite          ! Alias for current site
@@ -907,7 +901,6 @@ subroutine read_soil_moist_temp(cgrid,igr)
    logical                        :: l1             !
    real                           :: glat           !
    real                           :: glon           !
-   real                           :: soil_tempaux   !
    real                           :: tmp1           !
    real                           :: tmp2           !
    real                           :: soilw1         !

@@ -875,7 +875,7 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
                                              , MoreArgs = list(by=1)
                                              ) ) )
             dry.count = last-first+1
-            seq.dry   = seq.len(unique(count[dry]))
+            seq.dry   = seq_along(unique(count[dry]))
             dry.idx   = unlist(mapply(FUN=rep,x=seq.dry,each=dry.count))
             dry       = dry.span
 
@@ -1194,7 +1194,8 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
    wmo$res[       ,,"sheff"] = wmo$mod[,,"sheff"] - wmo$obs
    now.bias                  = mean(c(wmo$res[,,"sheff"]),na.rm=TRUE)
    now.sigres                = sd  (c(wmo$res[,,"sheff"]),na.rm=TRUE)
-   now.rmse                  = sqrt(now.bias^2+now.sigres^2)
+   now.n                     = sum(! is.na(wmo$res[,,"sheff"]))
+   now.rmse                  = sqrt(now.bias^2+(now.n-1)*now.sigres^2/now.n)
    region$sheff.bias         = rep(now.bias  ,times=nregion)
    region$sheff.sigres       = rep(now.sigres,times=nregion)
    region$sheff.rmse         = rep(now.rmse  ,times=nregion)
@@ -1210,24 +1211,27 @@ if (retrieve.data & file.exists(rdata.vulnerable)){
    wmo$mod.bias   = apply(X=wmo$res           ,MARGIN=c(1,3),FUN=mean,na.rm=TRUE)
    wmo$mod.sigma  = apply(X=wmo$res           ,MARGIN=c(1,3),FUN=sd  ,na.rm=TRUE)
    wmo$mod.n      = apply(X=is.finite(wmo$res),MARGIN=c(1,3),FUN=sum ,na.rm=TRUE)
-   wmo$mod.mse    = (wmo$mod.bias^2+wmo$mod.sigma^2) / wmo$mod.n
+   wmo$mod.mse    = wmo$mod.bias^2+(wmo$mod.n-1)*wmo$mod.sigma^2 / wmo$mod.n
+   wmo$mod.weight = wmo$mod.n / wmo$mod.mse
    #----- Convert sparse data into NA. ----------------------------------------------------#
    sparse                = wmo$mod.n < 2
-   wmo$mod.bias [sparse] = NA
-   wmo$mod.sigma[sparse] = NA
-   wmo$mod.n    [sparse] = 0
-   wmo$mod.mse  [sparse] = NA
+   wmo$mod.bias  [sparse] = NA
+   wmo$mod.sigma [sparse] = NA
+   wmo$mod.n     [sparse] = 0
+   wmo$mod.mse   [sparse] = NA
+   wmo$mod.weight[sparse] = 0
    #----- Convert everything to data frames. ----------------------------------------------#
-   wmo$mod.bias   = as.data.frame(wmo$mod.bias )
-   wmo$mod.sigma  = as.data.frame(wmo$mod.sigma)
-   wmo$mod.n      = as.data.frame(wmo$mod.n    )
-   wmo$mod.mse    = as.data.frame(wmo$mod.mse  )
+   wmo$mod.bias   = as.data.frame(wmo$mod.bias  )
+   wmo$mod.sigma  = as.data.frame(wmo$mod.sigma )
+   wmo$mod.n      = as.data.frame(wmo$mod.n     )
+   wmo$mod.mse    = as.data.frame(wmo$mod.mse   )
+   wmo$mod.weight = as.data.frame(wmo$mod.weight)
    #----- Find the weight for each data set. ----------------------------------------------#
-   wmo$mod.weight = ( 1 / mapply( FUN      = weighted.mean
-                                , x        = wmo$mod.mse
-                                , w        = wmo$mod.n
-                                , MoreArgs = list(na.rm=TRUE)
-                                ) )
+   wmo$mod.weight = mapply( FUN      = weighted.mean
+                          , x        = wmo$mod.weight
+                          , w        = wmo$mod.n
+                          , MoreArgs = list(na.rm=TRUE)
+                          )#end mapply
    wmo$mod.weight = wmo$mod.weight / sum(wmo$mod.weight)
    #---------------------------------------------------------------------------------------#
 
@@ -2647,7 +2651,7 @@ for (o in sequence(nout)){
    par(mar=c(5.1,4.1,4.1,2.1))
    myskill = NULL
    for (d in datrain$order){
-      for (w in seq.len(wmo$lon)){
+      for (w in seq_along(wmo$lon)){
          #----- Current data set information. ---------------------------------------------#
          now.obs = skill.obs[w,  ]
          now.mod = skill.mod[w,,d]
@@ -2682,7 +2686,7 @@ for (o in sequence(nout)){
                              , mar            = c(5,4,4,3)+0.1
                              )#end skill.plot
          #---------------------------------------------------------------------------------#
-      }#end for (d in seq.len(wmo$lon))
+      }#end for (d in seq_along(wmo$lon))
       #------------------------------------------------------------------------------------#
    }#end for (d in sequence(ndatrain))
    #---------------------------------------------------------------------------------------#

@@ -582,6 +582,7 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
                                     , extheta2temp ! ! function
    use therm_lib8            , only : alvl8        & ! function
                                     , alvi8        & ! function
+                                    , tq2enthalpy8 & ! function
                                     , tl2uint8     ! ! function
    use mem_edcp              , only : ed_fluxf_g   ! ! intent(in)
    implicit none
@@ -643,18 +644,38 @@ subroutine copy_lake_brams(i,j,ifm,mzg,mzs,initp)
 
 
    !----- Find the flux components of each patch. -----------------------------------------!
-   leaf_g(ifm)%sensible_gc(i,j,1) = sngloff(initp%avg_sensible_gc      ,tiny_lakeoff)
-   leaf_g(ifm)%evap_gc(i,j,1)     = sngloff( initp%avg_vapor_gc                            &
-                                           * ( initp%lake_fliq * alvl8(initp%lake_temp)    &
-                                             + (1.d0 - initp%lake_fliq)                    &
-                                             * alvi8(initp%lake_temp))                     &
-                                           , tiny_lakeoff )
-   leaf_g(ifm)%sensible_vc(i,j,1) = 0.
-   leaf_g(ifm)%evap_vc(i,j,1)     = 0.
-   leaf_g(ifm)%transp(i,j,1)      = 0.
-   leaf_g(ifm)%gpp(i,j,1)         = 0.
-   leaf_g(ifm)%plresp(i,j,1)      = 0.
-   leaf_g(ifm)%resphet(i,j,1)     = 0.
+   leaf_g(ifm)%hflxac      (i,j,1) = sngloff( initp%avg_sensible_ac, tiny_lakeoff)
+   leaf_g(ifm)%wflxac      (i,j,1) = sngloff( initp%avg_vapor_ac   , tiny_lakeoff)
+   leaf_g(ifm)%qwflxac     (i,j,1) = sngloff( initp%avg_vapor_ac                           &
+                                            * tq2enthalpy8(initp%can_temp,1.d0,.true.)     &
+                                            , tiny_lakeoff )
+   leaf_g(ifm)%eflxac      (i,j,1) = leaf_g(ifm)%hflxac (i,j,1)                            &
+                                   + leaf_g(ifm)%qwflxac(i,j,1)
+   leaf_g(ifm)%cflxac      (i,j,1) = sngloff( initp%avg_carbon_ac  , tiny_lakeoff)
+   leaf_g(ifm)%hflxgc      (i,j,1) = sngloff( initp%avg_sensible_gc, tiny_lakeoff)
+   leaf_g(ifm)%wflxgc      (i,j,1) = sngloff( initp%avg_vapor_gc   , tiny_lakeoff)
+   leaf_g(ifm)%qwflxgc     (i,j,1) = sngloff( initp%avg_vapor_gc                           &
+                                            * tq2enthalpy8(initp%lake_temp,1.d0,.true.)    &
+                                            , tiny_lakeoff)
+   leaf_g(ifm)%hflxvc      (i,j,1) = 0.0
+   leaf_g(ifm)%wflxvc      (i,j,1) = 0.0
+   leaf_g(ifm)%qwflxvc     (i,j,1) = 0.0
+   leaf_g(ifm)%transp      (i,j,1) = 0.0
+   leaf_g(ifm)%qtransp     (i,j,1) = 0.0
+   leaf_g(ifm)%intercepted (i,j,1) = 0.0
+   leaf_g(ifm)%qintercepted(i,j,1) = 0.0
+   leaf_g(ifm)%wshed       (i,j,1) = 0.0
+   leaf_g(ifm)%qwshed      (i,j,1) = 0.0
+   leaf_g(ifm)%throughfall (i,j,1) = 0.0
+   leaf_g(ifm)%qthroughfall(i,j,1) = 0.0
+   leaf_g(ifm)%gpp         (i,j,1) = 0.0
+   leaf_g(ifm)%plresp      (i,j,1) = 0.0
+   leaf_g(ifm)%resphet     (i,j,1) = 0.0
+   leaf_g(ifm)%growresp    (i,j,1) = 0.0
+   leaf_g(ifm)%runoff      (i,j,1) = 0.0
+   leaf_g(ifm)%qrunoff     (i,j,1) = 0.0
+   leaf_g(ifm)%drainage    (i,j,1) = 0.0
+   leaf_g(ifm)%qdrainage   (i,j,1) = 0.0
    !---------------------------------------------------------------------------------------!
 
 

@@ -247,6 +247,7 @@ module canopy_struct_dynamics
       logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
       real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real           :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
+      real           :: c3_cumldrag  ! c3 * cumulative drag.                    [      ---]
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
@@ -967,7 +968,8 @@ module canopy_struct_dynamics
          !    Find the ratio between u* and u at the top cohort, using Massman's equation  !
          ! (6).                                                                            !
          !---------------------------------------------------------------------------------!
-         ustarouh = (c1_m97 - c2_m97 * exp(-c3_m97 * cumldrag(zcan)))
+         c3_cumldrag = min(lnexp_max,max(lnexp_min,c3_m97 * cumldrag(zcan)))
+         ustarouh    = (c1_m97 - c2_m97 * exp(- c3_cumldrag))
          !---------------------------------------------------------------------------------!
 
 
@@ -1549,6 +1551,7 @@ module canopy_struct_dynamics
       logical        :: dry_grasses  ! Flag to check whether LAI+WAI is zero    [      ---]
       real(kind=8)   :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real(kind=8)   :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
+      real(kind=8)   :: c3_cumldrag  ! c3 * cumulative drag                     [      ---]
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
@@ -2220,7 +2223,8 @@ module canopy_struct_dynamics
          !    Find the ratio between u* and u at the top cohort, using Massman's equation  !
          ! (6).                                                                            !
          !---------------------------------------------------------------------------------!
-         ustarouh = (c1_m978 - c2_m978 * exp(-c3_m978 * cumldrag8(zcan)))
+         c3_cumldrag = min(lnexp_max8,max(lnexp_min8,c3_m978 * cumldrag8(zcan)))
+         ustarouh = (c1_m978 - c2_m978 * exp(- c3_cumldrag))
          !---------------------------------------------------------------------------------!
 
 

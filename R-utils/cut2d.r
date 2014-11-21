@@ -2,7 +2,7 @@
 #     Create factors for a two-dimension surface.  This works exactly the same way as the  #
 # cut function, except that the levels consider 2 variables.                               #
 #------------------------------------------------------------------------------------------#
-cut2d = function(x,y=NULL,xbreaks=10,ybreaks=10){
+cut2d = function(x,y=NULL,xbreaks=10,ybreaks=10,...){
 
    #---------------------------------------------------------------------------------------#
    #     First thing, we check whether the input variables make sense.                     #
@@ -38,11 +38,11 @@ cut2d = function(x,y=NULL,xbreaks=10,ybreaks=10){
    #    Split both X and Y.                                                                #
    #---------------------------------------------------------------------------------------#
    #----- X. ------------------------------------------------------------------------------#
-   xcut  = cut(xy$x,breaks=xbreaks)
+   xcut  = cut(xy$x,breaks=xbreaks,...)
    xlevs = levels(xcut)
    nxlev = length(xlevs)
    #----- Y. ------------------------------------------------------------------------------#
-   ycut  = cut(xy$y,breaks=ybreaks)
+   ycut  = cut(xy$y,breaks=ybreaks,...)
    ylevs = levels(ycut)
    nylev = length(ylevs)
    #----- Combine X and Y. ----------------------------------------------------------------#

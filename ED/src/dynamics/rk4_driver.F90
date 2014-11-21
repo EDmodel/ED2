@@ -32,8 +32,6 @@ module rk4_driver
                                         , compute_budget       ! ! function
       implicit none
 
-      !----------- Use MPI timing calls, need declarations --------------------------------!
-      include 'mpif.h'
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)              , target      :: cgrid
       integer                   , intent (in) :: ifm
@@ -130,7 +128,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                        &
                                              ,cpoly%ntext_soil(:,isi))
-               call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               call update_patch_derived_props(csite,ipa)
                !---------------------------------------------------------------------------!
 
 

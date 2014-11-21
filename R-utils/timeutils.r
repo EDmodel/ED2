@@ -4,6 +4,7 @@
 #------------------------------------------------------------------------------------------#
 is.dates <<- function(x) inherits(x,"dates")
 is.times <<- function(x) inherits(x,"times")
+is.time  <<- function(x){ is.chron(x) || is.dates(x) || is.times(x)}
 #------------------------------------------------------------------------------------------#
 
 
@@ -531,7 +532,7 @@ if (mseason.1st %in% c(1,4,7,10)){
 }#end if
 
 nseasons       <<- length(season.list)
-season.cols    <<- c("royalblue4","chartreuse4","yellow3","orangered","grey22")
+season.cols    <<- c("#3B24B3","#2996CC","#D9BE36","#990F0F",all.colour)
 season.label   <<- paste(sprintf("%2.2i",sequence(nseasons)),season.list,sep="-")
 #==========================================================================================#
 #==========================================================================================#

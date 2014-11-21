@@ -404,3 +404,45 @@ dbh2agb.baker <<- function(dbh,wdens,allom="baker.chave"){
 }#end if
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     We find the dbh based on above-ground biomass and wood density, following the        #
+# allometry proposed by:                                                                   #
+#                                                                                          #
+# Baker, T. R., and co-authors, 2004: Variation in wood density determines spatial         #
+#     patterns in Amazonian forest biomass. Global Change Biol., 10, 545-562.              #
+#                                                                                          #
+# Chave, J., B. Riera, M.A. Dubois, 2001: Estimation of biomass in a neotropical forest of #
+#     French Guiana: spatial and temporal variability.  J. Trop. Ecol., 17, 79-96.         #
+#------------------------------------------------------------------------------------------#
+agb2dbh.baker <<- function(agb,wdens,allom="baker.chave"){
+
+
+   ln.agb  = log(agb)
+   ln.rhon = log(wdens / 0.58 / C2B)
+
+
+   if (allom == "baker.chave"){
+      #------ Use Chave's based function (equation 2, Baker et al., 2004). ----------------#
+      dbh = exp( 1 / 2.42 * ( ln.agb - ln.rhon + 2.00 ) )
+      #------------------------------------------------------------------------------------#
+   }else if (allom == "baker.chambers"){
+      #------ Use Chambers' function. -----------------------------------------------------#
+      stop("Cannot invert Chambers' equation...")
+      #------------------------------------------------------------------------------------#
+   }else if (allom == "chave.2006"){
+      #------ Use Chambers' function. -----------------------------------------------------#
+      stop ("Cannot invert Chave 2006 equation...")
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+   return(dbh)
+}#end if
+#==========================================================================================#
+#==========================================================================================#

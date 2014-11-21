@@ -555,7 +555,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
    NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
-   NL%LU_DATABASE       = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
+   NL%LU_DATABASE       = 'myludatabase'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
    NL%ED_MET_DRIVER_DB  = 'mymetdriverdb'
@@ -1117,7 +1117,7 @@ $ED_NL
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
    !---------------------------------------------------------------------------------------!
-   NL%IANTH_DISTURB   = 0
+   NL%IANTH_DISTURB   = myanthdisturb
    !---------------------------------------------------------------------------------------!
 
 

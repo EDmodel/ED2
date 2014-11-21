@@ -233,6 +233,7 @@ module fuse_fiss_utils
       type(patchtype)      , pointer     :: cpatch       ! Pointer to current site
       integer                            :: ipa,ico      ! Counters
       logical, dimension(:), allocatable :: remain_table ! Flag: this patch will remain.
+      real                               :: total_area   ! Area of removed patches
       real                               :: elim_area    ! Area of removed patches
       real                               :: new_area     ! Just to make sure area is 1.
       real                               :: area_scale   ! Scaling area factor.
@@ -247,12 +248,14 @@ module fuse_fiss_utils
       ! Realocate a new site with only the valid patches, and normalize their areas and    !
       ! plant densities to reflect the area loss.                                          !
       !------------------------------------------------------------------------------------!
-      elim_area = 0.0
+      elim_area  = 0.0
+      total_area = 0.0
       do ipa = 1,csite%npatches
          if (csite%area(ipa) < min_patch_area) then
             elim_area = elim_area + csite%area(ipa)
             remain_table(ipa) = .false.
          end if
+         total_area = total_area + csite%area(ipa)
       end do
 
       !----- Use the mask to resize the patch vectors in the current site. ----------------!
@@ -274,11 +277,11 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Renormalize the total area.                                                     !
       !------------------------------------------------------------------------------------!
-      new_area=0.
-      area_scale = 1./(1. - elim_area)
+      new_area   = 0.
+      area_scale = 1.0 / (total_area - elim_area)
       do ipa = 1,csite%npatches
          csite%area(ipa) = csite%area(ipa) * area_scale
-       new_area = new_area + csite%area(ipa)
+         new_area        = new_area + csite%area(ipa)
       end do
 
       if (abs(new_area-1.0) > 1.e-5) then
@@ -1039,7 +1042,8 @@ module fuse_fiss_utils
                                     , ndcycle                & ! intent(in)
                                     , igrass                 ! ! intent(in)
       use consts_coms        , only : lnexp_min              & ! intent(in)
-                                    , lnexp_max              ! ! intent(in)
+                                    , lnexp_max              & ! intent(in)
+                                    , tiny_num               ! ! intent(in)
       use fusion_fission_coms, only : corr_cohort
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1076,7 +1080,7 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
       newni   = 1.0 / newn
-      if (cpatch%lai(recc) + cpatch%lai(donc) > 1e-15) then
+      if (cpatch%lai(recc) + cpatch%lai(donc) > tiny_num ) then
          rlai    = cpatch%lai(recc)
          dlai    = cpatch%lai(donc)
          newlaii = 1.0 / (rlai+dlai)
@@ -1084,8 +1088,8 @@ module fuse_fiss_utils
 
          ! This is a fix for when two cohorts with very very low LAI are fused
          ! it prevents numerical errors (RGK 8-18-2014)
-         rlai = 1.0e15*cpatch%lai(recc)
-         dlai = 1.0e15*cpatch%lai(donc)
+         rlai    = cpatch%lai(recc) / tiny_num
+         dlai    = cpatch%lai(donc) / tiny_num
          newlaii = 1.0 / (rlai+dlai)
       else
          rlai    = 0.0
@@ -2882,6 +2886,7 @@ module fuse_fiss_utils
                                      , light_toler_min     & ! intent(in)
                                      , light_toler_max     & ! intent(in)
                                      , light_toler_mult    & ! intent(in)
+                                     , min_oldgrowth       & ! intent(in)
                                      , fuse_prefix         ! ! intent(in)
       use ed_max_dims         , only : n_pft               & ! intent(in)
                                      , str_len             ! ! intent(in)
@@ -2915,6 +2920,8 @@ module fuse_fiss_utils
       integer                             :: ico             ! Counters
       integer                             :: donp            ! Counters
       integer                             :: recp            ! Counters
+      integer                             :: rec_lu          ! Land use of receptor patch
+      integer                             :: don_lu          ! Land use of donor patch
       integer                             :: ipft            ! Counters
       integer                             :: ihgt            ! Counters
       integer                             :: ifus            ! Counters
@@ -2928,6 +2935,7 @@ module fuse_fiss_utils
       logical                             :: dark_donp       ! Donor patch bin too small
       logical                             :: dark_recp       ! Receptor patch bin too small
       logical                             :: same_age        ! Patches with same age
+      logical                             :: old_or_same_lu  ! Old patches or the same LU.
       real                                :: diff            ! Absolute difference in prof.
       real                                :: refv            ! Reference value of bin
       real                                :: norm            ! Normalised difference
@@ -3100,6 +3108,7 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
             donloope: do donp=csite%npatches,2,-1
                donpatch => csite%patch(donp)
+               don_lu = csite%dist_type(donp)
                
                !----- If patch is not empty, or has already been fused, move on. ----------!
                if ( (.not. fuse_table(donp)) .or.                                          &
@@ -3120,6 +3129,16 @@ module fuse_fiss_utils
                end if
                recloope: do recp=donp-1,1,-1
                   recpatch => csite%patch(recp)
+                  rec_lu = csite%dist_type(recp)
+
+                  !------------------------------------------------------------------------!
+                  !     Set this flag that checks whether the patches have the same        !
+                  ! disturbance type or are too old so we don't need to distinguish them.  !
+                  !------------------------------------------------------------------------!
+                  old_or_same_lu =   don_lu == rec_lu                         .or.         &
+                                   ( csite%age(donp) >= min_oldgrowth(don_lu) .and.        &
+                                     csite%age(recp) >= min_oldgrowth(rec_lu) )
+                  !------------------------------------------------------------------------!
 
                   !------------------------------------------------------------------------!
                   !     Skip the patch if it isn't empty, or it has already been fused, or !
@@ -3127,16 +3146,18 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   if ( (.not. fuse_table(recp))                       .or.                 &
                        ( dont_force_fuse                              .and.                &
-                         ( recpatch%ncohorts > 0                      .or.                 &
-                           csite%dist_type(donp) /= csite%dist_type(recp)     ) ) ) then
+                         ( recpatch%ncohorts > 0 .or. (.not. old_or_same_lu) ) ) ) then
                      cycle recloope
                   end if
                   !------------------------------------------------------------------------!
 
-                  !----- Skip the patch if they don't have the same disturbance type. -----!
-                  if ( csite%dist_type(donp) /= csite%dist_type(recp)) cycle recloope
                   !------------------------------------------------------------------------!
-                  
+                  !     Skip the patch if they don't have the same disturbance type and    !
+                  ! are not too old.                                                       !
+                  !------------------------------------------------------------------------!
+                  if (.not. old_or_same_lu) cycle recloope
+                  !------------------------------------------------------------------------!
+
                   !------------------------------------------------------------------------!
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
@@ -3230,6 +3251,7 @@ module fuse_fiss_utils
 
                   donloopa: do donp=csite%npatches,2,-1
                      donpatch => csite%patch(donp)
+                     don_lu = csite%dist_type(donp)
                      
                      !----- If patch is not empty, or has already been fused, move on. ----!
                      if ( (.not. fuse_table(donp)) .or.                                    &
@@ -3252,6 +3274,7 @@ module fuse_fiss_utils
                      end if
                      recloopa: do recp=donp-1,1,-1
                         recpatch => csite%patch(recp)
+                        rec_lu = csite%dist_type(recp)
 
                         !------------------------------------------------------------------!
                         !     Skip the patch if it isn't empty, or it has already been     !
@@ -3551,6 +3574,7 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                donloopp: do donp = csite%npatches,2,-1
                   donpatch => csite%patch(donp)
+                  don_lu = csite%dist_type(donp)
 
                   !------------------------------------------------------------------------!
                   !     If this is an empty patch, or has already been merged, we skip it. !
@@ -3575,9 +3599,16 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   recp_found = .false.
                   recloopp: do recp=donp-1,1,-1
-                     recp_found = csite%dist_type(donp) == csite%dist_type(recp) .and.     &
-                                  fuse_table(recp) .and.                                   &
+
+                     rec_lu = csite%dist_type(recp)
+
+                     old_or_same_lu =   don_lu == rec_lu                         .or.      &
+                                      ( csite%age(donp) >= min_oldgrowth(don_lu) .and.     &
+                                        csite%age(recp) >= min_oldgrowth(rec_lu) )
+
+                     recp_found = old_or_same_lu .and. fuse_table(recp) .and.              &
                                   (csite%dist_type(recp) == 1 .or. csite%age(recp) > 3.)
+
                      if (recp_found) then
                         recpatch => csite%patch(recp)
                         exit recloopp
@@ -4025,10 +4056,24 @@ module fuse_fiss_utils
       !----- The new area is simply the sum of each patch area. ---------------------------!
       newarea  = csite%area(donp) + csite%area(recp)
       newareai = 1.0/newarea
+      !------------------------------------------------------------------------------------!
 
       !----- Assign eliminated LAI and nplant to zero (everything stays) ------------------!
       elim_nplant = 0.
       elim_lai    = 0.
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case of old-growth stands, the disturbance type flag may be different.  In  !
+      ! this case, we keep the type for the largest patch.                                 !
+      !------------------------------------------------------------------------------------!
+      if (csite%area(donp) > csite%area(recp)) then
+         csite%dist_type(recp) = csite%dist_type(donp)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- We now take the weighted average, scale by the individual patch area. --------!
       csite%age(recp)                = newareai *                                          &
@@ -4679,7 +4724,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
-      if (writing_long .and. all(csite%dmean_can_prss > 10.0) ) then
+      if (writing_long .and.  (.not. fuse_initial) ) then
 
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
@@ -5492,7 +5537,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
-      if (writing_dcyc .and. all(csite%qmean_can_prss > 10.0)) then
+      if (writing_dcyc .and. (.not. fuse_initial)) then
 
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
@@ -5986,7 +6031,7 @@ module fuse_fiss_utils
       ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
       !------------------------------------------------------------------------------------!
-      call update_patch_derived_props(csite,lsl, prss,recp)
+      call update_patch_derived_props(csite,recp)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!

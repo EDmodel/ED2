@@ -19,92 +19,105 @@ module rad_carma
    !    This subroutine is an interface between BRAMS and the actual CARMA driver.         !
    !---------------------------------------------------------------------------------------!
    subroutine radcomp_carma(m1,m2,m3,npat,nclouds,ncrad,ia,iz,ja,jz,mynum,iswrtyp,ilwrtyp  &
-                           ,icumfdbk,solfac,theta,pi0,pp,rv,rain,lwl,iwl,cuprliq,cuprice   &
-                           ,cuparea,cupierr,dn0,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort  &
-                           ,rshort_top,rshortup_top,rlong,rlongup_top,albedt,cosz,rlongup  &
-                           ,fmapt,pm,patch_area)
+                           ,icumfdbk,solfac,theta,pi0,pp,rv,st_rain,cb_rain,lwl,iwl        &
+                           ,cuprliq,cuprice,cuparea,cupierr,dn0,rtp,fthrd,rtgt,f13t,f23t   &
+                           ,glat,glon,par_beam,par_diffuse,nir_beam,nir_diffuse,rshort     &
+                           ,rshort_diffuse,rshort_top,rshortup_top,rlong,rlongup_top       &
+                           ,albedt,cosz,rlongup,fmapt,pm,patch_area)
       use catt_start  , only : catt               ! ! intent(in)
       use mem_grid    , only : ngrid              ! ! intent(in)
       use grid_dims   , only : nzpmax             ! ! intent(in)
       use mem_aerad   , only : nwave              ! ! intent(in)
       use mem_radiate , only : rad_cosz_min       ! ! intent(in)
       use rconstants  , only : day_sec            & ! intent(in)
+                             , hr_sec             & ! intent(in)
                              , t00                ! ! intent(in)
       use therm_lib   , only : exner2press        & ! function
                              , extheta2temp       ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                          , intent(in)    :: m1
-      integer                          , intent(in)    :: m2
-      integer                          , intent(in)    :: m3
-      integer                          , intent(in)    :: ia
-      integer                          , intent(in)    :: iz
-      integer                          , intent(in)    :: ja
-      integer                          , intent(in)    :: jz
-      integer                          , intent(in)    :: mynum
-      integer                          , intent(in)    :: npat
-      integer                          , intent(in)    :: nclouds
-      integer                          , intent(inout) :: ncrad
-      integer                          , intent(in)    :: iswrtyp
-      integer                          , intent(in)    :: ilwrtyp
-      integer                          , intent(in)    :: icumfdbk
-      real                             , intent(in)    :: solfac
-      real, dimension(m1,m2,m3)        , intent(in)    :: theta
-      real, dimension(m1,m2,m3)        , intent(in)    :: pi0
-      real, dimension(m1,m2,m3)        , intent(in)    :: pp
-      real, dimension(m1,m2,m3)        , intent(in)    :: rv
-      real, dimension(m1,m2,m3)        , intent(inout) :: lwl
-      real, dimension(m1,m2,m3)        , intent(inout) :: iwl
-      real, dimension(m1,m2,m3,nclouds), intent(in)    :: cuprliq
-      real, dimension(m1,m2,m3,nclouds), intent(in)    :: cuprice
-      real, dimension(   m2,m3,nclouds), intent(in)    :: cuparea
-      real, dimension(   m2,m3,nclouds), intent(in)    :: cupierr
-      real, dimension(   m2,m3)        , intent(in)    :: rain
-      real, dimension(   m2,m3,npat)   , intent(in)    :: patch_area
-      real, dimension(m1,m2,m3)        , intent(in)    :: dn0
-      real, dimension(m1,m2,m3)        , intent(in)    :: rtp
-      real, dimension(m2,m3)           , intent(in)    :: rtgt
-      real, dimension(m2,m3)           , intent(in)    :: f13t
-      real, dimension(m2,m3)           , intent(in)    :: f23t
-      real, dimension(m2,m3)           , intent(in)    :: glat
-      real, dimension(m2,m3)           , intent(in)    :: glon
-      real, dimension(m2,m3)           , intent(in)    :: cosz
-      real, dimension(m2,m3)           , intent(in)    :: albedt
-      real, dimension(m2,m3)           , intent(in)    :: fmapt
-      real, dimension(m1,m2,m3)        , intent(in)    :: pm
-      real, dimension(m2,m3)           , intent(inout) :: rshort
-      real, dimension(m2,m3)           , intent(inout) :: rshort_top
-      real, dimension(m2,m3)           , intent(inout) :: rshortup_top
-      real, dimension(m2,m3)           , intent(inout) :: rlong
-      real, dimension(m2,m3)           , intent(inout) :: rlongup_top
-      real, dimension(m1,m2,m3)        , intent(inout) :: fthrd
-      real, dimension(m2,m3)           , intent(in)    :: rlongup
+      integer                                  , intent(in)    :: m1
+      integer                                  , intent(in)    :: m2
+      integer                                  , intent(in)    :: m3
+      integer                                  , intent(in)    :: ia
+      integer                                  , intent(in)    :: iz
+      integer                                  , intent(in)    :: ja
+      integer                                  , intent(in)    :: jz
+      integer                                  , intent(in)    :: mynum
+      integer                                  , intent(in)    :: npat
+      integer                                  , intent(in)    :: nclouds
+      integer                                  , intent(inout) :: ncrad
+      integer                                  , intent(in)    :: iswrtyp
+      integer                                  , intent(in)    :: ilwrtyp
+      integer                                  , intent(in)    :: icumfdbk
+      real(kind=4)                             , intent(in)    :: solfac
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: theta
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: pi0
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: pp
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: rv
+      real(kind=4), dimension(m1,m2,m3)        , intent(inout) :: lwl
+      real(kind=4), dimension(m1,m2,m3)        , intent(inout) :: iwl
+      real(kind=4), dimension(m1,m2,m3,nclouds), intent(in)    :: cuprliq
+      real(kind=4), dimension(m1,m2,m3,nclouds), intent(in)    :: cuprice
+      real(kind=4), dimension(   m2,m3,nclouds), intent(in)    :: cuparea
+      real(kind=4), dimension(   m2,m3,nclouds), intent(in)    :: cupierr
+      real(kind=4), dimension(   m2,m3)        , intent(in)    :: st_rain
+      real(kind=4), dimension(   m2,m3,nclouds), intent(in)    :: cb_rain
+      real(kind=4), dimension(   m2,m3,npat)   , intent(in)    :: patch_area
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: dn0
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: rtp
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: rtgt
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: f13t
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: f23t
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: glat
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: glon
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: cosz
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: albedt
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: fmapt
+      real(kind=4), dimension(m1,m2,m3)        , intent(in)    :: pm
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: par_beam
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: par_diffuse
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: nir_beam
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: nir_diffuse
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: rshort
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: rshort_diffuse
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: rshort_top
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: rshortup_top
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: rlong
+      real(kind=4), dimension(m2,m3)           , intent(inout) :: rlongup_top
+      real(kind=4), dimension(m1,m2,m3)        , intent(inout) :: fthrd
+      real(kind=4), dimension(m2,m3)           , intent(in)    :: rlongup
       !----- Local variables. -------------------------------------------------------------!
-      integer                                          :: i
-      integer                                          :: j
-      integer                                          :: k
-      integer                                          :: ipat
-      integer                                          :: icld
-      real                                             :: xland
-      real, dimension(m1)                              :: lwl_cld
-      real, dimension(m1)                              :: iwl_cld
-      real                                             :: area_csky
-      real                                             :: area_cld
-      real                                             :: rain_eff
-      real                                             :: rshort_cld
-      real                                             :: rshort_top_cld
-      real                                             :: rshortup_top_cld
-      real                                             :: rlong_cld
-      real                                             :: rlongup_top_cld
-      real, dimension(m1)                              :: fthrd_cld
-      real, dimension(nwave)                           :: aotl_cld
-      real, dimension(nwave)                           :: aotl
-      real                                             :: exner
-      real                                             :: press
-      real                                             :: tempc
-      real                                             :: rvcgs
+      integer                                                  :: i
+      integer                                                  :: j
+      integer                                                  :: k
+      integer                                                  :: ipat
+      integer                                                  :: icld
+      real(kind=4)                                             :: xland
+      real(kind=4), dimension(m1)                              :: lwl_cld
+      real(kind=4), dimension(m1)                              :: iwl_cld
+      real(kind=4)                                             :: area_csky
+      real(kind=4)                                             :: area_cld
+      real(kind=4)                                             :: cb_rain_eff
+      real(kind=4)                                             :: par_beam_cld
+      real(kind=4)                                             :: par_diffuse_cld
+      real(kind=4)                                             :: nir_beam_cld
+      real(kind=4)                                             :: nir_diffuse_cld
+      real(kind=4)                                             :: rshort_cld
+      real(kind=4)                                             :: rshort_diffuse_cld
+      real(kind=4)                                             :: rshort_top_cld
+      real(kind=4)                                             :: rshortup_top_cld
+      real(kind=4)                                             :: rlong_cld
+      real(kind=4)                                             :: rlongup_top_cld
+      real(kind=4), dimension(m1)                              :: fthrd_cld
+      real(kind=4), dimension(nwave)                           :: aotl_cld
+      real(kind=4), dimension(nwave)                           :: aotl
+      real(kind=4)                                             :: exner
+      real(kind=4)                                             :: press
+      real(kind=4)                                             :: tempc
+      real(kind=4)                                             :: rvcgs
       !----- Locally saved variables. -----------------------------------------------------!
-      logical                          , save          :: first_time = .true.
+      logical                                  , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -140,13 +153,6 @@ module rad_carma
             !----- Finding the amount of land. --------------------------------------------!
             xland = 1. - patch_area(i,j,1)
 
-            !----- Precipitation is used only if the full cumulus feedback is off. --------!
-            if (icumfdbk == 0) then
-               rain_eff = rain(i,j)
-            else
-               rain_eff = 0.
-            end if
-
             !----- Make sure that the hydrometeor mixing ratio is non-negative. -----------!
             do k = 1, m1
                lwl(k,i,j) = max(0.,lwl(k,i,j))
@@ -169,11 +175,17 @@ module rad_carma
                      lwl_cld(k) = 0.
                      iwl_cld(k) = 0.
                   end do
+                  cb_rain_eff   = 0.
                else
                   if (cupierr(i,j,icld) /= 0.) cycle cldloop
 
-                  area_cld  = cuparea(i,j,icld)
-                  area_csky = area_csky - area_cld
+                  area_cld    = cuparea(i,j,icld)
+                  area_csky   = area_csky - area_cld
+                  if (area_cld > 0.001) then
+                     cb_rain_eff = cb_rain(i,j,icld) / area_cld
+                  else
+                     cb_rain_eff = 0.
+                  end if
 
                   do k = 1, m1
                      lwl_cld(k) = max(0.,cuprliq(k,i,j,icld))
@@ -182,47 +194,73 @@ module rad_carma
                end if
                !---------------------------------------------------------------------------!
 
+
+
                !----- Reset the scratch variables. ----------------------------------------!
                call flush_carma()
-               rshort_cld       = 0.
-               rshort_top_cld   = 0.
-               rshortup_top_cld = 0.
-               rlong_cld        = 0.
-               rlongup_top_cld  = 0.
-               fthrd_cld (:)    = 0.
+               par_beam_cld       = 0.
+               par_diffuse_cld    = 0.
+               nir_beam_cld       = 0.
+               nir_diffuse_cld    = 0.
+               rshort_cld         = 0.
+               rshort_diffuse_cld = 0.
+               rshort_top_cld     = 0.
+               rshortup_top_cld   = 0.
+               rlong_cld          = 0.
+               rlongup_top_cld    = 0.
+               fthrd_cld (:)      = 0.
+               !---------------------------------------------------------------------------!
 
-               !----- Copying the aerosol optical transmission to a scratch array. --------!
+
+
+               !----- Copy the aerosol optical transmission to a scratch array. -----------!
                call ci_3d_1d(m2,m3,nwave,carma(ngrid)%aot,aotl_cld,i,j)
                !---------------------------------------------------------------------------!
 
-               !----- Calling the main CARMA driver. --------------------------------------!
-               call radcarma(nzpmax,m1,solfac,theta(1:m1,i,j),pi0(1:m1,i,j),pp(1:m1,i,j)   &
-                            ,rv(1:m1,i,j),rain_eff,lwl(1:m1,i,j),iwl(1:m1,i,j)             &
-                            ,lwl_cld,iwl_cld,dn0(1:m1,i,j),rtp(1:m1,i,j),fthrd_cld         &
-                            ,rtgt(i,j),f13t(i,j),f23t(i,j),glat(i,j),glon(i,j),rshort_cld  &
-                            ,rshort_top_cld,rshortup_top_cld,rlong_cld,rlongup_top_cld     &
-                            ,albedt(i,j),cosz(i,j),rlongup(i,j),mynum,fmapt(i,j)           &
-                            ,pm(1:m1,i,j),aotl_cld,xland)
 
-               !----- Integrating the fluxes and optical depth. ---------------------------!
+
+
+               !----- Call the main CARMA driver. -----------------------------------------!
+               call radcarma(nzpmax,m1,solfac,theta(1:m1,i,j),pi0(1:m1,i,j),pp(1:m1,i,j)   &
+                            ,rv(1:m1,i,j),st_rain(i,j),cb_rain_eff,lwl(1:m1,i,j)           &
+                            ,iwl(1:m1,i,j),lwl_cld,iwl_cld,dn0(1:m1,i,j),rtp(1:m1,i,j)     &
+                            ,fthrd_cld,rtgt(i,j),f13t(i,j),f23t(i,j),glat(i,j),glon(i,j)   &
+                            ,par_beam_cld,par_diffuse_cld,nir_beam_cld,nir_diffuse_cld     &
+                            ,rshort_cld,rshort_diffuse_cld,rshort_top_cld,rshortup_top_cld &
+                            ,rlong_cld,rlongup_top_cld,albedt(i,j),cosz(i,j),rlongup(i,j)  &
+                            ,mynum,fmapt(i,j),pm(1:m1,i,j),aotl_cld,xland)
+               !---------------------------------------------------------------------------!
+
+
+
+
+               !----- Integrate the fluxes, heating rate, and optical depth. --------------!
                if (isl_aerad) then
-                   rshort      (i,j) = rshort      (i,j) + rshort_cld       * area_cld
-                   rshort_top  (i,j) = rshort_top  (i,j) + rshort_top_cld   * area_cld
-                   rshortup_top(i,j) = rshortup_top(i,j) + rshortup_top_cld * area_cld
+                  par_beam      (i,j) = par_beam      (i,j) + par_beam_cld       * area_cld
+                  par_diffuse   (i,j) = par_diffuse   (i,j) + par_diffuse_cld    * area_cld
+                  nir_beam      (i,j) = nir_beam      (i,j) + nir_beam_cld       * area_cld
+                  nir_diffuse   (i,j) = nir_diffuse   (i,j) + nir_diffuse_cld    * area_cld
+                  rshort        (i,j) = rshort        (i,j) + rshort_cld         * area_cld
+                  rshort_diffuse(i,j) = rshort_diffuse(i,j) + rshort_diffuse_cld * area_cld
+                  rshort_top    (i,j) = rshort_top    (i,j) + rshort_top_cld     * area_cld
+                  rshortup_top  (i,j) = rshortup_top  (i,j) + rshortup_top_cld   * area_cld
                end if
                if (ir_aerad ) then
-                  rlong        (i,j) = rlong       (i,j) + rlong_cld        * area_cld
-                  rlongup_top  (i,j) = rlongup_top (i,j) + rlongup_top_cld  * area_cld
+                  rlong         (i,j) = rlong         (i,j) + rlong_cld          * area_cld
+                  rlongup_top   (i,j) = rlongup_top   (i,j) + rlongup_top_cld    * area_cld
                end if
                do k = 1, m1
                   fthrd(k,i,j) = fthrd(k,i,j) + fthrd_cld(k) * area_cld
                end do
                aotl(:) = aotl(:) + aotl_cld(:) * area_cld
-               
+               !---------------------------------------------------------------------------!
+
+
+
                !---------------------------------------------------------------------------!
                !     Print the output if the radiation heating rate is screwy.             !
                !---------------------------------------------------------------------------!
-               if (any(abs(fthrd_cld) > 300./day_sec)) then
+               if (any(abs(fthrd_cld) > 9999./day_sec)) then
                   do k=1,m1
                      fthrd_cld(k) = fthrd_cld(k) * day_sec
                      lwl(k,i,j)   = lwl(k,i,j)   * 1000.
@@ -242,7 +280,8 @@ module rad_carma
                   write (unit=*,fmt='(a,1x,es12.5)') ' - RLONGUP = ',rlongup(i,j)
                   write (unit=*,fmt='(a,1x,es12.5)') ' - COSZ    = ',cosz(i,j)
                   write (unit=*,fmt='(a,1x,es12.5)') ' - ALBEDT  = ',albedt(i,j)
-                  write (unit=*,fmt='(a,1x,es12.5)') ' - RAIN    = ',rain(i,j)
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - ST_RAIN = ',st_rain(i,j) * hr_sec
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - CB_RAIN = ',cb_rain_eff  * hr_sec
                   write (unit=*,fmt='(a,1x,es12.5)') ' - AREA    = ',area_cld
                   write (unit=*,fmt='(123a)') ('-',k=1,123)
                   write (unit=*,fmt='(10(a,1x))') '    K','  TEMP [degC]','  PRESS [hPa]'  &
@@ -270,8 +309,11 @@ module rad_carma
                end if
                !---------------------------------------------------------------------------!
             end do cldloop
+            !------------------------------------------------------------------------------!
 
-            !----- Copying the scratch array back to the CARMA structure. -----------------!
+
+
+            !----- Copy the scratch array back to the CARMA structure. --------------------!
             call ci_1d_3d(m2,m3,nwave,aotl,carma(ngrid)%aot,i,j)
             
             if (ir_aerad .and. rlong(i,j) /= rlong(i,j)) then
@@ -289,9 +331,11 @@ module rad_carma
                write (unit=*,fmt='(a)')       '==========================================='
                call abort_run('Weird RLONG on CARMA...','radcomp_carma','rad_carma.f90')
             end if
+            !------------------------------------------------------------------------------!
          end do iloop
+         !---------------------------------------------------------------------------------!
       end do jloop
-
+      !------------------------------------------------------------------------------------!
       return
    end subroutine radcomp_carma
    !=======================================================================================!
@@ -304,8 +348,9 @@ module rad_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine radcarma(nzpmax,m1,solfac,theta,pi0,pp,rv,rain,lwl,iwl,lwl_cld,iwl_cld,dn0   &
-                      ,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort,rshort_top,rshortup_top   &
+   subroutine radcarma(nzpmax,m1,solfac,theta,pi0,pp,rv,st_rain,cb_rain,lwl,iwl,lwl_cld    &
+                      ,iwl_cld,dn0,rtp,fthrd,rtgt,f13t,f23t,glat,glon,par_beam,par_diffuse &
+                      ,nir_beam,nir_diffuse,rshort,rshort_diffuse,rshort_top,rshortup_top  &
                       ,rlong,rlongup_top,albedt,cosz,rlongup,mynum,fmapt,pm,aotl,xland)
       use catt_start  , only : catt         ! ! intent(in)
       use mem_grid    , only : centlon      & ! intent(in)
@@ -336,77 +381,84 @@ module rad_carma
                              , extheta2temp ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                  , intent(in)    :: nzpmax
-      integer                  , intent(in)    :: m1
-      integer                  , intent(in)    :: mynum
-      real                     , intent(in)    :: solfac
-      real                     , intent(in)    :: rtgt
-      real                     , intent(in)    :: f13t
-      real                     , intent(in)    :: f23t
-      real                     , intent(in)    :: glat
-      real                     , intent(in)    :: glon
-      real                     , intent(in)    :: cosz
-      real                     , intent(in)    :: albedt
-      real                     , intent(in)    :: fmapt
-      real                     , intent(in)    :: rain
-      real                     , intent(in)    :: xland
-      real, dimension(m1)      , intent(in)    :: pm     ! part. mat. (kg[pm]/kg[air])
-      real, dimension(m1)      , intent(in)    :: theta
-      real, dimension(m1)      , intent(in)    :: pi0
-      real, dimension(m1)      , intent(in)    :: pp
-      real, dimension(m1)      , intent(in)    :: rv
-      real, dimension(m1)      , intent(in)    :: dn0
-      real, dimension(m1)      , intent(in)    :: rtp
-      real, dimension(m1)      , intent(in)    :: lwl
-      real, dimension(m1)      , intent(in)    :: iwl
-      real, dimension(m1)      , intent(in)    :: lwl_cld
-      real, dimension(m1)      , intent(in)    :: iwl_cld
-      real                     , intent(in)    :: rlongup
-      real, dimension(m1)      , intent(inout) :: fthrd
-      real, dimension(nwave)   , intent(inout) :: aotl
-      real                     , intent(out)   :: rshort
-      real                     , intent(out)   :: rshort_top
-      real                     , intent(out)   :: rshortup_top
-      real                     , intent(out)   :: rlong
-      real                     , intent(out)   :: rlongup_top
+      integer                          , intent(in)    :: nzpmax
+      integer                          , intent(in)    :: m1
+      integer                          , intent(in)    :: mynum
+      real(kind=4)                     , intent(in)    :: solfac
+      real(kind=4)                     , intent(in)    :: rtgt
+      real(kind=4)                     , intent(in)    :: f13t
+      real(kind=4)                     , intent(in)    :: f23t
+      real(kind=4)                     , intent(in)    :: glat
+      real(kind=4)                     , intent(in)    :: glon
+      real(kind=4)                     , intent(in)    :: cosz
+      real(kind=4)                     , intent(in)    :: albedt
+      real(kind=4)                     , intent(in)    :: fmapt
+      real(kind=4)                     , intent(in)    :: st_rain
+      real(kind=4)                     , intent(in)    :: cb_rain
+      real(kind=4)                     , intent(in)    :: xland
+      real(kind=4), dimension(m1)      , intent(in)    :: pm     ! part. mat. (kg[pm]/kg[air])
+      real(kind=4), dimension(m1)      , intent(in)    :: theta
+      real(kind=4), dimension(m1)      , intent(in)    :: pi0
+      real(kind=4), dimension(m1)      , intent(in)    :: pp
+      real(kind=4), dimension(m1)      , intent(in)    :: rv
+      real(kind=4), dimension(m1)      , intent(in)    :: dn0
+      real(kind=4), dimension(m1)      , intent(in)    :: rtp
+      real(kind=4), dimension(m1)      , intent(in)    :: lwl
+      real(kind=4), dimension(m1)      , intent(in)    :: iwl
+      real(kind=4), dimension(m1)      , intent(in)    :: lwl_cld
+      real(kind=4), dimension(m1)      , intent(in)    :: iwl_cld
+      real(kind=4)                     , intent(in)    :: rlongup
+      real(kind=4), dimension(m1)      , intent(inout) :: fthrd
+      real(kind=4), dimension(nwave)   , intent(inout) :: aotl
+      real(kind=4)                     , intent(out)   :: par_beam
+      real(kind=4)                     , intent(out)   :: par_diffuse
+      real(kind=4)                     , intent(out)   :: nir_beam
+      real(kind=4)                     , intent(out)   :: nir_diffuse
+      real(kind=4)                     , intent(out)   :: rshort
+      real(kind=4)                     , intent(out)   :: rshort_diffuse
+      real(kind=4)                     , intent(out)   :: rshort_top
+      real(kind=4)                     , intent(out)   :: rshortup_top
+      real(kind=4)                     , intent(out)   :: rlong
+      real(kind=4)                     , intent(out)   :: rlongup_top
       !----- Local variables. -------------------------------------------------------------!
-      real, dimension(nzpmax)                  :: prd
-      real, dimension(nzpmax+1)                :: temprd
-      real, dimension(nzpmax)                  :: dn0r
-      real, dimension(nzpmax)                  :: dztr
-      real, dimension(nzpmax)                  :: pmr
-      real, dimension(nzpmax)                  :: rvr
-      real                                     :: rainr
-      real, dimension(nzpmax)                  :: lwlr
-      real, dimension(nzpmax)                  :: iwlr
-      real                                     :: xlandr
-      real, dimension(nzpmax)                  :: fthrl
-      real, dimension(nzpmax)                  :: fthrs
-      real                                     :: exner
-      real                                     :: dzsdx
-      real                                     :: dzsdy
-      real                                     :: dlon
-      real                                     :: a1
-      real                                     :: a2
-      real                                     :: dayhr
-      real                                     :: gglon
-      real                                     :: dztri
-      real                                     :: dayhrr
-      real                                     :: hrangl
-      real                                     :: sinz
-      real                                     :: sazmut
-      real                                     :: slazim
-      real                                     :: slangl
-      real                                     :: cosi
-      integer                                  :: igas
-      integer                                  :: kk
-      integer                                  :: ik
-      integer                                  :: i
-      integer                                  :: j
-      integer                                  :: k
-      integer                                  :: nzz
+      real(kind=4), dimension(nzpmax)                  :: prd
+      real(kind=4), dimension(nzpmax+1)                :: temprd
+      real(kind=4), dimension(nzpmax)                  :: dn0r
+      real(kind=4), dimension(nzpmax)                  :: dztr
+      real(kind=4), dimension(nzpmax)                  :: pmr
+      real(kind=4), dimension(nzpmax)                  :: rvr
+      real(kind=4), dimension(nzpmax)                  :: st_lwlr
+      real(kind=4), dimension(nzpmax)                  :: st_iwlr
+      real(kind=4), dimension(nzpmax)                  :: cb_lwlr
+      real(kind=4), dimension(nzpmax)                  :: cb_iwlr
+      real(kind=4)                                     :: xlandr
+      real(kind=4), dimension(nzpmax)                  :: fthrl
+      real(kind=4), dimension(nzpmax)                  :: fthrs
+      real(kind=4)                                     :: exner
+      real(kind=4)                                     :: dzsdx
+      real(kind=4)                                     :: dzsdy
+      real(kind=4)                                     :: dlon
+      real(kind=4)                                     :: a1
+      real(kind=4)                                     :: a2
+      real(kind=4)                                     :: dayhr
+      real(kind=4)                                     :: gglon
+      real(kind=4)                                     :: deltaz
+      real(kind=4)                                     :: dayhrr
+      real(kind=4)                                     :: hrangl
+      real(kind=4)                                     :: sinz
+      real(kind=4)                                     :: sazmut
+      real(kind=4)                                     :: slazim
+      real(kind=4)                                     :: slangl
+      real(kind=4)                                     :: cosi
+      integer                                          :: igas
+      integer                                          :: kk
+      integer                                          :: ik
+      integer                                          :: i
+      integer                                          :: j
+      integer                                          :: k
+      integer                                          :: nzz
       !----- Local constants. -------------------------------------------------------------!
-      real                     , parameter     :: fcui = 1.e-6 ! mg/kg => kg/kg
+      real(kind=4)                     , parameter     :: fcui = 1.e-6 ! mg/kg => kg/kg
       !------------------------------------------------------------------------------------!
 
       !----- Copy environment variables to some scratch arrays. ---------------------------!
@@ -418,8 +470,8 @@ module rad_carma
 
          !----- Convert the next 7 variables to cgs for the time being. -------------------!
          prd(k)  = exner2press(exner) * 10.  ! pressure
-         dn0r(k) = dn0(k) * 1.e-3         ! air density
-         dztr(k) = dzt(k) / rtgt * 1.e-2
+         dn0r(k) = dn0(k) * 0.001            ! air density
+         dztr(k) = dzt(k) / rtgt * 0.01      ! dztr is 1/delta_z hence the 0.01
 
          if (catt == 1) then
             pmr(k) = pm(k) * fcui
@@ -442,30 +494,37 @@ module rad_carma
       ! transfer values from BRAMS grid to CARMA grid.                                     !
       !------------------------------------------------------------------------------------!
       do k=1,m1-1
-         p(k)    =    prd(k+1)
-         t(k)    = temprd(k+1)
-         rhoa(k) =   dn0r(k+1)
-         lwlr(k) = (lwl(k+1)+lwl_cld(k+1)) * dn0r(k+1) * wdns  ![kg/m3]
-         iwlr(k) = (iwl(k+1)+iwl_cld(k+1)) * dn0r(k+1) * wdns  ![kg/m3]
+         p      (k) =    prd(k+1)
+         t      (k) = temprd(k+1)
+         rhoa   (k) =   dn0r(k+1)
+         st_lwlr(k) = lwl    (k+1) * dn0r(k+1) ! [g/cm3]
+         st_iwlr(k) = iwl    (k+1) * dn0r(k+1) ! [g/cm3]
+         cb_lwlr(k) = lwl_cld(k+1) * dn0r(k+1) ! [g/cm3]
+         cb_iwlr(k) = iwl_cld(k+1) * dn0r(k+1) ! [g/cm3]
       end do
 
 
       !----- Revert the vertical index when cartesian coordinates are used. ---------------!
       do ik = 1,nzz
          kk = nzz + 1 - ik
-         t_aerad(kk)   = t(ik)
-         p_aerad(kk)   = p(ik)
-         lwl_aerad(kk) = lwlr(ik)
-         iwl_aerad(kk) = iwlr(ik)
+         t_aerad     (kk) = t      (ik)
+         p_aerad     (kk) = p      (ik)
+         st_lwl_aerad(kk) = st_lwlr(ik)
+         st_iwl_aerad(kk) = st_iwlr(ik)
+         cb_lwl_aerad(kk) = cb_lwlr(ik)
+         cb_iwl_aerad(kk) = cb_iwlr(ik)
       end do
       do ik = 1,nzz
-         dztri=1./(dztr(ik) * 1.e+2)
-         lwp_aerad(ik) = lwl_aerad(ik) * dztri   ![kg/m2]
-         iwp_aerad(ik) = iwl_aerad(ik) * dztri   ![kg/m2]
+         deltaz           = 1. / dztr(ik)
+         st_lwp_aerad(ik) = st_lwl_aerad(ik) * deltaz  ![g/cm2]
+         st_iwp_aerad(ik) = st_iwl_aerad(ik) * deltaz  ![g/cm2]
+         cb_lwp_aerad(ik) = cb_lwl_aerad(ik) * deltaz  ![g/cm2]
+         cb_iwp_aerad(ik) = cb_iwl_aerad(ik) * deltaz  ![g/cm2]
       end do
 
-      xland_aerad=xland
-      rain_aerad=rain
+      xland_aerad   = xland
+      st_rain_aerad = st_rain
+      cb_rain_aerad = cb_rain
       tabove_aerad  = t(nzz)
 
       !----- Initialise gas concentrations. -----------------------------------------------!
@@ -481,12 +540,16 @@ module rad_carma
 
       !----- Initialise radiation arrays. -------------------------------------------------!
       call initrad(imontha,idatea,iyeara,itimea,time,m1)
+      !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
       call prerad(m1,nzpmax,dztr,fmapt)
       call radtran(albedt,cosz,m1,aotl(11))
-      call radtran_to_rams(m1,fthrl,rlong,rlongup_top,fthrs,rshort,rshort_top,rshortup_top &
-                          ,aotl,mynum)
+      call radtran_to_rams(m1,fthrl,rlong,rlongup_top,fthrs,par_beam,par_diffuse,nir_beam  &
+                          ,nir_diffuse,rshort,rshort_diffuse,rshort_top,rshortup_top,aotl  &
+                          ,mynum)
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !    Modify the downward surface shortwave flux by considering the slope of the      !
@@ -495,7 +558,7 @@ module rad_carma
       if (itopo == 1 .and. isl_aerad) then
          dzsdx = f13t * rtgt
          dzsdy = f23t * rtgt
-  
+
          !---------------------------------------------------------------------------------!
          !     The y- and x-directions must be true north and east for this correction.    !
          ! The following lines will rotate the model y/x to the true north/east.           !
@@ -505,14 +568,14 @@ module rad_carma
          a2   = - dzsdx * sin(dlon) + dzsdy * cos(dlon)
          dzsdx = a1
          dzsdy = a2
-  
+
          dayhr = real(time / 3600.) + real(itimea/100)  + real(mod(itimea,100)) / 60.
          gglon = glon
          if (lonrad == 0) gglon = centlon(1)
          dayhrr = mod(dayhr+gglon/15.+24.,24.)
          hrangl = 15. * (dayhrr - 12.) * pio180
          sinz   = max(0.000001,sqrt(max(0., (1. - cosz * cosz ) ) ))
-  
+
          sazmut = asin(max(-1.,min(1.,cdec*sin(hrangl)/sinz)))
          !---------------------------------------------------------------------------------!
          !    Imposing a lower bound for dzsdx and dzsdy, they will be squared soon after  !
@@ -523,14 +586,14 @@ module rad_carma
          slazim       = halfpi - atan2(dzsdy,dzsdx)
          slangl       = atan(sqrt(dzsdx*dzsdx+dzsdy*dzsdy))
          cosi         = cos(slangl) * cosz + sin(slangl) * sinz * cos(sazmut-slazim)
-         rshort       = max(0.,rshort       * cosi / cosz)
+         !----- The line below was commented out for BRAMS-5.0. ---------------------------!
+         ! rshort       = max(0.,rshort       * cosi / cosz)
       end if
     
       do k = 2,m1-1
          fthrd(k) = fthrl(k) + fthrs(k)
       end do
   
-      rshort  = rshort / (1. - albedt)
       fthrd(1) = fthrd(2)
       
       return
@@ -610,7 +673,7 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       igrp = 0
       do ielem = 1, nelem
-         if (itype(ielem) == i_involatile .or. itype(ielem) .eq. i_volatile) then
+         if (itype(ielem) == i_involatile .or. itype(ielem) == i_volatile) then
             igrp = igrp + 1
             ienconc(igrp) = ielem
          end if
@@ -622,7 +685,7 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       igrp = 0
       do ielem = 1, nelem
-         if (itype(ielem) == i_involatile .or. itype(ielem) .eq. i_volatile) then
+         if (itype(ielem) == i_involatile .or. itype(ielem) == i_volatile) then
             igrp = igrp + 1
          end if
          igelem(ielem) = igrp
@@ -784,9 +847,10 @@ module rad_carma
          !    r0   = number mode radius.                                                   !
          !    rsig = geometric standard deviation.                                         !
          !    totm = total mass particle concentration (g/cm3).                            !
+         !    r0(k) and rsig(k) modified after BRAMS-5.0 (KML/SRF/NMER - 2011-09-27).      !
          !---------------------------------------------------------------------------------!
-         r0(k)   = 1.95e-5
-         rsig(k) = 1.62
+         r0(k)   = 2.10e-5
+         rsig(k) = 1.55
          totn    = (6. * totm(k) / (rhop3(1,1,1)*pi1*r0(k)**3) )                           &
                  * exp((-9./2)*log(rsig(k))**2)
          !----- Adjust prefactor to yield particle number concentration <ntot>. -----------!
@@ -910,8 +974,8 @@ module rad_carma
       !    Initialize the radiative transfer model.                                        !
       !------------------------------------------------------------------------------------!
       call setuprad(m1)
-     
-       if (.not. lmie) call calcproperties
+      if (.not. lmie) call calcproperties
+      !------------------------------------------------------------------------------------!
 
       !---- Get radiative wavelengths. ----------------------------------------------------!
       do iwave = 1,nwave
@@ -2772,7 +2836,8 @@ module rad_carma
    subroutine radtran(albedt,cosz,m1,aot11)
       use rconstants  , only : pi1             & ! intent(in)
                              , gcgs            & ! intent(in)
-                             , day_sec         ! ! intent(in)
+                             , day_sec         & ! intent(in)
+                             , tiny_num8       ! ! intent(in)
       use mem_aerad   , only : u0_aerad        & ! intent()
                              , qrad_aerad      & ! intent()
                              , alb_toai_aerad  & ! intent()
@@ -2782,6 +2847,11 @@ module rad_carma
                              , fsl_dn_aerad    & ! intent()
                              , fir_up_aerad    & ! intent()
                              , fir_dn_aerad    & ! intent()
+                             , lpara           & ! intent()
+                             , lparz           & ! intent()
+                             , lnira           & ! intent()
+                             , lnirz           & ! intent()
+                             , nsol            & ! intent()
                              , nir             ! ! intent()
       use mem_globrad , only : isl             & ! intent()
                              , nvert           & ! intent()
@@ -2790,6 +2860,7 @@ module rad_carma
                              , nrad            & ! intent()
                              , u0              & ! intent()
                              , nsolp           & ! intent()
+                             , nsol            & ! intent()
                              , albedo_sfc      & ! intent()
                              , emis            & ! intent()
                              , ntotal          & ! intent()
@@ -2809,9 +2880,12 @@ module rad_carma
                              , fupbs           & ! intent()
                              , fdownbs         & ! intent()
                              , fnetbs          & ! intent()
-                             , nsol            & ! intent()
-                             , fslu            & ! intent()
-                             , fsld            & ! intent()
+                             , solfx           & ! intent()
+                             , fslu_toa        & ! intent()
+                             , fsld_toa        & ! intent()
+                             , fslu_diff_gnd   & ! intent()
+                             , fsld_diff_gnd   & ! intent()
+                             , fsld_beam_gnd   & ! intent()
                              , alb_toa         & ! intent()
                              , alb_tomi        & ! intent()
                              , alb_toai        & ! intent()
@@ -2819,24 +2893,28 @@ module rad_carma
                              , tiru            & ! intent()
                              , fupbi           & ! intent()
                              , fdownbi         & ! intent()
-                             , fnetbi          & ! intent()
-                             , firu            ! ! intent()
+                             , fnetbi          ! ! intent()
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                    , intent(in) :: m1
-      real                       , intent(in) :: albedt
-      real                       , intent(in) :: cosz
-      real                       , intent(in) :: aot11
+      integer                        , intent(in) :: m1
+      real(kind=4)                   , intent(in) :: albedt
+      real(kind=4)                   , intent(in) :: cosz
+      real(kind=4)                   , intent(in) :: aot11
       !----- Local variables. -------------------------------------------------------------!
-      real    , dimension(nlayer)             :: heati
-      real    , dimension(nlayer)             :: heats
-      real    , dimension(nlayer)             :: heat 
-      integer                                 :: i,i1,j1
-      integer                                 :: ig
-      integer                                 :: j
-      integer                                 :: l,k
-      real                                    :: term1
-      integer                                 :: count=0
+      real(kind=4), dimension(nlayer)             :: heati
+      real(kind=4), dimension(nlayer)             :: heats
+      real(kind=4), dimension(nlayer)             :: heat 
+      integer                                     :: i
+      integer                                     :: i1
+      integer                                     :: j1
+      integer                                     :: ig
+      integer                                     :: j
+      integer                                     :: l
+      integer                                     :: k
+      real(kind=4)                                :: term1
+      real(kind=8)                                :: aux8
+      !----- External functions. ----------------------------------------------------------!
+      real(kind=4)                   , external   :: sngloff
       !------------------------------------------------------------------------------------!
   
       heats   =  0.0
@@ -2901,14 +2979,21 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       call twostr(m1)
       call add(m1,cosz)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     If infrared calculations are required then call newflux1 for a more accurate   !
       ! solution.                                                                          !
       !------------------------------------------------------------------------------------!
       if (ir_aerad) call newflux1(m1)
+      !------------------------------------------------------------------------------------!
 
-      !----- Calculate infrafred and solar heating rates (deg/day). -----------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Calculate infrafred and solar heating rates [K/s].                            !
+      !------------------------------------------------------------------------------------!
       if (isl_aerad) then
          do j = 1,nvert
             term1 = fdegday/(dpg(j) * gcgs)
@@ -2930,13 +3015,13 @@ module rad_carma
       end do
 
       do j = 1,nvert
-         !----- Load heating rates [deg_k/s] into interface common block. -----------------!
+         !----- Save heating rates in [K/day] to aerad block. -----------------------------!
          heat(j)        =  heats(j) + heati(j)
          heats_aerad(j) =  heats(j) / day_sec
          heati_aerad(j) =  heati(j) / day_sec
       end do
 
-      if (any(abs(heats) > 200.)) then
+      if (any(abs(heats) > 2000.)) then
          write (unit=*,fmt='(77a)') ('-',j=1,77)
          write (unit=*,fmt='(7(a,1x))') '    J','    L','       HEATS','        FNET'      &
                                                        ,'         DPG','     FDEGDAY'      &
@@ -2951,18 +3036,90 @@ module rad_carma
          end do
          write (unit=*,fmt='(77a)') ('-',j=1,77)
       end if
+      !------------------------------------------------------------------------------------!
 
-      solnet      = 0.0
-      soldowntoa  = 0.0
-      soluptoa    = 0.0
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the shortwave fluxes at the top of the atmosphere and near the ground.   !
+      !------------------------------------------------------------------------------------!
+      fslu_toa     (:) = 0.0
+      fsld_toa     (:) = 0.0
+      fslu_diff_gnd(:) = 0.0
+      fsld_diff_gnd(:) = 0.0
+      fsld_beam_gnd(:) = 0.0
       if (isl_aerad) then
-         do l = 1,nsolp
-            solnet     = solnet     - fnet(l,nlayer)
-            soldowntoa = soldowntoa + direc(l,1)
-            soluptoa   = soluptoa   - fnet(l,1) - direc(l,1)
+         do l=1,nsolp
+            !------ Upward radiation at top of atmosphere. --------------------------------!
+            aux8                    = dble(ck1(l,1)) * dble(el2(l,1))                      &
+                                    - dble(ck2(l,1)) * dble(em2(l,1)) + dble(cp(l,1))
+            fslu_toa     (nprob(l)) = fslu_toa(nprob(l)) + sngloff(aux8,tiny_num8)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------ Upward diffuse radiation at top of atmosphere. ------------------------!
+            aux8                    = dble(ck1(l,nlayer)) * dble(el1(l,nlayer))            &
+                                    + dble(ck2(l,nlayer)) * dble(em1(l,nlayer))            &
+                                    + dble(cpb(l,nlayer))
+            fslu_diff_gnd(nprob(l)) = fslu_diff_gnd(nprob(l)) + sngloff(aux8,tiny_num8)
+
+            aux8                    = dble(ck1(l,nlayer)) * dble(el2(l,nlayer))            &
+                                    + dble(ck2(l,nlayer)) * dble(em2(l,nlayer))            &
+                                    + dble(cmb(l,nlayer))
+            fsld_diff_gnd(nprob(l)) = fsld_diff_gnd(nprob(l)) + sngloff(aux8,tiny_num8)
+
+            aux8                    = dble(directd(l,nlayer))
+            fsld_beam_gnd(nprob(l)) = fsld_beam_gnd(nprob(l)) + sngloff(aux8,tiny_num8)
+         end do
+         do l=1,nsol
+            fsld_toa(l)        = cosz * solfx(l)
          end do
       end if
-    
+      !------------------------------------------------------------------------------------!
+
+
+      soldowntoa     = 0.0
+      soluptoa       = 0.0
+      parup_diff_gnd = 0.0
+      pardn_diff_gnd = 0.0
+      pardn_beam_gnd = 0.0
+      nirup_diff_gnd = 0.0
+      nirdn_diff_gnd = 0.0
+      nirdn_beam_gnd = 0.0
+      if (isl_aerad) then
+         do l=lpara,lparz
+            parup_diff_gnd = parup_diff_gnd  + fslu_diff_gnd(l)
+            pardn_diff_gnd = pardn_diff_gnd  + fsld_diff_gnd(l)
+            pardn_beam_gnd = pardn_beam_gnd  + fsld_beam_gnd(l)
+         end do
+         do l=lnira,lnirz
+            nirup_diff_gnd = nirup_diff_gnd  + fslu_diff_gnd(l)
+            nirdn_diff_gnd = nirdn_diff_gnd  + fsld_diff_gnd(l)
+            nirdn_beam_gnd = nirdn_beam_gnd  + fsld_beam_gnd(l)
+         end do
+
+         do l = 1,nsol
+            soldowntoa = soldowntoa + fsld_toa(l)
+            soluptoa   = soluptoa   + fslu_toa(l)
+         end do
+         
+      end if
+
+
+      ! if (soluptoa < 1.0) then
+      !    write (unit=76,fmt='(8(a,1x))')                                                 &
+      !       ' BAND','NPROB','         CK1','         CK2','         EL1','         EM2'  &
+      !                      ,'          CP','    FSLU_TOA'
+      !    do l=1,nsolp
+      !       write (unit=76,fmt='(2(i5,1x),6(es12.5,1x))')                                &
+      !          l,nprob(l),ck1(l,nlayer),ck2(l,nlayer),el1(l,nlayer),em2(l,nlayer)        &
+      !                    ,cp (l,nlayer),fslu_toa(nprob(l))
+      !    end do
+      !    call abort_run("Upwelling radiation at TOA is screwy, check file fort.76"       &
+      !                  ,"radtran","rad_carma.f90")
+      ! end if
       xirdown = 0.0
       xirup   = 0.0
       if (ir_aerad) then
@@ -3006,6 +3163,16 @@ module rad_carma
    ! depths and cloud optical depths, calculate final optical properties. we use a delta   !
    ! two stream approach to find w0, single scattering albedo, g0, asymmmetry parameter,   !
    ! taul, layer optical depth, opd, cumulative optical depth to base of layer.            !
+   !                                                                                       !
+   !     References:                                                                       !
+   !                                                                                       !
+   !  Sun, Z., K. P. Shine, 1995: Parameterization of ice cloud radiative properties and   !
+   !      its application to the potential climatic importance of mixed-phase clouds.      !
+   !      J. Climate, 8, 1874--1888.                                                       !
+   !                                                                                       !
+   !  Savijarvi, H., A. Arola, P. Raisanen, 1997: Short-wave optical properties of         !
+   !      precipitating water clouds.  Quart. J. Roy. Meteorol. Soc., 123, 883--899.       !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine oppr(m1,aot11)
       use rconstants , only : gcgs          ! ! intent(in)
@@ -3052,7 +3219,9 @@ module rad_carma
                             , wave          & ! intent(something)
                             , lmie          ! ! intent(something)
       use mem_aerad  , only : lprocopio     ! ! intent(in)
-      use rconstants , only : t008          ! ! intent(in)
+      use rconstants , only : t008          & ! intent(in)
+                            , hr_sec8       & ! intent(in)
+                            , lnexp_min8    ! ! intent(in)
 
       implicit none
 
@@ -3070,20 +3239,23 @@ module rad_carma
       real(kind=8), dimension(ntotal,nlayer)                  :: taucld8
       real(kind=8), dimension(ntotal,nlayer)                  :: wcld8
       real(kind=8), dimension(ntotal,nlayer)                  :: gcld8
-      real(kind=8), dimension(ntotal,nlayer)                  :: wolc8
-      real(kind=8), dimension(ntotal,nlayer)                  :: woice8
-      real(kind=8), dimension(ntotal,nlayer)                  :: worain8
-      real(kind=8), dimension(ntotal,nlayer)                  :: gl8
-      real(kind=8), dimension(ntotal,nlayer)                  :: gice8
-      real(kind=8), dimension(ntotal,nlayer)                  :: grain8
-      real(kind=8), dimension(ntotal,nlayer)                  :: denc8
-      real(kind=8), dimension(ntotal,nlayer)                  :: taucldlw8
-      real(kind=8), dimension(ntotal,nlayer)                  :: taucldice8
-      real(kind=8), dimension(ntotal,nlayer)                  :: taurain8
+      real(kind=8), dimension(ntotal,nlayer)                  :: st_woliq8
+      real(kind=8), dimension(ntotal,nlayer)                  :: st_woice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: cb_woliq8
+      real(kind=8), dimension(ntotal,nlayer)                  :: cb_woice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: st_gliq8
+      real(kind=8), dimension(ntotal,nlayer)                  :: st_gice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: cb_gliq8
+      real(kind=8), dimension(ntotal,nlayer)                  :: cb_gice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: st_tauliq8
+      real(kind=8), dimension(ntotal,nlayer)                  :: st_tauice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: cb_tauliq8
+      real(kind=8), dimension(ntotal,nlayer)                  :: cb_tauice8
       real(kind=8), dimension(ntotal)                         :: wot8
       real(kind=8), dimension(ntotal)                         :: got8
       real(kind=8), dimension(nlayer)                         :: corr8
-      real(kind=8), dimension(nlayer)                         :: reffi8
+      real(kind=8), dimension(nlayer)                         :: st_reffi8
+      real(kind=8), dimension(nlayer)                         :: cb_reffi8
       real(kind=8), dimension(nwave)                          :: rdqextnew8
       real(kind=8), dimension(nwave)                          :: wonew8
       real(kind=8), dimension(nwave)                          :: gonew8
@@ -3103,7 +3275,8 @@ module rad_carma
       integer                                                 :: idaot
       integer                                                 :: jjj
       !----- Double precision version of most variables in this subroutine. ---------------!
-      real(kind=8)                                            :: rain_aerad8
+      real(kind=8)                                            :: st_rain_aerad8
+      real(kind=8)                                            :: cb_rain_aerad8
       real(kind=8)                                            :: p_top8
       real(kind=8), dimension(nrad,ngroup)                    :: xsecta8
       real(kind=8), dimension(nlayer,nrad,ngroup)             :: caer8
@@ -3135,10 +3308,14 @@ module rad_carma
       real(kind=8), dimension(m1)                             :: p_aerad8
       real(kind=8), dimension(m1)                             :: qv_aerad8
       real(kind=8), dimension(m1)                             :: t_aerad8
-      real(kind=8), dimension(m1)                             :: lwl_aerad8
-      real(kind=8), dimension(m1)                             :: iwl_aerad8
-      real(kind=8), dimension(m1)                             :: lwp_aerad8
-      real(kind=8), dimension(m1)                             :: iwp_aerad8
+      real(kind=8), dimension(m1)                             :: st_lwl_aerad8
+      real(kind=8), dimension(m1)                             :: st_iwl_aerad8
+      real(kind=8), dimension(m1)                             :: st_lwp_aerad8
+      real(kind=8), dimension(m1)                             :: st_iwp_aerad8
+      real(kind=8), dimension(m1)                             :: cb_lwl_aerad8
+      real(kind=8), dimension(m1)                             :: cb_iwl_aerad8
+      real(kind=8), dimension(m1)                             :: cb_lwp_aerad8
+      real(kind=8), dimension(m1)                             :: cb_iwp_aerad8
       real(kind=8), dimension(ntotal,nlayer)                  :: taul8
       real(kind=8), dimension(ntotal,nlayer)                  :: w08
       real(kind=8), dimension(ntotal,nlayer)                  :: g08
@@ -3146,8 +3323,11 @@ module rad_carma
       real(kind=8), dimension(ntotal,nlayer)                  :: uopd8
       real(kind=8)                                            :: y38
       logical                                                 :: alright
+      !----- Local constants. -------------------------------------------------------------!
+      real(kind=8)                               , parameter  :: gmax8  = 9.95d-1
+      real(kind=8)                               , parameter  :: womin8 = 5.00d-3
       !----- External functions. ----------------------------------------------------------!
-      logical, external                                       :: is_finite
+      logical                                    , external   :: is_finite
       !------------------------------------------------------------------------------------!
 
 
@@ -3158,83 +3338,96 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       
       !----- Copy the following values to the scratch double precision variables. ---------!
-      xsecta8      = dble(xsecta    )
-      
-      rdqext8      = dble(rdqext    )
-      qscat8       = dble(qscat     )
-      qbrqs8       = dble(qbrqs     )
-      ta8          = dble(ta        )
-      tb8          = dble(tb        )
-      tt8          = dble(tt        )
-      wa8          = dble(wa        )
-      wb8          = dble(wb        )
-      ga8          = dble(ga        )
-      gb8          = dble(gb        )
-      tia8         = dble(tia       )
-      tib8         = dble(tib       )
-      wia8         = dble(wia       )
-      wib8         = dble(wib       )
-      gia8         = dble(gia       )
-      gib8         = dble(gib       )
-      alpha8       = dble(alpha     )
-      gama8        = dble(gama      )
-      gangle8      = dble(gangle    )
-      paray8       = dble(paray     )
-      taugas8      = dble(taugas    )
-      pah2o8       = dble(pah2o     )
-      rdh2o8       = dble(rdh2o     )
-      p_aerad8     = dble(p_aerad   )
-      qv_aerad8    = dble(qv_aerad  )
-      t_aerad8     = dble(t_aerad   )
-      lwl_aerad8   = dble(lwl_aerad )
-      iwl_aerad8   = dble(iwl_aerad )
-      lwp_aerad8   = dble(lwp_aerad )
-      iwp_aerad8   = dble(iwp_aerad )
-      contnm8      = dble(contnm    )
-      rain_aerad8  = dble(rain_aerad)
-      p_top8       = dble(p_top     )
+      xsecta8        = dble(xsecta    )
+      rdqext8        = dble(rdqext    )
+      qscat8         = dble(qscat     )
+      qbrqs8         = dble(qbrqs     )
+      ta8            = dble(ta        )
+      tb8            = dble(tb        )
+      tt8            = dble(tt        )
+      wa8            = dble(wa        )
+      wb8            = dble(wb        )
+      ga8            = dble(ga        )
+      gb8            = dble(gb        )
+      tia8           = dble(tia       )
+      tib8           = dble(tib       )
+      wia8           = dble(wia       )
+      wib8           = dble(wib       )
+      gia8           = dble(gia       )
+      gib8           = dble(gib       )
+      alpha8         = dble(alpha     )
+      gama8          = dble(gama      )
+      gangle8        = dble(gangle    )
+      paray8         = dble(paray     )
+      taugas8        = dble(taugas    )
+      pah2o8         = dble(pah2o     )
+      rdh2o8         = dble(rdh2o     )
+      p_aerad8       = dble(p_aerad   )
+      qv_aerad8      = dble(qv_aerad  )
+      t_aerad8       = dble(t_aerad   )
+      contnm8        = dble(contnm    )
+      p_top8         = dble(p_top     )
       !------------------------------------------------------------------------------------!
-      
+
+
+      !----- Convert water content to g/m3. -----------------------------------------------!
+      st_lwl_aerad8  = dble(st_lwl_aerad ) * 1.d+6
+      st_iwl_aerad8  = dble(st_iwl_aerad ) * 1.d+6
+      cb_lwl_aerad8  = dble(cb_lwl_aerad ) * 1.d+6
+      cb_iwl_aerad8  = dble(cb_iwl_aerad ) * 1.d+6
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Convert integrated water content to g/m2. ------------------------------------!
+      st_lwp_aerad8  = dble(st_lwp_aerad ) * 1.d+4
+      st_iwp_aerad8  = dble(st_iwp_aerad ) * 1.d+4
+      cb_lwp_aerad8  = dble(cb_lwp_aerad ) * 1.d+4
+      cb_iwp_aerad8  = dble(cb_iwp_aerad ) * 1.d+4
+      !------------------------------------------------------------------------------------!
+
+      !----- Convert rainfall to mm/hr. ---------------------------------------------------!
+      st_rain_aerad8 = dble(st_rain_aerad) * hr_sec8
+      cb_rain_aerad8 = dble(cb_rain_aerad) * hr_sec8
+      !------------------------------------------------------------------------------------!
+
       !------ Copy over the following global variables from mem_carma, to dp --------------!
+      tauaer8        = dble(tauaer    )
+      taucld8        = dble(taucld    )
+      wcld8          = dble(wcld      )
+      gcld8          = dble(gcld      )
+      caer8          = dble(caer      )
+      taul8          = dble(taul      )
+      opd8           = dble(opd       )
+      uopd8          = dble(uopd      )
+      !------------------------------------------------------------------------------------!
 
-      tauaer8      = dble(tauaer    )
-      taucldlw8    = dble(taucldlw  )
-      taucldice8   = dble(taucldice )
-      taucld8      = dble(taucld    )
-      wcld8        = dble(wcld      )
-      gcld8        = dble(gcld      )
-      gl8          = dble(gl        )
-      gice8        = dble(gice      )
-      wolc8        = dble(wolc      )
-      caer8        = dble(caer      )
-      woice8       = dble(woice     )
-      gice8        = dble(gice      )
-      taul8        = dble(taul      )
-      opd8         = dble(opd       )
-      uopd8        = dble(uopd      )
 
-      corr8      = 0.d0
-      denc8      = 0.d0
-      reffi8     = 0.d0
-      taucldlw8  = 0.d0
-      taucldice8 = 0.d0
-      taurain8   = 0.d0
-      wolc8      = 0.d0
-      woice8     = 0.d0
-      worain8    = 0.d0
-      gl8        = 0.d0
-      gice8      = 0.d0
-      grain8     = 0.d0
-      taucld8    = 0.d0
-      wcld8      = 0.d0
-      gcld8      = 0.d0
-      rdqextnew8 = 0.d0
-      wonew8     = 0.d0
-      gonew8     = 0.d0
+      !------ Initialise variables. -------------------------------------------------------!
+      corr8          = 0.d0
+      taucld8        = 0.d0
+      wcld8          = 0.d0
+      gcld8          = 0.d0
+      rdqextnew8     = 0.d0
+      wonew8         = 0.d0
+      gonew8         = 0.d0
+      st_reffi8      = 0.d0
+      cb_reffi8      = 0.d0
+      st_woliq8      = 0.d0
+      st_woice8      = 0.d0
+      cb_woliq8      = 0.d0
+      cb_woice8      = 0.d0
+      st_gliq8       = 0.d0
+      st_gice8       = 0.d0
+      st_tauliq8     = 0.d0
+      st_tauice8     = 0.d0
+      cb_tauliq8     = 0.d0
+      cb_tauice8     = 0.d0
+      !------------------------------------------------------------------------------------!
+
+
 
 
       if (lprocopio .and. lmie) then
- 
          idaot = max(min(int(10*((anint(10.*max(aot11,1e-20))/10.)+0.1)/2.),9),1)
 
          do l = 1,nwave
@@ -3248,8 +3441,9 @@ module rad_carma
             do ig = 1,ngroup
                do i = 1,nrad
                  do l = 1,ntotal
-                    taua8(l,j)   = taua8(l,j)                                              &
-                                 + rdqextnew8(nprob(l)) * xsecta8(i,ig) * caer8(j,i,ig)
+                    taua8(l,j)   = max( taua8(l,j) + rdqextnew8(nprob(l)) * xsecta8(i,ig)  &
+                                                   * caer8(j,i,ig)                         &
+                                      , roundoff8 )
                     tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)
                     wol8(l,j)    = wonew8(nprob(l))
                     gol8(l,j)    = gonew8(nprob(l))
@@ -3297,73 +3491,177 @@ module rad_carma
 
 
       do j=1,nlayer
+         !---------------------------------------------------------------------------------!
+         !     reffi8 is the effective radius in um.  We apply the correction for          !
+         ! precipitating proposed by Savijarvi et al. (1997).                              !
+         !---------------------------------------------------------------------------------!
          if (xland_aerad >= .009) then
-           reffi8(j) =  7.0d0 * 1.d3 * lwl_aerad8(j) + 5.5d0 
-         else 
-           reffi8(j) =  9.5d0 * 1.d3 * lwl_aerad8(j) + 4.0d0
+           st_reffi8(j) =  5.0d0 + 8.0d0 * st_lwl_aerad8(j)
+         else
+           st_reffi8(j) =  4.0d0 + 9.5d0 * st_lwl_aerad8(j)
          end if
-         
+         cb_reffi8(j) = 5.0d0 + 8.0d0 * cb_lwl_aerad8(j)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     According to Savijarvi et al. (1997), their parametrisation underestimates  !
+         ! the cloud radii for precipitating clouds.  We apply a correction factor if      !
+         ! rainfall is occurring.                                                          !
+         !---------------------------------------------------------------------------------!
+         st_reffi8(j) = 2.5d0 * (st_reffi8(j) + 1.2d+0 * st_rain_aerad8)
+         cb_reffi8(j) = 2.5d0 * (cb_reffi8(j) + 6.0d-1 * cb_rain_aerad8)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Correction term based on Sun and Shine (1995), equation 7.                  !
+         !---------------------------------------------------------------------------------!
          corr8(j) = 1.047d0 - 9.13d-5 * (tt8(j)-t008) + 2.03d-4 * (tt8(j)-t008) **2        &
                             - 1.06d-5 * (tt8(j)-t008) **3
          corr8(j) = max(corr8(j),roundoff8)  
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
 
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over layers and bands.                                                    !
+      !------------------------------------------------------------------------------------!
       do j=1,nlayer
-         do l= 1,ntotal        
-            if (j == 1) taurain8(l,j) = 1.8d-4 * rain_aerad8 * 2.0d3
-            
-            taucldlw8  (l,j) = 1.d3 * lwp_aerad8(j) *(ta8(l)/reffi8(j)+tb8(l)/reffi8(j)**2)
+         do l= 1,ntotal
 
-            worain8    (l,j) = 5.5d-1
-            wolc8      (l,j) = (1.d0 - wa8(l)) + wb8(l) * reffi8(j)
-        
-            gl8        (l,j) = ga8(l) + gb8(l) * reffi8(j)
-        
-            grain8     (l,j) = 9.5d-1
-            denc8      (l,j) = 1.d0 / (tia8(l) + tib8(l) * 1.d3 * iwl_aerad8(j))
-            taucldice8 (l,j) = corr8(j) * 1.0d3 * iwp_aerad8(j) * denc8(l,j)
-            
-            if (wib8(l) < roundoff8) then
-               x_teste8 = 0.d0
-            else
-               x_teste8 = (1.0d3 * iwl_aerad8(j))**wib8(l)
-            end if
-
-            woice8(l,j) = ( 1.d0 -  wia8(l) * x_teste8)                                    &
-                        * ( 1.d0 - gama8(l) * (corr8(j) - 1.d0)/ corr8(j) )
-            
-            if(gib8(l) < roundoff8) then
-               x_teste8 = 1.d0
-            else
-               x_teste8 = (1.0d3 * iwl_aerad8(j))**gib8(l)
-            end if
-            gice8(l,j)  = (gia8(l) * x_teste8)                                             &
-                        * ( 1.d0 + alpha8(l) * (corr8(j) - 1.d0)/ corr8(j) )
-                           
-            
+            !------------------------------------------------------------------------------!
+            !    Optical depth and asymmetry formulations depend on the band.              !
+            !------------------------------------------------------------------------------!
             select case (l)
+            case (1:90)
+               !---------------------------------------------------------------------------!
+               ! MLO. Based on equation 12 by Savijarvi et al. (1997).  Because stratus    !
+               !      and cumulus clouds may have different radii, we find the optical     !
+               !      properties separately.                                               !
+               !---------------------------------------------------------------------------!
+               st_tauliq8(l,j) = st_lwp_aerad8(j)                                          &
+                               * ( ta8(l) / st_reffi8(j) + tb8(l) / st_reffi8(j)**2 )
+               st_gliq8  (l,j) = ga8(l) + gb8(l) * st_reffi8(j)
+               st_woliq8 (l,j) = 1.d0 - wa8(l) + wb8(l) * st_reffi8(j)
+
+               cb_tauliq8(l,j) = cb_lwp_aerad8(j)                                          &
+                               * ( ta8(l) / cb_reffi8(j) + tb8(l) / cb_reffi8(j)**2 )
+               cb_gliq8  (l,j) = ga8(l) + gb8(l) * cb_reffi8(j)
+               cb_woliq8 (l,j) = 1.d0 - wa8(l) + wb8(l) * cb_reffi8(j)
+               !---------------------------------------------------------------------------!
             case (91:113)
-               taucldlw8(l,j)= 1.0d3 * lwp_aerad8(j) * ta8(l) * exp(tb8(l)* reffi8(j))
+               st_tauliq8(l,j) = st_lwp_aerad8(j) * ta8(l)                                 &
+                               * exp(max(lnexp_min8,tb8(l)* st_reffi8(j)))
+               st_gliq8  (l,j) = ga8(l) + gb8(l) * st_reffi8(j)
+               st_woliq8 (l,j) = 1.d0 - wa8(l) + wb8(l) * st_reffi8(j)
 
+               cb_tauliq8(l,j) = cb_lwp_aerad8(j) * ta8(l)                                 &
+                               * exp(max(lnexp_min8,tb8(l)* cb_reffi8(j)))
+               cb_gliq8  (l,j) = ga8(l) + gb8(l) * cb_reffi8(j)
+               cb_woliq8 (l,j) = 1.d0 - wa8(l) + wb8(l) * cb_reffi8(j)
             case (114:154)
-               taucldlw8(l,j) = 1.0d3 * lwp_aerad8(j) * ( ta8(l) + tb8(l)* reffi8(j))
-               gl8(l,j)       = 1.d0 - ga8(l) * exp( gb8(l) * reffi8(j))
+               st_tauliq8(l,j) = st_lwp_aerad8(j) * ( ta8(l) + tb8(l)* st_reffi8(j))
+               st_gliq8  (l,j) = 1.d0 - ga8(l) * exp(max(lnexp_min8,gb8(l) * st_reffi8(j)))
+               st_woliq8 (l,j) = 1.d0 - wa8(l) + wb8(l) * st_reffi8(j)
 
+               cb_tauliq8(l,j) = cb_lwp_aerad8(j) * ( ta8(l) + tb8(l)* cb_reffi8(j))
+               cb_gliq8  (l,j) = 1.d0 - ga8(l) * exp(max(lnexp_min8,gb8(l) * cb_reffi8(j)))
+               cb_woliq8 (l,j) = 1.d0 - wa8(l) + wb8(l) * cb_reffi8(j)
             end select
-            
-            taucld8(l,j) = taucldlw8(l,j) + taucldice8(l,j) + taurain8(l,j)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Make sure optical properties are bounded. ------------------------------!
+            st_gliq8 (l,j) = min(gmax8 ,st_gliq8 (l,j))
+            st_woliq8(l,j) = max(womin8,st_woliq8(l,j))
+            cb_gliq8 (l,j) = min(gmax8 ,cb_gliq8 (l,j))
+            cb_woliq8(l,j) = max(womin8,cb_woliq8(l,j))
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !   Optical depth for ice, this comes from equations 2 and 3 of Sun and Shine  !
+            ! (1995).  Notice that tia8 and tib8 are 1000 times larger because their       !
+            ! equation is in km-1 and we need it in m-1.                                   !
+            !------------------------------------------------------------------------------!
+            st_tauice8 (l,j) = corr8(j) * st_iwp_aerad8(j)                                 &
+                             / (tia8(l) + tib8(l) * st_iwl_aerad8(j))
+            cb_tauice8 (l,j) = corr8(j) * cb_iwp_aerad8(j)                                 &
+                             / (tia8(l) + tib8(l) * cb_iwl_aerad8(j))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     "If" statement to avoid 0**0.  If exponent is too small, assume it       !
+            ! should be zero.  The expressions by Sun and Shine (1995) may allow single    !
+            ! scattering albedo to be less than zero for very high ice contents, so we     !
+            ! must ensure this will never happen.                                          !
+            !------------------------------------------------------------------------------!
+            if (wib8(l) < 1.d-5) then
+               st_woice8(i,j) = 1.d0 - gama8(l) * (corr8(j) - 1.d0) / corr8(j)
+               cb_woice8(i,j) = 1.d0 - gama8(l) * (corr8(j) - 1.d0) / corr8(j)
+            else
+               st_woice8(l,j) = ( 1.d0 -  wia8(l) * st_iwl_aerad8(j) ** wib8(l) )          &
+                              * ( 1.d0 - gama8(l) * (corr8(j) - 1.d0)/ corr8(j) )
+               cb_woice8(l,j) = ( 1.d0 -  wia8(l) * cb_iwl_aerad8(j) ** wib8(l) )          &
+                              * ( 1.d0 - gama8(l) * (corr8(j) - 1.d0)/ corr8(j) )
+            end if
+            st_woice8(l,j) = max(womin8,st_woice8(l,j))
+            cb_woice8(l,j) = max(womin8,cb_woice8(l,j))
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     "If" statement to avoid 0**0.  If exponent is too small, assume it       !
+            ! should be one.  The expressions by Sun and Shine (1995) allow asymmetry      !
+            ! factor to be greater than 1 for very high ice contents, so we make sure this !
+            ! doesn't happen.                                                              !
+            !------------------------------------------------------------------------------!
+            if (gib8(l) < 1.d-5) then
+               st_gice8(l,j)  = gia8(l)                                                    &
+                              * ( 1.d0 + alpha8(l) * (corr8(j) - 1.d0)/ corr8(j) )
+               cb_gice8(l,j)  = gia8(l)                                                    &
+                              * ( 1.d0 + alpha8(l) * (corr8(j) - 1.d0)/ corr8(j) )
+            else
+               st_gice8(l,j)  = gia8(l) * st_iwl_aerad8(j) ** gib8(l)                      &
+                              * ( 1.d0 + alpha8(l) * (corr8(j) - 1.d0)/ corr8(j) )
+               cb_gice8(l,j)  = gia8(l) * cb_iwl_aerad8(j) ** gib8(l)                      &
+                              * ( 1.d0 + alpha8(l) * (corr8(j) - 1.d0)/ corr8(j) )
+            end if
+            st_gice8(l,j)     = min(gmax8,st_gice8(l,j))
+            cb_gice8(l,j)     = min(gmax8,cb_gice8(l,j))
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    Total optical depth is the sum of the optical depth of the three          !
+            ! components, whereas the asymmetry and single-scattering albedo are weighted  !
+            ! averages for all three hidrometeors, using optical depth as the weight.      !
+            !------------------------------------------------------------------------------!
+            taucld8(l,j) = st_tauliq8(l,j) + cb_tauliq8(l,j)                               &
+                         + st_tauice8(l,j) + cb_tauice8(l,j)
 
             if ( taucld8(l,j) > roundoff8) then
-               wcld8(l,j) = ( wolc8(l,j) * taucldlw8(l,j)  + woice8(l,j) * taucldice8(l,j) &
-                            + worain8(l,j) * taurain8(l,j)) / taucld8(l,j)
-               gcld8(l,j) = ( wolc8(l,j) *  taucldlw8(l,j) * gl8(l,j)                      &
-                            + woice8(l,j) * taucldice8(l,j)* gice8(l,j)                    &
-                            + worain8(l,j) * taurain8(l,j) * grain8(l,j))                  &
-                            / (wcld8(l,j) * taucld8(l,j))            
+               wcld8(l,j) = ( st_woliq8(l,j) * st_tauliq8(l,j)                             &
+                            + cb_woliq8(l,j) * cb_tauliq8(l,j)                             &
+                            + st_woice8(l,j) * st_tauice8(l,j)                             &
+                            + cb_woice8(l,j) * cb_tauice8(l,j) ) / taucld8(l,j)
+               gcld8(l,j) = ( st_woliq8(l,j) * st_tauliq8(l,j) * st_gliq8(l,j)             &
+                            + cb_woliq8(l,j) * cb_tauliq8(l,j) * cb_gliq8(l,j)             &
+                            + st_woice8(l,j) * st_tauice8(l,j) * st_gice8(l,j)             &
+                            + cb_woice8(l,j) * cb_tauice8(l,j) * cb_gice8(l,j) )           &
+                            / ( wcld8(l,j) * taucld8(l,j) )
             else 
               wcld8(l,j)  = 1.d0
               gcld8(l,j)  = 0.d0
             end if
+            !------------------------------------------------------------------------------!
          end do
       end do
 
@@ -3413,8 +3711,8 @@ module rad_carma
             if (iradgas == 0) then
                wot8(l) = wol8(l,j)
             else
-               wot8(l)      = ( paray8(l,j) + tauaer8(l,j) * wol8(l,j)                     &
-                              + taucld8(l,j) * wcld8(l,j) ) / taul8(l,j)
+               wot8(l) = ( paray8(l,j) + tauaer8(l,j) * wol8(l,j)                          &
+                         + taucld8(l,j) * wcld8(l,j) ) / taul8(l,j)
             end if
             wot8(l)      = min(1.d0 - roundoff8,wot8(l))
 
@@ -3469,39 +3767,47 @@ module rad_carma
       okloop1: do j=1,nlayer
          okloop2: do l=lls,lla
             alright = is_finite(taul(l,j))
-            if (.not. alright) exit okloop1
+            if (.not. alright) then
+               write (unit=69,fmt='(31(a,1x))')                  'LAYER',       ' BAND'    &
+                                                         ,'     ST_LWL8','     CB_LWL8'    &
+                                                         ,'     ST_IWL8','     CB_IWL8'    &
+                                                         ,'     ST_LWP8','     CB_LWP8'    &
+                                                         ,'     ST_IWP8','     CB_IWP8'    &
+                                                         ,'       TAUL8','     TAUCLD8'    &
+                                                         ,'  ST_TAULIQ8','  CB_TAULIQ8'    &
+                                                         ,'  ST_TAUICE8','  CB_TAUICE8'    &
+                                                         ,'   ST_REFFI8','   CB_REFFI8'    &
+                                                         ,'       CORR8',         'W08'    &
+                                                         ,'       WCLD8','   ST_WOLIQ8'    &
+                                                         ,'   CB_WOLIQ8','   ST_WOICE8'    &
+                                                         ,'   CB_WOICE8','         G08'    &
+                                                         ,'       GCLD8','    ST_GLIQ8'    &
+                                                         ,'    CB_GLIQ8','    ST_GICE8'    &
+                                                         ,'    CB_GICE8'
+               do i=1,nlayer
+                  write (unit=69,fmt='(2(i5,1x),29(es12.5,1x))')                           &
+                      i,l,st_lwl_aerad8(i),cb_lwl_aerad8(i),st_iwl_aerad8(i)               &
+                     ,cb_iwl_aerad8(i),st_lwp_aerad8(i),cb_lwp_aerad8(i),st_iwp_aerad8(i)  &
+                     ,cb_iwp_aerad8(i),taul8(l,i),taucld8(l,i),st_tauliq8(l,i)             &
+                     ,cb_tauliq8(l,i),st_tauice8(l,i),cb_tauice8(l,i),st_reffi8(i)         &
+                     ,cb_reffi8(i),corr8(i),w08(l,i),wcld8(l,i),st_woliq8(l,i)             &
+                     ,cb_woliq8(l,i),st_woice8(l,i),cb_woice8(l,i),g08(l,i),gcld8(l,i)     &
+                     ,st_gliq8(l,i),cb_gliq8(l,i),st_gice8(l,i),cb_gice8(l,i)
+               end do
+               call abort_run('Optical properties are screwy, check file fort.69.'         &
+                             ,'oppr','rad_carma.f90')
+            end if
          end do okloop2
       end do okloop1
-
-      if (.not. alright) then
-         write (unit=*,fmt='(12(a,1x))') '   KK','   IB','        TAUL','       TAUL8'     &
-                                                        ,'    TAUCLDI8','       CORR8'     &
-                                                        ,'        TIA8','        TIB8'     &
-                                                        ,'       DENC8','         TT8'     &
-                                                        ,'        IWP8','        IWL8'
-         do j=1,nlayer
-            do l=lls,lla
-               write (unit=*,fmt='(2(i5,1x),10(es12.5,1x))')                               &
-                  j,l,taul(l,j),taul8(l,j),taucldice8(l,j),corr8(j)                        &
-                     ,tia8(l),tib8(l),denc8(l,j),tt8(j),iwl_aerad8(j),iwp_aerad8(j)
-            end do
-         end do
-      end if
       !------------------------------------------------------------------------------------!
 
-      !------ Copy the dp values back to their global singles -----------------------------!
 
+
+      !------ Copy the dp values back to their global singles -----------------------------!
       tauaer      = sngl(tauaer8    )
-      taucldlw    = sngl(taucldlw8  )
-      taucldice   = sngl(taucldice8 )
       taucld      = sngl(taucld8    )
       wcld        = sngl(wcld8      )
       gcld        = sngl(gcld8      )
-      gl          = sngl(gl8        )
-      gice        = sngl(gice8      )
-      wolc        = sngl(wolc8      )
-      woice       = sngl(woice8     )
-      gice        = sngl(gice8      )
       taul        = sngl(taul8      )
       opd         = sngl(opd8       )
       uopd        = sngl(uopd8      )
@@ -3555,7 +3861,7 @@ module rad_carma
       !------------------------------------------------------------------------------------!
 
       !----- Calculate the wavelength dependent Planck's function at the ground. ----------!
-      itg = anint(100. * t_surf) - nlow
+      itg = min(size(planck,2),max(1,nint(100. * t_surf) - nlow))
       do i = 1,nirp
          pltemp1(i) = planck(ltemp(i),itg)
       end do
@@ -3576,7 +3882,7 @@ module rad_carma
       end if
 
       do j = 1,nlayer
-         it1(j) = anint(100.*tt(j)) - nlow
+         it1(j) = max(1,min(size(planck,2),nint(100.*tt(j)) - nlow))
       end do
       do j = 1,nlayer
          do i = 1,nirp
@@ -3615,310 +3921,351 @@ module rad_carma
 
    !=======================================================================================!
    !=======================================================================================!
-  SUBROUTINE twostr(m1)
-    !
-    !	 ******************************************************************
-    !	 *  Purpose		:  Defines matrix properties and sets up  *
-    !	 *			   matrix coefficients that do not depend *
-    !	 *			   on zenith angle or temperature.	  *
-    !	 *  Subroutines Called  :  None 				  *
-    !	 *  Input		:  W0, G0				  *
-    !	 *  Output		:  B1, B2, GAMI, ACON, EL1, AF, ETC	  *
-    !	 * ****************************************************************
-    !
-    use rconstants , only: srthree, twopi
-    USE mem_globrad, ONLY: nsolp,nlayer,jn,jdble,irs,ntotal
-  
-    IMPLICIT NONE
-  
-    INTEGER,INTENT(IN) :: m1
-    INTEGER	   :: j
-    INTEGER	   :: jd
-    INTEGER	   :: l
-    REAL,PARAMETER :: two = 2.d0
-    
-      
-    DO  l    =  1,ntotal !lls(i1,j1),lla(i1,j1)
-  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	  IF( l>=lls .AND. l<=lla) THEN
-  	    IF(l <= nsolp ) THEN
-  	      u1i(l) = srthree
-  	    ELSE
-  	      u1i(l) = two
-  	    END IF
-  	    !u1s(l)  =  twopi/u1i(l)
-  	  END IF
-  	END IF
-    END DO
-    !
-    !	   here we define layer properties following general scheme
-    !	   of meador and weavor. then we set up layer properties
-    !	   needed for matrix.
-    !
-    DO  j =  1,nlayer
-      DO  l=  1,ntotal
-  	  IF(isl_aerad  .OR. irs .NE. 0 ) THEN
-  	    IF( l>=lls .AND. l<=lla) THEN
-  	      !these are for two stream and hemispheric means
-  	      b1(l,j)   =  0.5*u1i(l)*(2.-w0(l,j)*(1. + g0(l,j)))
-  	      b2(l,j)   =  0.5*u1i(l)*w0(l,j)*(1. - g0(l,j))
-  	      ak(l,j)   =  SQRT(ABS(b1(l,j)**2 - b2(l,j)**2))
-  	      gami(l,j)  =  b2(l,j)/(b1(l,j) + ak(l,j))
-  	      ee1(l,j)   =  EXP(-ak(l,j)*taul(l,j))
-  	      el1(l,j)   =  1.0 + gami(l,j) *ee1(l,j)
-  	      em1(l,j)   =  1.0 - gami(l,j) * ee1(l,j)
-  	      el2(l,j)   =  gami(l,j) + ee1(l,j)
-  	      em2(l,j)   =  gami(l,j) - ee1(l,j)
-  	    END IF
-  	  END IF
-      END DO
-    END DO
-    !
-    !	  we seek to solve ax(l-1)+bx(l)+ex(l+1) = d.
-    !	  l=2n for even l, l=n+1 for odd l. the mean intensity (tmi/4pi)
-    !	  and the net flux (fnet) are related to x's as noted in add.
-    !	  first we set up the coefficients that are independent of solar
-    !	  angle or temparature: a(i),b(i),e(i). d(i) is defined in add.
-    !
-    j=  0
-    DO  jd=  2,jn,2
-      j=  j + 1
-      DO  l=  1,ntotal
-  	  IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	    IF( l>=lls .AND. l<=lla) THEN
-  	      !here are the even matrix elements
-  	      af(l,jd)   =  em1(l,j+1)*el1(l,j)- &
-  				  em2(l,j+1)*el2(l,j)
-  	      bf(l,jd)   =  em1(l,j+1)* em1(l,j)- &
-  				  em2(l,j+1)*em2(l,j)
-  	      ef(l,jd)   =  el1(l,j+1)*em2(l,j+1) - &
-  				  el2(l,j+1)*em1(l,j+1)
-  	      !here are the odd matrix elements except for the top.
-  	      af(l,jd+1) =  em1(l,j)*el2(l,j)- &
-  				  el1(l,j)*em2(l,j)
-  	      bf(l,jd+1) =  el1(l,j+1)*el1(l,j) - &
-  				  el2(l,j+1)*el2(l,j)
-  	      ef(l,jd+1) =  el2(l,j)*em2(l,j+1)- &
-  				el1(l,j)*em1(l,j+1)
-  	    END IF
-  	  END IF
-      END DO
-    END DO
-    !
-    !	  HERE ARE THE TOP AND BOTTOM BOUNDARY CONDITIONS AS WELL AS THE
-    !	  BEGINNING OF THE TRIDIAGONAL SOLUTION DEFINITIONS. I ASSUME
-    !	  NO DIFFUSE RADIATION IS INCIDENT AT UPPER BOUNDARY.
-    !
-    DO  l=  1,ntotal
-  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	  IF( l>=lls .AND. l<=lla) THEN
-  	    af(l,1)    = 0.0
-  	    bf(l,1)    = el1(l,1)
-  	    ef(l,1)    = -em1(l,1)
-  	    af(l,jdble) = el1(l,nlayer)-rsfx(l)*el2(l,nlayer)
-  	    bf(l,jdble) = em1(l,nlayer)-rsfx(l)*em2(l,nlayer)
-  	    ef(l,jdble) = 0.0
-  	  END IF
-  	END IF
-    END DO
-  
-  END SUBROUTINE twostr
-  
-  SUBROUTINE add(m1,cosz)
-    use rconstants , only: srthree, twopi, pi1
-    USE mem_globrad, ONLY: isl,u0,nlayer,nsolp,sol,roundoff, &
-  			   irs,ntotal,u1s,emis,jn, &
-  			   jdble,ndbl
-    
-    IMPLICIT NONE 
-   
-    !	  THIS SUBROUTINE FORMS THE MATRIX FOR THE MULTIPLE LAYERS AND
-    !	  USES A TRIDIAGONAL ROUTINE TO FIND RADIATION IN THE ENTIRE
-    !	  ATMOSPHERE.
-   
-    !	  ******************************
-    !	  *   CALCULATIONS FOR SOLAR   *
-    !	  ******************************
-    INTEGER,INTENT(IN) :: m1
-    REAL,INTENT(IN) :: cosz  
-    INTEGER :: j,kk
-    INTEGER :: jd
-    INTEGER :: kindex
-    INTEGER :: l
-    REAL    :: b4
-    REAL    :: c1
-    REAL    :: c2
-    REAL    :: cm1
-    REAL    :: cp1
-    REAL    :: du0
-    REAL    :: x
-    REAL    :: x2
-    REAL    :: x3
-    REAL    :: x4
-    REAL,DIMENSION(nsolp,nlayer) :: direct,el3,ee3,cm
-    REAL,DIMENSION(nsolp) :: sfcs
-    REAL,DIMENSION(ntotal,ndbl) :: df,as,ds,xk
-    INTEGER :: i1,j1
-  
-    DO  j	 =  1,nlayer
-      kk = MAX( 1, j-1 )
-      DO  l    =  1,nsolp
-  	  du0=1./cosz
-  	  IF(isl_aerad)  THEN
-  	    b3(l,j)     =  0.5*(1.-srthree*g0(l,j)*cosz)
-  	    b4         =  1. - b3(l,j)
-  	    x2         =  taul(l,j)*du0
-  	    ee3(l,j)   =  EXP(-x2)
-  	    x3         =  opd(l,j)*du0
-  	    el3(l,j)   =  EXP(-x3)*sol(l)
-  	    direct(l,j) =  cosz*el3(l,j)
-  	    c1         =  b1(l,j) - du0
-  	    IF( ABS(c1) < roundoff ) c1 = sign(roundoff,c1)
-  	    c2         =  ak(l,j)*ak(l,j) - du0*du0
-  	    IF( ABS(c2) <= roundoff ) c2 = roundoff
-  	    cp1        =  w0(l,j)*(b3(l,j)*c1+b4*b2(l,j))/c2
-  	    cpb(l,j)    =  cp1 * el3(l,j)
-  	    IF( j /= 1 ) THEN
-  	      x4 = el3(l,kk)
-  	    ELSE
-  	      x4 = sol(l)
-  	    END IF
-  	    cp(l,j)     =  cp1 * x4
-  	    cm1        =  ( cp1*b2(l,j) + w0(l,j)*b4 )/c1
-  	    cmb(l,j)    =  cm1 * el3(l,j)
-  	    cm(l,j)    =  cm1 * x4
-  	  END IF
-      END DO
-    END DO
-    !	     CALCULATE SFCS, THE SOURCE AT THE BOTTOM.
-    IF(isl_aerad)  THEN
-       DO l=  1,nsolp
-  	  sfcs(l)=  direct(l,nlayer) * rsfx(l)
-       END DO
-    END IF
-   
-    !	  ******************************
-    !	  * CALCULATIONS FOR INFRARED. *
-    !	  ******************************
-    DO  j= 1,nlayer
-      DO  l = nsolp+1,ntotal
-  	  IF(irs /= 0)  THEN
-  	      kindex = MAX(1,j-1)
-  	      b3(l,j)     = 1.0/(b1(l,j)+b2(l,j))
-  	      cp(l,j)     = (ptemp(l,kindex)+slope(l,j)* &
-  				   b3(l,j))*(twopi/u1i(l))
-  	      cpb(l,j)    = cp(l,j) + slope(l,j)* &
-  				  taul(l,j)*(twopi/u1i(l))
-  	      cm(l,j)     = (ptemp(l,kindex)-slope(l,j)* &
-  				   b3(l,j))*(twopi/u1i(l))
-  	      cmb(l,j)    = cm(l,j) + slope(l,j)* &
-  				  taul(l,j)*(twopi/u1i(l))
-  	      el3(l,j)    = 0.0
-  	      direct(l,j) = 0.0
-  	      ee3(l,j)    = 0.0
-  	  END IF
-      END DO
-    END DO
-    
-    IF (irs /= 0)  THEN
-       DO  l= nsolp+1,ntotal
-          sfcs(l)= emis(l)*ptempg(l)*pi1
-       END DO
-    END IF
-   
-    j=  0
-    DO  jd=  2,jn,2
-     j=  j + 1
-     DO  l=1,ntotal
-  	 IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	   IF(l>=lls .AND. l<=lla) THEN
-  	 !	    HERE ARE THE EVEN MATRIX ELEMENTS
-  	   df(l,jd) = (cp(l,j+1) - cpb(l,j))*em1(l,j+1) -  &
-  		(cm(l,j+1) - cmb(l,j))*em2(l,j+1)
-  	 !	    HERE ARE THE ODD MATRIX ELEMENTS EXCEPT FOR THE TOP.
-  	   df(l,jd+1) =  el2(l,j) * (cp(l,j+1)-cpb(l,j)) +  &
-  		el1(l,j) * (cmb(l,j) - cm(l,j+1))
-  	    END IF
-  	  END IF
-      END DO
-    END DO
-   
-    !	  HERE ARE THE TOP AND BOTTOM BOUNDARY CONDITIONS AS WELL AS THE
-    !	  BEGINNING OF THE TRIDIAGONAL SOLUTION DEFINITIONS. I ASSUME NO
-    !	  DIFFUSE RADIATION IS INCIDENT AT THE TOP.
-    DO  l=1,ntotal
-  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	  IF(l>=lls.AND. l<=lla) THEN
-  	    df(l,1)   = -cm(l,1)
-  	    df(l,jdble) = sfcs(l)+rsfx(l)*cmb(l,nlayer)- &
-  			  cpb(l,nlayer)
-  	    ds(l,jdble) = df(l,jdble)/bf(l,jdble)
-  	    as(l,jdble) = af(l,jdble)/bf(l,jdble)
-  	  END IF
-  	END IF
-    END DO
-   
-    !	  ********************************************
-    !	  *	WE SOLVE THE TRIDIAGONAL EQUATIONS   *
-    !	  ********************************************
-   
-    DO  j = 2, jdble
-      DO  l=1,ntotal
-  	  IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	    IF(l>=lls .AND. l<=lla) THEN
-  	      x  = 1./(bf(l,jdble+1-j) - ef(l,jdble+1-j)* &
-  			  as(l,jdble+2-j))
-  	      as(l,jdble+1-j) = af(l,jdble+1-j)*x
-  	      ds(l,jdble+1-j) = (df(l,jdble+1-j) - &
-  			  ef(l,jdble+1-j) *ds(l,jdble+2-j))*x
-  	    END IF
-  	  END IF
-      END DO
-    END DO
-   
-    DO  l=1,ntotal
-  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	  IF(l>=lls .AND. l<=lla) THEN
-  	    xk(l,1)    = ds(l,1)
-  	  END IF 
-  	END IF
-    END DO
-  
-    DO  j	= 2, jdble
-      DO  l=1,ntotal
-  	  IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	    IF(l>=lls .AND. l<=lla) THEN
-  	      xk(l,j) = ds(l,j) - as(l,j)*xk(l,j-1)
-  	    END IF 
-  	  END IF
-      END DO
-    END DO
-   
-    !  ***************************************************************
-    !	  CALCULATE LAYER COEFFICIENTS, NET FLUX AND MEAN INTENSITY
-    !  ***************************************************************
-      
-     DO j = 1,nlayer
-       DO  l=1,ntotal
-  	   IF(isl_aerad .OR. irs .NE. 0 ) THEN
-  	     IF(l>=lls .AND. l<=lla) THEN
-  	       ck1(l,j)   = xk(l,2*j-1)
-  	       ck2(l,j)   = xk(l,2*j)
-	       
-  	       fnet(l,j)  = ck1(l,j)  *( el1(l,j) &
-  				 -el2(l,j)) + ck2(l,j) * &
-  				    ( em1(l,j)-em2(l,j) ) + &
-  				    cpb(l,j) - cmb(l,j) - direct(l,j)
- 	       tmi(l,j)   =  el3(l,j) + u1i(l) *(ck1(l,j)  *  &
-  			  ( el1(l,j) + el2(l,j))   + ck2(l,j) * &
-  			  ( em1(l,j)+em2(l,j) ) +  cpb(l,j) + &
-  			  cmb(l,j) )
-  	     END IF 
-  	   END IF
-       END DO
-     END DO
-   
-    END SUBROUTINE add
+   !                                                                                       !
+   !  Subroutine twostr.  This routine defines matrix properties and sets up matrix        !
+   !       coefficients that do not depend on zenith angle or temperature.                 !
+   !  Subroutines Called  :  None                                                          !
+   !  Input               :  W0, G0                                                        !
+   !  Output              :  B1, B2, GAMI, ACON, EL1, AF, ETC                              !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   subroutine twostr(m1)
+      use rconstants , only : srthree & ! intent(in)
+                            , twopi   ! ! intent(in)
+      use mem_globrad, only : nsolp   & ! intent(in)
+                            , nlayer  & ! intent(in)
+                            , ndblm1  & ! intent(in)
+                            , ndbl    & ! intent(in)
+                            , irs     & ! intent(in)
+                            , ntotal  ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer, intent(in) :: m1
+      !----- Local variables. -------------------------------------------------------------!
+      integer             :: j
+      integer             :: jd
+      integer             :: l
+      !----- Local constants. -------------------------------------------------------------!
+      real   , parameter  :: two = 2.d0
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether to calculate anything.  We do this outside the loops, so we check !
+      ! it only once.                                                                      !
+      !------------------------------------------------------------------------------------!
+      if (isl_aerad .or. irs /= 0) then
+         do l=lls,lla
+            if ( l <= nsolp ) then
+               u1i(l) = srthree
+            else
+               u1i(l) = two
+            end if
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Define layer properties following general scheme of meador and weavor. then !
+         ! we set up layer properties needed for matrix.                                   !
+         !---------------------------------------------------------------------------------!
+         do j=1,nlayer
+            do l=lls,lla
+               !----- These are for two stream and hemispheric means. ---------------------!
+               b1  (l,j) = 0.5*u1i(l)*(2.-w0(l,j)*(1. + g0(l,j)))
+               b2  (l,j) = 0.5*u1i(l)*w0(l,j)*(1. - g0(l,j))
+               ak  (l,j) = sqrt(abs(b1(l,j)**2 - b2(l,j)**2))
+               gami(l,j) = b2(l,j)/(b1(l,j) + ak(l,j))
+               ee1 (l,j) = exp(-ak(l,j)*taul(l,j))
+               el1 (l,j) = 1.0 + gami(l,j) *ee1(l,j)
+               em1 (l,j) = 1.0 - gami(l,j) * ee1(l,j)
+               el2 (l,j) = gami(l,j) + ee1(l,j)
+               em2 (l,j) = gami(l,j) - ee1(l,j)
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     We seek to solve ax(l-1)+bx(l)+ex(l+1) = d.  l=2n for even l, l=n+1 for odd !
+         ! l. the mean intensity (tmi/4pi) and the net flux (fnet) are related to x's as   !
+         ! noted in add.  First we set up the coefficients that are independent of solar   !
+         ! angle or temparature: a(i),b(i),e(i). d(i) is defined in add.                   !
+         !---------------------------------------------------------------------------------!
+         j = 0
+         do jd=2,ndblm1,2
+            j = j + 1
+            do l=lls,lla
+               !----- Even matrix elements. -----------------------------------------------!
+               af(l,jd)   =  em1(l,j+1) * el1(l,j  ) - em2(l,j+1) * el2(l,j  )
+               bf(l,jd)   =  em1(l,j+1) * em1(l,j  ) - em2(l,j+1) * em2(l,j  )
+               ef(l,jd)   =  el1(l,j+1) * em2(l,j+1) - el2(l,j+1) * em1(l,j+1)
+               !---- Odd matrix elements (except top). ------------------------------------!
+               af(l,jd+1) =  em1(l,j  ) * el2(l,j  ) - el1(l,j  ) * em2(l,j  )
+               bf(l,jd+1) =  el1(l,j+1) * el1(l,j  ) - el2(l,j+1) * el2(l,j  )
+               ef(l,jd+1) =  el2(l,j  ) * em2(l,j+1) - el1(l,j  ) * em1(l,j+1)
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Top and bottom boundary conditions as well as the beginning of the tri-     !
+         ! diagonal solution definitions.  Assume no diffuse radiation is incident at the  !
+         ! upper boundary.                                                                 !
+         !---------------------------------------------------------------------------------!
+         do l=lls,lla
+            af(l,1)    = 0.0
+            bf(l,1)    = el1(l,1)
+            ef(l,1)    = -em1(l,1)
+            af(l,ndbl) = el1(l,nlayer)-rsfx(l)*el2(l,nlayer)
+            bf(l,ndbl) = em1(l,nlayer)-rsfx(l)*em2(l,nlayer)
+            ef(l,ndbl) = 0.0
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine twostr
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine forms the matrix for the multiple layers and uses a tridiagonal    !
+   ! routine to find radiation in the entire atmosphere.                                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine add(m1,cosz)
+      use rconstants , only : srthree  & ! intent(in)
+                            , twopi    & ! intent(in)
+                            , pi1      ! ! intent(in)
+      use mem_globrad, only : isl      & ! intent(in)
+                            , u0       & ! intent(in)
+                            , nlayer   & ! intent(in)
+                            , nsolp    & ! intent(in)
+                            , sol      & ! intent(in)
+                            , solfx    & ! intent(in)
+                            , roundoff & ! intent(in)
+                            , irs      & ! intent(in)
+                            , ntotal   & ! intent(in)
+                            , u1s      & ! intent(in)
+                            , emis     & ! intent(in)
+                            , ndblm1   & ! intent(in)
+                            , ndbl     & ! intent(in)
+                            , nprob    ! ! intent(in)
+      use mem_aerad  , only : nsol     & ! intent(in)
+                            , nir      ! ! intent(in)
+      implicit none 
+
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                       , intent(in) :: m1
+      real                          , intent(in) :: cosz
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                    :: j
+      integer                                    :: kk
+      integer                                    :: jd
+      integer                                    :: kindex
+      integer                                    :: l
+      integer                                    :: i1
+      integer                                    :: j1
+      real                                       :: b4
+      real                                       :: c1
+      real                                       :: c2
+      real                                       :: cm1
+      real                                       :: cp1
+      real                                       :: du0
+      real                                       :: x
+      real                                       :: x2
+      real                                       :: x3
+      real                                       :: x4
+      real, dimension(nsolp,nlayer)              :: el3
+      real, dimension(nsolp,nlayer)              :: ee3
+      real, dimension(nsolp,nlayer)              :: cm
+      real, dimension(nsolp)                     :: sfcs
+      real, dimension(ntotal,ndbl)               :: df
+      real, dimension(ntotal,ndbl)               :: as
+      real, dimension(ntotal,ndbl)               :: ds
+      real, dimension(ntotal,ndbl)               :: xk
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      u0  = cosz
+      du0 = 1. / cosz
+      do j=1,nlayer
+         kk = max(1,j-1)
+         do l=1,nsolp
+            if (isl_aerad) then
+               b3(l,j)      =  0.5 * ( 1.0 - srthree * g0(l,j) * cosz)
+               b4           =  1. - b3(l,j)
+               x2           =  taul(l,j)*du0
+               ee3(l,j)     =  exp(-x2)
+               x3           =  opd(l,j)*du0
+               el3(l,j)     =  exp(-x3)*sol(l)
+               directd(l,j) =  cosz*el3(l,j)
+               c1          =  b1(l,j) - du0
+               if( abs(c1) < roundoff ) c1 = sign(roundoff,c1)
+               c2           =  ak(l,j)*ak(l,j) - du0*du0
+               if( abs(c2) <= roundoff ) c2 = roundoff
+               cp1          =  w0(l,j)*(b3(l,j)*c1+b4*b2(l,j))/c2
+               cpb(l,j)     =  cp1 * el3(l,j)
+               if ( j /= 1 ) then
+                  x4 = el3(l,kk)
+               else
+                  x4 = sol(l)
+               end if
+               cp (l,j) = cp1 * x4
+               cm1      = ( cp1 * b2(l,j) + w0(l,j) * b4 ) / c1
+               cmb(l,j) = cm1 * el3(l,j)
+               cm (l,j) = cm1 * x4
+            end if
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Calculate sfcs, the source at the bottom.                                      !
+      !------------------------------------------------------------------------------------!
+      if (isl_aerad) then
+         do l=  1,nsolp
+            sfcs(l)=  directd(l,nlayer) * rsfx(l)
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Calculations for infrared.                                                     !
+      !------------------------------------------------------------------------------------!
+      if (irs /= 0)  then
+         do j=1,nlayer
+            do l=nsolp+1,ntotal
+               kindex       = max(1,j-1)
+               b3(l,j)      = 1.0/(b1(l,j)+b2(l,j))
+               cp(l,j)      = (ptemp(l,kindex)+slope(l,j)*b3(l,j))*(twopi/u1i(l))
+               cpb(l,j)     = cp(l,j) + slope(l,j)*taul(l,j)*(twopi/u1i(l))
+               cm(l,j)      = (ptemp(l,kindex)-slope(l,j)*b3(l,j))*(twopi/u1i(l))
+               cmb(l,j)     = cm(l,j) + slope(l,j) * taul(l,j)*(twopi/u1i(l))
+               el3(l,j)     = 0.0
+               directd(l,j) = 0.0
+               ee3(l,j)     = 0.0
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         do  l= nsolp+1,ntotal
+            sfcs(l)= emis(l)*ptempg(l)*pi1
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      j = 0
+      if (isl_aerad .or. irs /= 0 ) then
+         do jd=2,ndblm1,2
+            j = j + 1
+            do l=lls,lla
+               !----- Even matrix elements. -----------------------------------------------!
+               df(l,jd)   = (cp(l,j+1) - cpb(l,j)) * em1(l,j+1)                            &
+                          - (cm(l,j+1) - cmb(l,j)) * em2(l,j+1)
+               !----- Odd matrix elements (except top). -----------------------------------!
+               df(l,jd+1) = el2(l,j) * (cp (l,j+1) - cpb(l,j  ))                           &
+                          + el1(l,j) * (cmb(l,j  ) - cm (l,j+1))
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Top and bottom boundary conditions as well as the beginning of the tri-     !
+         ! diagonal solution definitions. Assume no diffuse radiation is incident at the   !
+         ! top.                                                                            !
+         !---------------------------------------------------------------------------------!
+         do  l=lls,lla
+            df(l,1   ) = -cm(l,1)
+            df(l,ndbl) = sfcs(l) + rsfx(l) * cmb(l,nlayer) - cpb(l,nlayer)
+            ds(l,ndbl) = df(l,ndbl) / bf(l,ndbl)
+            as(l,ndbl) = af(l,ndbl) / bf(l,ndbl)
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Solve the tridiagonal equations.                                               !
+      !------------------------------------------------------------------------------------!
+      if (isl_aerad .or. irs /= 0 ) then
+         do j=2,ndbl
+            do l=lls,lla
+               x              = 1. / (bf(l,ndbl+1-j) - ef(l,ndbl+1-j) * as(l,ndbl+2-j))
+               as(l,ndbl+1-j) = af(l,ndbl+1-j)*x
+               ds(l,ndbl+1-j) = (df(l,ndbl+1-j) - ef(l,ndbl+1-j) * ds(l,ndbl+2-j))*x
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         do l=lls,lla
+            xk(l,1)    = ds(l,1)
+
+            do j=2,ndbl
+               xk(l,j) = ds(l,j) - as(l,j)*xk(l,j-1)
+            end do
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     calculate layer coefficients, net flux and mean intensity.                  !
+         !---------------------------------------------------------------------------------!
+         do j=1,nlayer
+            do l=lls,lla
+               ck1(l,j)   = xk(l,2*j-1)
+               ck2(l,j)   = xk(l,2*j)
+               fnet(l,j)  = ck1(l,j) * ( el1(l,j) - el2(l,j) )                             &
+                          + ck2(l,j) * ( em1(l,j) - em2(l,j) )                             &
+                          + cpb(l,j) - cmb(l,j) - directd(l,j)
+               tmi(l,j)   = el3(l,j) + u1i(l) * ( ck1(l,j) * ( el1(l,j) + el2(l,j) )       &
+                                                + ck2(l,j) * ( em1(l,j) + em2(l,j) )       &
+                                                + cpb(l,j) + cmb(l,j) )
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine add
    !=======================================================================================!
    !=======================================================================================!
 
@@ -4122,61 +4469,97 @@ module rad_carma
    !=======================================================================================!
 
 
-  SUBROUTINE plnk(e,t1,d)
-    
-    !	  ******************************************************
-    !	  *  Purpose		 :  Calculate Planck Function  *
-    !	  *  Subroutines Called  :  None		       *
-    !	  *  Input		 :  WAVE, NCOUNT	       *
-    !	  *  Output		 :  PLANCK		       *
-    !	  * ****************************************************
-   
-    !  THIS SUBROUTINE COMPUTES THE INTEGRAL OF THE PLANCK FUNCTION BETWEEN
-    !  ZERO AND THE SPECIFIED VALUE OF LAMBDA.  THUS (USING XL AS LAMBDA)
-    !  WE WANT TO INTEGRATE
-    !  R = INTEGRAL(XL=0 TO XL=XLSPEC) ( C1*XL**-5* / (EXP(C2/XL*T)-1) )*DXL
-    !  SUBSTITUTING U=C2/(XL*T), THE INTEGRAL BECOMES
-    !  R = A CONSTANT TIMES INTEGRAL (USPEC TO INFINITY) OF
-    !		 ( U**3 / (EXP(U) - 1) )*DU
-    !  THE APPROXIMATIONS SHOWN HERE ARE ON PAGE 998 OF ABRAMOWITZ AND SEGUN
-    !  UNDER THE HEADING OF DEBYE FUNCTIONS.  C2 IS THE PRODUCT OF PLANCK'S
-    !  CONSTANT AND THE SPEED OF LIGHT DIVIDED BY BOLTZMANN'S CONSTANT.
-    !  C2 = 14390 WHEN LAMBDA IS IN MICRONS.
-    !  THE FACTOR 0.15399 IS THE RECIPROCAL OF SIX TIMES
-    !  THE SUM OF (1/N**2) FOR ALL N FROM ONE TO INFINITY.  IT IS CHOSEN TO
-    !  NORMALIZE THE INTEGRAL TO A MAXIMUM VALUE OF UNITY.
-    !  RADIATION IN REAL UNITS IS OBTAINED BY MULTIPLYING THE INTEGRAL BY
-    !  THE STEFAN-BOLTZMANN CONSTANT TIMES T**4.
-    IMPLICIT NONE
-   
-    REAL				     :: e
-    REAL, INTENT(IN)			     :: t1
-    REAL, INTENT(OUT)			     :: d
-    REAL :: am(5)
-    REAL :: v1,a
-    INTEGER :: m
-   
-    d		 =   0.0
-    v1  	 =   e/t1
-   
-    IF (v1 <= 1.) THEN
-      d 	=  1.0 - 0.15399*v1**3 *  &
-  	  (1./3.-v1/8. + v1**2/60. - v1**4/5040. +  &
-  	  v1**6/272160. - v1**8/13305600	 )
-    END IF
-   
-    IF ( v1 > 1. .AND. v1 <= 50.) THEN
-      DO  m   =  1,5
-  	a	=  FLOAT(m)*v1
-  	am(m)	=  0.15399 * EXP(-a)/m**4 * (((a+3.)*a+6.)*a+6.)
-      END DO
-   
-      d 	 =  am(1)+am(2)+am(3)+am(4)+am(5)
-    END IF
-   
-    d		  =  d*t1**4
-   
-  END SUBROUTINE plnk
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine computes the integral of the planck function between zero and the  !
+   ! specified value of lambda.  thus (using xl as lambda) we want to integrate            !
+   !                                                                                       !
+   !       r = integral(xl=0 to xl=xlspec) ( c1*xl**-5* / (exp(c2/xl*t)-1) )*dxl           !
+   !                                                                                       !
+   !  substituting u=c2/(xl*t), the integral becomes                                       !
+   !                                                                                       !
+   !       r = a constant times integral (uspec to infinity) of ( u**3 / (exp(u) - 1) )*du !
+   !                                                                                       !
+   !    The approximations shown here are on page 998 of Abramowitz and Segun under the    !
+   ! heading of debye functions.  c2 is the product of Planck's constant and the speed of  !
+   ! light divided by Boltzmann's constant.                                                !
+   !                                                                                       !
+   !       c2 = 14390 when lambda is in microns.                                           !
+   !                                                                                       !
+   !    The factor 0.15399 is the reciprocal of six times.  The sum of (1/n**2) for all n  !
+   ! from one to infinity.  It is chosen to normalise the integral to a maximum value of   !
+   ! unity.  Radiation in real units is obtained by multiplying the integral by the        !
+   ! Stefan-Boltzmann constant times T**4.                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine plnk(e,t1,d)
+      use rconstants, only : onethird8 ! ! intent(in)
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4)               :: e
+      real(kind=4), intent(in)   :: t1
+      real(kind=4), intent(out)  :: d
+      !----- Local variables. -------------------------------------------------------------!
+      integer                    :: m
+      real(kind=8), dimension(5) :: am8
+      real(kind=8)               :: v18
+      real(kind=8)               :: a8
+      real(kind=8)               :: m8
+      real(kind=8)               :: e8
+      real(kind=8)               :: t18
+      real(kind=8)               :: d8
+      !----- Local constants. -------------------------------------------------------------!
+      real(kind=8), parameter    :: tiny_planck8 = 1.d-30
+      !----- External function. -----------------------------------------------------------!
+      real(kind=4)               :: sngloff
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Double precision version of input variables.                                   !
+      !------------------------------------------------------------------------------------!
+      e8  = dble(e )
+      t18 = dble(t1)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Main loop.                                                                     !
+      !------------------------------------------------------------------------------------!
+      d8  = 0.d0
+      v18 = e8/t18
+      if (v18 <= 1.d0) then
+         d8 =  1.d0 - 1.5399d-1 * v18 ** 3 * ( onethird8 - 1.25d-1*v18 + v18 ** 2 / 6.d1   &
+                                             - v18 ** 4 / 5.04000d3 + v18 ** 6 / 2.72160d5 &
+                                             - v18 ** 8 / 1.33056d7 )
+      end if
+
+      if ( v18 > 1.d0 .and. v18 <= 5.d1) then
+         do  m   =  1,5
+             m8     =  dble(m)
+             a8     =  m8*v18
+             am8(m) =  1.5399d-1 * exp(-a8) / m8**4                                        &
+                    * ( ( (a8 + 3.d0 ) * a8 + 6.d0 ) * a8 + 6.d0 )
+         end do
+         d8 =  sum(am8)
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Get the output.                                                                !
+      !------------------------------------------------------------------------------------!
+      d8 = d8 * t18 ** 4
+      d  = sngloff(d8,tiny_planck8)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine plnk
    !=======================================================================================!
    !=======================================================================================!
 
@@ -4254,36 +4637,36 @@ module rad_carma
       real                                , intent(in)       :: tmag2
       real                                , intent(in)       :: wvno
       !----- Local variables. -------------------------------------------------------------!
-      double complex, dimension(iacap)                     :: acap
-      double complex, dimension(2)                         :: wfn
-      double complex, dimension(4)                         :: z
-      double complex, dimension(3,iacap)                   :: w
-      double complex, dimension(8)                         :: u
-      double complex                                       :: fnap
-      double complex                                       :: fnbp
-      double complex                                       :: fna
-      double complex                                       :: fnb
-      double complex                                       :: rf
-      double complex                                       :: rrf
-      double complex                                       :: rrfx
-      double complex                                       :: wm1
-      double complex                                       :: fn1
-      double complex                                       :: fn2
-      double complex                                       :: tc1
-      double complex                                       :: tc2
-      double complex                                       :: k1
-      double complex                                       :: k2
-      double complex                                       :: k3
-      double complex                                       :: rc
-      double complex                                       :: dh1
-      double complex                                       :: dh2
-      double complex                                       :: dh4
-      double complex                                       :: p24h24
-      double complex                                       :: p24h21
-      double complex                                       :: pstore
-      double complex                                       :: hstore
-      double complex                                       :: dummy
-      double complex                                       :: dumsq
+      double complex, dimension(iacap)                       :: acap
+      double complex, dimension(2)                           :: wfn
+      double complex, dimension(4)                           :: z
+      double complex, dimension(3,iacap)                     :: w
+      double complex, dimension(8)                           :: u
+      double complex                                         :: fnap
+      double complex                                         :: fnbp
+      double complex                                         :: fna
+      double complex                                         :: fnb
+      double complex                                         :: rf
+      double complex                                         :: rrf
+      double complex                                         :: rrfx
+      double complex                                         :: wm1
+      double complex                                         :: fn1
+      double complex                                         :: fn2
+      double complex                                         :: tc1
+      double complex                                         :: tc2
+      double complex                                         :: k1
+      double complex                                         :: k2
+      double complex                                         :: k3
+      double complex                                         :: rc
+      double complex                                         :: dh1
+      double complex                                         :: dh2
+      double complex                                         :: dh4
+      double complex                                         :: p24h24
+      double complex                                         :: p24h21
+      double complex                                         :: pstore
+      double complex                                         :: hstore
+      double complex                                         :: dummy
+      double complex                                         :: dumsq
       real(kind=8)    , dimension(5)                         :: t
       real(kind=8)    , dimension(4)                         :: ta
       real(kind=8)    , dimension(2)                         :: tb
@@ -4356,8 +4739,8 @@ module rad_carma
       nmx1 =  1.1d0 * t(1)
 
       if ( nmx1 > iacap-1 )  then
-         write (unit=*,fmt='(a,1x,i6)') ' NMX1  = ',nmx1
-         write (unit=*,fmt='(a,1x,i6)') ' IACAP = ',iacap
+         write (unit=*,fmt='(a,1x,i)') ' NMX1  = ',nmx1
+         write (unit=*,fmt='(a,1x,i)') ' IACAP = ',iacap
          call abort_run('The upper limit for acap is not enough.'                          &
                        ,'miess','rad_carma.f90')
       end if
@@ -4385,37 +4768,30 @@ module rad_carma
          end do
       end do loop1
 
-      loop2: do
-         if ( thetd < 0.0 )  thetd = abs(thetd)
-
-         if ( thetd <= 0.0 ) then
-            cstht  = 1.0
-            si2tht = 0.0
-            exit loop2
-         end if
-
-         if ( thetd < 90. )  then
-            t(1)   =  pio1808 * thetd
-            cstht  =  cos( t(1) )
-            si2tht =  1.d0 - cstht*cstht
-            exit loop2
-         end if
-
-         if ( thetd <= 90. ) then
-            cstht  =  0.0
-            si2tht =  1.0
-            exit loop2
-         end if
-
+      !----- Take the absolute value of thetd, which must be bounded between 0 and 90. ----!
+      thetd = abs(thetd)
+      if ( thetd == 0.0 ) then
+         cstht  = 1.0
+         si2tht = 0.0
+      elseif (thetd < 90.) then
+         t(1)   =  pio1808 * thetd
+         cstht  =  cos( t(1) )
+         si2tht =  1.d0 - cstht*cstht
+      elseif (thetd == 90.) then
+         cstht  =  0.0
+         si2tht =  1.0
+      else
          write (unit=*,fmt='(a,1x,es12.5)') ' THETD = ',thetd
          call abort_run('The value of the scattering angle is greater than 90.0 degrees!'  &
                        ,'miess','rad_carma.f90')
-      end do loop2
+      end if
+      !------------------------------------------------------------------------------------!
 
-         piz(1)  =  0.0
-         piz(2)  =  1.0
-         tau(1)  =  0.0
-         tau(2)  =  cstht
+
+      piz(1)  =  0.0
+      piz(2)  =  1.0
+      tau(1)  =  0.0
+      tau(2)  =  cstht
 
       !----- Initialisation of homogeneous sphere. ----------------------------------------!
       t(1)   =  cos(x)
@@ -4433,10 +4809,6 @@ module rad_carma
          tc2   = acap(1) * rf   +  rx
          fna   = (tc1 * ta(3) - ta(1)) / (tc1 * wfn(2) - wfn(1))
          fnb   = (tc2 * ta(3) - ta(1)) / (tc2 * wfn(2) - wfn(1))
-         tb(1) = dble(fna)
-         tb(2) = aimag(fna)
-         tc(1) = dble(fnb)
-         tc(2) = aimag(fnb)
       else
          n = 1
          !----- Initialisation procedure for stratified sphere begins here. ---------------!
@@ -4498,17 +4870,17 @@ module rad_carma
                       / (u(2)*u(5)*u(7) + k1*u(2) - dumsq*k3*u(5))
          fnb   = u(8) * (u(3)*u(6)*u(7) + k2*u(3) - dumsq*k2*u(6))                         &
                       / (u(4)*u(6)*u(7) + k2*u(4) - dumsq*k2*u(6))
-         tb(1) = dble(fna)
-         tb(2) = aimag(fna)
-         tc(1) = dble(fnb)
-         tc(2) = aimag(fnb)
       end if
 
       fnap  = fna
       fnbp  = fnb
-      td(1) = dble(fnap)
+      tb(1) = dble (fna )
+      tb(2) = aimag(fna )
+      tc(1) = dble (fnb )
+      tc(2) = aimag(fnb )
+      td(1) = dble (fnap)
       td(2) = aimag(fnap)
-      te(1) = dble(fnbp)
+      te(1) = dble (fnbp)
       te(2) = aimag(fnbp)
       t(1)  = 1.50
       !------------------------------------------------------------------------------------!
@@ -4596,10 +4968,6 @@ module rad_carma
          fn2 = (tc2 * ta(3) - ta(1)) / (tc2 * wfn(2) - wfn(1))
          m   = wvno * r
          if ( n >= m ) then
-            if (.not. iflag) then
-               iflag = abs((fn1-fna)/fn1) < epsilon_mie .and.                              &
-                       abs(  ( fn2-fnb ) / fn2  ) < epsilon_mie  
-            end if
             if (iflag) then
                fna   =  fn1
                fnb   =  fn2
@@ -4607,6 +4975,17 @@ module rad_carma
                tb(2) = aimag(fna)
                tc(1) = dble(fnb)
                tc(2) = aimag(fnb)
+            else
+               iflag = abs((fn1-fna)/fn1) < epsilon_mie .and.                              &
+                       abs((fn2-fnb)/fn2) < epsilon_mie  
+               if (iflag) then
+                  fna   =  fn1
+                  fnb   =  fn2
+                  tb(1) = dble(fna)
+                  tb(2) = aimag(fna)
+                  tc(1) = dble(fnb)
+                  tc(2) = aimag(fnb)
+               end if
             end if
          end if
          t(5)    = n
@@ -4688,7 +5067,8 @@ module rad_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine radtran_to_rams(m1,fthrl,rlong,rlongup_top,fthrs,rshort,rshort_top           &
+   subroutine radtran_to_rams(m1,fthrl,rlong,rlongup_top,fthrs,par_beam,par_diffuse        &
+                             ,nir_beam,nir_diffuse,rshort,rshort_Diffuse,rshort_top        &
                              ,rshortup_top,aotr,mynum)
       use mem_grid   , only : nzpmax  ! ! intent(in)
       use mem_globrad, only : nwave   & ! intent(in)
@@ -4705,7 +5085,12 @@ module rad_carma
       integer                   , intent(in)    :: m1,mynum
       real                      , intent(out)   :: rlong
       real                      , intent(out)   :: rlongup_top
+      real                      , intent(out)   :: par_beam
+      real                      , intent(out)   :: par_diffuse
+      real                      , intent(out)   :: nir_beam
+      real                      , intent(out)   :: nir_diffuse
       real                      , intent(out)   :: rshort
+      real                      , intent(out)   :: rshort_diffuse
       real                      , intent(out)   :: rshort_top
       real                      , intent(out)   :: rshortup_top
       real   , dimension(nwave) , intent(out)   :: aotr
@@ -4738,11 +5123,17 @@ module rad_carma
       end do
 
 
-      rshort       = solnet      ! Total short wave absorbed by the surface.
-      rshort_top   = soldowntoa  ! Total incoming short wave at the top layer.
-      rshortup_top = soluptoa    ! Total outgoing short wave at the top layer.
-      rlong        = xirdown ! Surface long wave radiation.
-      rlongup_top  = xirup   ! Emerging long wave radiation at the top layer.
+      par_beam       = pardn_beam_gnd
+      par_diffuse    = pardn_diff_gnd
+      nir_beam       = nirdn_beam_gnd
+      nir_diffuse    = nirdn_diff_gnd
+      !-----  Total short wave absorbed by the surface. -----------------------------------!
+      rshort         = pardn_beam_gnd + pardn_diff_gnd + nirdn_beam_gnd + nirdn_diff_gnd
+      rshort_diffuse = pardn_diff_gnd + nirdn_diff_gnd
+      rshort_top     = soldowntoa  ! Total incoming short wave at the top layer.
+      rshortup_top   = soluptoa    ! Total outgoing short wave at the top layer.
+      rlong          = xirdown     ! Surface long wave radiation.
+      rlongup_top    = xirup       ! Emerging long wave radiation at the top layer.
       if (rlong /= rlong .and. ilwrtyp == 4) then 
          write(unit=*,fmt='(a)') '-------------------------------------------------------'
          call abort_run('Weird RLONG... ','radtrans_to_rams','rad_carma.f90')

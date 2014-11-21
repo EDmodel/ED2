@@ -1402,10 +1402,10 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < -1 .or. ied_init_mode > 6) .and. &
+   elseif ((ied_init_mode < -1 .or. ied_init_mode > 7) .and. &
            (ied_init_mode /= 99 )) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                     'Invalid IED_INIT_MODE, it must be between -1 and 6. Yours is set to' &
+                     'Invalid IED_INIT_MODE, it must be between -1 and 7. Yours is set to' &
                     ,ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -2040,7 +2040,7 @@ end do
    if (ianth_disturb == 1) then
       !------ Checking the plantation PFT.  It must be a tree PFT. ------------------------!
       select case (plantation_stock)
-      case (2,3,4,6,7,8,9,10,11)
+      case (2,3,4,6,7,8,9,10,11,17)
          continue
       case default
          write(reason,fmt='(a,1x,i5,a)')                                                   &
@@ -2052,7 +2052,7 @@ end do
    
       !------ Checking the plantation PFT. It must be a grass PFT. ------------------------!
       select case (agri_stock)
-      case (1,5,12,13,14,15)
+      case (1,5,12,13,14,15,16)
          continue
       case default
          write(reason,fmt='(a,1x,i5,a)')                                                   &

@@ -221,7 +221,6 @@ subroutine ed_bigleaf_init(cgrid)
                csite%fast_soil_N       (ipa) = fsn (ilu) / area(ilu)
                csite%sum_dgd           (ipa) = 0.0
                csite%sum_chd           (ipa) = 0.0
-               csite%plantation        (ipa) = 0
                csite%cohort_count      (ipa) = 0
                !---------------------------------------------------------------------------!
 
@@ -248,7 +247,6 @@ subroutine ed_bigleaf_init(cgrid)
                      csite%fast_soil_N       (ipa) = fsn (ilu) / area(ilu)
                      csite%sum_dgd           (ipa) = sum_dgd(ilu)
                      csite%sum_chd           (ipa) = sum_chd(ilu)
-                     csite%plantation        (ipa) = 0
                      csite%cohort_count      (ipa) = 1
 
                      !----- Big-leaf model, therefore only one cohort per patch. ----------!

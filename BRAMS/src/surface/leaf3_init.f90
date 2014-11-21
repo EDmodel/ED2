@@ -1,4 +1,3 @@
-
 !====================================== Change Log ========================================!
 ! 5.0.0                                                                                    !
 !                                                                                          !
@@ -19,26 +18,30 @@ subroutine sfcdata()
       !  Soil Characteristics (see Clapp & Hornberger, 1978; McCumber & Pielke, 1981;      !
       !                            Pielke, 1984; Tremback & Kessler, 1985)                 !
       !------------------------------------------------------------------------------------!
-      real :: slpots     ! Soil moisture potential at saturation                 [       m]
-      real :: slmsts     ! Soil moisture at saturation                           [   m3/m3]
-      real :: slbs       ! B exponent                                            [     n/d]
-      real :: slcpd      ! Specific heat of dry soil                             [  J/m3/K]
-      real :: soilcp     ! Dry soil capacity (at -3.1MPa)                        [   m3/m3]
-      real :: soilwp     ! Wilting point capacity (at -1.5MPa)                   [   m3/m3]
-      real :: slcons     ! hydraulic conductivity at saturation                  [     m/s]
-      real :: slcons0    ! Surface value for slcons                              [     m/s]
-      real :: soilcond0  ! Intercept for conductivity calculation                [   N/K/s]
-      real :: soilcond1  ! Linear coefficient for conductivity                   [   N/K/s]
-      real :: soilcond2  ! Quadratic coefficient for conductivity                [   N/K/s]
-      real :: sfldcap    ! Soil field capacity                                   [   m3/m3]
-      real :: albwet     ! Albedo for wet soil                                   [     ---]
-      real :: albdry     ! Albedo for dry soil                                   [     ---]
-      real :: xsand      ! Percentage of sand                                    [     ---]
-      real :: xclay      ! Percentage of clay                                    [     ---]
-      real :: xsilt      ! Percentage of silt                                    [     ---]
-      real :: xrobulk    ! Bulk density                                          [     ---]
-      real :: slden      ! "Dry" soil density (porosity)                         [   kg/m3]
-      real :: psild      ! Soil potential threshold for leaf drop                [       m]
+      real(kind=4) :: slpots     ! Soil moisture potential at saturation         [       m]
+      real(kind=4) :: slmsts     ! Soil moisture at saturation                   [   m3/m3]
+      real(kind=4) :: slbs       ! B exponent                                    [     n/d]
+      real(kind=4) :: slcpd      ! Specific heat of dry soil                     [  J/m3/K]
+      real(kind=4) :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
+      real(kind=4) :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
+      real(kind=4) :: slcons     ! hydraulic conductivity at saturation          [     m/s]
+      real(kind=4) :: slcons0    ! Surface value for slcons                      [     m/s]
+      real(kind=4) :: thcond0    ! Thermal conductance, term 3                   [        ]
+      real(kind=4) :: thcond1    ! Thermal conductance, term 3                   [        ]
+      real(kind=4) :: thcond2    ! Thermal conductance, term 3                   [        ]
+      real(kind=4) :: thcond3    ! Thermal conductance, term 3                   [        ]
+      real(kind=4) :: sfldcap    ! Soil field capacity                           [   m3/m3]
+      real(kind=4) :: xsand      ! Percentage of sand                            [     ---]
+      real(kind=4) :: xclay      ! Percentage of clay                            [     ---]
+      real(kind=4) :: xsilt      ! Percentage of silt                            [     ---]
+      real(kind=4) :: xrobulk    ! Bulk density                                  [     ---]
+      real(kind=4) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+      real(kind=4) :: soilld     ! Soil threshold for leaf drop                  [   m3/m3]
+      real(kind=4) :: soilfr     ! Soil threshold for fire (unused)              [   m3/m3]
+      real(kind=4) :: psiwp      ! Soil potential at wilting point               [       m]
+      real(kind=4) :: psifc      ! Soil potential at field capacity              [       m]
+      real(kind=4) :: psild      ! Soil potential threshold for leaf drop        [       m]
+      real(kind=4) :: psifr      ! Soil potential threshold for fire (unused)    [       m]
    end type soil_class
    !.......................................................................................!
    type soilcol_class
@@ -53,21 +56,54 @@ subroutine sfcdata()
    !.......................................................................................!
    type vegt_class
       !----- LEAF-3 biophysical parameters by land use class number. ----------------------!
-      real :: albv_green
-      real :: albv_brown
-      real :: emisv
-      real :: sr_max
-      real :: tai_max
-      real :: sai
-      real :: veg_clump
-      real :: veg_frac
-      real :: veg_ht
-      real :: rootdep
-      real :: dead_frac
-      real :: gsw_max
-      real :: leaf_width
-      real :: stom_side
-      real :: phenology
+      real(kind=4) :: albv_green
+      real(kind=4) :: albv_brown
+      real(kind=4) :: emisv
+      real(kind=4) :: sr_max
+      real(kind=4) :: tai_max
+      real(kind=4) :: sai
+      real(kind=4) :: veg_clump
+      real(kind=4) :: veg_frac
+      real(kind=4) :: veg_ht
+      real(kind=4) :: rootdep
+      real(kind=4) :: dead_frac
+      real(kind=4) :: gsw_max
+      real(kind=4) :: leaf_width
+      real(kind=4) :: stom_side
+      real(kind=4) :: phenology
+      real(kind=4) :: clumping_factor
+      real(kind=4) :: orient_factor
+      real(kind=4) :: leaf_reflect_vis
+      real(kind=4) :: leaf_reflect_nir
+      real(kind=4) :: wood_reflect_vis
+      real(kind=4) :: wood_reflect_nir
+      real(kind=4) :: leaf_trans_vis
+      real(kind=4) :: leaf_trans_nir
+      real(kind=4) :: wood_trans_vis
+      real(kind=4) :: wood_trans_nir
+      real(kind=4) :: leaf_emiss_tir
+      real(kind=4) :: wood_emiss_tir
+      real(kind=4) :: pathway
+      real(kind=4) :: leaf_supply
+      real(kind=4) :: dr_gamma
+      real(kind=4) :: gsw_0
+      real(kind=4) :: gsw_m
+      real(kind=4) :: quantum_yield
+      real(kind=4) :: cn_l
+      real(kind=4) :: f_lnr
+      real(kind=4) :: fun_nitro
+      real(kind=4) :: sla_0
+      real(kind=4) :: sla_m
+      real(kind=4) :: vm0_qten
+      real(kind=4) :: vm0_dec
+      real(kind=4) :: rd0_qten
+      real(kind=4) :: rd0_dec
+      real(kind=4) :: rr0_0
+      real(kind=4) :: rr0_qten
+      real(kind=4) :: rr0_dec
+      real(kind=4) :: gr_factor
+      real(kind=4) :: phys_low_temp
+      real(kind=4) :: phys_high_temp
    end type vegt_class
    !----- Local variables. ----------------------------------------------------------------!
    type(soil_class)   , dimension(nstyp)            :: soilparms
@@ -85,106 +121,296 @@ subroutine sfcdata()
    real                                             :: xmin
    real                                             :: slz0
    real                                             :: ezg
+   !------ Local constants. ---------------------------------------------------------------!
+   real(kind=4)       , parameter                   :: f_nr      = 7.16
+   real(kind=4)       , parameter                   :: alpha_r25 = 60.0
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     Maximum TAI is based on average LAI by class after:                               !
+   !                                                                                       !
+   ! Asner, G. P., J. M. O. Scurlock, J. A. Hicke, 2003: Global synthesis of leaf area     !
+   !    index observations: implications for ecological and remote sensing studies.        !
+   !    Glob. Ecol. Biogeogr., 12, 191--205, doi: 10.1046/j.1466-822X.2003.00026.x         !
+   !                                                                                       !
+   ! SAI:TAI ratio came from the following publications:                                   !
+   !                                                                                       !
+   ! Breda, N. J. J., 2003: Ground-based measurements of leaf area index: a review of      !
+   !    methods, instruments, and current controversies.  J. Exp. Bot. 54(392),            !
+   !    2403--2417, doi: 10.1093/jxb/erg263.                                               !
+   !                                                                                       !
+   ! Gower, S. T., C. J. Kucharik, J. M. Norman, 1999: Direct and indirect estimation of   !
+   !    leaf area index, f_APAR, and net primary production of terrestrial ecosystems.     !
+   !    Remote Sens. Environ., 70(1), 29--51, doi: 10.1016/S0034-4257(99)00056-5           !
+   !                                                                                       !
+   ! Hirano, T., R. Hirata, Y. Fujinuma, N. Saigusa, S. Yamamoto, Y. Harazono, M. Takada,  !
+   !    K. Inukai, G. Inoue, 2003: CO2 and water vapour exchange of a larch fores in       !
+   !    northern Japan.  Tellus B, 55(2), 244--257, doi: 10.1034/j.1600-0889.2003.00063.x  !
+   !                                                                                       !
+   ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien,  !
+   !    H. Ordonez, 2013: Comparison of direct and indirect methods for assessing leaf     !
+   !    area index across a tropical rain forest landscape.  Agric. For. Meteorol., 177,   !
+   !    110--116, doi: 10.1016/j.agrformet.2013.04.010                                     !
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !    Declare the biophysics parameters.                                                 !
-   ! (1st line)   albv_green   albv_brown            emisv          sr_max        tai_max  !
-   ! (2nd line)          sai    veg_clump         veg_frac          veg_ht        rootdep  !
-   ! (3rd line)    dead_frac      gsw_max       leaf_width       stom_side      phenology  !
+   ! ( 1st line)   albv_green    albv_brown          emisv          sr_max        tai_max  !
+   ! ( 2nd line)          sai     veg_clump       veg_frac          veg_ht        rootdep  !
+   ! ( 3rd line)    dead_frac       gsw_max     leaf_width       stom_side      phenology  !
+   ! ( 4th line)     clumping        orient   leaf_ref_vis    leaf_ref_nir   wood_ref_vis  !
+   ! ( 5th line) wood_ref_nir  leaf_tra_vis   leaf_tra_nir    wood_tra_vis   wood_tra_nir  !
+   ! ( 6th line) leaf_emi_tir  wood_emi_tir        pathway     leaf_supply       dr_gamma  !
+   ! ( 7th line)        gsw_0         gsw_m  quantum_yield            cn_l          f_lnr  !
+   ! ( 8th line)    fun_nitro         sla_0          sla_m        vm0_qten        vm0_dec  !
+   ! ( 9th line)     rd0_qten       rd0_dec          rr0_0        rr0_qten        rr0_dec  !
+   ! (10th line)    gr_factor    phys_low_t    phys_high_t                                 !
    !---------------------------------------------------------------------------------------!
    bioparms = (/                                                                           &
    !-----  0. Ocean.  Not really used, and this is class 0.  Let's skip it. ---------------!
-   !    vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0 &
-   !              ,       0.0,        0.0,             0.00,            0.0,           0.0 &
-   !              ,       0.0,        0.0,             0.00,            0.0            0.0)&
+   !    vegt_class(      0.00,       0.00,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000,            0.0,           0.0 &
+   !              ,       0.0,        0.0,            0.000)                               &
    !-----  1. Lakes, rivers, streams. -----------------------------------------------------!
-       vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0  &
-                 ,       0.0,        0.0,             0.00,            0.0,           0.0  &
-                 ,       0.0,        0.0,             0.00,            0.0,           0.0) &
+       vegt_class(      0.00,       0.00,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000)                                &
    !-----  2. Ice cap/glacier. ------------------------------------------------------------!
-      ,vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0  &
-                 ,       0.0,        0.0,             0.00,            0.0,           0.0  &
-                 ,       0.0,        0.0,             0.00,            0.0,           0.0) &
+      ,vegt_class(      0.00,       0.00,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000)                                &
    !-----  3. Desert, bare soil. ----------------------------------------------------------!
-      ,vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0  &
-                 ,       0.0,        0.0,             0.00,            0.0,           0.0  &
-                 ,       0.0,        0.0,             0.00,            0.0,           0.0) &
+      ,vegt_class(      0.00,       0.00,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000,            0.0,           0.0  &
+                 ,       0.0,        0.0,            0.000)                                &
    !-----  4. Evergreen needleleaf tree. --------------------------------------------------!
-      ,vegt_class(      0.14,       0.24,             0.97,            5.4,           8.0  &
-                 ,       1.0,        1.0,             0.80,           20.0,           1.5  &
-                 ,       0.0,     0.0020,             0.05,            2.0,           0.0) &
+      ,vegt_class(      0.14,       0.24,            0.970,            5.4,           6.6  &
+                 ,       1.1,        1.0,            0.800,           20.0,           1.5  &
+                 ,       0.0,     0.0020,            0.050,            2.0,           0.0  &
+                 ,      0.63,       0.01,            0.070,           0.35,          0.16  &
+                 ,      0.39,       0.05,            0.100,          0.001,         0.001  &
+                 ,      0.97,       0.90,            3.000,          0.016,        0.0145  &
+                 ,     1000.,        7.2,            0.060,           35.0,         0.050  &
+                 ,      0.72,       10.0,            1.250,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !-----  5. Deciduous needleleaf tree. --------------------------------------------------!
-      ,vegt_class(      0.14,       0.24,             0.95,            5.4,           8.0  &
-                 ,       1.0,        1.0,             0.80,           22.0,           1.5  &
-                 ,       0.0,     0.0020,             0.05,            2.0,           4.0) &
+      ,vegt_class(      0.14,       0.24,            0.950,            5.4,           5.9  &
+                 ,       1.4,        1.0,            0.800,           22.0,           1.5  &
+                 ,       0.0,     0.0020,            0.050,            2.0,           4.0  &
+                 ,      0.78,       0.01,            0.070,           0.35,          0.16  &
+                 ,      0.39,       0.05,            0.100,          0.001,         0.001  &
+                 ,      0.97,       0.90,            3.000,          0.016,        0.0145  &
+                 ,     1000.,        7.2,            0.060,           25.0,         0.080  &
+                 ,      0.79,        24.,            3.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !-----  6. Deciduous broadleaf tree. ---------------------------------------------------!
-      ,vegt_class(      0.20,       0.24,             0.95,            6.2,           7.0  &
-                 ,       1.0,        0.0,             0.80,           22.0,           1.5  &
-                 ,       0.0,     0.0020,             0.10,            1.0,           4.0) &
+      ,vegt_class(      0.20,       0.24,            0.950,            6.2,           5.6  &
+                 ,       1.1,        0.0,            0.800,           22.0,           1.5  &
+                 ,       0.0,     0.0020,            0.100,            1.0,           4.0  &
+                 ,     0.705,       0.25,            0.100,           0.45,          0.16  &
+                 ,      0.39,       0.05,            0.250,          0.001,         0.001  &
+                 ,      0.97,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        7.2,            0.080,           25.0,         0.090  &
+                 ,      0.66,        30.,            4.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !-----  7. "Evergreen" broadleaf tree (but drought deciduous). -------------------------!
-      ,vegt_class(      0.12,       0.18,             0.95,            4.1,           6.5  &
-                 ,       1.0,        0.0,             0.90,           32.0,           2.5  &
-                 ,       0.0,     0.0035,             0.20,            1.0,           4.0) &
+      ,vegt_class(      0.12,       0.18,            0.950,            4.1,           5.4  &
+                 ,       0.6,        0.0,            0.900,           32.0,           2.5  &
+                 ,       0.0,     0.0035,            0.200,            1.0,           4.0  &
+                 ,     0.640,       0.10,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.080,           30.0,         0.060  &
+                 ,      0.83,       12.0,            1.500,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !-----  8. Short grass. ----------------------------------------------------------------!
-      ,vegt_class(      0.13,       0.30,             0.96,            5.1,           4.0  &
-                 ,       1.0,        0.0,             0.75,            0.3,           0.7  &
-                 ,       0.7,     0.0100,             0.10,            1.0,           4.0) &
+      ,vegt_class(      0.13,       0.30,            0.960,            5.1,           1.8  &
+                 ,       0.1,        0.0,            0.750,            0.3,           0.7  &
+                 ,       0.7,     0.0100,            0.100,            1.0,           4.0  &
+                 ,      0.78,      -0.30,            0.100,           0.46,          0.16  &
+                 ,      0.25,       0.05,            0.230,          0.028,         0.248  &
+                 ,      0.96,       0.96,            4.000,          0.016,        0.0350  &
+                 ,    10000.,        5.2,            0.055,           25.0,         0.090  &
+                 ,      0.64,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !-----  9. Tall grass. -----------------------------------------------------------------!
-      ,vegt_class(      0.24,       0.43,             0.96,            5.1,           5.0  &
-                 ,       1.0,        0.0,             0.80,            1.2,           1.0  &
-                 ,       0.7,     0.0100,             0.10,            1.0,           4.0) &
+      ,vegt_class(      0.24,       0.43,            0.960,            5.1,           2.6  &
+                 ,       0.1,        0.0,            0.800,            1.2,           1.0  &
+                 ,       0.7,     0.0100,            0.100,            1.0,           4.0  &
+                 ,      0.78,      -0.30,            0.100,           0.46,          0.16  &
+                 ,      0.25,       0.05,            0.230,          0.028,         0.248  &
+                 ,      0.96,       0.96,            4.000,          0.016,        0.0350  &
+                 ,    10000.,        5.2,            0.055,           25.0,         0.090  &
+                 ,      0.64,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 10. Semi-desert. ----------------------------------------------------------------!
-      ,vegt_class(      0.24,       0.24,             0.96,            5.1,           1.0  &
-                 ,       0.2,        1.0,             0.20,            0.7,           1.0  &
-                 ,       0.0,     0.0020,             0.03,            1.0,           4.0) &
+      ,vegt_class(      0.24,       0.24,            0.960,            5.1,           1.7  &
+                 ,       0.4,        1.0,            0.200,            0.7,           1.0  &
+                 ,       0.0,     0.0020,            0.030,            1.0,           4.0  &
+                 ,      0.78,        0.0,            0.100,           0.46,          0.16  &
+                 ,      0.25,       0.05,            0.230,          0.028,         0.248  &
+                 ,      0.96,       0.96,            4.000,          0.016,        0.0350  &
+                 ,     3160.,        5.2,            0.055,           25.0,         0.090  &
+                 ,      0.64,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 11. Tundra. ---------------------------------------------------------------------!
-      ,vegt_class(      0.20,       0.24,             0.95,            5.1,           4.5  &
-                 ,       0.5,        1.0,             0.60,            0.2,           1.0  &
-                 ,       0.0,     0.0200,             0.03,            1.0,           4.0) &
+      ,vegt_class(      0.20,       0.24,            0.950,            5.1,           1.9  &
+                 ,       0.2,        1.0,            0.600,            0.2,           1.0  &
+                 ,       0.0,     0.0200,            0.030,            1.0,           4.0  &
+                 ,      0.75,      -0.30,            0.110,           0.35,          0.31  &
+                 ,      0.53,       0.05,            0.340,          0.120,         0.250  &
+                 ,      0.96,       0.96,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.060,           25.0,         0.090  &
+                 ,      0.68,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !----- 12. Evergreen shrub. ------------------------------------------------------------!
-      ,vegt_class(      0.14,       0.24,             0.97,            5.1,           5.5  &
-                 ,       1.0,        1.0,             0.70,            1.0,           1.0  &
-                 ,       0.0,     0.0020,             0.05,            1.0,           0.0) &
+      ,vegt_class(      0.14,       0.24,            0.970,            5.1,           2.8  &
+                 ,       0.7,        1.0,            0.700,            1.0,           1.0  &
+                 ,       0.0,     0.0020,            0.050,            1.0,           0.0  &
+                 ,      0.77,       0.01,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.95,            3.000,          0.016,        0.0145  &
+                 ,    10000.,       9.00,            0.080,           30.0,          0.06  &
+                 ,      0.62,       12.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 13. Deciduous shrub. ------------------------------------------------------------!
-      ,vegt_class(      0.20,       0.28,             0.97,            5.1,           5.5  &
-                 ,       1.0,        1.0,             0.70,            1.0,           1.0  &
-                 ,       0.0,     0.0020,             0.05,            1.0,           4.0) &
+      ,vegt_class(      0.20,       0.28,            0.970,            5.1,           2.8  &
+                 ,       0.7,        1.0,            0.700,            1.0,           1.0  &
+                 ,       0.0,     0.0020,            0.050,            1.0,           4.0  &
+                 ,      0.74,       0.25,            0.100,           0.45,          0.16  &
+                 ,      0.39,       0.05,            0.250,          0.001,         0.001  &
+                 ,      0.97,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,       9.00,            0.080,           25.0,          0.09  &
+                 ,      0.60,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !----- 14. Mixed woodland. -------------------------------------------------------------!
-      ,vegt_class(      0.16,       0.24,             0.96,            6.2,           7.0  &
-                 ,       1.0,        0.5,             0.80,           22.0,           1.5  &
-                 ,       0.0,     0.0020,             0.08,            1.0,           4.0) &
+      ,vegt_class(      0.16,       0.24,            0.960,            6.2,           6.1  &
+                 ,       1.1,        0.5,            0.800,           22.0,           1.5  &
+                 ,       0.0,     0.0020,            0.080,            1.0,           4.0  &
+                 ,      0.70,       0.05,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,       8.10,            0.080,           30.0,          0.07  &
+                 ,      0.68,       20.0,            2.625,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !----- 15. Crop/mixed farming, C3 grassland. -------------------------------------------!
-      ,vegt_class(      0.22,       0.40,             0.95,            5.1,           5.0  &
-                 ,       0.5,        0.0,             0.85,            1.0,           1.0  &
-                 ,       0.0,     0.0100,             0.10,            1.0,           4.0) &
+      ,vegt_class(      0.22,       0.40,            0.950,            5.1,           3.8  &
+                 ,       0.2,        0.0,            0.850,            1.0,           1.0  &
+                 ,       0.0,     0.0100,            0.100,            1.0,           4.0  &
+                 ,      0.78,      -0.30,            0.100,           0.46,          0.16  &
+                 ,      0.25,       0.05,            0.230,          0.028,         0.248  &
+                 ,      0.96,       0.96,            3.000,          0.016,        0.0145  &
+                 ,    10000.,       9.00,            0.060,           25.0,          0.09  &
+                 ,      0.61,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      4.714,           45.000)                                &
    !----- 16. Irrigated crop. -------------------------------------------------------------!
-      ,vegt_class(      0.18,       0.40,             0.95,            5.1,           5.0  &
-                 ,       0.5,        0.0,             0.80,            1.1,           1.0  &
-                 ,       0.0,     0.0020,             0.10,            1.0,           0.0) &
+      ,vegt_class(      0.18,       0.40,            0.950,            5.1,           3.8  &
+                 ,       0.2,        0.0,            0.800,            1.1,           1.0  &
+                 ,       0.0,     0.0020,            0.100,            1.0,           0.0  &
+                 ,      0.78,      -0.30,            0.100,           0.46,          0.16  &
+                 ,      0.25,       0.05,            0.230,          0.028,         0.248  &
+                 ,      0.96,       0.96,            3.000,          0.016,        0.0145  &
+                 ,    10000.,       9.00,            0.060,           25.0,          0.09  &
+                 ,      0.61,       30.0,            0.000,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 17. Bog or marsh. ---------------------------------------------------------------!
-      ,vegt_class(      0.12,       0.43,             0.98,            5.1,           7.0  &
-                 ,       1.0,        0.0,             0.80,            1.6,           1.0  &
-                 ,       0.0,     0.0020,             0.20,            1.0,           0.0) &
+      ,vegt_class(      0.12,       0.43,            0.980,            5.1,           3.8  &
+                 ,       0.2,        0.0,            0.800,            1.6,           1.0  &
+                 ,       0.0,     0.0020,            0.200,            1.0,           0.0  &
+                 ,      0.80,      -0.30,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.080,           30.0,         0.060  &
+                 ,      0.83,       12.0,            1.500,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 18. Wooded grassland. -----------------------------------------------------------!
-      ,vegt_class(      0.13,       0.30,             0.96,            5.1,           6.0  &
-                 ,       1.0,        0.0,             0.80,            7.0,           1.5  &
-                 ,       0.0,     0.0100,             0.08,            1.0,           4.0) &
+      ,vegt_class(      0.13,       0.30,            0.960,            5.1,           4.0  &
+                 ,       0.5,        0.0,            0.800,            7.0,           1.5  &
+                 ,       0.0,     0.0100,            0.080,            1.0,           4.0  &
+                 ,      0.70,      0.000,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.080,           27.5,         0.075  &
+                 ,      0.72,       21.0,            0.750,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 19. Urban and built up. ---------------------------------------------------------!
-      ,vegt_class(      0.20,       0.36,             0.90,            5.1,           3.6  &
-                 ,       1.0,        0.0,             0.74,            6.0,           0.8  &
-                 ,       0.0,     0.0020,             0.05,            1.0,           0.0) &
+      ,vegt_class(      0.20,       0.36,            0.900,            5.1,           2.0  &
+                 ,       0.3,        0.0,            0.500,            6.0,           0.8  &
+                 ,       0.0,     0.0020,            0.050,            1.0,           0.0  &
+                 ,      0.70,       0.00,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.080,           30.0,         0.060  &
+                 ,      0.83,       12.0,            1.500,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 20. Wetland evergreen broadleaf tree. -------------------------------------------!
-      ,vegt_class(      0.17,       0.24,             0.95,            4.1,           7.0  &
-                 ,       1.0,        0.0,             0.90,           32.0,           1.5  &
-                 ,       0.0,     0.0020,             0.20,            1.0,           0.0) &
+      ,vegt_class(      0.17,       0.24,            0.950,            4.1,           7.1  &
+                 ,       0.8,        0.0,            0.900,           32.0,           1.5  &
+                 ,       0.0,     0.0020,            0.200,            1.0,           0.0  &
+                 ,      0.67,       0.10,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.080,           30.0,         0.060  &
+                 ,      0.83,       12.0,            1.500,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    !----- 21. Very urban. -----------------------------------------------------------------!
-      ,vegt_class(      0.16,       0.24,             0.96,            5.1,           2.0  &
-                 ,       1.5,        1.0,             0.10,           20.0,           1.5  &
-                 ,       0.0,     0.0020,             0.05,            1.0,           0.0) &
+      ,vegt_class(      0.16,       0.24,            0.960,            5.1,           1.2  &
+                 ,       0.2,        1.0,            0.200,           20.0,           1.5  &
+                 ,       0.0,     0.0020,            0.050,            1.0,           0.0  &
+                 ,      0.70,       0.00,            0.100,           0.46,          0.11  &
+                 ,      0.25,       0.05,            0.230,          0.001,         0.001  &
+                 ,      0.95,       0.90,            3.000,          0.016,        0.0145  &
+                 ,    10000.,        9.0,            0.080,           30.0,         0.060  &
+                 ,      0.83,       12.0,            1.500,            2.4,           0.4  &
+                 ,       2.4,        0.4,            0.672,            2.4,           0.4  &
+                 ,     0.333,      8.000,           45.000)                                &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -196,31 +422,180 @@ subroutine sfcdata()
    ! by the biophysics solver in LEAF-3.                                                   !
    !---------------------------------------------------------------------------------------!
    do nnn = 1,(nvtyp+nvtyp_teb)
-      albv_green(nnn) = bioparms(nnn)%albv_green
-      albv_brown(nnn) = bioparms(nnn)%albv_brown
-      emisv(nnn)      = bioparms(nnn)%emisv
-      sr_max(nnn)     = bioparms(nnn)%sr_max
-      tai_max(nnn)    = bioparms(nnn)%tai_max
-      sai(nnn)        = bioparms(nnn)%sai
-      veg_clump(nnn)  = bioparms(nnn)%veg_clump
-      veg_frac(nnn)   = bioparms(nnn)%veg_frac
-      veg_ht(nnn)     = bioparms(nnn)%veg_ht
-      dead_frac(nnn)  = bioparms(nnn)%dead_frac
-      gsw_max(nnn)    = bioparms(nnn)%gsw_max
-      leaf_width(nnn) = bioparms(nnn)%leaf_width
-      stom_side(nnn)  = bioparms(nnn)%stom_side
+      !----- Variables obtained directly from the look up table above. --------------------!
+      albv_green       (nnn) = bioparms(nnn)%albv_green
+      albv_brown       (nnn) = bioparms(nnn)%albv_brown
+      emisv            (nnn) = bioparms(nnn)%emisv
+      sr_max           (nnn) = bioparms(nnn)%sr_max
+      tai_max          (nnn) = bioparms(nnn)%tai_max
+      sai              (nnn) = bioparms(nnn)%sai
+      veg_clump        (nnn) = bioparms(nnn)%veg_clump
+      veg_frac         (nnn) = bioparms(nnn)%veg_frac
+      veg_ht           (nnn) = bioparms(nnn)%veg_ht
+      dead_frac        (nnn) = bioparms(nnn)%dead_frac
+      gsw_max          (nnn) = bioparms(nnn)%gsw_max
+      leaf_width       (nnn) = bioparms(nnn)%leaf_width
+      stom_side        (nnn) = bioparms(nnn)%stom_side
+      phenology        (nnn) = nint(bioparms(nnn)%phenology)
+      clumping_factor  (nnn) = dble(bioparms(nnn)%clumping_factor)
+      orient_factor    (nnn) = dble(bioparms(nnn)%orient_factor)
+      leaf_reflect_vis (nnn) = dble(bioparms(nnn)%leaf_reflect_vis)
+      leaf_reflect_nir (nnn) = dble(bioparms(nnn)%leaf_reflect_nir)
+      wood_reflect_vis (nnn) = dble(bioparms(nnn)%wood_reflect_vis)
+      wood_reflect_nir (nnn) = dble(bioparms(nnn)%wood_reflect_nir)
+      leaf_trans_vis   (nnn) = dble(bioparms(nnn)%leaf_trans_vis)
+      leaf_trans_nir   (nnn) = dble(bioparms(nnn)%leaf_trans_nir)
+      wood_trans_vis   (nnn) = dble(bioparms(nnn)%wood_trans_vis)
+      wood_trans_nir   (nnn) = dble(bioparms(nnn)%wood_trans_nir)
+      leaf_emiss_tir   (nnn) = dble(bioparms(nnn)%leaf_emiss_tir)
+      wood_emiss_tir   (nnn) = dble(bioparms(nnn)%wood_emiss_tir)
+      pathway          (nnn) = nint(bioparms(nnn)%pathway)
+      leaf_supply      (nnn) = bioparms(nnn)%leaf_supply
+      dr_gamma         (nnn) = bioparms(nnn)%dr_gamma
+      gsw_0            (nnn) = bioparms(nnn)%gsw_0
+      gsw_m            (nnn) = bioparms(nnn)%gsw_m
+      quantum_yield    (nnn) = bioparms(nnn)%quantum_yield
+      cn_l             (nnn) = bioparms(nnn)%cn_l
+      f_lnr            (nnn) = bioparms(nnn)%f_lnr
+      fun_nitro        (nnn) = bioparms(nnn)%fun_nitro
+      sla_0            (nnn) = bioparms(nnn)%sla_0
+      sla_m            (nnn) = bioparms(nnn)%sla_m
+      vm0_qten         (nnn) = bioparms(nnn)%vm0_qten
+      vm0_dec          (nnn) = bioparms(nnn)%vm0_dec
+      rd0_qten         (nnn) = bioparms(nnn)%rd0_qten
+      rd0_dec          (nnn) = bioparms(nnn)%rd0_dec
+      rr0_0            (nnn) = bioparms(nnn)%rr0_0
+      rr0_qten         (nnn) = bioparms(nnn)%rr0_qten
+      rr0_dec          (nnn) = bioparms(nnn)%rr0_dec
+      gr_factor        (nnn) = bioparms(nnn)%gr_factor
+      phys_low_temp    (nnn) = bioparms(nnn)%phys_low_temp
+      phys_high_temp   (nnn) = bioparms(nnn)%phys_high_temp
+      !------------------------------------------------------------------------------------!
 
+
+
+      !----- Maximum leaf area index. -----------------------------------------------------!
       glai_max(nnn)   = tai_max(nnn) - sai(nnn)
+      !------------------------------------------------------------------------------------!
 
-      root(1,nnn)  = 0.              ! not used
+      !----- Not used... ------------------------------------------------------------------!
+      root(1,nnn)  = 0.
+      !------------------------------------------------------------------------------------!
 
       !----- Find the bottom layer that this patch can access water. ----------------------!
       kroot(nnn)   = nzg
       do k = nzg-1,1,-1
          if (slz(k+1) > -bioparms(nnn)%rootdep) kroot(nnn) = k
       end do
-      
-      phenology(nnn)  = nint(bioparms(nnn)%phenology)
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find the Vm0 coefficient, which is constant and will be divided by SLA to     !
+      ! find the actual Vm0.                                                               !
+      !------------------------------------------------------------------------------------!
+      if (cn_l(nnn) == 0.0) then
+         vm0_0(nnn) = 0.0
+      else
+         vm0_0(nnn) = f_lnr(nnn) * f_nr * alpha_r25 / cn_l(nnn)
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Forward scattering.                                                            !
+      !------------------------------------------------------------------------------------!
+      !----- Visible (PAR). ---------------------------------------------------------------!
+      leaf_scatter_vis(nnn) = leaf_reflect_vis(nnn) + leaf_trans_vis(nnn)
+      wood_scatter_vis(nnn) = wood_reflect_vis(nnn) + wood_trans_vis(nnn)
+      !----- Near infrared (NIR). ---------------------------------------------------------!
+      leaf_scatter_nir(nnn) = leaf_reflect_nir(nnn) + leaf_trans_nir(nnn)
+      wood_scatter_nir(nnn) = wood_reflect_nir(nnn) + wood_trans_nir(nnn)
+      !----- Thermal infrared (TIR). ------------------------------------------------------!
+      leaf_scatter_tir(nnn) = 1.d0 - leaf_emiss_tir(nnn)
+      wood_scatter_tir(nnn) = 1.d0 - wood_emiss_tir(nnn)
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !      Back-scattering coefficients following CLM.                                   !
+      !------------------------------------------------------------------------------------!
+      !----- Visible (PAR). ---------------------------------------------------------------!
+      if (leaf_scatter_vis(nnn) == 0.d0) then
+         leaf_backscatter_vis(nnn) = 5.d-1
+      else
+         leaf_backscatter_vis(nnn) = ( leaf_scatter_vis(nnn)                               &
+                                      + 2.5d-1                                             &
+                                      * ( leaf_reflect_vis(nnn) - leaf_trans_vis(nnn)   )  &
+                                      * ( 1.d0 + orient_factor(nnn)) ** 2 )                &
+                                    / ( 2.d0 * leaf_scatter_vis(nnn) )
+      end if
+      if (wood_scatter_vis(nnn) == 0.d0) then
+         wood_backscatter_vis(nnn) = 5.d-1
+      else
+         wood_backscatter_vis(nnn) = ( wood_scatter_vis(nnn)                               &
+                                      + 2.5d-1                                             &
+                                      * ( wood_reflect_vis(nnn) - wood_trans_vis(nnn)   )  &
+                                      * ( 1.d0 + orient_factor(nnn)) ** 2 )                &
+                                    / ( 2.d0 * wood_scatter_vis(nnn) )
+      end if
+      !----- Near infrared (NIR). ---------------------------------------------------------!
+      if (leaf_scatter_nir(nnn) == 0.d0) then
+         leaf_backscatter_nir(nnn) = 5.d-1
+      else
+         leaf_backscatter_nir(nnn) = ( leaf_scatter_nir(nnn)                               &
+                                      + 2.5d-1                                             &
+                                      * ( leaf_reflect_nir(nnn) - leaf_trans_nir(nnn)   )  &
+                                      * ( 1.d0 + orient_factor(nnn)) ** 2 )                &
+                                    / ( 2.d0 * leaf_scatter_nir(nnn) )
+      end if
+      if (wood_scatter_nir(nnn) == 0.d0) then
+         wood_backscatter_nir(nnn) = 5.d-1
+      else
+         wood_backscatter_nir(nnn) = ( wood_scatter_nir(nnn)                               &
+                                      + 2.5d-1                                             &
+                                      * ( wood_reflect_nir(nnn) - wood_trans_nir(nnn)   )  &
+                                      * ( 1.d0 + orient_factor(nnn)) ** 2 )                &
+                                    / ( 2.d0 * wood_scatter_nir(nnn) )
+      end if
+      !------------------------------------------------------------------------------------!
+      !      Thermal infra-red (TIR): Here we use the same expression from CLM manual,     !
+      ! further assuming that the transmittance is zero like Zhao and Qualls (2006) did,   !
+      ! the backscattering coefficient becomes a function of the leaf orientation only.    !
+      ! We don't have different orientation factor for wood (we could have), so we assume  !
+      ! them to be the same as leaves.                                                     !
+      !------------------------------------------------------------------------------------!
+      leaf_backscatter_tir(nnn) = 5.d-1 + 1.25d-1 * (1 + orient_factor(nnn)) ** 2
+      wood_backscatter_tir(nnn) = 5.d-1 + 1.25d-1 * (1 + orient_factor(nnn)) ** 2
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Light extinction coefficients.   These are found following CLM technical       !
+      ! manual, and the values fall back to ED-2.0 defaults when orient_factor is zero.    !
+      !---------------------------------------------------------------------------------------!
+      phi1(nnn) = 5.00d-1 - orient_factor(nnn) * ( 6.33d-1 + 3.3d-1 * orient_factor(nnn) )
+      phi2(nnn) = 8.77d-1 * (1.d0 - 2.d0 * phi1(nnn))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the average inverse diffuse optical depth per unit leaf and stem area.    !
+      ! We follow CLM technical manual, equation 3.4 only when the orientation factor is   !
+      ! non-zero.   Otherwise, we make it 1.d0, which is the limit of that equation when   !
+      ! phi2 approaches zero.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (orient_factor(nnn) == 0.d0) then
+         mu_bar(nnn) = 1.d0
+      else
+         mu_bar(nnn) = ( 1.d0 - phi1(nnn) * log(1.d0 + phi2(nnn)/phi1(nnn)) / phi2(nnn) )  &
+                     / phi2(nnn)
+      end if
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -229,97 +604,115 @@ subroutine sfcdata()
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    ! Define the soil parameters.                                                           !
-   ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
-   ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
-   ! (3rd line)       soilcond2       sfldcap        albwet    albdry         xsand        !
-   ! (4th line)           xclay         xsilt       xrobulk     slden         psild        !
+   ! (1st line)          slpots        slmsts          slbs      slcpd        soilcp       !
+   ! (2nd line)          soilwp        slcons       slcons0    thcond0       thcond1       !
+   ! (3rd line)         thcond2       thcond3       sfldcap      xsand         xclay       !
+   ! (4th line)           xsilt       xrobulk      slden        soilld        soilfr       !
+   ! (5th line)         slpotwp       slpotfc    slpotld       slpotfr                     !
    !---------------------------------------------------------------------------------------!
    soilparms = (/                                                                          &
       !----- 1. Sand. ---------------------------------------------------------------------!
-       soil_class( -0.049831046,     0.373250,     3.295000, 1584640.,  0.026183447        &
-                 ,  0.032636854,  2.446421e-5,  0.000500000,   0.3000,       4.8000        &
-                 ,      -2.7000,  0.132130936,        0.229,    0.352,        0.920        &
-                 ,        0.030,        0.050,        1200.,    1600.,    -76.47872)       &
+       soil_class( -0.049831046,     0.373250,     3.295000,  1342809.,  0.026183447       &
+                 ,  0.032636854,  2.446421e-5,  0.000500000, 0.9546011,    0.5333047       &
+                 ,    0.6626306,   -0.4678112,  0.132130936,     0.920,        0.030       &
+                 ,        0.050,        1200.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 2. Loamy sand. ---------------------------------------------------------------!
-      ,soil_class( -0.067406224,     0.385630,     3.794500, 1584809.,  0.041560499        &
-                 ,  0.050323046,  1.776770e-5,  0.000600000,   0.3000,       4.6600        &
-                 ,      -2.6000,  0.155181959,        0.212,    0.335,        0.825        &
-                 ,        0.060,        0.115,        1250.,    1600.,    -76.47872)       &
+      ,soil_class( -0.067406224,     0.385630,     3.794500,  1326165.,  0.041560499       &
+                 ,  0.050323046,  1.776770e-5,  0.000600000, 0.9279457,    0.5333047       &
+                 ,    0.6860126,   -0.4678112,  0.155181959,     0.825,        0.060       &
+                 ,        0.115,        1250.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 3. Sandy loam. ---------------------------------------------------------------!
-      ,soil_class( -0.114261521,     0.407210,     4.629000, 1587042.,  0.073495043        &
-                 ,  0.085973722,  1.022660e-5,  0.000769000,   0.2900,       4.2700        &
-                 ,      -2.3100,  0.194037750,        0.183,    0.307,        0.660        &
-                 ,        0.110,        0.230,        1300.,    1600.,    -76.47872)       &
+      ,soil_class( -0.114261521,     0.407210,     4.629000,  1295982.,  0.073495043       &
+                 ,  0.085973722,  1.022660e-5,  0.000769000, 0.8826064,    0.5333047       &
+                 ,    0.7257838,   -0.4678112,  0.194037750,     0.660,        0.110       &
+                 ,        0.230,        1300.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 4. Silt loam. ----------------------------------------------------------------!
-      ,soil_class( -0.566500112,     0.470680,     5.552000, 1568225.,  0.150665475        &
-                 ,  0.171711257,  2.501101e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.273082063,        0.107,    0.250,        0.200        &
-                 ,        0.160,        0.640,        1400.,    1600.,    -76.47872)       &
+      ,soil_class( -0.566500112,     0.470680,     5.552000,  1191975.,  0.150665475       &
+                 ,  0.171711257,  2.501101e-6,  0.000010600, 0.7666418,    0.5333047       &
+                 ,    0.8275072,   -0.4678112,  0.273082063,     0.200,        0.160       &
+                 ,        0.640,        1400.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 5. Loam. ---------------------------------------------------------------------!
-      ,soil_class( -0.260075834,     0.440490,     5.646000, 1588082.,  0.125192234        &
-                 ,  0.142369513,  4.532431e-6,  0.002200000,   0.2800,       3.6300        &
-                 ,      -1.8500,  0.246915025,        0.140,    0.268,        0.410        &
-                 ,        0.170,        0.420,        1350.,    1600.,    -76.47872)       &
+      ,soil_class( -0.260075834,     0.440490,     5.646000,  1245546.,  0.125192234       &
+                 ,  0.142369513,  4.532431e-6,  0.002200000, 0.8168244,    0.5333047       &
+                 ,    0.7834874,   -0.4678112,  0.246915025,     0.410,        0.170       &
+                 ,        0.420,        1350.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 6. Sandy clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.116869181,     0.411230,     7.162000, 1636224.,  0.136417267        &
-                 ,  0.150969505,  6.593731e-6,  0.001500000,   0.2800,       3.7800        &
-                 ,      -1.9600,  0.249629687,        0.163,    0.260,        0.590        &
-                 ,        0.270,        0.140,        1350.,    1600.,    -76.47872)       &
+      ,soil_class( -0.116869181,     0.411230,     7.162000,  1304598.,  0.136417267       &
+                 ,  0.150969505,  6.593731e-6,  0.001500000, 0.8544779,    0.5333047       &
+                 ,    0.7504579,   -0.4678112,  0.249629687,     0.590,        0.270       &
+                 ,        0.140,        1350.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 7. Silty clay loam. ----------------------------------------------------------!
-      ,soil_class( -0.627769194,     0.478220,     8.408000, 1621562.,  0.228171947        &
-                 ,  0.248747504,  1.435262e-6,  0.000107000,   0.2600,       2.7300        &
-                 ,      -1.2000,  0.333825332,        0.081,    0.195,        0.100        &
-                 ,        0.340,        0.560,        1500.,    1600.,    -76.47872)       &
+      ,soil_class( -0.627769194,     0.478220,     8.408000,  1193778.,  0.228171947       &
+                 ,  0.248747504,  1.435262e-6,  0.000107000, 0.7330059,    0.5333047       &
+                 ,    0.8570124,   -0.4678112,  0.333825332,     0.100,        0.340       &
+                 ,        0.560,        1500.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 8. Clayey loam. --------------------------------------------------------------!
-      ,soil_class( -0.281968114,     0.446980,     8.342000, 1636911.,  0.192624431        &
-                 ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
-                 ,      -1.5600,  0.301335491,        0.116,    0.216,        0.320        &
-                 ,        0.340,        0.340,        1450.,    1600.,    -76.47872)       &
+      ,soil_class( -0.281968114,     0.446980,     8.342000,  1249582.,  0.192624431       &
+                 ,  0.210137962,  2.717260e-6,  0.002200000, 0.7847168,    0.5333047       &
+                 ,    0.8116520,   -0.4678112,  0.301335491,     0.320,        0.340       &
+                 ,        0.340,        1450.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 9. Sandy clay. ---------------------------------------------------------------!
-      ,soil_class( -0.121283019,     0.415620,     9.538000, 1673422.,  0.182198910        &
-                 ,  0.196607427,  4.314507e-6,  0.000002167,   0.2700,       3.3200        &
-                 ,      -1.6300,  0.286363001,        0.144,    0.216,        0.520        &
-                 ,        0.420,        0.060,        1450.,    1600.,    -76.47872)       &
+      ,soil_class( -0.121283019,     0.415620,     9.538000,  1311396.,  0.182198910       &
+                 ,  0.196607427,  4.314507e-6,  0.000002167, 0.8273339,    0.5333047       &
+                 ,    0.7742686,   -0.4678112,  0.286363001,     0.520,        0.420       &
+                 ,        0.060,        1450.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 10. Silty clay. --------------------------------------------------------------!
-      ,soil_class( -0.601312179,     0.479090,    10.461000, 1652723.,  0.263228486        &
-                 ,  0.282143846,  1.055191e-6,  0.000001033,   0.2500,       2.5800        &
-                 ,      -1.0900,  0.360319788,        0.068,    0.159,        0.060        &
-                 ,        0.470,        0.470,        1650.,    1600.,    -76.47872)       &
+      ,soil_class( -0.601312179,     0.479090,    10.461000,  1203168.,  0.263228486       &
+                 ,  0.282143846,  1.055191e-6,  0.000001033, 0.7164724,    0.5333047       &
+                 ,    0.8715154,   -0.4678112,  0.360319788,     0.060,        0.470       &
+                 ,        0.470,        1650.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 11. Clay. --------------------------------------------------------------------!
-      ,soil_class( -0.299226464,     0.454400,    12.460000, 1692037.,  0.259868987        &
-                 ,  0.275459057,  1.307770e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.353255209,        0.083,    0.140,        0.200        &
-                 ,        0.600,        0.200,        1700.,    1600.,    -76.47872)       &
+      ,soil_class( -0.299226464,     0.454400,    12.460000,  1259466.,  0.259868987       &
+                 ,  0.275459057,  1.307770e-6,  0.000001283, 0.7406805,    0.5333047       &
+                 ,    0.8502802,   -0.4678112,  0.353255209,     0.200,        0.600       &
+                 ,        0.200,        1700.,     1600.,        0.000,        0.000       &
+                 ,        0.000,        0.000,     0.000,        0.000              )      &
       !----- 12. Peat. --------------------------------------------------------------------!
-      ,soil_class( -0.534564359,     0.469200,     6.180000,  874000.,  0.167047523        &
-                 ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
-                 ,       0.0000,  0.285709966,        0.070,    0.140,       0.2000        &
-                 ,       0.2000,       0.6000,         500.,     300.,    -76.47872)       &
+      ,soil_class( -0.534564359,     0.469200,     6.180000,   874000.,  0.167047523       &
+                 ,  0.187868805,  2.357930e-6,  0.000008000, 0.7644011,    0.5333047       &
+                 ,    0.8294728,   -0.4678112,  0.285709966,    0.2000,       0.2000       &
+                 ,       0.6000,         500.,         300.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 13. Bedrock. -----------------------------------------------------------------!
-      ,soil_class(    0.0000000,     0.000000,     0.000000, 2130000.,  0.000000000        &
-                 ,  0.000000000,  0.000000e+0,  0.000000000,   4.6000,       0.0000        &
-                 ,       0.0000,  0.000000001,        0.320,    0.320,       0.0000        &
-                 ,       0.0000,       0.0000,           0.,       0.,       0.0000)       &
+      ,soil_class(    0.0000000,     0.000000,     0.000000,  2130000.,  0.000000000       &
+                 ,  0.000000000,  0.000000e+0,  0.000000000, 1.3917897,    0.5333047       &
+                 ,    0.2791318,   -0.4678112,  0.000000001,        0.0000        &
+                 ,       0.0000,       0.0000,           0.,        0.,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000,        0.000)      &
       !----- 14. Silt. --------------------------------------------------------------------!
-      ,soil_class( -1.047128548,     0.492500,     3.862500, 1510052.,  0.112299080        &
-                 ,  0.135518820,  2.046592e-6,  0.000010600,   0.2700,       3.4700        &
-                 ,      -1.7400,  0.245247642,        0.092,    0.265,        0.075        &
-                 ,        0.050,        0.875,        1400.,    1600.,    -76.47872)       &
+      ,soil_class( -1.047128548,     0.492500,     3.862500,  1143842.,  0.112299080       &
+                 ,  0.135518820,  2.046592e-6,  0.000010600, 0.7425839,    0.5333047       &
+                 ,    0.8486106,   -0.4678112,  0.245247642,     0.075,        0.050       &
+                 ,        0.875,        1400.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 15. Heavy clay. --------------------------------------------------------------!
-      ,soil_class( -0.322106879,     0.461200,    15.630000, 1723619.,  0.296806035        &
-                 ,  0.310916364,  7.286705e-7,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.382110712,        0.056,    0.080,        0.100        &
-                 ,        0.800,        0.100,        1700.,    1600.,    -76.47872)       &
+      ,soil_class( -0.322106879,     0.461200,    15.630000,  1264547.,  0.296806035       &
+                 ,  0.310916364,  7.286705e-7,  0.000001283, 0.7057374,    0.5333047       &
+                 ,    0.8809321,   -0.4678112,  0.382110712,     0.100,        0.800       &
+                 ,        0.100,        1700.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 16. Clayey sand. -------------------------------------------------------------!
-      ,soil_class( -0.176502150,     0.432325,    11.230000, 1688353.,  0.221886929        &
-                 ,  0.236704039,  2.426785e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.320146708,        0.115,    0.175,        0.375        &
-                 ,        0.525,        0.100,        1700.,    1600.,    -76.47872)       &
+      ,soil_class( -0.176502150,     0.432325,    11.230000,  1292163.,  0.221886929       &
+                 ,  0.236704039,  2.426785e-6,  0.000001283, 0.7859325,    0.5333047       &
+                 ,    0.8105855,   -0.4678112,  0.320146708,     0.375,        0.525       &
+                 ,        0.100,        1700.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
       !----- 17. Clayey silt. -------------------------------------------------------------!
-      ,soil_class( -0.438278332,     0.467825,    11.305000, 1670103.,  0.261376708        &
-                 ,  0.278711303,  1.174982e-6,  0.000001283,   0.2500,       2.4000        &
-                 ,      -0.9600,  0.357014719,        0.075,    0.151,        0.125        &
-                 ,        0.525,        0.350,        1700.,    1600.,    -76.47872)       &
+      ,soil_class( -0.438278332,     0.467825,    11.305000,  1228490.,  0.261376708       &
+                 ,  0.278711303,  1.174982e-6,  0.000001283, 0.7281197,    0.5333047       &
+                 ,    0.8612985,   -0.4678112,  0.357014719,     0.125,        0.525       &
+                 ,        0.350,        1700.,        1600.,     0.000,        0.000       &
+                 ,        0.000,        0.000,        0.000,     0.000              )      &
    /)
    !---------------------------------------------------------------------------------------!
 
@@ -351,8 +744,23 @@ subroutine sfcdata()
    ezg    = log(slz(1)/slz(nzg)) / log(real(nzg))
    slz0   = slz(1) * (real(nzg+1)/real(nzg))**ezg
 
-   slzt_0 = .5 * (slz0 + slz(1))
+   slzt(0) = .5 * (slz0 + slz(1))
 
+
+
+   !----- Determine the top layer to consider for heterotrophic respiration. --------------!
+   k_rh_loop: do k_hetresp=nzg-1,1,-1
+     if (slz(k_hetresp) < depth_hetresp) exit k_rh_loop
+   end do k_rh_loop
+   k_hetresp = k_hetresp + 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Populate the parameters for all soil types.                                       !
+   !---------------------------------------------------------------------------------------!
    do nnn = 1,nstyp
       slcons0(nnn) = soilparms(nnn)%slcons0
       if (nnn /= 13) then
@@ -368,15 +776,14 @@ subroutine sfcdata()
          do k = 1,nzg
             slcons1(k,nnn) = soilparms(nnn)%slcons0 * exp(slz(k) * fhydraul(nnn))
          end do
-         slcons1_0(nnn) = soilparms(nnn)%slcons0 * exp(slz0 * fhydraul(nnn))
+         slcons1(0,nnn) = soilparms(nnn)%slcons0 * exp(slz0 * fhydraul(nnn))
       case default
          select case (ipercol)
          case (0,1)
             !----- ORIGINAL form - const with depth. --------------------------------------!
-            do k=1,nzg
+            do k=0,nzg
                slcons1(k,nnn) = soilparms(nnn)%slcons
             end do
-            slcons1_0(nnn) = soilparms(nnn)%slcons
 
          case (2)
             !------------------------------------------------------------------------------!
@@ -384,10 +791,9 @@ subroutine sfcdata()
             ! from Cosby et al. (1984) because it has a stronger spread and it accounts    !
             ! for sand and clay contents.                                                  !
             !------------------------------------------------------------------------------!
-            do k=1,nzg
+            do k=0,nzg
                slcons1(k,nnn) = soilparms(nnn)%slcons * exp ( - slzt(k) / refdepth)
             end do
-            slcons1_0(nnn) = soilparms(nnn)%slcons * exp ( - slzt_0 / refdepth)
          end select
       end select
       !------ Copy the other parameters to the vectors. -----------------------------------!
@@ -401,23 +807,31 @@ subroutine sfcdata()
       sfldcap  (nnn) = soilparms(nnn)%sfldcap
       soilcp   (nnn) = soilparms(nnn)%soilcp
       soilwp   (nnn) = soilparms(nnn)%soilwp
-      soilcond0(nnn) = soilparms(nnn)%soilcond0
-      soilcond1(nnn) = soilparms(nnn)%soilcond1
-      soilcond2(nnn) = soilparms(nnn)%soilcond2
+      thcond0  (nnn) = soilparms(nnn)%thcond0
+      thcond1  (nnn) = soilparms(nnn)%thcond1
+      thcond2  (nnn) = soilparms(nnn)%thcond2
+      thcond3  (nnn) = soilparms(nnn)%thcond3
       xsand    (nnn) = soilparms(nnn)%xsand
       xclay    (nnn) = soilparms(nnn)%xclay
       xsilt    (nnn) = soilparms(nnn)%xsilt
       xrobulk  (nnn) = soilparms(nnn)%xrobulk
-      psild    (nnn) = soilparms(nnn)%psild
+      !------------------------------------------------------------------------------------!
 
       !----- Find potential at the wilting point. -----------------------------------------!
       if (nnn /= 13) then
+         psild    (nnn) = -76.47872
          psiwp    (nnn) = soilparms(nnn)%slpots                                            &
                            / (soilparms(nnn)%soilwp / soilparms(nnn)%slmsts)               &
                            ** soilparms(nnn)%slbs
+         psifc    (nnn) = soilparms(nnn)%slpots                                            &
+                           / (soilparms(nnn)%sfldcap / soilparms(nnn)%slmsts)              &
+                           ** soilparms(nnn)%slbs
       else
+         psild    (nnn) = 0.0
          psiwp    (nnn) = 0.0
+         psifc    (nnn) = 0.0
       end if
+      !------------------------------------------------------------------------------------!
 
       !----- Define the emmisivity and slfc. ----------------------------------------------!
       emisg(nnn) = .98
@@ -426,6 +840,7 @@ subroutine sfcdata()
       else
          slfc(nnn) = 0.0
       end if
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -631,10 +1046,15 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                          ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_condct     &
                          ,ground_rsat,ground_rvap,ground_temp,ground_fliq,veg_water        &
                          ,veg_hcap,veg_energy,can_prss,can_theiv,can_vpdef,can_theta       &
-                         ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp  &
-                         ,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass       &
-                         ,snow_depth,rshort_gnd,rlong_gnd,cosz,rlongup,albedt,rvv,prsv,piv &
-                         ,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
+                         ,can_rvap,can_co2,hflxac_out,wflxac_out,qwflxac_out,eflxac_out    &
+                         ,cflxac_out,hflxgc_out,wflxgc_out,qwflxgc_out,hflxvc_out          &
+                         ,wflxvc_out,qwflxvc_out,transp_out,qtransp_out,intercepted_out    &
+                         ,qintercepted_out,wshed_out,qwshed_out,throughfall_out            &
+                         ,qthroughfall_out,runoff_out,qrunoff_out,drainage_out             &
+                         ,qdrainage_out,gpp_out,plresp_out,resphet_out,growresp            &
+                         ,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass,snow_depth,rshort_gnd    &
+                         ,rlong_gnd,cosz,rlongup,albedt,rvv,prsv,piv,vt2da,vt2db           &
+                         ,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
@@ -713,14 +1133,33 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(    n2,n3,npat), intent(inout) :: can_theta
    real, dimension(    n2,n3,npat), intent(inout) :: can_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: can_co2
-   real, dimension(    n2,n3,npat), intent(inout) :: sensible_gc
-   real, dimension(    n2,n3,npat), intent(inout) :: sensible_vc
-   real, dimension(    n2,n3,npat), intent(inout) :: evap_gc
-   real, dimension(    n2,n3,npat), intent(inout) :: evap_vc
-   real, dimension(    n2,n3,npat), intent(inout) :: transp
-   real, dimension(    n2,n3,npat), intent(inout) :: gpp
-   real, dimension(    n2,n3,npat), intent(inout) :: plresp
-   real, dimension(    n2,n3,npat), intent(inout) :: resphet
+   real, dimension(    n2,n3,npat), intent(inout) :: hflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: eflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: cflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: hflxgc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wflxgc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwflxgc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: hflxvc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wflxvc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwflxvc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: transp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qtransp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: intercepted_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qintercepted_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wshed_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwshed_out
+   real, dimension(    n2,n3,npat), intent(inout) :: throughfall_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qthroughfall_out
+   real, dimension(    n2,n3,npat), intent(inout) :: runoff_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qrunoff_out
+   real, dimension(    n2,n3,npat), intent(inout) :: drainage_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qdrainage_out
+   real, dimension(    n2,n3,npat), intent(inout) :: gpp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: plresp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: resphet_out
+   real, dimension(    n2,n3,npat), intent(inout) :: growresp
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvic
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvif
@@ -841,14 +1280,33 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          end do
          
          !----- Fluxes.  Initially they should be all zero. -------------------------------!
-         sensible_gc (i,j,1) = 0.0
-         sensible_vc (i,j,1) = 0.0
-         evap_gc     (i,j,1) = 0.0
-         evap_vc     (i,j,1) = 0.0
-         transp      (i,j,1) = 0.0
-         gpp         (i,j,1) = 0.0
-         plresp      (i,j,1) = 0.0
-         resphet     (i,j,1) = 0.0
+         hflxac_out      (i,j,1) = 0.0
+         wflxac_out      (i,j,1) = 0.0
+         qwflxac_out     (i,j,1) = 0.0
+         eflxac_out      (i,j,1) = 0.0
+         cflxac_out      (i,j,1) = 0.0
+         hflxgc_out      (i,j,1) = 0.0
+         wflxgc_out      (i,j,1) = 0.0
+         qwflxgc_out     (i,j,1) = 0.0
+         hflxvc_out      (i,j,1) = 0.0
+         wflxvc_out      (i,j,1) = 0.0
+         qwflxvc_out     (i,j,1) = 0.0
+         transp_out      (i,j,1) = 0.0
+         qtransp_out     (i,j,1) = 0.0
+         intercepted_out (i,j,1) = 0.0
+         qintercepted_out(i,j,1) = 0.0
+         wshed_out       (i,j,1) = 0.0
+         qwshed_out      (i,j,1) = 0.0
+         throughfall_out (i,j,1) = 0.0
+         qthroughfall_out(i,j,1) = 0.0
+         runoff_out      (i,j,1) = 0.0
+         qrunoff_out     (i,j,1) = 0.0
+         drainage_out    (i,j,1) = 0.0
+         qdrainage_out   (i,j,1) = 0.0
+         gpp_out         (i,j,1) = 0.0
+         plresp_out      (i,j,1) = 0.0
+         resphet_out     (i,j,1) = 0.0
+         growresp        (i,j,1) = 0.0
 
          !----- Above-ground biomass.  This should be always 0 for water patches. ---------!
          veg_agb  (i,j,1) = 0.0
@@ -894,14 +1352,6 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                call abort_run('Delta-z is too thin!','sfcinit_nofile','leaf3_init.f90')
             end if
 
-
-            veg_hcap  (i,j,ipat) = hcapveg_ref * max(veg_ht(nveg),hcapveg_hmin)
-            veg_water (i,j,ipat) = 0.
-            veg_energy(i,j,ipat) = veg_hcap(i,j,ipat) * can_temp
-
-            !----- Above-ground biomass.  This is non-0 only when we run ED-2. ------------!
-            veg_agb   (i,j,ipat) = 0.
-
             !----- Canopy air properties.  Initially we just assume same properties. ------!
             can_prss  (i,j,ipat) = can_prss (i,j,1)
             can_theta (i,j,ipat) = can_theta(i,j,1)
@@ -911,14 +1361,33 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
             can_co2   (i,j,ipat) = can_co2  (i,j,1)
 
             !----- Fluxes.  Initially they should be all zero. ----------------------------!
-            sensible_gc (i,j,ipat) = 0.0
-            sensible_vc (i,j,ipat) = 0.0
-            evap_gc     (i,j,ipat) = 0.0
-            evap_vc     (i,j,ipat) = 0.0
-            transp      (i,j,ipat) = 0.0
-            gpp         (i,j,ipat) = 0.0
-            plresp      (i,j,ipat) = 0.0
-            resphet     (i,j,ipat) = 0.0
+            hflxac_out      (i,j,ipat) = 0.0
+            wflxac_out      (i,j,ipat) = 0.0
+            qwflxac_out     (i,j,ipat) = 0.0
+            eflxac_out      (i,j,ipat) = 0.0
+            cflxac_out      (i,j,ipat) = 0.0
+            hflxgc_out      (i,j,ipat) = 0.0
+            wflxgc_out      (i,j,ipat) = 0.0
+            qwflxgc_out     (i,j,ipat) = 0.0
+            hflxvc_out      (i,j,ipat) = 0.0
+            wflxvc_out      (i,j,ipat) = 0.0
+            qwflxvc_out     (i,j,ipat) = 0.0
+            transp_out      (i,j,ipat) = 0.0
+            qtransp_out     (i,j,ipat) = 0.0
+            intercepted_out (i,j,ipat) = 0.0
+            qintercepted_out(i,j,ipat) = 0.0
+            wshed_out       (i,j,ipat) = 0.0
+            qwshed_out      (i,j,ipat) = 0.0
+            throughfall_out (i,j,ipat) = 0.0
+            qthroughfall_out(i,j,ipat) = 0.0
+            runoff_out      (i,j,ipat) = 0.0
+            qrunoff_out     (i,j,ipat) = 0.0
+            drainage_out    (i,j,ipat) = 0.0
+            qdrainage_out   (i,j,ipat) = 0.0
+            gpp_out         (i,j,ipat) = 0.0
+            plresp_out      (i,j,ipat) = 0.0
+            resphet_out     (i,j,ipat) = 0.0
+            growresp        (i,j,ipat) = 0.0
 
 
             available_water = 0.0
@@ -961,8 +1430,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
 
                !------ Integrate the relative potential. ----------------------------------!
                if (k >= kroot(nveg) .and. nsoil /= 13) then
-                  psi_layer       = slpots(nsoil)                                          &
-                                  / (soil_water(k,i,j,ipat) / slmsts(nsoil)) ** slbs(nsoil)
+                  psi_layer       = leaf3_matric_potential(nsoil,soil_water(k,i,j,ipat))
                   available_water = available_water                                        &
                                   + max(0., (psi_layer-psiwp(nsoil))                       &
                                           / (psild(nsoil) - psiwp(nsoil)) )                &
@@ -1027,13 +1495,38 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                sfcwater_nlev(i,j,ipat) = 0.
             end if
 
-            call vegndvi(ifm, patch_area      (i,j,ipat) , leaf_class         (i,j,ipat)   &
-                            , veg_fracarea    (i,j,ipat) , veg_lai            (i,j,ipat)   &
-                            , veg_tai         (i,j,ipat) , veg_rough          (i,j,ipat)   &
-                            , veg_height      (i,j,ipat) , veg_displace       (i,j,ipat)   &
-                            , veg_albedo      (i,j,ipat) , veg_ndvip          (i,j,ipat)   &
-                            , veg_ndvic       (i,j,ipat) , veg_ndvif          (i,j,ipat)   &
-                            , psibar_10d      (i,j,ipat) )
+            !------------------------------------------------------------------------------!
+            !     Compute some vegetation properties, such as LAI, heat capacity, and      !
+            ! update energy whilst preserving the temperature and liquid fraction.  We     !
+            ! assign a dummy heat capacity because the routine will transform the energy   !
+            ! back to temperature.                                                         !
+            !------------------------------------------------------------------------------!
+            veg_temp = can_temp
+            if (veg_temp > t00) then
+               veg_fliq = 1.0
+            elseif (veg_temp < t00) then
+               veg_fliq = 0.0
+            else
+               veg_fliq = 0.5
+            end if
+            veg_hcap  (i,j,ipat) = hcapveg_ref * max(veg_height(i,j,ipat),hcapveg_hmin)
+            veg_water (i,j,ipat) = 0.
+            veg_energy(i,j,ipat) = cmtl2uext(veg_hcap(i,j,ipat),veg_water(i,j,ipat)        &
+                                            ,veg_temp,veg_fliq)
+            call veg_misc_update( ifm                                                      &
+                                , patch_area      (i,j,ipat) , leaf_class       (i,j,ipat) &
+                                , veg_fracarea    (i,j,ipat) , veg_lai          (i,j,ipat) &
+                                , veg_tai         (i,j,ipat) , veg_rough        (i,j,ipat) &
+                                , veg_height      (i,j,ipat) , veg_displace     (i,j,ipat) &
+                                , veg_albedo      (i,j,ipat) , veg_ndvip        (i,j,ipat) &
+                                , veg_ndvic       (i,j,ipat) , veg_ndvif        (i,j,ipat) &
+                                , veg_agb         (i,j,ipat) , veg_energy       (i,j,ipat) &
+                                , veg_water       (i,j,ipat) , veg_hcap         (i,j,ipat) &
+                                , psibar_10d      (i,j,ipat) )
+            !------------------------------------------------------------------------------!
+
+
+
 
             call leaf3_grndvap( soil_energy(mzg,i,j,ipat) , soil_water     (mzg,i,j,ipat)  &
                               , soil_text  (mzg,i,j,ipat) , sfcwater_energy(  1,i,j,ipat)  &
@@ -1088,11 +1581,15 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                              , soil_water    (:,i,j,ipat) , soil_color    (  i,j,ipat)     &
                              , soil_text     (:,i,j,ipat) , sfcwater_depth(:,i,j,ipat)     &
                              , patch_area    (  i,j,ipat) , veg_fracarea  (  i,j,ipat)     &
-                             , leaf_class    (  i,j,ipat) , veg_albedo    (  i,j,ipat)     &
+                             , leaf_class    (  i,j,ipat) , veg_lai       (  i,j,ipat)     &
+                             , veg_tai       (  i,j,ipat) , veg_albedo    (  i,j,ipat)     &
                              , sfcwater_nlev (  i,j,ipat) , 0.                             &
-                             , 0.                         , cosz          (  i,j     )     &
-                             , albedt        (  i,j     ) , rlongup       (  i,j     )     &
-                             , rshort_gnd    (  i,j,ipat) , rlong_gnd     (  i,j,ipat)     )
+                             , 0.                         , 0.                             &
+                             , 0.                         , 0.                             &
+                             , 0.                         , 0.                             &
+                             , cosz          (  i,j     ) , albedt        (  i,j     )     &
+                             , rlongup       (  i,j     ) , rshort_gnd    (  i,j,ipat)     &
+                             , rlong_gnd     (  i,j,ipat) , .true.                         )
          end do patchloop2
       end do iloop
    end do jloop

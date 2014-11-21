@@ -31,7 +31,8 @@ sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z
          }else{
             #----- x is an array, make up some x axis. ------------------------------------#
             z = x
-            x = seq(0, 1, len = nrow(z))
+            x = seq(from = 0, to = 1, length.out = nrow(z))
+            y = seq(from = 0, to = 1, length.out = ncol(z))
          }#end if
        }else{
           #----- Bad setting. -------------------------------------------------------------#

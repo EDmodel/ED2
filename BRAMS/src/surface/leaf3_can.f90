@@ -8,19 +8,127 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
                        ,ustar,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough           &
                        ,patch_rough,veg_height,veg_displace,veg_lai,veg_tai,veg_water      &
                        ,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_condct,can_prss   &
-                       ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc           &
-                       ,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp      &
-                       ,ground_fliq,available_water,rshort)
-   use leaf_coms
-   use rconstants
-   use therm_lib , only : eslif          & ! function
-                        , rslif          & ! function
-                        , thetaeiv       & ! function
-                        , tslif          & ! function
-                        , uextcm2tl      & ! subroutine
-                        , tl2uint        & ! function
-                        , tq2enthalpy    ! ! function
-   use catt_start, only : CATT
+                       ,can_rvap,can_co2,hflxac_out,wflxac_out,qwflxac_out,eflxac_out      &
+                       ,cflxac_out,hflxgc_out,wflxgc_out,qwflxgc_out,hflxvc_out,wflxvc_out &
+                       ,qwflxvc_out,transp_out,qtransp_out,intercepted_out                 &
+                       ,qintercepted_out,wshed_out,qwshed_out,throughfall_out              &
+                       ,qthroughfall_out,gpp_out,plresp_out,resphet_out,growresp           &
+                       ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water    &
+                       ,rshort)
+   use leaf_coms , only : dtl3                 & ! intent(in)
+                        , dtl3_factor          & ! intent(in)
+                        , dtvg                 & ! intent(in)
+                        , ndtvegi              & ! intent(in)
+                        , supersat_ok          & ! intent(in)
+                        , resolvable           & ! intent(in)
+                        , gr_factor            & ! intent(in)
+                        , leaf_maxwhc          & ! intent(in)
+                        , gbh                  & ! intent(in)
+                        , gbw                  & ! intent(in)
+                        , gsw                  & ! intent(in)
+                        , snowfac              & ! intent(in)
+                        , exar                 & ! intent(in)
+                        , geoht                & ! intent(in)
+                        , atm_vels             & ! intent(in)
+                        , atm_temp_zcan        & ! intent(in)
+                        , pcpgl                & ! intent(in)
+                        , qpcpgl               & ! intent(in)
+                        , dpcpgl               & ! intent(in)
+                        , can_exner            & ! intent(in)
+                        , can_depth            & ! intent(in)
+                        , can_temp             & ! intent(in)
+                        , can_rhv              & ! intent(in)
+                        , can_shv              & ! intent(in)
+                        , can_rhos             & ! intent(in)
+                        , can_cp               & ! intent(in)
+                        , veg_temp             & ! intent(in)
+                        , veg_fliq             & ! intent(in)
+                        , veg_wind             & ! intent(in)
+                        , sfcwater_tempk       & ! intent(in)
+                        , sfcwater_fracliq     & ! intent(in)
+                        , soil_tempk           & ! intent(in)
+                        , soil_fracliq         & ! intent(in)
+                        , rshort_v             & ! intent(in)
+                        , rlong_v              & ! intent(in)
+                        , ggsoil               & ! intent(in)
+                        , transp_o             & ! intent(in)
+                        , gpp_o                & ! intent(in)
+                        , leaf_resp_o          & ! intent(in)
+                        , root_resp_o          & ! intent(in)
+                        , het_resp_o           & ! intent(in)
+                        , drysoil              & ! intent(in)
+                        , satsoil              & ! intent(in)
+                        , can_enthalpy         & ! intent(inout)
+                        , ggbare               & ! intent(out)
+                        , dtl3owcc             & ! intent(out)
+                        , dtl3ohcc             & ! intent(out)
+                        , dtl3occc             & ! intent(out)
+                        , rho_ustar            & ! intent(out)
+                        , eflxac               & ! intent(out)
+                        , hflxac               & ! intent(out)
+                        , hflxvc               & ! intent(out)
+                        , hflxgc               & ! intent(out)
+                        , hflxsc               & ! intent(out)
+                        , wflxac               & ! intent(out)
+                        , qwflxac              & ! intent(out)
+                        , wflxgc               & ! intent(out)
+                        , qwflxgc              & ! intent(out)
+                        , wflxsc               & ! intent(out)
+                        , qwflxsc              & ! intent(out)
+                        , wflxvc               & ! intent(out)
+                        , qwflxvc              & ! intent(out)
+                        , transp               & ! intent(out)
+                        , qtransp              & ! intent(out)
+                        , hflxvc_tot           & ! intent(out)
+                        , wflxvc_tot           & ! intent(out)
+                        , qwflxvc_tot          & ! intent(out)
+                        , cflxvc_tot           & ! intent(out)
+                        , cflxgc_tot           & ! intent(out)
+                        , transp_tot           & ! intent(out)
+                        , qtransp_tot          & ! intent(out)
+                        , cflxac               & ! intent(out)
+                        , cflxgc               & ! intent(out)
+                        , cflxvc               & ! intent(out)
+                        , estar                & ! intent(out)
+                        , qstar                & ! intent(out)
+                        , ggveg                & ! intent(out)
+                        , ggnet                & ! intent(out)
+                        , wshed                & ! intent(out)
+                        , qwshed               & ! intent(out)
+                        , dwshed               & ! intent(out)
+                        , intercepted_tot      & ! intent(out)
+                        , qintercepted_tot     & ! intent(out)
+                        , dintercepted_tot     & ! intent(out)
+                        , throughfall_tot      & ! intent(out)
+                        , qthroughfall_tot     & ! intent(out)
+                        , dthroughfall_tot     & ! intent(out)
+                        , wshed_tot            & ! intent(out)
+                        , qwshed_tot           & ! intent(out)
+                        , dwshed_tot           & ! intent(out)
+                        , dewgnd_tot           & ! intent(out)
+                        , qdewgnd_tot          & ! intent(out)
+                        , ddewgnd_tot          ! ! intent(out)
+   use rconstants, only : wdns                 & ! intent(in)
+                        , wdnsi                & ! intent(in)
+                        , fdnsi                & ! intent(in)
+                        , mmdry                & ! intent(in)
+                        , mmdryi               & ! intent(in)
+                        , day_sec              & ! intent(in)
+                        , vonk                 & ! intent(in)
+                        , huge_num             & ! intent(in)
+                        , toodry               & ! intent(in)
+                        , twothirds            & ! intent(in)
+                        , pi1                  & ! intent(in)
+                        , tiny_num             ! ! intent(in)
+   use therm_lib , only : qslif                & ! function
+                        , rslif                & ! function
+                        , thetaeiv             & ! function
+                        , tslif                & ! function
+                        , uextcm2tl            & ! subroutine
+                        , tl2uint              & ! function
+                        , tq2enthalpy          ! ! function
+   use mem_leaf  , only : ndtveg               & ! intent(in)
+                        , isfcl                ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer             , intent(in)    :: mzg
@@ -58,33 +166,42 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    real                , intent(inout) :: can_prss
    real                , intent(inout) :: can_rvap
    real                , intent(inout) :: can_co2
-   real                , intent(inout) :: sensible_gc
-   real                , intent(inout) :: sensible_vc
-   real                , intent(inout) :: evap_gc
-   real                , intent(inout) :: evap_vc
-   real                , intent(inout) :: transp
-   real                , intent(inout) :: gpp
-   real                , intent(inout) :: plresp
-   real                , intent(inout) :: resphet
+   real                , intent(inout) :: hflxac_out
+   real                , intent(inout) :: wflxac_out
+   real                , intent(inout) :: qwflxac_out
+   real                , intent(inout) :: eflxac_out
+   real                , intent(inout) :: cflxac_out
+   real                , intent(inout) :: hflxgc_out
+   real                , intent(inout) :: wflxgc_out
+   real                , intent(inout) :: qwflxgc_out
+   real                , intent(inout) :: hflxvc_out
+   real                , intent(inout) :: wflxvc_out
+   real                , intent(inout) :: qwflxvc_out
+   real                , intent(inout) :: transp_out
+   real                , intent(inout) :: qtransp_out
+   real                , intent(inout) :: intercepted_out
+   real                , intent(inout) :: qintercepted_out
+   real                , intent(inout) :: wshed_out
+   real                , intent(inout) :: qwshed_out
+   real                , intent(inout) :: throughfall_out
+   real                , intent(inout) :: qthroughfall_out
+   real                , intent(inout) :: gpp_out
+   real                , intent(inout) :: plresp_out
+   real                , intent(inout) :: resphet_out
+   real                , intent(inout) :: growresp
    !----- Local arguments. ----------------------------------------------------------------!
    integer                             :: k
    integer                             :: kk
    integer                             :: nveg
    integer                             :: nsoil
+   integer                             :: nit
+   logical                             :: is_dew_cp
+   logical                             :: is_dew_cs
    real                                :: aux
    real                                :: dsm
    real                                :: fac
    real                                :: factv
-   real                                :: fthi
-   real                                :: ftlo
-   real                                :: frad
-   real                                :: fswp
-   real                                :: fvpd
    real                                :: qwtot
-   real                                :: lsfc_rvap
-   real                                :: lint_rvap
-   real                                :: lsfc_pvap
-   real                                :: lint_pvap
    real                                :: sigmaw 
    real                                :: slai
    real                                :: stai
@@ -99,18 +216,16 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    real                                :: zdisp
    real                                :: zveg
    real                                :: wflx
-   real                                :: dewgndflx
-   real                                :: qdewgndflx
-   real                                :: ddewgndflx
-   real                                :: transp_test
-   real                                :: transp_wilt
-   real                                :: gsw_wilt
-   real                                :: gsw_inf
-   real                                :: wshed
-   real                                :: qwshed
-   real                                :: dwshed
    real                                :: old_veg_water
    real                                :: old_veg_energy
+   real                                :: shv_gradient
+   real                                :: sfcwater_qsat
+   real                                :: rfac
+   real                                :: gr_weight
+   real                                :: ground_shv
+   real                                :: ground_qsat
+   real                                :: vfarea_eff
+   real                                :: dew_now
    !----- Local constants. ----------------------------------------------------------------!
    character(len=9)      , parameter   :: fmti='(a,1x,i6)'
    character(len=13)     , parameter   :: fmtf='(a,1x,es12.5)'
@@ -123,9 +238,10 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
 
 
    !----- Find the time step auxiliary variables. -----------------------------------------!
-   dtllowcc = dtll / (can_depth * can_rhos)
-   dtllohcc = dtll / (can_depth * can_rhos)
-   dtlloccc = dtllowcc * mmdry
+   dtl3owcc  = dtl3 / (can_depth * can_rhos)
+   dtl3ohcc  = dtl3 / (can_depth * can_rhos)
+   dtl3occc  = dtl3owcc * mmdry
+   gr_weight = dtl3 / day_sec
    !---------------------------------------------------------------------------------------!
 
 
@@ -136,7 +252,13 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    rho_ustar  = can_rhos  * ustar
    eflxac     = rho_ustar * estar                 ! Enthalpy exchange
    hflxac     = rho_ustar * tstar * can_exner     ! Sensible heat exchange
-   wflxac     = rho_ustar * rstar                 ! Water vapour exchange
+   wflxac     = rho_ustar * qstar                 ! Water vapour exchange
+   !----- "Latent" heat flux. -------------------------------------------------------------!
+   if (wflxac >= 0.0) then
+      qwflxac = wflxac * tq2enthalpy(atm_temp_zcan,1.0,.true.)
+   else
+      qwflxac = wflxac * tq2enthalpy(can_temp,1.0,.true.)
+   end if
    cflxac     = rho_ustar * cstar * mmdryi        ! CO2 exchange
    !---------------------------------------------------------------------------------------!
 
@@ -169,10 +291,11 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       factv = log((geoht-zdisp) / zoveg) / (vonk * vonk * atm_vels)
       aux   = exp(exar * (1. - (zdisp + zoveg) / zveg))
       ggveg = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
+      ggnet = ggbare * ggveg / (ggbare + ggveg)
    else
       ggveg = huge_num
+      ggnet = ggbare
    end if
-   ggnet    = ggbare * ggveg / (ggbare + ggveg)
    !---------------------------------------------------------------------------------------!
 
 
@@ -182,10 +305,12 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    ! to the fraction of open canopy.                                                       !
    !---------------------------------------------------------------------------------------!
    if (resolvable) then
-      intercepted_tot  = pcpgl  * veg_fracarea * (1. - snowfac)
-      qintercepted_tot = qpcpgl * veg_fracarea * (1. - snowfac)
-      dintercepted_tot = dpcpgl * veg_fracarea * (1. - snowfac)
+      vfarea_eff       = veg_fracarea * (1. - snowfac)
+      intercepted_tot  = pcpgl  * vfarea_eff
+      qintercepted_tot = qpcpgl * vfarea_eff
+      dintercepted_tot = dpcpgl * vfarea_eff
    else
+      vfarea_eff       = 0.0
       intercepted_tot  = 0.0
       qintercepted_tot = 0.0
       dintercepted_tot = 0.0
@@ -194,102 +319,119 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    throughfall_tot  = pcpgl  - intercepted_tot
    qthroughfall_tot = qpcpgl - qintercepted_tot
    dthroughfall_tot = dpcpgl - dintercepted_tot
-   wshed_tot        = 0.0
-   qwshed_tot       = 0.0
-   dwshed_tot       = 0.0
    !---------------------------------------------------------------------------------------!
+
 
 
 
    !---------------------------------------------------------------------------------------!
    !     Compute sensible heat and moisture fluxes between the ground and the canopy air   !
    ! space.  The ground may be either the top soil layer or the temporary surface water    !
-   ! snow surface.  wflx is the possible vapour flux, and can be either positive or        !
-   ! negative.  After we compute it, we check its sign, because the value is good only     !
-   ! when it is negative or when the surface is water/snow.  The ground calculation must   !
-   ! be done differently.  Later, two variables will define the flux between ground and    !
-   ! canopy air space:                                                                     !
-   ! - wflxgc [kg/m2/s] is going to be the evaporation flux from ground to canopy.         !
-   ! - dewgnd [kg/m2/s] is going to be the dew/frost flux from canopy to ground.           !
-   !     Both are defined as positive quantities.  Sensible heat is defined by only one    !
-   ! variable, hflxgc [J/m2/s], which can be either positive or negative.                  !
+   ! snow surface.  First we check whether the vapour fluxes to ground are positive or     !
+   ! negative.  Later, three variables will define the flux between ground and canopy air  !
+   ! space.  They are either positive or zero:                                             !
+   !                                                                                       !
+   ! - wflxsc [kg/m2/s] is going to be the evaporation flux from pounding water or         !
+   !                    snowpack to canopy.                                                !
+   ! - wflxgc [kg/m2/s] is going to be the evaporation flux from top soil layer to canopy. !
+   ! - dewgnd [kg/m2/s] is going to be the dew/frost flux from canopy to ground (this      !
+   !                    encompasses dew formation on both because dew always goes to the   !
+   !                    virtual layer).                                                    !
+   !                                                                                       !
+   !     Sensible heat is defined by two variables, hflxgc (soil) and hflxsc (TSW)         !
+   ! [J/m2/s], which can be either positive or negative.                                   !
    !---------------------------------------------------------------------------------------!
-   hflxgc = ggnet * can_rhos * can_cp * (ground_temp - can_temp)
-   wflx   = ggnet * can_rhos          * (ground_rsat - can_rvap)
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   Here we will decide how to compute the evaporation and condensation fluxes based on !
-   ! the sign of wflx, the number of temporary surface water/snow layers, and whether the  !
-   ! canopy air is saturation and whether the user is concerned about super-saturation.    !
-   !---------------------------------------------------------------------------------------!
-   if (wflx <= 0.0) then
-      !------------------------------------------------------------------------------------!
-      !     Flux is negative, which means that dew/frost is going to form.  We must also   !
-      ! decide whether dew or frost will form, and this is based on the current partition  !
-      ! of the surface water phase.  The depth gain uses frost density rather than ice     !
-      ! density based on MCD suggestion on 11/16/2009.                                     !
-      !------------------------------------------------------------------------------------!
-      dewgndflx  = min(-wflx,(can_rvap - toodry) / dtllowcc)
-      qdewgndflx = dewgndflx * tq2enthalpy(ground_temp,1.0,.true.)
-      ddewgndflx = dewgndflx * (ground_fliq * wdnsi + (1.0-ground_fliq) * fdnsi)
-      !----- Set evaporation fluxes to zero. ----------------------------------------------!
-      wflxgc     = 0.0
-      qwflxgc    = 0.0
-
-   elseif (can_rhv >= 1.0 .and. (.not. supersat_ok)) then
-      !------------------------------------------------------------------------------------!
-      !     In principle evaporation could happen, but the canopy air space is saturated.  !
-      ! The user doesn't want too much super-saturation, so we will not let any            !
-      ! evaporation to occur.                                                              !
-      !------------------------------------------------------------------------------------!
-      dewgndflx  = 0.0
-      qdewgndflx = 0.0
-      ddewgndflx = 0.0
-      wflxgc     = 0.0
-      qwflxgc    = 0.0
-
-   elseif (ksn > 0) then
-      !------------------------------------------------------------------------------------!
-      !     Evaporation will happen, and there is a temporary surface water/snow layer     !
-      ! above the soil, so wflx is still good, we simply use it, and make the dew/frost    !
-      ! fluxes to be zero.                                                                 !
-      !------------------------------------------------------------------------------------!
-      dewgndflx  = 0.0
-      qdewgndflx = 0.0
-      ddewgndflx = 0.0
-      wflxgc     = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
-      qwflxgc    = wflx * tq2enthalpy(ground_temp,1.0,.true.)
-
+   if (ksn > 0) then
+      hflxsc        = snowfac * ggnet * can_rhos * can_cp * (sfcwater_tempk(ksn) - can_temp)
+      sfcwater_qsat = qslif(can_prss,sfcwater_tempk(ksn))
+      is_dew_cp     = sfcwater_qsat <= can_shv
    else
+      hflxsc        = 0.0
+      sfcwater_qsat = can_shv
+      is_dew_cp     = .false.
+   end if
+   hflxgc      = (1.0 - snowfac) * ggnet * can_rhos * can_cp * (ground_temp - can_temp)
+   ground_qsat = ground_rsat / ( 1.0 + ground_rsat )
+   is_dew_cs   = ground_qsat <= can_shv
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we will decide how to compute the evaporation and condensation fluxes        !
+   ! between temporary surface water and canopy air space, based on the sign of water      !
+   ! flux.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   if (is_dew_cp) then
+      !----- Dew should be formed due to contact between top TSW and canopy air space. ----!
+      dew_now     = snowfac * ggnet * can_rhos * ( can_shv - sfcwater_qsat )
+      dewgnd_tot  = dew_now
+      qdewgnd_tot = dew_now * tq2enthalpy(sfcwater_tempk(ksn),1.00,.true.)
+      ddewgnd_tot = dew_now * (         sfcwater_fracliq(ksn)   * wdnsi                    &
+                              + ( 1.0 - sfcwater_fracliq(ksn) ) * fdnsi )
+      wflxsc      = 0.0
+      qwflxsc     = 0.0
+   elseif (ksn > 0 .and. ( can_rhv < 1.0 .or. supersat_ok )) then
       !------------------------------------------------------------------------------------!
-      !    Evaporation will happen, but water will come from the top most layer.  Wflx     !
-      ! cannot be used because the ground specific humidity is not the saturation specific !
-      ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
-      ! itself and the soil moisture.  ground_rvap cannot be less than can_rvap, so we no  !
-      ! longer need to check for sign.                                                     !
+      !     Evaporation should occur, and canopy air space is not yet super-saturated (or  !
+      ! the user is fine with super-saturation).                                           !
       !------------------------------------------------------------------------------------!
-      wflxgc  = can_rhos * ggnet * ggsoil * (ground_rvap - can_rvap) / (ggnet + ggsoil)
-      !----- Adjust the flux according to the surface fraction (no phase bias). -----------!
-      qwflxgc = wflxgc * tq2enthalpy(ground_temp,1.0,.true.)
-      !----- Set condensation fluxes to zero. ---------------------------------------------!
-      dewgndflx  = 0.0
-      qdewgndflx = 0.0
-      ddewgndflx = 0.0
+      dewgnd_tot  = 0.0
+      qdewgnd_tot = 0.0
+      ddewgnd_tot = 0.0
+      wflxsc      = snowfac * ggnet * can_rhos * ( sfcwater_qsat - can_shv )
+      qwflxsc     = wflxsc * tq2enthalpy(sfcwater_tempk(ksn),1.0,.true.)
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
 
 
-   !----- Find the total input of water due to dew/frost formation. -----------------------!
-   dewgnd_tot  = dewgndflx  * dtll
-   qdewgnd_tot = qdewgndflx * dtll
-   ddewgnd_tot = ddewgndflx * dtll
    !---------------------------------------------------------------------------------------!
+   !     Similarly, we will decide how to compute the evaporation and condensation fluxes  !
+   ! between top soil layer and canopy air space, based on the sign of water flux.         !
+   !---------------------------------------------------------------------------------------!
+   if (is_dew_cs) then
+      !----- Dew should be formed due to contact between top soil and canopy air space. ---!
+      dew_now     = ( 1.d0 - snowfac ) * ggnet * can_rhos * ( can_shv - ground_qsat )
+      dewgnd_tot  = dewgnd_tot  + dew_now
+      qdewgnd_tot = qdewgnd_tot + dew_now * tq2enthalpy(ground_temp,1.0,.true.)
+      ddewgnd_tot = ddewgnd_tot + dew_now * (         ground_fliq   * wdnsi                &
+                                            + ( 1.0 - ground_fliq ) * fdnsi )
+      wflxgc      = 0.0
+      qwflxgc     = 0.0
+   else if (drysoil(mzg)) then
+      !------------------------------------------------------------------------------------!
+      !    There should be evaporation, except that there is no water left to be extracted !
+      ! from the ground... Set both evaporation and condensation fluxes to zero.           !
+      !------------------------------------------------------------------------------------!
+      wflxgc      = 0.0
+      qwflxgc     = 0.0
+      !------------------------------------------------------------------------------------!
+
+   elseif (can_rhv < 1.0 .or. supersat_ok) then
+      !------------------------------------------------------------------------------------!
+      !     Evaporation should occur, and canopy air space is not yet super-saturated (or  !
+      ! the user is fine with super-saturation).                                           !
+      !------------------------------------------------------------------------------------!
+      wflxgc      = ( 1.0 - snowfac ) * ggnet * can_rhos * ( ground_qsat - can_shv )       &
+                  * ( 1.d0 / (1.d0 + ggnet / ggsoil) )
+      qwflxgc     = wflxgc * tq2enthalpy(ground_temp,1.0,.true.)
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Respiration driver.                                                               !
+   !---------------------------------------------------------------------------------------!
+   call leaf3_soil_resp(mzg,resolvable,soil_energy,soil_water,soil_text,leaf_class,veg_lai &
+                       ,veg_tai)
+   !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -301,20 +443,6 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
    if (resolvable) then
       !----- Save the vegetation class in an alias. ---------------------------------------!
       nveg = nint(leaf_class)
-   
-      !------------------------------------------------------------------------------------!
-      !     Find the wind speed at the top of the canopy, using the similarity theory.     !
-      !------------------------------------------------------------------------------------!
-      veg_wind = leaf3_reduced_wind(ustar,zeta,ribulk,geoht,veg_displace,veg_height        &
-                                  ,patch_rough)
-
-
-      !------------------------------------------------------------------------------------!
-      !    Find the aerodynamic conductances for heat and water at the leaf boundary       !
-      ! layer.                                                                             !
-      !------------------------------------------------------------------------------------!
-      call leaf3_aerodynamic_conductances(nveg,veg_wind,veg_temp,can_temp,can_rvap         &
-                                         ,can_rhos,can_cp)
       !------------------------------------------------------------------------------------!
 
 
@@ -322,176 +450,193 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       !     Find the "perceived" leaf area and tree area indices, dependending on snow     !
       ! cover.                                                                             !
       !------------------------------------------------------------------------------------!
-      stai = veg_tai * (1. - snowfac)
-      slai = veg_lai * (1. - snowfac)
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Soil water potential factor for stomatal control. ----------------------------!
-      swp = -200.0
-      do k = kroot(nveg),mzg
-         nsoil  = nint(soil_text(k))
-         slpotv = slpots(nsoil) * (slmsts(nsoil) / soil_water(k)) ** slbs(nsoil)
-         if (slpotv > swp) swp = slpotv
-      end do
-      swp = swp * grav * wdns
+      stai = veg_tai * ( 1.0 - snowfac )
+      slai = veg_lai * ( 1.0 - snowfac )
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Find the intercellular vapour pressure and mixing ratio; they are both assumed !
-      ! to be the saturation value at the leaf temperature.                                !
+      !     Find the wind speed at the top of the canopy, using the similarity theory.     !
       !------------------------------------------------------------------------------------!
-      lint_pvap = eslif(veg_temp)
-      lint_rvap = rslif(can_prss,veg_temp)
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Compute mixing ratio at leaf surface using previous gsw ----------------------!
-      gsw       = stom_condct
-      lsfc_rvap = (gbw * can_rvap + gsw * lint_rvap) / (gbw + gsw)
-      lsfc_pvap = lsfc_rvap * can_prss / (ep + lsfc_rvap)
-      vpd       = max(lint_pvap - lsfc_pvap,0.)
+      veg_wind = leaf3_reduced_wind(ustar,zeta,ribulk,geoht,veg_displace,veg_height        &
+                                  ,patch_rough,vfarea_eff,stai)
       !------------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------!
-      !      Use a combination of 5 environmental factors that may control stomatal        !
-      ! conductance to estimate the target value for this new time step.                   !
-      !------------------------------------------------------------------------------------!
-      ftlo    = 1. + exp(-stlo * (veg_temp - btlo))
-      fthi    = 1. + exp(-sthi * (veg_temp - bthi))
-      frad    = 1. + exp(-srad * (rshort   - brad))
-      fswp    = 1. + exp(-sswp * (swp      - bswp))
-      fvpd    = 1. + exp(-svpd * (vpd      - bvpd))
-      if (slai > tai_min) then
-         gsw_inf = can_rhos * gsw_max(nveg) / (ftlo * fthi * frad * fvpd * fswp) / slai
-      else
-         gsw_inf = 0.0
-      end if
-      !------------------------------------------------------------------------------------!
-
-      !----- 15-minute response time for stomatal conductance (must have dtll <= 900.). ---!
-      gsw     = gsw + dtll * (gsw_inf - gsw) / max(dtll,900.)
-      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !    Transpiration can only happen if there are leaves and water.                    !
+      !      Vegetation time step.  The fluxes have already been flushed to zero before    !
+      ! entering here, so in principle there is no need to flush them again.               !
       !------------------------------------------------------------------------------------!
-      if (available_water > 0. .and. gsw > 0.0) then
+      vegloop: do nit = 1,ndtveg
+         !---------------------------------------------------------------------------------!
+         !    Find the aerodynamic conductances for heat and water at the leaf boundary    !
+         ! layer.                                                                          !
+         !---------------------------------------------------------------------------------!
+         call leaf3_aerodynamic_conductances(leaf_class,veg_wind,veg_temp,can_temp         &
+                                            ,can_rvap,can_rhos,can_cp)
+         !---------------------------------------------------------------------------------!
 
-         !----- Find the maximum transpiration allowed. -----------------------------------!
-         transp_wilt  = min(available_water / dtll, transp_max)
 
-         !------ Find the stomatal conductance. -------------------------------------------!
-         if (transp_wilt >= gbw * (lint_rvap - can_rvap)) then
+
+         !---------------------------------------------------------------------------------!
+         !     Find the intercellular vapour pressure and mixing ratio; they are both      !
+         ! assumed to be the saturation value at the leaf temperature.                     !
+         !---------------------------------------------------------------------------------!
+         shv_gradient  = qslif(can_prss,veg_temp) - can_shv
+         rfac          = (1. + rslif(can_prss,veg_temp)) * (1. + can_rvap)
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Photosynthesis driver.                                                      !
+         !---------------------------------------------------------------------------------!
+         call leaf3_photo_driver(mzg,soil_water,soil_text,leaf_class,rshort,veg_lai        &
+                                ,veg_tai,can_prss,can_rvap,can_co2,stom_condct)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Sensible heat flux from leaf to canopy.  The 2*lai means that heat         !
+         ! exchange occurs on both sides of the leaf, whereas pi1*(stai-slai) means that   !
+         ! heat exchange occurs through the entire perimeter of branches and twigs.        !
+         !---------------------------------------------------------------------------------!
+         hflxvc = ( 2. * slai + pi1 * ( stai - slai )) * gbh * (veg_temp - can_temp)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether evaporation or condensation should happen.                    !
+         !---------------------------------------------------------------------------------!
+         if (shv_gradient > 0.0 .and. can_rhv >= 1.0 .and. (.not. supersat_ok)) then
             !------------------------------------------------------------------------------!
-            !   In this case, wilting would only happen if gsw could be negative, which is !
-            ! physically unrealistic.  No need to worry, use the actual conductance.       !
+            !     Stop flux to canopy air space if relative humidity is 100% and the user  !
+            ! doesn't want super-saturation to happen.                                     !
             !------------------------------------------------------------------------------!
-            transp_test  = stom_side(nveg) * gbw * gsw * slai * (lint_rvap - can_rvap)     &
-                         / (gbw + gsw)
+            wflxvc = 0.0
+            !------------------------------------------------------------------------------!
+         elseif (shv_gradient >= 0.0) then
+            !------------------------------------------------------------------------------!
+            !     Saturation at leaf temperature is greater than canopy air space mixing   !
+            ! ratio.  If some water is sitting on the leaf surface, let it evaporate.      !
+            ! Evaporation should happen from only one side of the leaf.                    !
+            !------------------------------------------------------------------------------!
+            !----- Compute the fraction of leaves covered in water. -----------------------!
+            sigmaw = min(1.0, (veg_water / (.2 * stai)) ** twothirds)
+            !----- Find the evaporation rate. ---------------------------------------------!
+            wflxvc = min(stai * gbw * shv_gradient * rfac * sigmaw,veg_water/dtvg)
+            !------------------------------------------------------------------------------!
          else
             !------------------------------------------------------------------------------!
-            !    Limit maximum transpiration to be <= transp_max and less than the maximum !
-            ! water available by decreasing stomatal conductance if necessary.             !
+            !     Flow is towards the leaf, dew/frost formation on one side of the leaf.   !
+            ! We don't let the dew formation completely eliminate water from the canopy    !
+            ! air space, and impose 0. transpiration.                                      !
             !------------------------------------------------------------------------------!
-            gsw_wilt     = gbw * transp_wilt / ((lint_rvap - can_rvap) * gbw - transp_wilt)
-            gsw          = min(gsw,gsw_wilt)
-            transp_test  = stom_side(nveg) * gbw * gsw * slai * (lint_rvap - can_rvap)     &
-                         / (gbw + gsw)
+            wflxvc = max(stai * gbw * shv_gradient * rfac, (10.*toodry-can_shv) / dtl3owcc)
+            !------------------------------------------------------------------------------!
          end if
-      else
-         transp_test = 0.
-      end if
-      stom_condct = gsw
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Sensible heat flux from leaf to canopy. --------------------------------------!
-      hflxvc = 2. * stai * gbh * (veg_temp - can_temp)
-
-      !------------------------------------------------------------------------------------!
-      !     Check whether evaporation or condensation should happen.                       !
-      !------------------------------------------------------------------------------------!
-      if (lint_rvap >= can_rvap) then
-         !---------------------------------------------------------------------------------!
-         !     Saturation at leaf temperature is greater than canopy air space mixing      !
-         ! ratio.  If some water is sitting on the leaf surface, let it evaporate.         !
-         ! Evaporation should happen from only one side of the leaf.                       !
-         !---------------------------------------------------------------------------------!
-         !----- Compute the fraction of leaves covered in water. --------------------------!
-         sigmaw = min(1.0, (veg_water / (.2 * stai)) ** twothirds)
-         !----- Find the evaporation rate. ------------------------------------------------!
-         wflxvc = min(stai * gbw * (lint_rvap - can_rvap) * sigmaw,veg_water/dtll)
          !---------------------------------------------------------------------------------!
 
+
+
+
          !---------------------------------------------------------------------------------!
-         !     Also, if there is available soil water and let it transpire.                !
+         !     Update vegetation moisture from precipitation, vapor flux with canopy,      !
+         ! and shedding of excess moisture.                                                !
          !---------------------------------------------------------------------------------!
-         transp_loc = max(0., transp_test)
-      else
+         old_veg_water = veg_water
+         wtemp         = veg_water + ( intercepted_tot - wflxvc ) * dtvg
+         !----- If this result will lead to negative solution, then reduce evaporation. ---!
+         if (wtemp < 0.005 * leaf_maxwhc * stai) then
+            wflxvc     = veg_water / dtvg + intercepted_tot
+            veg_water  = 0.
+            wshed      = 0.
+            qwshed     = 0.
+            dwshed     = 0.
+         elseif (wtemp > leaf_maxwhc * stai) then
+            !----- Shed water in excess of the leaf holding water capacity. ---------------!
+            wshed      = ( wtemp - leaf_maxwhc * stai ) / dtvg
+            qwshed     = wshed * tl2uint(veg_temp,veg_fliq)
+            dwshed     = wshed * (veg_fliq * wdnsi + (1.0 - veg_fliq) * fdnsi)
+            veg_water  = leaf_maxwhc * stai
+         else
+            wshed      = 0.
+            qwshed     = 0.
+            dwshed     = 0.
+            veg_water  = wtemp
+         end if
          !---------------------------------------------------------------------------------!
-         !     Flow is towards the leaf, dew/frost formation on one side of the leaf.  We  !
-         ! don't let the dew formation completely eliminate water from the canopy air      !
-         ! space, and impose 0. transpiration.                                             !
+
+
+
+         !------ Find the associated latent heat flux from vegetation to canopy. ----------!
+         if ( wflxvc >= 0.0 ) then
+            qwflxvc = wflxvc * tq2enthalpy(veg_temp,1.0,.true.)
+         else
+            qwflxvc = wflxvc * tq2enthalpy(can_temp,1.0,.true.)
+         end if
+         transp     = transp_o
+         qtransp    = transp * tq2enthalpy(veg_temp,1.0,.true.)
          !---------------------------------------------------------------------------------!
-         wflxvc     = max( stai * gbw * (lint_rvap - can_rvap)                             &
-                         , min(0.,(toodry-can_rvap)/ dtllowcc) )
-         transp_loc = 0.
-      end if
-      transp_tot = transp_tot + transp_loc
+
+
+         !---------------------------------------------------------------------------------!
+         !      Update vegetation internal energy from radiative fluxes and sensible and   !
+         ! latent heat transfer with canopy air.                                           !
+         !---------------------------------------------------------------------------------!
+         old_veg_energy = veg_energy
+         veg_energy     = veg_energy                                                       &
+                        + dtvg * ( rshort_v + rlong_v - hflxvc - qwflxvc - qtransp         &
+                                 + qintercepted_tot - qwshed )
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Update the exponential smoothing of growth respiration.  In case the value  !
+         ! is becoming too small, flush it to zero to avoid floating point exceptions.     !
+         !---------------------------------------------------------------------------------!
+         growresp = growresp * (1. - gr_weight)                                            &
+                  + gr_factor(nveg) * (gpp_o - leaf_resp_o - root_resp_o ) * gr_weight
+         if (growresp < tiny_num) growresp = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Update the fluxes.                                                           !
+         !---------------------------------------------------------------------------------!
+         hflxvc_tot  = hflxvc_tot  + hflxvc  * ndtvegi
+         wflxvc_tot  = wflxvc_tot  + wflxvc  * ndtvegi
+         qwflxvc_tot = qwflxvc_tot + qwflxvc * ndtvegi
+         transp_tot  = transp_tot  + transp  * ndtvegi
+         qtransp_tot = qtransp_tot + qtransp * ndtvegi
+         wshed_tot   = wshed_tot   + wshed   * ndtvegi
+         qwshed_tot  = qwshed_tot  + qwshed  * ndtvegi
+         dwshed_tot  = dwshed_tot  + dwshed  * ndtvegi
+         cflxgc_tot  = cflxgc_tot  + (root_resp_o + 0.3 * growresp + het_resp_o) * ndtvegi
+         cflxvc_tot  = cflxvc_tot  + (leaf_resp_o + 0.7 * growresp - gpp_o     ) * ndtvegi
+         !----- Output GPP and plant respiration for output. ------------------------------!
+         gpp_out     = gpp_out     + gpp_o   * dtl3_factor * ndtvegi
+         plresp_out  = plresp_out  + (leaf_resp_o + root_resp_o + growresp)                &
+                                   * dtl3_factor * ndtvegi
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Update vegetation temperature and liquid water fraction.                     !
+         !---------------------------------------------------------------------------------!
+         call uextcm2tl(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+         !---------------------------------------------------------------------------------!
+      end do vegloop
       !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Update vegetation moisture from precipitation, vapor flux with canopy,         !
-      ! and shedding of excess moisture.                                                   !
-      !------------------------------------------------------------------------------------!
-      old_veg_water = veg_water
-      wtemp         = veg_water - wflxvc * dtll + intercepted_tot
-      !----- If this result will lead to negative solution, then reduce evaporation. ------!
-      if (wtemp < 0.005 * leaf_maxwhc * stai) then
-         wflxvc     = (veg_water + intercepted_tot) / dtll
-         veg_water  = 0.
-         wshed_tot  = 0.
-         qwshed_tot = 0.
-         dwshed_tot = 0.
-      elseif (wtemp > leaf_maxwhc * stai) then
-         !----- Shed water in excess of the leaf holding water capacity. ------------------!
-         wshed_tot  = wtemp - leaf_maxwhc * stai
-         qwshed_tot = wshed_tot * tl2uint(veg_temp,veg_fliq)
-         dwshed_tot = wshed_tot * (veg_fliq * wdnsi + (1.0 - veg_fliq) * fdnsi)
-         veg_water  = leaf_maxwhc * stai
-      else
-         wshed_tot  = 0.
-         qwshed_tot = 0.
-         dwshed_tot = 0.
-         veg_water  = wtemp
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------ Find the associated latent heat flux from vegetation to canopy. -------------!
-      qwflxvc     = wflxvc     * tq2enthalpy(veg_temp,1.0,.true.)
-      qtransp_loc = transp_loc * tq2enthalpy(veg_temp,1.0,.true.)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Update vegetation internal energy from radiative fluxes and sensible and      !
-      ! latent heat transfer with canopy air.                                              !
-      !------------------------------------------------------------------------------------!
-      old_veg_energy = veg_energy
-      veg_energy     = veg_energy                                                          &
-                     + dtll * ( rshort_v + rlonga_v + rlonggs_v - rlongv_gs - rlongv_a     &
-                              - hflxvc   - qwflxvc   - qtransp_loc)                        &
-                     + qintercepted_tot - qwshed_tot
 
 
 
@@ -500,54 +645,88 @@ subroutine leaf3_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_ma
       !      Update enthalpy, CO2, and canopy mixing ratio.                                !
       !------------------------------------------------------------------------------------!
       can_enthalpy = can_enthalpy                                                          &
-                   + dtllohcc * ( hflxgc + qwflxgc  - qdewgndflx                           &
-                                + hflxvc + qwflxvc  + qtransp_loc                          &
-                                + eflxac)
-      can_rvap     = can_rvap                                                              &
-                   + dtllowcc * ( wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !      CO2 exchange with biosphere is currently not computed in LEAF-3... Feel       !
-      ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.      !
-      !------------------------------------------------------------------------------------!
-      cflxgc   = 0.
-      cflxvc   = 0.
-      cflxcv   = 0.
-      can_co2  = can_co2  + dtllowcc * mmdry * (cflxgc + cflxvc + cflxcv + cflxac)
+                   + dtl3ohcc * ( hflxsc + hflxgc + hflxvc_tot + qwflxsc + qwflxgc         &
+                                - qdewgnd_tot + qwflxvc_tot + qtransp_tot + eflxac)
+      can_shv      = can_shv                                                               &
+                   + dtl3owcc * ( wflxsc + wflxgc - dewgnd_tot + wflxvc_tot + transp_tot   &
+                                + wflxac)
+      can_rvap     = can_shv / ( 1.0 - can_shv )
+      can_co2    = can_co2  + dtl3occc * (cflxgc_tot + cflxvc_tot + cflxac)
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Update the fluxes. -----------------------------------------------------------!
-      sensible_gc = sensible_gc +  hflxgc                * dtll_factor
-      sensible_vc = sensible_vc +  hflxvc                * dtll_factor
-      evap_gc     = evap_gc     + (qwflxgc - qdewgndflx) * dtll_factor
-      evap_vc     = evap_vc     +  qwflxvc               * dtll_factor
-      transp      = transp      +  qtransp_loc           * dtll_factor
+      hflxac_out       = hflxac_out       + hflxac                     * dtl3_factor
+      wflxac_out       = wflxac_out       + wflxac                     * dtl3_factor
+      qwflxac_out      = qwflxac_out      + qwflxac                    * dtl3_factor
+      eflxac_out       = eflxac_out       + eflxac                     * dtl3_factor
+      cflxac_out       = cflxac_out       + cflxac                     * dtl3_factor
+      hflxgc_out       = hflxgc_out       + ( hflxgc  + hflxsc  )      * dtl3_factor
+      wflxgc_out       = wflxgc_out       + ( wflxgc  + wflxsc  - dewgnd_tot  )            &
+                                                                       * dtl3_factor
+      qwflxgc_out      = qwflxgc_out      + ( qwflxgc + qwflxsc - qdewgnd_tot )            &
+                                                                       * dtl3_factor
+      hflxvc_out       = hflxvc_out       + hflxvc_tot                 * dtl3_factor
+      wflxvc_out       = wflxvc_out       + wflxvc_tot                 * dtl3_factor
+      qwflxvc_out      = qwflxvc_out      + qwflxvc_tot                * dtl3_factor
+      transp_out       = transp_out       + transp_tot                 * dtl3_factor
+      qtransp_out      = qtransp_out      + qtransp_tot                * dtl3_factor
+      intercepted_out  = intercepted_out  + intercepted_tot            * dtl3_factor
+      qintercepted_out = qintercepted_out + qintercepted_tot           * dtl3_factor
+      wshed_out        = wshed_out        + wshed_tot                  * dtl3_factor
+      qwshed_out       = qwshed_out       + qwshed_tot                 * dtl3_factor
+      throughfall_out  = throughfall_out  + throughfall_tot            * dtl3_factor
+      qthroughfall_out = qthroughfall_out + qthroughfall_tot           * dtl3_factor
+      resphet_out      = resphet_out      + het_resp_o                 * dtl3_factor
+      !------------------------------------------------------------------------------------!
 
    else
       !------------------------------------------------------------------------------------!
       !    No vegetation, or vegetation buried in snow...                                  !
       !------------------------------------------------------------------------------------!
 
+      !----- Decay the growth respiration. ------------------------------------------------!
+      growresp   = growresp * (1. - gr_weight)
+      if (growresp < tiny_num) growresp = 0.0
+      !------------------------------------------------------------------------------------!
+
+
       !----- Update the canopy prognostic variables. --------------------------------------!
-      can_enthalpy = can_enthalpy + dtllohcc * (hflxgc + qwflxgc - qdewgndflx + eflxac)
-      can_rvap     = can_rvap     + dtllowcc * (wflxgc - dewgndflx + wflxac)
+      can_enthalpy = can_enthalpy                                                          &
+                   + dtl3ohcc * (hflxsc + hflxgc + qwflxsc + qwflxgc - qdewgnd_tot + eflxac)
+      can_shv      = can_shv + dtl3owcc * (wflxsc + wflxgc - dewgnd_tot + wflxac)
+      can_rvap     = can_shv / ( 1.0 - can_shv )
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !      CO2 exchange with biosphere is currently not computed in LEAF-3... Feel       !
       ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.      !
       !------------------------------------------------------------------------------------!
-      cflxgc       = 0.
-      can_co2      = can_co2      + dtlloccc * (cflxgc + cflxac)
+      cflxgc       = het_resp_o
+      cflxvc_tot   = 0.
+      can_co2      = can_co2      + dtl3occc * (cflxgc + cflxvc_tot + cflxac)
       !------------------------------------------------------------------------------------!
 
+
+
       !----- Update the fluxes. -----------------------------------------------------------!
-      sensible_gc = sensible_gc +  hflxgc                * dtll_factor
-      evap_gc     = evap_gc     + (qwflxgc - qdewgndflx) * dtll_factor
+      hflxac_out       = hflxac_out       + hflxac                     * dtl3_factor
+      wflxac_out       = wflxac_out       + wflxac                     * dtl3_factor
+      qwflxac_out      = qwflxac_out      + qwflxac                    * dtl3_factor
+      eflxac_out       = eflxac_out       + eflxac                     * dtl3_factor
+      cflxac_out       = cflxac_out       + cflxac                     * dtl3_factor
+      hflxgc_out       = hflxgc_out       + ( hflxgc  + hflxsc      )  * dtl3_factor
+      wflxgc_out       = wflxgc_out       + ( wflxgc  + wflxsc  - dewgnd_tot  )            &
+                                          * dtl3_factor
+      qwflxgc_out      = qwflxgc_out      + ( qwflxgc + qwflxsc - qdewgnd_tot )            &
+                                          * dtl3_factor
+      throughfall_out  = throughfall_out  + throughfall_tot            * dtl3_factor
+      qthroughfall_out = qthroughfall_out + qthroughfall_tot           * dtl3_factor
+      resphet_out      = resphet_out      + het_resp_o                 * dtl3_factor
+      !------------------------------------------------------------------------------------!
 
    end if
 

@@ -13,8 +13,8 @@ source ${HOME}/.bashrc
 # here     -- This directory (don't use `pwd` if you are putting this on crontab)          #
 # emailday -- The file that blocks the e-mail delivery (default is ${here}/emailday.txt)   #
 #------------------------------------------------------------------------------------------#
-here='/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx'
-emailday=${here}'/emailday.txt'
+here="/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx"
+emailday="${here}/emailday.txt"
 #------------------------------------------------------------------------------------------#
 
 
@@ -37,7 +37,7 @@ emailday=${here}'/emailday.txt'
 #==========================================================================================#
 
 
-if [ ${here} == '/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx' ]
+if [ ${here} == "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" ]
 then
    echo " here = ${here} "
    echo " Set up variable here before running email_reset.sh"

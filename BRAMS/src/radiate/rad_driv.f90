@@ -68,19 +68,39 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
    implicit none
   
    !----- Arguments -----------------------------------------------------------------------!
-   integer                     , intent(in) :: mzp,mxp,myp,ia,iz,ja,jz,mynum
+   integer                     , intent(in)  :: mzp
+   integer                     , intent(in)  :: mxp
+   integer                     , intent(in)  :: myp
+   integer                     , intent(in)  :: ia
+   integer                     , intent(in)  :: iz
+   integer                     , intent(in)  :: ja
+   integer                     , intent(in)  :: jz
+   integer                     , intent(in)  :: mynum
    !----- Local variables -----------------------------------------------------------------!
-   integer                                  :: koff,nrad,i,j,k,ka,kz,icld
-   real                                     :: solc
-   real, dimension(mxp,myp)                 :: rain
-   real, dimension(mzp,mxp,myp)             :: lwl,iwl
-   real                                     :: tcoal,fracliq
-   real                                     :: max_albedt,max_rlongup
-   real                                     :: time_rfrq
+   integer                                   :: koff
+   integer                                   :: nrad
+   integer                                   :: i
+   integer                                   :: j
+   integer                                   :: k
+   integer                                   :: ka
+   integer                                   :: kz
+   integer                                   :: icld
+   real                                      :: solc
+   real, dimension(:,:)        , allocatable :: st_rain
+   real, dimension(:,:,:)      , allocatable :: cb_rain
+   real, dimension(:,:,:)      , allocatable :: lwl
+   real, dimension(:,:,:)      , allocatable :: iwl
+   real                                      :: tcoal
+   real                                      :: fracliq
+   real                                      :: max_albedt
+   real                                      :: max_rlongup
+   real                                      :: time_rfrq
    !---------------------------------------------------------------------------------------!
 
    !----- Leave this driver if the user turned off the radiation --------------------------!
    if (ilwrtyp + iswrtyp == 0) return
+
+
 
    kz = mzp-1
 
@@ -107,16 +127,23 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
    time_rfrq = real(dmod(time + 0.001,dble(radfrq)))
 
    if ( time_rfrq  < dtlt .or. time < 0.001) then
-                                                      
-      !----- Resetting the radiative forcing ----------------------------------------------!
-      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd)
-      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw)
-      call azero(mxp*myp,radiate_g(ngrid)%rshort)
+
+      !----- Reset the radiative forcing --------------------------------------------------!
+      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd     )
+      call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw  )
+      call azero(mxp*myp,radiate_g(ngrid)%par_beam      )
+      call azero(mxp*myp,radiate_g(ngrid)%par_diffuse   )
+      call azero(mxp*myp,radiate_g(ngrid)%nir_beam      )
+      call azero(mxp*myp,radiate_g(ngrid)%nir_diffuse   )
+      call azero(mxp*myp,radiate_g(ngrid)%rshort        )
       call azero(mxp*myp,radiate_g(ngrid)%rshort_diffuse)
-      call azero(mxp*myp,radiate_g(ngrid)%rshort_top)
-      call azero(mxp*myp,radiate_g(ngrid)%rshortup_top)
-      call azero(mxp*myp,radiate_g(ngrid)%rlongup_top)
-      call azero(mxp*myp,radiate_g(ngrid)%rlong)
+      call azero(mxp*myp,radiate_g(ngrid)%rshort_top    )
+      call azero(mxp*myp,radiate_g(ngrid)%rshortup_top  )
+      call azero(mxp*myp,radiate_g(ngrid)%rlongup_top   )
+      call azero(mxp*myp,radiate_g(ngrid)%rlong         )
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !    Compute solar zenith angle.                                                     !
@@ -129,30 +156,38 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
 
       !----- CARMA radiation --------------------------------------------------------------!
       if (ilwrtyp == 4 .or. iswrtyp == 4) then
-         call azero(mzp*mxp*myp, lwl)
-         call azero(mzp*mxp*myp, iwl)
-         call azero(    mxp*myp,rain)
-         !------ Accumulating the precipitation -------------------------------------------!
-         if (nnqparm(ngrid) > 0 ) then
-            do icld=1,nclouds
-               call ae1t0p1(mxp*myp,rain,cuparm_g(ngrid)%conprr(:,:,icld),hr_sec,rain)
-            end do
-         end if
-         if (bulk_on) call ae1t0p1(mxp*myp,rain,micro_g(ngrid)%pcpg,hr_sec,rain)
+         allocate(st_rain(    mxp,myp)        )
+         allocate(cb_rain(    mxp,myp,nclouds))
+         allocate(lwl    (mzp,mxp,myp        ))
+         allocate(iwl    (mzp,mxp,myp        ))
+
+         call azero(mzp*mxp*myp        ,lwl    )
+         call azero(mzp*mxp*myp        ,iwl    )
+         call azero(    mxp*myp        ,st_rain)
+         call azero(    mxp*myp*nclouds,cb_rain)
+
+
+         !------ Copy precipitation -------------------------------------------------------!
+         if (nnqparm(ngrid) > 0 ) call atob(mxp*myp*nclouds,cuparm_g(ngrid)%conprr,cb_rain)
+         if (bulk_on)             call atob(mxp*myp        ,micro_g(ngrid)%pcpg   ,st_rain)
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
-         !    Adding the hydrometeors to lwl and iwl. This is safe even when some or all   !
-         ! pure liquid or pure ice hydrometeors are unavailable, because in this case the  !
-         ! arrays have zero.                                                               !
+         !    Add hydrometeors to lwl and iwl. This is safe even when some or all pure     !
+         ! liquid or pure ice hydrometeors are unavailable, because in this case the       !
+         ! arrays have been set to zero.                                                   !
          !---------------------------------------------------------------------------------!
          call ae1p1(mzp*mxp*myp,lwl,lwl,scratch%vt3da) ! Cloud
          call ae1p1(mzp*mxp*myp,lwl,lwl,scratch%vt3db) ! Rain
          call ae1p1(mzp*mxp*myp,iwl,iwl,scratch%vt3dc) ! Pristine ice
          call ae1p1(mzp*mxp*myp,iwl,iwl,scratch%vt3dd) ! Snow
          call ae1p1(mzp*mxp*myp,iwl,iwl,scratch%vt3de) ! Aggregates
+         !---------------------------------------------------------------------------------!
+
+
          !----- Graupel: if available, we need to split between ice and liquid. -----------!
          if (availcat(6)) then
-
             do j=ja,jz
                do i=ia,iz
                   ka = nint(grid_g(ngrid)%flpw(i,j))
@@ -164,6 +199,9 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                end do
             end do
          end if
+         !---------------------------------------------------------------------------------!
+
+
          !----- Hail: if available, we need to split between ice and liquid. --------------!
          if (availcat(7)) then
             do j=ja,jz
@@ -176,25 +214,43 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                   end do
                end do
             end do
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
 
-         !----- Calling CARMA radiation driver --------------------------------------------!
+
+
+
+         !----- Call CARMA radiation driver -----------------------------------------------!
          call radcomp_carma(mzp,mxp,myp,npatch,nclouds,ncrad,ia,iz,ja,jz,mynum,iswrtyp     &
                            ,ilwrtyp,icumfdbk,solfac                                        &
                            ,basic_g(ngrid)%theta           ,basic_g(ngrid)%pi0             &
                            ,basic_g(ngrid)%pp              ,basic_g(ngrid)%rv              &
-                           ,rain,lwl,iwl                   ,scratch%vt4da                  &
+                           ,st_rain,cb_rain,lwl,iwl        ,scratch%vt4da                  &
                            ,scratch%vt4dc                  ,scratch%vt3dr                  &
                            ,scratch%vt3ds                  ,basic_g(ngrid)%dn0             &
                            ,basic_g(ngrid)%rtp             ,radiate_g(ngrid)%fthrd         &
                            ,grid_g(ngrid)%rtgt             ,grid_g(ngrid)%f13t             &
                            ,grid_g(ngrid)%f23t             ,grid_g(ngrid)%glat             &
-                           ,grid_g(ngrid)%glon             ,radiate_g(ngrid)%rshort        &
-                           ,radiate_g(ngrid)%rshort_top    ,radiate_g(ngrid)%rshortup_top  &
-                           ,radiate_g(ngrid)%rlong         ,radiate_g(ngrid)%rlongup_top   &
-                           ,radiate_g(ngrid)%albedt        ,radiate_g(ngrid)%cosz          &
-                           ,radiate_g(ngrid)%rlongup       ,grid_g(ngrid)%fmapt            &
-                           ,scalar_g(3,ngrid)%sclp         ,leaf_g(ngrid)%patch_area       )
+                           ,grid_g(ngrid)%glon             ,radiate_g(ngrid)%par_beam      &
+                           ,radiate_g(ngrid)%par_diffuse   ,radiate_g(ngrid)%nir_beam      &
+                           ,radiate_g(ngrid)%nir_diffuse   ,radiate_g(ngrid)%rshort        &
+                           ,radiate_g(ngrid)%rshort_diffuse,radiate_g(ngrid)%rshort_top    &
+                           ,radiate_g(ngrid)%rshortup_top  ,radiate_g(ngrid)%rlong         &
+                           ,radiate_g(ngrid)%rlongup_top   ,radiate_g(ngrid)%albedt        &
+                           ,radiate_g(ngrid)%cosz          ,radiate_g(ngrid)%rlongup       &
+                           ,grid_g(ngrid)%fmapt            ,scalar_g(3,ngrid)%sclp         &
+                           ,leaf_g(ngrid)%patch_area       )
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Free memory. --------------------------------------------------------------!
+         deallocate(st_rain)
+         deallocate(cb_rain)
+         deallocate(lwl    )
+         deallocate(iwl    )
+         !---------------------------------------------------------------------------------!
       end if
 
       if (ilwrtyp <= 2 .or. iswrtyp <= 2) then
@@ -238,7 +294,34 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                           ,scratch%vt3dr                  ,scratch%vt3ds                   &
                           ,mynum                          )
       end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     If shortwave radiation isn't CARMA, split the components using the Weiss and   !
+      ! Norman (1985) method.                                                              !
+      !------------------------------------------------------------------------------------!
+      select case (iswrtyp)
+      case (1,2,3)
+         do j=ja,jz
+            do i=ia,iz
+               call wn85_rshort_split( radiate_g(ngrid)%rshort         (i,j)               &
+                                     , radiate_g(ngrid)%cosz           (i,j)               &
+                                     , radiate_g(ngrid)%par_beam       (i,j)               &
+                                     , radiate_g(ngrid)%par_diffuse    (i,j)               &
+                                     , radiate_g(ngrid)%nir_beam       (i,j)               &
+                                     , radiate_g(ngrid)%nir_diffuse    (i,j)               &
+                                     , radiate_g(ngrid)%rshort_diffuse (i,j)               )
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+      case default
+         continue
+      end select
+      !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine radiate
 !==========================================================================================!
@@ -794,5 +877,176 @@ subroutine zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
 
    return
 end subroutine zen
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine computes the split between direct and diffuse radiation, and        !
+! between visible and near-infrared radiation using the method suggested by:               !
+!                                                                                          !
+! Weiss, A., J. M. Norman, 1985: Partitioning solar radiation into direct and diffuse,     !
+!     visible and near-infrared components.  Agric. For. Meteorol., 34, 205-213. (WN85)    !
+!------------------------------------------------------------------------------------------!
+subroutine wn85_rshort_split(rshort_full,cosz,par_beam,par_diff,nir_beam,nir_diff          &
+                            ,rshort_diff)
+   use rconstants , only : solar         & ! intent(in)
+                         , prefsea       & ! intent(in)
+                         , twothirds     ! ! intent(in)
+   use mem_radiate, only : rad_cosz_min  & ! intent(in)
+                         , ref_fvis_beam & ! intent(in)
+                         , ref_fvis_diff & ! intent(in)
+                         , ref_fnir_beam & ! intent(in)
+                         , ref_fnir_diff ! ! intent(in)
+   use leaf_coms  , only : atm_prss      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in)    :: rshort_full          ! Incident SW radiation   (total)   [  W/m²]
+   real, intent(in)    :: cosz                 ! cos(zenith distance)              [   ---]
+   real, intent(out)   :: par_beam             ! Incident PAR            (direct ) [  W/m²]
+   real, intent(out)   :: par_diff             ! Incident PAR            (diffuse) [  W/m²]
+   real, intent(out)   :: nir_beam             ! Incident near-infrared  (direct ) [  W/m²]
+   real, intent(out)   :: nir_diff             ! Incident near-infrared  (diffuse) [  W/m²]
+   real, intent(out)   :: rshort_diff          ! Incident SW radiation   (diffuse) [  W/m²]
+   !----- Local variables. ----------------------------------------------------------------!
+   real                :: par_beam_top         ! PAR at the top of atmosphere      [  W/m²]
+   real                :: nir_beam_top         ! NIR at the top of atmosphere      [  W/m²]
+   real                :: par_beam_pot         ! Potential incident PAR  (direct)  [  W/m²]
+   real                :: par_diff_pot         ! Potential incident PAR  (diffuse) [  W/m²]
+   real                :: par_full_pot         ! Potential incident PAR  (total)   [  W/m²]
+   real                :: nir_beam_pot         ! Potential  PAR          (direct)  [  W/m²]
+   real                :: nir_diff_pot         ! Potential  PAR          (diffuse) [  W/m²]
+   real                :: nir_full_pot         ! Potential  PAR          (total)   [  W/m²]
+   real                :: par_full             ! Actual incident PAR     (total)   [  W/m²]
+   real                :: nir_full             ! Actual incident NIR     (total)   [  W/m²]
+   real                :: fvis_beam_act        ! Actual beam fraction - PAR        [   ---]
+   real                :: fnir_beam_act        ! Actual beam fraction - NIR        [   ---]
+   real                :: fvis_diff_act        ! Actual diffuse fraction - PAR     [   ---]
+   real                :: fnir_diff_act        ! Actual diffuse fraction - NIR     [   ---]
+   real                :: ratio                ! Ratio between obs. and expected   [   ---]
+   real                :: aux_par              ! Auxiliary variable                [   ---]
+   real                :: aux_nir              ! Auxiliary variable                [   ---]
+   real                :: secz                 ! sec(zenith distance)              [   ---]
+   real                :: log10secz            ! log10[sec(zenith distance)]       [   ---]
+   real                :: w10                  ! Minimum Water absorption          [  W/m²]
+   !---------------------------------------------------------------------------------------!
+   !    Local constants.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   !----- Extinction coefficient. (equations 1 and 4 of WN85) -----------------------------!
+   real              , parameter :: par_beam_expext  = -0.185
+   real              , parameter :: nir_beam_expext  = -0.060
+   !----- This is the typical conversion of diffuse radiation in sunny days. --------------!
+   real              , parameter :: par2diff_sun = 0.400
+   real              , parameter :: nir2diff_sun = 0.600
+   !----- Coefficients for various equations in WN85. -------------------------------------!
+   real, dimension(3), parameter :: wn85_06 = (/ -1.1950, 0.4459, -0.0345 /)
+   real, dimension(2), parameter :: wn85_11 = (/  0.90, 0.70 /)
+   real, dimension(2), parameter :: wn85_12 = (/  0.88, 0.68 /)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     First thing to check is whether this is daytime or "night-time".  If the zenith   !
+   ! angle is too close to horizon, we assume it's dawn/dusk and all radiation goes to     !
+   ! diffuse.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   if (cosz <= rad_cosz_min) then
+      rshort_diff  = rshort_full
+      par_beam     = 0.0
+      nir_beam     = 0.0
+      par_diff     = ref_fvis_diff * rshort_diff
+      nir_diff     = ref_fnir_diff * rshort_diff
+   else
+      !----- Save 1/cos(zen), which is the secant.  We will use this several times. -------!
+      secz      = 1. / cosz
+      log10secz = log10(secz)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Total radiation at the top [  W/m²], using ED defaults. ----------------------!
+      par_beam_top = ref_fvis_beam * solar
+      nir_beam_top = ref_fnir_beam * solar
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Find the potential PAR components (beam, diffuse, total), using equations 1, 3, !
+      ! and 9 of WN85.                                                                     !
+      !------------------------------------------------------------------------------------!
+      par_beam_pot = par_beam_top                                                          &
+                   * exp ( par_beam_expext * (atm_prss / prefsea) * secz) * cosz
+      par_diff_pot = par2diff_sun * (par_beam_top - par_beam_pot) * cosz
+      par_full_pot = par_beam_pot + par_diff_pot
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the NIR absorption of 10 mm of precipitable water, using WN85 equation 6. !
+      !------------------------------------------------------------------------------------!
+      w10 = solar * 10 ** (wn85_06(1) + log10secz * (wn85_06(2) + wn85_06(3) * log10secz))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the potential direct and diffuse near-infrared radiation, using equations !
+      ! 4, 5, and 10 of WN85.                                                              !
+      !------------------------------------------------------------------------------------!
+      nir_beam_pot = ( nir_beam_top                                                        &
+                     * exp ( nir_beam_expext * (atm_prss / prefsea) * secz) - w10 ) * cosz
+      nir_diff_pot = nir2diff_sun * ( nir_beam_top - nir_beam_pot - w10 ) * cosz
+      nir_full_pot = nir_beam_pot + nir_diff_pot
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the actual total for PAR and NIR, using equations 7 and 8.                !
+      !------------------------------------------------------------------------------------!
+      ratio    = rshort_full / (par_full_pot + nir_full_pot)
+      par_full = ratio * par_full_pot
+      nir_full = ratio * nir_full_pot
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the fraction of PAR and NIR that stays as beam, using equations 11 and 12 !
+      ! of WN85.                                                                           !
+      !------------------------------------------------------------------------------------!
+      !----- Make sure that the ratio is bounded. -----------------------------------------!
+      aux_par       = min(wn85_11(1), max(0., ratio))
+      aux_nir       = min(wn85_12(1), max(0., ratio))
+      fvis_beam_act = min(1., max(0., par_beam_pot                                         &
+                                 * (1. - ((wn85_11(1) - aux_par)/wn85_11(2)) ** twothirds) &
+                                 / par_full_pot ) )
+      fnir_beam_act = min(1., max(0., nir_beam_pot                                         &
+                                 * (1. - ((wn85_12(1) - aux_nir)/wn85_12(2)) ** twothirds) &
+                                 / nir_full_pot ) )
+      fvis_diff_act = 1. - fvis_beam_act
+      fnir_diff_act = 1. - fnir_beam_act
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the radiation components.                                                 !
+      !------------------------------------------------------------------------------------!
+      par_beam    = fvis_beam_act * par_full
+      par_diff    = fvis_diff_act * par_full
+      nir_beam    = fnir_beam_act * nir_full
+      nir_diff    = fnir_diff_act * nir_full
+      rshort_diff = par_diff + nir_diff
+      !------------------------------------------------------------------------------------!
+   end if
+
+   return
+end subroutine wn85_rshort_split
 !==========================================================================================!
 !==========================================================================================!
