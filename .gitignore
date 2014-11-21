@@ -18,9 +18,24 @@ ED/build/ed_2.1-opt
 */bin/*.[fF]90
 
 # specific rules
-BRAMS/build/bin/include.mk.opt
-ED/build/bin/include.mk.opt
-ED/build/bin/dependency.mk
+BRAMS/*/bin/*.mod
+BRAMS/*/bin/*.f90
+BRAMS/*/bin/*.F90
+BRAMS/*/bin/*.c
+BRAMS/*/bin/include.mk.opt
+BRAMS/*/bin/dependency.mk
+Ramspost/*/bin/include.mk.opt
+Ramspost/*/bin/dependency.mk
+Ramspost/*/bin/*.mod
+Ramspost/*/bin/*.f90
+Ramspost/*/bin/*.F90
+Ramspost/*/bin/*.c
+ED/*/bin/include.mk.opt
+ED/*/bin/dependency.mk
+ED/*/bin/*.mod
+ED/*/bin/*.f90
+ED/*/bin/*.F90
+ED/*/bin/*.c
 ed-test
 kiss
 racci
