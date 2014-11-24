@@ -114,7 +114,7 @@ subroutine timing(icall,t1)
    real   , external     :: cputime
 #elif defined(MAC_OS_X)
    real                  :: etime
-#elif defined(PC_GFORTRAN)
+#elif defined(__GFORTRAN__)
    real                  :: etime
 #else
    real   ,external      :: etime
