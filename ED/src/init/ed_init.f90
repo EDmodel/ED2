@@ -625,7 +625,8 @@ subroutine sfcdata_ed()
          thicknet(kzs)      = thicknet(kzs) + 2. * thik
          thik               = thik * stretch
       end do
-      if ((kzs+1)/2 .ne. kzs/2) thicknet(kzs) = thicknet(kzs) - thik/stretch
+!      if ((kzs+1)/2 .ne. kzs/2) thicknet(kzs) = thicknet(kzs) - thik/stretch
+	  if(MOD(kzs, 2) .ne. 0) thicknet(kzs) = thicknet(kzs) - thik/stretch	 
       do k = 1,kzs
          thick(k,kzs) = thick(k,kzs) / thicknet(kzs)
       end do
