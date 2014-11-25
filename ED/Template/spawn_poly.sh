@@ -12,6 +12,8 @@ moi=$(whoami)
 desc=$(basename ${here})
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
+biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
+               # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart='/n/home00/mlongo/data/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
@@ -1130,52 +1132,91 @@ do
    then
       thissfilin=${fullygrown}
 
-      #------------------------------------------------------------------------------------#
-      #    Check how many PFTs to use.                                                     #
-      #------------------------------------------------------------------------------------#
-      case ${isizepft} in 
-      0|5)
-         pftname="pft05"
-         ;;
-      2)
-         pftname="pft02"
-         ;;
-      esac
-      #------------------------------------------------------------------------------------#
+
 
       #------------------------------------------------------------------------------------#
-      #     Check how many patches to use.                                                 #
+      #    Find the biometric files.  This has been checked in spawn_poly.sh so they are   #
+      # correct.  Add a dummy name in case this is not supposed to be a biomass            #
+      # initialisation run.                                                                #
       #------------------------------------------------------------------------------------#
-      case ${iage} in
+      case ${biotype} in
+      0)
+         #----- isizepft controls everything, and iage is ignored. ------------------------#
+         case ${isizepft} in
+         0)
+            #----- Frankeinstein's under storey. ------------------------------------------#
+            thissfilin="${bioinit}/${polyiata}_default."
+            ;;
+         1)
+            #----- No under storey. -------------------------------------------------------#
+            thissfilin="${bioinit}/${polyiata}_nounder."
+            ;;
+         2)
+            #----- Same as default, but with only one grass and one tree. -----------------#
+            thissfilin="${bioinit}/${polyiata}_twopft."
+            ;;
+         *)
+            #----- Invalid option. Stop the script. ---------------------------------------#
+            echo ' Polygon:  '${polyname}
+            echo ' IATA:     '${polyiata}
+            echo ' ISIZEPFT: '${isizepft}
+            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
+            exit 57
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+         ;;
+
       1)
-         agename="age01"
-         ;;
-      *)
-         agename="age00"
-         ;;
-      esac
-      #------------------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
+         #    'isizepft' controls how many PFTs to use.                                    #
+         #---------------------------------------------------------------------------------#
+         case ${isizepft} in 
+         0|5)
+            pftname="pft05"
+            ;;
+         2)
+            pftname="pft02"
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     'iage' controls how many patches to use.                                    #
+         #---------------------------------------------------------------------------------#
+         case ${iage} in
+         1)
+            agename="age01"
+            ;;
+         *)
+            agename="age00"
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
 
 
 
 
-      #------------------------------------------------------------------------------------#
-      #      Check whether the site has the PFT and age structure.                         #
-      #------------------------------------------------------------------------------------#
-      case ${polyiata} in
-      hvd|s77|fns|cau|and|par|tap)
-         thissfilin="${bioinit}/${polyiata}_default."
-         ;;
-      cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
-         thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
-         ;;
-      *)
-         echo ' Polygon:  '${polyname}
-         echo ' IATA:     '${polyiata}
-         echo ' IAGE:     '${iage}
-         echo ' ISIZEPFT: '${isizepft}
-         echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
-         exit 59
+         #---------------------------------------------------------------------------------#
+         #      Check whether the site has the PFT and age structure.                      #
+         #---------------------------------------------------------------------------------#
+         case ${polyiata} in
+         hvd|s77|fns|cau|and|par|tap)
+            thissfilin="${bioinit}/${polyiata}_default."
+            ;;
+         cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
+            thissfilin="${bioinit}/${polyiata}_${pftname}+${agename}."
+            ;;
+         *)
+            echo ' Polygon:  '${polyname}
+            echo ' IATA:     '${polyiata}
+            echo ' IAGE:     '${iage}
+            echo ' ISIZEPFT: '${isizepft}
+            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
+            exit 59
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
          ;;
       esac
       #------------------------------------------------------------------------------------#

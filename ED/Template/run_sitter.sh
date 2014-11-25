@@ -38,6 +38,8 @@ situtils="${here}/sit_utils"
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="/n/home00/mlongo/data/ed2_data/site_bio_data"
+biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
+               # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
 #------------------------------------------------------------------------------------------#
 
 
@@ -917,21 +919,88 @@ then
       # correct.  Add a dummy name in case this is not supposed to be a biomass            #
       # initialisation run.                                                                #
       #------------------------------------------------------------------------------------#
-      case ${isizepft} in
+      case ${biotype} in
       0)
-         #----- Frankeinstein's under storey. ---------------------------------------------#
-         thisbiomin="${bioinit}/${polyiata}_default."
+         #----- isizepft controls everything, and iage is ignored. ------------------------#
+         case ${isizepft} in
+         0)
+            #----- Frankeinstein's under storey. ------------------------------------------#
+            thisbiomin="${bioinit}/${polyiata}_default."
+            ;;
+         1)
+            #----- No under storey. -------------------------------------------------------#
+            thisbiomin="${bioinit}/${polyiata}_nounder."
+            ;;
+         2)
+            #----- Same as default, but with only one grass and one tree. -----------------#
+            thisbiomin="${bioinit}/${polyiata}_twopft."
+            ;;
+         *)
+            #----- Invalid option. Stop the script. ---------------------------------------#
+            echo ' Polygon:  '${polyname}
+            echo ' IATA:     '${polyiata}
+            echo ' ISIZEPFT: '${isizepft}
+            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
+            exit 57
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
          ;;
+
       1)
-         #----- No under storey. ----------------------------------------------------------#
-         thisbiomin="${bioinit}/${polyiata}_nounder."
-         ;;
-      2)
-         #----- Same as default, but with only one grass and one tree. --------------------#
-         thisbiomin="${bioinit}/${polyiata}_twopft."
+         #---------------------------------------------------------------------------------#
+         #    'isizepft' controls how many PFTs to use.                                    #
+         #---------------------------------------------------------------------------------#
+         case ${isizepft} in 
+         0|5)
+            pftname="pft05"
+            ;;
+         2)
+            pftname="pft02"
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+
+         #---------------------------------------------------------------------------------#
+         #     'iage' controls how many patches to use.                                    #
+         #---------------------------------------------------------------------------------#
+         case ${iage} in
+         1)
+            agename="age01"
+            ;;
+         *)
+            agename="age00"
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Check whether the site has the PFT and age structure.                      #
+         #---------------------------------------------------------------------------------#
+         case ${polyiata} in
+         hvd|s77|fns|cau|and|par|tap)
+            thisbiomin="${bioinit}/${polyiata}_default."
+            ;;
+         cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
+            thisbiomin="${bioinit}/${polyiata}_${pftname}+${agename}."
+            ;;
+         *)
+            echo ' Polygon:  '${polyname}
+            echo ' IATA:     '${polyiata}
+            echo ' IAGE:     '${iage}
+            echo ' ISIZEPFT: '${isizepft}
+            echo 'This IATA cannot be used by biomass initialisation with this ISIZEPFT!'
+            exit 59
+            ;;
+         esac
+         #---------------------------------------------------------------------------------#
          ;;
       *)
-         thisbiomin="${bioinit}/${polyiata}_nothing."
+         echo ' Invalid biotype:  '${biotype}
+         exit 58
          ;;
       esac
       #------------------------------------------------------------------------------------#
