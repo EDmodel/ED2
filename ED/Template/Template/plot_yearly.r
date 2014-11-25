@@ -1675,20 +1675,21 @@ for (place in myplaces){
 
          last     = vararr[nyears,]
          last     = c(last[1],last[1],last)
-         #----------------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
 
 
 
-         #----- Bind first and last year to the array, to make the edges buffered. ---------#
+         #----- Bind first and last year to the array, to make the edges buffered. --------#
          varbuff  = cbind(vararr[,1],vararr,vararr[,nzg])
          varbuff  = rbind(last,varbuff,first)
-         #----------------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
 
 
 
-         #----------------------------------------------------------------------------------#
-         #   Expand the month and year axes.  Make the -------------------------------------------#
-         yearaxis = c(yeara-1,datum$toyear,yearz+1)
+         #---------------------------------------------------------------------------------#
+         #   Expand the month and year axes.                                               #
+         #---------------------------------------------------------------------------------#
+         yearaxis = c(min(datum$toyear)-1,datum$toyear,max(datum$toyear)+1)
          soilaxis = -log(-1.0 * c( slz[1]*(slz[1]/slz[2])
                                  , soilaxis
                                  , slz[nzg]*(slz[nzg]/slz[nzg-1]) ))

@@ -167,6 +167,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$growth.resp             = rep(NA,times=ntimes)
    emean$storage.resp            = rep(NA,times=ntimes)
    emean$reco                    = rep(NA,times=ntimes)
+   emean$assim.light             = rep(NA,times=ntimes)
+   emean$assim.rubp              = rep(NA,times=ntimes)
+   emean$assim.co2               = rep(NA,times=ntimes)
+   emean$assim.ratio             = rep(NA,times=ntimes)
    emean$mco                     = rep(NA,times=ntimes)
    emean$cba                     = rep(NA,times=ntimes)
    emean$last.1yr.cba            = rep(NA,times=ntimes)
@@ -466,6 +470,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$growth.resp       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$storage.resp      = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$plant.resp        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$assim.light       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$assim.rubp        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$assim.co2         = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$assim.ratio       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$mco               = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$cba               = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$cbamax            = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
@@ -599,6 +607,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$het.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$cwd.resp       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$soil.resp      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$assim.light    = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$assim.rubp     = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$assim.co2      = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$assim.ratio    = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$nep            = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$nee            = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$reco           = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
@@ -794,6 +806,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$growth.resp    = list()
    cohort$storage.resp   = list()
    cohort$plant.resp     = list()
+   cohort$assim.light    = list()
+   cohort$assim.rubp     = list()
+   cohort$assim.co2      = list()
+   cohort$assim.ratio    = list()
    cohort$npp            = list()
    cohort$cba            = list()
    cohort$cbamax         = list()
@@ -944,6 +960,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$growth.resp       [idx ] = old.datum$emean$growth.resp         [sel ]
    new.datum$emean$storage.resp      [idx ] = old.datum$emean$storage.resp        [sel ]
    new.datum$emean$reco              [idx ] = old.datum$emean$reco                [sel ]
+   new.datum$emean$assim.light       [idx ] = old.datum$emean$assim.light         [sel ]
+   new.datum$emean$assim.rubp        [idx ] = old.datum$emean$assim.rubp          [sel ]
+   new.datum$emean$assim.co2         [idx ] = old.datum$emean$assim.co2           [sel ]
+   new.datum$emean$assim.ratio       [idx ] = old.datum$emean$assim.ratio         [sel ]
    new.datum$emean$mco               [idx ] = old.datum$emean$mco                 [sel ]
    new.datum$emean$cba               [idx ] = old.datum$emean$cba                 [sel ]
    new.datum$emean$last.1yr.cba      [idx ] = old.datum$emean$last.1yr.cba        [sel ]
@@ -1201,6 +1221,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$growth.resp    [idx,,] = old.datum$szpft$growth.resp     [sel,,]
    new.datum$szpft$storage.resp   [idx,,] = old.datum$szpft$storage.resp    [sel,,]
    new.datum$szpft$plant.resp     [idx,,] = old.datum$szpft$plant.resp      [sel,,]
+   new.datum$szpft$assim.light    [idx,,] = old.datum$szpft$assim.light     [sel,,]
+   new.datum$szpft$assim.rubp     [idx,,] = old.datum$szpft$assim.rubp      [sel,,]
+   new.datum$szpft$assim.co2      [idx,,] = old.datum$szpft$assim.co2       [sel,,]
    new.datum$szpft$mco            [idx,,] = old.datum$szpft$mco             [sel,,]
    new.datum$szpft$cba            [idx,,] = old.datum$szpft$cba             [sel,,]
    new.datum$szpft$cbamax         [idx,,] = old.datum$szpft$cbamax          [sel,,]
@@ -1338,6 +1361,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$het.resp      [idx,] = old.datum$qmean$het.resp       [sel,]
    new.datum$qmean$cwd.resp      [idx,] = old.datum$qmean$cwd.resp       [sel,]
    new.datum$qmean$soil.resp     [idx,] = old.datum$qmean$soil.resp      [sel,]
+   new.datum$qmean$assim.light   [idx,] = old.datum$qmean$assim.light    [sel,]
+   new.datum$qmean$assim.rubp    [idx,] = old.datum$qmean$assim.rubp     [sel,]
+   new.datum$qmean$assim.co2     [idx,] = old.datum$qmean$assim.co2      [sel,]
+   new.datum$qmean$assim.ratio   [idx,] = old.datum$qmean$assim.ratio    [sel,]
    new.datum$qmean$nep           [idx,] = old.datum$qmean$nep            [sel,]
    new.datum$qmean$nee           [idx,] = old.datum$qmean$nee            [sel,]
    new.datum$qmean$reco          [idx,] = old.datum$qmean$reco           [sel,]
@@ -1529,6 +1556,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$stem.resp        = old.datum$cohort$stem.resp
    new.datum$cohort$storage.resp     = old.datum$cohort$storage.resp
    new.datum$cohort$plant.resp       = old.datum$cohort$plant.resp
+   new.datum$cohort$assim.light      = old.datum$cohort$assim.light
+   new.datum$cohort$assim.rubp       = old.datum$cohort$assim.rubp
+   new.datum$cohort$assim.co2        = old.datum$cohort$assim.co2
+   new.datum$cohort$assim.ratio      = old.datum$cohort$assim.ratio
    new.datum$cohort$npp              = old.datum$cohort$npp
    new.datum$cohort$cba              = old.datum$cohort$cba
    new.datum$cohort$cbamax           = old.datum$cohort$cbamax

@@ -396,6 +396,15 @@ module ed_state_vars
       ! Photosynthesis rate, closed stomata (umol/m2 leaf/s)
       real ,pointer,dimension(:) :: A_closed
 
+      ! Photosynthesis rate, light limited (umol/m2 leaf/s)
+      real ,pointer,dimension(:) :: A_light
+
+      ! Photosynthesis rate, rubisco limited (umol/m2 leaf/s)
+      real ,pointer,dimension(:) :: A_rubp
+
+      ! Photosynthesis rate, CO2 limited (umol/m2 leaf/s)
+      real ,pointer,dimension(:) :: A_co2
+
       ! Transpiration rate, open stomata (kg/m2_leaf/s)
       real ,pointer,dimension(:) :: psi_open
 
@@ -464,72 +473,75 @@ module ed_state_vars
       ! m2g means m2 of ground area (extensive variable)                                   !
       !------------------------------------------------------------------------------------!
       !----- Fast averages. ---------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_gpp              ! Gross prim. prod. [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_npp              ! Net primary prod. [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_leaf_resp        ! Leaf respiration  [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_root_resp        ! Root respiration  [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_growth_resp      ! Growth resp.      [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_storage_resp     ! Storage resp.     [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_vleaf_resp       ! Virt. leaf resp.  [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_plresp           ! Plant resp.       [kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_leaf_energy      ! Leaf int. energy  [    J/m2g]
-      real,pointer,dimension(:)   :: fmean_leaf_water       ! Leaf sfc. water   [   kg/m2g]
-      real,pointer,dimension(:)   :: fmean_leaf_hcap        ! Leaf heat cap.    [  J/m2g/K]
-      real,pointer,dimension(:)   :: fmean_leaf_vpdef       ! Leaf VPD          [       Pa]
-      real,pointer,dimension(:)   :: fmean_leaf_temp        ! Leaf temperature  [        K]
-      real,pointer,dimension(:)   :: fmean_leaf_fliq        ! Liquid fraction   [       --]
-      real,pointer,dimension(:)   :: fmean_leaf_gsw         ! Stomatal conduct. [      m/s]
-      real,pointer,dimension(:)   :: fmean_leaf_gbw         ! Leaf BL conduct.  [      m/s]
-      real,pointer,dimension(:)   :: fmean_wood_energy      ! Wood int. energy  [    J/m2g]
-      real,pointer,dimension(:)   :: fmean_wood_water       ! Wood sfc. water   [   kg/m2g]
-      real,pointer,dimension(:)   :: fmean_wood_hcap        ! Wood heat cap.    [  J/m2g/K]
-      real,pointer,dimension(:)   :: fmean_wood_temp        ! Wood temperature  [        K]
-      real,pointer,dimension(:)   :: fmean_wood_fliq        ! Liquid fraction   [       --]
-      real,pointer,dimension(:)   :: fmean_wood_gbw         ! Wood BL conduct.  [      m/s]
-      real,pointer,dimension(:)   :: fmean_fs_open          ! Net stress factor [       --]
-      real,pointer,dimension(:)   :: fmean_fsw              ! Moisture stress   [       --]
-      real,pointer,dimension(:)   :: fmean_fsn              ! Nitrogen stress   [       --]
-      real,pointer,dimension(:)   :: fmean_psi_open         ! Transp. no stress [ kg/m2l/s]
-      real,pointer,dimension(:)   :: fmean_psi_closed       ! Transp. max st.   [ kg/m2l/s]
-      real,pointer,dimension(:)   :: fmean_water_supply     ! Water supply      [       --]
-      real,pointer,dimension(:)   :: fmean_light_level      ! Light lev. (Tot.) [       --]
-      real,pointer,dimension(:)   :: fmean_light_level_beam ! Light lev. (Beam) [       --]
-      real,pointer,dimension(:)   :: fmean_light_level_diff ! Lighy lev. (Diff) [       --]
-      real,pointer,dimension(:)   :: fmean_par_l            ! Abs. PAR (Leaf)   [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_par_l_beam       ! Abs. Dir. PAR     [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_par_l_diff       ! Abs. Diffuse PAR  [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_rshort_l         ! Abs. SW (leaf)    [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_rlong_l          ! Abs. LW (leaf)    [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_sensible_lc      ! Sensible heat     [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_vapor_lc         ! Leaf evaporation  [ kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_transp           ! Leaf transp.      [ kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_intercepted_al   ! Leaf interception [ kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_wshed_lg         ! Leaf shedding     [ kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_rshort_w         ! Abs. SW (Wood)    [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_rlong_w          ! Abs. LW (Wood)    [    W/m2g]
-      real,pointer,dimension(:,:) :: fmean_rad_profile      ! Rad. profile      [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_sensible_wc      ! Sensible heat     [    W/m2g]
-      real,pointer,dimension(:)   :: fmean_vapor_wc         ! Wood evaporation  [ kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_intercepted_aw   ! Wood interception [ kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_wshed_wg         ! Wood shedding     [ kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_gpp              ! Gross prim. prod. [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_npp              ! Net primary prod. [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_resp        ! Leaf respiration  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_root_resp        ! Root respiration  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_growth_resp      ! Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_storage_resp     ! Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_vleaf_resp       ! Virt. leaf resp.  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_plresp           ! Plant resp.       [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_leaf_energy      ! Leaf int. energy  [     J/m2g]
+      real,pointer,dimension(:)   :: fmean_leaf_water       ! Leaf sfc. water   [    kg/m2g]
+      real,pointer,dimension(:)   :: fmean_leaf_hcap        ! Leaf heat cap.    [   J/m2g/K]
+      real,pointer,dimension(:)   :: fmean_leaf_vpdef       ! Leaf VPD          [        Pa]
+      real,pointer,dimension(:)   :: fmean_leaf_temp        ! Leaf temperature  [         K]
+      real,pointer,dimension(:)   :: fmean_leaf_fliq        ! Liquid fraction   [        --]
+      real,pointer,dimension(:)   :: fmean_leaf_gsw         ! Stomatal conduct. [       m/s]
+      real,pointer,dimension(:)   :: fmean_leaf_gbw         ! Leaf BL conduct.  [       m/s]
+      real,pointer,dimension(:)   :: fmean_wood_energy      ! Wood int. energy  [     J/m2g]
+      real,pointer,dimension(:)   :: fmean_wood_water       ! Wood sfc. water   [    kg/m2g]
+      real,pointer,dimension(:)   :: fmean_wood_hcap        ! Wood heat cap.    [   J/m2g/K]
+      real,pointer,dimension(:)   :: fmean_wood_temp        ! Wood temperature  [         K]
+      real,pointer,dimension(:)   :: fmean_wood_fliq        ! Liquid fraction   [        --]
+      real,pointer,dimension(:)   :: fmean_wood_gbw         ! Wood BL conduct.  [       m/s]
+      real,pointer,dimension(:)   :: fmean_fs_open          ! Net stress factor [        --]
+      real,pointer,dimension(:)   :: fmean_fsw              ! Moisture stress   [        --]
+      real,pointer,dimension(:)   :: fmean_fsn              ! Nitrogen stress   [        --]
+      real,pointer,dimension(:)   :: fmean_a_light          ! Assim. (light)    [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_rubp           ! Assim. (RuBP)     [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_co2            ! Assim. (CO2)      [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_psi_open         ! Transp. no stress [  kg/m2l/s]
+      real,pointer,dimension(:)   :: fmean_psi_closed       ! Transp. max st.   [  kg/m2l/s]
+      real,pointer,dimension(:)   :: fmean_water_supply     ! Water supply      [        --]
+      real,pointer,dimension(:)   :: fmean_light_level      ! Light lev. (Tot.) [        --]
+      real,pointer,dimension(:)   :: fmean_light_level_beam ! Light lev. (Beam) [        --]
+      real,pointer,dimension(:)   :: fmean_light_level_diff ! Lighy lev. (Diff) [        --]
+      real,pointer,dimension(:)   :: fmean_par_l            ! Abs. PAR (Leaf)   [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_par_l_beam       ! Abs. Dir. PAR     [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_par_l_diff       ! Abs. Diffuse PAR  [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_rshort_l         ! Abs. SW (leaf)    [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_rlong_l          ! Abs. LW (leaf)    [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_sensible_lc      ! Sensible heat     [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_vapor_lc         ! Leaf evaporation  [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_transp           ! Leaf transp.      [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_intercepted_al   ! Leaf interception [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_wshed_lg         ! Leaf shedding     [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_rshort_w         ! Abs. SW (Wood)    [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_rlong_w          ! Abs. LW (Wood)    [     W/m2g]
+      real,pointer,dimension(:,:) :: fmean_rad_profile      ! Rad. profile      [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_sensible_wc      ! Sensible heat     [     W/m2g]
+      real,pointer,dimension(:)   :: fmean_vapor_wc         ! Wood evaporation  [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_intercepted_aw   ! Wood interception [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_wshed_wg         ! Wood shedding     [  kg/m2g/s]
       !----- Variables without sub-daily averages. ----------------------------------------!
-      real,pointer,dimension(:)   :: dmean_nppleaf          ! Leaf NPP          [kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppfroot         ! Fine root NPP     [kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppsapwood       ! Sapwood NPP       [kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppcroot         ! Coarse root NPP   [kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppseeds         ! Seed NPP          [kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppwood          ! Wood NPP          [kgC/pl/yr]
-      real,pointer,dimension(:)   :: dmean_nppdaily         ! Daily NPP         [kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppleaf          ! Leaf NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppfroot         ! Fine root NPP     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppsapwood       ! Sapwood NPP       [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppcroot         ! Coarse root NPP   [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppseeds         ! Seed NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppwood          ! Wood NPP          [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppdaily         ! Daily NPP         [ kgC/pl/yr]
       !----- Monthly means of variables that are integrated daily. ------------------------!
-      real,pointer,dimension(:)   :: mmean_lai              ! Leaf area index   [  m2l/m2g]
-      real,pointer,dimension(:)   :: mmean_bleaf            ! Leaf biomass      [   kgC/pl]
-      real,pointer,dimension(:)   :: mmean_broot            ! Root biomass      [   kgC/pl]
-      real,pointer,dimension(:)   :: mmean_bstorage         ! Storage biomass   [   kgC/pl]
-      real,pointer,dimension(:,:) :: mmean_mort_rate        ! Mortality rate    [     1/yr]
-      real,pointer,dimension(:)   :: mmean_leaf_maintenance ! Leaf maintenance  [kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_root_maintenance ! Root mainten.     [kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_leaf_drop        ! Leaf drop         [kgC/pl/yr]
-      real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [   kgC/pl]
+      real,pointer,dimension(:)   :: mmean_lai              ! Leaf area index   [   m2l/m2g]
+      real,pointer,dimension(:)   :: mmean_bleaf            ! Leaf biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_broot            ! Root biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bstorage         ! Storage biomass   [    kgC/pl]
+      real,pointer,dimension(:,:) :: mmean_mort_rate        ! Mortality rate    [      1/yr]
+      real,pointer,dimension(:)   :: mmean_leaf_maintenance ! Leaf maintenance  [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_root_maintenance ! Root mainten.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_leaf_drop        ! Leaf drop         [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [    kgC/pl]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -556,6 +568,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_fs_open
       real,pointer,dimension(:)     :: dmean_fsw
       real,pointer,dimension(:)     :: dmean_fsn
+      real,pointer,dimension(:)     :: dmean_a_light
+      real,pointer,dimension(:)     :: dmean_a_rubp
+      real,pointer,dimension(:)     :: dmean_a_co2
       real,pointer,dimension(:)     :: dmean_psi_open
       real,pointer,dimension(:)     :: dmean_psi_closed
       real,pointer,dimension(:)     :: dmean_water_supply
@@ -605,6 +620,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_fs_open
       real,pointer,dimension(:)     :: mmean_fsw
       real,pointer,dimension(:)     :: mmean_fsn
+      real,pointer,dimension(:)     :: mmean_a_light
+      real,pointer,dimension(:)     :: mmean_a_rubp
+      real,pointer,dimension(:)     :: mmean_a_co2
       real,pointer,dimension(:)     :: mmean_psi_open
       real,pointer,dimension(:)     :: mmean_psi_closed
       real,pointer,dimension(:)     :: mmean_water_supply
@@ -670,6 +688,9 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_fs_open
       real,pointer,dimension(:,:)   :: qmean_fsw
       real,pointer,dimension(:,:)   :: qmean_fsn
+      real,pointer,dimension(:,:)   :: qmean_a_light
+      real,pointer,dimension(:,:)   :: qmean_a_rubp
+      real,pointer,dimension(:,:)   :: qmean_a_co2
       real,pointer,dimension(:,:)   :: qmean_psi_open
       real,pointer,dimension(:,:)   :: qmean_psi_closed
       real,pointer,dimension(:,:)   :: qmean_water_supply
@@ -2123,165 +2144,168 @@ module ed_state_vars
 
 
       !----- Fast averages. ---------------------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_gpp              ! Gross primary prod. [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_npp              ! Net primary prod.   [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_resp        ! Leaf respiration    [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_root_resp        ! Root respiration    [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_growth_resp      ! Growth resp.        [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_storage_resp     ! Storage resp.       [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_vleaf_resp       ! Virt. leaf resp.    [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_plresp           ! Plant respiration.  [kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_energy      ! Leaf int. energy    [     J/m2]
-      real,pointer,dimension(:) :: fmean_leaf_water       ! Leaf sfc. water     [    kg/m2]
-      real,pointer,dimension(:) :: fmean_leaf_hcap        ! Leaf heat capacity  [   J/m2/K]
-      real,pointer,dimension(:) :: fmean_leaf_vpdef       ! Leaf VPD            [       Pa]
-      real,pointer,dimension(:) :: fmean_leaf_temp        ! Leaf temperature    [        K]
-      real,pointer,dimension(:) :: fmean_leaf_fliq        ! Liquid fraction     [       --]
-      real,pointer,dimension(:) :: fmean_leaf_gsw         ! Stomatal conduct.   [      m/s]
-      real,pointer,dimension(:) :: fmean_leaf_gbw         ! Leaf BL conduct.    [      m/s]
-      real,pointer,dimension(:) :: fmean_wood_energy      ! Wood int. energy    [     J/m2]
-      real,pointer,dimension(:) :: fmean_wood_water       ! Wood sfc. water     [    kg/m2]
-      real,pointer,dimension(:) :: fmean_wood_hcap        ! Wood heat capacity  [   J/m2/K]
-      real,pointer,dimension(:) :: fmean_wood_temp        ! Wood temperature    [        K]
-      real,pointer,dimension(:) :: fmean_wood_fliq        ! Liquid fraction     [       --]
-      real,pointer,dimension(:) :: fmean_wood_gbw         ! Wood BL conduct.    [      m/s]
-      real,pointer,dimension(:) :: fmean_fs_open          ! Net stress factor   [       --]
-      real,pointer,dimension(:) :: fmean_fsw              ! Moisture stress     [       --] 
-      real,pointer,dimension(:) :: fmean_fsn              ! Nitrogen stress     [       --]
-      real,pointer,dimension(:) :: fmean_psi_open         ! Transp. no stress   [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_psi_closed       ! Transp. max stress  [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_water_supply     ! Water supply        [       --]
-      real,pointer,dimension(:) :: fmean_par_l            ! Absorbed PAR (Leaf) [     W/m2]
-      real,pointer,dimension(:) :: fmean_par_l_beam       ! Abs. Dir. PAR       [     W/m2]
-      real,pointer,dimension(:) :: fmean_par_l_diff       ! Abs. Diffuse PAR    [     W/m2]
-      real,pointer,dimension(:) :: fmean_rshort_l         ! Abs. SW (leaf)      [     W/m2]
-      real,pointer,dimension(:) :: fmean_rlong_l          ! Abs. LW (leaf)      [     W/m2]
-      real,pointer,dimension(:) :: fmean_sensible_lc      ! Sensible heat       [     W/m2]
-      real,pointer,dimension(:) :: fmean_vapor_lc         ! Leaf evaporation    [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_transp           ! Leaf transpiration  [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_intercepted_al   ! Leaf interception   [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_wshed_lg         ! Leaf shedding       [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_rshort_w         ! Abs. SW (Wood)      [     W/m2]
-      real,pointer,dimension(:) :: fmean_rlong_w          ! Abs. LW (Wood)      [     W/m2]
-      real,pointer,dimension(:) :: fmean_sensible_wc      ! Sensible heat       [     W/m2]
-      real,pointer,dimension(:) :: fmean_vapor_wc         ! Wood evaporation    [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_intercepted_aw   ! Wood interception   [  kg/m2/s]
-      real,pointer,dimension(:) :: fmean_wshed_wg         ! Wood shedding       [  kg/m2/s]
+      real,pointer,dimension(:) :: fmean_gpp              ! Gross primary prod. [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_npp              ! Net primary prod.   [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_resp        ! Leaf respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_root_resp        ! Root respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_growth_resp      ! Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_storage_resp     ! Storage resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_vleaf_resp       ! Virt. leaf resp.    [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_plresp           ! Plant respiration.  [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_energy      ! Leaf int. energy    [      J/m2]
+      real,pointer,dimension(:) :: fmean_leaf_water       ! Leaf sfc. water     [     kg/m2]
+      real,pointer,dimension(:) :: fmean_leaf_hcap        ! Leaf heat capacity  [    J/m2/K]
+      real,pointer,dimension(:) :: fmean_leaf_vpdef       ! Leaf VPD            [        Pa]
+      real,pointer,dimension(:) :: fmean_leaf_temp        ! Leaf temperature    [         K]
+      real,pointer,dimension(:) :: fmean_leaf_fliq        ! Liquid fraction     [        --]
+      real,pointer,dimension(:) :: fmean_leaf_gsw         ! Stomatal conduct.   [       m/s]
+      real,pointer,dimension(:) :: fmean_leaf_gbw         ! Leaf BL conduct.    [       m/s]
+      real,pointer,dimension(:) :: fmean_wood_energy      ! Wood int. energy    [      J/m2]
+      real,pointer,dimension(:) :: fmean_wood_water       ! Wood sfc. water     [     kg/m2]
+      real,pointer,dimension(:) :: fmean_wood_hcap        ! Wood heat capacity  [    J/m2/K]
+      real,pointer,dimension(:) :: fmean_wood_temp        ! Wood temperature    [         K]
+      real,pointer,dimension(:) :: fmean_wood_fliq        ! Liquid fraction     [        --]
+      real,pointer,dimension(:) :: fmean_wood_gbw         ! Wood BL conduct.    [       m/s]
+      real,pointer,dimension(:) :: fmean_fs_open          ! Net stress factor   [        --]
+      real,pointer,dimension(:) :: fmean_fsw              ! Moisture stress     [        --]
+      real,pointer,dimension(:) :: fmean_fsn              ! Nitrogen stress     [        --]
+      real,pointer,dimension(:) :: fmean_a_light          ! Assim. (light)      [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_rubp           ! Assim. (RuBP)       [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_co2            ! Assim. (CO2)        [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_psi_open         ! Transp. no stress   [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_psi_closed       ! Transp. max stress  [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_water_supply     ! Water supply        [        --]
+      real,pointer,dimension(:) :: fmean_par_l            ! Absorbed PAR (Leaf) [      W/m2]
+      real,pointer,dimension(:) :: fmean_par_l_beam       ! Abs. Dir. PAR       [      W/m2]
+      real,pointer,dimension(:) :: fmean_par_l_diff       ! Abs. Diffuse PAR    [      W/m2]
+      real,pointer,dimension(:) :: fmean_rshort_l         ! Abs. SW (leaf)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_rlong_l          ! Abs. LW (leaf)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_sensible_lc      ! Sensible heat       [      W/m2]
+      real,pointer,dimension(:) :: fmean_vapor_lc         ! Leaf evaporation    [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_transp           ! Leaf transpiration  [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_intercepted_al   ! Leaf interception   [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_wshed_lg         ! Leaf shedding       [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_rshort_w         ! Abs. SW (Wood)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_rlong_w          ! Abs. LW (Wood)      [      W/m2]
+      real,pointer,dimension(:) :: fmean_sensible_wc      ! Sensible heat       [      W/m2]
+      real,pointer,dimension(:) :: fmean_vapor_wc         ! Wood evaporation    [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_intercepted_aw   ! Wood interception   [   kg/m2/s]
+      real,pointer,dimension(:) :: fmean_wshed_wg         ! Wood shedding       [   kg/m2/s]
       !----- Photosynthesis/Decomposition. ------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rh              ! Heterotr. resp.    [kgC/m2/yr]
-      real,pointer,dimension(:)   :: fmean_cwd_rh          ! CWD respiration    [kgC/m2/yr]
-      real,pointer,dimension(:)   :: fmean_nep             ! Net Ecosyst. Prod. [kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_rh              ! Heterotr. resp.    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_cwd_rh          ! CWD respiration    [ kgC/m2/yr]
+      real,pointer,dimension(:)   :: fmean_nep             ! Net Ecosyst. Prod. [ kgC/m2/yr]
       !----- State variables. -------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rk4step         ! RK4 time step      [        s]
-      real,pointer,dimension(:)   :: fmean_available_water ! Available water    [    kg/m2]
-      real,pointer,dimension(:)   :: fmean_can_theiv       ! CAS Theta_Eiv      [        K]
-      real,pointer,dimension(:)   :: fmean_can_theta       ! CAS Potential temp.[        K]
-      real,pointer,dimension(:)   :: fmean_can_vpdef       ! CAS Vap. Pres. Def.[       Pa]
-      real,pointer,dimension(:)   :: fmean_can_temp        ! CAS Temperature    [        K]
-      real,pointer,dimension(:)   :: fmean_can_shv         ! CAS Specific hum.  [    kg/kg]
-      real,pointer,dimension(:)   :: fmean_can_co2         ! CAS CO2 mix. ratio [ umol/mol]
-      real,pointer,dimension(:)   :: fmean_can_rhos        ! CAS air density    [    kg/m3]
-      real,pointer,dimension(:)   :: fmean_can_prss        ! CAS pressure       [       Pa]
-      real,pointer,dimension(:)   :: fmean_gnd_temp        ! Ground temperature [        K]
-      real,pointer,dimension(:)   :: fmean_gnd_shv         ! Ground spec. hum.  [    kg/kg]
-      real,pointer,dimension(:)   :: fmean_can_ggnd        ! Net canopy conduct.[      m/2]
-      real,pointer,dimension(:)   :: fmean_sfcw_depth      ! TPSL depth         [        m]
-      real,pointer,dimension(:)   :: fmean_sfcw_energy     ! TPSL int. energy   [     J/kg]
-      real,pointer,dimension(:)   :: fmean_sfcw_mass       ! TPSL water mass    [    kg/m2]
-      real,pointer,dimension(:)   :: fmean_sfcw_temp       ! TPSL temperature   [        K]
-      real,pointer,dimension(:)   :: fmean_sfcw_fliq       ! TPSL liquid frac.  [       --]
-      real,pointer,dimension(:,:) :: fmean_soil_energy     ! Soil int. energy   [     J/m3]
-      real,pointer,dimension(:,:) :: fmean_soil_mstpot     ! Soil matric potl.  [        m]
-      real,pointer,dimension(:,:) :: fmean_soil_water      ! Soil water content [    m3/m3]
-      real,pointer,dimension(:,:) :: fmean_soil_temp       ! Soil temperature   [        K]
-      real,pointer,dimension(:,:) :: fmean_soil_fliq       ! Soil liquid frac.  [       --]
+      real,pointer,dimension(:)   :: fmean_rk4step         ! RK4 time step      [         s]
+      real,pointer,dimension(:)   :: fmean_available_water ! Available water    [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_can_theiv       ! CAS Theta_Eiv      [         K]
+      real,pointer,dimension(:)   :: fmean_can_theta       ! CAS Potential temp.[         K]
+      real,pointer,dimension(:)   :: fmean_can_vpdef       ! CAS Vap. Pres. Def.[        Pa]
+      real,pointer,dimension(:)   :: fmean_can_temp        ! CAS Temperature    [         K]
+      real,pointer,dimension(:)   :: fmean_can_shv         ! CAS Specific hum.  [     kg/kg]
+      real,pointer,dimension(:)   :: fmean_can_co2         ! CAS CO2 mix. ratio [  umol/mol]
+      real,pointer,dimension(:)   :: fmean_can_rhos        ! CAS air density    [     kg/m3]
+      real,pointer,dimension(:)   :: fmean_can_prss        ! CAS pressure       [        Pa]
+      real,pointer,dimension(:)   :: fmean_gnd_temp        ! Ground temperature [         K]
+      real,pointer,dimension(:)   :: fmean_gnd_shv         ! Ground spec. hum.  [     kg/kg]
+      real,pointer,dimension(:)   :: fmean_can_ggnd        ! Net canopy conduct.[       m/2]
+      real,pointer,dimension(:)   :: fmean_sfcw_depth      ! TPSL depth         [         m]
+      real,pointer,dimension(:)   :: fmean_sfcw_energy     ! TPSL int. energy   [      J/kg]
+      real,pointer,dimension(:)   :: fmean_sfcw_mass       ! TPSL water mass    [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_sfcw_temp       ! TPSL temperature   [         K]
+      real,pointer,dimension(:)   :: fmean_sfcw_fliq       ! TPSL liquid frac.  [        --]
+      real,pointer,dimension(:,:) :: fmean_soil_energy     ! Soil int. energy   [      J/m3]
+      real,pointer,dimension(:,:) :: fmean_soil_mstpot     ! Soil matric potl.  [         m]
+      real,pointer,dimension(:,:) :: fmean_soil_water      ! Soil water content [     m3/m3]
+      real,pointer,dimension(:,:) :: fmean_soil_temp       ! Soil temperature   [         K]
+      real,pointer,dimension(:,:) :: fmean_soil_fliq       ! Soil liquid frac.  [        --]
       !----- Radiation --------------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_rshort_gnd   ! Gnd. absp. SW Rad.    [     W/m2]
-      real,pointer,dimension(:)   :: fmean_par_gnd      ! Absorbed PAR          [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rlong_gnd    ! Gnd. absp. LW Rad.    [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rlongup      ! Outgoing LW Rad.      [     W/m2]
-      real,pointer,dimension(:)   :: fmean_parup        ! Outgoing PAR          [     W/m2]
-      real,pointer,dimension(:)   :: fmean_nirup        ! Outgoing NIR          [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rshortup     ! Outgoing SW Rad.      [     W/m2]
-      real,pointer,dimension(:)   :: fmean_rnet         ! Net radiation         [     W/m2]
-      real,pointer,dimension(:)   :: fmean_albedo       ! Albedo                [     ----]
-      real,pointer,dimension(:)   :: fmean_albedo_par   ! Direct Albedo         [     ----]
-      real,pointer,dimension(:)   :: fmean_albedo_nir   ! Diffuse Albedo        [     ----]
-      real,pointer,dimension(:)   :: fmean_rlong_albedo ! Longwave Albedo       [     ----]
+      real,pointer,dimension(:)   :: fmean_rshort_gnd   ! Gnd. absp. SW Rad.    [      W/m2]
+      real,pointer,dimension(:)   :: fmean_par_gnd      ! Absorbed PAR          [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rlong_gnd    ! Gnd. absp. LW Rad.    [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rlongup      ! Outgoing LW Rad.      [      W/m2]
+      real,pointer,dimension(:)   :: fmean_parup        ! Outgoing PAR          [      W/m2]
+      real,pointer,dimension(:)   :: fmean_nirup        ! Outgoing NIR          [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rshortup     ! Outgoing SW Rad.      [      W/m2]
+      real,pointer,dimension(:)   :: fmean_rnet         ! Net radiation         [      W/m2]
+      real,pointer,dimension(:)   :: fmean_albedo       ! Albedo                [      ----]
+      real,pointer,dimension(:)   :: fmean_albedo_par   ! Direct Albedo         [      ----]
+      real,pointer,dimension(:)   :: fmean_albedo_nir   ! Diffuse Albedo        [      ----]
+      real,pointer,dimension(:)   :: fmean_rlong_albedo ! Longwave Albedo       [      ----]
       !----- Characteristic variables. ----------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_ustar        ! Friction velocity     [      m/s]
-      real,pointer,dimension(:)   :: fmean_tstar        ! Pot. temp. scale      [        K]
-      real,pointer,dimension(:)   :: fmean_qstar        ! Water vapour scale    [    kg/kg]
-      real,pointer,dimension(:)   :: fmean_cstar        ! CO2 scale             [ umol/mol]
-      real,pointer,dimension(:)   :: fmean_carbon_ac    ! CO2 flux, ATM->CAS    [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_carbon_st    ! CO2 storage           [umol/m2/s]
-      real,pointer,dimension(:)   :: fmean_vapor_gc     ! Water flux, Gnd->CAS  [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_vapor_ac     ! Water flux, Atm->CAS  [  kg/m2/s]
-      real,pointer,dimension(:,:) :: fmean_smoist_gg    ! Soil water flux       [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_throughfall  ! Throughfall rate      [  kg/m2/s]
-      real,pointer,dimension(:,:) :: fmean_transloss    ! Water loss (transp.)  [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_runoff       ! Water runoff          [  kg/m2/s]
-      real,pointer,dimension(:)   :: fmean_drainage     ! Water drainage        [  kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_ustar        ! Friction velocity     [       m/s]
+      real,pointer,dimension(:)   :: fmean_tstar        ! Pot. temp. scale      [         K]
+      real,pointer,dimension(:)   :: fmean_qstar        ! Water vapour scale    [     kg/kg]
+      real,pointer,dimension(:)   :: fmean_cstar        ! CO2 scale             [  umol/mol]
+      real,pointer,dimension(:)   :: fmean_carbon_ac    ! CO2 flux, ATM->CAS    [ umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_carbon_st    ! CO2 storage           [ umol/m2/s]
+      real,pointer,dimension(:)   :: fmean_vapor_gc     ! Water flux, Gnd->CAS  [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_vapor_ac     ! Water flux, Atm->CAS  [   kg/m2/s]
+      real,pointer,dimension(:,:) :: fmean_smoist_gg    ! Soil water flux       [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_throughfall  ! Throughfall rate      [   kg/m2/s]
+      real,pointer,dimension(:,:) :: fmean_transloss    ! Water loss (transp.)  [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_runoff       ! Water runoff          [   kg/m2/s]
+      real,pointer,dimension(:)   :: fmean_drainage     ! Water drainage        [   kg/m2/s]
       !----- Sensible heat ----------------------------------------------------------------!
-      real,pointer,dimension(:)   :: fmean_sensible_gc  ! Sens. heat, GND->CAS  [     W/m2]
-      real,pointer,dimension(:)   :: fmean_sensible_ac  ! Sens. heat, ATM->CAS  [     W/m2]
-      real,pointer,dimension(:,:) :: fmean_sensible_gg  ! Soil heat flux        [     W/m2]
-      real,pointer,dimension(:)   :: fmean_qthroughfall ! Throughfall rate      [     W/m2]
-      real,pointer,dimension(:)   :: fmean_qrunoff      ! Surface runoff        [     W/m2]
-      real,pointer,dimension(:)   :: fmean_qdrainage    ! Drainage energy loss  [     W/m2]
+      real,pointer,dimension(:)   :: fmean_sensible_gc  ! Sens. heat, GND->CAS  [      W/m2]
+      real,pointer,dimension(:)   :: fmean_sensible_ac  ! Sens. heat, ATM->CAS  [      W/m2]
+      real,pointer,dimension(:,:) :: fmean_sensible_gg  ! Soil heat flux        [      W/m2]
+      real,pointer,dimension(:)   :: fmean_qthroughfall ! Throughfall rate      [      W/m2]
+      real,pointer,dimension(:)   :: fmean_qrunoff      ! Surface runoff        [      W/m2]
+      real,pointer,dimension(:)   :: fmean_qdrainage    ! Drainage energy loss  [      W/m2]
       !------ Met driver. -----------------------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_atm_theiv       ! IV Equiv. Pot. Temp   [       K]
-      real,pointer,dimension(:) :: fmean_atm_theta       ! Potential temperature [       K]
-      real,pointer,dimension(:) :: fmean_atm_temp        ! Temperature           [       K]
-      real,pointer,dimension(:) :: fmean_atm_vpdef       ! Vapour pres. deficit  [      Pa]
-      real,pointer,dimension(:) :: fmean_atm_shv         ! Specific humidity     [   kg/kg]
-      real,pointer,dimension(:) :: fmean_atm_rshort      ! Shortwave radiation   [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_rshort_diff ! Diffuse SW radiation  [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_par         ! Photosyn. Active Rad. [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_par_diff    ! Diffuse PAR           [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_rlong       ! Longwave radiation    [    W/m2]
-      real,pointer,dimension(:) :: fmean_atm_vels        ! Wind speed            [     m/s]
-      real,pointer,dimension(:) :: fmean_atm_rhos        ! Air density           [   kg/m3]
-      real,pointer,dimension(:) :: fmean_atm_prss        ! Air pressure          [      Pa]
-      real,pointer,dimension(:) :: fmean_atm_co2         ! Air CO2               [umol/mol]
-      real,pointer,dimension(:) :: fmean_pcpg            ! Precipitation rate    [ kg/m2/s]
-      real,pointer,dimension(:) :: fmean_qpcpg           ! Energy gain - rain    [    W/m2]
-      real,pointer,dimension(:) :: fmean_dpcpg           ! Precipitation depth   [       m]
+      real,pointer,dimension(:) :: fmean_atm_theiv       ! IV Equiv. Pot. Temp   [        K]
+      real,pointer,dimension(:) :: fmean_atm_theta       ! Potential temperature [        K]
+      real,pointer,dimension(:) :: fmean_atm_temp        ! Temperature           [        K]
+      real,pointer,dimension(:) :: fmean_atm_vpdef       ! Vapour pres. deficit  [       Pa]
+      real,pointer,dimension(:) :: fmean_atm_shv         ! Specific humidity     [    kg/kg]
+      real,pointer,dimension(:) :: fmean_atm_rshort      ! Shortwave radiation   [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_rshort_diff ! Diffuse SW radiation  [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_par         ! Photosyn. Active Rad. [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_par_diff    ! Diffuse PAR           [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_rlong       ! Longwave radiation    [     W/m2]
+      real,pointer,dimension(:) :: fmean_atm_vels        ! Wind speed            [      m/s]
+      real,pointer,dimension(:) :: fmean_atm_rhos        ! Air density           [    kg/m3]
+      real,pointer,dimension(:) :: fmean_atm_prss        ! Air pressure          [       Pa]
+      real,pointer,dimension(:) :: fmean_atm_co2         ! Air CO2               [ umol/mol]
+      real,pointer,dimension(:) :: fmean_pcpg            ! Precipitation rate    [  kg/m2/s]
+      real,pointer,dimension(:) :: fmean_qpcpg           ! Energy gain - rain    [     W/m2]
+      real,pointer,dimension(:) :: fmean_dpcpg           ! Precipitation depth   [        m]
       !----- Moore Foundation variables. --------------------------------------------------!
-      real,pointer,dimension(:) :: fmean_soil_wetness     ! Soil wetness index  [       --]
-      real,pointer,dimension(:) :: fmean_skin_temp        ! Skin temperature    [        K]
+      real,pointer,dimension(:) :: fmean_soil_wetness     ! Soil wetness index  [        --]
+      real,pointer,dimension(:) :: fmean_skin_temp        ! Skin temperature    [         K]
       !----- Variables without sub-daily averages. ----------------------------------------!
-      real,pointer,dimension(:) :: dmean_nppleaf          ! Leaf NPP            [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppfroot         ! Fine root NPP       [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppsapwood       ! Sapwood NPP         [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppcroot         ! Coarse root NPP     [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppseeds         ! Seed NPP            [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppwood          ! Wood NPP            [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_nppdaily         ! Daily NPP           [kgC/m2/yr]
-      real,pointer,dimension(:) :: dmean_A_decomp         ! Decomposition fact. [       --]
-      real,pointer,dimension(:) :: dmean_Af_decomp        ! A with N immobil.   [       --]
-      real,pointer,dimension(:) :: dmean_co2_residual     ! CO2 residual        [  umol/m2]
-      real,pointer,dimension(:) :: dmean_energy_residual  ! Enthalpy residual   [     J/m2]
-      real,pointer,dimension(:) :: dmean_water_residual   ! Water residual      [    kg/m2]
+      real,pointer,dimension(:) :: dmean_nppleaf          ! Leaf NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppfroot         ! Fine root NPP       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppsapwood       ! Sapwood NPP         [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppcroot         ! Coarse root NPP     [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppseeds         ! Seed NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppwood          ! Wood NPP            [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppdaily         ! Daily NPP           [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_A_decomp         ! Decomposition fact. [        --]
+      real,pointer,dimension(:) :: dmean_Af_decomp        ! A with N immobil.   [        --]
+      real,pointer,dimension(:) :: dmean_co2_residual     ! CO2 residual        [   umol/m2]
+      real,pointer,dimension(:) :: dmean_energy_residual  ! Enthalpy residual   [      J/m2]
+      real,pointer,dimension(:) :: dmean_water_residual   ! Water residual      [     kg/m2]
       !----- Variables that are updated once a day. ---------------------------------------!
-      real,pointer,dimension(:,:,:) :: mmean_lai              ! Leaf area index [    m2/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bleaf            ! Leaf biomass    [   kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_broot            ! Root biomass    [   kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bstorage         ! Storage         [   kgC/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bleaf_n          ! Leaf N mass     [   kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_broot_n          ! Root N mass     [   kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_bstorage_n       ! Storage N       [   kgN/m2]
-      real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance ! Leaf maintenance[kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_root_maintenance ! Root maintenance[kgC/m2/yr]
-      real,pointer,dimension(:,:,:) :: mmean_leaf_drop        ! Leaf shedding   [kgC/m2/yr]
-      real,pointer,dimension(:)     :: mmean_fast_soil_c      ! Fast soil C     [   kgC/m2]
-      real,pointer,dimension(:)     :: mmean_slow_soil_c      ! Slow soil C     [   kgC/m2]
-      real,pointer,dimension(:)     :: mmean_struct_soil_c    ! Struct. soil C  [   kgC/m2]
-      real,pointer,dimension(:)     :: mmean_struct_soil_l    ! Struct. soil L  [   kgL/m2]
-      real,pointer,dimension(:)     :: mmean_cwd_c            ! CWD carbon      [   kgC/m2]
-      real,pointer,dimension(:)     :: mmean_fast_soil_n      ! Fast soil N     [   kgN/m2]
-      real,pointer,dimension(:)     :: mmean_mineral_soil_n   ! Mineral. soil N [   kgN/m2]
-      real,pointer,dimension(:)     :: mmean_cwd_n            ! CWD nitrogen    [   kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_lai              ! Leaf area index [     m2/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bleaf            ! Leaf biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_broot            ! Root biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bstorage         ! Storage         [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bleaf_n          ! Leaf N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_broot_n          ! Root N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bstorage_n       ! Storage N       [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance ! Leaf maintenance[ kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_root_maintenance ! Root maintenance[ kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_leaf_drop        ! Leaf shedding   [ kgC/m2/yr]
+      real,pointer,dimension(:)     :: mmean_fast_soil_c      ! Fast soil C     [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_slow_soil_c      ! Slow soil C     [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_c    ! Struct. soil C  [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_struct_soil_l    ! Struct. soil L  [    kgL/m2]
+      real,pointer,dimension(:)     :: mmean_cwd_c            ! CWD carbon      [    kgC/m2]
+      real,pointer,dimension(:)     :: mmean_fast_soil_n      ! Fast soil N     [    kgN/m2]
+      real,pointer,dimension(:)     :: mmean_mineral_soil_n   ! Mineral. soil N [    kgN/m2]
+      real,pointer,dimension(:)     :: mmean_cwd_n            ! CWD nitrogen    [    kgN/m2]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
       real,pointer,dimension(:)     :: dmean_gpp
       real,pointer,dimension(:)     :: dmean_npp
@@ -2308,6 +2332,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_fs_open
       real,pointer,dimension(:)     :: dmean_fsw
       real,pointer,dimension(:)     :: dmean_fsn
+      real,pointer,dimension(:)     :: dmean_a_light
+      real,pointer,dimension(:)     :: dmean_a_rubp
+      real,pointer,dimension(:)     :: dmean_a_co2
       real,pointer,dimension(:)     :: dmean_psi_open
       real,pointer,dimension(:)     :: dmean_psi_closed
       real,pointer,dimension(:)     :: dmean_water_supply
@@ -2427,6 +2454,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_fs_open
       real,pointer,dimension(:)     :: mmean_fsw
       real,pointer,dimension(:)     :: mmean_fsn
+      real,pointer,dimension(:)     :: mmean_a_light
+      real,pointer,dimension(:)     :: mmean_a_rubp
+      real,pointer,dimension(:)     :: mmean_a_co2
       real,pointer,dimension(:)     :: mmean_psi_open
       real,pointer,dimension(:)     :: mmean_psi_closed
       real,pointer,dimension(:)     :: mmean_water_supply
@@ -2583,6 +2613,9 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_fs_open
       real,pointer,dimension(:,:)   :: qmean_fsw
       real,pointer,dimension(:,:)   :: qmean_fsn
+      real,pointer,dimension(:,:)   :: qmean_a_light
+      real,pointer,dimension(:,:)   :: qmean_a_rubp
+      real,pointer,dimension(:,:)   :: qmean_a_co2
       real,pointer,dimension(:,:)   :: qmean_psi_open
       real,pointer,dimension(:,:)   :: qmean_psi_closed
       real,pointer,dimension(:,:)   :: qmean_water_supply
@@ -3001,6 +3034,9 @@ module ed_state_vars
       allocate(cgrid%fmean_fs_open              (                    npolygons))
       allocate(cgrid%fmean_fsw                  (                    npolygons))
       allocate(cgrid%fmean_fsn                  (                    npolygons))
+      allocate(cgrid%fmean_a_light              (                    npolygons))
+      allocate(cgrid%fmean_a_rubp               (                    npolygons))
+      allocate(cgrid%fmean_a_co2                (                    npolygons))
       allocate(cgrid%fmean_psi_open             (                    npolygons))
       allocate(cgrid%fmean_psi_closed           (                    npolygons))
       allocate(cgrid%fmean_water_supply         (                    npolygons))
@@ -3141,6 +3177,9 @@ module ed_state_vars
          allocate(cgrid%dmean_fs_open          (                     npolygons))
          allocate(cgrid%dmean_fsw              (                     npolygons))
          allocate(cgrid%dmean_fsn              (                     npolygons))
+         allocate(cgrid%dmean_a_light          (                     npolygons))
+         allocate(cgrid%dmean_a_rubp           (                     npolygons))
+         allocate(cgrid%dmean_a_co2            (                     npolygons))
          allocate(cgrid%dmean_psi_open         (                     npolygons))
          allocate(cgrid%dmean_psi_closed       (                     npolygons))
          allocate(cgrid%dmean_water_supply     (                     npolygons))
@@ -3288,6 +3327,9 @@ module ed_state_vars
          allocate(cgrid%mmean_fs_open          (                     npolygons)) 
          allocate(cgrid%mmean_fsw              (                     npolygons)) 
          allocate(cgrid%mmean_fsn              (                     npolygons)) 
+         allocate(cgrid%mmean_a_light          (                     npolygons))
+         allocate(cgrid%mmean_a_rubp           (                     npolygons))
+         allocate(cgrid%mmean_a_co2            (                     npolygons))
          allocate(cgrid%mmean_psi_open         (                     npolygons)) 
          allocate(cgrid%mmean_psi_closed       (                     npolygons)) 
          allocate(cgrid%mmean_water_supply     (                     npolygons)) 
@@ -3453,6 +3495,9 @@ module ed_state_vars
          allocate(cgrid%qmean_fs_open          (             ndcycle,npolygons))
          allocate(cgrid%qmean_fsw              (             ndcycle,npolygons))
          allocate(cgrid%qmean_fsn              (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_light          (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_rubp           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_co2            (             ndcycle,npolygons))
          allocate(cgrid%qmean_psi_open         (             ndcycle,npolygons))
          allocate(cgrid%qmean_psi_closed       (             ndcycle,npolygons))
          allocate(cgrid%qmean_water_supply     (             ndcycle,npolygons))
@@ -4395,6 +4440,9 @@ module ed_state_vars
       allocate(cpatch%wood_gbw                     (                    ncohorts))
       allocate(cpatch%A_open                       (                    ncohorts))
       allocate(cpatch%A_closed                     (                    ncohorts))
+      allocate(cpatch%A_light                      (                    ncohorts))
+      allocate(cpatch%A_rubp                       (                    ncohorts))
+      allocate(cpatch%A_co2                        (                    ncohorts))
       allocate(cpatch%psi_open                     (                    ncohorts))
       allocate(cpatch%psi_closed                   (                    ncohorts))
       allocate(cpatch%gsw_open                     (                    ncohorts))
@@ -4416,7 +4464,6 @@ module ed_state_vars
       allocate(cpatch%llspan                       (                    ncohorts))
       allocate(cpatch%vm_bar                       (                    ncohorts))
       allocate(cpatch%sla                          (                    ncohorts))
-
       allocate(cpatch%fmean_gpp                    (                    ncohorts))
       allocate(cpatch%fmean_npp                    (                    ncohorts))
       allocate(cpatch%fmean_leaf_resp              (                    ncohorts))
@@ -4442,6 +4489,9 @@ module ed_state_vars
       allocate(cpatch%fmean_fs_open                (                    ncohorts))
       allocate(cpatch%fmean_fsw                    (                    ncohorts))
       allocate(cpatch%fmean_fsn                    (                    ncohorts))
+      allocate(cpatch%fmean_A_light                (                    ncohorts))
+      allocate(cpatch%fmean_A_rubp                 (                    ncohorts))
+      allocate(cpatch%fmean_A_co2                  (                    ncohorts))
       allocate(cpatch%fmean_psi_open               (                    ncohorts))
       allocate(cpatch%fmean_psi_closed             (                    ncohorts))
       allocate(cpatch%fmean_water_supply           (                    ncohorts))
@@ -4500,6 +4550,9 @@ module ed_state_vars
          allocate(cpatch%dmean_fs_open             (                    ncohorts))
          allocate(cpatch%dmean_fsw                 (                    ncohorts))
          allocate(cpatch%dmean_fsn                 (                    ncohorts))
+         allocate(cpatch%dmean_A_light             (                    ncohorts))
+         allocate(cpatch%dmean_A_rubp              (                    ncohorts))
+         allocate(cpatch%dmean_A_co2               (                    ncohorts))
          allocate(cpatch%dmean_psi_open            (                    ncohorts))
          allocate(cpatch%dmean_psi_closed          (                    ncohorts))
          allocate(cpatch%dmean_water_supply        (                    ncohorts))
@@ -4560,6 +4613,9 @@ module ed_state_vars
          allocate(cpatch%mmean_fs_open             (                    ncohorts))
          allocate(cpatch%mmean_fsw                 (                    ncohorts))
          allocate(cpatch%mmean_fsn                 (                    ncohorts))
+         allocate(cpatch%mmean_A_light             (                    ncohorts))
+         allocate(cpatch%mmean_A_rubp              (                    ncohorts))
+         allocate(cpatch%mmean_A_co2               (                    ncohorts))
          allocate(cpatch%mmean_psi_open            (                    ncohorts))
          allocate(cpatch%mmean_psi_closed          (                    ncohorts))
          allocate(cpatch%mmean_water_supply        (                    ncohorts))
@@ -4626,6 +4682,9 @@ module ed_state_vars
          allocate(cpatch%qmean_fs_open             (            ndcycle,ncohorts))
          allocate(cpatch%qmean_fsw                 (            ndcycle,ncohorts))
          allocate(cpatch%qmean_fsn                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_A_light             (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_A_rubp              (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_A_co2               (            ndcycle,ncohorts))
          allocate(cpatch%qmean_psi_open            (            ndcycle,ncohorts))
          allocate(cpatch%qmean_psi_closed          (            ndcycle,ncohorts))
          allocate(cpatch%qmean_water_supply        (            ndcycle,ncohorts))
@@ -4800,6 +4859,9 @@ module ed_state_vars
       nullify(cgrid%fmean_fs_open           )
       nullify(cgrid%fmean_fsw               )
       nullify(cgrid%fmean_fsn               )
+      nullify(cgrid%fmean_A_light           )
+      nullify(cgrid%fmean_A_rubp            )
+      nullify(cgrid%fmean_A_co2             )
       nullify(cgrid%fmean_psi_open          )
       nullify(cgrid%fmean_psi_closed        )
       nullify(cgrid%fmean_water_supply      )
@@ -4932,6 +4994,9 @@ module ed_state_vars
       nullify(cgrid%dmean_fs_open           )
       nullify(cgrid%dmean_fsw               )
       nullify(cgrid%dmean_fsn               )
+      nullify(cgrid%dmean_A_light           )
+      nullify(cgrid%dmean_A_rubp            )
+      nullify(cgrid%dmean_A_co2             )
       nullify(cgrid%dmean_psi_open          )
       nullify(cgrid%dmean_psi_closed        )
       nullify(cgrid%dmean_water_supply      )
@@ -5068,6 +5133,9 @@ module ed_state_vars
       nullify(cgrid%mmean_fs_open           )
       nullify(cgrid%mmean_fsw               )
       nullify(cgrid%mmean_fsn               )
+      nullify(cgrid%mmean_A_light           )
+      nullify(cgrid%mmean_A_rubp            )
+      nullify(cgrid%mmean_A_co2             )
       nullify(cgrid%mmean_psi_open          )
       nullify(cgrid%mmean_psi_closed        )
       nullify(cgrid%mmean_water_supply      )
@@ -5222,6 +5290,9 @@ module ed_state_vars
       nullify(cgrid%qmean_fs_open           )
       nullify(cgrid%qmean_fsw               )
       nullify(cgrid%qmean_fsn               )
+      nullify(cgrid%qmean_A_light           )
+      nullify(cgrid%qmean_A_rubp            )
+      nullify(cgrid%qmean_A_co2             )
       nullify(cgrid%qmean_psi_open          )
       nullify(cgrid%qmean_psi_closed        )
       nullify(cgrid%qmean_water_supply      )
@@ -6063,6 +6134,9 @@ module ed_state_vars
       nullify(cpatch%wood_gbw              )
       nullify(cpatch%A_open                )
       nullify(cpatch%A_closed              )
+      nullify(cpatch%A_light               )
+      nullify(cpatch%A_rubp                )
+      nullify(cpatch%A_co2                 )
       nullify(cpatch%psi_open              )
       nullify(cpatch%psi_closed            )
       nullify(cpatch%gsw_open              )
@@ -6109,6 +6183,9 @@ module ed_state_vars
       nullify(cpatch%fmean_fs_open         )
       nullify(cpatch%fmean_fsw             )
       nullify(cpatch%fmean_fsn             )
+      nullify(cpatch%fmean_A_light         )
+      nullify(cpatch%fmean_A_rubp          )
+      nullify(cpatch%fmean_A_co2           )
       nullify(cpatch%fmean_psi_open        )
       nullify(cpatch%fmean_psi_closed      )
       nullify(cpatch%fmean_water_supply    )
@@ -6164,6 +6241,9 @@ module ed_state_vars
       nullify(cpatch%dmean_fs_open         )
       nullify(cpatch%dmean_fsw             )
       nullify(cpatch%dmean_fsn             )
+      nullify(cpatch%dmean_A_light         )
+      nullify(cpatch%dmean_A_rubp          )
+      nullify(cpatch%dmean_A_co2           )
       nullify(cpatch%dmean_psi_open        )
       nullify(cpatch%dmean_psi_closed      )
       nullify(cpatch%dmean_water_supply    )
@@ -6221,6 +6301,9 @@ module ed_state_vars
       nullify(cpatch%mmean_fs_open         )
       nullify(cpatch%mmean_fsw             )
       nullify(cpatch%mmean_fsn             )
+      nullify(cpatch%mmean_A_light         )
+      nullify(cpatch%mmean_A_rubp          )
+      nullify(cpatch%mmean_A_co2           )
       nullify(cpatch%mmean_psi_open        )
       nullify(cpatch%mmean_psi_closed      )
       nullify(cpatch%mmean_water_supply    )
@@ -6284,6 +6367,9 @@ module ed_state_vars
       nullify(cpatch%qmean_fs_open         )
       nullify(cpatch%qmean_fsw             )
       nullify(cpatch%qmean_fsn             )
+      nullify(cpatch%qmean_A_light         )
+      nullify(cpatch%qmean_A_rubp          )
+      nullify(cpatch%qmean_A_co2           )
       nullify(cpatch%qmean_psi_open        )
       nullify(cpatch%qmean_psi_closed      )
       nullify(cpatch%qmean_water_supply    )
@@ -6469,6 +6555,9 @@ module ed_state_vars
       if(associated(cgrid%fmean_fs_open         )) deallocate(cgrid%fmean_fs_open         )
       if(associated(cgrid%fmean_fsw             )) deallocate(cgrid%fmean_fsw             )
       if(associated(cgrid%fmean_fsn             )) deallocate(cgrid%fmean_fsn             )
+      if(associated(cgrid%fmean_A_light         )) deallocate(cgrid%fmean_A_light         )
+      if(associated(cgrid%fmean_A_rubp          )) deallocate(cgrid%fmean_A_rubp          )
+      if(associated(cgrid%fmean_A_co2           )) deallocate(cgrid%fmean_A_co2           )
       if(associated(cgrid%fmean_psi_open        )) deallocate(cgrid%fmean_psi_open        )
       if(associated(cgrid%fmean_psi_closed      )) deallocate(cgrid%fmean_psi_closed      )
       if(associated(cgrid%fmean_water_supply    )) deallocate(cgrid%fmean_water_supply    )
@@ -6601,6 +6690,9 @@ module ed_state_vars
       if(associated(cgrid%dmean_fs_open         )) deallocate(cgrid%dmean_fs_open         )
       if(associated(cgrid%dmean_fsw             )) deallocate(cgrid%dmean_fsw             )
       if(associated(cgrid%dmean_fsn             )) deallocate(cgrid%dmean_fsn             )
+      if(associated(cgrid%dmean_A_light         )) deallocate(cgrid%dmean_A_light         )
+      if(associated(cgrid%dmean_A_rubp          )) deallocate(cgrid%dmean_A_rubp          )
+      if(associated(cgrid%dmean_A_co2           )) deallocate(cgrid%dmean_A_co2           )
       if(associated(cgrid%dmean_psi_open        )) deallocate(cgrid%dmean_psi_open        )
       if(associated(cgrid%dmean_psi_closed      )) deallocate(cgrid%dmean_psi_closed      )
       if(associated(cgrid%dmean_water_supply    )) deallocate(cgrid%dmean_water_supply    )
@@ -6737,6 +6829,9 @@ module ed_state_vars
       if(associated(cgrid%mmean_fs_open         )) deallocate(cgrid%mmean_fs_open         )
       if(associated(cgrid%mmean_fsw             )) deallocate(cgrid%mmean_fsw             )
       if(associated(cgrid%mmean_fsn             )) deallocate(cgrid%mmean_fsn             )
+      if(associated(cgrid%mmean_A_light         )) deallocate(cgrid%mmean_A_light         )
+      if(associated(cgrid%mmean_A_rubp          )) deallocate(cgrid%mmean_A_rubp          )
+      if(associated(cgrid%mmean_A_co2           )) deallocate(cgrid%mmean_A_co2           )
       if(associated(cgrid%mmean_psi_open        )) deallocate(cgrid%mmean_psi_open        )
       if(associated(cgrid%mmean_psi_closed      )) deallocate(cgrid%mmean_psi_closed      )
       if(associated(cgrid%mmean_water_supply    )) deallocate(cgrid%mmean_water_supply    )
@@ -6891,6 +6986,9 @@ module ed_state_vars
       if(associated(cgrid%qmean_fs_open         )) deallocate(cgrid%qmean_fs_open         )
       if(associated(cgrid%qmean_fsw             )) deallocate(cgrid%qmean_fsw             )
       if(associated(cgrid%qmean_fsn             )) deallocate(cgrid%qmean_fsn             )
+      if(associated(cgrid%qmean_A_light         )) deallocate(cgrid%qmean_A_light         )
+      if(associated(cgrid%qmean_A_rubp          )) deallocate(cgrid%qmean_A_rubp          )
+      if(associated(cgrid%qmean_A_co2           )) deallocate(cgrid%qmean_A_co2           )
       if(associated(cgrid%qmean_psi_open        )) deallocate(cgrid%qmean_psi_open        )
       if(associated(cgrid%qmean_psi_closed      )) deallocate(cgrid%qmean_psi_closed      )
       if(associated(cgrid%qmean_water_supply    )) deallocate(cgrid%qmean_water_supply    )
@@ -7764,6 +7862,9 @@ module ed_state_vars
       if(associated(cpatch%wood_gbw            )) deallocate(cpatch%wood_gbw            )
       if(associated(cpatch%A_open              )) deallocate(cpatch%A_open              )
       if(associated(cpatch%A_closed            )) deallocate(cpatch%A_closed            )
+      if(associated(cpatch%A_light             )) deallocate(cpatch%A_light             )
+      if(associated(cpatch%A_rubp              )) deallocate(cpatch%A_rubp              )
+      if(associated(cpatch%A_co2               )) deallocate(cpatch%A_co2               )
       if(associated(cpatch%psi_open            )) deallocate(cpatch%psi_open            )
       if(associated(cpatch%psi_closed          )) deallocate(cpatch%psi_closed          )
       if(associated(cpatch%gsw_open            )) deallocate(cpatch%gsw_open            )
@@ -7810,6 +7911,9 @@ module ed_state_vars
       if(associated(cpatch%fmean_fs_open       )) deallocate(cpatch%fmean_fs_open       )
       if(associated(cpatch%fmean_fsw           )) deallocate(cpatch%fmean_fsw           )
       if(associated(cpatch%fmean_fsn           )) deallocate(cpatch%fmean_fsn           )
+      if(associated(cpatch%fmean_A_light       )) deallocate(cpatch%fmean_A_light       )
+      if(associated(cpatch%fmean_A_rubp        )) deallocate(cpatch%fmean_A_rubp        )
+      if(associated(cpatch%fmean_A_co2         )) deallocate(cpatch%fmean_A_co2         )
       if(associated(cpatch%fmean_psi_open      )) deallocate(cpatch%fmean_psi_open      )
       if(associated(cpatch%fmean_psi_closed    )) deallocate(cpatch%fmean_psi_closed    )
       if(associated(cpatch%fmean_water_supply  )) deallocate(cpatch%fmean_water_supply  )
@@ -7867,6 +7971,9 @@ module ed_state_vars
       if(associated(cpatch%dmean_fs_open       )) deallocate(cpatch%dmean_fs_open       )
       if(associated(cpatch%dmean_fsw           )) deallocate(cpatch%dmean_fsw           )
       if(associated(cpatch%dmean_fsn           )) deallocate(cpatch%dmean_fsn           )
+      if(associated(cpatch%dmean_A_light       )) deallocate(cpatch%dmean_A_light       )
+      if(associated(cpatch%dmean_A_rubp        )) deallocate(cpatch%dmean_A_rubp        )
+      if(associated(cpatch%dmean_A_co2         )) deallocate(cpatch%dmean_A_co2         )
       if(associated(cpatch%dmean_psi_open      )) deallocate(cpatch%dmean_psi_open      )
       if(associated(cpatch%dmean_psi_closed    )) deallocate(cpatch%dmean_psi_closed    )
       if(associated(cpatch%dmean_water_supply  )) deallocate(cpatch%dmean_water_supply  )
@@ -7928,6 +8035,9 @@ module ed_state_vars
       if(associated(cpatch%mmean_fs_open       )) deallocate(cpatch%mmean_fs_open       )
       if(associated(cpatch%mmean_fsw           )) deallocate(cpatch%mmean_fsw           )
       if(associated(cpatch%mmean_fsn           )) deallocate(cpatch%mmean_fsn           )
+      if(associated(cpatch%mmean_A_light       )) deallocate(cpatch%mmean_A_light       )
+      if(associated(cpatch%mmean_A_rubp        )) deallocate(cpatch%mmean_A_rubp        )
+      if(associated(cpatch%mmean_A_co2         )) deallocate(cpatch%mmean_A_co2         )
       if(associated(cpatch%mmean_psi_open      )) deallocate(cpatch%mmean_psi_open      )
       if(associated(cpatch%mmean_psi_closed    )) deallocate(cpatch%mmean_psi_closed    )
       if(associated(cpatch%mmean_water_supply  )) deallocate(cpatch%mmean_water_supply  )
@@ -7993,6 +8103,9 @@ module ed_state_vars
       if(associated(cpatch%qmean_fs_open       )) deallocate(cpatch%qmean_fs_open       )
       if(associated(cpatch%qmean_fsw           )) deallocate(cpatch%qmean_fsw           )
       if(associated(cpatch%qmean_fsn           )) deallocate(cpatch%qmean_fsn           )
+      if(associated(cpatch%qmean_A_light       )) deallocate(cpatch%qmean_A_light       )
+      if(associated(cpatch%qmean_A_rubp        )) deallocate(cpatch%qmean_A_rubp        )
+      if(associated(cpatch%qmean_A_co2         )) deallocate(cpatch%qmean_A_co2         )
       if(associated(cpatch%qmean_psi_open      )) deallocate(cpatch%qmean_psi_open      )
       if(associated(cpatch%qmean_psi_closed    )) deallocate(cpatch%qmean_psi_closed    )
       if(associated(cpatch%qmean_water_supply  )) deallocate(cpatch%qmean_water_supply  )
@@ -9523,6 +9636,9 @@ module ed_state_vars
          opatch%wood_gbw              (oco) = ipatch%wood_gbw              (ico)
          opatch%A_open                (oco) = ipatch%A_open                (ico)
          opatch%A_closed              (oco) = ipatch%A_closed              (ico)
+         opatch%A_light               (oco) = ipatch%A_light               (ico)
+         opatch%A_rubp                (oco) = ipatch%A_rubp                (ico)
+         opatch%A_co2                 (oco) = ipatch%A_co2                 (ico)
          opatch%psi_open              (oco) = ipatch%psi_open              (ico)
          opatch%psi_closed            (oco) = ipatch%psi_closed            (ico)
          opatch%gsw_open              (oco) = ipatch%gsw_open              (ico)
@@ -9569,6 +9685,9 @@ module ed_state_vars
          opatch%fmean_fs_open         (oco) = ipatch%fmean_fs_open         (ico)
          opatch%fmean_fsw             (oco) = ipatch%fmean_fsw             (ico)
          opatch%fmean_fsn             (oco) = ipatch%fmean_fsn             (ico)
+         opatch%fmean_A_light         (oco) = ipatch%fmean_A_light         (ico)
+         opatch%fmean_A_rubp          (oco) = ipatch%fmean_A_rubp          (ico)
+         opatch%fmean_A_co2           (oco) = ipatch%fmean_A_co2           (ico)
          opatch%fmean_psi_open        (oco) = ipatch%fmean_psi_open        (ico)
          opatch%fmean_psi_closed      (oco) = ipatch%fmean_psi_closed      (ico)
          opatch%fmean_water_supply    (oco) = ipatch%fmean_water_supply    (ico)
@@ -9656,6 +9775,9 @@ module ed_state_vars
             opatch%dmean_fs_open         (oco) = ipatch%dmean_fs_open         (ico)
             opatch%dmean_fsw             (oco) = ipatch%dmean_fsw             (ico)
             opatch%dmean_fsn             (oco) = ipatch%dmean_fsn             (ico)
+            opatch%dmean_A_light         (oco) = ipatch%dmean_A_light         (ico)
+            opatch%dmean_A_rubp          (oco) = ipatch%dmean_A_rubp          (ico)
+            opatch%dmean_A_co2           (oco) = ipatch%dmean_A_co2           (ico)
             opatch%dmean_psi_open        (oco) = ipatch%dmean_psi_open        (ico)
             opatch%dmean_psi_closed      (oco) = ipatch%dmean_psi_closed      (ico)
             opatch%dmean_water_supply    (oco) = ipatch%dmean_water_supply    (ico)
@@ -9729,6 +9851,9 @@ module ed_state_vars
             opatch%mmean_fs_open         (oco) = ipatch%mmean_fs_open         (ico)
             opatch%mmean_fsw             (oco) = ipatch%mmean_fsw             (ico)
             opatch%mmean_fsn             (oco) = ipatch%mmean_fsn             (ico)
+            opatch%mmean_A_light         (oco) = ipatch%mmean_A_light         (ico)
+            opatch%mmean_A_rubp          (oco) = ipatch%mmean_A_rubp          (ico)
+            opatch%mmean_A_co2           (oco) = ipatch%mmean_A_co2           (ico)
             opatch%mmean_psi_open        (oco) = ipatch%mmean_psi_open        (ico)
             opatch%mmean_psi_closed      (oco) = ipatch%mmean_psi_closed      (ico)
             opatch%mmean_water_supply    (oco) = ipatch%mmean_water_supply    (ico)
@@ -9813,6 +9938,9 @@ module ed_state_vars
                opatch%qmean_fs_open         (n,oco) = ipatch%qmean_fs_open         (n,ico)
                opatch%qmean_fsw             (n,oco) = ipatch%qmean_fsw             (n,ico)
                opatch%qmean_fsn             (n,oco) = ipatch%qmean_fsn             (n,ico)
+               opatch%qmean_A_light         (n,oco) = ipatch%qmean_A_light         (n,ico)
+               opatch%qmean_A_rubp          (n,oco) = ipatch%qmean_A_rubp          (n,ico)
+               opatch%qmean_A_co2           (n,oco) = ipatch%qmean_A_co2           (n,ico)
                opatch%qmean_psi_open        (n,oco) = ipatch%qmean_psi_open        (n,ico)
                opatch%qmean_psi_closed      (n,oco) = ipatch%qmean_psi_closed      (n,ico)
                opatch%qmean_water_supply    (n,oco) = ipatch%qmean_water_supply    (n,ico)
@@ -10048,6 +10176,9 @@ module ed_state_vars
       opatch%wood_gbw              (1:z) = pack(ipatch%wood_gbw                  ,lmask)
       opatch%A_open                (1:z) = pack(ipatch%A_open                    ,lmask)
       opatch%A_closed              (1:z) = pack(ipatch%A_closed                  ,lmask)
+      opatch%A_light               (1:z) = pack(ipatch%A_light                   ,lmask)
+      opatch%A_rubp                (1:z) = pack(ipatch%A_rubp                    ,lmask)
+      opatch%A_co2                 (1:z) = pack(ipatch%A_co2                     ,lmask)
       opatch%psi_open              (1:z) = pack(ipatch%psi_open                  ,lmask)
       opatch%psi_closed            (1:z) = pack(ipatch%psi_closed                ,lmask)
       opatch%gsw_open              (1:z) = pack(ipatch%gsw_open                  ,lmask)
@@ -10150,6 +10281,9 @@ module ed_state_vars
       opatch%fmean_fs_open         (1:z) = pack(ipatch%fmean_fs_open             ,lmask)
       opatch%fmean_fsw             (1:z) = pack(ipatch%fmean_fsw                 ,lmask)
       opatch%fmean_fsn             (1:z) = pack(ipatch%fmean_fsn                 ,lmask)
+      opatch%fmean_A_light         (1:z) = pack(ipatch%fmean_A_light             ,lmask)
+      opatch%fmean_A_rubp          (1:z) = pack(ipatch%fmean_A_rubp              ,lmask)
+      opatch%fmean_A_co2           (1:z) = pack(ipatch%fmean_A_co2               ,lmask)
       opatch%fmean_psi_open        (1:z) = pack(ipatch%fmean_psi_open            ,lmask)
       opatch%fmean_psi_closed      (1:z) = pack(ipatch%fmean_psi_closed          ,lmask)
       opatch%fmean_water_supply    (1:z) = pack(ipatch%fmean_water_supply        ,lmask)
@@ -10245,6 +10379,9 @@ module ed_state_vars
       opatch%dmean_fs_open         (1:z) = pack(ipatch%dmean_fs_open             ,lmask)
       opatch%dmean_fsw             (1:z) = pack(ipatch%dmean_fsw                 ,lmask)
       opatch%dmean_fsn             (1:z) = pack(ipatch%dmean_fsn                 ,lmask)
+      opatch%dmean_A_light         (1:z) = pack(ipatch%dmean_A_light             ,lmask)
+      opatch%dmean_A_rubp          (1:z) = pack(ipatch%dmean_A_rubp              ,lmask)
+      opatch%dmean_A_co2           (1:z) = pack(ipatch%dmean_A_co2               ,lmask)
       opatch%dmean_psi_open        (1:z) = pack(ipatch%dmean_psi_open            ,lmask)
       opatch%dmean_psi_closed      (1:z) = pack(ipatch%dmean_psi_closed          ,lmask)
       opatch%dmean_water_supply    (1:z) = pack(ipatch%dmean_water_supply        ,lmask)
@@ -10341,6 +10478,9 @@ module ed_state_vars
       opatch%mmean_fs_open         (1:z) = pack(ipatch%mmean_fs_open             ,lmask)
       opatch%mmean_fsw             (1:z) = pack(ipatch%mmean_fsw                 ,lmask)
       opatch%mmean_fsn             (1:z) = pack(ipatch%mmean_fsn                 ,lmask)
+      opatch%mmean_A_light         (1:z) = pack(ipatch%mmean_A_light             ,lmask)
+      opatch%mmean_A_rubp          (1:z) = pack(ipatch%mmean_A_rubp              ,lmask)
+      opatch%mmean_A_co2           (1:z) = pack(ipatch%mmean_A_co2               ,lmask)
       opatch%mmean_psi_open        (1:z) = pack(ipatch%mmean_psi_open            ,lmask)
       opatch%mmean_psi_closed      (1:z) = pack(ipatch%mmean_psi_closed          ,lmask)
       opatch%mmean_water_supply    (1:z) = pack(ipatch%mmean_water_supply        ,lmask)
@@ -10451,6 +10591,9 @@ module ed_state_vars
          opatch%qmean_fs_open       (n,1:z) = pack(ipatch%qmean_fs_open       (n,:),lmask)
          opatch%qmean_fsw           (n,1:z) = pack(ipatch%qmean_fsw           (n,:),lmask)
          opatch%qmean_fsn           (n,1:z) = pack(ipatch%qmean_fsn           (n,:),lmask)
+         opatch%qmean_A_light       (n,1:z) = pack(ipatch%qmean_A_light       (n,:),lmask)
+         opatch%qmean_A_rubp        (n,1:z) = pack(ipatch%qmean_A_rubp        (n,:),lmask)
+         opatch%qmean_A_co2         (n,1:z) = pack(ipatch%qmean_A_co2         (n,:),lmask)
          opatch%qmean_psi_open      (n,1:z) = pack(ipatch%qmean_psi_open      (n,:),lmask)
          opatch%qmean_psi_closed    (n,1:z) = pack(ipatch%qmean_psi_closed    (n,:),lmask)
          opatch%qmean_water_supply  (n,1:z) = pack(ipatch%qmean_water_supply  (n,:),lmask)
@@ -11964,6 +12107,33 @@ module ed_state_vars
                            ,'Sub-daily mean - Nitrogen stress'                             &
                            ,'[         --]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_A_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_light                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_LIGHT_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Light-limited assimilation rate'             &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_A_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_rubp                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_RUBP_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - RuBP-limited assimilation rate'              &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_A_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_co2                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_CO2_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - CO2-limited assimilation rate'               &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_psi_open        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_psi_open                                      &
@@ -13137,6 +13307,33 @@ module ed_state_vars
                            ,'Daily mean - Nitrogen stress'                                 &
                            ,'[         --]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_A_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_light                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_LIGHT_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Light-limited assimilation rate'                 &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_A_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_rubp                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_RUBP_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - RuBP-limited assimilation rate'                  &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_A_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_co2                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_CO2_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - CO2-limited assimilation rate'                   &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_psi_open        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_psi_open                                      &
@@ -14183,6 +14380,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Nitrogen stress'                               &
                            ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_light                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_LIGHT_PY          :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Light-limited assimilation rate'               &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_rubp                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_RUBP_PY          :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - RuBP-limited assimilation rate'                &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_co2                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_CO2_PY          :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - CO2-limited assimilation rate'                 &
+                           ,'[umol/m2/s]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_psi_open        )) then
          nvar = nvar+1
@@ -15615,6 +15839,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Nitrogen stress'                                  &
                            ,'[         --]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_A_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_A_light                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_A_LIGHT_PY          :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Light-limited assimilation rate'                  &
+                           ,'[umol/m2/s]','(ndcycle,ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_A_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_A_rubp                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_A_RUBP_PY          :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - RuBP-limited assimilation rate'                   &
+                           ,'[umol/m2/s]','(ndcycle,ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_A_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_A_co2                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_A_CO2_PY          :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - CO2-limited assimilation rate'                    &
+                           ,'[umol/m2/s]','(ndcycle,ipoly)'            )
       end if
       if (associated(cgrid%qmean_psi_open        )) then
          nvar = nvar+1
@@ -24107,6 +24358,27 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%A_light)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%A_light,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'A_LIGHT :41:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%A_rubp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%A_rubp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'A_RUBP :41:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%A_co2)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%A_co2,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'A_CO2 :41:hist') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(cpatch%Psi_closed)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%Psi_closed,nvar,igr,init,cpatch%coglob_id, &
@@ -24534,6 +24806,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Nitrogen stress'                             &
                            ,'[         --]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_light                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_LIGHT_CO             :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Light-limited assimilation rate'             &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_rubp                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_RUBP_CO              :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - RuBP-limited assimilation rate'              &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_co2                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_CO2_CO              :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - CO2-limited assimilation rate'               &
+                           ,'[ umol/m2l/s]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_psi_open        )) then
          nvar = nvar+1
@@ -25090,6 +25389,33 @@ module ed_state_vars
                            ,'Daily mean - Nitrogen stress'                                 &
                            ,'[         --]','(icohort)'            )
       end if
+      if (associated(cpatch%dmean_a_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_a_light                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_A_LIGHT_CO             :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Light-limited assimilation rate'                 &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_a_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_a_rubp                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_A_RUBP_CO              :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - RuBP-limited assimilation rate'                  &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_a_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_a_co2                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_A_CO2_CO              :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - CO2-limited assimilation rate'                   &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
       if (associated(cpatch%dmean_psi_open        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_psi_open                                     &
@@ -25582,6 +25908,35 @@ module ed_state_vars
                            ,'Monthly mean - Nitrogen stress'                               &
                            ,'[         --]','(icohort)'            )
       end if
+      if (associated(cpatch%mmean_a_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_a_light                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_A_LIGHT_CO             :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Light-limited assimilation rate'               &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_a_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_a_rubp                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_A_RUBP_CO              :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - RuBP-limited assimilation rate'                &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_a_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_a_co2                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_A_CO2_CO              :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - CO2-limited assimilation rate'                 &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+
+
       if (associated(cpatch%mmean_psi_open        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_psi_open                                     &
@@ -26274,6 +26629,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Nitrogen stress'                                  &
                            ,'[         --]','(ndcycle,icohort)'    )
+      end if
+      if (associated(cpatch%fmean_a_light         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_a_light                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_A_LIGHT_CO             :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Light-limited assimilation rate'                  &
+                           ,'[ umol/m2l/s]','(ndcycle,icohort)'            )
+      end if
+      if (associated(cpatch%qmean_a_rubp          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_a_rubp                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_A_RUBP_CO              :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - RuBP-limited assimilation rate'                   &
+                           ,'[ umol/m2l/s]','(ndcycle,icohort)'            )
+      end if
+      if (associated(cpatch%qmean_a_co2           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_a_co2                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_A_CO2_CO              :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - CO2-limited assimilation rate'                    &
+                           ,'[ umol/m2l/s]','(ndcycle,icohort)'            )
       end if
       if (associated(cpatch%qmean_psi_open        )) then
          nvar = nvar+1

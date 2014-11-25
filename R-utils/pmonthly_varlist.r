@@ -943,6 +943,58 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.light"
+                        , desc     = "Light-limited assimilation rate"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.rubp"
+                        , desc     = "RuBP-limited assimilation rate"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.co2"
+                        , desc     = "CO2-limited assimilation rate"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.ratio"
+                        , desc     = "Light saturation"
+                        , e.unit   = untab$empty
+                        , i.unit   = untab$empty
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
 #------------------------------------------------------------------------------------------#
 
 

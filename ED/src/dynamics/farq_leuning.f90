@@ -78,16 +78,20 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    subroutine lphysiol_full(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,leaf_temp      &
                            ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
-                           ,leaf_gbw,A_open,A_closed,gsw_open,gsw_closed,lsfc_shv_open     &
-                           ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
-                           ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag)
+                           ,leaf_gbw,A_open,A_closed,A_light,A_rubp,A_co2,gsw_open         &
+                           ,gsw_closed,lsfc_shv_open,lsfc_shv_closed,lsfc_co2_open         &
+                           ,lsfc_co2_closed,lint_co2_open,lint_co2_closed,leaf_resp,vmout  &
+                           ,comppout,limit_flag)
       use rk4_coms       , only : tiny_offset              & ! intent(in)
                                 , effarea_transp           ! ! intent(in)
       use c34constants   , only : thispft                  & ! intent(out)
                                 , met                      & ! intent(out)
                                 , aparms                   & ! intent(out)
                                 , stclosed                 & ! intent(inout)
-                                , stopen                   ! ! intent(inout)
+                                , stopen                   & ! intent(inout)
+                                , lightlim                 & ! intent(inout)
+                                , rubiscolim               & ! intent(inout)
+                                , co2lim                   ! ! intent(inout)
       use pft_coms       , only : photosyn_pathway         & ! intent(in)
                                 , phenology                & ! intent(in)
                                 , D0                       & ! intent(in)
@@ -145,6 +149,9 @@ module farq_leuning
       real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m²/s]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (light) [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_rubp            ! Photosyn. rate (RuBP)  [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_co2             ! Photosyn. rate (CO2)   [µmol/m²/s]
       real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m²/s]
       real(kind=4), intent(out)   :: gsw_closed        ! St. cnd. of H2O  (cl.) [  kg/m²/s]
       real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg] 
@@ -278,6 +285,9 @@ module farq_leuning
       !----- Carbon demand, convert them to [µmol/m²/s]. ----------------------------------!
       A_closed       = sngloff(stclosed%co2_demand    * mol_2_umol8 , tiny_offset)
       A_open         = sngloff(stopen%co2_demand      * mol_2_umol8 , tiny_offset)
+      A_light        = sngloff(lightlim%co2_demand    * mol_2_umol8 , tiny_offset)
+      A_rubp         = sngloff(rubiscolim%co2_demand  * mol_2_umol8 , tiny_offset)
+      A_co2          = sngloff(co2lim%co2_demand      * mol_2_umol8 , tiny_offset)
       !----- Stomatal resistance, convert the conductances to [kg/m²/s]. ------------------!
       gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmdry8 / effarea_transp(ipft)      &
                               , tiny_offset)
@@ -619,6 +629,15 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
+      !      Initialise the limitation flag with some dummy value, so the debugger does    !
+      ! not complain.                                                                      !
+      !------------------------------------------------------------------------------------!
+      limit_flag = 99
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
       !      Initialise the parameters to compute the carbon demand for the case where the !
       ! stomata are closed.  We call the solver for the specific case in which the stomata !
       ! are closed, because in this case neither the carbon demand nor the stomatal water  !
@@ -633,20 +652,6 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
 
 
-
-      !------------------------------------------------------------------------------------!
-      !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
-      ! photosynthesis should happen, so we copy the closed case stomata values to the     !
-      ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
-      !------------------------------------------------------------------------------------!
-      par_twilight_min = find_twilight_min()
-
-      if (met%par < par_twilight_min) then
-         call copy_solution(stclosed,stopen)
-         limit_flag = 0
-         return
-      end if
-      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !    There is enough light to be considered at least dawn or dusk, so we go with     !
@@ -672,26 +677,30 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       par_twilight_min = find_twilight_min()
       if (met%par < par_twilight_min) then
-         call copy_solution(stclosed,stopen)
+         call copy_solution(stclosed,stopen  )
+         call copy_solution(stclosed,lightlim)
          limit_flag = 0
-         return
-      end if
-      !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
-      select case(thispft%photo_pathway)
-      case (3)
-         call solve_iterative_case(lightlim,success)
-      case (4)
-         call solve_aofixed_case(lightlim,success)
-      end select
-      !------------------------------------------------------------------------------------!
-      !     In case success was returned as "false", this means that the light-limited     !
-      ! case didn't converge (there was no root).  If this is the case we give up and      !
-      ! close all stomata, as there was no viable state for stomata to remain opened.      !
-      !------------------------------------------------------------------------------------!
-      if (.not. success) then
-         call copy_solution(stclosed,stopen)
-         limit_flag = -1
-         return
+      else
+         !---------------------------------------------------------------------------------!
+         !     Day time: choose the appropriate solver depending on the photosynthetic     !
+         ! pathway.                                                                        !
+         !---------------------------------------------------------------------------------!
+         select case(thispft%photo_pathway)
+         case (3)
+            call solve_iterative_case(lightlim,success)
+         case (4)
+            call solve_aofixed_case(lightlim,success)
+         end select
+         !---------------------------------------------------------------------------------!
+         !     In case success was returned as "false", this means that the light-limited  !
+         ! case didn't converge (there was no root).  If this is the case we give up and   !
+         ! close all stomata, as there was no viable state for stomata to remain opened.   !
+         !---------------------------------------------------------------------------------!
+         if (.not. success) then
+            call copy_solution(stclosed,stopen  )
+            call copy_solution(stclosed,lightlim)
+            limit_flag = -1
+         end if
       end if
       !------------------------------------------------------------------------------------!
 
@@ -716,9 +725,12 @@ module farq_leuning
       ! close all stomata, as there was no viable state for stomata to remain opened.      !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,stopen)
-         limit_flag = -2
-         return
+         call copy_solution(stclosed,rubiscolim)
+         select case (limit_flag)
+         case (99)
+            call copy_solution(stclosed,stopen)
+            limit_flag = -2
+         end select
       end if
       !------------------------------------------------------------------------------------!
 
@@ -734,12 +746,10 @@ module farq_leuning
       select case(thispft%photo_pathway)
       case (3)
          !---------------------------------------------------------------------------------!
-         !    C3, there is no CO2 limitation in this formulation.  Copy the closed stomata !
-         ! case, but assign a large number for carbon_demand, so this will never be        !
-         ! chosen.                                                                         !
+         !    C3, there is no CO2 limitation in this formulation.  Copy the Rubisco-       !
+         ! -limited case.                                                                  !
          !---------------------------------------------------------------------------------!
-         call copy_solution(stclosed,co2lim)
-         co2lim%co2_demand = discard
+         call copy_solution(rubiscolim,co2lim)
          success           = .true.
          !---------------------------------------------------------------------------------!
          !    C3, use the expression from C91, that Ao should not exceed 0.5 * Vm.         !
@@ -761,34 +771,43 @@ module farq_leuning
       ! stomata, as there was no viable state for stomata to remain opened.                !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,stopen)
-         co2lim%co2_demand = discard
-         return
+         call copy_solution(stclosed,co2lim)
+         select case (limit_flag)
+         case (99)
+            call copy_solution(stclosed,stopen)
+            limit_flag = -3
+         end select
       end if
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     If we have reached this point, it means that we found solutions for all the    !
-      ! cases.  The actual solution will be the one with the lowest carbon demand.         !
+      !     The actual solution will be the one with the lowest carbon demand.  In case    !
+      ! it is night time or one of the solvers failed, we close all stomata and skip this  !
+      ! decision step.                                                                     !
       !------------------------------------------------------------------------------------!
-      if (lightlim%co2_demand <= rubiscolim%co2_demand .and.                               &
-          lightlim%co2_demand <= co2lim%co2_demand              )  then
-         !----- Light is the strongest limitation. ----------------------------------------!
-         call copy_solution(lightlim,stopen)
-         limit_flag = 1
-      elseif (rubiscolim%co2_demand <  lightlim%co2_demand .and.                           &
-              rubiscolim%co2_demand <= co2lim%co2_demand        ) then
-         !----- Rubisco is the strongest limitation. --------------------------------------!
-         call copy_solution(rubiscolim,stopen)
-         limit_flag = 2
-      else
-         !----- CO2 is the strongest limitation. ------------------------------------------!
-         call copy_solution(co2lim,stopen)
-         limit_flag = 3
-      end if
+      select case (limit_flag)
+      case (99)
+         if (lightlim%co2_demand <= rubiscolim%co2_demand .and.                            &
+             lightlim%co2_demand <= co2lim%co2_demand              )  then
+            !----- Light is the strongest limitation. -------------------------------------!
+            call copy_solution(lightlim,stopen)
+            limit_flag = 1
+         elseif (rubiscolim%co2_demand <  lightlim%co2_demand .and.                        &
+                 rubiscolim%co2_demand <= co2lim%co2_demand        ) then
+            !----- Rubisco is the strongest limitation. -----------------------------------!
+            call copy_solution(rubiscolim,stopen)
+            limit_flag = 2
+         else
+            !----- CO2 is the strongest limitation. ---------------------------------------!
+            call copy_solution(co2lim,stopen)
+            limit_flag = 3
+         end if
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
+
 
       return
    end subroutine photosynthesis_exact_solver

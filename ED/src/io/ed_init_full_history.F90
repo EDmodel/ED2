@@ -951,6 +951,12 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_FSW_PY              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_fsn            (ipy:ipy)                              &
                         ,'DMEAN_FSN_PY              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_light        (ipy:ipy)                              &
+                        ,'DMEAN_A_LIGHT_PY          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_rubp         (ipy:ipy)                              &
+                        ,'DMEAN_A_RUBP_PY           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_co2          (ipy:ipy)                              &
+                        ,'DMEAN_A_CO2_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_psi_open       (ipy:ipy)                              &
                         ,'DMEAN_PSI_OPEN_PY         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_psi_closed     (ipy:ipy)                              &
@@ -1338,6 +1344,12 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                         ,'MMEAN_FSW_PY              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_fsn            (ipy:ipy)                              &
                         ,'MMEAN_FSN_PY              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_light        (ipy:ipy)                              &
+                        ,'MMEAN_A_LIGHT_PY          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_rubp         (ipy:ipy)                              &
+                        ,'MMEAN_A_RUBP_PY           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_co2          (ipy:ipy)                              &
+                        ,'MMEAN_A_CO2_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_psi_open       (ipy:ipy)                              &
                         ,'MMEAN_PSI_OPEN_PY         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_psi_closed     (ipy:ipy)                              &
@@ -1995,6 +2007,12 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                         ,'QMEAN_FSW_PY             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_fsn            (:,ipy)                                &
                         ,'QMEAN_FSN_PY             ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_light        (:,ipy)                                &
+                        ,'QMEAN_A_LIGHT_PY         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_rubp         (:,ipy)                                &
+                        ,'QMEAN_A_RUBP_PY          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_co2          (:,ipy)                                &
+                        ,'QMEAN_A_CO2_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_psi_open       (:,ipy)                                &
                         ,'QMEAN_PSI_OPEN_PY        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_psi_closed     (:,ipy)                                &
@@ -5035,6 +5053,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'A_OPEN                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%A_closed                                                      &
                      ,'A_CLOSED                  ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%A_light                                                       &
+                     ,'A_LIGHT                   ',dsetrank,iparallel,.false. ,foundvar)
+   call hdf_getslab_r(cpatch%A_rubp                                                        &
+                     ,'A_RUBP                    ',dsetrank,iparallel,.false. ,foundvar)
+   call hdf_getslab_r(cpatch%A_co2                                                         &
+                     ,'A_CO2                     ',dsetrank,iparallel,.false. ,foundvar)
    call hdf_getslab_r(cpatch%psi_open                                                      &
                      ,'PSI_OPEN                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%psi_closed                                                    &
@@ -5143,6 +5167,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'DMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_fsn                                                  &
                         ,'DMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_light                                              &
+                        ,'DMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_rubp                                               &
+                        ,'DMEAN_A_RUBP_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_co2                                                &
+                        ,'DMEAN_A_CO2_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_psi_open                                             &
                         ,'DMEAN_PSI_OPEN_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_psi_closed                                           &
@@ -5256,6 +5286,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'MMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_fsn                                                  &
                         ,'MMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_light                                              &
+                        ,'MMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_rubp                                               &
+                        ,'MMEAN_A_RUBP_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_co2                                                &
+                        ,'MMEAN_A_CO2_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_psi_open                                             &
                         ,'MMEAN_PSI_OPEN_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_psi_closed                                           &
@@ -5514,6 +5550,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'QMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_fsn                                                  &
                         ,'QMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_light                                              &
+                        ,'QMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_rubp                                               &
+                        ,'QMEAN_A_RUBP_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_co2                                                &
+                        ,'QMEAN_A_CO2_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_psi_open                                             &
                         ,'QMEAN_PSI_OPEN_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_psi_closed                                           &

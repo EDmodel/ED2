@@ -145,7 +145,7 @@ default = list( run           = "unnamed"
               , sldrain       = 90.
               , scolour       = 16
               , slzres        = 0
-              , queue         = "long_serial"
+              , queue         = "moorcroft2c"
               , met.driver    = "tower"
               , dtlsm         = 600.
               , vmfact.c3     = 1.00
@@ -207,7 +207,7 @@ default = list( run           = "unnamed"
               , ivegtdyn      = 1
               , igndvap       = 0
               , iphen         = -1
-              , iallom        = 2
+              , iallom        = 3
               , ibigleaf      = 0
               , irepro        = 2
               , treefall      = 0.0125
@@ -237,10 +237,24 @@ if (defjob){
 
 
 #------------------------------------------------------------------------------------------#
-#     Create a table with room for all simulations.                                        #
+#     Create a table with room for all simulations.  Check whether this is a special case. #
 #------------------------------------------------------------------------------------------#
 joborder = data.frame(sapply(X=default,FUN=rep,times=nruns),stringsAsFactors=FALSE)
-for (n in 1:nvars) joborder[[names(myruns)[n]]] = myruns[[names(myruns)[n]]]
+for (n in sequence(nvars)){
+   name.now = names(myruns)[n]
+   if (name.now %in% "labsorb.vis"){
+      joborder$ltrans.vis   = 1. * (1. - myruns$labsorb.vis) / 3.
+      joborder$lreflect.vis = 2. * (1. - myruns$labsorb.vis) / 3.
+   }else if (name.now %in% "labsorb.nir"){
+      joborder$ltrans.nir   = 1. * (1. - myruns$labsorb.nir) / 3.
+      joborder$lreflect.nir = 2. * (1. - myruns$labsorb.nir) / 3.
+   }else if (name.now %in% names(joborder)){
+      joborder[[name.now]] = myruns[[name.now]]
+   }else{
+      stop(paste(" Variable ",name.now," is not a valid joborder variable!",sep=""))
+   }#end if
+   #---------------------------------------------------------------------------------------#
+}#end for (n in sequence(nvars))
 #------------------------------------------------------------------------------------------#
 
 

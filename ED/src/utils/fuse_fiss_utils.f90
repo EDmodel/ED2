@@ -1061,13 +1061,13 @@ module fuse_fiss_utils
       integer                      :: t                 ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
       real                         :: newni             ! Inverse of new nplants
-      real                         :: newlaii           ! Inverse of new LAI
-      real                         :: newwaii           ! Inverse of new WAI
       real                         :: veg_fliq          ! Liquid fraction
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
       real                         :: rlai              ! LAI of receiver
       real                         :: dlai              ! LAI of donor
+      real                         :: rwai              ! WAI of receiver
+      real                         :: dwai              ! WAI of donor
       !------------------------------------------------------------------------------------!
 
 
@@ -1080,26 +1080,26 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
       newni   = 1.0 / newn
-      if (cpatch%lai(recc) + cpatch%lai(donc) > tiny_num ) then
-         rlai    = cpatch%lai(recc)
-         dlai    = cpatch%lai(donc)
-         newlaii = 1.0 / (rlai+dlai)
-      elseif  (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
 
-         ! This is a fix for when two cohorts with very very low LAI are fused
-         ! it prevents numerical errors (RGK 8-18-2014)
-         rlai    = cpatch%lai(recc) / tiny_num
-         dlai    = cpatch%lai(donc) / tiny_num
-         newlaii = 1.0 / (rlai+dlai)
+      !------------------------------------------------------------------------------------!
+      !    This is a fix for when two cohorts with very very low LAI are fused             !
+      ! it prevents numerical errors (RGK 8-18-2014).                                      !
+      ! (MLO 11-24-2014): turned rlai and dlai relative weights, so it works in all cases. !
+      ! Also, applied the same idea to WAI-dependent variables.                            !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
+         rlai    = cpatch%lai(recc) / ( cpatch%lai(recc) + cpatch%lai(donc) )
+         dlai    = cpatch%lai(donc) / ( cpatch%lai(recc) + cpatch%lai(donc) )
       else
-         rlai    = 0.0
-         dlai    = 0.0
-         newlaii = 0.0
+         rlai    = 0.5
+         dlai    = 0.5
       end if
-      if (cpatch%wai(recc) + cpatch%wai(donc) > 0.0) then
-         newwaii = 1.0 / (cpatch%wai(recc) + cpatch%wai(donc))
+      if (cpatch%wai(recc) + cpatch%wai(donc) > 0 ) then
+         rwai    = cpatch%wai(recc) / ( cpatch%wai(recc) + cpatch%wai(donc) )
+         dwai    = cpatch%wai(donc) / ( cpatch%wai(recc) + cpatch%wai(donc) )
       else
-         newwaii = 0.0
+         rwai    = 0.5
+         dwai    = 0.5
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1307,24 +1307,18 @@ module fuse_fiss_utils
       ! properties, they are scaled by the number of plants.  These numbers are diagnostic !
       ! and this should be used for the output only.                                       !
       !------------------------------------------------------------------------------------!
-      cpatch%lsfc_shv_open  (recc) = ( cpatch%lsfc_shv_open  (recc)  * rlai    &
-                                     + cpatch%lsfc_shv_open  (donc)  * dlai )  &
-                                   * newlaii
-      cpatch%lsfc_shv_closed(recc) = ( cpatch%lsfc_shv_closed(recc)  * rlai    &
-                                     + cpatch%lsfc_shv_closed(donc)  * dlai)   &
-                                   * newlaii
-      cpatch%lsfc_co2_open  (recc) = ( cpatch%lsfc_co2_open  (recc)  * rlai    &
-                                     + cpatch%lsfc_co2_open  (donc)  * dlai )  &
-                                   * newlaii
-      cpatch%lsfc_co2_closed(recc) = ( cpatch%lsfc_co2_closed(recc)  * rlai    &
-                                     + cpatch%lsfc_co2_closed(donc)  * dlai )  &
-                                   * newlaii
-      cpatch%lint_co2_open  (recc) = ( cpatch%lint_co2_open  (recc)  * rlai    &
-                                     + cpatch%lint_co2_open  (donc)  * dlai )  &
-                                   * newlaii
-      cpatch%lint_co2_closed(recc) = ( cpatch%lint_co2_closed(recc)  * rlai    &
-                                     + cpatch%lint_co2_closed(donc)  * dlai )  &
-                                   * newlaii
+      cpatch%lsfc_shv_open  (recc) = cpatch%lsfc_shv_open  (recc)  * rlai                  &
+                                   + cpatch%lsfc_shv_open  (donc)  * dlai
+      cpatch%lsfc_shv_closed(recc) = cpatch%lsfc_shv_closed(recc)  * rlai                  &
+                                   + cpatch%lsfc_shv_closed(donc)  * dlai
+      cpatch%lsfc_co2_open  (recc) = cpatch%lsfc_co2_open  (recc)  * rlai                  &
+                                   + cpatch%lsfc_co2_open  (donc)  * dlai
+      cpatch%lsfc_co2_closed(recc) = cpatch%lsfc_co2_closed(recc)  * rlai                  &
+                                   + cpatch%lsfc_co2_closed(donc)  * dlai
+      cpatch%lint_co2_open  (recc) = cpatch%lint_co2_open  (recc)  * rlai                  &
+                                   + cpatch%lint_co2_open  (donc)  * dlai
+      cpatch%lint_co2_closed(recc) = cpatch%lint_co2_closed(recc)  * rlai                  &
+                                   + cpatch%lint_co2_closed(donc)  * dlai
       !------------------------------------------------------------------------------------!
 
 
@@ -1406,10 +1400,10 @@ module fuse_fiss_utils
       !    Water demand is in kg/m2_leaf/s, so we scale them by LAI.  Water supply is in   !
       ! kg/m2_ground/s, so we just add them.                                               !
       !------------------------------------------------------------------------------------!
-      cpatch%psi_open    (recc) = ( cpatch%psi_open  (recc) * rlai             &
-                                  + cpatch%psi_open  (donc) * dlai ) * newlaii
-      cpatch%psi_closed  (recc) = ( cpatch%psi_closed(recc) * rlai             & 
-                                  + cpatch%psi_closed(donc) * dlai ) * newlaii
+      cpatch%psi_open    (recc) = cpatch%psi_open  (recc) * rlai                           &
+                                + cpatch%psi_open  (donc) * dlai
+      cpatch%psi_closed  (recc) = cpatch%psi_closed(recc) * rlai                           &
+                                + cpatch%psi_closed(donc) * dlai
       cpatch%water_supply(recc) = cpatch%water_supply(recc) + cpatch%water_supply(donc)
       !------------------------------------------------------------------------------------!
 
@@ -1418,14 +1412,20 @@ module fuse_fiss_utils
       !    Carbon demand is in kg_C/m2_leaf/s, so we scale them by LAI.  FSW and FSN are   !
       ! really related to leaves, so we scale them by LAI.                                 !
       !------------------------------------------------------------------------------------!
-      cpatch%A_open  (recc)     = ( cpatch%A_open  (recc) * rlai               &
-                                  + cpatch%A_open  (donc) * dlai ) * newlaii
-      cpatch%A_closed(recc)     = ( cpatch%A_closed(recc) * rlai               &
-                                  + cpatch%A_closed(donc) * dlai ) * newlaii
-      cpatch%fsw     (recc)     = ( cpatch%fsw     (recc) * rlai               &
-                                  + cpatch%fsw     (donc) * dlai ) * newlaii
-      cpatch%fsn     (recc)     = ( cpatch%fsn     (recc) * rlai               &
-                                  + cpatch%fsn     (donc) * dlai ) * newlaii
+      cpatch%A_open  (recc)     = cpatch%A_open  (recc) * rlai                             &
+                                + cpatch%A_open  (donc) * dlai
+      cpatch%A_closed(recc)     = cpatch%A_closed(recc) * rlai                             &
+                                + cpatch%A_closed(donc) * dlai
+      cpatch%A_light (recc)     = cpatch%A_light (donc) * rlai                             &
+                                + cpatch%A_light (recc) * dlai
+      cpatch%A_rubp  (recc)     = cpatch%A_rubp  (donc) * rlai                             &
+                                + cpatch%A_rubp  (recc) * dlai
+      cpatch%A_co2   (recc)     = cpatch%A_co2   (donc) * rlai                             &
+                                + cpatch%A_co2   (recc) * dlai
+      cpatch%fsw     (recc)     = cpatch%fsw     (recc) * rlai                             &
+                                + cpatch%fsw     (donc) * dlai
+      cpatch%fsn     (recc)     = cpatch%fsn     (recc) * rlai                             &
+                                + cpatch%fsn     (donc) * dlai
       cpatch%fs_open (recc)     = cpatch%fsw(recc) * cpatch%fsn(recc)
       !------------------------------------------------------------------------------------!
 
@@ -1592,41 +1592,26 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by LAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%fmean_leaf_gsw        (recc) = ( cpatch%fmean_leaf_gsw        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_leaf_gsw        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%fmean_leaf_gbw        (recc) = ( cpatch%fmean_leaf_gbw        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_leaf_gbw        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%fmean_fs_open         (recc) = ( cpatch%fmean_fs_open         (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_fs_open         (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%fmean_fsw             (recc) = ( cpatch%fmean_fsw             (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_fsw             (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%fmean_fsn             (recc) = ( cpatch%fmean_fsn             (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_fsn             (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%fmean_psi_open        (recc) = ( cpatch%fmean_psi_open        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_psi_open        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%fmean_psi_closed      (recc) = ( cpatch%fmean_psi_closed      (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_psi_closed      (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+         cpatch%fmean_leaf_gsw        (recc) = cpatch%fmean_leaf_gsw        (recc) * rlai  &
+                                             + cpatch%fmean_leaf_gsw        (donc) * dlai
+         cpatch%fmean_leaf_gbw        (recc) = cpatch%fmean_leaf_gbw        (recc) * rlai  &
+                                             + cpatch%fmean_leaf_gbw        (donc) * dlai
+         cpatch%fmean_fs_open         (recc) = cpatch%fmean_fs_open         (recc) * rlai  &
+                                             + cpatch%fmean_fs_open         (donc) * dlai
+         cpatch%fmean_fsw             (recc) = cpatch%fmean_fsw             (recc) * rlai  &
+                                             + cpatch%fmean_fsw             (donc) * dlai
+         cpatch%fmean_fsn             (recc) = cpatch%fmean_fsn             (recc) * rlai  &
+                                             + cpatch%fmean_fsn             (donc) * dlai
+         cpatch%fmean_A_light         (recc) = cpatch%fmean_A_light         (recc) * rlai  &
+                                             + cpatch%fmean_A_light         (donc) * dlai
+         cpatch%fmean_A_rubp          (recc) = cpatch%fmean_A_rubp          (recc) * rlai  &
+                                             + cpatch%fmean_A_rubp          (donc) * dlai
+         cpatch%fmean_A_co2           (recc) = cpatch%fmean_A_co2           (recc) * rlai  &
+                                             + cpatch%fmean_A_co2           (donc) * dlai
+         cpatch%fmean_psi_open        (recc) = cpatch%fmean_psi_open        (recc) * rlai  &
+                                             + cpatch%fmean_psi_open        (donc) * dlai
+         cpatch%fmean_psi_closed      (recc) = cpatch%fmean_psi_closed      (recc) * rlai  &
+                                             + cpatch%fmean_psi_closed      (donc) * dlai
          !---------------------------------------------------------------------------------!
 
 
@@ -1635,11 +1620,8 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by WAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%fmean_wood_gbw        (recc) = ( cpatch%fmean_wood_gbw        (recc)       &
-                                               * cpatch%wai                   (recc)       &
-                                               + cpatch%fmean_wood_gbw        (recc)       &
-                                               * cpatch%wai                   (recc) )     &
-                                             * newwaii
+         cpatch%fmean_wood_gbw        (recc) = cpatch%fmean_wood_gbw        (recc) * rwai  &
+                                             + cpatch%fmean_wood_gbw        (donc) * dwai
          !---------------------------------------------------------------------------------!
 
 
@@ -1716,11 +1698,8 @@ module fuse_fiss_utils
 
 
             !----- Scale vapour pressure deficit using LAI. -------------------------------!
-            cpatch%fmean_leaf_vpdef   (recc) = ( cpatch%fmean_leaf_vpdef      (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%fmean_leaf_vpdef      (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+            cpatch%fmean_leaf_vpdef   (recc) = cpatch%fmean_leaf_vpdef      (recc) * rlai  &
+                                             + cpatch%fmean_leaf_vpdef      (donc) * dlai
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
@@ -1867,41 +1846,26 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by LAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%dmean_leaf_gsw        (recc) = ( cpatch%dmean_leaf_gsw        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_leaf_gsw        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%dmean_leaf_gbw        (recc) = ( cpatch%dmean_leaf_gbw        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_leaf_gbw        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%dmean_fs_open         (recc) = ( cpatch%dmean_fs_open         (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_fs_open         (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%dmean_fsw             (recc) = ( cpatch%dmean_fsw             (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_fsw             (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%dmean_fsn             (recc) = ( cpatch%dmean_fsn             (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_fsn             (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%dmean_psi_open        (recc) = ( cpatch%dmean_psi_open        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_psi_open        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%dmean_psi_closed      (recc) = ( cpatch%dmean_psi_closed      (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_psi_closed      (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+         cpatch%dmean_leaf_gsw        (recc) = cpatch%dmean_leaf_gsw        (recc) * rlai  &
+                                             + cpatch%dmean_leaf_gsw        (donc) * dlai
+         cpatch%dmean_leaf_gbw        (recc) = cpatch%dmean_leaf_gbw        (recc) * rlai  &
+                                             + cpatch%dmean_leaf_gbw        (donc) * dlai
+         cpatch%dmean_fs_open         (recc) = cpatch%dmean_fs_open         (recc) * rlai  &
+                                             + cpatch%dmean_fs_open         (donc) * dlai
+         cpatch%dmean_fsw             (recc) = cpatch%dmean_fsw             (recc) * rlai  &
+                                             + cpatch%dmean_fsw             (donc) * dlai
+         cpatch%dmean_fsn             (recc) = cpatch%dmean_fsn             (recc) * rlai  &
+                                             + cpatch%dmean_fsn             (donc) * dlai
+         cpatch%dmean_A_light         (recc) = cpatch%dmean_A_light         (recc) * rlai  &
+                                             + cpatch%dmean_A_light         (donc) * dlai
+         cpatch%dmean_A_rubp          (recc) = cpatch%dmean_A_rubp          (recc) * rlai  &
+                                             + cpatch%dmean_A_rubp          (donc) * dlai
+         cpatch%dmean_A_co2           (recc) = cpatch%dmean_A_co2           (recc) * rlai  &
+                                             + cpatch%dmean_A_co2           (donc) * dlai
+         cpatch%dmean_psi_open        (recc) = cpatch%dmean_psi_open        (recc) * rlai  &
+                                             + cpatch%dmean_psi_open        (donc) * dlai
+         cpatch%dmean_psi_closed      (recc) = cpatch%dmean_psi_closed      (recc) * rlai  &
+                                             + cpatch%dmean_psi_closed      (donc) * dlai
          !---------------------------------------------------------------------------------!
 
 
@@ -1910,11 +1874,8 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by WAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%dmean_wood_gbw        (recc) = ( cpatch%dmean_wood_gbw        (recc)       &
-                                               * cpatch%wai                   (recc)       &
-                                               + cpatch%dmean_wood_gbw        (recc)       &
-                                               * cpatch%wai                   (recc) )     &
-                                             * newwaii
+         cpatch%dmean_wood_gbw        (recc) = cpatch%dmean_wood_gbw        (recc) * rwai  &
+                                             + cpatch%dmean_wood_gbw        (donc) * dwai
          !---------------------------------------------------------------------------------!
 
 
@@ -1991,11 +1952,8 @@ module fuse_fiss_utils
 
 
             !----- Scale vapour pressure deficit using LAI. -------------------------------!
-            cpatch%dmean_leaf_vpdef   (recc) = ( cpatch%dmean_leaf_vpdef      (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%dmean_leaf_vpdef      (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+            cpatch%dmean_leaf_vpdef   (recc) = cpatch%dmean_leaf_vpdef      (recc) * rlai  &
+                                             + cpatch%dmean_leaf_vpdef      (donc) * dlai
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
@@ -2241,41 +2199,26 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by LAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%mmean_leaf_gsw        (recc) = ( cpatch%mmean_leaf_gsw        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_leaf_gsw        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%mmean_leaf_gbw        (recc) = ( cpatch%mmean_leaf_gbw        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_leaf_gbw        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%mmean_fs_open         (recc) = ( cpatch%mmean_fs_open         (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_fs_open         (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%mmean_fsw             (recc) = ( cpatch%mmean_fsw             (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_fsw             (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%mmean_fsn             (recc) = ( cpatch%mmean_fsn             (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_fsn             (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%mmean_psi_open        (recc) = ( cpatch%mmean_psi_open        (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_psi_open        (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%mmean_psi_closed      (recc) = ( cpatch%mmean_psi_closed      (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_psi_closed      (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+         cpatch%mmean_leaf_gsw        (recc) = cpatch%mmean_leaf_gsw        (recc) * rlai  &
+                                             + cpatch%mmean_leaf_gsw        (donc) * dlai
+         cpatch%mmean_leaf_gbw        (recc) = cpatch%mmean_leaf_gbw        (recc) * rlai  &
+                                             + cpatch%mmean_leaf_gbw        (donc) * dlai
+         cpatch%mmean_fs_open         (recc) = cpatch%mmean_fs_open         (recc) * rlai  &
+                                             + cpatch%mmean_fs_open         (donc) * dlai
+         cpatch%mmean_fsw             (recc) = cpatch%mmean_fsw             (recc) * rlai  &
+                                             + cpatch%mmean_fsw             (donc) * dlai
+         cpatch%mmean_fsn             (recc) = cpatch%mmean_fsn             (recc) * rlai  &
+                                             + cpatch%mmean_fsn             (donc) * dlai
+         cpatch%mmean_A_light         (recc) = cpatch%mmean_A_light         (recc) * rlai  &
+                                             + cpatch%mmean_A_light         (donc) * dlai
+         cpatch%mmean_A_rubp          (recc) = cpatch%mmean_A_rubp          (recc) * rlai  &
+                                             + cpatch%mmean_A_rubp          (donc) * dlai
+         cpatch%mmean_A_co2           (recc) = cpatch%mmean_A_co2           (recc) * rlai  &
+                                             + cpatch%mmean_A_co2           (donc) * dlai
+         cpatch%mmean_psi_open        (recc) = cpatch%mmean_psi_open        (recc) * rlai  &
+                                             + cpatch%mmean_psi_open        (donc) * dlai
+         cpatch%mmean_psi_closed      (recc) = cpatch%mmean_psi_closed      (recc) * rlai  &
+                                             + cpatch%mmean_psi_closed      (donc) * dlai
          !---------------------------------------------------------------------------------!
 
 
@@ -2284,11 +2227,8 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by WAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%mmean_wood_gbw        (recc) = ( cpatch%mmean_wood_gbw        (recc)       &
-                                               * cpatch%wai                   (recc)       &
-                                               + cpatch%mmean_wood_gbw        (recc)       &
-                                               * cpatch%wai                   (recc) )     &
-                                             * newwaii
+         cpatch%mmean_wood_gbw        (recc) = cpatch%mmean_wood_gbw        (recc) * rwai  &
+                                             + cpatch%mmean_wood_gbw        (donc) * dwai
          !---------------------------------------------------------------------------------!
 
 
@@ -2367,11 +2307,8 @@ module fuse_fiss_utils
 
 
             !----- Scale vapour pressure deficit using LAI. -------------------------------!
-            cpatch%mmean_leaf_vpdef   (recc) = ( cpatch%mmean_leaf_vpdef      (recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%mmean_leaf_vpdef      (donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+            cpatch%mmean_leaf_vpdef   (recc) = cpatch%mmean_leaf_vpdef      (recc) * rlai  &
+                                             + cpatch%mmean_leaf_vpdef      (donc) * dlai
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
@@ -2589,41 +2526,26 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by LAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%qmean_leaf_gsw      (:,recc) = ( cpatch%qmean_leaf_gsw      (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_leaf_gsw      (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%qmean_leaf_gbw      (:,recc) = ( cpatch%qmean_leaf_gbw      (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_leaf_gbw      (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%qmean_fs_open       (:,recc) = ( cpatch%qmean_fs_open       (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_fs_open       (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%qmean_fsw           (:,recc) = ( cpatch%qmean_fsw           (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_fsw           (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%qmean_fsn           (:,recc) = ( cpatch%qmean_fsn           (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_fsn           (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%qmean_psi_open      (:,recc) = ( cpatch%qmean_psi_open      (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_psi_open      (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
-         cpatch%qmean_psi_closed    (:,recc) = ( cpatch%qmean_psi_closed    (:,recc)       &
-                                               * cpatch%lai                   (recc)       &
-                                               + cpatch%qmean_psi_closed    (:,donc)       &
-                                               * cpatch%lai                   (donc) )     &
-                                             * newlaii
+         cpatch%qmean_leaf_gsw      (:,recc) = cpatch%qmean_leaf_gsw      (:,recc) * rlai  &
+                                             + cpatch%qmean_leaf_gsw      (:,donc) * dlai
+         cpatch%qmean_leaf_gbw      (:,recc) = cpatch%qmean_leaf_gbw      (:,recc) * rlai  &
+                                             + cpatch%qmean_leaf_gbw      (:,donc) * dlai
+         cpatch%qmean_fs_open       (:,recc) = cpatch%qmean_fs_open       (:,recc) * rlai  &
+                                             + cpatch%qmean_fs_open       (:,donc) * dlai
+         cpatch%qmean_fsw           (:,recc) = cpatch%qmean_fsw           (:,recc) * rlai  &
+                                             + cpatch%qmean_fsw           (:,donc) * dlai
+         cpatch%qmean_fsn           (:,recc) = cpatch%qmean_fsn           (:,recc) * rlai  &
+                                             + cpatch%qmean_fsn           (:,donc) * dlai
+         cpatch%qmean_A_light       (:,recc) = cpatch%qmean_A_light       (:,recc) * rlai  &
+                                             + cpatch%qmean_A_light       (:,donc) * dlai
+         cpatch%qmean_A_rubp        (:,recc) = cpatch%qmean_A_rubp        (:,recc) * rlai  &
+                                             + cpatch%qmean_A_rubp        (:,donc) * dlai
+         cpatch%qmean_A_co2         (:,recc) = cpatch%qmean_A_co2         (:,recc) * rlai  &
+                                             + cpatch%qmean_A_co2         (:,donc) * dlai
+         cpatch%qmean_psi_open      (:,recc) = cpatch%qmean_psi_open      (:,recc) * rlai  &
+                                             + cpatch%qmean_psi_open      (:,donc) * dlai
+         cpatch%qmean_psi_closed    (:,recc) = cpatch%qmean_psi_closed    (:,recc) * rlai  &
+                                             + cpatch%qmean_psi_closed    (:,donc) * dlai
          !---------------------------------------------------------------------------------!
 
 
@@ -2632,11 +2554,8 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by WAI.                                          !
          !---------------------------------------------------------------------------------!
-         cpatch%qmean_wood_gbw      (:,recc) = ( cpatch%qmean_wood_gbw      (:,recc)       &
-                                               * cpatch%wai                   (recc)       &
-                                               + cpatch%qmean_wood_gbw      (:,donc)       &
-                                               * cpatch%wai                   (donc) )     &
-                                             * newwaii
+         cpatch%qmean_wood_gbw      (:,recc) = cpatch%qmean_wood_gbw      (:,recc) * rwai  &
+                                             + cpatch%qmean_wood_gbw      (:,donc) * dwai
          !---------------------------------------------------------------------------------!
 
 
@@ -2716,11 +2635,8 @@ module fuse_fiss_utils
 
 
                !----- Scale vapour pressure deficit using LAI. ----------------------------!
-               cpatch%qmean_leaf_vpdef (t,recc) = ( cpatch%qmean_leaf_vpdef    (t,recc)    &
-                                                  * cpatch%lai                   (recc)    &
-                                                  + cpatch%qmean_leaf_vpdef    (t,donc)    &
-                                                  * cpatch%lai                   (donc) )  &
-                                                * newlaii
+               cpatch%qmean_leaf_vpdef (t,recc) = cpatch%qmean_leaf_vpdef  (t,recc) * rlai &
+                                                + cpatch%qmean_leaf_vpdef  (t,donc) * dlai
                !---------------------------------------------------------------------------!
             else
                !----- None of the cohorts has leaf biomass use nplant to scale them. ------!

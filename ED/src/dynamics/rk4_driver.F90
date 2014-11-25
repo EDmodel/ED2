@@ -1430,6 +1430,12 @@ module rk4_driver
                                        + cpatch%fsw              (ico) * dtlsm_o_frqsum
          cpatch%fmean_fsn        (ico) = cpatch%fmean_fsn        (ico)                     &
                                        + cpatch%fsn              (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_light    (ico) = cpatch%fmean_A_light    (ico)                     &
+                                       + cpatch%A_light          (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_rubp     (ico) = cpatch%fmean_A_rubp     (ico)                     &
+                                       + cpatch%A_rubp           (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_co2      (ico) = cpatch%fmean_A_co2      (ico)                     &
+                                       + cpatch%A_co2            (ico) * dtlsm_o_frqsum
          !---------------------------------------------------------------------------------!
          !     The penalty factor for water and nitrogen are meaningful only during the    !
          ! day.  For the daily means we must add only when it is daytime, so we integrate  !
