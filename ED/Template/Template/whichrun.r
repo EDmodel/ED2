@@ -87,7 +87,7 @@ if (file.exists(hasrun) && ! sigsegv){
    crashed  = length(grep("IFLAG1 problem."                    ,simout)) > 0
    bad.met  = length(grep("Meteorological forcing has issues"  ,simout)) > 0
    stopped  = length(grep("FATAL ERROR"                        ,simout)) > 0
-   finished = length(grep("ED execution ends"                  ,simout)) > 0
+   finished = length(grep("ED-2\\.2 execution ends"            ,simout)) > 0
    running  = ! (metmiss || crashed || stopped || finished)
 }else if (file.exists(hasrun) && sigsegv){
    metmiss  = FALSE

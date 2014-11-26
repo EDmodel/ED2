@@ -1040,15 +1040,15 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , off   =    0.0
                                      , mult  =   0.01)
    numvar[["leaf.absorb.nir"]] = list( descr = "Leaf NIR absorptance"
-                                     , unit  = "%/yr"
-                                     , fmt   = "%.2f"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
                                      , off   =    0.0
-                                     , mult  =   0.01)
+                                     , mult  =   0.001)
    numvar[["leaf.absorb.vis"]] = list( descr = "Leaf PAR absorptance"
-                                     , unit  = "%/yr"
-                                     , fmt   = "%.2f"
+                                     , unit  = ""
+                                     , fmt   = "%.3f"
                                      , off   =    0.0
-                                     , mult  =   0.01)
+                                     , mult  =   0.001)
    numvar[["idrain.scen"]]     = list( descr = "Change in rainfall"
                                      , unit  = "s.d."
                                      , fmt   = "%.2f"
