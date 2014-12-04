@@ -1566,14 +1566,14 @@ subroutine initialize_rk4patches(init)
       allocate(co2lim(nbuff))
       allocate(lightlim(nbuff))
 
-      !------------------------------------------------------------------------------------!
-      ! Initialize the canopy structure arrays
-      !------------------------------------------------------------------------------------!
-      allocate(canstr(nbuff))
-      do ibuff=1,nbuff
-         call alloc_canopy_layer_mbs(canstr(ibuff))   ! The arrays in this structure DO NOT
-                                                      ! change in size (currently)
-      end do
+!      !------------------------------------------------------------------------------------!
+!      ! Initialize the canopy structure arrays
+!      !------------------------------------------------------------------------------------!
+!      allocate(canstr(nbuff))
+!      do ibuff=1,nbuff
+!         call alloc_canopy_layer_mbs(canstr(ibuff))   ! The arrays in this structure DO NOT
+!                                                      ! change in size (currently)
+!      end do
 
       !------------------------------------------------------------------------------------!
       ! Initialize radiation scratch space                                                 !

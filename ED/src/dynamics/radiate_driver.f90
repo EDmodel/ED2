@@ -370,8 +370,9 @@
        radscr(ibuff)%CA_array(:)                  = 0.d0
        radscr(ibuff)%htop_array(:)                = 0.d0
        radscr(ibuff)%hbot_array(:)                = 0.d0
-       radscr(ibuff)%beam_level_array(:)          = 0.d0
-       radscr(ibuff)%diff_level_array(:)          = 0.d0
+       radscr(ibuff)%par_level_beam(:)            = 0.d0
+       radscr(ibuff)%par_level_diffd(:)           = 0.d0
+       radscr(ibuff)%par_level_diffu(:)           = 0.d0
        radscr(ibuff)%light_level_array(:)         = 0.d0
        radscr(ibuff)%light_beam_level_array(:)    = 0.d0
        radscr(ibuff)%light_diff_level_array(:)    = 0.d0
@@ -479,8 +480,9 @@
                 radscr(ibuff)%par_v_diffuse_array   (  cohort_count) = 0.0
                 radscr(ibuff)%lw_v_array            (  cohort_count) = 0.0
                 radscr(ibuff)%radprof_array         (:,cohort_count) = 0.0
-                radscr(ibuff)%beam_level_array      (  cohort_count) = 0.d0
-                radscr(ibuff)%diff_level_array      (  cohort_count) = 0.d0
+                radscr(ibuff)%par_level_beam        (  cohort_count) = 0.d0
+                radscr(ibuff)%par_level_diffd       (  cohort_count) = 0.d0
+                radscr(ibuff)%par_level_diffu       (  cohort_count) = 0.d0
                 radscr(ibuff)%light_level_array     (  cohort_count) = 0.d0
                 radscr(ibuff)%light_beam_level_array(  cohort_count) = 0.d0
                 radscr(ibuff)%light_diff_level_array(  cohort_count) = 0.d0
@@ -575,8 +577,9 @@
                    radscr(ibuff)%lw_v_array             (  ico) = 0.0
                    radscr(ibuff)%radprof_array          (:,ico) = 0.0
                    radscr(ibuff)%par_v_diffuse_array      (ico) = 0.0
-                   radscr(ibuff)%beam_level_array         (ico) = 0.d0
-                   radscr(ibuff)%diff_level_array         (ico) = 0.d0
+                   radscr(ibuff)%par_level_beam           (ico) = 0.d0
+                   radscr(ibuff)%par_level_diffu          (ico) = 0.d0
+                   radscr(ibuff)%par_level_diffd          (ico) = 0.d0
                    radscr(ibuff)%light_level_array        (ico) = 0.d0
                    radscr(ibuff)%light_beam_level_array   (ico) = 0.d0
                    radscr(ibuff)%light_diff_level_array   (ico) = 0.d0
@@ -868,7 +871,7 @@
                                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
                                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
                                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
-                                      ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                                     ,radscr(ibuff)%CA_array(1:cohort_count)                  &
                                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
                                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
                                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
@@ -877,14 +880,16 @@
                                       ,downward_par_below_beam                              &
                                       ,downward_par_below_diffuse                           &
                                       ,upward_par_above_diffuse                             &
-                                      ,downward_nir_below_beam                              &
+                                     ,downward_nir_below_beam                              &
                                       ,downward_nir_below_diffuse                           &
                                       ,upward_nir_above_diffuse                             &
-                                      ,radscr(ibuff)%beam_level_array(1:cohort_count)       &
-                                      ,radscr(ibuff)%diff_level_array(1:cohort_count)       &
+                                      ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                                      ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                                      ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
                                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
                                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
                                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+
                 !---------------------------------------------------------------------------!
 
              case (1)
@@ -909,8 +914,9 @@
                                       ,downward_nir_below_beam                              &
                                       ,downward_nir_below_diffuse                           &
                                       ,upward_nir_above_diffuse                             &
-                                      ,radscr(ibuff)%beam_level_array(1:cohort_count)       &
-                                      ,radscr(ibuff)%diff_level_array(1:cohort_count)       &
+                                      ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                                      ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                                      ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
                                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
                                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
                                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
@@ -938,8 +944,9 @@
                                       ,downward_nir_below_beam                              &
                                       ,downward_nir_below_diffuse                           &
                                       ,upward_nir_above_diffuse                             &
-                                      ,radscr(ibuff)%beam_level_array(1:cohort_count)       &
-                                      ,radscr(ibuff)%diff_level_array(1:cohort_count)       &
+                                      ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                                      ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                                      ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
                                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
                                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
                                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
@@ -949,9 +956,6 @@
                 !---------------------------------------------------------------------------!
              end select
              !------------------------------------------------------------------------------!
-
- 
-
 
              !------------------------------------------------------------------------------!
              !    Since there is no horizontal competition, assuming that the maximum       !
@@ -1117,6 +1121,11 @@
                                                           ,tiny_offset )
                    cpatch%light_level_diff(ico)  = sngloff(radscr(ibuff)%light_diff_level_array(il)       &
                                                           ,tiny_offset )
+
+                   cpatch%par_level_beam(ico)  = sngloff(radscr(ibuff)%par_level_beam(il),tiny_offset)
+                   cpatch%par_level_diffu(ico) = sngloff(radscr(ibuff)%par_level_diffu(il),tiny_offset)
+                   cpatch%par_level_diffd(ico) = sngloff(radscr(ibuff)%par_level_diffd(il),tiny_offset)
+
                    !------------------------------------------------------------------------!
                 end if
                 !---------------------------------------------------------------------------!
@@ -1227,6 +1236,13 @@
                                                        ,tiny_offset )
                 cpatch%light_level_diff (1) = sngloff(radscr(ibuff)%light_diff_level_array(il)            &
                                                        ,tiny_offset )
+
+                cpatch%par_level_beam(1)  = sngloff(radscr(ibuff)%par_level_beam(il),tiny_offset)
+                cpatch%par_level_diffu(1) = sngloff(radscr(ibuff)%par_level_diffu(il),tiny_offset)
+                cpatch%par_level_diffd(1) = sngloff(radscr(ibuff)%par_level_diffd(il),tiny_offset)
+
+
+
                 !---------------------------------------------------------------------------!
              end if
              !------------------------------------------------------------------------------!
@@ -1740,6 +1756,16 @@
           cpatch%fmean_rlong_w           (ico) = cpatch%fmean_rlong_w           (ico)       &
                                                + cpatch%rlong_w                 (ico)       &
                                                * radfrq_o_frqsum
+
+          cpatch%fmean_par_level_beam    (ico) = cpatch%fmean_par_level_beam    (ico)       &
+                                               + cpatch%par_level_beam(ico) * radfrq_o_frqsum
+
+          cpatch%fmean_par_level_diffd   (ico) = cpatch%fmean_par_level_diffd   (ico)       &
+                                               + cpatch%par_level_diffd(ico) * radfrq_o_frqsum
+
+          cpatch%fmean_par_level_diffu   (ico) = cpatch%fmean_par_level_diffu   (ico)       &
+                                               + cpatch%par_level_diffu(ico) * radfrq_o_frqsum
+
           cpatch%fmean_light_level       (ico) = cpatch%fmean_light_level       (ico)       &
                                                + cpatch%light_level             (ico)       &
                                                * radfrq_o_frqsum

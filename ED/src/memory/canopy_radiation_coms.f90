@@ -85,8 +85,9 @@ module canopy_radiation_coms
       real(kind=8)    , pointer, dimension(:)  :: CA_array
       real(kind=8)    , pointer, dimension(:)  :: htop_array
       real(kind=8)    , pointer, dimension(:)  :: hbot_array
-      real(kind=8)    , pointer, dimension(:)  :: beam_level_array
-      real(kind=8)    , pointer, dimension(:)  :: diff_level_array
+      real(kind=8)    , pointer, dimension(:)  :: par_level_beam
+      real(kind=8)    , pointer, dimension(:)  :: par_level_diffd
+      real(kind=8)    , pointer, dimension(:)  :: par_level_diffu
       real(kind=8)    , pointer, dimension(:)  :: light_level_array
       real(kind=8)    , pointer, dimension(:)  :: light_beam_level_array
       real(kind=8)    , pointer, dimension(:)  :: light_diff_level_array
@@ -240,8 +241,9 @@ module canopy_radiation_coms
          allocate (cradscr%CA_array                  (          maxcohort))
          allocate (cradscr%htop_array                (          maxcohort))
          allocate (cradscr%hbot_array                (          maxcohort))
-         allocate (cradscr%beam_level_array          (          maxcohort))
-         allocate (cradscr%diff_level_array          (          maxcohort))
+         allocate (cradscr%par_level_beam            (          maxcohort))
+         allocate (cradscr%par_level_diffu           (          maxcohort))
+         allocate (cradscr%par_level_diffd           (          maxcohort))
          allocate (cradscr%light_level_array         (          maxcohort))
          allocate (cradscr%light_beam_level_array    (          maxcohort))
          allocate (cradscr%light_diff_level_array    (          maxcohort))
@@ -271,8 +273,9 @@ module canopy_radiation_coms
          if (associated(cradscr%CA_array                 )) deallocate(cradscr%CA_array  )
          if (associated(cradscr%htop_array               )) deallocate(cradscr%htop_array )
          if (associated(cradscr%hbot_array               )) deallocate(cradscr%hbot_array )
-         if (associated(cradscr%beam_level_array         )) deallocate(cradscr%beam_level_array )
-         if (associated(cradscr%diff_level_array         )) deallocate(cradscr%diff_level_array )
+         if (associated(cradscr%par_level_beam           )) deallocate(cradscr%par_level_beam )
+         if (associated(cradscr%par_level_diffu          )) deallocate(cradscr%par_level_diffu )
+         if (associated(cradscr%par_level_diffd          )) deallocate(cradscr%par_level_diffd )
          if (associated(cradscr%light_level_array        )) deallocate(cradscr%light_level_array )
          if (associated(cradscr%light_beam_level_array   )) deallocate(cradscr%light_beam_level_array )
          if (associated(cradscr%light_diff_level_array   )) deallocate(cradscr%light_diff_level_array )
@@ -300,8 +303,9 @@ module canopy_radiation_coms
         nullify(cradscr%CA_array                  )
         nullify(cradscr%htop_array                )
         nullify(cradscr%hbot_array                )
-        nullify(cradscr%beam_level_array          )
-        nullify(cradscr%diff_level_array          )
+        nullify(cradscr%par_level_beam            )
+        nullify(cradscr%par_level_diffu           )
+        nullify(cradscr%par_level_diffd           )
         nullify(cradscr%light_level_array         )
         nullify(cradscr%light_beam_level_array    )
         nullify(cradscr%light_diff_level_array    )

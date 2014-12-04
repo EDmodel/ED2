@@ -1371,6 +1371,16 @@ module fuse_fiss_utils
       cpatch%light_level_diff(recc) = ( cpatch%light_level_diff(recc) *cpatch%nplant(recc) &
                                       + cpatch%light_level_diff(donc) *cpatch%nplant(donc))&
                                     * newni
+      
+      cpatch%par_level_beam(recc)  = ( cpatch%par_level_beam(recc) *cpatch%nplant(recc)      &
+                                      + cpatch%par_level_beam(donc) *cpatch%nplant(donc) )    &
+                                    * newni
+      cpatch%par_level_diffd(recc) = ( cpatch%par_level_diffd(recc) *cpatch%nplant(recc) &
+                                      + cpatch%par_level_diffd(donc) *cpatch%nplant(donc))&
+                                    * newni
+      cpatch%par_level_diffu(recc) = ( cpatch%par_level_diffu(recc) *cpatch%nplant(recc) &
+                                      + cpatch%par_level_diffu(donc) *cpatch%nplant(donc))&
+                                    * newni
       !------------------------------------------------------------------------------------!
 
 
@@ -1579,6 +1589,24 @@ module fuse_fiss_utils
                                                + cpatch%fmean_light_level_diff(donc)       &
                                                * cpatch%nplant                (donc) )     &
                                              * newni
+
+         cpatch%fmean_par_level_beam     (recc) = ( cpatch%fmean_par_level_beam(recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_par_level_beam  (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_par_level_diffd(recc) = ( cpatch%fmean_par_level_diffd(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_par_level_diffd(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_par_level_diffu(recc) = ( cpatch%fmean_par_level_diffu(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_par_level_diffu(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         
+
          !---------------------------------------------------------------------------------!
 
 

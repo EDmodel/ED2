@@ -300,8 +300,8 @@ recursive subroutine read_ed_xml_config(filename)
            ! VALUES.. TO CHANGE MORT3 FOR TROPICAL, YOU NEED TO CHANGE
            ! M3_SCALE and M3_SLOPE.  SEE ED_PARAMS.F90 LINE 4989
            ! ------------------------------------------------------------
-           call getConfigREAL  ('mort3_pft_init','pft',i,rval,texist)
-           if(texist) mort3_pft_init(myPFT) = real(rval)
+           call getConfigREAL  ('mort3','pft',i,rval,texist)
+           if(texist) mort3(myPFT) = real(rval)
 
 
            call getConfigREAL  ('nonlocal_dispersal','pft',i,rval,texist)
@@ -1064,7 +1064,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("leaf_width",leaf_width(i))
         call putConfigREAL("hgt_min",hgt_min(i))
         call putConfigREAL("plant_min_temp",plant_min_temp(i))
-        call putConfigREAL("mort3_pft_init",mort3(i))
+        call putConfigREAL("mort3",mort3(i))
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("seed_rain",seed_rain(i))
         call putConfigREAL("stomatal_slope",stomatal_slope(i))
