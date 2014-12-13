@@ -1,6 +1,6 @@
 #==========================================================================================#
 #==========================================================================================#
-h2dbh = function(h,ipft){
+h2dbh <<- function(h,ipft){
 
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(h))
@@ -31,7 +31,7 @@ h2dbh = function(h,ipft){
 
 #==========================================================================================!
 #==========================================================================================!
-dbh2h = function(ipft,dbh){
+dbh2h <<- function(ipft,dbh){
 
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -66,7 +66,7 @@ dbh2h = function(ipft,dbh){
 
 #==========================================================================================#
 #==========================================================================================#
-dbh2bl = function(dbh,ipft){
+dbh2bl <<- function(dbh,ipft){
 
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
@@ -92,7 +92,7 @@ dbh2bl = function(dbh,ipft){
 
 #==========================================================================================#
 #==========================================================================================#
-dbh2bd = function(dbh,ipft){
+dbh2bd <<- function(dbh,ipft){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
@@ -121,7 +121,7 @@ dbh2bd = function(dbh,ipft){
 #==========================================================================================#
 #    Canopy Area allometry from Dietze and Clark (2008).                                   #
 #------------------------------------------------------------------------------------------#
-dbh2ca = function(dbh,ipft){
+dbh2ca <<- function(dbh,ipft){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
@@ -154,7 +154,7 @@ dbh2ca = function(dbh,ipft){
 #==========================================================================================#
 #    Wood area index from Ahrends et al. (2010).                                           #
 #------------------------------------------------------------------------------------------#
-dbh2wai = function(dbh,ipft,chambers=FALSE){
+dbh2wai <<- function(dbh,ipft,chambers=FALSE){
    if (length(ipft) == 1){
      zpft = rep(ipft,times=length(dbh))
    }else{
@@ -208,7 +208,7 @@ dbh2wai = function(dbh,ipft,chambers=FALSE){
 #==========================================================================================#
 #    Standing volume of a tree.                                                            #
 #------------------------------------------------------------------------------------------#
-dbh2vol = function(hgt,dbh,ipft){
+dbh2vol <<- function(hgt,dbh,ipft){
    vol  = pft$b1Vol[ipft] * hgt * dbh ^ pft$b2Vol[ipft]
    return(vol)
 }#end function dbh2ca
@@ -224,7 +224,7 @@ dbh2vol = function(hgt,dbh,ipft){
 #==========================================================================================#
 #    Rooting depth.                                                                        #
 #------------------------------------------------------------------------------------------#
-dbh2rd = function(hgt,dbh,ipft){
+dbh2rd <<- function(hgt,dbh,ipft){
    if (iallom %in% c(0)){
       #------------------------------------------------------------------------------------#
       #    Original ED-2.1 (I don't know the source for this equation, though).            #
@@ -282,7 +282,7 @@ h2crownbh <<- function (height,ipft){
 #      predicting foliar biomass and leaf area:sapwood area ratio from tree height in five #
 #      Costa Rican rain forest species.  Tree Physiol. 28, 1601-1608.                      #
 #------------------------------------------------------------------------------------------#
-dbh2bl.alt = function (dbh,genus){
+dbh2bl.alt <<- function (dbh,genus){
    #----- Make genus case insensitive. ----------------------------------------------------#
    genushere = tolower(genus)
    #---------------------------------------------------------------------------------------#

@@ -55,8 +55,6 @@ image.map <<- function( x
                       , key.options      = NULL
                       , sub.options      = NULL
                       , main.title       = NULL
-                      , main.xlab        = NULL
-                      , main.ylab        = NULL
                       , key.title        = NULL
                       , plot.after       = NULL
                       , matrix.plot      = FALSE

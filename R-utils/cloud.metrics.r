@@ -163,17 +163,32 @@ cloud.metrics <<- function( x
 
 
       #----- Find the general metrics. ----------------------------------------------------#
-      first = .Int.cloud.metrics( z       = z1st
-                                , pref    = "z1st"
-                                , probs   = probs
-                                , zbreaks = zbreaks
-                                , n.dens  = n.dens
-                                , zl.dens = zl.dens
-                                , zh.dens = zh.dens
-                                , zzdens  = NULL
-                                , zmin    = zmin
-                                , zmax    = zmax
-                                )#end .Int.cloud.metrics
+      if (length(z1st) > min.pts){
+         first = .Int.cloud.metrics( z       = z1st
+                                   , pref    = "z1st"
+                                   , probs   = probs
+                                   , zbreaks = zbreaks
+                                   , n.dens  = n.dens
+                                   , zl.dens = zl.dens
+                                   , zh.dens = zh.dens
+                                   , zzdens  = NULL
+                                   , zmin    = zmin
+                                   , zmax    = zmax
+                                   )#end .Int.cloud.metrics
+      }else{
+         first = .Int.cloud.metrics( z       = x$z
+                                   , pref    = "z1st"
+                                   , probs   = probs
+                                   , zbreaks = zbreaks
+                                   , n.dens  = n.dens
+                                   , zl.dens = zl.dens
+                                   , zh.dens = zh.dens
+                                   , zzdens  = NULL
+                                   , zmin    = zmin
+                                   , zmax    = zmax
+                                   )#end .Int.cloud.metrics
+         first = first + NA
+      }#end if (length(z1st) > min.pts)
       #------------------------------------------------------------------------------------#
 
    }else{
@@ -184,7 +199,7 @@ cloud.metrics <<- function( x
 
 
    #---------------------------------------------------------------------------------------#
-   #     Find metrics for last return only.                                                #
+   #     Find metrics for points flagged as medium and high vegetation only.               #
    #---------------------------------------------------------------------------------------#
    if (tree.stats){
       #------------------------------------------------------------------------------------#
@@ -195,21 +210,36 @@ cloud.metrics <<- function( x
 
 
       #----- Find the general metrics. ----------------------------------------------------#
-      tree = .Int.cloud.metrics( z       = zveg
-                               , pref    = "tree"
-                               , probs   = probs
-                               , zbreaks = zbreaks
-                               , n.dens  = n.dens
-                               , zl.dens = zl.dens
-                               , zh.dens = zh.dens
-                               , zzdens  = NULL
-                               , zmin    = zmin
-                               , zmax    = zmax
-                               )#end .Int.cloud.metrics
+      if (length(zveg) > min.pts){
+         tree = .Int.cloud.metrics( z       = zveg
+                                  , pref    = "tree"
+                                  , probs   = probs
+                                  , zbreaks = zbreaks
+                                  , n.dens  = n.dens
+                                  , zl.dens = zl.dens
+                                  , zh.dens = zh.dens
+                                  , zzdens  = NULL
+                                  , zmin    = zmin
+                                  , zmax    = zmax
+                                  )#end .Int.cloud.metrics
+      }else{
+         tree = .Int.cloud.metrics( z       = x$z
+                                  , pref    = "tree"
+                                  , probs   = probs
+                                  , zbreaks = zbreaks
+                                  , n.dens  = n.dens
+                                  , zl.dens = zl.dens
+                                  , zh.dens = zh.dens
+                                  , zzdens  = NULL
+                                  , zmin    = zmin
+                                  , zmax    = zmax
+                                  )#end .Int.cloud.metrics
+         tree = tree + NA
+      }#end if
       #------------------------------------------------------------------------------------#
 
    }else{
-      last = NULL
+      tree = NULL
    }#end if (tree.stats)
    #---------------------------------------------------------------------------------------#
 
@@ -219,7 +249,7 @@ cloud.metrics <<- function( x
    if (mat.out){
       ans = cbind(elev = every, zmah = mah, z1st = first, tree = tree)
    }else{
-      ans = c(every,mah,first,last)
+      ans = c(every,mah,first,tree)
    }#end if
    #---------------------------------------------------------------------------------------#
 

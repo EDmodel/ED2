@@ -1201,10 +1201,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(      9,            19,           28)
          nz     = c(     12,            21,           29)
       }else if (lenici == 30){
-         nparms = 3
-         param  = c("iscenario","iphen.scheme","isoil.text")
-         na     = c(         11,            20,          29)
-         nz     = c(         14,            22,          30)
+         nparms = 4
+         param  = c("isas","iage","idiversity","leaf.absorb.vis")
+         na     = c(     6,    13,          19,               28)
+         nz     = c(     8,    14,          20,               30)
       }else if (lenici == 31){
          nparms = 3
          param  = c("iallom","idimort","include.fire")

@@ -5,19 +5,20 @@
 #    This function is exactly the same as filled.contour, but without the black lines      #
 # between the colours in the scale...                                                      #
 #------------------------------------------------------------------------------------------#
-sombreado = function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z)),z
-                    ,xlim=range(x,finite=TRUE),ylim=range(y,finite=TRUE)
-                    ,zlim=range(z,finite=TRUE)
-                    ,levels = if (key.log){
-                                 sort(unique(pretty.log(x=z,n=nlevels,forcelog=TRUE)))
-                              }else{
-                                 sort(unique(pretty(x=z,n=nlevels)))
-                              }#end if
-                    ,nlevels=100,colour.palette=color.palette,color.palette=cm.colors
-                    ,col=colour.palette(length(levels)-1)
-                    ,plot.title,plot.axes,xlog=FALSE,ylog=FALSE,key.title,key.axes
-                    ,key.log=FALSE,asp=NA,interp=TRUE
-                    ,xaxs="i",yaxs="i",las=1,axes=TRUE,frame.plot=axes,useRaster=TRUE,...){
+sombreado <<- function(x=seq(from=0,to=1,len=nrow(z)),y=seq(from=0,to=1,len=ncol(z)),z
+                      ,xlim=range(x,finite=TRUE),ylim=range(y,finite=TRUE)
+                      ,zlim=range(z,finite=TRUE)
+                      ,levels = if (key.log){
+                                   sort(unique(pretty.log(x=z,n=nlevels,forcelog=TRUE)))
+                                }else{
+                                   sort(unique(pretty(x=z,n=nlevels)))
+                                }#end if
+                      ,nlevels=100,colour.palette=color.palette,color.palette=cm.colors
+                      ,col=colour.palette(length(levels)-1)
+                      ,plot.title,plot.axes,xlog=FALSE,ylog=FALSE,key.title,key.axes
+                      ,key.log=FALSE,asp=NA,interp=TRUE
+                      ,xaxs="i",yaxs="i",las=1,axes=TRUE,frame.plot=axes,useRaster=TRUE
+                      ,...){
 
    #----- Check which kind of input was given. --------------------------------------------#
    if (missing(z)) {

@@ -38,7 +38,14 @@ maxit  <<- 150    # Maximum number of iterations in general
 #------------------------------------------------------------------------------------------#
 
 
-
+#----- Colours for months. ----------------------------------------------------------------#
+month.at   <<- (sequence(12) - 0.5 ) / 12
+month.off  <<- -1.5/12
+month.cols <<- hsv( h = month.at
+                  , s = 0.75 + 0.25 * cos((month.at - month.off) * 2 * pi)
+                  , v = 0.75 + 0.25 * sin((month.at - month.off) * 2 * pi)
+                  )#end hsv
+#------------------------------------------------------------------------------------------#
 
 #------ Define the colours and labels for IGBP land use maps. -----------------------------#
 igbp.col <<- c( H2O = RGB(   0,  20,  82)
