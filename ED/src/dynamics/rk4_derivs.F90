@@ -484,7 +484,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       avg_th_cond               =  rk4aux%th_cond_s(mzg)                                   &
                                 *  ( rk4aux%th_cond_p(1) / rk4aux%th_cond_s(mzg) )         &
                                 ** ( dslz8(mzg) / (initp%sfcwater_depth(1)+ dslz8(mzg)))  
-      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac                            &
+!      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac                            &
+      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond				                               &
                                 * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))        &
                                 / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )         
       rk4aux%h_flux_s   (1)     = rk4aux%h_flux_g(mzg+1)                               
@@ -510,7 +511,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                   - dble(csite%rshort_g(ipa))
    rk4aux%h_flux_g        (mzg+1) = rk4aux%h_flux_g(mzg+1) + dinitp%avg_sensible_gg (mzg)
    !---------------------------------------------------------------------------------------!
-
+   rk4aux%h_flux_s        (mzs+1) = rk4aux%h_flux_s(mzs+1) + hflxsc + qwflxsc - 		   &
+   									dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
 
 
 
@@ -1003,6 +1005,13 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    closedcan_frac = max(0.d0,min(1.d0,1.d0-initp%opencan_frac))
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Set all heat fluxes to zero, we only add them if they occur and are allowed.      !
+   !---------------------------------------------------------------------------------------!
+   hflxsc         = 0.d0
+   hflxgc         = 0.d0
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

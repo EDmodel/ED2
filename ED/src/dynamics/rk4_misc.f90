@@ -1294,7 +1294,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
                             , wdnsi8                & ! intent(in)
                             , uiliqt38              & ! intent(in)
                             , wdnsi8                & ! intent(in)
-                            , fdnsi8                ! ! intent(in)
+                            , fdnsi8                & ! intent(in)
+                            , fsdnsi8               ! ! intent(in)
    use therm_lib8    , only : uint2tl8              & ! subroutine
                             , uextcm2tl8            & ! subroutine
                             , tl2uint8              & ! function
@@ -2015,8 +2016,11 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !     Check whether the layer as is meet the minimum requirements to stand as a   !
          ! new layer by itself.                                                            !
          !---------------------------------------------------------------------------------!
-         if ( initp%sfcwater_mass(k)   >  rk4tiny_sfcw_mass              .and.             &
-              rk4snowmin * thicknet(k) <= sum_sfcw_mass                  .and.             &
+!         if ( initp%sfcwater_mass(k)   >  rk4tiny_sfcw_mass              .and.             &
+!              rk4snowmin * thicknet(k) <= sum_sfcw_mass                  .and.             &
+!              initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
+         if ( initp%sfcwater_mass(k)   >=  rk4snowmin		             .and.             &
+              rk4snowmin * fsdnsi8 <= initp%sfcwater_depth(k)            .and.             &
               initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
             newlayers = newlayers + 1
          end if
