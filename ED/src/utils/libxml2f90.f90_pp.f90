@@ -44,7 +44,7 @@ module libxml2f90_module
   character(1),allocatable    ::  tempstringa(:)
   integer(4)                  ::  filelines
   integer(4)                  ::  lbact
-  character(32)               ::  default_llid='CNTL'
+  character(1024)               ::  default_llid='CNTL'
   integer(4)                  ::  xmlformat=3
   integer(4)                  ::  arraystep=2000
   integer(4)                  ::  indstep=2
@@ -430,7 +430,7 @@ end module libxml2f90_strings_module
 
 module ll_module
   type ll_type
-     character(32)            :: LL_ID
+     character(1024)            :: LL_ID
      character(32)            :: TAG
      character(32)            :: ID
      character(1),dimension(:),pointer :: VALUE
