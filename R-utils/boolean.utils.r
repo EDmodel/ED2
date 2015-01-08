@@ -14,14 +14,14 @@ combn.boolean <<- function(x){
 
    #----- Build the list with all possible combinations (except all negative). ------------#
    ans = mapply( FUN      = combn
-                , m        = sequence(nx)
-                , MoreArgs = list( x        = sequence(nx)
-                                 , fun      = which.2.boolean
-                                 , along    = x
-                                 , simplify = TRUE
-                                 )#end list
-                , SIMPLIFY = FALSE
-                )#end mapply
+               , m        = sequence(nx)
+               , MoreArgs = list( x        = sequence(nx)
+                                , FUN      = which.2.boolean
+                                , along    = x
+                                , simplify = TRUE
+                                )#end list
+               , SIMPLIFY = FALSE
+               )#end mapply
    ans = lapply( X = ans, FUN = t)
    #---------------------------------------------------------------------------------------#
 
