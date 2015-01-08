@@ -19,6 +19,7 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
    n.variables = length(variables)
    n.receptor  = nrow(receptor)
    empty       = rep(NA,n.receptor)
+   try.genus   = "genus" %in% names(donor)
    #---------------------------------------------------------------------------------------#
 
 
@@ -28,8 +29,13 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
    this.1st  = empty; this.1st[don.2.rec] = donor$common.1st
    this.sci  = empty; this.sci[don.2.rec] = donor$scientific
    this.fam  = empty; this.fam[don.2.rec] = donor$family
-   this.gen  = empty; this.gen[don.2.rec] = donor$genus
-   this.full = ifelse(is.na(this.sci),FALSE, this.sci != this.gen)
+   if (try.genus){
+      this.gen  = empty; this.gen[don.2.rec] = donor$genus
+      this.full = ifelse(is.na(this.sci),FALSE, this.sci != this.gen)
+   }else{
+      this.gen  = empty
+      this.full = ! is.na(this.sci)
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -38,7 +44,7 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
    #      Copy new data to the receptor dataset, one variable at a time as they have       #
    # different rules.                                                                      #
    #---------------------------------------------------------------------------------------#
-   for (nv in 1:n.variables){
+   for (nv in sequence(n.variables)){
       #------------------------------------------------------------------------------------#
       #       Grab the variable name, and make some auxiliary names.                       #
       #------------------------------------------------------------------------------------#
@@ -181,7 +187,9 @@ fuse.trees <<- function(receptor,donor,don.2.rec,survey.years,sci.strict=TRUE){
          }else if (any(diff.sci)){
             update.scientific   = this.full | is.na(receptor$scientific)
             receptor$scientific = ifelse(update.scientific,this.sci,receptor$scientific)
-            receptor$genus      = ifelse(update.scientific,this.gen,receptor$genus     )
+            if (try.genus){
+               receptor$genus   = ifelse(update.scientific,this.gen,receptor$genus     )
+            }#end if
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -370,7 +378,7 @@ blend.trees = function(receptor,donor,years.blend){
    #      Copy new data to the receptor dataset, one variable at a time as they have       #
    # different rules.                                                                      #
    #---------------------------------------------------------------------------------------#
-   for (nv in 1:n.variables){
+   for (nv in sequence(n.variables)){
       #------------------------------------------------------------------------------------#
       #       Grab the variable name, and make some auxiliary names.                       #
       #------------------------------------------------------------------------------------#
@@ -390,6 +398,7 @@ blend.trees = function(receptor,donor,years.blend){
            length(grep(pattern="old."      ,x=vname)) > 0 ||
            length(grep(pattern=".1st"      ,x=vname)) > 0 ||
            length(grep(pattern="scientific",x=vname)) > 0 ||
+           length(grep(pattern="genus"     ,x=vname)) > 0 ||
            length(grep(pattern="family"    ,x=vname)) > 0 ||
            length(grep(pattern="year.last" ,x=vname)) > 0 ||
            length(grep(pattern="cnpj"      ,x=vname)) > 0 ||

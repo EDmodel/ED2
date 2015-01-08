@@ -2825,7 +2825,7 @@ if (plot.site){
             ncohort       = length(pp)
             mod.down.diff = array( data = NA
                                 , dim  = c(nband,nstats,nsimul,ncohort)
-                                , dimnames = list( band.key,stats,simul$key,NULL)
+                                , dimnames = list( band$key,stats,simul$key,NULL)
                                 )#end array
             #------------------------------------------------------------------------------#
 

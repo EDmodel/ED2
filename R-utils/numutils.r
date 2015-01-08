@@ -1087,3 +1087,47 @@ eddy.cov <<- function(x,y,...){
 }#end function eddy.cov
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Function to find neat breaks given the resolution.                                   # 
+#------------------------------------------------------------------------------------------#
+neat.breaks <<- function(x,res,...){
+   bad = 0
+   #----- Make sure that x is a vector with contents. -------------------------------------#
+   if ((! is.vector(x)) || (! is.numeric(x)) || length(x) < 2){
+      cat("x must be a numeric vector of length 2 (or greater)!","\n",sep="")
+      bad = bad + 1
+   }else{
+      #----- Remove infinite/NA entries. --------------------------------------------------#
+      x = x[is.finite(x)]
+      if (length(x) < 2){
+         cat("x must contain at least 2 finite values!","\n",sep="")
+         bad = bad + 1
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #----- Make sure that res is a simple scalar. ------------------------------------------#
+   if ((! is.vector(res)) || (! is.numeric(res)) || length(res) != 1){
+      cat("res must be a numeric scalar!","\n",sep="")
+      bad = bad + 1
+      if (res <= 0){
+         cat("res must be positive!","\n",sep="")
+         bad = bad + 1
+      }#end if
+   }#end if
+   if (bad > 0) stop(" x and/or res are invalid!")
+   #---------------------------------------------------------------------------------------#
+
+   xrange   = range(x,finite=TRUE)
+   xextreme = c(floor(xrange[1]/res),ceiling(xrange[2]/res)) * res
+   breaks   = seq(from=xextreme[1],to=xextreme[2],by=res)
+   return(breaks)
+}#end function neat.breaks
+#==========================================================================================#
+#==========================================================================================#

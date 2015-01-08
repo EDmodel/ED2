@@ -2,7 +2,8 @@
 #     Create factors for a three-dimension volime.  This works exactly the same way as the #
 # cut function, except that the levels consider 3 variables.                               #
 #------------------------------------------------------------------------------------------#
-cut3d = function(x,y=NULL,z=NULL,xbreaks=10,ybreaks=10,zbreaks=10,...){
+cut3d <<- function(x,y=NULL,z=NULL,xbreaks=10,ybreaks=10,zbreaks=10
+                ,xlabels=NULL,ylabels=NULL,zlabels=NULL,...){
 
    #---------------------------------------------------------------------------------------#
    #     First thing, we check whether the input variables make sense.                     #
@@ -38,15 +39,15 @@ cut3d = function(x,y=NULL,z=NULL,xbreaks=10,ybreaks=10,zbreaks=10,...){
    #    Split X, Y, and Z.                                                                 #
    #---------------------------------------------------------------------------------------#
    #----- X. ------------------------------------------------------------------------------#
-   xcut  = cut(xyz$x,breaks=xbreaks,...)
+   xcut  = cut(xyz$x,breaks=xbreaks,labels=xlabels,...)
    xlevs = levels(xcut)
    nxlev = length(xlevs)
    #----- Y. ------------------------------------------------------------------------------#
-   ycut  = cut(xyz$y,breaks=ybreaks,...)
+   ycut  = cut(xyz$y,breaks=ybreaks,labels=ylabels,...)
    ylevs = levels(ycut)
    nylev = length(ylevs)
    #----- Z. ------------------------------------------------------------------------------#
-   zcut  = cut(xyz$z,breaks=zbreaks,...)
+   zcut  = cut(xyz$z,breaks=zbreaks,labels=zlabels,...)
    zlevs = levels(zcut)
    nzlev = length(zlevs)
    #----- Combine X and Y. ----------------------------------------------------------------#
@@ -68,7 +69,7 @@ cut3d = function(x,y=NULL,z=NULL,xbreaks=10,ybreaks=10,zbreaks=10,...){
 #------------------------------------------------------------------------------------------#
 #    This function is called to tell that cut2d had an invalid argument for point...       #
 #------------------------------------------------------------------------------------------#
-bad.configuration = function(varname){
+bad.configuration <<- function(varname){
       print(paste("In function in.poly:",varname,"is not a valid variable.",sep=" "))
       print("It must be:")
       print(" a. A two-element vector (longitude and latitude)")
