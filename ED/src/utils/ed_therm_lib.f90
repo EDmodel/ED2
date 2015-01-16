@@ -162,7 +162,7 @@ module ed_therm_lib
          else
             !----- Find the snow layer that is the closest to where the leaves would be. --!
             do k = csite%nlev_sfcwater(ipa), 1, -1
-               if (sum(csite%sfcwater_depth(1:k,ipa)) > cpatch%hite(ico)) then
+               if (sum(csite%sfcwater_depth(1:k,ipa)) >= cpatch%hite(ico)) then
                   kclosest = k
                end if
             end do
