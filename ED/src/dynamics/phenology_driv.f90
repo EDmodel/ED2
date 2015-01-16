@@ -600,6 +600,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)
+         !---------------------------------------------------------------------------------!
 
          !----- Printing some debugging stuff if the code is set for it. ------------------!
          if (printphen) then

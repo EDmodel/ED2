@@ -43,6 +43,7 @@ module rk4_driver
       integer                                 :: ipy
       integer                                 :: isi
       integer                                 :: ipa
+      integer                                 :: ico
       integer                                 :: iun
       integer                                 :: nsteps
       integer                                 :: imon
@@ -62,6 +63,8 @@ module rk4_driver
       real                                    :: old_can_temp
       real                                    :: old_can_prss
       real                                    :: old_can_depth
+      !----- Local constants. -------------------------------------------------------------!
+      logical                   , parameter   :: test_energy_sanity = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
@@ -163,6 +166,15 @@ module rk4_driver
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
                !---------------------------------------------------------------------------!
 
+
+
+               !---------------------------------------------------------------------------!
+               !      Test whether temperature and energy are reasonable.                  !
+               !---------------------------------------------------------------------------!
+               if (test_energy_sanity) then
+                  call sanity_check_veg_energy(csite,ipa)
+               end if
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !

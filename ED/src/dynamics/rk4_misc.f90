@@ -31,6 +31,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , reset_rk4_fluxes       ! ! sub-routine
    use ed_max_dims           , only : n_pft                  ! ! intent(in)
    use therm_lib8            , only : uextcm2tl8             & ! subroutine
+                                    , cmtl2uext8             & ! function
                                     , thetaeiv8              & ! function
                                     , idealdenssh8           & ! function
                                     , rehuil8                & ! function
@@ -298,7 +299,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%leaf_temp  (ico) = dble(cpatch%leaf_temp  (ico))
          targetp%leaf_water (ico) = dble(cpatch%leaf_water (ico))
          targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
-         targetp%leaf_energy(ico) = targetp%leaf_hcap(ico) * targetp%leaf_temp(ico)
+         targetp%leaf_energy(ico) = cmtl2uext8( targetp%leaf_hcap (ico)                    &
+                                              , targetp%leaf_water(ico)                    &
+                                              , targetp%leaf_temp (ico)                    &
+                                              , targetp%leaf_fliq (ico) )
       end if
       !------------------------------------------------------------------------------------!
 
@@ -322,7 +326,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%wood_temp  (ico) = dble(cpatch%wood_temp  (ico))
          targetp%wood_water (ico) = dble(cpatch%wood_water (ico))
          targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
-         targetp%wood_energy(ico) = targetp%wood_hcap(ico) * targetp%wood_temp(ico)
+         targetp%wood_energy(ico) = cmtl2uext8( targetp%wood_hcap (ico)                    &
+                                              , targetp%wood_water(ico)                    &
+                                              , targetp%wood_temp (ico)                    &
+                                              , targetp%wood_fliq (ico) )
       end if
       !------------------------------------------------------------------------------------!
 
@@ -3453,15 +3460,16 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Leaf information (only the resolvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),10(a12,1x))')                                              &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
-                            ,'       BLEAF',' LEAF_ENERGY','   LEAF_TEMP','  LEAF_WATER'
+                            ,'       BLEAF',' LEAF_ENERGY','  LEAF_WATER','   LEAF_HCAP'   &
+                            ,'   LEAF_TEMP','   LEAF_FLIQ'
    do ico = 1,cpatch%ncohorts
       if (cpatch%leaf_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),10(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
-              ,cpatch%bleaf(ico),cpatch%leaf_energy(ico),cpatch%leaf_temp(ico)             &
-              ,cpatch%leaf_water(ico)
+              ,cpatch%bleaf(ico),cpatch%leaf_energy(ico),cpatch%leaf_water(ico)            &
+              ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico)
       end if
    end do
    write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
@@ -4314,5 +4322,159 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
    return
 end subroutine print_rk4_state
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine checks whether the leaf and wood properties are consistent.  Any    !
+! update on long-term dynamics must ensure that updates on internal energy and heat        !
+! capacity results in the same temperature.  This check is only needed in case of updates  !
+! in the long-term dynamics.                                                               !
+!------------------------------------------------------------------------------------------!
+subroutine sanity_check_veg_energy(csite,ipa)
+   use ed_state_vars          , only : sitetype             & ! structure
+                                     , patchtype            ! ! structure
+   use consts_coms            , only : tiny_num             ! ! intent(in)
+   use therm_lib              , only : uextcm2tl            ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(sitetype)            , target      :: csite
+   integer                   , intent(in)  :: ipa
+   !----- Local variables. ----------------------------------------------------------------!
+   type(patchtype)           , pointer     :: cpatch
+   integer                                 :: ico
+   real                                    :: test_leaf_temp
+   real                                    :: test_leaf_fliq
+   real                                    :: test_wood_temp
+   real                                    :: test_wood_fliq
+   logical                                 :: fine_leaf_temp
+   logical                                 :: fine_leaf_fliq
+   logical                                 :: fine_wood_temp
+   logical                                 :: fine_wood_fliq
+   integer                                 :: n
+   integer                                 :: nproblem
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=13)         , parameter   :: efmt       = '(a,1x,es12.5)'
+   character(len=9)          , parameter   :: ifmt       = '(a,1x,i5)'
+   character(len=9)          , parameter   :: lfmt       = '(a,1x,l1)'
+   real                      , parameter   :: fine_toler = 0.01
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Current patch. ------------------------------------------------------------------!
+   cpatch => csite%patch(ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Check each cohort.  Print all cohorts that may have problem before crashing.     !
+   !---------------------------------------------------------------------------------------!
+   nproblem = 0
+   do ico=1,cpatch%ncohorts
+      !----- Check leaf thermodynamics. ---------------------------------------------------!
+      if (cpatch%leaf_resolvable(ico)) then
+         call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)                     &
+                       ,cpatch%leaf_hcap(ico),test_leaf_temp,test_leaf_fliq)
+         fine_leaf_temp = abs(cpatch%leaf_temp(ico) - test_leaf_temp) <= fine_toler
+         fine_leaf_fliq = abs(cpatch%leaf_fliq(ico) - test_leaf_fliq) <= fine_toler .or.   &
+                          cpatch%leaf_water(ico) <= tiny_num
+      else
+         fine_leaf_temp = .true.
+         fine_leaf_fliq = .true.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Check wood thermodynamics. ---------------------------------------------------!
+      if (cpatch%wood_resolvable(ico)) then
+         call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)                     &
+                       ,cpatch%wood_hcap(ico),test_wood_temp,test_wood_fliq)
+         fine_wood_temp = abs(cpatch%wood_temp(ico) - test_wood_temp) <= fine_toler
+         fine_wood_fliq = abs(cpatch%wood_fliq(ico) - test_wood_fliq) <= fine_toler .or.   &
+                          cpatch%wood_water(ico) <= tiny_num
+      else
+         fine_wood_temp = .true.
+         fine_wood_fliq = .true.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print information if anything is wrong.                                        !
+      !------------------------------------------------------------------------------------!
+      if ( .not. ( fine_leaf_temp .and. fine_leaf_fliq .and.                               &
+                   fine_wood_temp .and. fine_wood_fliq ) ) then
+         nproblem = nproblem + 1
+
+
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(a)'  ) ' Energy/temperature inconsistency detected!!'
+         write (unit=*,fmt='(92a)') ('-',n=1,92)
+         write (unit=*,fmt=ifmt   ) ' + IPA              =',ipa
+         write (unit=*,fmt=ifmt   ) ' + ILU              =',csite%dist_type   (ipa)
+         write (unit=*,fmt=efmt   ) ' + AGE              =',csite%age         (ipa)
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
+         write (unit=*,fmt=ifmt   ) ' + PFT              =',cpatch%pft        (ico)
+         write (unit=*,fmt=efmt   ) ' + DBH              =',cpatch%dbh        (ico)
+         write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%hite       (ico)
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=lfmt   ) ' + LEAF_RESOLVABLE  =',cpatch%leaf_resolvable(ico)
+         write (unit=*,fmt=efmt   ) ' + LAI              =',cpatch%lai            (ico)
+         write (unit=*,fmt=efmt   ) ' + ELONGF           =',cpatch%elongf         (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_ENERGY      =',cpatch%leaf_energy    (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_WATER       =',cpatch%leaf_water     (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_HCAP        =',cpatch%leaf_hcap      (ico)
+         write (unit=*,fmt=lfmt   ) ' + FINE_LEAF_TEMP   =',fine_leaf_temp
+         write (unit=*,fmt=efmt   ) ' + LEAF_TEMP_MEMORY =',cpatch%leaf_temp      (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_TEMP_TEST   =',test_leaf_temp
+         write (unit=*,fmt=lfmt   ) ' + FINE_LEAF_FLIQ   =',fine_leaf_fliq
+         write (unit=*,fmt=efmt   ) ' + LEAF_FLIQ_MEMORY =',cpatch%leaf_fliq      (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_FLIQ_TEST   =',test_leaf_fliq
+
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=lfmt   ) ' + WOOD_RESOLVABLE  =',cpatch%wood_resolvable(ico)
+         write (unit=*,fmt=efmt   ) ' + WAI              =',cpatch%wai            (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_ENERGY      =',cpatch%wood_energy    (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_WATER       =',cpatch%wood_water     (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_HCAP        =',cpatch%wood_hcap      (ico)
+         write (unit=*,fmt=lfmt   ) ' + FINE_WOOD_TEMP   =',fine_wood_temp
+         write (unit=*,fmt=efmt   ) ' + WOOD_TEMP_MEMORY =',cpatch%wood_temp      (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_TEMP_TEST   =',test_wood_temp
+         write (unit=*,fmt=lfmt   ) ' + FINE_WOOD_FLIQ   =',fine_wood_fliq
+         write (unit=*,fmt=efmt   ) ' + WOOD_FLIQ_MEMORY =',cpatch%wood_fliq      (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_FLIQ_TEST   =',test_wood_fliq
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(a)') ' '
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   !----- Stop in case there is a problem. ------------------------------------------------!
+   if (nproblem > 0) then
+      call fatal_error('Long-term dynamics is not updating leaf/wood energy correctly!'    &
+                      ,'sanity_check_veg_energy','rk4_misc.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine sanity_check_veg_energy
 !==========================================================================================!
 !==========================================================================================!

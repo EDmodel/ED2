@@ -72,10 +72,11 @@ subroutine hybrid_timestep(cgrid)
   real                                   :: wtime0
   real(kind=8)                           :: hbeg
   logical                  , save     :: first_time=.true.
-
-  !----- External functions. -------------------------------------------------------------!
+  !----- Local constants. -----------------------------------------------!
+  logical                  , parameter   :: test_energy_sanity = .false.
+  !----- External functions. --------------------------------------------!
   real, external                         :: walltime
-  !---------------------------------------------------------------------------------------!
+  !----------------------------------------------------------------------!
   
   initp => integration_buff%initp
   ytemp => integration_buff%ytemp
@@ -170,8 +171,18 @@ subroutine hybrid_timestep(cgrid)
            
            !----- Compute current storage terms. -----------------------------!
            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
-           
-           
+
+
+
+           !------------------------------------------------------------------!
+           !      Test whether temperature and energy are reasonable.         !
+           !------------------------------------------------------------------!
+           if (test_energy_sanity) then
+              call sanity_check_veg_energy(csite,ipa)
+           end if
+           !------------------------------------------------------------------!
+
+
            !------------------------------------------------------------------!
            !     Set up the integration patch.                                !
            !------------------------------------------------------------------!

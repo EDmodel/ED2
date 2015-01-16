@@ -59,6 +59,8 @@ subroutine euler_timestep(cgrid)
    real                                   :: old_can_temp
    real                                   :: old_can_prss
    real                                   :: fm
+   !----- Local constants. ----------------------------------------------------------------!
+   logical                  , parameter   :: test_energy_sanity = .false.
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -142,6 +144,16 @@ subroutine euler_timestep(cgrid)
 
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Test whether temperature and energy are reasonable.                     !
+            !------------------------------------------------------------------------------!
+            if (test_energy_sanity) then
+               call sanity_check_veg_energy(csite,ipa)
+            end if
             !------------------------------------------------------------------------------!
 
 

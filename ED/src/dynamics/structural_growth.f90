@@ -107,6 +107,7 @@ subroutine structural_growth(cgrid, month)
                bstorage_in = cpatch%bstorage(ico)
                agb_in      = cpatch%agb     (ico)
                ba_in       = cpatch%basarea (ico)
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !    Apply mortality, and do not allow nplant < negligible_nplant (such a   !
@@ -173,6 +174,7 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
                net_stem_N_uptake = (cpatch%bdead(ico) - bdead_in) * cpatch%nplant(ico)     &
                                  * ( 1.0 / c2n_stem(cpatch%pft(ico)) - 1.0 / c2n_storage)
+               !---------------------------------------------------------------------------!
                
                !---------------------------------------------------------------------------!
                !      Calculate total seed production and seed litter.  The seed pool gets !
@@ -182,6 +184,7 @@ subroutine structural_growth(cgrid, month)
                
                cpatch%today_NPPseeds(ico) = f_bseeds * cpatch%bstorage(ico)                &
                                           * cpatch%nplant(ico)
+               !---------------------------------------------------------------------------!
                
                !---------------------------------------------------------------------------!
                ! ALS. If agriculture: set seedling_mortality very low or zero              !
@@ -190,6 +193,7 @@ subroutine structural_growth(cgrid, month)
                seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
                                   * seedling_mortality(ipft)
                                   
+               !---------------------------------------------------------------------------!
                
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
@@ -198,9 +202,11 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
                net_seed_N_uptake = cpatch%bseeds(ico) * cpatch%nplant(ico)                 &
                                  * (1.0 / c2n_recruit(ipft) - 1.0 / c2n_storage)
+               !---------------------------------------------------------------------------!
 
                !----- Decrement the storage pool. -----------------------------------------!
                cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
+               !---------------------------------------------------------------------------!
 
                !----- Finalize litter inputs. ---------------------------------------------!
                csite%fsc_in(ipa) = csite%fsc_in(ipa) + f_labile(ipft) * balive_mort_litter &
@@ -217,6 +223,7 @@ subroutine structural_growth(cgrid, month)
                csite%total_plant_nitrogen_uptake(ipa) =                                    &
                       csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
                     + net_stem_N_uptake
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !     Calculate some derived cohort properties:                             !
@@ -232,22 +239,6 @@ subroutine structural_growth(cgrid, month)
                call update_derived_cohort_props(cpatch,ico                                 &
                                                   ,cpoly%green_leaf_factor(ipft,isi)       &
                                                   ,cpoly%lsl(isi))
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               ! MLO. We now update the heat capacity and the vegetation internal energy.  !
-               !      Since no energy or water balance is done here, we simply update the  !
-               !      energy in order to keep the same temperature and water as before.    !
-               !      Internal energy is an extensive variable, we just account for the    !
-               !      difference in the heat capacity to update it.                        !
-               !---------------------------------------------------------------------------!
-               old_leaf_hcap = cpatch%leaf_hcap(ico)
-               old_wood_hcap = cpatch%wood_hcap(ico)
-               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
-                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
-                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
-               call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
-               call is_resolvable(csite,ipa,ico)
                !---------------------------------------------------------------------------!
 
 
@@ -441,6 +432,25 @@ subroutine structural_growth(cgrid, month)
                                       ,cpoly%basal_area_mort(:,:,isi)                      &
                                       ,cpoly%agb_mort(:,:,isi))
                !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               ! MLO. We now update the heat capacity and the vegetation internal energy.  !
+               !      Since no energy or water balance is done here, we simply update the  !
+               !      energy in order to keep the same temperature and water as before.    !
+               !      Internal energy is an extensive variable, we just account for the    !
+               !      difference in the heat capacity to update it.                        !
+               !---------------------------------------------------------------------------!
+               old_leaf_hcap = cpatch%leaf_hcap(ico)
+               old_wood_hcap = cpatch%wood_hcap(ico)
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
+                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+               call is_resolvable(csite,ipa,ico)
+               !---------------------------------------------------------------------------!
+
             end do cohortloop
             !------------------------------------------------------------------------------!
 
@@ -673,6 +683,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
 
 
+
                !----- Update annual average carbon balances for mortality. ----------------!
                if (month == 1) then
                   prev_month = 12
@@ -808,6 +819,24 @@ subroutine structural_growth_eq_0(cgrid, month)
                cpatch%wai             (ico) = wai_in
                cpatch%crown_area      (ico) = cai_in
                cpatch%krdepth         (ico) = krdepth_in
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               ! MLO. We now update the heat capacity and the vegetation internal energy.  !
+               !      Since no energy or water balance is done here, we simply update the  !
+               !      energy in order to keep the same temperature and water as before.    !
+               !      Internal energy is an extensive variable, we just account for the    !
+               !      difference in the heat capacity to update it.                        !
+               !---------------------------------------------------------------------------!
+               old_leaf_hcap = cpatch%leaf_hcap(ico)
+               old_wood_hcap = cpatch%wood_hcap(ico)
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
+                                 ,cpatch%nplant(ico),cpatch%pft(ico)                       &
+                                 ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
+               call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
+               call is_resolvable(csite,ipa,ico)
                !---------------------------------------------------------------------------!
             end do cohortloop
             !------------------------------------------------------------------------------!

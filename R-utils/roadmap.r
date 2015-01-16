@@ -19,8 +19,13 @@ roadmap <<- function(rpath=NULL,roads,stroad=FALSE,...){
   roadfiles = file.path(rpath,paste(roads,".csv",sep=""))
   nroads    = length(roads)
 
-  for (r in 1:nroads){
-     datum=read.csv(file=roadfiles[r],header=TRUE,na.strings="NA")
+  for (r in sequence(nroads)){
+     datum        = read.table( file       = roadfiles[r]
+                              , header     = FALSE
+                              , sep        = ","
+                              , na.strings = "NA"
+                              , colClasses = rep("numeric",3)
+                              )#end read.table
      names(datum) = c("lon","lat","hgt")
      lines(x=datum$lon,y=datum$lat,...)
   }#end for
@@ -51,8 +56,13 @@ panel.roadmap <<- function(rpath=NULL,roads,stroad=FALSE,...){
   roadfiles = file.path(rpath,paste(roads,".csv",sep=""))
   nroads    = length(roads)
 
-  for (r in 1:nroads){
-     datum=read.csv(file=roadfiles[r],header=TRUE,na.strings="NA")
+  for (r in sequence(nroads)){
+     datum        = read.table( file       = roadfiles[r]
+                              , header     = FALSE
+                              , sep        = ","
+                              , na.strings = "NA"
+                              , colClasses = rep("numeric",3)
+                              )#end read.table
      names(datum) = c("lon","lat","hgt")
      panel.lines(x=datum$lon,y=datum$lat,...)
   }#end for

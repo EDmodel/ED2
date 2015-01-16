@@ -393,8 +393,8 @@ image.map <<- function( x
       #----- Set the window. --------------------------------------------------------------#
       if (matrix.plot & edge.axes){
          if (left && right){
-            mar.left  = 4.1
-            mar.right = 2.1
+            mar.left  = 4.6
+            mar.right = 0.6
          }else if (left){
             mar.left  = 3.1
             mar.right = 0.1

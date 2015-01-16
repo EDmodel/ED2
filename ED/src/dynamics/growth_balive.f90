@@ -76,20 +76,20 @@ module growth_balive
       !------------------------------------------------------------------------------------!
 
 
-      do ipy = 1,cgrid%npolygons
+      polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-         do isi = 1,cpoly%nsites
+         siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
 
-            do ipa = 1,csite%npatches
+            patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
                !----- Reset averaged variables. -------------------------------------------!
                csite%total_plant_nitrogen_uptake(ipa) = 0.0
 
                !----- Loop over cohorts. --------------------------------------------------!
-               do ico = 1,cpatch%ncohorts
+               cohortloop: do ico = 1,cpatch%ncohorts
 
                   !----- Alias for current PFT. -------------------------------------------!
                   ipft = cpatch%pft(ico)
@@ -257,6 +257,7 @@ module growth_balive
                   !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
                   cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico) + dndt   * tfact
                   cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico) + dlnndt * tfact
+                  !------------------------------------------------------------------------!
 
 
                   !----- Updating LAI, WAI, and CAI. --------------------------------------!
@@ -265,10 +266,16 @@ module growth_balive
                                    ,cpatch%hite(ico) ,cpatch%pft(ico),cpatch%sla(ico)      &
                                    ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico) &
                                    ,cpatch%bsapwooda(ico))
+                  !------------------------------------------------------------------------!
+
+
 
                   !----- Update above-ground biomass. -------------------------------------!
                   cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
                                               ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                  !------------------------------------------------------------------------!
+
+
 
                   !------------------------------------------------------------------------!
                   !     It is likely that biomass has changed, therefore, update           !
@@ -284,22 +291,30 @@ module growth_balive
                   !----- Update the stability status. -------------------------------------!
                   call is_resolvable(csite,ipa,ico)
                   !------------------------------------------------------------------------!
-               end do
-               
+               end do cohortloop
+               !---------------------------------------------------------------------------!
+
                !----- Update litter. ------------------------------------------------------!
                call litter(csite,ipa)
-               
+               !---------------------------------------------------------------------------!
+
                !----- Update patch LAI, WAI, height, roughness... -------------------------!
                call update_patch_derived_props(csite,ipa)
+               !---------------------------------------------------------------------------!
 
                !----- Recalculate storage terms (for budget assessment). ------------------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               !---------------------------------------------------------------------------!
 
                !----- It's a new day, reset average daily temperature. --------------------!
                csite%avg_daily_temp(ipa) = 0.0 
-            end do
-         end do
-      end do
+               !---------------------------------------------------------------------------!
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine dbalive_dt
@@ -370,20 +385,20 @@ module growth_balive
       !------------------------------------------------------------------------------------!
 
 
-      do ipy = 1,cgrid%npolygons
+      polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-         do isi = 1,cpoly%nsites
+         siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
 
-            do ipa = 1,csite%npatches
+            patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
                !----- Reset averaged variables. -------------------------------------------!
                csite%total_plant_nitrogen_uptake(ipa) = 0.0
 
                !----- Loop over cohorts. --------------------------------------------------!
-               do ico = 1,cpatch%ncohorts
+               cohortloop: do ico = 1,cpatch%ncohorts
 
                   !----- Alias for current PFT. -------------------------------------------!
                   ipft = cpatch%pft(ico)
@@ -533,14 +548,20 @@ module growth_balive
                   !----- Update monthly mortality rates [plants/m2/month and 1/month]. ----!
                   cpatch%monthly_dndt  (ico) = cpatch%monthly_dndt  (ico) + dndt   * tfact
                   cpatch%monthly_dlnndt(ico) = cpatch%monthly_dlnndt(ico) + dlnndt * tfact
+                  !------------------------------------------------------------------------!
 
-               end do
+               end do cohortloop
+               !---------------------------------------------------------------------------!
 
                !----- It's a new day, reset average daily temperature. --------------------!
                csite%avg_daily_temp(ipa) = 0.0 
-            end do
-         end do
-      end do
+               !---------------------------------------------------------------------------!
+            end do patchloop
+            !------------------------------------------------------------------------------!
+         end do siteloop
+         !---------------------------------------------------------------------------------!
+      end do polyloop
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine dbalive_dt_eq_0
