@@ -534,12 +534,12 @@ subroutine h5_output(vtype)
 
                      call h5aclose_f(attr_id,hdferr)
                      call h5sclose_f(aspace_id,hdferr)
+		     call h5tclose_f(atype_id,hdferr)
                   elseif (verbose) then
                      write (unit=*,fmt='(a)') '      # Skipping metadata...'
                   end if
 
                   if (verbose) write (unit=*,fmt='(a)') '      # Creating dataset...'
-                  call h5dopen_f(file_id,varn,dset_id,hdferr)
 
                   if (hdferr /= 0) then
                      write (unit=*,fmt=*) 'File name:           ',trim(anamel)
