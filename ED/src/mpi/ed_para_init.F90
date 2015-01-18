@@ -79,8 +79,6 @@ subroutine ed_node_decomp(init,standalone,masterworks)
       call ed_parvec_work(ngr,mmxp(ngr),mmyp(ngr))
    end do
 
-   print*,runtype,ied_init_mode
-
    !----- Check whether we have a good first guess of how different polygons work. --------!
    call ed_load_work_from_history()
 

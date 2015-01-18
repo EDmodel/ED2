@@ -261,20 +261,16 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   
   rhoc  = ycurr%can_rhos
   dc    = ycurr%can_depth
-  qc    = ynext%can_shv             ! NAN
-  Tg    = ycurr%ground_temp         ! NORMAL
-  gg    = ycurr%ggnet               ! NAN
-  mgc   = ycurr%wflxsc + ycurr%wflxgc     ! NAN
-  ga    = ycurr%ggbare                    ! SEEMS FINE?
-  Ta    = rk4site%atm_theta*rk4site%atm_exner/cpdry8   ! NORMAL
-  mac   = ycurr%wflxac                    ! VERY SMALL
-  dqcdt = dydt%can_shv                    ! NAN !!!
-  xc    = rhoc*dc*((1.d0-qc)*cpdry8+qc*cph2o8)   ! NAN
-  href  = t3ple8*cice8+alvi38-cph2o8*t3ple8      ! NORMAL
-
-  
-!  print*," ibuff = ",ibuff,rhoc,dc,qc,Tg,gg,mgc,ga,Ta,mac,dqcdt,xc,href
-
+  qc    = ynext%can_shv
+  Tg    = ycurr%ground_temp
+  gg    = ycurr%ggnet
+  mgc   = ycurr%wflxsc + ycurr%wflxgc
+  ga    = ycurr%ggbare
+  Ta    = rk4site%atm_theta*rk4site%atm_exner/cpdry8
+  mac   = ycurr%wflxac
+  dqcdt = dydt%can_shv
+  xc    = rhoc*dc*((1.d0-qc)*cpdry8+qc*cph2o8)
+  href  = t3ple8*cice8+alvi38-cph2o8*t3ple8
 
   ! USES NEW TG
 !!  B(id_tcan) = (1.d0/xc)*       &

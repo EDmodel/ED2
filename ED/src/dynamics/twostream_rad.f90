@@ -142,8 +142,6 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
                              + cai(i) * exp ( - etai(i) / ( cai(i) * mu_bar(ipft) ) ) )
       !------------------------------------------------------------------------------------!
 
-!      mu(i) = mu_bar(ipft)
-
       !------------------------------------------------------------------------------------!
       !      Black is the emission of a black body at the same temperature of the layer.   !
       !  The temperature is the weighted average where the weights are the product between !
@@ -572,9 +570,6 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
                         / log( ( 1.d0 - cai(i) )                                           &
                              + cai(i) * exp( - proj_area(i) * etai(i)                      &
                                              / ( cai(i) * czen ) ) )
-
-!         mu0      (i) = 1/(proj_area(i)/czen)
-
          !---------------------------------------------------------------------------------!
 
 
@@ -586,9 +581,6 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !---------------------------------------------------------------------------------!
          mu (i) = - etai(i) / log( ( 1.d0 - cai(i) )                                       &
                                  + cai(i) * exp( - etai(i) / mu_bar(ipft) ) )
-
-!         mu (i) = mu_bar(ipft)
-
          !---------------------------------------------------------------------------------!
 
 

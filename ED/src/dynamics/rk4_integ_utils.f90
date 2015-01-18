@@ -62,21 +62,6 @@ subroutine odeint(h1,csite,ipa,nsteps)
    ibuff = 1
    !$ ibuff = OMP_get_thread_num()+1
 
-!! MOVED TO INITIALIZE_MISC_STEPVARS TO PRESERVE THREADSAFETY (RGK)  
-!!   !-------------------------------------------------------------------------------------!
-!!   !     Check whether we will use runoff or not, and saving this check to save time.    !
-!!   !-------------------------------------------------------------------------------------!
-!!   if (first_time) then
-!!      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
-!!      if (runoff_time /= 0.) then
-!!         runoff_time_i = 1.d0/dble(runoff_time)
-!!      else 
-!!         runoff_time_i = 0.d0
-!!      end if
-!!      first_time   = .false.
-!!   end if
-!!   !-------------------------------------------------------------------------------------!
-
    cpatch => csite%patch(ipa)
 
    !---------------------------------------------------------------------------------------!
