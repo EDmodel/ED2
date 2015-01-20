@@ -1,3 +1,3 @@
 #!/bin/sh
 
-./ed_2.1-opt -f $1
+~/ED2/ED/build/ed_2.1-opt -f $1
