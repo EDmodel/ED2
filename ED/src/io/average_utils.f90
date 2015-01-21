@@ -1467,6 +1467,11 @@ module average_utils
                   cpatch%fmean_light_level       (ico) = 0.0
                   cpatch%fmean_light_level_beam  (ico) = 0.0
                   cpatch%fmean_light_level_diff  (ico) = 0.0
+
+                  cpatch%fmean_par_level_beam    (ico) = 0.0                  
+                  cpatch%fmean_par_level_diffd   (ico) = 0.0                  
+                  cpatch%fmean_par_level_diffu   (ico) = 0.0
+
                   cpatch%fmean_par_l             (ico) = 0.0
                   cpatch%fmean_par_l_beam        (ico) = 0.0
                   cpatch%fmean_par_l_diff        (ico) = 0.0
@@ -2212,6 +2217,17 @@ module average_utils
                   cpatch%dmean_par_l_diff    (ico) = cpatch%dmean_par_l_diff    (ico)      &
                                                    + cpatch%fmean_par_l_diff    (ico)      &
                                                    * frqsum_o_daysec
+
+                  cpatch%dmean_par_level_beam(ico) = cpatch%dmean_par_level_beam(ico)      &
+                                                   + cpatch%fmean_par_level_beam(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_par_level_diffd(ico)= cpatch%dmean_par_level_diffd(ico)     &
+                                                   + cpatch%fmean_par_level_diffd(ico)     &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_par_level_diffu(ico) = cpatch%dmean_par_level_diffu(ico)    &
+                                                   + cpatch%fmean_par_level_diffu(ico)     &
+                                                   * frqsum_o_daysec
+
                   cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico)      &
                                                    + cpatch%fmean_rshort_l      (ico)      &
                                                    * frqsum_o_daysec
@@ -2697,6 +2713,14 @@ module average_utils
                                                      * daylight_i
                   cpatch%dmean_light_level_diff(ico) = cpatch%dmean_light_level_diff(ico)  &
                                                      * daylight_i
+
+                  cpatch%dmean_par_level_beam(ico)   = cpatch%dmean_par_level_beam  (ico)  &
+                                                     * daylight_i
+                  cpatch%dmean_par_level_diffu(ico)   = cpatch%dmean_par_level_diffu  (ico)  &
+                                                     * daylight_i
+                  cpatch%dmean_par_level_diffd(ico)   = cpatch%dmean_par_level_diffd  (ico)  &
+                                                     * daylight_i
+
                   cpatch%dmean_fs_open         (ico) = cpatch%dmean_fs_open         (ico)  &
                                                      * daylight_i
                   cpatch%dmean_fsw             (ico) = cpatch%dmean_fsw             (ico)  &
@@ -3306,6 +3330,11 @@ module average_utils
                   cpatch%dmean_light_level       (ico) = 0.0
                   cpatch%dmean_light_level_beam  (ico) = 0.0
                   cpatch%dmean_light_level_diff  (ico) = 0.0
+
+                  cpatch%dmean_par_level_beam    (ico) = 0.0
+                  cpatch%dmean_par_level_diffd   (ico) = 0.0
+                  cpatch%dmean_par_level_diffu   (ico) = 0.0
+
                   cpatch%dmean_par_l             (ico) = 0.0
                   cpatch%dmean_par_l_beam        (ico) = 0.0
                   cpatch%dmean_par_l_diff        (ico) = 0.0
@@ -4444,6 +4473,19 @@ module average_utils
                   cpatch%mmean_water_supply    (ico) = cpatch%mmean_water_supply    (ico)  &
                                                      + cpatch%dmean_water_supply    (ico)  &
                                                      * ndaysi
+
+                  cpatch%mmean_par_level_beam  (ico) = cpatch%mmean_par_level_beam  (ico)  &
+                                                     + cpatch%dmean_par_level_beam  (ico)  &
+                                                     * ndaysi
+
+                  cpatch%mmean_par_level_diffd (ico) = cpatch%mmean_par_level_diffd  (ico)  &
+                                                     + cpatch%dmean_par_level_diffd  (ico)  &
+                                                     * ndaysi
+
+                  cpatch%mmean_par_level_diffu (ico) = cpatch%mmean_par_level_diffu  (ico)  &
+                                                     + cpatch%dmean_par_level_diffu  (ico)  &
+                                                     * ndaysi
+
                   cpatch%mmean_light_level     (ico) = cpatch%mmean_light_level     (ico)  &
                                                      + cpatch%dmean_light_level     (ico)  &
                                                      * ndaysi
@@ -4453,6 +4495,8 @@ module average_utils
                   cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)  &
                                                      + cpatch%dmean_light_level_diff(ico)  &
                                                      * ndaysi
+
+
                   cpatch%mmean_par_l           (ico) = cpatch%mmean_par_l           (ico)  &
                                                      + cpatch%dmean_par_l           (ico)  &
                                                      * ndaysi
@@ -5284,6 +5328,11 @@ module average_utils
                   cpatch%mmean_light_level       (ico) = 0.0
                   cpatch%mmean_light_level_beam  (ico) = 0.0
                   cpatch%mmean_light_level_diff  (ico) = 0.0
+
+                  cpatch%mmean_par_level_beam    (ico) = 0.0
+                  cpatch%mmean_par_level_diffd   (ico) = 0.0
+                  cpatch%mmean_par_level_diffu   (ico) = 0.0
+
                   cpatch%mmean_par_l             (ico) = 0.0
                   cpatch%mmean_par_l_beam        (ico) = 0.0
                   cpatch%mmean_par_l_diff        (ico) = 0.0
@@ -6217,9 +6266,23 @@ module average_utils
                   cpatch%qmean_water_supply  (t,ico) = cpatch%qmean_water_supply  (t,ico)  &
                                                      + cpatch%fmean_water_supply    (ico)  &
                                                      * ndaysi
+                  
+                  cpatch%qmean_par_level_beam(t,ico) = cpatch%qmean_par_level_beam(t,ico) &
+                                                     + cpatch%fmean_par_level_beam(ico)    &
+                                                     * ndaysi
+
+                  cpatch%qmean_par_level_diffd(t,ico)= cpatch%qmean_par_level_diffd(t,ico) &
+                                                     + cpatch%fmean_par_level_diffd(ico)    &
+                                                     * ndaysi
+
+                  cpatch%qmean_par_level_diffu(t,ico)= cpatch%qmean_par_level_diffu(t,ico) &
+                                                     + cpatch%fmean_par_level_diffu(ico)    &
+                                                     * ndaysi
+
                   cpatch%qmean_light_level   (t,ico) = cpatch%qmean_light_level   (t,ico)  &
                                                      + cpatch%fmean_light_level     (ico)  &
                                                      * ndaysi
+
                   cpatch%qmean_light_level_beam(t,ico) =                                   &
                                                       cpatch%qmean_light_level_beam(t,ico) &
                                                     + cpatch%fmean_light_level_beam  (ico) &
@@ -6989,6 +7052,11 @@ module average_utils
                   cpatch%qmean_psi_open            (:,ico) = 0.0
                   cpatch%qmean_psi_closed          (:,ico) = 0.0
                   cpatch%qmean_water_supply        (:,ico) = 0.0
+
+                  cpatch%qmean_par_level_beam      (:,ico) = 0.0
+                  cpatch%qmean_par_level_diffu     (:,ico) = 0.0
+                  cpatch%qmean_par_level_diffd     (:,ico) = 0.0
+
                   cpatch%qmean_light_level         (:,ico) = 0.0
                   cpatch%qmean_light_level_beam    (:,ico) = 0.0
                   cpatch%qmean_light_level_diff    (:,ico) = 0.0

@@ -24,8 +24,8 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
   use grid_coms,only         : nzg,nzs
   use rk4_coms,only          : effarea_evap,effarea_heat,effarea_transp, &
-       rk4site,rk4patchtype,bdf2patchtype,checkbudget,hcapcan,ibranch_thermo
-  use ed_misc_coms,only   : fast_diagnostics
+       rk4site,rk4patchtype,rk4aux,bdf2patchtype,checkbudget,ibranch_thermo
+  use ed_misc_coms,only    : fast_diagnostics
   use ed_state_vars,only   : patchtype
   use therm_lib8,only      : reducedpress8,idealdenssh8
   use ed_therm_lib,only    : ed_grndvap8
@@ -34,7 +34,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
        alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8,pi18
   use therm_lib8,only      : uint2tl8,uextcm2tl8,tq2enthalpy8, tl2uint8, cmtl2uext8
   use soil_coms, only      : soil8,dslz8
-
+  !$ use omp_lib
   implicit none
   
   ! define the previous,current and next patch states
@@ -88,7 +88,10 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   real(kind=8)  :: qtransp,qtransp_tot
   real(kind=8)  :: hflxlc,hflxlc_tot
   real(kind=8)  :: hflxwc,hflxwc_tot
-  
+  integer       :: ibuff
+
+  ibuff = 1
+  !$ ibuff = OMP_get_thread_num()+1
 
   !==========================================================================!
   !                                                                          !
@@ -103,7 +106,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   ! Row and Column indices for the transition matrix operators               !
   !==========================================================================!
   id_tcan   = 1
-
 
   !==========================================================================!
   ! Heat flux to the atmosphere... few ways to go about this                 !
@@ -270,7 +272,6 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   xc    = rhoc*dc*((1.d0-qc)*cpdry8+qc*cph2o8)
   href  = t3ple8*cice8+alvi38-cph2o8*t3ple8
 
-  
   ! USES NEW TG
 !!  B(id_tcan) = (1.d0/xc)*       &
 !!       (gg*rhoc*cpdry8*Tg       &
@@ -643,7 +644,8 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   ! Update eulerian based budget fluxes
   ! ============================================================
   
-  eflxac = hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
+
+  eflxac = rk4aux(ibuff)%hcapcan*(ynext%can_enthalpy-ycurr%can_enthalpy)/dtf  - &
        (dydt%avg_sensible_gc + ycurr%qwflxsc + ycurr%qwflxgc    + &
        hflxlc_tot + qwflxlc_tot + qtransp_tot + hflxwc_tot + qwflxwc_tot)
 

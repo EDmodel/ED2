@@ -22,7 +22,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
                            , iyeara             & ! intent(inout)
                            , imontha            & ! intent(inout)
                            , idatea             & ! intent(inout)
-                           , itimea             ! ! intent(inout)
+                           , itimea               ! intent(inout)
    use ed_state_vars, only : allocate_edglobals & ! subroutine
                            , filltab_alltypes   ! ! subroutine
 

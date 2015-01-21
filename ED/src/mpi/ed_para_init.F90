@@ -27,6 +27,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
                           , ed_alloc_work     & ! subroutine
                           , ed_nullify_work   ! ! subroutine
    use soil_coms   , only : isoilflg          ! ! subroutine
+   use ed_misc_coms, only : runtype,ied_init_mode
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: init
@@ -37,7 +38,6 @@ subroutine ed_node_decomp(init,standalone,masterworks)
    integer             :: nsiz
    integer             :: ntotmachs
    !---------------------------------------------------------------------------------------!
-
 
    !---------------------------------------------------------------------------------------!
    !    This is a logical flag to test wheter the master should also simulate polygons.    !
@@ -560,11 +560,16 @@ subroutine ed_load_work_from_history()
                           , memoffs             & ! intent(inout)
                           , memsize             & ! intent(inout)
                           , datatype_id         ! ! intent(inout)
+! $OMP use omp_lib
+
 #if USE_HDF5
    use hdf5
 #endif
+
    implicit none
+
 #if USE_HDF5
+
    !----- Local variables. ----------------------------------------------------------------!
    character(len=str_len), dimension(maxlist)               :: full_list
    character(len=str_len), dimension(maxfiles)              :: histo_list
@@ -602,6 +607,7 @@ subroutine ed_load_work_from_history()
    real            , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
 
+   
 
    !---------------------------------------------------------------------------------------!
    !     Here we decide whether this is a history or an ED-2.1 restart run.  In case none  !
@@ -616,10 +622,14 @@ subroutine ed_load_work_from_history()
    write (unit=*,fmt='(a)') '-------------------------------------------------------------'
 
 
+
+
    !---------------------------------------------------------------------------------------!
    !     Open the HDF5 environment and                                                     !
    !---------------------------------------------------------------------------------------!
    call h5open_f(hdferr)
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Loop over all regions.  This is useful only for regional runs, so we skip the      !
@@ -633,7 +643,7 @@ subroutine ed_load_work_from_history()
       full_list(:)  = ''
       histo_list(:) = '' 
       write(cgr,fmt='(a1,i2.2)') 'g',ifm
-      
+
       if (trim(runtype) == 'HISTORY') then
          !----- Full history restart. -----------------------------------------------------!
          dbletime=dble(current_time%time)     
@@ -650,7 +660,6 @@ subroutine ed_load_work_from_history()
             call fatal_error ('File '//trim(hnamel)//' not found.'                         &
                              ,'ed_load_work_from_history','ed_para_init.f90')
          end if
-
       elseif (ied_init_mode == 4) then
          !----- Standard restart. ---------------------------------------------------------!
          hnamel = trim(sfilin(ifm))//"-"//trim(cgr)//".h5"
@@ -674,6 +683,7 @@ subroutine ed_load_work_from_history()
          !----- Check every file and save only those that are actually history files. -----!
          call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
       end if
+
 
 
 
@@ -844,6 +854,7 @@ subroutine ed_load_work_from_history()
    !----- Close the HDF environment. ------------------------------------------------------!
    call h5close_f(hdferr)
 #else
+
    call fatal_error('ED2 now requires HDF5...','ed_load_work_from_history'                 &
                    ,'ed_para_init.F90')
 #endif

@@ -4845,6 +4845,13 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
    call hdf_getslab_r(cpatch%monthly_dlnndt                                                &
                      ,'MONTHLY_DLNNDT            ',dsetrank,iparallel,.true. ,foundvar)
 
+   call hdf_getslab_r(cpatch%par_level_beam                                                &
+                     ,'PAR_LEVEL_BEAM              ',dsetrank,iparallel,.false. ,foundvar)
+   call hdf_getslab_r(cpatch%par_level_diffd                                               &
+                     ,'PAR_LEVEL_DIFFD             ',dsetrank,iparallel,.false. ,foundvar)
+   call hdf_getslab_r(cpatch%par_level_diffu                                               &
+                     ,'PAR_LEVEL_DIFFU             ',dsetrank,iparallel,.false. ,foundvar)
+
    call hdf_getslab_r(cpatch%light_level                                                   &
                      ,'LIGHT_LEVEL               ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%light_level_beam                                              &

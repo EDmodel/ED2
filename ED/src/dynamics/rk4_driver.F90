@@ -30,6 +30,7 @@ module rk4_driver
       use therm_lib              , only : tq2enthalpy          ! ! function
       use budget_utils           , only : update_budget        & ! function
                                         , compute_budget       ! ! function
+      !$ use omp_lib
       implicit none
 
       !----------- Use MPI timing calls, need declarations --------------------------------!
@@ -42,6 +43,19 @@ module rk4_driver
       type(sitetype)            , pointer     :: csite
       type(patchtype)           , pointer     :: cpatch
       type(met_driv_state)      , pointer     :: cmet
+
+      type(rk4patchtype)       , pointer      :: initp
+      type(rk4patchtype)       , pointer      :: yscal
+      type(rk4patchtype)       , pointer      :: y
+      type(rk4patchtype)       , pointer      :: dydx
+      type(rk4patchtype)       , pointer      :: yerr
+      type(rk4patchtype)       , pointer      :: ytemp
+      type(rk4patchtype)       , pointer      :: ak2
+      type(rk4patchtype)       , pointer      :: ak3
+      type(rk4patchtype)       , pointer      :: ak4
+      type(rk4patchtype)       , pointer      :: ak5
+      type(rk4patchtype)       , pointer      :: ak6
+      type(rk4patchtype)       , pointer      :: ak7
       integer                                 :: ipy
       integer                                 :: isi
       integer                                 :: ipa
@@ -64,9 +78,14 @@ module rk4_driver
       real                                    :: old_can_temp
       real                                    :: old_can_prss
       real                                    :: old_can_depth
+      real                                    :: patch_vels
+      integer                                 :: ibuff
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
+
+      
+
 
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -74,7 +93,6 @@ module rk4_driver
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             cmet  => cpoly%met(isi)
-
 
             !------------------------------------------------------------------------------!
             !     Update the monthly rainfall.                                             !
@@ -84,46 +102,85 @@ module rk4_driver
                                              + cmet%pcpg * dtlsm
             !------------------------------------------------------------------------------!
 
+            !---------------------------------------------------------------------------!
+            !    Copy the meteorological variables to the rk4site structure.            !
+            !---------------------------------------------------------------------------!
+            call copy_met_2_rk4site(nzg,cmet%atm_ustar,cmet%atm_theiv,cmet%atm_vpdef,   &
+                  cmet%atm_theta,        &
+                  cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht,   &
+                  cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,          &
+                  cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam,      &
+                  cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse,     &
+                  cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi),   &
+                  cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy),       &
+                  cgrid%lat(ipy),cgrid%cosz(ipy))
+            !---------------------------------------------------------------------------!
+
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(      &
+            !$OMP initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,    &
+            !$OMP ak4,ak5,ak6,ak7,cpatch,patch_vels,        &
+            !$OMP old_can_co2,old_can_rhos,old_can_temp,    &
+            !$OMP old_can_prss,old_can_enthalpy,            &
+            !$OMP old_can_shv,ecurr_netrad,                 &
+            !$OMP wcurr_loss2atm,ecurr_loss2atm,            &
+            !$OMP co2curr_loss2atm,                         &
+            !$OMP wcurr_loss2drainage,ecurr_loss2drainage,  &
+            !$OMP wcurr_loss2runoff,ecurr_loss2runoff,nsteps )
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               
+               ibuff = 1
+               !$ ibuff = OMP_get_thread_num()+1
+
+               initp => integration_buff(ibuff)%initp
+               yscal => integration_buff(ibuff)%yscal
+               y     => integration_buff(ibuff)%y
+               dydx  => integration_buff(ibuff)%dydx
+               yerr  => integration_buff(ibuff)%yerr
+               ytemp => integration_buff(ibuff)%ytemp
+               ak2   => integration_buff(ibuff)%ak2
+               ak3   => integration_buff(ibuff)%ak3
+               ak4   => integration_buff(ibuff)%ak4
+               ak5   => integration_buff(ibuff)%ak5
+               ak6   => integration_buff(ibuff)%ak6
+               ak7   => integration_buff(ibuff)%ak7
+
+
+
                !----- Reset all buffers to zero, as a safety measure. ---------------------!
-               call zero_rk4_patch(integration_buff%initp)
-               call zero_rk4_patch(integration_buff%yscal)
-               call zero_rk4_patch(integration_buff%y)
-               call zero_rk4_patch(integration_buff%dydx)
-               call zero_rk4_patch(integration_buff%yerr)
-               call zero_rk4_patch(integration_buff%ytemp)
-               call zero_rk4_patch(integration_buff%ak2)
-               call zero_rk4_patch(integration_buff%ak3)
-               call zero_rk4_patch(integration_buff%ak4)
-               call zero_rk4_patch(integration_buff%ak5)
-               call zero_rk4_patch(integration_buff%ak6)
-               call zero_rk4_patch(integration_buff%ak7)
-               call zero_rk4_cohort(integration_buff%initp)
-               call zero_rk4_cohort(integration_buff%yscal)
-               call zero_rk4_cohort(integration_buff%y)
-               call zero_rk4_cohort(integration_buff%dydx)
-               call zero_rk4_cohort(integration_buff%yerr)
-               call zero_rk4_cohort(integration_buff%ytemp)
-               call zero_rk4_cohort(integration_buff%ak2)
-               call zero_rk4_cohort(integration_buff%ak3)
-               call zero_rk4_cohort(integration_buff%ak4)
-               call zero_rk4_cohort(integration_buff%ak5)
-               call zero_rk4_cohort(integration_buff%ak6)
-               call zero_rk4_cohort(integration_buff%ak7)
+               call zero_rk4_patch(initp)
+               call zero_rk4_patch(yscal)
+               call zero_rk4_patch(y)
+               call zero_rk4_patch(dydx)
+               call zero_rk4_patch(yerr)
+               call zero_rk4_patch(ytemp)
+               call zero_rk4_patch(ak2)
+               call zero_rk4_patch(ak3)
+               call zero_rk4_patch(ak4)
+               call zero_rk4_patch(ak5)
+               call zero_rk4_patch(ak6)
+               call zero_rk4_patch(ak7)
+               call zero_rk4_cohort(initp)
+               call zero_rk4_cohort(yscal)
+               call zero_rk4_cohort(y)
+               call zero_rk4_cohort(dydx)
+               call zero_rk4_cohort(yerr)
+               call zero_rk4_cohort(ytemp)
+               call zero_rk4_cohort(ak2)
+               call zero_rk4_cohort(ak3)
+               call zero_rk4_cohort(ak4)
+               call zero_rk4_cohort(ak5)
+               call zero_rk4_cohort(ak6)
+               call zero_rk4_cohort(ak7)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
                if (csite%can_theta(ipa) < cmet%atm_theta) then
-                  cmet%vels = cmet%vels_stab
+                  patch_vels = cmet%vels_stab
                else
-                  cmet%vels = cmet%vels_unstab
+                  patch_vels = cmet%vels_unstab
                end if
                !---------------------------------------------------------------------------!
-
-
 
                !---------------------------------------------------------------------------!
                !    Update roughness and canopy depth.                                     !
@@ -143,24 +200,6 @@ module rk4_driver
                old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
                !---------------------------------------------------------------------------!
 
-
-
-               !---------------------------------------------------------------------------!
-               !    Copy the meteorological variables to the rk4site structure.            !
-               !---------------------------------------------------------------------------!
-               call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)         &
-                                      ,csite%can_depth(ipa),cmet%atm_ustar,cmet%vels       &
-                                      ,cmet%atm_theiv,cmet%atm_vpdef,cmet%atm_theta        &
-                                      ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht   &
-                                      ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg          &
-                                      ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam      &
-                                      ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse     &
-                                      ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)   &
-                                      ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)       &
-                                      ,cgrid%lat(ipy),cgrid%cosz(ipy))
-               !---------------------------------------------------------------------------!
-
-
                !----- Compute current storage terms. --------------------------------------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
                !---------------------------------------------------------------------------!
@@ -169,7 +208,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
                !---------------------------------------------------------------------------!
-               call copy_patch_init(csite,ipa,integration_buff%initp)
+               call copy_patch_init(csite,ipa,initp,patch_vels)
                !---------------------------------------------------------------------------!
 
 
@@ -189,14 +228,14 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
                !---------------------------------------------------------------------------!
-               call copy_patch_init_carbon(csite,ipa,integration_buff%initp)
+               call copy_patch_init_carbon(csite,ipa,initp)
                !---------------------------------------------------------------------------!
 
 
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch_rk4(csite,integration_buff%initp,ipa                   &
+               call integrate_patch_rk4(csite,initp,ipa                                    &
                                        ,cpoly%nighttime(isi),wcurr_loss2atm                &
                                        ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm       &
                                        ,wcurr_loss2drainage,ecurr_loss2drainage            &
@@ -205,6 +244,7 @@ module rk4_driver
 
 
                !----- Add the number of steps into the step counter. ----------------------!
+               !----- workload accumulation is order-independent, so this can stay shared 
                cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
                !---------------------------------------------------------------------------!
 
@@ -230,6 +270,8 @@ module rk4_driver
                                   ,old_can_prss)
                !---------------------------------------------------------------------------!
             end do patchloop
+            !$OMP END PARALLEL DO
+
             !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!
@@ -946,7 +988,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
                !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
@@ -1013,7 +1055,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
                !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
@@ -1134,7 +1176,7 @@ module rk4_driver
 
 
                !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
@@ -1180,7 +1222,7 @@ module rk4_driver
 
 
                !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind  (ico) = sngloff(rk4site%vels, tiny_offset)
+               cpatch%veg_wind  (ico) = sngloff(initp%vels, tiny_offset)
                !----- Set water demand and conductances to zero. --------------------------!
                cpatch%psi_open  (ico) = 0.0
                cpatch%psi_closed(ico) = 0.0
@@ -1246,7 +1288,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
                !----- Copy the meteorological wind to here. -------------------------------!
-               cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+               cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
                !---------------------------------------------------------------------------!
 
 
@@ -1284,7 +1326,7 @@ module rk4_driver
 
                !----- Copy the meteorological wind to here. -------------------------------!
                if (.not. cpatch%leaf_resolvable(ico)) then
-                  cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+                  cpatch%veg_wind(ico) = sngloff(initp%vels, tiny_offset)
                end if
                !---------------------------------------------------------------------------!
             end if
