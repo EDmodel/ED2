@@ -294,16 +294,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) hgt_min(myPFT) = real(rval)
            call getConfigREAL  ('plant_min_temp','pft',i,rval,texist)
            if(texist) plant_min_temp(myPFT) = real(rval)
-
-           ! ------------------------------------------------------------
-           ! THESE VALUES POPULATE MORT3, BUT ONLY FOR TEMPERATE
-           ! VALUES.. TO CHANGE MORT3 FOR TROPICAL, YOU NEED TO CHANGE
-           ! M3_SCALE and M3_SLOPE.  SEE ED_PARAMS.F90 LINE 4989
-           ! ------------------------------------------------------------
            call getConfigREAL  ('mort3','pft',i,rval,texist)
            if(texist) mort3(myPFT) = real(rval)
-
-
            call getConfigREAL  ('nonlocal_dispersal','pft',i,rval,texist)
            if(texist) nonlocal_dispersal(myPFT) = real(rval)
            call getConfigREAL  ('seed_rain','pft',i,rval,texist)
@@ -350,9 +342,6 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) mort1(myPFT) = real(rval)
            call getConfigREAL  ('mort2','pft',i,rval,texist)
            if(texist) mort2(myPFT) = real(rval)
-
-           call getConfigREAL  ('Vm_q10','pft',i,rval,texist)
-           if(texist) Vm_q10(myPFT) = real(rval)
 
            call getConfigREAL  ('Vm_low_temp','pft',i,rval,texist)
            if(texist) Vm_low_temp(myPFT) = real(rval)
@@ -423,12 +412,7 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) agf_bs(:) = real(rval)
         call getConfigREAL  ('frost_mort','pftconst',i,rval,texist)
         if(texist) frost_mort = real(rval)
-
-        call getConfigREAL  ('m3_scale','pftconst',i,rval,texist)
-        if(texist) m3_scale = real(rval)
-        call getConfigREAL  ('m3_slope','pftconst',i,rval,texist)
-        if(texist) m3_slope = real(rval)
-
+        
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
@@ -556,15 +540,12 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) rlong_min = real(rval) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
         if(texist) rk4min_veg_temp = rval ! This is double precision. 
-
-        ! THE NEXT THREE ARE DEPRECATED (RGK)
-!        call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)
-!        if(texist) visible_fraction = real(rval)
-!        call getConfigREAL  ('visible_fraction_dir','radiation',i,rval,texist)
-!        if(texist) visible_fraction_dir = real(rval)
-!        call getConfigREAL  ('visible_fraction_dif','radiation',i,rval,texist)
-!        if(texist) visible_fraction_dif = real(rval)
-
+        call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)
+        if(texist) visible_fraction = real(rval)
+        call getConfigREAL  ('visible_fraction_dir','radiation',i,rval,texist)
+        if(texist) visible_fraction_dir = real(rval)
+        call getConfigREAL  ('visible_fraction_dif','radiation',i,rval,texist)
+        if(texist) visible_fraction_dif = real(rval)
         call getConfigREAL  ('leaf_scatter_nir','radiation',i,rval,texist)
         if(texist) leaf_scatter_nir = real(rval)
         call getConfigREAL  ('leaf_reflect_nir','radiation',i,rval,texist)
