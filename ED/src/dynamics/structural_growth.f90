@@ -327,7 +327,8 @@ subroutine structural_growth(cgrid, month)
 !                          / (        ddmort_const  * cbr_light                             &
 !                            + (1.0 - ddmort_const) * cbr_moist                             &
 !                            - cbr_severe_stress(ipft) )
-                  cbr_now = cb / (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)       &
+                  cbr_now =  cpatch%cb (prev_month,ico)       					           &
+                  			/ (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)         &
                             + (1.0 - ddmort_const) * cpatch%cb_moistmax (prev_month,ico) )
                end if
                !---------------------------------------------------------------------------!
@@ -673,7 +674,8 @@ subroutine structural_growth_eq_0(cgrid, month)
 !                          / (        ddmort_const  * cbr_light                             &
 !                            + (1.0 - ddmort_const) * cbr_moist                             &
 !                            - cbr_severe_stress(ipft) )
-                  cbr_now = cb / (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)       &
+                  cbr_now =  cpatch%cb (prev_month,ico)       					           &
+                  			/ (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)         &
                             + (1.0 - ddmort_const) * cpatch%cb_moistmax (prev_month,ico) )
                end if
                !---------------------------------------------------------------------------!
