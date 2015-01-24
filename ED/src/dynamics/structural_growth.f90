@@ -321,12 +321,14 @@ subroutine structural_growth(cgrid, month)
                     cbr_moist == cbr_severe_stress(ipft)       ) then
                   cbr_now = cbr_severe_stress(ipft)
                else
-                  cbr_now = cbr_severe_stress(ipft)                                        &
-                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
-                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
-                          / (        ddmort_const  * cbr_light                             &
-                            + (1.0 - ddmort_const) * cbr_moist                             &
-                            - cbr_severe_stress(ipft) )
+!                  cbr_now = cbr_severe_stress(ipft)                                        &
+!                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
+!                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
+!                          / (        ddmort_const  * cbr_light                             &
+!                            + (1.0 - ddmort_const) * cbr_moist                             &
+!                            - cbr_severe_stress(ipft) )
+                  cbr_now = cb / (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)       &
+                            + (1.0 - ddmort_const) * cpatch%cb_moistmax (prev_month,ico) )
                end if
                !---------------------------------------------------------------------------!
 
@@ -665,12 +667,14 @@ subroutine structural_growth_eq_0(cgrid, month)
                     cbr_moist == cbr_severe_stress(ipft)       ) then
                   cbr_now = cbr_severe_stress(ipft)
                else
-                  cbr_now = cbr_severe_stress(ipft)                                        &
-                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
-                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
-                          / (        ddmort_const  * cbr_light                             &
-                            + (1.0 - ddmort_const) * cbr_moist                             &
-                            - cbr_severe_stress(ipft) )
+!                  cbr_now = cbr_severe_stress(ipft)                                        &
+!                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
+!                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
+!                          / (        ddmort_const  * cbr_light                             &
+!                            + (1.0 - ddmort_const) * cbr_moist                             &
+!                            - cbr_severe_stress(ipft) )
+                  cbr_now = cb / (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)       &
+                            + (1.0 - ddmort_const) * cpatch%cb_moistmax (prev_month,ico) )
                end if
                !---------------------------------------------------------------------------!
 
