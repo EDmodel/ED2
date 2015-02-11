@@ -275,20 +275,45 @@ cloud.metrics <<- function( x
    #----- Make sure this function has been called by summnum.  Otherwise, stop. -----------#
    patt  = "^([A-Za-z0-9]+)(\\({1})(.*)(\\){1})$"
    repl  = "\\1"
-   wcm.1 = try(gsub(pattern=patt,replacement=repl,x=deparse(sys.call(-1))),silent=TRUE)
-   if ("try-error" %in% is(wcm.1)){
-      wcm.1 = NA
-   }else if (is.null(wcm.1)){
-      wcm.1 = NA
-   }else{
-      wcm.1 = substring(wcm.1[1],1,13)
-   }#end if
-   if ( ! (wcm.1 %==% "cloud.metrics")){
-      mess =  paste( " Function .Int.cloud.metrics is internal,"
-                   , " and can only be called by cloud.metrics"
-                   , sep = ""
-                   )#end paste
-      stop(mess)
+   n     = 0
+   mess  = TRUE
+   top   = FALSE
+   wcm   = list()
+   while (! top){
+      n = n + 1
+      wcm[[n]] = try( gsub( pattern     = patt
+                          , replacement = repl
+                          , x           = deparse(sys.call(-n))
+                          )#end gsub
+                    , silent = TRUE
+                    )#end try
+      if ("try-error" %in% is(wcm[[n]])){
+         wcm[[n]] = NA
+         top      = TRUE
+      }else{
+         #----- Not an error.  Check whether this has been called by a friend function. ---#
+         wcm[[n]] = paste(wcm[[n]],collapse="")
+         top      = substring(wcm[[n]],1,4) %==% "NULL"
+         mess     = mess && ! ( substring(wcm[[n]],1,13) %==% "cloud.metrics" ||
+                                substring(wcm[[n]],1,12) %==% "grid.metrics"  )
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end while
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Do not allow this function to continue in case it was an externall call.          #
+   #---------------------------------------------------------------------------------------#
+   if (mess){
+      wcm =  sapply(X=wcm,FUN=rbind)
+      print(wcm)
+      bye =  paste( " Function .Int.cloud.metrics is internal,"
+                  , " and can only be called by cloud.metrics or grid.metrics"
+                  , sep = ""
+                  )#end paste
+      stop(bye)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -412,5 +437,84 @@ cloud.metrics <<- function( x
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end function .Int.cloud.metrics
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This function finds the canopy opening as a function of height breaks.              #
+#------------------------------------------------------------------------------------------#
+open.fcan <<- function( pt.cloud
+                           , zabove    = seq(from=0,to=35,by=5)
+                           ){
+
+   #----- Breaks.  Ensure the last break is Infinity. -------------------------------------#
+   if (any(! is.finite(zabove))){
+      stop("zabove contains non-finite entries, which is forbidden!")
+   }#end if
+   zbreaks = sort(c(zabove,Inf))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       Check whether the point cloud has any data in it.                               #
+   #---------------------------------------------------------------------------------------#
+   if (nrow(pt.cloud) == 0){
+      ans = rep(NA,times=length(zabove))
+   }else{
+      #----- Discard data that are not classified as vegetation. --------------------------#
+      zveg    = ifelse( pt.cloud$pt.class %in% c(3,4,5) & pt.cloud$pt.class %>=% zabove[1]
+                      , pt.cloud$z
+                      , NA
+                      )#end ifelse
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     If everything became NA, then all returns were ground returns, assume no       #
+      # canopy cover.                                                                      #
+      #------------------------------------------------------------------------------------#
+      if (all(is.na(zveg))){
+         #----- Set all classes to zero. --------------------------------------------------#
+         ans = rep(0,times=length(zabove))
+         #---------------------------------------------------------------------------------#
+      }else{
+
+         #----- Split elevation in bins. --------------------------------------------------#
+         zcut    = as.integer(cut(x=zveg,breaks=zbreaks,labels=zabove,right=FALSE))
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Count layers, and return the fraction above each height layer. ------------#
+         tabnow   = table(zcut)
+         ans      = rep(0,times=length(zabove))
+         idx      = as.numeric(names(tabnow))
+         ans[idx] = tabnow
+         ans      = rev(cumsum(rev(ans))) / length(zcut)
+         #---------------------------------------------------------------------------------#
+      }#end if (all(is.na(zveg)))
+      #------------------------------------------------------------------------------------#
+   }#end if (nrow(pt.cloud) == 0)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Make names based on zabove, then return the answer. -----------------------------#
+   fmt        = ceiling(log10(max(abs(zabove))*(1.+10*.Machine$double.eps)))
+   if (all(zabove == as.integer(zabove))){
+      fmt        = paste("%0",fmt,".",fmt,"i",sep="")
+   }else{
+      fmt        = paste("%0",fmt+3,".",2,"f",sep="")
+   }#end if
+   names(ans) = paste("fcan",sprintf(fmt,zabove),sep=".")
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end frac.can.lidar
 #==========================================================================================#
 #==========================================================================================#

@@ -27284,7 +27284,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cpatch%qmean_rad_profile                                  &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_RAD_PROFILE_CO :-411:hist') 
+                           ,'QMEAN_RAD_PROFILE_CO :-411:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Radiation profile','[W/m2]'                       &
                            ,'(iradprof,ndcycle,icohort)')

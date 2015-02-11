@@ -527,7 +527,7 @@ image.map <<- function( x
             xxxyyy  = cbind(xxx[sss],yyy[sss])
             rrr     = raster(ncols=nx.interp,nrows=ny.interp,xmn=0,xmx=1,ymn=0,ymx=1)
             zint    = rasterize(x=xxxyyy,y=rrr,field=zzz[sss],fun=mean)
-            zo      = slot(slot(zint$layer,"data"),"values")
+            zo      = zint[[1]]@data@values
             zo      = matrix(data=zo,nrow=nx.interp,ncol=ny.interp)
             iy      = sequence(ny.interp)
             zo      = zo[,rev(sequence(ny.interp))]

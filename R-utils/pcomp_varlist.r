@@ -4131,6 +4131,10 @@
                               , col.scheme = "iclife"
                               , plog.map   = TRUE
                               )#end list
+                        , list( vname      = "last.1yr.growth"
+                              , col.scheme = "clife"
+                              , plog.map   = TRUE
+                              )#end list
                         , list( vname      = "last.1yr.change"
                               , col.scheme = "clife"
                               , plog.map   = FALSE

@@ -434,10 +434,12 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    flagvar[["imetrad"]]         = list( descr   = "SW Radiation splitting"
                                       , numeric = TRUE
                                       , values  = seq(from=0,to=4,by=1)
-                                      , names   = c("Input files","SiB"
-                                                  ,"Weissman-Norman"
-                                                  ,"Cloudy"
-                                                  ,"Sesame Street")
+                                      , names   = c( "Input files"
+                                                   , "SiB"
+                                                   , "Weissman-Norman"
+                                                   , "100% diffuse"
+                                                   , "100% direct"
+                                                   )#end c
                                       )#end list
    #----- icanrad is the canopy radiation model. ------------------------------------------#
    flagvar[["icanrad"]]         = list( descr   = "Canopy radiation method"
@@ -1172,9 +1174,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(        13,       23)
       }else if (lenici == 24){
          nparms = 3
-         param  = c("met.forcing","icanrad","init.mode")
-         na     = c(            6,      14,          22)
-         nz     = c(            8,      16,          24)
+         param  = c("leaf.absorb.vis","imetrad")
+         na     = c(               12,       23)
+         nz     = c(               14,       24)
       }else if (lenici == 25){
          nparms = 3
          param  = c("iphen.scheme","d0","include.fire")
@@ -2212,6 +2214,27 @@ poitmp[[u]] = list( short           = "diamantino"
                   , yeara           = 1964
                   , yearz           = 2009
                   , iphen           = 2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "douglas_tnf"
+                  , longname        = "Tapajos Natl Forest, PA"
+                  , iata            = "dcm"
+                  , lon             = -54.959
+                  , lat             =  -2.857
+                  , alt             = 198.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 16
+                  , sand            = 0.390
+                  , clay            = 0.590
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Santarem_Km67"
+                  , yeara           = 1996
+                  , yearz           = 2012
+                  , iphen           = -1
                   )#end list
 u           = u + 1
 poitmp[[u]] = list( short           = "dourados"          
@@ -3374,6 +3397,27 @@ poitmp[[u]] = list( short           = "paragominas"
                   , iata            = "par"
                   , lon             = -47.517
                   , lat             =  -3.315
+                  , alt             = 122
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.00
+                  , clay            = -1.00
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1964
+                  , yearz           = 2009
+                  , iphen           = +2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "paragominas"
+                  , longname        = "Paragominas, PA"
+                  , iata            = "prg"
+                  , lon             = -47.349
+                  , lat             =  -2.986
                   , alt             = 122
                   , wmo             = NA
                   , isoilflg        = 1

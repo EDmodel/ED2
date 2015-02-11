@@ -526,7 +526,7 @@ do
       mon1stcensus=3
       minrecruitdbh=10
       ;;
-   s67)
+   s67|dcm)
       dtcensus=24
       let yr1stcensus=${yeara}+1-${yodd}
       mon1stcensus=7
@@ -1201,7 +1201,7 @@ do
          #      Check whether the site has the PFT and age structure.                      #
          #---------------------------------------------------------------------------------#
          case ${polyiata} in
-         hvd|s77|fns|cau|and|par|tap)
+         hvd|s77|fns|cau|and|par|tap|dcm)
             thissfilin="${bioinit}/${polyiata}_default."
             ;;
          cax|s67|s83|m34|gyf|pdg|rja|pnz|ban)
