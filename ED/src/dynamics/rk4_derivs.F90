@@ -1392,14 +1392,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                   !     If we ever have shedding, force wshed to cap out at that maximum   !
                   ! leaf water.  Assume this process happens before evaporation.           !
                   !------------------------------------------------------------------------!
-!! TURNIGN OFF SHEDDING FOR NOW
+!! TURNING OFF SHEDDING FOR NOW
 !!
-
-                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
-                                    - max_leaf_water) / dt)
-                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
-                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
-                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+!
+!                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
+!                                    - max_leaf_water) / dt)
+!                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
+!                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
+!                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
                   !------------------------------------------------------------------------!
 
 
@@ -1734,12 +1734,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                   !------------------------------------------------------------------------!
 !! TURNIGN OFF SHEDDING FOR NOW
 !!
-
-                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
-                                    - max_wood_water) / dt)
-                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
-                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
-                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+!
+!                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
+!                                    - max_wood_water) / dt)
+!                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+!                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
+!                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
                   !------------------------------------------------------------------------!
 
 
