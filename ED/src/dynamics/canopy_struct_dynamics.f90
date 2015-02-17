@@ -298,7 +298,7 @@ module canopy_struct_dynamics
       ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
       !------------------------------------------------------------------------------------!
 !      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
-      snowfac_can     = csite%snowfac
+      snowfac_can     = csite%snowfac(ipa)
       !------------------------------------------------------------------------------------!
 
 
