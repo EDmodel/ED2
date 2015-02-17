@@ -485,7 +485,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                 *  ( rk4aux%th_cond_p(1) / rk4aux%th_cond_s(mzg) )         &
                                 ** ( dslz8(mzg) / (initp%sfcwater_depth(1)+ dslz8(mzg)))  
 !      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac                            &
-      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond				                               &
+      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond &
                                 * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))        &
                                 / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )         
       rk4aux%h_flux_s   (1)     = rk4aux%h_flux_g(mzg+1)                               
@@ -511,8 +511,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                   - dble(csite%rshort_g(ipa))
    rk4aux%h_flux_g        (mzg+1) = rk4aux%h_flux_g(mzg+1) + dinitp%avg_sensible_gg (mzg)
    !---------------------------------------------------------------------------------------!
-   rk4aux%h_flux_s        (mzs+1) = rk4aux%h_flux_s(mzs+1) + hflxsc + qwflxsc - 		   &
-   									dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
+   rk4aux%h_flux_s        (mzs+1) = rk4aux%h_flux_s(mzs+1) + hflxsc + qwflxsc  &
+                                    - dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
 
 
 
@@ -665,11 +665,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
 
 
          !----- Limit water transfers to prevent over-saturation and over-depletion. ------!
-         if ( rk4aux%w_flux_g(k) >= 0. .and.                                               &
+         if ( rk4aux%w_flux_g(k)>=0. .and.                                               &
              (rk4aux%drysoil(k-1) .or. rk4aux%satsoil(k)) )    then
             rk4aux%w_flux_g(k) = 0.d0
 
-         elseif( rk4aux%w_flux_g(k) < 0. .and.                                             &
+         elseif( rk4aux%w_flux_g(k)<0. .and.                                             &
                 (rk4aux%satsoil(k-1) .or. rk4aux%drysoil(k)) ) then
             rk4aux%w_flux_g(k) = 0.d0
 
@@ -686,7 +686,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       !      Find the internal energy flux associated with the water flux.  This is sign-  !
       ! -dependent because the temperature must be the source temperature.                 !
       !------------------------------------------------------------------------------------!
-      if (rk4aux%w_flux_g(k) > 0) then
+      if (rk4aux%w_flux_g(k)>0) then
          rk4aux%qw_flux_g(k) = rk4aux%w_flux_g(k) * wdns8                                  &
                              * tl2uint8(initp%soil_tempk(k-1),1.d0)
       else
