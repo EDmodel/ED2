@@ -511,8 +511,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                   - dble(csite%rshort_g(ipa))
    rk4aux%h_flux_g        (mzg+1) = rk4aux%h_flux_g(mzg+1) + dinitp%avg_sensible_gg (mzg)
    !---------------------------------------------------------------------------------------!
-   rk4aux%h_flux_s        (mzs+1) = rk4aux%h_flux_s(mzs+1) + hflxsc + qwflxsc  &
-                                    - dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
+!   rk4aux%h_flux_s        (mzs+1) = rk4aux%h_flux_s(mzs+1) + hflxsc + qwflxsc  &
+!                                    - dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
 
 
 
@@ -553,11 +553,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    ! temporary "snow" layer.                                                               !
    !---------------------------------------------------------------------------------------!
    if ( ksn > 0 ) then
-      dinitp%sfcwater_mass  (ksn+1) =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
-      dinitp%sfcwater_energy(ksn+1) = dinitp%sfcwater_energy(ksn)                            &
-                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc      !&
-                                  !- hflxsc  + dble(csite%rlong_s(ipa))
-      dinitp%sfcwater_depth (ksn+1) = ddewgnd + dwshed_tot + dthroughfall_tot
+      dinitp%sfcwater_mass  (ksn) =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
+      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn)                            &
+                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc      &
+                                  - hflxsc  + dble(csite%rlong_s(ipa))
+      dinitp%sfcwater_depth (ksn) = ddewgnd + dwshed_tot + dthroughfall_tot
    else
       dinitp%virtual_water        =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
       dinitp%virtual_energy       = qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc
