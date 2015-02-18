@@ -485,6 +485,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                 *  ( rk4aux%th_cond_p(1) / rk4aux%th_cond_s(mzg) )         &
                                 ** ( dslz8(mzg) / (initp%sfcwater_depth(1)+ dslz8(mzg)))  
 !      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac                            &
+!      rk4aux%h_flux_g   (mzg+1) = - avg_th_cond &
       rk4aux%h_flux_g   (mzg+1) = - avg_th_cond &
                                 * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))        &
                                 / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )         
@@ -994,8 +995,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    eflxac    = rho_ustar      * initp%estar                   ! Enthalpy flux
    cflxac    = rho_ustar      * initp%cstar * mmdryi8         ! CO2 flux [umol/m2/s]
    !------ Sensible heat flux. ------------------------------------------------------------!
-!   hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
-   hflxac    = rho_ustar      * initp%tstar * initp%can_exner ! Sensible Heat flux
+   hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
+!   hflxac    = rho_ustar      * initp%tstar * initp%can_exner ! Sensible Heat flux
    !---------------------------------------------------------------------------------------!
 
 
