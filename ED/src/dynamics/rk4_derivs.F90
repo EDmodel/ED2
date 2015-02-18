@@ -1406,8 +1406,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 
 
                   !----- Then constrain the amount that can be evaporated. ----------------!
-!                  wflxlc = min(wflxlc,max_dwdt+leaf_intercepted-wshed)
-                  wflxlc = min(wflxlc,max_dwdt-wshed)
+                  wflxlc = min(wflxlc,max_dwdt+leaf_intercepted-wshed)
+!                  wflxlc = min(wflxlc,max_dwdt-wshed)
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1724,33 +1724,33 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
 
 
-              !---------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
                !       This is called by the hybrid solver only.                           !
                !---------------------------------------------------------------------------!
-               if (is_hybrid) then
-
-                  max_dwdt = initp%wood_water(ico)/dt
-
-                  !------------------------------------------------------------------------!
-                  !     If we ever have shedding, force wshed to cap out at that maximum   !
-                  ! leaf water.  Assume this process happens before evaporation.           !
-                  !------------------------------------------------------------------------!
-!! TURNING OFF SHEDDING FOR NOW
-!!
-
-                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
-                                    - max_wood_water) / dt)
-                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
-                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
-                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Then constrain the amount that can be evaporated. ----------------!
-!                  wflxwc = min(wflxwc,max_dwdt+wood_intercepted-wshed)
-                  wflxwc = min(wflxwc,max_dwdt-wshed)
-                  !------------------------------------------------------------------------!
-               end if
+!               if (is_hybrid) then
+!
+!                  max_dwdt = initp%wood_water(ico)/dt
+!
+!                  !------------------------------------------------------------------------!
+!                  !     If we ever have shedding, force wshed to cap out at that maximum   !
+!                  ! leaf water.  Assume this process happens before evaporation.           !
+!                  !------------------------------------------------------------------------!
+!!! TURNING OFF SHEDDING FOR NOW
+!!!
+!
+!                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
+!                                    - max_wood_water) / dt)
+!                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+!                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
+!                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+!                  !------------------------------------------------------------------------!
+!
+!
+!                  !----- Then constrain the amount that can be evaporated. ----------------!
+!!                  wflxwc = min(wflxwc,max_dwdt+wood_intercepted-wshed)
+!                  wflxwc = min(wflxwc,max_dwdt-wshed)
+!                  !------------------------------------------------------------------------!
+!               end if
                !---------------------------------------------------------------------------!
 
 
