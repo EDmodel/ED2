@@ -994,7 +994,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    eflxac    = rho_ustar      * initp%estar                   ! Enthalpy flux
    cflxac    = rho_ustar      * initp%cstar * mmdryi8         ! CO2 flux [umol/m2/s]
    !------ Sensible heat flux. ------------------------------------------------------------!
-   hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
+!   hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
+   hflxac    = rho_ustar      * initp%tstar * initp%can_exner ! Sensible Heat flux
    !---------------------------------------------------------------------------------------!
 
 
