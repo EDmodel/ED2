@@ -1387,6 +1387,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                !       This is called by the hybrid solver only.                           !
                !---------------------------------------------------------------------------!
                if (is_hybrid) then
+               if (dt>-8000.d0) then
 
                   max_dwdt = initp%leaf_water(ico)/dt
                   
@@ -1406,8 +1407,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 
 
                   !----- Then constrain the amount that can be evaporated. ----------------!
+!                  wflxlc = min(wflxlc,max_dwdt+leaf_intercepted-wshed)
                   wflxlc = min(wflxlc,max_dwdt+leaf_intercepted-wshed)
                   !------------------------------------------------------------------------!
+               end if
                end if
                !---------------------------------------------------------------------------!
 
@@ -1727,6 +1730,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                !       This is called by the hybrid solver only.                           !
                !---------------------------------------------------------------------------!
                if (is_hybrid) then
+               if (dt>-8000.d0) then
 
                   max_dwdt = initp%wood_water(ico)/dt
 
@@ -1748,6 +1752,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                   !----- Then constrain the amount that can be evaporated. ----------------!
                   wflxwc = min(wflxwc,max_dwdt+wood_intercepted-wshed)
                   !------------------------------------------------------------------------!
+               end if
                end if
                !---------------------------------------------------------------------------!
 
