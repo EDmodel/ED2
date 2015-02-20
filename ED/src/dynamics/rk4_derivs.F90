@@ -513,7 +513,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
 !   rk4aux%h_flux_g        (mzg+1) = dinitp%avg_sensible_gg (mzg)
    !---------------------------------------------------------------------------------------!
 !   rk4aux%h_flux_s        (ksn) = rk4aux%h_flux_s(ksn) + hflxsc + qwflxsc  &
-                                    - dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
+!                                    - dble(csite%rlong_s(ipa)) - dble(csite%rshort_s(mzs,ipa))
 
 
 
