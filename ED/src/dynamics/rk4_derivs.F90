@@ -507,7 +507,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    !      Add the irradiance and canopy fluxes.                                            !
    !---------------------------------------------------------------------------------------!
-   dinitp%avg_sensible_gg (mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))            !&
+   dinitp%avg_sensible_gg (mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))            &
                                   - dble(csite%rshort_g(ipa))
    rk4aux%h_flux_g        (mzg+1) = rk4aux%h_flux_g(mzg+1) + dinitp%avg_sensible_gg (mzg)
 !   rk4aux%h_flux_g        (mzg+1) = dinitp%avg_sensible_gg (mzg)
