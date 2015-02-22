@@ -1058,7 +1058,7 @@ subroutine hybrid_timestep(cgrid)
     write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
-    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',inc%can_co2
+    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',fac*inc%can_co2
 	end if
 
    rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
