@@ -1046,17 +1046,18 @@ subroutine hybrid_timestep(cgrid)
    type(rk4patchtype) , target     :: inc    ! Temporary patch with its derivatives
    type(patchtype)    , target     :: cpatch ! Current patch (for characteristics)
    real(kind=8)       , intent(in) :: fac    ! Increment factor
-   integer            , intent(in)  :: ipa               ! Current patch ID
    !----- Local variables -----------------------------------------------------------------!
    integer                         :: ico    ! Cohort ID
    integer                         :: k      ! Counter
+   integer                         :: pno      ! patch id
    !---------------------------------------------------------------------------------------!
 
 
-!	if(ipa == 5) 
+!	if(rkp%patch == 5) 
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
-    write (unit=*,fmt='(a,1x,i1)') '  Patch  =',ipa
+									pno = rkp%patch
+    write (unit=*,fmt='(a,1x,i1)') '  Patch  =',pno
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',fac*inc%can_co2
