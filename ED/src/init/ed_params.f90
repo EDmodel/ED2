@@ -1079,7 +1079,7 @@ subroutine init_can_air_params()
    !      Variables to define the vegetation aerodynamic conductance.  They are currently  !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   gbhmos_min  = 1.e-8
+   gbhmos_min  = 1.e-12
    gbhmos_min8 = dble(gbhmos_min)
    !---------------------------------------------------------------------------------------!
 
