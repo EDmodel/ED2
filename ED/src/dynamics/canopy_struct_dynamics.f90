@@ -320,10 +320,6 @@ module canopy_struct_dynamics
                                  + snow_rough * snowfac_can
          csite%veg_displace(ipa) = vh2dh * csite%rough(ipa) / vh2vr
 
-         write(unit=*,fmt='(a)')           '========================================'
-         write(unit=*,fmt='(a)')           ' Checking Veg Displace into ED Stars'
-         write (unit=*,fmt='(a,1x,f11.6)')   ' Veg_displace from Rough (line 325):      ',csite%veg_displace(ipa)
-
          !---------------------------------------------------------------------------------!
 
 
@@ -1612,9 +1608,6 @@ module canopy_struct_dynamics
                             + snow_rough8 * snowfac_can
          initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
 
-         write(unit=*,fmt='(a)')           '========================================'
-         write(unit=*,fmt='(a)')           ' Checking Veg Displace into ED Stars'
-         write (unit=*,fmt='(a,1x,f11.6)')   ' Veg_displace from Rough (line 1617):      ',initp%veg_displace
          
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
@@ -2287,8 +2280,6 @@ module canopy_struct_dynamics
 
          !----- Find the actual displacement height and roughness. ------------------------!
          initp%veg_displace = max( vh2dh8 * veg_height_min8, d0ohgt * initp%veg_height)
-         write (unit=*,fmt='(a,1x,f11.6)')   ' Veg_displace from height (line 2290):      ',initp%veg_displace
-
          initp%rough        = max( vh2vr8 * veg_height_min8, z0ohgt * initp%veg_height)
          !---------------------------------------------------------------------------------!
 
