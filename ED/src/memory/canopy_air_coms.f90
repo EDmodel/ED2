@@ -976,17 +976,26 @@ module canopy_air_coms
 
 
 
+
+      !------------------------------------------------------------------------------------!
+      !     Define the coefficient Ri * zstar / [Pr * (zstar-z0)]                          !
+      !------------------------------------------------------------------------------------!
+      coeff = ribuse * zstar / (tprandtl * (zstar - rough))
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !     If the bulk Richardson number is zero or almost zero, then we rather just      !
       ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
       ! also avoids the risk of having zeta with the opposite sign.                        !
       !------------------------------------------------------------------------------------!
-      zetasmall = ribuse * min(lnzoz0m,lnzoz0h)
+      zetasmall = coeff * min(lnzoz0m,lnzoz0h)
       if (ribuse <= 0. .and. zetasmall > - z0moz0h * toler) then
-         zoobukhov = zetasmall / tprandtl
+         zoobukhov = zetasmall
          return
       elseif (ribuse > 0. .and. zetasmall < z0moz0h * toler) then
-         zoobukhov = zetasmall / (tprandtl - beta_s * (1.0 - min(z0moz,z0hoz)) * ribuse)
+         zoobukhov = zetasmall / (1.0 - beta_s * ribuse / tprandtl)
          return
       else
          zetamin    =  toler
@@ -994,40 +1003,44 @@ module canopy_air_coms
       end if
       !------------------------------------------------------------------------------------!
 
+
+
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       !write(unit=89,fmt='(60a1)') ('-',itn=1,60)
-      !write(unit=89,fmt='(5(a,1x,f11.4,1x),a,l1)')                                         &
-      !   'Input values: Rib =',rib,'zref=',zref,'rough=',rough,'zoz0=',zoz0                &
+      !write(unit=89,fmt='(5(a,1x,f11.4,1x),a,l1)')                                        &
+      !   'Input values: Rib =',rib,'zstar=',star,'rough=',rough,'zoz0=',zoz0              &
       !           ,'lnzoz0=',lnzoz0,'stable=',stable
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
 
       !------------------------------------------------------------------------------------!
-      !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
+      !     First guess, use Oncley and Dudhia (1995) approximation for unstable case.     !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
       ! Ri is too positive.                                                                !
       !------------------------------------------------------------------------------------!
-      zetaa = rib * lnzoz0m / tprandtl
+      zetaa = zetasmall
       !------------------------------------------------------------------------------------!
 
 
 
-      !----- Finding the function and its derivative. -------------------------------------!
+      !----- Find the function and its derivative. ----------------------------------------!
       zeta0m   = zetaa * z0moz
       zeta0h   = zetaa * z0hoz
       fm       = lnzoz0m - psim(zetaa,stable) + psim(zeta0m,stable)
       fh       = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
       dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaa,stable)
       dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaa,stable)
-      funa     = ribuse * fm * fm / (tprandtl * fh) - zetaa
-      deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                   &
-               / (tprandtl * fh * fh) - 1.
+      funa     = coeff * fm * fm / fh - zetaa
+      deriv    = coeff * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh) - 1.
+      !------------------------------------------------------------------------------------!
 
-      !----- Copying just in case it fails at the first iteration. ------------------------!
+
+      !----- Copy just in case it fails at the first iteration. ---------------------------!
       zetaz = zetaa
       fun   = funa
+      !------------------------------------------------------------------------------------!
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1036,6 +1049,7 @@ module canopy_air_coms
       !  ,'fh=',fh,'dfmdzeta=',dfmdzeta,'dfhdzeta=',dfhdzeta,'deriv=',deriv
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
+
 
       !----- Enter Newton's method loop. --------------------------------------------------!
       converged = .false.
@@ -1059,21 +1073,20 @@ module canopy_air_coms
             exit newloop
          end if
 
-         !----- Copying the previous guess ------------------------------------------------!
+         !----- Copy the previous guess ---------------------------------------------------!
          zetaa = zetaz
          funa  = fun
          !----- New guess, its function and derivative evaluation -------------------------!
-         zetaz = zetaa - fun/deriv
-
+         zetaz    = zetaa - fun/deriv
          zeta0m   = zetaz * z0moz
          zeta0h   = zetaz * z0hoz
          fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
          fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
          dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaz,stable)
          dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaz,stable)
-         fun      = ribuse * fm * fm / (tprandtl * fh) - zetaz
-         deriv    = ribuse * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                &
-                  / (tprandtl * fh * fh) - 1.
+         fun      = coeff * fm * fm / fh - zetaz
+         deriv    = coeff * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh) - 1.
+         !---------------------------------------------------------------------------------!
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1092,6 +1105,10 @@ module canopy_air_coms
             return
          end if
       end do newloop
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     If we reached this point then it's because Newton's method failed or it has    !
@@ -1136,7 +1153,7 @@ module canopy_air_coms
             zeta0h   = zetaz * z0hoz
             fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
             fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
-            funz     = ribuse * fm * fm / (tprandtl * fh) - zetaz
+            funz     = coeff * fm * fm / fh - zetaz
             zside    = funa * funz < 0.0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1151,7 +1168,7 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar   =',zstar   ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar  =',zstar  ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse =',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
@@ -1174,12 +1191,13 @@ module canopy_air_coms
          converged = abs(zoobukhov-zetaa) < toler * abs(zoobukhov)
          if (converged) exit bisloop
 
-         !------ Finding the new function -------------------------------------------------!
+         !------ Update function evaluation. ----------------------------------------------!
          zeta0m   = zoobukhov * z0moz
          zeta0h   = zoobukhov * z0hoz
          fm       = lnzoz0m - psim(zoobukhov,stable) + psim(zeta0m,stable)
          fh       = lnzoz0h - psih(zoobukhov,stable) + psih(zeta0h,stable)
-         fun      = ribuse * fm * fm / (tprandtl * fh) - zoobukhov
+         fun      = coeff * fm * fm / fh - zoobukhov
+         !---------------------------------------------------------------------------------!
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1189,20 +1207,20 @@ module canopy_air_coms
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
-         !------ Defining my new interval based on the intermediate value theorem. --------!
+         !------ Define new interval based on the intermediate value theorem. -------------!
          if (fun*funa < 0. ) then
             zetaz = zoobukhov
             funz  = fun
             !----- If we are updating zside again, modify aside (Illinois method) ---------!
             if (zside) funa = funa * 0.5
-            !----- We just updated zside, setting zside to true. --------------------------!
+            !----- We just updated zside, set zside to true. ------------------------------!
             zside = .true.
          else
             zetaa = zoobukhov
             funa  = fun
             !----- If we are updating aside again, modify aside (Illinois method) ---------!
             if (.not. zside) funz = funz * 0.5
-            !----- We just updated aside, setting aside to true. --------------------------!
+            !----- We just updated aside, set aside to true. ------------------------------!
             zside = .false.
          end if
       end do bisloop
@@ -1217,7 +1235,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar            [     m] =',zstar
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar           [     m] =',zstar
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
          write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m
@@ -1339,54 +1357,75 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
 
 
+
+
       !------------------------------------------------------------------------------------!
-      !     First thing: if the bulk Richardson number is zero or almost zero, then we     !
-      ! rather just assign z/L to be the one given by Oncley and Dudhia (1995).  This      !
-      ! saves time and also avoids the risk of having zeta with the opposite sign.         !
+      !     Define the coefficient Ri * zstar / [Pr * (zstar-z0)]                          !
       !------------------------------------------------------------------------------------!
-      zetasmall = ribuse * min(lnzoz0m,lnzoz0h)
-      if (ribuse <= 0.d0 .and. zetasmall > - z0moz0h8 * toler8) then
-         zoobukhov8 = zetasmall / tprandtl8
+      coeff = ribuse * zstar / (tprandtl8 * (zstar - rough))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the bulk Richardson number is zero or almost zero, then we rather just      !
+      ! assign z/L to be the one similar to Oncley and Dudhia (1995).  This saves time and !
+      ! also avoids the risk of having zeta with the opposite sign.                        !
+      !------------------------------------------------------------------------------------!
+      zetasmall = coeff * min(lnzoz0m,lnzoz0h)
+      if (ribuse <= 0.d0 .and. zetasmall > - z0moz0h * toler8) then
+         zoobukhov8 = zetasmall
          return
-      elseif (ribuse > 0.d0 .and. zetasmall < z0moz0h8 * toler8) then
-         zoobukhov8 = zetasmall / (tprandtl8 - beta_s8 * (1.d0 - min(z0moz,z0hoz))*ribuse)
+      elseif (ribuse > 0.d0 .and. zetasmall < z0moz0h * toler8) then
+         zoobukhov8 = zetasmall / (1.d0 - beta_s8 * ribuse / tprandtl8)
          return
       else
          zetamin    =  toler8
          zetamax    = -toler8
       end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
       !write(unit=89,fmt='(60a1)') ('-',itn=1,60)
-      !write(unit=89,fmt='(5(a,1x,f11.4,1x),a,l1)')                                         &
-      !   'Input values: Rib =',rib,'zref=',zref,'rough=',rough,'zoz0=',zoz0                &
+      !write(unit=89,fmt='(5(a,1x,f11.4,1x),a,l1)')                                        &
+      !   'Input values: Rib =',rib,'zstar=',star,'rough=',rough,'zoz0=',zoz0              &
       !           ,'lnzoz0=',lnzoz0,'stable=',stable
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
 
 
+
       !------------------------------------------------------------------------------------!
-      !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
+      !     First guess, use Oncley and Dudhia (1995) approximation for unstable case.     !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
       ! Ri is too positive.                                                                !
       !------------------------------------------------------------------------------------!
-      zetaa = ribuse * lnzoz0m / tprandtl8
+      zetaa = zetasmall
+      !------------------------------------------------------------------------------------!
 
-      !----- Finding the function and its derivative. -------------------------------------!
+
+
+      !----- Find the function and its derivative. ----------------------------------------!
       zeta0m   = zetaa * z0moz
       zeta0h   = zetaa * z0hoz
       fm       = lnzoz0m - psim8(zetaa,stable) + psim8(zeta0m,stable)
       fh       = lnzoz0h - psih8(zetaa,stable) + psih8(zeta0h,stable)
       dfmdzeta = z0moz * dpsimdzeta8(zeta0m,stable) - dpsimdzeta8(zetaa,stable)
       dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaa,stable)
-      funa     = ribuse * fm * fm / (tprandtl8 * fh) - zetaa
-      deriv    = ribuse * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)                 &
-               / (tprandtl8 * fh * fh) - 1.d0
+      funa     = coeff * fm * fm / fh - zetaa
+      deriv    = coeff * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh) - 1.d0
+      !------------------------------------------------------------------------------------!
 
-      !----- Copying just in case it fails at the first iteration. ------------------------!
+
+      !----- Copy just in case it fails at the first iteration. ---------------------------!
       zetaz = zetaa
       fun   = funa
+      !------------------------------------------------------------------------------------!
+
+
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1430,9 +1469,9 @@ module canopy_air_coms
          fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
          dfmdzeta = z0moz * dpsimdzeta8(zeta0m,stable) - dpsimdzeta8(zetaz,stable)
          dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaz,stable)
-         fun      = ribuse * fm * fm / (tprandtl8 * fh) - zetaz
-         deriv    = ribuse * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)              &
-                  / (tprandtl8 * fh * fh) - 1.d0
+         fun      = coeff * fm * fm / fh - zetaz
+         deriv    = coeff * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)               &
+                  / (fh * fh) - 1.d0
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1451,6 +1490,10 @@ module canopy_air_coms
             return
          end if
       end do newloop
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     If we reached this point then it's because Newton's method failed or it has    !
@@ -1495,7 +1538,7 @@ module canopy_air_coms
             zeta0h   = zetaz * z0hoz
             fm       = lnzoz0m - psim8(zetaz,stable) + psim8(zeta0m,stable)
             fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
-            funz     = ribuse * fm * fm / (tprandtl8 * fh) - zetaz
+            funz     = coeff * fm * fm / fh - zetaz
             zside    = funa * funz < 0.d0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
             !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1510,7 +1553,7 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar   =',zstar  ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar  =',zstar  ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse=',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
@@ -1538,7 +1581,7 @@ module canopy_air_coms
          zeta0h   = zoobukhov8 * z0hoz
          fm       = lnzoz0m - psim8(zoobukhov8,stable) + psim8(zeta0m,stable)
          fh       = lnzoz0h - psih8(zoobukhov8,stable) + psih8(zeta0h,stable)
-         fun      = ribuse * fm * fm / (tprandtl8 * fh) - zoobukhov8
+         fun      = coeff * fm * fm / fh - zoobukhov8
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
@@ -1576,7 +1619,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar            [     m] =',zstar
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar           [     m] =',zstar
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
          write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m
