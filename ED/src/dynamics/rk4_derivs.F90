@@ -1905,7 +1905,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                          + wflxlc_tot  + wflxwc_tot  + transp_tot                          & 
                          + wflxac                                  ) * wcapcani
 
-	if (ipa = 5) then
+	if (ipa == 5) then
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a)')   '	diagnosing what dries can_co2 down	'
     write (unit=*,fmt='(a)')   '-------------------------------------------'
@@ -1918,7 +1918,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
     end if
    dinitp%can_co2      = ( cflxgc      + cflxlc_tot  + cflxwc_tot                          &
                          + cflxac                                  ) * ccapcani
-	if (ipa = 5) then
+	if (ipa == 5) then
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 OUT  =',dinitp%can_co2
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     end if
