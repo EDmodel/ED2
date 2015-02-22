@@ -1060,39 +1060,50 @@ module canopy_struct_dynamics
             hbotcrown = dble(h2crownbh(cpatch%hite(ico),cpatch%pft(ico)))
             !------------------------------------------------------------------------------!
 
+            !------------------------------------------------------------------------------!
+			! Old ED Veg Wind computation
+            !------------------------------------------------------------------------------!
+            hmidcrown = 0.5 * (hbotcrown + htopcrown)
+            !----- Determine which layer we should use for wind reduction. ----------------!
+            k = min(ncanlyr,max(1,ceiling((hmidcrown * zztop0i)**ehgti)))
+                        !----- Calculate the wind speed at height z. ----------------------------------!
+            cpatch%veg_wind(ico) = max( ugbmin                                             &
+                                      , uh * exp(-nn * (1. - cumldrag(k)/cumldrag(zcan))))
+            !------------------------------------------------------------------------------!
 
-            !------------------------------------------------------------------------------!
-            !     Find the layer indices for the bottom and top of the crown.              !
-            !------------------------------------------------------------------------------!
-            kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i)**ehgti) + 1)
-            kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i)**ehgti) + 1)
-            kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i)**ehgti))
-            kzfull    = min(ncanlyr,floor  ((htopcrown * zztop0i)**ehgti))
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     Add the LAD for the full layers.                                         !
-            !------------------------------------------------------------------------------!
-            if ( kapartial == kzpartial ) then
-               !----- Cohort crown is in a single layer, copy the layer wind speed. -------!
-               cpatch%veg_wind(ico) = windlyr(kapartial)
-            else
-               !---------------------------------------------------------------------------!
-               !      Cohort spans through multiple layers.  Use the average, weighted by  !
-               ! the thickness of the layer.                                               !
-               !---------------------------------------------------------------------------!
-               !----- Partial layers (bottom and top). ------------------------------------!
-               cpatch%veg_wind(ico) = windlyr(kapartial) * (zztop(kapartial) - hbotcrown)  &
-                                    + windlyr(kzpartial) * (htopcrown - zzbot(kzpartial))
-               do k = kafull,kzfull
-                  cpatch%veg_wind(ico) = cpatch%veg_wind(ico) + windlyr(k) * dzcan(k)
-               end do
-               !----- Divide by the total crown length to obtain the average wind. --------!
-               cpatch%veg_wind(ico) = cpatch%veg_wind(ico) / (htopcrown - hbotcrown)
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
+!
+!            !------------------------------------------------------------------------------!
+!            !     Find the layer indices for the bottom and top of the crown.              !
+!            !------------------------------------------------------------------------------!
+!            kapartial = min(ncanlyr,floor  ((hbotcrown * zztop0i)**ehgti) + 1)
+!            kafull    = min(ncanlyr,ceiling((hbotcrown * zztop0i)**ehgti) + 1)
+!            kzpartial = min(ncanlyr,ceiling((htopcrown * zztop0i)**ehgti))
+!            kzfull    = min(ncanlyr,floor  ((htopcrown * zztop0i)**ehgti))
+!            !------------------------------------------------------------------------------!
+!
+!
+!            !------------------------------------------------------------------------------!
+!            !     Add the LAD for the full layers.                                         !
+!            !------------------------------------------------------------------------------!
+!            if ( kapartial == kzpartial ) then
+!               !----- Cohort crown is in a single layer, copy the layer wind speed. -------!
+!               cpatch%veg_wind(ico) = windlyr(kapartial)
+!            else
+!               !---------------------------------------------------------------------------!
+!               !      Cohort spans through multiple layers.  Use the average, weighted by  !
+!               ! the thickness of the layer.                                               !
+!               !---------------------------------------------------------------------------!
+!               !----- Partial layers (bottom and top). ------------------------------------!
+!               cpatch%veg_wind(ico) = windlyr(kapartial) * (zztop(kapartial) - hbotcrown)  &
+!                                    + windlyr(kzpartial) * (htopcrown - zzbot(kzpartial))
+!               do k = kafull,kzfull
+!                  cpatch%veg_wind(ico) = cpatch%veg_wind(ico) + windlyr(k) * dzcan(k)
+!               end do
+!               !----- Divide by the total crown length to obtain the average wind. --------!
+!               cpatch%veg_wind(ico) = cpatch%veg_wind(ico) / (htopcrown - hbotcrown)
+!               !---------------------------------------------------------------------------!
+!            end if
+!            !------------------------------------------------------------------------------!
 
 
 
