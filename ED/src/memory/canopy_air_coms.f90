@@ -1151,7 +1151,7 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref   ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar   =',zstar   ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse =',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
@@ -1217,7 +1217,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar            [     m] =',zstar
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
          write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m
@@ -1510,7 +1510,7 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref  ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zstar   =',zstar  ,'rough  =',rough
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib    ,'ribuse=',ribuse
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
@@ -1576,7 +1576,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'ribuse          [   ---] =',ribuse
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zstar            [     m] =',zstar
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
          write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m
