@@ -319,7 +319,6 @@ module canopy_struct_dynamics
          csite%rough       (ipa) = soil_rough * (1.0 - snowfac_can)                 &
                                  + snow_rough * snowfac_can
          csite%veg_displace(ipa) = vh2dh * csite%rough(ipa) / vh2vr
-
          !---------------------------------------------------------------------------------!
 
 
@@ -1014,7 +1013,6 @@ module canopy_struct_dynamics
          csite%veg_displace(ipa) = max( vh2dh  * veg_height_min                            &
                                       , d0ohgt * csite%veg_height(ipa) )
 
-
          csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
                                       , z0ohgt * csite%veg_height(ipa) )
          !---------------------------------------------------------------------------------!
@@ -1579,6 +1577,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
 
       write (unit=*,fmt='(a)')   '===================================='
+      write (unit=*,fmt='(a,1x,es12.5)') '  can_co2  =',initp%can_co2
 
       !------------------------------------------------------------------------------------!
       !     Find the fraction of the canopy covered in snow (original snowfac function)    !
