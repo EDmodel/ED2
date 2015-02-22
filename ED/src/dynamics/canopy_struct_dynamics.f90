@@ -251,7 +251,6 @@ module canopy_struct_dynamics
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
-      write(unit=*,fmt='(a)')           '========================================'
 
       !----- Assign some pointers. --------------------------------------------------------!
       csite  => cpoly%site(isi)
