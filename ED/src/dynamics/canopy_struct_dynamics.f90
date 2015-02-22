@@ -1576,9 +1576,6 @@ module canopy_struct_dynamics
       cpatch=>csite%patch(ipa)
       !------------------------------------------------------------------------------------!
 
-      write (unit=*,fmt='(a)')   '===================================='
-      write (unit=*,fmt='(a,1x,es12.5)') '  can_co2  =',initp%can_co2
-
       !------------------------------------------------------------------------------------!
       !     Find the fraction of the canopy covered in snow (original snowfac function)    !
       !     I think canopy roughness may need to be re-thought, but this was necessary     !
