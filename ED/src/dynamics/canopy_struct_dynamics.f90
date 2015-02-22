@@ -319,6 +319,11 @@ module canopy_struct_dynamics
          csite%rough       (ipa) = soil_rough * (1.0 - snowfac_can)                 &
                                  + snow_rough * snowfac_can
          csite%veg_displace(ipa) = vh2dh * csite%rough(ipa) / vh2vr
+
+         write(unit=*,fmt='(a)')           '========================================'
+         write(unit=*,fmt='(a)')           ' Checking Veg Displace into ED Stars'
+         write (unit=*,fmt='(a,1x,f11.6)')   ' Veg_displace from Rough (line 325):      ',csite%veg_displace(ipa)
+
          !---------------------------------------------------------------------------------!
 
 
@@ -1012,6 +1017,10 @@ module canopy_struct_dynamics
          !----- Find the actual displacement height and roughness. ------------------------!
          csite%veg_displace(ipa) = max( vh2dh  * veg_height_min                            &
                                       , d0ohgt * csite%veg_height(ipa) )
+
+         write (unit=*,fmt='(a,1x,f11.6)')   ' Veg_displace from line 1020:      ',csite%veg_displace(ipa)
+
+
          csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
                                       , z0ohgt * csite%veg_height(ipa) )
          !---------------------------------------------------------------------------------!
