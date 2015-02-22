@@ -1003,7 +1003,8 @@ module canopy_struct_dynamics
             d0ohgt = d0ohgt - dzcan(k) / htop                                              &
                             * exp(-2.0 * nn * (1.0 - cumldrag(k) / cumldrag(zcan)))
          end do
-         z0ohgt = (1.0 - d0ohgt) * min(1.0, exp(- vonk / ustarouh + infunc))
+!         z0ohgt = (1.0 - d0ohgt) * min(1.0, exp(- vonk / ustarouh + infunc))
+         z0ohgt = (1.0 - d0ohgt) * exp(- vonk / ustarouh + infunc)
          !---------------------------------------------------------------------------------!
 
 
