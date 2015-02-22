@@ -1053,10 +1053,19 @@ subroutine hybrid_timestep(cgrid)
 
 
 
+    write (unit=*,fmt='(a)')   '-------------------------------------------'
+    write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
+    write (unit=*,fmt='(a)')   '-------------------------------------------'
+    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
+    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',inc%can_co2
 
    rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
+   
+   write (unit=*,fmt='(a)')   '-------------------------------------------'
+write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 OUT  =',rkp%can_co2
+   write (unit=*,fmt='(a)')   '-------------------------------------------'
 
    do k=rk4site%lsl,nzg
       rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
