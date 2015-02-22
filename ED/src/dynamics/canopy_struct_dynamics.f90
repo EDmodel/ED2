@@ -1012,8 +1012,7 @@ module canopy_struct_dynamics
          !----- Find the actual displacement height and roughness. ------------------------!
          csite%veg_displace(ipa) = max( vh2dh  * veg_height_min                            &
                                       , d0ohgt * csite%veg_height(ipa) )
-!         csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
-         csite%rough       (ipa) = max( soil_rough                            &
+         csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
                                       , z0ohgt * csite%veg_height(ipa) )
          !---------------------------------------------------------------------------------!
 
