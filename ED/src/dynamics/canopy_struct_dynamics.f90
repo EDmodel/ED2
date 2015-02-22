@@ -920,6 +920,9 @@ module canopy_struct_dynamics
          ! need the full integral of the leaf area density before we determine these       !
          ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
+         !----- Constant drag. ------------------------------------------------------------!
+         cdrag   (:) = cdrag0
+         ldga_bk     = 0.0
          !----- Decide whether to apply the sheltering effect or not. ---------------------!
          select case (icanturb)
          case (2)
