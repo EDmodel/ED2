@@ -1014,8 +1014,6 @@ module canopy_struct_dynamics
          csite%veg_displace(ipa) = max( vh2dh  * veg_height_min                            &
                                       , d0ohgt * csite%veg_height(ipa) )
 
-         write (unit=*,fmt='(a,1x,f11.6)')   ' Veg_displace from line 1020:      ',csite%veg_displace(ipa)
-
 
          csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
                                       , z0ohgt * csite%veg_height(ipa) )
@@ -1579,6 +1577,8 @@ module canopy_struct_dynamics
       !----- Assign some pointers. --------------------------------------------------------!
       cpatch=>csite%patch(ipa)
       !------------------------------------------------------------------------------------!
+
+      write (unit=*,fmt='(a)')   '===================================='
 
       !------------------------------------------------------------------------------------!
       !     Find the fraction of the canopy covered in snow (original snowfac function)    !
