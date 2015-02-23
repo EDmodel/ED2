@@ -1329,7 +1329,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          dthroughfall      = 0.d0
          !---------------------------------------------------------------------------------!
       
-      
+
 
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = initp%gpp(ico) - initp%leaf_resp(ico)
@@ -1905,27 +1905,27 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                          + wflxlc_tot  + wflxwc_tot  + transp_tot                          & 
                          + wflxac                                  ) * wcapcani
 
-	if (ipa == 5) then
-    write (unit=*,fmt='(a)')   '==========================================='
-    write (unit=*,fmt='(a)')   '	diagnosing what dries can_co2 down	'
-    write (unit=*,fmt='(a)')   '-------------------------------------------'
-    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',dinitp%can_co2
-    write (unit=*,fmt='(a,1x,es12.5)') '  cflxgc  =',cflxgc
-    write (unit=*,fmt='(a,1x,es12.5)') '  cflxlc_tot  =',cflxlc_tot
-    write (unit=*,fmt='(a,1x,es12.5)') '  cflxwc_tot  =',cflxwc_tot
-    write (unit=*,fmt='(a,1x,es12.5)') '  cflxac  =',cflxac
-    write (unit=*,fmt='(a)')   '-------------------------------------------'
-    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',ccapcani
-    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',initp%can_rhos
-    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',initp%can_depth
-    write (unit=*,fmt='(a)')   '-------------------------------------------'
-    end if
+!	if (ipa == 5) then
+!    write (unit=*,fmt='(a)')   '==========================================='
+!    write (unit=*,fmt='(a)')   '	diagnosing what dries can_co2 down	'
+!    write (unit=*,fmt='(a)')   '-------------------------------------------'
+!    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',dinitp%can_co2
+!    write (unit=*,fmt='(a,1x,es12.5)') '  cflxgc  =',cflxgc
+!    write (unit=*,fmt='(a,1x,es12.5)') '  cflxlc_tot  =',cflxlc_tot
+!    write (unit=*,fmt='(a,1x,es12.5)') '  cflxwc_tot  =',cflxwc_tot
+!    write (unit=*,fmt='(a,1x,es12.5)') '  cflxac  =',cflxac
+!    write (unit=*,fmt='(a)')   '-------------------------------------------'
+!    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',ccapcani
+!    write (unit=*,fmt='(a,1x,es12.5)') '  can_rhos  =',initp%can_rhos
+!    write (unit=*,fmt='(a,1x,es12.5)') '  can_depth  =',initp%can_depth
+!    write (unit=*,fmt='(a)')   '-------------------------------------------'
+!    end if
    dinitp%can_co2      = ( cflxgc      + cflxlc_tot  + cflxwc_tot                          &
                          + cflxac                                  ) * ccapcani
-	if (ipa == 5) then
-    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 OUT  =',dinitp%can_co2
-    write (unit=*,fmt='(a)')   '-------------------------------------------'
-    end if
+!	if (ipa == 5) then
+!    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 OUT  =',dinitp%can_co2
+!    write (unit=*,fmt='(a)')   '-------------------------------------------'
+!    end if
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
