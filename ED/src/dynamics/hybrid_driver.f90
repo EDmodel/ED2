@@ -1055,7 +1055,7 @@ subroutine hybrid_timestep(cgrid)
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-	if(csite%cpatch(ipa) == 5) 
+	if(csite%patch(ipa) == 5) 
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
     write (unit=*,fmt='(a)')   '-------------------------------------------'
