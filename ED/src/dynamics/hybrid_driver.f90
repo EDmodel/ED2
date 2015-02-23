@@ -399,7 +399,6 @@ subroutine hybrid_timestep(cgrid)
       first_time   = .false.
    end if
    
-   ipa_now = ipa
    !----- Use some aliases for simplicity. -----------------------------------!
    cpatch => csite%patch(ipa)
    
