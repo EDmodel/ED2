@@ -109,16 +109,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    end if
    !---------------------------------------------------------------------------------------!
 
-!
-!   !----- Find the patch-level Total Leaf and Wood Area Index. ----------------------------!
-!   csite%lai(ipa) = 0.0
-!   csite%wai(ipa) = 0.0
-!   do ico=1,cpatch%ncohorts
-!      csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
-!      csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
-!   end do
-!   !---------------------------------------------------------------------------------------!
-!
 
    !---------------------------------------------------------------------------------------!
    !     Calculate liquid water available for transpiration.   The way this is done        !
@@ -537,10 +527,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                              + (1.0 - cpatch%fs_open(ico))                 &
                                              * csite%A_c_max(ipft,ipa) )                   &
                                            + cpatch%leaf_respiration(ico)
-!            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
-!                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
-!                                           + cpatch%leaf_respiration(ico)
-            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_lightmax(ico)                
+            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
+                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
+                                           + cpatch%leaf_respiration(ico)
             !------------------------------------------------------------------------------!
 
       else
