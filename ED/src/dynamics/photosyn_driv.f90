@@ -386,7 +386,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
             !------------------------------------------------------------------------------!
-            leaf_par = csite%par_l_max(ipa) / cpatch%lai(ico) 
+            leaf_par = cpatch%par_l(ico) / cpatch%lai(ico) 
             !------------------------------------------------------------------------------!
 
 
@@ -537,9 +537,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                              + (1.0 - cpatch%fs_open(ico))                 &
                                              * csite%A_c_max(ipft,ipa) )                   &
                                            + cpatch%leaf_respiration(ico)
-            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
-                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
-                                           + cpatch%leaf_respiration(ico)
+!            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
+!                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
+!                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_lightmax(ico)                
             !------------------------------------------------------------------------------!
 
       else
