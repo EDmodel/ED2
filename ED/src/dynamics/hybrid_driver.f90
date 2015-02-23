@@ -1055,13 +1055,13 @@ subroutine hybrid_timestep(cgrid)
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-	if(ipa == 5) 
+!	if(ipa == 5) 
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',fac*inc%can_co2
-	end if
+!	end if
 
    rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
