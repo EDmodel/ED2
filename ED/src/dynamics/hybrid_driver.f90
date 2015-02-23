@@ -1052,11 +1052,10 @@ subroutine hybrid_timestep(cgrid)
    integer                         :: pno      ! patch id
    !---------------------------------------------------------------------------------------!
 
-
+	pno = cpatch
 !	if(rkp%patch == 5) 
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
-									pno = rkp%patch
     write (unit=*,fmt='(a,1x,i1)') '  Patch  =',pno
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
