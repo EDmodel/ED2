@@ -1916,8 +1916,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
     write (unit=*,fmt='(a,1x,es12.5)') '  cflxac  =',cflxac
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',ccapcani
-    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',can_rhos
-    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',can_depth
+    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',initp%can_rhos
+    write (unit=*,fmt='(a,1x,es12.5)') '  ccapcani  =',initp%can_depth
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     end if
    dinitp%can_co2      = ( cflxgc      + cflxlc_tot  + cflxwc_tot                          &
