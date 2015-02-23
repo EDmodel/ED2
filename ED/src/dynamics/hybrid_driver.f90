@@ -1046,29 +1046,29 @@ subroutine hybrid_timestep(cgrid)
    type(rk4patchtype) , target     :: inc    ! Temporary patch with its derivatives
    type(patchtype)    , target     :: cpatch ! Current patch (for characteristics)
    real(kind=8)       , intent(in) :: fac    ! Increment factor
-   integer            , intent(in)  :: ipa     ! Current patch ID
+   integer            , intent(in)  :: ipa   ! Current patch ID
    !----- Local variables -----------------------------------------------------------------!
    integer                         :: ico    ! Cohort ID
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-	if(ipa == 5) 
+!	if(ipa == 5) 
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
     write (unit=*,fmt='(a)')   '-------------------------------------------'
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
     write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',fac*inc%can_co2
-	end if
+!	end if
 
    rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
   
-   if(ipa == 5)   
+!   if(ipa == 5)   
    write (unit=*,fmt='(a)')   '-------------------------------------------'
 	write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 OUT  =',rkp%can_co2
    write (unit=*,fmt='(a)')   '-------------------------------------------'
-	end if
+!	end if
 
    do k=rk4site%lsl,nzg
       rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
