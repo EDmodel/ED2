@@ -645,24 +645,24 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
                !     Find the relative carbon balance for the imediate previous month.     !
                !---------------------------------------------------------------------------!
+			   ! CRR Version: I think the way I've set this up now should let CBR vary 	   !
+			   !	continuously up until some minimum.  This way we don't have a binary   !
+			   !	stressed or not with our trees.  It can be stressed, but not severely  !
+               !---------------------------------------------------------------------------!
                !----- Light-related carbon balance. ---------------------------------------!
-               if (ddmort_const == 0.) then
-                  cbr_light = 1.0
-               elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
+!               if (cpatch%cb(prev_month,ico) > 0) then
                   cbr_light = min(1.0, cpatch%cb          (prev_month,ico)                 &
                                      / cpatch%cb_lightmax (prev_month,ico) )
-               else
-                  cbr_light = cbr_severe_stress(ipft)
-               end if
+!               else
+!                  cbr_light = cbr_severe_stress(ipft) 
+!               end if
                !----- Soil moisture-related carbon balance. -------------------------------!
-               if (ddmort_const == 1.) then
-                  cbr_moist = 1.0
-               elseif (cpatch%cb_moistmax(prev_month,ico) > 0.0) then
+!               if (cpatch%cb(prev_month,ico) > 0) then
                   cbr_moist = min(1.0, cpatch%cb          (prev_month,ico)                 &
                                      / cpatch%cb_moistmax (prev_month,ico) )
-               else
-                  cbr_moist = cbr_severe_stress(ipft)
-               end if
+!               else
+!                  cbr_moist = cbr_severe_stress(ipft)
+!               end if
                !----- Relative carbon balance: a linear combination of the two factors. ---!
                if ( cbr_light == cbr_severe_stress(ipft) .and.                             &
                     cbr_moist == cbr_severe_stress(ipft)       ) then
@@ -674,9 +674,8 @@ subroutine structural_growth_eq_0(cgrid, month)
 !                          / (        ddmort_const  * cbr_light                             &
 !                            + (1.0 - ddmort_const) * cbr_moist                             &
 !                            - cbr_severe_stress(ipft) )
-                  cbr_now =  cpatch%cb (prev_month,ico)       					           &
-                  			/ (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)         &
-                            + (1.0 - ddmort_const) * cpatch%cb_moistmax (prev_month,ico) )
+                  cbr_now =  ddmort_const  * max(cbr_light, cbr_severe_stress(ipft)) &
+                  			 + (1.0 - ddmort_const) * max(cbr_moist, cbr_severe_stress(ipft)) 
                end if
                !---------------------------------------------------------------------------!
 
