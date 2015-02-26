@@ -1108,8 +1108,9 @@ module growth_balive
             !------------------------------------------------------------------------------!
             !     Check whether we are on allometry or not.                                !
             !------------------------------------------------------------------------------!
-            on_allometry = 2.0 * abs(balive_aim - cpatch%balive(ico))                      &
-                         / (balive_aim + cpatch%balive(ico))          < 1.e-6
+!            on_allometry = 2.0 * abs(balive_aim - cpatch%balive(ico))                      &
+!                         / (balive_aim + cpatch%balive(ico))          < 1.e-6
+			on_allometry = abs(balive_aim - cpatch%balive(ico))/balive_aim < 0.01
             if (cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                !---------------------------------------------------------------------------!
                !     We're back to allometry, change phenology_status.                     !
