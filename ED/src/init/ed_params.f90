@@ -2230,7 +2230,7 @@ subroutine init_pft_mort_params()
    !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
    !  mortality.                                                                           !
    !---------------------------------------------------------------------------------------!
-   cbr_severe_stress(1:17) = -0.4  ! if mort2 = 10, this leads to a max CB mort rate of 0.98
+   cbr_severe_stress(1:17) = -0.2  ! if mort2 = 20, this leads to a max CB mort rate of 0.98
    !cbr_severe_stress(1:17) = log(epsilon(1.0)) / mort2(1:17)
    !---------------------------------------------------------------------------------------!
 
