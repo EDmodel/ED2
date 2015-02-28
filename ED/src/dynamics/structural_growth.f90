@@ -676,7 +676,7 @@ subroutine structural_growth_eq_0(cgrid, month)
 
 
                !---------------------------------------------------------------------------!
-               !     Find the relative carbon balance for the imediate previous month.     !
+               !     Find the relative carbon balance for the immediate previous month.    !
                !---------------------------------------------------------------------------!
 			   ! CRR Version: This should have similar functionality as Marcos' version but!
 			   !	is a bit easier to work through.  Also constrains cbr at a maximum 	   !
@@ -729,7 +729,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
                if (is_grass(ipft) .and. igrass == 1) then
                   !------------------------------------------------------------------------!
-                  !      New grasses.  Only the imediate past month is considered.         !
+                  !      New grasses.  Only the immediate past month is considered.        !
                   !------------------------------------------------------------------------!
                   cpatch%cbr_bar(ico) = cbr_now
                   !------------------------------------------------------------------------!
