@@ -626,10 +626,10 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
                select case (iddmort_scheme)
                case (0)
+                  !------ Storage is not accounted. ------------------------------------------------!
                   cpatch%cb          (13,ico) = 0.0
                   cpatch%cb_lightmax (13,ico) = 0.0
                   cpatch%cb_moistmax (13,ico) = 0.0
-                  !------ Storage is not accounted. ------------------------------------------------!
                if (is_grass(ipft) .and. igrass == 1) then
                   !------------------------------------------------------------------------!
                   !      New grasses.  Only the imediate past month is considered.         !
@@ -649,10 +649,10 @@ subroutine structural_growth_eq_0(cgrid, month)
 				end if
 
                case (1)
+            	  !------ Storage is accounted. ----------------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
-            	  !------ Storage is accounted. ----------------------------------------------------!
                if (is_grass(ipft) .and. igrass == 1) then
                   !------------------------------------------------------------------------!
                   !      New grasses.  Only the imediate past month is considered.         !
@@ -703,8 +703,8 @@ subroutine structural_growth_eq_0(cgrid, month)
                   cbr_moist = cbr_severe_stress(ipft)
                end if
                !----- Relative carbon balance: a linear combination of the two factors. ---!
-               if ( cbr_light == cbr_severe_stress(ipft) .and.                             &
-                    cbr_moist == cbr_severe_stress(ipft)       ) then
+               if ( cbr_light <= cbr_severe_stress(ipft) .and.                             &
+                    cbr_moist <= cbr_severe_stress(ipft)       ) then
                   cbr_now = cbr_severe_stress(ipft)
                else
 !                  cbr_now = cbr_severe_stress(ipft)                                        &
