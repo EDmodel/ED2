@@ -642,9 +642,9 @@ subroutine structural_growth_eq_0(cgrid, month)
                   !------------------------------------------------------------------------!
                   !      Trees or old grasses.  Update the running average.                !
                   !------------------------------------------------------------------------!
-                  cpatch%cb          (13,ico) = 0.0 + mean(cpatch%cb(1:12,ico)
-                  cpatch%cb_lightmax (13,ico) = 0.0 + mean(cpatch%cb_lightmax(1:12,ico)
-                  cpatch%cb_moistmax (13,ico) = 0.0 + mean(cpatch%cb_moistmax(1:12,ico)
+                  cpatch%cb          (13,ico) = 0.0 + mean(cpatch%cb(1:12,ico))
+                  cpatch%cb_lightmax (13,ico) = 0.0 + mean(cpatch%cb_lightmax(1:12,ico))
+                  cpatch%cb_moistmax (13,ico) = 0.0 + mean(cpatch%cb_moistmax(1:12,ico))
                   !---------------------------------------------------------------------------------!
 				end if
 
@@ -665,9 +665,9 @@ subroutine structural_growth_eq_0(cgrid, month)
                   !------------------------------------------------------------------------!
                   !      Trees or old grasses.  Update the running average.                !
                   !------------------------------------------------------------------------!
-                  cpatch%cb          (13,ico) = cpatch%bstorage(ico) + mean(cpatch%cb(1:12,ico)
-                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico) + mean(cpatch%cb_lightmax(1:12,ico)
-                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico) + mean(cpatch%cb_moistmax(1:12,ico)
+                  cpatch%cb          (13,ico) = cpatch%bstorage(ico) + mean(cpatch%cb(1:12,ico))
+                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico) + mean(cpatch%cb_lightmax(1:12,ico))
+                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico) + mean(cpatch%cb_moistmax(1:12,ico))
                   !---------------------------------------------------------------------------------!
 				end if
                end select
