@@ -312,8 +312,8 @@ subroutine structural_growth(cgrid, month)
                else  !!Tree loop, use annual average carbon balance
                   do imonth = 1,12
                      cb_act = cb_act + cpatch%cb(imonth,ico)
-                     cb_lightmax = cb_max + cpatch%cb_lightmax(imonth,ico)
-                     cb_moistmax = cb_max + cpatch%cb_moistmax(imonth,ico)
+                     cb_lightmax = cb_lightmax + cpatch%cb_lightmax(imonth,ico)
+                     cb_moistmax = cb_moistmax + cpatch%cb_moistmax(imonth,ico)
                   end do
                end if
 
@@ -685,8 +685,8 @@ subroutine structural_growth_eq_0(cgrid, month)
                else  !!Tree loop, use annual average carbon balance
                   do imonth = 1,12
                      cb_act = cb_act + cpatch%cb(imonth,ico)
-                     cb_lightmax = cb_max + cpatch%cb_lightmax(imonth,ico)
-                     cb_moistmax = cb_max + cpatch%cb_moistmax(imonth,ico)
+                     cb_lightmax = cb_lightmax + cpatch%cb_lightmax(imonth,ico)
+                     cb_moistmax = cb_moistmax + cpatch%cb_moistmax(imonth,ico)
                   end do
                end if
 
