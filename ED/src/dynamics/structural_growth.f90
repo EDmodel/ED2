@@ -46,6 +46,7 @@ subroutine structural_growth(cgrid, month)
    integer                       :: ilu
    integer                       :: ipft
    integer                       :: prev_month
+   integer                       :: imonth
    real                          :: salloc
    real                          :: salloci
    real                          :: balive_in
@@ -456,6 +457,7 @@ subroutine structural_growth_eq_0(cgrid, month)
    integer                       :: ilu
    integer                       :: ipft
    integer                       :: prev_month
+   integer                       :: imonth
    real                          :: salloc
    real                          :: salloci
    real                          :: cb_act
