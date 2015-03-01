@@ -324,7 +324,7 @@ subroutine structural_growth(cgrid, month)
 !                  cbr_light = 1.0
 !               elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
 				if (cb_lightmax > 0.0) then
-                  cbr_light = min(1.0, cb/cb_lightmax)
+                  cbr_light = min(1.0, cb_act / cb_lightmax)
                else
                   cbr_light = cbr_severe_stress(ipft)
                end if
@@ -696,7 +696,7 @@ subroutine structural_growth_eq_0(cgrid, month)
 !                  cbr_light = 1.0
 !               elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
 				if (cb_lightmax > 0.0) then
-                  cbr_light = min(1.0, cb/cb_lightmax)
+                  cbr_light = min(1.0, cb_act / cb_lightmax)
                else
                   cbr_light = cbr_severe_stress(ipft)
                end if
