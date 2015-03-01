@@ -717,33 +717,30 @@ subroutine structural_growth_eq_0(cgrid, month)
                   			 + (1.0 - ddmort_const) * max(cbr_moist, cbr_severe_stress(ipft)) 
                end if
                !---------------------------------------------------------------------------!
-			   if (cbr_now < cbr_severe_stress(ipft)) then
-			   	  cbr_now = cbr_severe_stress(ipft)
-			   end if
-!
-!               !---------------------------------------------------------------------------!
-!               !     New scheme based off of running carbon balance mean calculated above  !
-!               !		 not weighted cbr												   !
-!               !---------------------------------------------------------------------------!
-!               cpatch%cbr_bar(ico) = cbr_now
 
                !---------------------------------------------------------------------------!
-               !     Check which type of plant this cohort is.                             !
+               !     New scheme based off of running carbon balance mean calculated above  !
+               !		 not weighted cbr												   !
                !---------------------------------------------------------------------------!
-               if (is_grass(ipft) .and. igrass == 1) then
-                  !------------------------------------------------------------------------!
-                  !      New grasses.  Only the immediate past month is considered.        !
-                  !------------------------------------------------------------------------!
-                  cpatch%cbr_bar(ico) = cbr_now
-                  !------------------------------------------------------------------------!
-               else
-                  !------------------------------------------------------------------------!
-                  !      Trees or old grasses.  Update the running average.                !
-                  !------------------------------------------------------------------------!
-                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
-                  !------------------------------------------------------------------------!
-               end if
-               !---------------------------------------------------------------------------!
+               cpatch%cbr_bar(ico) = max(cbr_now, cbr_severe_stress(ipft))
+
+!               !---------------------------------------------------------------------------!
+!               !     Check which type of plant this cohort is.                             !
+!               !---------------------------------------------------------------------------!
+!               if (is_grass(ipft) .and. igrass == 1) then
+!                  !------------------------------------------------------------------------!
+!                  !      New grasses.  Only the immediate past month is considered.        !
+!                  !------------------------------------------------------------------------!
+!                  cpatch%cbr_bar(ico) = cbr_now
+!                  !------------------------------------------------------------------------!
+!               else
+!                  !------------------------------------------------------------------------!
+!                  !      Trees or old grasses.  Update the running average.                !
+!                  !------------------------------------------------------------------------!
+!                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
+!                  !------------------------------------------------------------------------!
+!               end if
+!               !---------------------------------------------------------------------------!
 
 
                !----- Update interesting output quantities. -------------------------------!
