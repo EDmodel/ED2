@@ -665,9 +665,9 @@ subroutine structural_growth_eq_0(cgrid, month)
                   !------------------------------------------------------------------------!
                   !      Trees or old grasses.  Update the running average.                !
                   !------------------------------------------------------------------------!
-                  cpatch%cb          (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb(1:12,ico))/12
-                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb_lightmax(1:12,ico))/12
-                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb_moistmax(1:12,ico))/12
+                  cpatch%cb          (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb(1:12,ico))
+                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb_lightmax(1:12,ico))
+                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb_moistmax(1:12,ico))
                   !---------------------------------------------------------------------------------!
 				end if
                end select
@@ -717,7 +717,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                   			 + (1.0 - ddmort_const) * max(cbr_moist, cbr_severe_stress(ipft)) 
                end if
                !---------------------------------------------------------------------------!
-			   if (cbr_now < cbr_severe_stress(ipft))
+			   if (cbr_now < cbr_severe_stress(ipft)) then
 			   	  cbr_now = cbr_severe_stress(ipft)
 			   end if
 !
