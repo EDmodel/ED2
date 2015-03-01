@@ -279,46 +279,77 @@ subroutine structural_growth(cgrid, month)
                select case (iddmort_scheme)
                case (0)
                   !------ Storage is not accounted. ------------------------------------------------!
+!                  cpatch%cb          (13,ico) = 0.0
+!                  cpatch%cb_lightmax (13,ico) = 0.0
+!                  cpatch%cb_moistmax (13,ico) = 0.0
+               if (is_grass(ipft) .and. igrass == 1) then
+                  !------------------------------------------------------------------------!
+                  !      New grasses.  Only the imediate past month is considered.         !
+                  !------------------------------------------------------------------------!
                   cpatch%cb          (13,ico) = 0.0
                   cpatch%cb_lightmax (13,ico) = 0.0
                   cpatch%cb_moistmax (13,ico) = 0.0
+                  !------------------------------------------------------------------------!
+				else
+                  !------------------------------------------------------------------------!
+                  !      Trees or old grasses.  Update the running average.                !
+                  !------------------------------------------------------------------------!
+                  cpatch%cb          (13,ico) = 0.0 + sum(cpatch%cb(1:12,ico))
+                  cpatch%cb_lightmax (13,ico) = 0.0 + sum(cpatch%cb_lightmax(1:12,ico))
+                  cpatch%cb_moistmax (13,ico) = 0.0 + sum(cpatch%cb_moistmax(1:12,ico))
                   !---------------------------------------------------------------------------------!
+				end if
+
                case (1)
-                  !------ Storage is accounted. ----------------------------------------------------!
+            	  !------ Storage is accounted. ----------------------------------------------------!
+!                  cpatch%cb          (13,ico) = cpatch%bstorage(ico)
+!                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
+!                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
+               if (is_grass(ipft) .and. igrass == 1) then
+                  !------------------------------------------------------------------------!
+                  !      New grasses.  Only the imediate past month is considered.         !
+                  !------------------------------------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
+                  !------------------------------------------------------------------------!
+				else
+                  !------------------------------------------------------------------------!
+                  !      Trees or old grasses.  Update the running average.                !
+                  !------------------------------------------------------------------------!
+                  cpatch%cb          (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb(1:12,ico))
+                  cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb_lightmax(1:12,ico))
+                  cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico) + sum(cpatch%cb_moistmax(1:12,ico))
                   !---------------------------------------------------------------------------------!
+				end if
                end select
                !------------------------------------------------------------------------------------!
 
 
 
-
-               !---------------------------------------------------------------------------!
-               !     Find the relative carbon balance for the imediate previous month.     !
-               !---------------------------------------------------------------------------!
                !----- Light-related carbon balance. ---------------------------------------!
-               if (ddmort_const == 0.) then
-                  cbr_light = 1.0
-               elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
+!               if (ddmort_const == 0.) then
+!                  cbr_light = 1.0
+!               elseif (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
+				if (cpatch%cb_lightmax(prev_month,ico) > 0.0) then
                   cbr_light = min(1.0, cpatch%cb          (prev_month,ico)                 &
                                      / cpatch%cb_lightmax (prev_month,ico) )
                else
                   cbr_light = cbr_severe_stress(ipft)
                end if
                !----- Soil moisture-related carbon balance. -------------------------------!
-               if (ddmort_const == 1.) then
-                  cbr_moist = 1.0
-               elseif (cpatch%cb_moistmax(prev_month,ico) > 0.0) then
+!               if (ddmort_const == 1.) then
+!                  cbr_moist = 1.0
+!               elseif (cpatch%cb_moistmax(prev_month,ico) > 0.0) then
+				if (cpatch%cb_moistmax(prev_month,ico) > 0.0) then
                   cbr_moist = min(1.0, cpatch%cb          (prev_month,ico)                 &
                                      / cpatch%cb_moistmax (prev_month,ico) )
                else
                   cbr_moist = cbr_severe_stress(ipft)
                end if
                !----- Relative carbon balance: a linear combination of the two factors. ---!
-               if ( cbr_light == cbr_severe_stress(ipft) .and.                             &
-                    cbr_moist == cbr_severe_stress(ipft)       ) then
+               if ( cbr_light <= cbr_severe_stress(ipft) .and.                             &
+                    cbr_moist <= cbr_severe_stress(ipft)       ) then
                   cbr_now = cbr_severe_stress(ipft)
                else
 !                  cbr_now = cbr_severe_stress(ipft)                                        &
@@ -327,31 +358,34 @@ subroutine structural_growth(cgrid, month)
 !                          / (        ddmort_const  * cbr_light                             &
 !                            + (1.0 - ddmort_const) * cbr_moist                             &
 !                            - cbr_severe_stress(ipft) )
-                  cbr_now =  cpatch%cb (prev_month,ico)       					           &
-                  			/ (ddmort_const  * cpatch%cb_lightmax (prev_month,ico)         &
-                            + (1.0 - ddmort_const) * cpatch%cb_moistmax (prev_month,ico) )
+                  cbr_now =  ddmort_const  * max(cbr_light, cbr_severe_stress(ipft)) &
+                  			 + (1.0 - ddmort_const) * max(cbr_moist, cbr_severe_stress(ipft)) 
                end if
                !---------------------------------------------------------------------------!
 
+               !---------------------------------------------------------------------------!
+               !     New scheme based off of running carbon balance mean calculated above  !
+               !		 not weighted cbr												   !
+               !---------------------------------------------------------------------------!
+               cpatch%cbr_bar(ico) = max(cbr_now, cbr_severe_stress(ipft))
 
-
-               !---------------------------------------------------------------------------!
-               !     Check which type of plant this cohort is.                             !
-               !---------------------------------------------------------------------------!
-               if (is_grass(ipft) .and. igrass == 1) then
-                  !------------------------------------------------------------------------!
-                  !      New grasses.  Only the imediate past month is considered.         !
-                  !------------------------------------------------------------------------!
-                  cpatch%cbr_bar(ico) = cbr_now
-                  !------------------------------------------------------------------------!
-               else
-                  !------------------------------------------------------------------------!
-                  !      Trees or old grasses.  Update the running average.                !
-                  !------------------------------------------------------------------------!
-                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
-                  !------------------------------------------------------------------------!
-               end if
-               !---------------------------------------------------------------------------!
+!               !---------------------------------------------------------------------------!
+!               !     Check which type of plant this cohort is.                             !
+!               !---------------------------------------------------------------------------!
+!               if (is_grass(ipft) .and. igrass == 1) then
+!                  !------------------------------------------------------------------------!
+!                  !      New grasses.  Only the immediate past month is considered.        !
+!                  !------------------------------------------------------------------------!
+!                  cpatch%cbr_bar(ico) = cbr_now
+!                  !------------------------------------------------------------------------!
+!               else
+!                  !------------------------------------------------------------------------!
+!                  !      Trees or old grasses.  Update the running average.                !
+!                  !------------------------------------------------------------------------!
+!                  cpatch%cbr_bar(ico) = (11. * cpatch%cbr_bar(ico) + cbr_now) / 12.
+!                  !------------------------------------------------------------------------!
+!               end if
+!               !---------------------------------------------------------------------------!
 
 
                !----- Update interesting output quantities. -------------------------------!
