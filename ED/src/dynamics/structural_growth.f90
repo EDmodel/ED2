@@ -343,14 +343,12 @@ subroutine structural_growth(cgrid, month)
                     cbr_moist <= cbr_severe_stress(ipft)       ) then
                   cbr_now = cbr_severe_stress(ipft)
                else
-!                  cbr_now = cbr_severe_stress(ipft)                                        &
-!                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
-!                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
-!                          / (        ddmort_const  * cbr_light                             &
-!                            + (1.0 - ddmort_const) * cbr_moist                             &
-!                            - cbr_severe_stress(ipft) )
-                  cbr_now =  ddmort_const  * max(cbr_light, cbr_severe_stress(ipft)) &
-                  			 + (1.0 - ddmort_const) * max(cbr_moist, cbr_severe_stress(ipft)) 
+                  cbr_now = cbr_severe_stress(ipft)                                        &
+                          + ( cbr_light - cbr_severe_stress(ipft) )                        &
+                          * ( cbr_moist - cbr_severe_stress(ipft) )                        &
+                          / (        ddmort_const  * cbr_moist                             &
+                            + (1.0 - ddmort_const) * cbr_light                             &
+                            - cbr_severe_stress(ipft) )
                end if
                !---------------------------------------------------------------------------!
 
