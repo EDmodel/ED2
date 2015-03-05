@@ -61,6 +61,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: cb_act
    real                          :: cb_lightmax
    real                          :: cb_moistmax
+   real                          :: cb_mlmax
    real                          :: cbr_light
    real                          :: cbr_moist
    real                          :: cbr_now
@@ -261,6 +262,7 @@ subroutine structural_growth(cgrid, month)
                cpatch%cb          (prev_month,ico) = cpatch%cb          (13,ico)
                cpatch%cb_lightmax (prev_month,ico) = cpatch%cb_lightmax (13,ico)
                cpatch%cb_moistmax (prev_month,ico) = cpatch%cb_moistmax (13,ico)
+               cpatch%cb_mlmax    (prev_month,ico) = cpatch%cb_mlmax (13,ico)
                !---------------------------------------------------------------------------!
 
 
@@ -286,12 +288,14 @@ subroutine structural_growth(cgrid, month)
                   cpatch%cb          (13,ico) = 0.0
                   cpatch%cb_lightmax (13,ico) = 0.0
                   cpatch%cb_moistmax (13,ico) = 0.0
+                  cpatch%cb_mlmax    (13,ico) = 0.0
 
                case (1)
             	  !------ Storage is accounted. ----------------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_mlmax (13,ico) = cpatch%bstorage(ico)
                end select
                !------------------------------------------------------------------------------------!
 
@@ -300,20 +304,23 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
 
                !----- Initialize with 0 ---------------------------------------------------!
-			   cb_act		= 0.0
-			   cb_lightmax 	= 0.0
-			   cb_moistmax	= 0.0
+               cb_act		    = 0.0
+               cb_lightmax 	= 0.0
+               cb_moistmax	= 0.0
+               cb_mlmax	    = 0.0
 
                !----- Compute the relative carbon balance. --------------------------------!
                if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only
-                  cb_act =  cpatch%cb(prev_month,ico)
-                  cb_lightmax =  cpatch%cb_lightmax(prev_month,ico)
-                  cb_moistmax =  cpatch%cb_moistmax(prev_month,ico)
+                  cb_act      =  cpatch%cb          (prev_month,ico)
+                  cb_lightmax =  cpatch%cb_lightmax (prev_month,ico)
+                  cb_moistmax =  cpatch%cb_moistmax (prev_month,ico)
+                  cb_mlmax    =  cpatch%cb_mlmax    (prev_month,ico)
                else  !!Tree loop, use annual average carbon balance
                   do imonth = 1,12
-                     cb_act = cb_act + cpatch%cb(imonth,ico)
-                     cb_lightmax = cb_lightmax + cpatch%cb_lightmax(imonth,ico)
-                     cb_moistmax = cb_moistmax + cpatch%cb_moistmax(imonth,ico)
+                     cb_act      = cb_act      + cpatch%cb          (imonth,ico)
+                     cb_lightmax = cb_lightmax + cpatch%cb_lightmax (imonth,ico)
+                     cb_moistmax = cb_moistmax + cpatch%cb_moistmax (imonth,ico)
+                     cb_mlmax    = cb_mlmax    + cpatch%cb_mlmax    (imonth,ico)
                   end do
                end if
 
@@ -331,6 +338,12 @@ subroutine structural_growth(cgrid, month)
                   cbr_moist = min(1.0, cb_act / cb_moistmax )
                else
                   cbr_moist = cbr_severe_stress(ipft)
+               end if
+               !----- Soil moisture+light related carbon balance. -------------------------!
+				       if (cb_mlmax > 0.0) then
+                  cbr_ml    = min(1.0, cb_act / cb_mlmax )
+               else
+                  cbr_ml    = cbr_severe_stress(ipft)
                end if
                !----- Relative carbon balance: a linear combination of the two factors. ---!
                if ( cbr_light <= cbr_severe_stress(ipft) .and.                             &
@@ -432,8 +445,10 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: cb_act
    real                          :: cb_lightmax
    real                          :: cb_moistmax
+   real                          :: cb_mlmax
    real                          :: cbr_light
    real                          :: cbr_moist
+   real                          :: cbr_ml
    real                          :: balive_in
    real                          :: bleaf_in
    real                          :: broot_in
@@ -608,6 +623,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                cpatch%cb          (prev_month,ico) = cpatch%cb          (13,ico)
                cpatch%cb_lightmax (prev_month,ico) = cpatch%cb_lightmax (13,ico)
                cpatch%cb_moistmax (prev_month,ico) = cpatch%cb_moistmax (13,ico)
+               cpatch%cb_mlmax    (prev_month,ico) = cpatch%cb_mlmax    (13,ico)
                !---------------------------------------------------------------------------!
 
 
@@ -633,12 +649,13 @@ subroutine structural_growth_eq_0(cgrid, month)
                   cpatch%cb          (13,ico) = 0.0
                   cpatch%cb_lightmax (13,ico) = 0.0
                   cpatch%cb_moistmax (13,ico) = 0.0
-
+                  cpatch%cb_mlmax    (13,ico) = 0.0
                case (1)
             	  !------ Storage is accounted. ----------------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_mlmax    (13,ico) = cpatch%bstorage(ico)
                end select
                !------------------------------------------------------------------------------------!
 
@@ -647,20 +664,23 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
 
                !----- Initialize with 0 ---------------------------------------------------!
-			   cb_act		= 0.0
-			   cb_lightmax 	= 0.0
-			   cb_moistmax	= 0.0
+			         cb_act       = 0.0
+			         cb_lightmax 	= 0.0
+			         cb_moistmax	= 0.0
+			         cb_mlmax     = 0.0
 
                !----- Compute the relative carbon balance. --------------------------------!
                if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only
-                  cb_act =  cpatch%cb(prev_month,ico)
-                  cb_lightmax =  cpatch%cb_lightmax(prev_month,ico)
-                  cb_moistmax =  cpatch%cb_moistmax(prev_month,ico)
+                  cb_act      =  cpatch%cb          (prev_month,ico)
+                  cb_lightmax =  cpatch%cb_lightmax (prev_month,ico)
+                  cb_moistmax =  cpatch%cb_moistmax (prev_month,ico)
+                  cb_mlmax    =  cpatch%cb_mlmax    (prev_month,ico)
                else  !!Tree loop, use annual average carbon balance
                   do imonth = 1,12
-                     cb_act = cb_act + cpatch%cb(imonth,ico)
-                     cb_lightmax = cb_lightmax + cpatch%cb_lightmax(imonth,ico)
-                     cb_moistmax = cb_moistmax + cpatch%cb_moistmax(imonth,ico)
+                     cb_act      = cb_act      + cpatch%cb          (imonth,ico)
+                     cb_lightmax = cb_lightmax + cpatch%cb_lightmax (imonth,ico)
+                     cb_moistmax = cb_moistmax + cpatch%cb_moistmax (imonth,ico)
+                     cb_mlmax    = cb_mlmax    + cpatch%cb_mlmax    (imonth,ico)
                   end do
                end if
 
@@ -678,6 +698,12 @@ subroutine structural_growth_eq_0(cgrid, month)
                   cbr_moist = min(1.0, cb_act / cb_moistmax )
                else
                   cbr_moist = cbr_severe_stress(ipft)
+               end if
+               !----- Soil moisture+light related carbon balance. -------------------------!
+				       if (cb_mlmax > 0.0) then
+                  cbr_ml    = min(1.0, cb_act / cb_mlmax )
+               else
+                  cbr_ml    = cbr_severe_stress(ipft)
                end if
                !----- Relative carbon balance: a linear combination of the two factors. ---!
                if ( cbr_light <= cbr_severe_stress(ipft) .and.                             &
