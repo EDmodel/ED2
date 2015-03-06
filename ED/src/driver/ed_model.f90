@@ -192,7 +192,12 @@ subroutine ed_model()
    call initialize_rk4patches(.true.)
    !---------------------------------------------------------------------------------------!
    
-   
+   !---------------------------------------------------------------------------------------!
+   ! Initialize some stepping variables
+   call initialize_misc_stepvars()
+   !---------------------------------------------------------------------------------------!
+
+
    if (ifoutput /= 0) call h5_output('INST')
 
    if (isoutput /= 0) then

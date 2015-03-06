@@ -100,9 +100,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    end do
    !---------------------------------------------------------------------------------------!
 
-
-
-
    !----- Reset properties. ---------------------------------------------------------------!
    csite%veg_height(ipa)       = 0.0
    weight_sum                  = 0.0
@@ -264,7 +261,6 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
                                         , csite%can_shv   (ipa)                            )
       !------------------------------------------------------------------------------------!
 
-      
       !----- Update soil temperature and liquid water fraction. ---------------------------!
       do k = 1, mzg
          nsoil    = ntext_soil(k)

@@ -642,7 +642,6 @@ module budget_utils
                                       , patchtype             ! ! structure
       use grid_coms            , only : nzg                   ! ! intent(in)
       use soil_coms            , only : dslz                  ! ! intent(in)
-      use rk4_coms             , only : toosparse             ! ! intent(in)
       use therm_lib            , only : tq2enthalpy           ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
