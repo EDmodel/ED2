@@ -65,7 +65,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: cb_mlmax
    real                          :: cbr_light
    real                          :: cbr_moist
-   real                          :: cbr_now
+   real                          :: cbr_ml
    real                          :: f_bseeds
    real                          :: f_bdead
    real                          :: balive_mort_litter
