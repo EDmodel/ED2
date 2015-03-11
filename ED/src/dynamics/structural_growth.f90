@@ -285,33 +285,33 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
                select case (iddmort_scheme)
                case (0)
-                  !------ Storage is not accounted. ------------------------------------------------!
+                  !------ Storage is not accounted. ---------------------------------------!
                   cpatch%cb          (13,ico) = 0.0
                   cpatch%cb_lightmax (13,ico) = 0.0
                   cpatch%cb_moistmax (13,ico) = 0.0
                   cpatch%cb_mlmax    (13,ico) = 0.0
 
                case (1)
-            	  !------ Storage is accounted. ----------------------------------------------------!
+                !------ Storage is accounted. ---------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_mlmax    (13,ico) = cpatch%bstorage(ico)
                end select
-               !------------------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
-               !	Set up CB/CBmax as running sums and use that in the calculate cbr	   !
+               !  Set up CB/CBmax as running sums and use that in the calculate cbr        !
                !---------------------------------------------------------------------------!
 
                !----- Initialize with 0 ---------------------------------------------------!
-               cb_act		    = 0.0
-               cb_lightmax 	= 0.0
-               cb_moistmax	= 0.0
-               cb_mlmax	    = 0.0
+               cb_act       = 0.0
+               cb_lightmax  = 0.0
+               cb_moistmax  = 0.0
+               cb_mlmax     = 0.0
 
                !----- Compute the relative carbon balance. --------------------------------!
-               if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only
+               if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's CB only
                   cb_act      =  cpatch%cb          (prev_month,ico)
                   cb_lightmax =  cpatch%cb_lightmax (prev_month,ico)
                   cb_moistmax =  cpatch%cb_moistmax (prev_month,ico)
@@ -325,54 +325,55 @@ subroutine structural_growth(cgrid, month)
                   end do
                end if
                !---------------------------------------------------------------------------!
-				
+
                !----- Light-related carbon balance. ---------------------------------------!
-			   if (cb_lightmax > 0.0) then
+               if (cb_lightmax > 0.0) then
                   cbr_light = min(1.0, cb_act / cb_lightmax)
                else
                   cbr_light = cbr_severe_stress(ipft)
                end if
 
                !----- Soil moisture-related carbon balance. -------------------------------!
-			   if (cb_moistmax > 0.0) then
+               if (cb_moistmax > 0.0) then
                   cbr_moist = min(1.0, cb_act / cb_moistmax )
                else
                   cbr_moist = cbr_severe_stress(ipft)
                end if
 
                !----- Soil moisture+light related carbon balance. -------------------------!
-			   if (cb_mlmax > 0.0) then
+               if (cb_mlmax > 0.0) then
                   cbr_ml    = min(1.0, cb_act / cb_mlmax )
                else
                   cbr_ml    = cbr_severe_stress(ipft)
                end if
 
                !---------------------------------------------------------------------------!
-               !	calculate CBR according to the specified CBR_SCHEME             	   !
+               !  calculate CBR according to the specified CBR_SCHEME                      !
                !---------------------------------------------------------------------------!
                select case (cbr_scheme)
-			   case (0)
-                  !----- CBR from absolute max CB --------------------------------------------!
-			      cpatch%cbr_bar(ico) = max(cbr_ml, cbr_severe_stress(ipft))
+               case (0)
+                 !----- CBR from absolute max CB ------------------------------------------!
+                 cpatch%cbr_bar(ico) = max(cbr_ml, cbr_severe_stress(ipft))
 
-			   case (1)
-                  !----- CBR from combination of light & moist CBR ---------------------------!
-               	  !----- Relative carbon balance: a combination of the two factors. ----------!
-                  if ( cbr_light <= cbr_severe_stress(ipft) .and.                             &
-                    cbr_moist <= cbr_severe_stress(ipft)       ) then
-                    cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)
-                  else
-                     cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)                            &
-                             + ( cbr_light - cbr_severe_stress(ipft) )                        &
-                             * ( cbr_moist - cbr_severe_stress(ipft) )                        &
-                             / (        ddmort_const  * cbr_moist                             &
-                               + (1.0 - ddmort_const) * cbr_light                             &
-                               - cbr_severe_stress(ipft) )
-                  end if
+               case (1)
+                 !----- CBR from combination of light & moist CBR -------------------------!
+                 !----- Relative carbon balance: a combination of the two factors. --------!
+                 if ( cbr_light <= cbr_severe_stress(ipft) .and.                           &
+                   cbr_moist <= cbr_severe_stress(ipft)       ) then
+                   cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)
+                 else
+                    cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)                          &
+                            + ( cbr_light - cbr_severe_stress(ipft) )                      &
+                            * ( cbr_moist - cbr_severe_stress(ipft) )                      &
+                            / (        ddmort_const  * cbr_moist                           &
+                              + (1.0 - ddmort_const) * cbr_light                           &
+                              - cbr_severe_stress(ipft) )
+                 end if
 
-			   case (2)
-                  !----- CBR from most limiting CBR ------------------------------------------!
-			      cpatch%cbr_bar(ico) = max(min(cbr_moist, cbr_light), cbr_severe_stress(ipft))
+               case (2)
+                 !----- CBR from most limiting CBR ----------------------------------------!
+                 cpatch%cbr_bar(ico) = max( min(cbr_moist, cbr_light),                     &
+                                            cbr_severe_stress(ipft) )
 
                end select
                !---------------------------------------------------------------------------!
@@ -670,7 +671,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                   cpatch%cb_moistmax (13,ico) = 0.0
                   cpatch%cb_mlmax    (13,ico) = 0.0
                case (1)
-            	  !------ Storage is accounted. ----------------------------------------------------!
+               !------ Storage is accounted. ----------------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
@@ -679,14 +680,14 @@ subroutine structural_growth_eq_0(cgrid, month)
                !------------------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
-               !	Set up CB/CBmax as running sums and use that in the calculate cbr	   !
+               !  Set up CB/CBmax as running sums and use that in the calculate cbr        !
                !---------------------------------------------------------------------------!
 
                !----- Initialize with 0 ---------------------------------------------------!
-                  cb_act		= 0.0
-                  cb_lightmax 	= 0.0
-                  cb_moistmax	= 0.0
-                  cb_mlmax	    = 0.0
+                  cb_act       = 0.0
+                  cb_lightmax  = 0.0
+                  cb_moistmax  = 0.0
+                  cb_mlmax     = 0.0
 
                !----- Compute the relative carbon balance. --------------------------------!
                if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only
@@ -703,54 +704,54 @@ subroutine structural_growth_eq_0(cgrid, month)
                   end do
                end if
                !---------------------------------------------------------------------------!
-				
+
                !----- Light-related carbon balance. ---------------------------------------!
-			   if (cb_lightmax > 0.0) then
+               if (cb_lightmax > 0.0) then
                   cbr_light = min(1.0, cb_act / cb_lightmax)
                else
                   cbr_light = cbr_severe_stress(ipft)
                end if
 
                !----- Soil moisture-related carbon balance. -------------------------------!
-			   if (cb_moistmax > 0.0) then
+               if (cb_moistmax > 0.0) then
                   cbr_moist = min(1.0, cb_act / cb_moistmax )
                else
                   cbr_moist = cbr_severe_stress(ipft)
                end if
 
                !----- Soil moisture+light related carbon balance. -------------------------!
-			   if (cb_mlmax > 0.0) then
+               if (cb_mlmax > 0.0) then
                   cbr_ml    = min(1.0, cb_act / cb_mlmax )
                else
                   cbr_ml    = cbr_severe_stress(ipft)
                end if
 
                !---------------------------------------------------------------------------!
-               !	calculate CBR according to the specified CBR_SCHEME             	   !
+               !  calculate CBR according to the specified CBR_SCHEME                      !
                !---------------------------------------------------------------------------!
                select case (cbr_scheme)
-			   case (0)
-                  !----- CBR from absolute max CB --------------------------------------------!
-			      cpatch%cbr_bar(ico) = max(cbr_ml, cbr_severe_stress(ipft))
+               case (0)
+                 !----- CBR from absolute max CB ------------------------------------------!
+                 cpatch%cbr_bar(ico) = max(cbr_ml, cbr_severe_stress(ipft))
 
-			   case (1)
-                  !----- CBR from combination of light & moist CBR ---------------------------!
-               	  !----- Relative carbon balance: a combination of the two factors. ----------!
-                  if ( cbr_light <= cbr_severe_stress(ipft) .and.                             &
-                    cbr_moist <= cbr_severe_stress(ipft)       ) then
-                    cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)
-                  else
-                     cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)                            &
-                             + ( cbr_light - cbr_severe_stress(ipft) )                        &
-                             * ( cbr_moist - cbr_severe_stress(ipft) )                        &
-                             / (        ddmort_const  * cbr_moist                             &
-                               + (1.0 - ddmort_const) * cbr_light                             &
-                               - cbr_severe_stress(ipft) )
-                  end if
+               case (1)
+                 !----- CBR from combination of light & moist CBR -------------------------!
+                 !----- Relative carbon balance: a combination of the two factors. --------!
+                 if ( cbr_light <= cbr_severe_stress(ipft) .and.                           &
+                   cbr_moist <= cbr_severe_stress(ipft)       ) then
+                   cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)
+                 else
+                   cpatch%cbr_bar(ico) = cbr_severe_stress(ipft)                           &
+                           + ( cbr_light - cbr_severe_stress(ipft) )                       &
+                           * ( cbr_moist - cbr_severe_stress(ipft) )                       &
+                           / (        ddmort_const  * cbr_moist                            &
+                             + (1.0 - ddmort_const) * cbr_light                            &
+                             - cbr_severe_stress(ipft) )
+                 end if
 
-			   case (2)
-                  !----- CBR from most limiting CBR ------------------------------------------!
-			      cpatch%cbr_bar(ico) = max(min(cbr_moist, cbr_light), cbr_severe_stress(ipft))
+               case (2)
+                 !----- CBR from most limiting CBR ----------------------------------------!
+                 cpatch%cbr_bar(ico) = max(min(cbr_moist, cbr_light), cbr_severe_stress(ipft))
 
                end select
                !---------------------------------------------------------------------------!
