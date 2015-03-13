@@ -128,6 +128,7 @@ module farq_leuning
                                 , umol_2_mol8              & ! intent(in)
                                 , mol_2_umol8              & ! intent(in)
                                 , Watts_2_Ein8             ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=4), intent(in)    :: can_prss          ! Canopy air pressure    [       Pa]
@@ -157,10 +158,15 @@ module farq_leuning
       real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [µmol/m²/s]
       real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ µmol/mol]
       integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
+      !----- Local
+      integer                     :: ib
+      
       !----- External function. -----------------------------------------------------------!
       real(kind=4)    , external      :: sngloff     ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !----- Initialise limit_flag to night time value. -----------------------------------!
       limit_flag = 0
@@ -174,21 +180,21 @@ module farq_leuning
       ! precision.                                                                         !
       !------------------------------------------------------------------------------------!
       !----- 1. Variables that remain with the same units. --------------------------------!
-      met%leaf_temp    = dble(leaf_temp)
-      met%can_rhos     = dble(can_rhos )
-      met%can_prss     = dble(can_prss )
-      met%can_o2       = o2_ref8
+      met(ib)%leaf_temp    = dble(leaf_temp)
+      met(ib)%can_rhos     = dble(can_rhos )
+      met(ib)%can_prss     = dble(can_prss )
+      met(ib)%can_o2       = o2_ref8
       !----- 2. Convert specific humidity to mol/mol. -------------------------------------!
-      met%can_shv      = epi8 * dble(can_shv) 
+      met(ib)%can_shv      = epi8 * dble(can_shv) 
       !----- 3. Convert CO2 to mol/mol. ---------------------------------------------------!
-      met%can_co2      = dble(can_co2) * umol_2_mol8
+      met(ib)%can_co2      = dble(can_co2) * umol_2_mol8
       !----- 4. Convert W/m2 to mol/m2/s. -------------------------------------------------!
-      met%par          = dble(leaf_par) * Watts_2_Ein8
+      met(ib)%par          = dble(leaf_par) * Watts_2_Ein8
       !------------------------------------------------------------------------------------!
       !  5. Intercellular specific humidity, which is assumed to be at saturation          !
       !     given the leaf temperature.  We convert it to mol/mol.                         !
       !------------------------------------------------------------------------------------!
-      met%lint_shv    = epi8 * dble(lint_shv)
+      met(ib)%lint_shv    = epi8 * dble(lint_shv)
       !------------------------------------------------------------------------------------!
       !  6. Find the conductivities for water and carbon.  The input for water is in       !
       !     kg/m²/s, and here we convert to mol/m²/s.  The convertion coefficient from     !
@@ -196,8 +202,8 @@ module farq_leuning
       !     the effective area for transpiration, depending on whether the leaves of this  !
       !     plant functional type are hypo-stomatous, symmetrical, or amphistomatous.      !
       !------------------------------------------------------------------------------------!
-      met%blyr_cond_h2o = dble(leaf_gbw)  * mmdryi8 * effarea_transp(ipft)
-      met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
+      met(ib)%blyr_cond_h2o = dble(leaf_gbw)  * mmdryi8 * effarea_transp(ipft)
+      met(ib)%blyr_cond_co2 = gbw_2_gbc8 * met(ib)%blyr_cond_h2o
       !------------------------------------------------------------------------------------!
 
 
@@ -206,23 +212,23 @@ module farq_leuning
       !     Load physiological parameters that are PFT-dependent to the thispft structure. !
       ! Convert all variables to mol and Kelvin, when needed.                              !
       !------------------------------------------------------------------------------------!
-      thispft%photo_pathway = photosyn_pathway(ipft)
-      thispft%D0            = dble(D0(ipft))
-      thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
-      thispft%m             = dble(stomatal_slope(ipft))
-      thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
-      thispft%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
-      thispft%vm_hor        = dble(vm_hor(ipft))
-      thispft%vm_q10        = dble(vm_q10(ipft))
-      thispft%vm_decay_a    = dble(vm_decay_a(ipft))
-      thispft%vm_decay_b    = dble(vm_decay_b(ipft))
-      thispft%vm_decay_e    = dble(vm_decay_e(ipft))
-      thispft%rd_low_temp   = dble(rd_low_temp(ipft))  + t008
-      thispft%rd_high_temp  = dble(rd_high_temp(ipft)) + t008
-      thispft%rd_hor        = dble(rd_hor(ipft))
-      thispft%rd_q10        = dble(rd_q10(ipft))
-      thispft%rd_decay_e    = dble(rd_decay_e(ipft))
-      thispft%alpha0        = dble(quantum_efficiency(ipft))
+      thispft(ib)%photo_pathway = photosyn_pathway(ipft)
+      thispft(ib)%D0            = dble(D0(ipft))
+      thispft(ib)%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
+      thispft(ib)%m             = dble(stomatal_slope(ipft))
+      thispft(ib)%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
+      thispft(ib)%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
+      thispft(ib)%vm_hor        = dble(vm_hor(ipft))
+      thispft(ib)%vm_q10        = dble(vm_q10(ipft))
+      thispft(ib)%vm_decay_a    = dble(vm_decay_a(ipft))
+      thispft(ib)%vm_decay_b    = dble(vm_decay_b(ipft))
+      thispft(ib)%vm_decay_e    = dble(vm_decay_e(ipft))
+      thispft(ib)%rd_low_temp   = dble(rd_low_temp(ipft))  + t008
+      thispft(ib)%rd_high_temp  = dble(rd_high_temp(ipft)) + t008
+      thispft(ib)%rd_hor        = dble(rd_hor(ipft))
+      thispft(ib)%rd_q10        = dble(rd_q10(ipft))
+      thispft(ib)%rd_decay_e    = dble(rd_decay_e(ipft))
+      thispft(ib)%alpha0        = dble(quantum_efficiency(ipft))
       !------------------------------------------------------------------------------------!
 
 
@@ -235,13 +241,13 @@ module farq_leuning
       select case(phenology(ipft))
       case (3)
          !------ Light-controlled phenology. ----------------------------------------------!
-         thispft%vm0 = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min)      &
+         thispft(ib)%vm0 = dble(vm0_amp / (1.0 + (llspan/vm0_tran)**vm0_slope) + vm0_min)      &
                      * umol_2_mol8
-         thispft%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
+         thispft(ib)%rd0 = dble(vm_bar) * umol_2_mol8 * dble(dark_respiration_factor(ipft))
       case default
          !------ Other phenologies, no distinction on Vm0. --------------------------------!
-         thispft%vm0 = dble(vm0(ipft)) * umol_2_mol8
-         thispft%rd0 = dble(rd0(ipft)) * umol_2_mol8
+         thispft(ib)%vm0 = dble(vm0(ipft)) * umol_2_mol8
+         thispft(ib)%rd0 = dble(rd0(ipft)) * umol_2_mol8
       end select
       !------------------------------------------------------------------------------------!
 
@@ -276,28 +282,28 @@ module farq_leuning
       ! back to the standard ED units                                                      !
       !------------------------------------------------------------------------------------!
       !----- Carbon demand, convert them to [µmol/m²/s]. ----------------------------------!
-      A_closed       = sngloff(stclosed%co2_demand    * mol_2_umol8 , tiny_offset)
-      A_open         = sngloff(stopen%co2_demand      * mol_2_umol8 , tiny_offset)
+      A_closed       = sngloff(stclosed(ib)%co2_demand    * mol_2_umol8 , tiny_offset)
+      A_open         = sngloff(stopen(ib)%co2_demand      * mol_2_umol8 , tiny_offset)
       !----- Stomatal resistance, convert the conductances to [kg/m²/s]. ------------------!
-      gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmdry8 / effarea_transp(ipft)      &
+      gsw_closed     = sngloff(stclosed(ib)%stom_cond_h2o * mmdry8 / effarea_transp(ipft)      &
                               , tiny_offset)
-      gsw_open       = sngloff(stopen%stom_cond_h2o   * mmdry8 / effarea_transp(ipft)      &
+      gsw_open       = sngloff(stopen(ib)%stom_cond_h2o   * mmdry8 / effarea_transp(ipft)      &
                               , tiny_offset)
       !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
-      lsfc_shv_closed = sngloff(stclosed%lsfc_shv     * ep8         , tiny_offset)
-      lsfc_shv_open   = sngloff(stopen%lsfc_shv       * ep8         , tiny_offset)
+      lsfc_shv_closed = sngloff(stclosed(ib)%lsfc_shv     * ep8         , tiny_offset)
+      lsfc_shv_open   = sngloff(stopen(ib)%lsfc_shv       * ep8         , tiny_offset)
       !----- Leaf surface CO2 concentration, convert them to [µmol/mol]. ------------------!
-      lsfc_co2_closed = sngloff(stclosed%lsfc_co2     * mol_2_umol8 , tiny_offset)
-      lsfc_co2_open   = sngloff(stopen%lsfc_co2       * mol_2_umol8 , tiny_offset)
+      lsfc_co2_closed = sngloff(stclosed(ib)%lsfc_co2     * mol_2_umol8 , tiny_offset)
+      lsfc_co2_open   = sngloff(stopen(ib)%lsfc_co2       * mol_2_umol8 , tiny_offset)
       !----- Intercellular carbon dioxide concentration, convert them to [µmol/mol]. ------!
-      lint_co2_closed = sngloff(stclosed%lint_co2     * mol_2_umol8 , tiny_offset)
-      lint_co2_open   = sngloff(stopen%lint_co2       * mol_2_umol8 , tiny_offset)
+      lint_co2_closed = sngloff(stclosed(ib)%lint_co2     * mol_2_umol8 , tiny_offset)
+      lint_co2_open   = sngloff(stopen(ib)%lint_co2       * mol_2_umol8 , tiny_offset)
       !----- Leaf respiration [µmol/m²/s]. ------------------------------------------------!
-      leaf_resp       = sngloff(aparms%leaf_resp      * mol_2_umol8 , tiny_offset)
+      leaf_resp       = sngloff(aparms(ib)%leaf_resp      * mol_2_umol8 , tiny_offset)
       !----- Maximum Rubisco capacity to perform the carboxylase function [µmol/m²/s]. ----!
-      vmout           = sngloff(aparms%vm             * mol_2_umol8 , tiny_offset)
+      vmout           = sngloff(aparms(ib)%vm             * mol_2_umol8 , tiny_offset)
       !----- Gross photosynthesis compensation point, convert it to [µmol/mol]. -----------!
-      comppout        = sngloff(aparms%compp          * mol_2_umol8 , tiny_offset)
+      comppout        = sngloff(aparms(ib)%compp          * mol_2_umol8 , tiny_offset)
       !------------------------------------------------------------------------------------!
       return
    end subroutine lphysiol_full
@@ -350,6 +356,7 @@ module farq_leuning
                                 , lnexp_max8            & ! intent(in)
                                 , rmol8                 & ! intent(in)
                                 , t008                  ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       integer     , intent(in) :: ipft              ! PFT type.                 [      ---]
@@ -363,9 +370,11 @@ module farq_leuning
       real(kind=8)             :: tlow_fun          ! Low temperature bound     [      ---]
       real(kind=8)             :: thigh_fun         ! High temperature bound    [      ---]
       real(kind=8)             :: greeness          ! Leaf "Greeness"           [   0 to 1]
+      integer                  :: ib
       !------------------------------------------------------------------------------------!
-
-
+      
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !------------------------------------------------------------------------------------!
       !     If this plant functional type has cold phenology associated with it, we must   !
@@ -384,33 +393,33 @@ module farq_leuning
       !    Decide whether to make alpha dependent on temperature or not.  This is only     !
       ! done for C3 plants, C4 plants always have constant alpha in our model.             !
       !------------------------------------------------------------------------------------!
-      select case (thispft%photo_pathway)
+      select case (thispft(ib)%photo_pathway)
       case (3)
          select case(quantum_efficiency_T)
          case (0)
             !----- The user wants constant alpha for C3 plants. ---------------------------!
-            aparms%alpha = thispft%alpha0
+            aparms(ib)%alpha = thispft(ib)%alpha0
 
          case (1)
             !------------------------------------------------------------------------------!
             !    The user wants alpha as a function of temperature.  The equation below is !
             ! equation 2 from E78, modified to take in temperature in Kelvin.              !
             !------------------------------------------------------------------------------!
-            if (met%leaf_temp > t008) then
-               aparms%alpha = qyield08                                                     &
-                            + met%leaf_temp * (qyield18   + qyield28 * met%leaf_temp)
+            if (met(ib)%leaf_temp > t008) then
+               aparms(ib)%alpha = qyield08                                                     &
+                            + met(ib)%leaf_temp * (qyield18   + qyield28 * met(ib)%leaf_temp)
             else
                !---------------------------------------------------------------------------!
                !     We don't apply the equation when the temperature is below freezing.   !
                ! If this is the case, we use the value at 0 degC instead.                  !
                !---------------------------------------------------------------------------!
-               aparms%alpha = ehleringer_alpha0c8
+               aparms(ib)%alpha = ehleringer_alpha0c8
             end if
             !------------------------------------------------------------------------------!
          end select
 
       case (4)
-         aparms%alpha = thispft%alpha0
+         aparms(ib)%alpha = thispft(ib)%alpha0
 
       end select
       !------------------------------------------------------------------------------------!
@@ -429,7 +438,7 @@ module farq_leuning
 
 
          !----- Find Vm using the Arrhenius equation, with no correction. -----------------!
-         vm_nocorr = greeness * arrhenius(met%leaf_temp,thispft%vm0,thispft%vm_hor)
+         vm_nocorr = greeness * arrhenius(met(ib)%leaf_temp,thispft(ib)%vm0,thispft(ib)%vm_hor)
          !---------------------------------------------------------------------------------!
 
 
@@ -439,23 +448,23 @@ module farq_leuning
          ! temperature will make the exponential too large or too small.                   !
          !---------------------------------------------------------------------------------!
          !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft%vm_decay_e * (thispft%vm_low_temp  - met%leaf_temp)
+         lnexplow  = thispft(ib)%vm_decay_e * (thispft(ib)%vm_low_temp  - met(ib)%leaf_temp)
          lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
          tlow_fun  = 1.d0 +  exp(lnexplow)
          !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft%vm_decay_e * (met%leaf_temp - thispft%vm_high_temp)
+         lnexphigh = thispft(ib)%vm_decay_e * (met(ib)%leaf_temp - thispft(ib)%vm_high_temp)
          lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
          thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
 
          !------ Correct Vm. --------------------------------------------------------------!
-         aparms%vm = vm_nocorr / (tlow_fun * thigh_fun)
+         aparms(ib)%vm = vm_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 
          !----- Find Rd using the Arrhenius equation, with no correction. -----------------!
-         rd_nocorr = greeness * arrhenius(met%leaf_temp,thispft%rd0,thispft%rd_hor)
+         rd_nocorr = greeness * arrhenius(met(ib)%leaf_temp,thispft(ib)%rd0,thispft(ib)%rd_hor)
          !---------------------------------------------------------------------------------!
 
 
@@ -465,18 +474,18 @@ module farq_leuning
          ! temperature will make the exponential too large or too small.                   !
          !---------------------------------------------------------------------------------!
          !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft%rd_decay_e * (thispft%rd_low_temp  - met%leaf_temp)
+         lnexplow  = thispft(ib)%rd_decay_e * (thispft(ib)%rd_low_temp  - met(ib)%leaf_temp)
          lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
          tlow_fun  = 1.d0 +  exp(lnexplow)
          !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft%rd_decay_e * (met%leaf_temp - thispft%rd_high_temp)
+         lnexphigh = thispft(ib)%rd_decay_e * (met(ib)%leaf_temp - thispft(ib)%rd_high_temp)
          lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
          thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
 
          !------ Correct rd. --------------------------------------------------------------!
-         aparms%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
+         aparms(ib)%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 
@@ -486,15 +495,15 @@ module farq_leuning
          ! the Michaelis-Mentel constant for CO2.  The oxygen one should have no impact,   !
          ! but we always assign it to avoid divisions by zero.                             !
          !---------------------------------------------------------------------------------!
-         select case (thispft%photo_pathway)
+         select case (thispft(ib)%photo_pathway)
          case (3)
-            aparms%compp = arrhenius(met%leaf_temp,compp_refval8,compp_hor8)
-            aparms%kco2  = arrhenius(met%leaf_temp,kco2_refval8 ,kco2_hor8 )
+            aparms(ib)%compp = arrhenius(met(ib)%leaf_temp,compp_refval8,compp_hor8)
+            aparms(ib)%kco2  = arrhenius(met(ib)%leaf_temp,kco2_refval8 ,kco2_hor8 )
          case (4)
-            aparms%compp = 0.d0
-            aparms%kco2  = 0.d0
+            aparms(ib)%compp = 0.d0
+            aparms(ib)%kco2  = 0.d0
          end select
-         aparms%ko2   = arrhenius(met%leaf_temp,ko2_refval8,ko2_hor8)
+         aparms(ib)%ko2   = arrhenius(met(ib)%leaf_temp,ko2_refval8,ko2_hor8)
          !---------------------------------------------------------------------------------!
 
 
@@ -507,7 +516,7 @@ module farq_leuning
 
 
          !----- Find Vm using the Collatz equation, with no correction. -------------------!
-         vm_nocorr = greeness * collatz(met%leaf_temp,thispft%vm0,thispft%vm_q10)
+         vm_nocorr = greeness * collatz(met(ib)%leaf_temp,thispft(ib)%vm0,thispft(ib)%vm_q10)
          !---------------------------------------------------------------------------------!
 
 
@@ -517,28 +526,28 @@ module farq_leuning
          ! temperature will make the exponential too small or too large.                   !
          !---------------------------------------------------------------------------------!
          !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft%vm_decay_e * (thispft%vm_low_temp  - met%leaf_temp)
+         lnexplow  = thispft(ib)%vm_decay_e * (thispft(ib)%vm_low_temp  - met(ib)%leaf_temp)
          lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
          tlow_fun  = 1.d0 +  exp(lnexplow)
          !----- High temperature. ---------------------------------------------------------!
-         !lnexphigh = ( - thispft%vm_decay_a + thispft%vm_decay_b * met%leaf_temp)             &
-         !          / (rmol8 * met%leaf_temp)
+         !lnexphigh = ( - thispft(ib)%vm_decay_a + thispft(ib)%vm_decay_b * met(ib)%leaf_temp)             &
+         !          / (rmol8 * met(ib)%leaf_temp)
          !lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
          !thigh_fun = 1.d0 + exp(lnexphigh)
          !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft%vm_decay_e * (met%leaf_temp - thispft%vm_high_temp)
+         lnexphigh = thispft(ib)%vm_decay_e * (met(ib)%leaf_temp - thispft(ib)%vm_high_temp)
          lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
          thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
 
          !------ Correct Vm. --------------------------------------------------------------!
-         aparms%vm = vm_nocorr / (tlow_fun * thigh_fun)
+         aparms(ib)%vm = vm_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 
          !----- Find Rd using the Collatz equation, with no correction. -------------------!
-         rd_nocorr = greeness * collatz(met%leaf_temp,thispft%rd0,thispft%rd_q10)
+         rd_nocorr = greeness * collatz(met(ib)%leaf_temp,thispft(ib)%rd0,thispft(ib)%rd_q10)
          !---------------------------------------------------------------------------------!
 
 
@@ -548,17 +557,17 @@ module farq_leuning
          ! temperature will make the exponential too large or too small.                   !
          !---------------------------------------------------------------------------------!
          !----- Low temperature. ----------------------------------------------------------!
-         lnexplow  = thispft%rd_decay_e * (thispft%rd_low_temp  - met%leaf_temp)
+         lnexplow  = thispft(ib)%rd_decay_e * (thispft(ib)%rd_low_temp  - met(ib)%leaf_temp)
          lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
          tlow_fun  = 1.d0 +  exp(lnexplow)
          !----- High temperature. ---------------------------------------------------------!
-         lnexphigh = thispft%rd_decay_e * (met%leaf_temp - thispft%rd_high_temp)
+         lnexphigh = thispft(ib)%rd_decay_e * (met(ib)%leaf_temp - thispft(ib)%rd_high_temp)
          lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
          thigh_fun = 1.d0 + exp(lnexphigh)
          !---------------------------------------------------------------------------------!
 
          !------ Correct Rd. --------------------------------------------------------------!
-         aparms%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
+         aparms(ib)%leaf_resp = rd_nocorr / (tlow_fun * thigh_fun)
          !---------------------------------------------------------------------------------!
 
 
@@ -568,15 +577,15 @@ module farq_leuning
          ! the Michaelis-Mentel constant for CO2.  The oxygen one should have no impact,   !
          ! but we always assign it to avoid divisions by zero.                             !
          !---------------------------------------------------------------------------------!
-         select case (thispft%photo_pathway)
+         select case (thispft(ib)%photo_pathway)
          case (3)
-            aparms%compp = collatz(met%leaf_temp,compp_refval8,compp_q108)
-            aparms%kco2  = collatz(met%leaf_temp,kco2_refval8 ,kco2_q108 )
+            aparms(ib)%compp = collatz(met(ib)%leaf_temp,compp_refval8,compp_q108)
+            aparms(ib)%kco2  = collatz(met(ib)%leaf_temp,kco2_refval8 ,kco2_q108 )
          case (4)
-            aparms%compp = 0.d0
-            aparms%kco2  = 0.d0
+            aparms(ib)%compp = 0.d0
+            aparms(ib)%kco2  = 0.d0
          end select
-         aparms%ko2   = collatz(met%leaf_temp,ko2_refval8,ko2_q108)
+         aparms(ib)%ko2   = collatz(met(ib)%leaf_temp,ko2_refval8,ko2_q108)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -607,6 +616,7 @@ module farq_leuning
                                 , lightlim         & ! intent(inout)
                                 , copy_solution    ! ! intent(in)
       use physiology_coms, only : c34smax_gsw8     ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       integer     , intent(in ) :: ipft             ! Plant functional type      [     ---]
@@ -614,9 +624,10 @@ module farq_leuning
       !------ Local variables. ------------------------------------------------------------!
       logical                   :: success          ! The solver succeeded.      [     T|F]
       real(kind=8)              :: par_twilight_min ! Minimum daytime radiation  [mol/m2/s]
+      integer                   :: ib
       !------------------------------------------------------------------------------------!
-
-
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !------------------------------------------------------------------------------------!
       !      Initialise the parameters to compute the carbon demand for the case where the !
@@ -625,7 +636,7 @@ module farq_leuning
       ! conductance depend on the intercellular CO2 mixing ratio.                          !
       !------------------------------------------------------------------------------------!
       call set_co2_demand_params('CLOSED')
-      call solve_aofixed_case(stclosed,success)
+      call solve_aofixed_case(stclosed(ib),success)
       if (.not. success) then
          call fatal_error ('Solution failed for closed case'                               &
                           ,'photosynthesis_exact_solver','farq_leuning.f90')
@@ -641,8 +652,8 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       par_twilight_min = find_twilight_min()
 
-      if (met%par < par_twilight_min) then
-         call copy_solution(stclosed,stopen)
+      if (met(ib)%par < par_twilight_min) then
+         call copy_solution(stclosed(ib),stopen(ib))
          limit_flag = 0
          return
       end if
@@ -671,17 +682,17 @@ module farq_leuning
       ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
       !------------------------------------------------------------------------------------!
       par_twilight_min = find_twilight_min()
-      if (met%par < par_twilight_min) then
-         call copy_solution(stclosed,stopen)
+      if (met(ib)%par < par_twilight_min) then
+         call copy_solution(stclosed(ib),stopen(ib))
          limit_flag = 0
          return
       end if
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
-      select case(thispft%photo_pathway)
+      select case(thispft(ib)%photo_pathway)
       case (3)
-         call solve_iterative_case(lightlim,success)
+         call solve_iterative_case(lightlim(ib),success)
       case (4)
-         call solve_aofixed_case(lightlim,success)
+         call solve_aofixed_case(lightlim(ib),success)
       end select
       !------------------------------------------------------------------------------------!
       !     In case success was returned as "false", this means that the light-limited     !
@@ -689,7 +700,7 @@ module farq_leuning
       ! close all stomata, as there was no viable state for stomata to remain opened.      !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,stopen)
+         call copy_solution(stclosed(ib),stopen(ib))
          limit_flag = -1
          return
       end if
@@ -704,11 +715,11 @@ module farq_leuning
       !----- Update the CO2 demand function parameters for Rubisco limitation. ------------!
       call set_co2_demand_params('RUBISCO')
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
-      select case(thispft%photo_pathway)
+      select case(thispft(ib)%photo_pathway)
       case (3)
-         call solve_iterative_case(rubiscolim,success)
+         call solve_iterative_case(rubiscolim(ib),success)
       case (4)
-         call solve_aofixed_case(rubiscolim,success)
+         call solve_aofixed_case(rubiscolim(ib),success)
       end select
       !------------------------------------------------------------------------------------!
       !     In case success was returned as "false", this means that the Rubisco-limited   !
@@ -716,7 +727,7 @@ module farq_leuning
       ! close all stomata, as there was no viable state for stomata to remain opened.      !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,stopen)
+         call copy_solution(stclosed(ib),stopen(ib))
          limit_flag = -2
          return
       end if
@@ -731,20 +742,20 @@ module farq_leuning
       !----- Update the CO2 demand function parameters for CO2 limitation. ----------------!
       call set_co2_demand_params('CO2')
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
-      select case(thispft%photo_pathway)
+      select case(thispft(ib)%photo_pathway)
       case (3)
          !---------------------------------------------------------------------------------!
          !    C3, there is no CO2 limitation in this formulation.  Copy the closed stomata !
          ! case, but assign a large number for carbon_demand, so this will never be        !
          ! chosen.                                                                         !
          !---------------------------------------------------------------------------------!
-         call copy_solution(stclosed,co2lim)
-         co2lim%co2_demand = discard
+         call copy_solution(stclosed(ib),co2lim(ib))
+         co2lim(ib)%co2_demand = discard
          success           = .true.
          !---------------------------------------------------------------------------------!
          !    C3, use the expression from C91, that Ao should not exceed 0.5 * Vm.         !
          !---------------------------------------------------------------------------------!
-         ! call solve_aofixed_case(co2lim,success)
+         ! call solve_aofixed_case(co2lim(ib),success)
          !---------------------------------------------------------------------------------!
 
       case (4)
@@ -753,7 +764,7 @@ module farq_leuning
          ! inter-cellular CO2 concentration.  We must find all these three variables       !
          ! simultaneously, using an iterative method.                                      !
          !---------------------------------------------------------------------------------!
-         call solve_iterative_case(co2lim,success)
+         call solve_iterative_case(co2lim(ib),success)
       end select
       !------------------------------------------------------------------------------------!
       !     In case success was returned as "false", this means that the CO2-limited case  !
@@ -761,8 +772,8 @@ module farq_leuning
       ! stomata, as there was no viable state for stomata to remain opened.                !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,stopen)
-         co2lim%co2_demand = discard
+         call copy_solution(stclosed(ib),stopen(ib))
+         co2lim(ib)%co2_demand = discard
          return
       end if
       !------------------------------------------------------------------------------------!
@@ -773,19 +784,19 @@ module farq_leuning
       !     If we have reached this point, it means that we found solutions for all the    !
       ! cases.  The actual solution will be the one with the lowest carbon demand.         !
       !------------------------------------------------------------------------------------!
-      if (lightlim%co2_demand <= rubiscolim%co2_demand .and.                               &
-          lightlim%co2_demand <= co2lim%co2_demand              )  then
+      if (lightlim(ib)%co2_demand <= rubiscolim(ib)%co2_demand .and.                               &
+          lightlim(ib)%co2_demand <= co2lim(ib)%co2_demand              )  then
          !----- Light is the strongest limitation. ----------------------------------------!
-         call copy_solution(lightlim,stopen)
+         call copy_solution(lightlim(ib),stopen(ib))
          limit_flag = 1
-      elseif (rubiscolim%co2_demand <  lightlim%co2_demand .and.                           &
-              rubiscolim%co2_demand <= co2lim%co2_demand        ) then
+      elseif (rubiscolim(ib)%co2_demand <  lightlim(ib)%co2_demand .and.                           &
+              rubiscolim(ib)%co2_demand <= co2lim(ib)%co2_demand        ) then
          !----- Rubisco is the strongest limitation. --------------------------------------!
-         call copy_solution(rubiscolim,stopen)
+         call copy_solution(rubiscolim(ib),stopen(ib))
          limit_flag = 2
       else
          !----- CO2 is the strongest limitation. ------------------------------------------!
-         call copy_solution(co2lim,stopen)
+         call copy_solution(co2lim(ib),stopen(ib))
          limit_flag = 3
       end if
       !------------------------------------------------------------------------------------!
@@ -815,6 +826,7 @@ module farq_leuning
                                 , c34smax_gsw8      & ! intent(in)
                                 , c34smin_lint_co28 & ! intent(in)
                                 , c34smax_lint_co28 ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(solution_vars), intent(out) :: answer
@@ -834,8 +846,11 @@ module farq_leuning
       real(kind=8)                     :: ciroot2
       logical                          :: bounded1
       logical                          :: bounded2
+      integer                          :: ib
       !------------------------------------------------------------------------------------!
 
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !------------------------------------------------------------------------------------!
       !   1. Initialise the success flag as true.  In case we have trouble solving this    !
@@ -844,19 +859,17 @@ module farq_leuning
       success = .true.
       !------------------------------------------------------------------------------------!
 
-
-
       !------------------------------------------------------------------------------------!
       !   2. Since the carbon demand doesn't depend on the intercellular CO2, compute it   !
       !      using the first guess.                                                        !
       !------------------------------------------------------------------------------------!
-      answer%co2_demand = calc_co2_demand(met%can_co2)
+      answer%co2_demand = calc_co2_demand(met(ib)%can_co2)
       !------------------------------------------------------------------------------------!
 
 
 
       !----- 3. Compute the leaf surface CO2. ---------------------------------------------!
-      answer%lsfc_co2  = met%can_co2 - answer%co2_demand / met%blyr_cond_co2
+      answer%lsfc_co2  = met(ib)%can_co2 - answer%co2_demand / met(ib)%blyr_cond_co2
       !------------------------------------------------------------------------------------!
 
 
@@ -869,7 +882,7 @@ module farq_leuning
          !     If carbon demand is zero or negative, this means that light is below the    !
          ! light compensation point, so all stomata should remain closed.                  !
          !---------------------------------------------------------------------------------!
-         answer%stom_cond_h2o = thispft%b
+         answer%stom_cond_h2o = thispft(ib)%b
          answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
          answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
       else
@@ -877,13 +890,13 @@ module farq_leuning
          !     Carbon demand is positive, look for a solution.                             !
          !---------------------------------------------------------------------------------!
          !----- Find auxiliary coefficients to compute the quadratic terms. ---------------!
-         qterm1 = (met%can_co2 - aparms%compp) * met%blyr_cond_co2 - answer%co2_demand
-         qterm2 = (thispft%d0 + met%lint_shv - met%can_shv) * met%blyr_cond_h2o
-         qterm3 = thispft%m * answer%co2_demand * thispft%d0 * met%blyr_cond_co2
+         qterm1 = (met(ib)%can_co2 - aparms(ib)%compp) * met(ib)%blyr_cond_co2 - answer%co2_demand
+         qterm2 = (thispft(ib)%d0 + met(ib)%lint_shv - met(ib)%can_shv) * met(ib)%blyr_cond_h2o
+         qterm3 = thispft(ib)%m * answer%co2_demand * thispft(ib)%d0 * met(ib)%blyr_cond_co2
          !----- Find the coefficients for the quadratic equation. -------------------------!
-         aquad = qterm1 * thispft%d0
-         bquad = qterm1 * qterm2 - aquad * thispft%b - qterm3
-         cquad = - qterm1 * qterm2 * thispft%b - qterm3 * met%blyr_cond_h2o
+         aquad = qterm1 * thispft(ib)%d0
+         bquad = qterm1 * qterm2 - aquad * thispft(ib)%b - qterm3
+         cquad = - qterm1 * qterm2 * thispft(ib)%b - qterm3 * met(ib)%blyr_cond_h2o
          !----- Solve the quadratic equation for gsw. -------------------------------------!
          if (aquad == 0.d0) then
             !----- Not really a quadratic equation. ---------------------------------------!
@@ -917,17 +930,17 @@ module farq_leuning
          ! cellular CO2 concentration.  In case both make solutions make sense (unlikely), !
          ! we decide the root based on the intercellular CO2.                              !
          !---------------------------------------------------------------------------------!
-         bounded1 = gswroot1 >= thispft%b .and. gswroot1 <= c34smax_gsw8
-         bounded2 = gswroot2 >= thispft%b .and. gswroot2 <= c34smax_gsw8
+         bounded1 = gswroot1 >= thispft(ib)%b .and. gswroot1 <= c34smax_gsw8
+         bounded2 = gswroot2 >= thispft(ib)%b .and. gswroot2 <= c34smax_gsw8
          if (bounded1 .and. bounded2) then
             !----- Both solutions are valid, warn the user as this should never happen. ---!
             ciroot1 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot1)
             ciroot2 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot2)
 
             bounded1 = ciroot1 >= c34smin_lint_co28 .and.                                  &
-                       ciroot1 <= min(c34smax_lint_co28,met%can_co2)
+                       ciroot1 <= min(c34smax_lint_co28,met(ib)%can_co2)
             bounded2 = ciroot2 >= c34smin_lint_co28 .and.                                  &
-                       ciroot2 <= min(c34smax_lint_co28,met%can_co2)
+                       ciroot2 <= min(c34smax_lint_co28,met(ib)%can_co2)
              
             if (bounded1 .and. bounded2) then
                !----- Both intercellular CO2 work, pick the highest and warn the user. ----!
@@ -978,9 +991,9 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       !   8. Lastly, find the surface water specific humidity.                             !
       !------------------------------------------------------------------------------------!
-      answer%lsfc_shv = ( answer%stom_cond_h2o * met%lint_shv                              &
-                        + met%blyr_cond_h2o    * met%can_shv  )                            &
-                      / ( met%blyr_cond_h2o + answer%stom_cond_h2o)
+      answer%lsfc_shv = ( answer%stom_cond_h2o * met(ib)%lint_shv                              &
+                        + met(ib)%blyr_cond_h2o    * met(ib)%can_shv  )                            &
+                      / ( met(ib)%blyr_cond_h2o + answer%stom_cond_h2o)
       !------------------------------------------------------------------------------------!
 
       return
@@ -1011,6 +1024,7 @@ module farq_leuning
                                 , thispft           & ! intent(in)
                                 , aparms            ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8        ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(solution_vars), intent(out) :: answer    ! The strutcure with the answer
@@ -1032,8 +1046,11 @@ module farq_leuning
       logical                          :: hitmin    ! 2nd guess tried minimum   [      ---]
       logical                          :: hitmax    ! 2nd guess tried maximum   [      ---]
       logical                          :: bounded   ! Guess range is bounded.   [      T|F]
+      integer                          :: ib
       !------------------------------------------------------------------------------------!
 
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !------------------------------------------------------------------------------------!
       !      Initialise the convergence flag.  Here we start realistic, ops, I mean,       !
@@ -1281,11 +1298,11 @@ module farq_leuning
          answer%stom_cond_h2o = calc_stom_cond_h2o(answer%lint_co2,answer%co2_demand)
          answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
          !----- 5. Compute the leaf surface CO2. ------------------------------------------!
-         answer%lsfc_co2  = met%can_co2 - answer%co2_demand / met%blyr_cond_co2
+         answer%lsfc_co2  = met(ib)%can_co2 - answer%co2_demand / met(ib)%blyr_cond_co2
          !----- 6. Compute the leaf surface vapour mixing ratio. --------------------------!
-         answer%lsfc_shv  = ( answer%stom_cond_h2o * met%lint_shv                          &
-                            + met%blyr_cond_h2o    * met%can_shv  )                        &
-                          / ( met%blyr_cond_h2o + answer%stom_cond_h2o)
+         answer%lsfc_shv  = ( answer%stom_cond_h2o * met(ib)%lint_shv                          &
+                            + met(ib)%blyr_cond_h2o    * met(ib)%can_shv  )                        &
+                          / ( met(ib)%blyr_cond_h2o + answer%stom_cond_h2o)
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1314,12 +1331,17 @@ module farq_leuning
                                 , thispft      & ! intent(in)
                                 , met          ! ! intent(in)
       use physiology_coms, only : klowco28     ! ! intent(in)
+      !$ use omp_lib
+
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       character(len=*), intent(in) :: whichlim      ! A flag telling which case we are
-                                                    !   about to solve
-      !------------------------------------------------------------------------------------!
+                                                    !   about to solve      
+      !------Local ---------------------------------------------------------------------!
+      integer                      :: ib
 
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !------------------------------------------------------------------------------------!
       !    Define the parameters based on this call.                                       !
@@ -1327,17 +1349,17 @@ module farq_leuning
       select case(trim(whichlim))
       case ('CLOSED')
          !----- Closed stomata case, or night time.  These are the same for C3 and C4. ----!
-         aparms%rho   = 0.d0
-         aparms%sigma = 0.d0
-         aparms%xi    = 0.d0
-         aparms%tau   = 1.d0
-         aparms%nu    = - aparms%leaf_resp
+         aparms(ib)%rho   = 0.d0
+         aparms(ib)%sigma = 0.d0
+         aparms(ib)%xi    = 0.d0
+         aparms(ib)%tau   = 1.d0
+         aparms(ib)%nu    = - aparms(ib)%leaf_resp
       case default
          !---------------------------------------------------------------------------------!
          !     Open stomata case, so now we distinguish between C3 and C4 as their         !
          ! functional forms are different.                                                 !
          !---------------------------------------------------------------------------------!
-         select case (thispft%photo_pathway)
+         select case (thispft(ib)%photo_pathway)
          case (3)
             !------------------------------------------------------------------------------!
             !     C3 case.  Decide whether this is the light- or Rubisco-limited case.     !
@@ -1345,28 +1367,28 @@ module farq_leuning
             select case (trim(whichlim))
             case ('LIGHT')
                !---- Light-limited case. --------------------------------------------------!
-               aparms%rho   =  aparms%alpha * met%par
-               aparms%sigma = -aparms%alpha * met%par * aparms%compp
-               aparms%xi    = 1.d0
-               aparms%tau   = 2.d0 * aparms%compp
-               aparms%nu    = -aparms%leaf_resp
+               aparms(ib)%rho   =  aparms(ib)%alpha * met(ib)%par
+               aparms(ib)%sigma = -aparms(ib)%alpha * met(ib)%par * aparms(ib)%compp
+               aparms(ib)%xi    = 1.d0
+               aparms(ib)%tau   = 2.d0 * aparms(ib)%compp
+               aparms(ib)%nu    = -aparms(ib)%leaf_resp
 
             case ('RUBISCO')
                !----- Rubisco-limited rate of photosynthesis case. ------------------------!
-               aparms%rho   =  aparms%vm
-               aparms%sigma = -aparms%vm * aparms%compp
-               aparms%xi    = 1.d0
-               aparms%tau   = aparms%kco2 * (1.d0 + met%can_o2 / aparms%ko2)
-               aparms%nu    = -aparms%leaf_resp
+               aparms(ib)%rho   =  aparms(ib)%vm
+               aparms(ib)%sigma = -aparms(ib)%vm * aparms(ib)%compp
+               aparms(ib)%xi    = 1.d0
+               aparms(ib)%tau   = aparms(ib)%kco2 * (1.d0 + met(ib)%can_o2 / aparms(ib)%ko2)
+               aparms(ib)%nu    = -aparms(ib)%leaf_resp
             !------------------------------------------------------------------------------!
 
             case ('CO2')
                !----- CO2-limited for low CO2 concentration case. -------------------------!
-               aparms%rho   = 0.d0
-               aparms%sigma = 5.d-1 * aparms%vm
-               aparms%xi    = 0.d0
-               aparms%tau   = 1.d0
-               aparms%nu    = -aparms%leaf_resp
+               aparms(ib)%rho   = 0.d0
+               aparms(ib)%sigma = 5.d-1 * aparms(ib)%vm
+               aparms(ib)%xi    = 0.d0
+               aparms(ib)%tau   = 1.d0
+               aparms(ib)%nu    = -aparms(ib)%leaf_resp
 
             end select
          case (4)
@@ -1377,27 +1399,27 @@ module farq_leuning
             select case(trim(whichlim))
             case ('LIGHT')
                !----- Light-limited case. -------------------------------------------------!
-               aparms%rho   = 0.d0
-               aparms%sigma = aparms%alpha * met%par
-               aparms%xi    = 0.d0
-               aparms%tau   = 1.d0
-               aparms%nu    = - aparms%leaf_resp
+               aparms(ib)%rho   = 0.d0
+               aparms(ib)%sigma = aparms(ib)%alpha * met(ib)%par
+               aparms(ib)%xi    = 0.d0
+               aparms(ib)%tau   = 1.d0
+               aparms(ib)%nu    = - aparms(ib)%leaf_resp
 
             case ('RUBISCO')
                !----- Rubisco-limited rate of photosynthesis case. ------------------------!
-               aparms%rho   = 0.d0
-               aparms%sigma = aparms%vm
-               aparms%xi    = 0.d0
-               aparms%tau   = 1.d0
-               aparms%nu    = -aparms%leaf_resp
+               aparms(ib)%rho   = 0.d0
+               aparms(ib)%sigma = aparms(ib)%vm
+               aparms(ib)%xi    = 0.d0
+               aparms(ib)%tau   = 1.d0
+               aparms(ib)%nu    = -aparms(ib)%leaf_resp
 
             case ('CO2')
                !----- CO2-limited for low CO2 concentration case. -------------------------!
-               aparms%rho   = klowco28 * aparms%vm
-               aparms%sigma = 0.d0
-               aparms%xi    = 0.d0
-               aparms%tau   = 1.d0
-               aparms%nu    = -aparms%leaf_resp
+               aparms(ib)%rho   = klowco28 * aparms(ib)%vm
+               aparms(ib)%sigma = 0.d0
+               aparms(ib)%xi    = 0.d0
+               aparms(ib)%tau   = 1.d0
+               aparms(ib)%nu    = -aparms(ib)%leaf_resp
 
             end select
             !------------------------------------------------------------------------------!
@@ -1409,10 +1431,6 @@ module farq_leuning
    end subroutine set_co2_demand_params
    !=======================================================================================!
    !=======================================================================================!
-
-
-
-
 
 
    !=======================================================================================!
@@ -1431,6 +1449,8 @@ module farq_leuning
       use c34constants, only : thispft & ! intent(in)
                              , aparms  & ! intent(in)
                              , met     ! ! intent(in)
+      !$ use omp_lib
+      
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       logical     , intent(in)  :: newton              ! Newton's method step  [       T|F]
@@ -1448,8 +1468,11 @@ module farq_leuning
       real(kind=8)              :: eprime1             ! Derivative of the 1st term
       real(kind=8)              :: eprime2             ! Derivative of the 2nd term
       real(kind=8)              :: eprime3             ! Derivative of the 3rd term
+      integer                   :: ib
       !------------------------------------------------------------------------------------!
-
+      
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       !----- Find the CO2 demand. ---------------------------------------------------------!
       co2_demand       = calc_co2_demand(lint_co2)
@@ -1462,10 +1485,10 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       !     Find the function components, then the function evaluation.                    !
       !------------------------------------------------------------------------------------!
-      efun1 = (stom_cond_h2o - thispft%b) / (thispft%m * co2_demand)
-      efun2 = (met%can_co2 - aparms%compp - co2_demand/met%blyr_cond_co2)
-      efun3 = 1.d0 + ( met%blyr_cond_h2o * (met%lint_shv - met%can_shv)                    &
-                     / (thispft%d0 * (met%blyr_cond_h2o + stom_cond_h2o)))
+      efun1 = (stom_cond_h2o - thispft(ib)%b) / (thispft(ib)%m * co2_demand)
+      efun2 = (met(ib)%can_co2 - aparms(ib)%compp - co2_demand/met(ib)%blyr_cond_co2)
+      efun3 = 1.d0 + ( met(ib)%blyr_cond_h2o * (met(ib)%lint_shv - met(ib)%can_shv)                    &
+                     / (thispft(ib)%d0 * (met(ib)%blyr_cond_h2o + stom_cond_h2o)))
       fun   = efun1 * efun2 * efun3 - 1.d0
       !------------------------------------------------------------------------------------!
 
@@ -1483,13 +1506,13 @@ module farq_leuning
                                                        ,co2_demand_prime)
          !----- Function components. ------------------------------------------------------!
          eprime1 = ( stom_cond_h2o_prime * co2_demand                                      &
-                   - co2_demand_prime * (stom_cond_h2o - thispft%b) )                      &
-                 / (thispft%m * co2_demand * co2_demand)
+                   - co2_demand_prime * (stom_cond_h2o - thispft(ib)%b) )                      &
+                 / (thispft(ib)%m * co2_demand * co2_demand)
 
-         eprime2 = - co2_demand_prime / met%blyr_cond_co2
+         eprime2 = - co2_demand_prime / met(ib)%blyr_cond_co2
 
          eprime3 = - (efun3 - 1.d0) *  stom_cond_h2o_prime                                 &
-                 / ( met%blyr_cond_h2o + stom_cond_h2o )
+                 / ( met(ib)%blyr_cond_h2o + stom_cond_h2o )
 
          deriv   = eprime1 * efun2   * efun3                                               &
                  + efun1   * eprime2 * efun3                                               &
@@ -1515,13 +1538,18 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    real(kind=8) function calc_co2_demand(lint_co2)
       use c34constants, only : aparms ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2 ! Intercellular CO2 concentration    [  mol/mol]
       !------------------------------------------------------------------------------------!
+      integer                  :: ib
       
-      calc_co2_demand = (aparms%rho * lint_co2 + aparms%sigma)                             &
-                      / (aparms%xi  * lint_co2 + aparms%tau  ) + aparms%nu
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
+
+      calc_co2_demand = (aparms(ib)%rho * lint_co2 + aparms(ib)%sigma)                             &
+                      / (aparms(ib)%xi  * lint_co2 + aparms(ib)%tau  ) + aparms(ib)%nu
       return
    end function calc_co2_demand
    !=======================================================================================!
@@ -1539,14 +1567,20 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    real(kind=8) function calc_co2_demand_prime(lint_co2,co2_demand)
       use c34constants, only : aparms ! ! intent(in)
+      !$ use omp_lib
+
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2   ! Intercellular CO2 concentration  [  mol/mol]
       real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/m²/s]
       !------------------------------------------------------------------------------------!
+      integer :: ib
+
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
       
-      calc_co2_demand_prime = (aparms%rho - aparms%xi * (co2_demand - aparms%nu))          &
-                            / (aparms%xi  * lint_co2 + aparms%tau  )
+      calc_co2_demand_prime = (aparms(ib)%rho - aparms(ib)%xi * (co2_demand - aparms(ib)%nu))          &
+                            / (aparms(ib)%xi  * lint_co2 + aparms(ib)%tau  )
       return
    end function calc_co2_demand_prime
    !=======================================================================================!
@@ -1565,14 +1599,19 @@ module farq_leuning
    real(kind=8) function calc_stom_cond_h2o(lint_co2,co2_demand)
       use c34constants   , only : met        ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8 ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2   ! Intercellular CO2 concentration  [  mol/mol]
       real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/m²/s]
       !------------------------------------------------------------------------------------!
+      integer :: ib
 
-      calc_stom_cond_h2o = met%blyr_cond_co2 * co2_demand                                  &
-                         / (gsw_2_gsc8 * ( (met%can_co2 - lint_co2) * met%blyr_cond_co2    &
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
+
+      calc_stom_cond_h2o = met(ib)%blyr_cond_co2 * co2_demand                                  &
+                         / (gsw_2_gsc8 * ( (met(ib)%can_co2 - lint_co2) * met(ib)%blyr_cond_co2    &
                                          - co2_demand ) )
 
       return
@@ -1595,6 +1634,7 @@ module farq_leuning
                                                  ,co2_demand_prime)
       use c34constants   , only : met        ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8 ! ! intent(in)
+      !$ use omp_lib
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2         ! Intercell. CO2 conc.      [   mol/mol]
@@ -1602,12 +1642,16 @@ module farq_leuning
       real(kind=8), intent(in) :: co2_demand       ! CO2 demand                [  mol/m²/s]
       real(kind=8), intent(in) :: co2_demand_prime ! Derivative of CO2 demand  [1/mol/m²/s]
       !------------------------------------------------------------------------------------!
+      integer :: ib
+      
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
       calc_stom_cond_h2o_prime = stom_cond_h2o                                             &
                                * ( co2_demand_prime / co2_demand                           &
-                                 + (met%blyr_cond_co2 + co2_demand_prime)                  &
-                                 / (gsw_2_gsc8 * ( (met%can_co2 - lint_co2)                &
-                                                 * met%blyr_cond_co2 - co2_demand) ))
+                                 + (met(ib)%blyr_cond_co2 + co2_demand_prime)                  &
+                                 / (gsw_2_gsc8 * ( (met(ib)%can_co2 - lint_co2)                &
+                                                 * met(ib)%blyr_cond_co2 - co2_demand) ))
 
       return
    end function calc_stom_cond_h2o_prime
@@ -1636,6 +1680,8 @@ module farq_leuning
                                 , c34smin_lint_co28 & ! intent(in)
                                 , c34smax_lint_co28 & ! intent(in)
                                 , c34smax_gsw8      ! ! intent(in)
+      !$ use omp_lib
+
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(out)  :: cimin   ! Minimum intercellular CO2         [  mol/mol]
@@ -1661,16 +1707,18 @@ module farq_leuning
       logical                    :: ok1     ! 1st root is okay.                 [      T|F]
       logical                    :: ok2     ! 2nd root is okay.                 [      T|F]
       integer                    :: ibnd    ! Loop for low and high conductance.
+      integer                    :: ib
       !------------------------------------------------------------------------------------!
-
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
 
 
       !------------------------------------------------------------------------------------!
       ! First case: This check will find when Aopen goes to 0., which causes a singularity !
       ! in the function of which we are looking for a root.                                !
       !------------------------------------------------------------------------------------!
-      ciAo = - (aparms%tau * aparms%nu + aparms%sigma)                                     &
-           / (aparms%xi  * aparms%nu + aparms%rho  )
+      ciAo = - (aparms(ib)%tau * aparms(ib)%nu + aparms(ib)%sigma)                                     &
+           / (aparms(ib)%xi  * aparms(ib)%nu + aparms(ib)%rho  )
       !------------------------------------------------------------------------------------!
 
 
@@ -1680,10 +1728,10 @@ module farq_leuning
       ! be 0.   This will cause a singularity in the gsw function.                         !
       !------------------------------------------------------------------------------------!
       !----- 1. Define the coefficients for the quadratic equation. -----------------------!
-      aquad = met%blyr_cond_co2 * aparms%xi
-      bquad = aparms%xi * (aparms%nu - met%blyr_cond_co2 * met%can_co2 )                   &
-            + met%blyr_cond_co2 * aparms%tau + aparms%rho
-      cquad = aparms%tau * (aparms%nu - met%blyr_cond_co2 * met%can_co2 ) + aparms%sigma
+      aquad = met(ib)%blyr_cond_co2 * aparms(ib)%xi
+      bquad = aparms(ib)%xi * (aparms(ib)%nu - met(ib)%blyr_cond_co2 * met(ib)%can_co2 )                   &
+            + met(ib)%blyr_cond_co2 * aparms(ib)%tau + aparms(ib)%rho
+      cquad = aparms(ib)%tau * (aparms(ib)%nu - met(ib)%blyr_cond_co2 * met(ib)%can_co2 ) + aparms(ib)%sigma
       !----- 2. Decide whether this is a true quadratic case or not. ----------------------!
       if (aquad /= 0.d0) then
          !---------------------------------------------------------------------------------!
@@ -1732,15 +1780,15 @@ module farq_leuning
       ! conductance.                                                                       !
       !------------------------------------------------------------------------------------!
       !----- 1. Find some auxiliary variables. --------------------------------------------!
-      xtmp = met%blyr_cond_h2o * ( met%can_shv - met%lint_shv - thispft%d0)/thispft%d0
-      ytmp = met%blyr_cond_co2 + xtmp * gbw_2_gbc8
-      ztmp = xtmp * gbw_2_gbc8 * met%blyr_cond_co2
-      wtmp = ztmp * met%can_co2 - ytmp * aparms%nu
+      xtmp = met(ib)%blyr_cond_h2o * ( met(ib)%can_shv - met(ib)%lint_shv - thispft(ib)%d0)/thispft(ib)%d0
+      ytmp = met(ib)%blyr_cond_co2 + xtmp * gbw_2_gbc8
+      ztmp = xtmp * gbw_2_gbc8 * met(ib)%blyr_cond_co2
+      wtmp = ztmp * met(ib)%can_co2 - ytmp * aparms(ib)%nu
 
       !----- 2. Define the coefficients for the quadratic equation. -----------------------!
-      aquad = ztmp * aparms%xi
-      bquad = ytmp * aparms%rho - aparms%xi * wtmp + ztmp * aparms%tau
-      cquad = - aparms%tau * wtmp + ytmp * aparms%sigma
+      aquad = ztmp * aparms(ib)%xi
+      bquad = ytmp * aparms(ib)%rho - aparms(ib)%xi * wtmp + ztmp * aparms(ib)%tau
+      cquad = - aparms(ib)%tau * wtmp + ytmp * aparms(ib)%sigma
 
       !----- 3. Decide whether this is a true quadratic case or not. ----------------------!
       if (aquad /= 0.d0) then
@@ -1789,7 +1837,7 @@ module farq_leuning
       ! air CO2.                                                                           !
       !------------------------------------------------------------------------------------!
       ciroot1 = max(c34smin_lint_co28,ciAo)
-      ciroot2 = min(ciQ, cigsw,met%can_co2)
+      ciroot2 = min(ciQ, cigsw,met(ib)%can_co2)
       !------------------------------------------------------------------------------------!
 
 
@@ -1928,10 +1976,14 @@ module farq_leuning
                                 , aparms            & ! intent(in)
                                 , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8
+      !$ use omp_lib
       implicit none
+      integer :: ib
+      ib = 1
+      !$ ib = OMP_get_thread_num()+1
       
-      find_twilight_min = ( aparms%leaf_resp  * (met%can_co2 + 2.d0 * aparms%compp) )      &
-                        / ( aparms%alpha      * (met%can_co2 -        aparms%compp) )
+      find_twilight_min = ( aparms(ib)%leaf_resp  * (met(ib)%can_co2 + 2.d0 * aparms(ib)%compp) )      &
+                        / ( aparms(ib)%alpha      * (met(ib)%can_co2 -        aparms(ib)%compp) )
                         
 
       return

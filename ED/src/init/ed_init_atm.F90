@@ -36,6 +36,8 @@ subroutine ed_init_atm()
    use pft_coms              , only : sla               ! ! intent(in)
    use ed_therm_lib          , only : calc_veg_hcap     & ! subroutine
                                     , ed_grndvap        ! ! subroutine
+   use canopy_layer_coms     , only : canstr            &
+                                    , alloc_canopy_layer_mbs
    use therm_lib             , only : thetaeiv          & ! function
                                     , vpdefil           & ! function
                                     , idealdenssh       & ! function
@@ -47,6 +49,7 @@ subroutine ed_init_atm()
    use met_driver_coms       , only : met_driv_state    ! ! structure
    use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
    use budget_utils          , only : update_budget     ! ! subroutine
+   !$ use omp_lib
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    type(edtype)        , pointer  :: cgrid
@@ -76,12 +79,29 @@ subroutine ed_init_atm()
    real                           :: elim_lai
    real                           :: can_exner
    real                           :: rvaux
+   integer                        :: ibuff
+   integer                        :: nbuff
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
    !---------------------------------------------------------------------------------------!
 
    !----- This is just any integer used to control the MPI sending/receiving tools. -------!
    ping = 6
+
+
+   !----- This is as good a place as any to initialize canopy variables, particularly -----!
+   !----- those that require separate buffers. --------------------------------------------!
+
+   !------------------------------------------------------------------------------------!
+   ! Initialize the canopy structure arrays
+   !------------------------------------------------------------------------------------!
+   nbuff = 1
+   !$ nbuff= OMP_get_max_threads()
+   allocate(canstr(nbuff))
+   do ibuff=1,nbuff
+      call alloc_canopy_layer_mbs(canstr(ibuff))   ! The arrays in this structure DO NOT
+   end do
+
 
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids

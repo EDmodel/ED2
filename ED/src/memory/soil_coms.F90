@@ -230,8 +230,11 @@ module soil_coms
    ! RUNOFF_TIME -- In case a temporary surface water (TSW) is created, this is the "e-    !
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    real                                       :: runoff_time
+   real                                       :: runoff_time_i
+   logical                                    :: simplerunoff
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
