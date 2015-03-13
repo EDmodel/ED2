@@ -126,7 +126,6 @@ module canopy_struct_dynamics
                                   , zztop                & ! intent(in)
                                   , zzbot                & ! intent(in)
                                   , zzmid                & ! intent(in)
-                                  , cdrag                & ! intent(out)
                                   , zero_canopy_layer    & ! subroutine
                                   , canstr
       use consts_coms      , only : vonk                 & ! intent(in)
@@ -920,7 +919,7 @@ module canopy_struct_dynamics
          ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
          !----- Constant drag. ------------------------------------------------------------!
-         cdrag   (:) = cdrag0
+         canstr(ibuff)%cdrag   (:) = cdrag0
          ldga_bk     = 0.0
          !----- Decide whether to apply the sheltering effect or not. ---------------------!
          select case (icanturb)
