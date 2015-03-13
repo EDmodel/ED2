@@ -30,6 +30,7 @@ module rk4_stepper
                                , patchtype           ! ! structure
       use grid_coms     , only : nzg                 & ! intent(in)
                                , nzs                 ! ! intent(in)
+      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -43,7 +44,11 @@ module rk4_stepper
       logical                                  :: reject_step,reject_result
       logical                                  :: minstep,stuck,test_reject,pdo
       integer                                  :: k
+      integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
+
+      ibuff=1
+      !$ ibuff = OMP_get_thread_num()+1
 
       h           =  htry
       reject_step =  .false.
@@ -52,10 +57,10 @@ module rk4_stepper
          !---------------------------------------------------------------------------------!
          ! 1. Try a step of varying size.                                                  !
          !---------------------------------------------------------------------------------!
-         call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp         &
-                     ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
-                     ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
-                     ,integration_buff%ak7,x,h,csite,ipa,reject_step,reject_result)
+         call rkck(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,integration_buff(ibuff)%ytemp         &
+                     ,integration_buff(ibuff)%yerr,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3      &
+                     ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5,integration_buff(ibuff)%ak6       &
+                     ,integration_buff(ibuff)%ak7,x,h,csite,ipa,reject_step,reject_result)
 
          !---------------------------------------------------------------------------------!
          ! 2. Check to see how accurate the step was.  Errors were calculated by integrat- !
@@ -68,8 +73,8 @@ module rk4_stepper
             !------------------------------------------------------------------------------!
             errmax = 1.d1
          else
-            call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
-                           ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp)
+            call get_errmax(errmax, integration_buff(ibuff)%yerr,integration_buff(ibuff)%yscal           &
+                           ,csite%patch(ipa),integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
             errmax = errmax * rk4epsi
          end if
 
@@ -130,24 +135,24 @@ module rk4_stepper
 
                if (reject_result) then
                   !----- Run the LSM sanity check but this time we force the print. -------!
-                  call rk4_sanity_check(integration_buff%ytemp,test_reject,csite,ipa       &
-                                       ,integration_buff%dydx,h,.true.)
-                  call print_sanity_check(integration_buff%y,csite,ipa)
+                  call rk4_sanity_check(integration_buff(ibuff)%ytemp,test_reject,csite,ipa       &
+                                       ,integration_buff(ibuff)%dydx,h,.true.)
+                  call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                elseif (reject_step) then
-                  call rk4_sanity_check(integration_buff%ak7,test_reject,csite,ipa         &
-                                       ,integration_buff%dydx,h,.true.)
-                  call print_sanity_check(integration_buff%y,csite,ipa)
+                  call rk4_sanity_check(integration_buff(ibuff)%ak7,test_reject,csite,ipa         &
+                                       ,integration_buff(ibuff)%dydx,h,.true.)
+                  call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                else
-                  call print_errmax(errmax,integration_buff%yerr,integration_buff%yscal    &
-                                      ,csite%patch(ipa),integration_buff%y                 &
-                                      ,integration_buff%ytemp)
+                  call print_errmax(errmax,integration_buff(ibuff)%yerr,integration_buff(ibuff)%yscal    &
+                                      ,csite%patch(ipa),integration_buff(ibuff)%y                 &
+                                      ,integration_buff(ibuff)%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Epsilon:',rk4eps
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                end if
-               call print_rk4patch(integration_buff%y, csite,ipa)
+               call print_rk4patch(integration_buff(ibuff)%y, csite,ipa)
             endif
          
          else
@@ -157,13 +162,13 @@ module rk4_stepper
             !      to do some minor adjustments before...                                  !
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
-            call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
+            call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
             !----- iii. Make temporary surface water stable and positively defined. -------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp, h, csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h, csite,ipa)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
-            call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
+            call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
@@ -179,14 +184,14 @@ module rk4_stepper
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
-               call norm_rk4_fluxes(integration_buff%ytemp,h)
-               call print_rk4_state(integration_buff%y,integration_buff%ytemp,csite,ipa,x,h)
+               call norm_rk4_fluxes(integration_buff(ibuff)%ytemp,h)
+               call print_rk4_state(integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp,csite,ipa,x,h)
             end if
 
             !------------------------------------------------------------------------------!
             !    3e. Copy the temporary structure to the intermediate state.               !
             !------------------------------------------------------------------------------!
-            call copy_rk4_patch(integration_buff%ytemp,integration_buff%y                  &
+            call copy_rk4_patch(integration_buff(ibuff)%ytemp,integration_buff(ibuff)%y                  &
                                ,csite%patch(ipa))
 
             !------------------------------------------------------------------------------!
@@ -194,7 +199,7 @@ module rk4_stepper
             !        debugging.                                                            !
             !------------------------------------------------------------------------------!
             if (print_detailed) then
-               call reset_rk4_fluxes(integration_buff%y)
+               call reset_rk4_fluxes(integration_buff(ibuff)%y)
             end if
 
             !----- 3g. Update time. -------------------------------------------------------!
@@ -449,19 +454,20 @@ module rk4_stepper
                                        , integration_vars      & ! structure
                                        , rk4site               & ! intent(in)
                                        , rk4eps                & ! intent(in)
+                                       , rk4aux                & ! intent(in)
                                        , toocold               & ! intent(in)
-                                       , rk4min_can_enthalpy   & ! intent(in)
-                                       , rk4max_can_enthalpy   & ! intent(in)
-                                       , rk4min_can_theta      & ! intent(in)
-                                       , rk4max_can_theta      & ! intent(in)
+!                                       , rk4min_can_enthalpy   & ! intent(in)
+!                                       , rk4max_can_enthalpy   & ! intent(in)
+!                                       , rk4min_can_theta      & ! intent(in)
+!                                       , rk4max_can_theta      & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
                                        , rk4min_can_shv        & ! intent(in)
                                        , rk4min_can_rhv        & ! intent(in)
                                        , rk4max_can_rhv        & ! intent(in)
                                        , rk4min_can_temp       & ! intent(in)
                                        , rk4max_can_temp       & ! intent(in)
-                                       , rk4min_can_prss       & ! intent(in)
-                                       , rk4max_can_prss       & ! intent(in)
+!                                       , rk4min_can_prss       & ! intent(in)
+!                                       , rk4max_can_prss       & ! intent(in)
                                        , rk4min_can_co2        & ! intent(in)
                                        , rk4max_can_co2        & ! intent(in)
                                        , rk4max_veg_temp       & ! intent(in)
@@ -471,8 +477,8 @@ module rk4_stepper
                                        , rk4max_sfcw_temp      & ! intent(in)
                                        , rk4max_soil_temp      & ! intent(in)
                                        , rk4min_soil_temp      & ! intent(in)
-                                       , rk4max_soil_water     & ! intent(in)
-                                       , rk4min_soil_water     & ! intent(in)
+!                                       , rk4max_soil_water     & ! intent(in)
+!                                       , rk4min_soil_water     & ! intent(in)
                                        , rk4min_sfcw_mass      & ! intent(in)
                                        , rk4min_virt_water     & ! intent(in)
                                        , rk4tiny_sfcw_mass     & ! intent(in)
@@ -486,6 +492,7 @@ module rk4_stepper
       use ed_state_vars         , only : sitetype              & ! structure
                                        , patchtype             ! ! structure
       use grid_coms             , only : nzg                   ! ! intent(in)
+      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -507,7 +514,11 @@ module rk4_stepper
       logical                          :: cflag8
       logical                          :: cflag9
       logical                          :: cflag10
+      integer                          :: ibuff
       !------------------------------------------------------------------------------------!
+
+      ibuff=1
+      !$ ibuff = OMP_get_thread_num()+1
 
 
       !----- Be optimistic and start assuming that things are fine. -----------------------!
@@ -518,8 +529,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (y%can_enthalpy > rk4max_can_enthalpy   .or.                                      &
-          y%can_enthalpy < rk4min_can_enthalpy        ) then
+      if (y%can_enthalpy > rk4aux(ibuff)%rk4max_can_enthalpy   .or.                        &
+          y%can_enthalpy < rk4aux(ibuff)%rk4min_can_enthalpy        ) then
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
@@ -551,7 +562,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air potential temperature is off.                       !
       !------------------------------------------------------------------------------------!
-      if (y%can_theta > rk4max_can_theta .or. y%can_theta < rk4min_can_theta ) then
+      if (  y%can_theta > rk4aux(ibuff)%rk4max_can_theta .or. &
+            y%can_theta < rk4aux(ibuff)%rk4min_can_theta ) then
          reject_step = .true.
          if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
          if (print_problems) then
@@ -647,7 +659,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (y%can_prss > rk4max_can_prss .or. y%can_prss < rk4min_can_prss) then
+      if (    y%can_prss > rk4aux(ibuff)%rk4max_can_prss .or. &
+              y%can_prss < rk4aux(ibuff)%rk4min_can_prss) then
          reject_step = .true.
          if(record_err) integ_err(5,2) = integ_err(5,2) + 1_8
          if (print_problems) then
@@ -949,8 +962,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       do k=rk4site%lsl,nzg
          !----- Soil moisture -------------------------------------------------------------!
-         if (y%soil_water(k)< rk4min_soil_water(k) .or.                                    &
-             y%soil_water(k)> rk4max_soil_water(k) ) then
+         if (y%soil_water(k)< rk4aux(ibuff)%rk4min_soil_water(k) .or.                                    &
+             y%soil_water(k)> rk4aux(ibuff)%rk4max_soil_water(k) ) then
             reject_step = .true.
             if(record_err) integ_err(osow+k,2) = integ_err(osow+k,2) + 1_8
             if (print_problems) then
@@ -1091,12 +1104,15 @@ module rk4_stepper
          write(unit=*,fmt='(6(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
                                           ,'   MAX_THETA','MIN_ENTHALPY','MAX_ENTHALPY'
          write(unit=*,fmt='(6(es12.5,1x))') rk4min_can_temp    ,rk4max_can_temp            &
-                                           ,rk4min_can_theta   ,rk4max_can_theta           &
-                                           ,rk4min_can_enthalpy,rk4max_can_enthalpy
+                                           ,rk4aux(ibuff)%rk4min_can_theta                 &
+                                           ,rk4aux(ibuff)%rk4max_can_theta                 &
+                                           ,rk4aux(ibuff)%rk4min_can_enthalpy              &
+                                           ,rk4aux(ibuff)%rk4max_can_enthalpy
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
                                           ,'     MAX_CO2'
-         write(unit=*,fmt='(4(es12.5,1x))') rk4min_can_prss ,rk4max_can_prss               &
+         write(unit=*,fmt='(4(es12.5,1x))') rk4aux(ibuff)%rk4min_can_prss                  &
+                                           ,rk4aux(ibuff)%rk4max_can_prss               &
                                            ,rk4min_can_co2  ,rk4max_can_co2
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(78a)')         ('-',k=1,78)
@@ -1118,7 +1134,8 @@ module rk4_stepper
          write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
          write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'    &
                                           ,'    MAX_TEMP'
-         write(unit=*,fmt='(4(es12.5,1x))') rk4min_soil_water(nzg),rk4max_soil_water(nzg)  &
+         write(unit=*,fmt='(4(es12.5,1x))') rk4aux(ibuff)%rk4min_soil_water(nzg)           &
+                                           ,rk4aux(ibuff)%rk4max_soil_water(nzg)  &
                                            ,rk4min_soil_temp      ,rk4max_soil_temp
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(78a)')         ('=',k=1,78)
