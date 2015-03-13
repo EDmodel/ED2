@@ -732,9 +732,11 @@ subroutine read_ed10_ed20_history_file
                         cpatch%cb         (1:12,ic2) = 1.0
                         cpatch%cb_lightmax(1:12,ic2) = 1.0
                         cpatch%cb_moistmax(1:12,ic2) = 1.0
+                        cpatch%cb_mlmax   (1:12,ic2) = 1.0
                         cpatch%cb         (  13,ic2) = 0.0
                         cpatch%cb_lightmax(  13,ic2) = 0.0
                         cpatch%cb_moistmax(  13,ic2) = 0.0
+                        cpatch%cb_mlmax   (  13,ic2) = 0.0
                         !------------------------------------------------------------------!
 
                         !----- Above ground biomass, use the allometry. -------------------!

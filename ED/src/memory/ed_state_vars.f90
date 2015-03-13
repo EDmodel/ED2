@@ -188,6 +188,12 @@ module ed_state_vars
       ! (kgC/plant) - 13th column holds the partial month integration.
       real, pointer,dimension(:,:) :: cb_moistmax  !(13,ncohorts)
 
+      ! Maximum monthly carbon balance for past 12 months and the current 
+      ! month  if cohort had access to all soil moisture needed (maximum moisture/fsw)
+      ! AND the cohort was at the top of the canopy (maximum light).
+      ! (kgC/plant) - 13th column holds the partial month integration.
+      real, pointer,dimension(:,:) :: cb_mlmax  !(13,ncohorts)
+
       ! Relative carbon balance:
       !                    1         CB_lightmax             CB_watermax 
       !                  ----   = k ------------- + (1 - k) -------------
@@ -278,6 +284,9 @@ module ed_state_vars
       ! Maximum GPP if cohort had all soil moisture needed (maximum soil moisture)
       ! [umol/m2 ground/s], averaged over 1 day
       real ,pointer,dimension(:) :: today_gpp_moistmax
+      ! Maximum GPP if cohort had maximum soil moisture and maximum light
+      ! [umol/m2 ground/s], averaged over 1 day
+      real ,pointer,dimension(:) :: today_gpp_mlmax
 
 
       real,pointer,dimension(:) :: today_nppleaf
@@ -4332,6 +4341,7 @@ module ed_state_vars
       allocate(cpatch%cb                           (                 13,ncohorts))
       allocate(cpatch%cb_lightmax                  (                 13,ncohorts))
       allocate(cpatch%cb_moistmax                  (                 13,ncohorts))
+      allocate(cpatch%cb_mlmax                     (                 13,ncohorts))
       allocate(cpatch%cbr_bar                      (                    ncohorts))
       allocate(cpatch%leaf_energy                  (                    ncohorts))
       allocate(cpatch%leaf_temp                    (                    ncohorts))
@@ -4360,6 +4370,7 @@ module ed_state_vars
       allocate(cpatch%today_gpp_pot                (                    ncohorts))
       allocate(cpatch%today_gpp_lightmax           (                    ncohorts))
       allocate(cpatch%today_gpp_moistmax           (                    ncohorts))
+      allocate(cpatch%today_gpp_mlmax              (                    ncohorts))
       allocate(cpatch%today_nppleaf                (                    ncohorts))
       allocate(cpatch%today_nppfroot               (                    ncohorts))
       allocate(cpatch%today_nppsapwood             (                    ncohorts))
@@ -6003,6 +6014,7 @@ module ed_state_vars
       nullify(cpatch%cb                    )
       nullify(cpatch%cb_lightmax           )
       nullify(cpatch%cb_moistmax           )
+      nullify(cpatch%cb_mlmax              )
       nullify(cpatch%cbr_bar               )
       nullify(cpatch%leaf_energy           )
       nullify(cpatch%leaf_temp             )
@@ -6031,6 +6043,7 @@ module ed_state_vars
       nullify(cpatch%today_gpp_pot         )
       nullify(cpatch%today_gpp_lightmax    )
       nullify(cpatch%today_gpp_moistmax    )
+      nullify(cpatch%today_gpp_mlmax       )
       nullify(cpatch%today_nppleaf         )
       nullify(cpatch%today_nppfroot        )
       nullify(cpatch%today_nppsapwood      )
@@ -7704,6 +7717,7 @@ module ed_state_vars
       if(associated(cpatch%cb                  )) deallocate(cpatch%cb                  )
       if(associated(cpatch%cb_lightmax         )) deallocate(cpatch%cb_lightmax         )
       if(associated(cpatch%cb_moistmax         )) deallocate(cpatch%cb_moistmax         )
+      if(associated(cpatch%cb_mlmax            )) deallocate(cpatch%cb_mlmax            )
       if(associated(cpatch%cbr_bar             )) deallocate(cpatch%cbr_bar             )
       if(associated(cpatch%leaf_energy         )) deallocate(cpatch%leaf_energy         )
       if(associated(cpatch%leaf_temp           )) deallocate(cpatch%leaf_temp           )
@@ -7732,6 +7746,7 @@ module ed_state_vars
       if(associated(cpatch%today_gpp_pot       )) deallocate(cpatch%today_gpp_pot       )
       if(associated(cpatch%today_gpp_lightmax  )) deallocate(cpatch%today_gpp_lightmax  )
       if(associated(cpatch%today_gpp_moistmax  )) deallocate(cpatch%today_gpp_moistmax  )
+      if(associated(cpatch%today_gpp_mlmax     )) deallocate(cpatch%today_gpp_mlmax     )
       if(associated(cpatch%today_nppleaf       )) deallocate(cpatch%today_nppleaf       )
       if(associated(cpatch%today_nppfroot      )) deallocate(cpatch%today_nppfroot      )
       if(associated(cpatch%today_nppsapwood    )) deallocate(cpatch%today_nppsapwood    )
@@ -9492,6 +9507,7 @@ module ed_state_vars
          opatch%today_gpp_pot         (oco) = ipatch%today_gpp_pot         (ico)
          opatch%today_gpp_lightmax    (oco) = ipatch%today_gpp_lightmax    (ico)
          opatch%today_gpp_moistmax    (oco) = ipatch%today_gpp_moistmax    (ico)
+         opatch%today_gpp_mlmax       (oco) = ipatch%today_gpp_mlmax       (ico)
          opatch%today_nppleaf         (oco) = ipatch%today_nppleaf         (ico)
          opatch%today_nppfroot        (oco) = ipatch%today_nppfroot        (ico)
          opatch%today_nppsapwood      (oco) = ipatch%today_nppsapwood      (ico)
@@ -9603,6 +9619,7 @@ module ed_state_vars
             opatch%cb         (m,oco) = ipatch%cb         (m,ico)
             opatch%cb_lightmax(m,oco) = ipatch%cb_lightmax(m,ico)
             opatch%cb_moistmax(m,oco) = ipatch%cb_moistmax(m,ico)
+            opatch%cb_mlmax   (m,oco) = ipatch%cb_mlmax   (m,ico)
          end do
          !---------------------------------------------------------------------------------!
 
@@ -10017,6 +10034,7 @@ module ed_state_vars
       opatch%today_gpp_pot         (1:z) = pack(ipatch%today_gpp_pot             ,lmask)
       opatch%today_gpp_lightmax    (1:z) = pack(ipatch%today_gpp_lightmax        ,lmask)
       opatch%today_gpp_moistmax    (1:z) = pack(ipatch%today_gpp_moistmax        ,lmask)
+      opatch%today_gpp_mlmax       (1:z) = pack(ipatch%today_gpp_mlmax           ,lmask)
       opatch%today_nppleaf         (1:z) = pack(ipatch%today_nppleaf             ,lmask)
       opatch%today_nppfroot        (1:z) = pack(ipatch%today_nppfroot            ,lmask)
       opatch%today_nppsapwood      (1:z) = pack(ipatch%today_nppsapwood          ,lmask)
@@ -10081,6 +10099,7 @@ module ed_state_vars
          opatch%cb         (m,1:z) = pack(ipatch%cb           (m,:),lmask)
          opatch%cb_lightmax(m,1:z) = pack(ipatch%cb_lightmax  (m,:),lmask)
          opatch%cb_moistmax(m,1:z) = pack(ipatch%cb_moistmax  (m,:),lmask)
+         opatch%cb_mlmax   (m,1:z) = pack(ipatch%cb_mlmax     (m,:),lmask)
       end do
       !------------------------------------------------------------------------------------!
 
@@ -23926,6 +23945,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
       end if
 
+      if (associated(cpatch%today_gpp_mlmax)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_gpp_mlmax,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_GPP_MLMAX :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+
       if (associated(cpatch%growth_respiration)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%growth_respiration,nvar,igr,init,cpatch%coglob_id, &
@@ -26710,6 +26736,15 @@ module ed_state_vars
                            ,var_len,var_len_global,max_ptrs                                &
                            ,'CB_MOISTMAX :49:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Full moisture carbon balance last 12 months+current' &
+                           ,'[kgC/plant]','13 - icohort') 
+      end if
+
+      if (associated(cpatch%cb_mlmax)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%cb_mlmax,nvar,igr,init,cpatch%coglob_id            &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'CB_MLMAX :49:hist:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Full moisture+light C balance last 12 months+current'&
                            ,'[kgC/plant]','13 - icohort') 
       end if
       !------------------------------------------------------------------------------------!

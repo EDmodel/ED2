@@ -2022,6 +2022,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          if ( initp%sfcwater_mass(k)   >=  rk4snowmin		             .and.             &
               rk4snowmin * fsdnsi8 <= initp%sfcwater_depth(k)            .and.             &
               initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
+
             newlayers = newlayers + 1
          end if
          !---------------------------------------------------------------------------------!

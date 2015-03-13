@@ -1325,8 +1325,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          csite%rlong_s (ipa) = 0.0
          csite%rlong_g (ipa) = surface_netabs_longwave
       else
-         csite%rlong_s (ipa) = surface_netabs_longwave
-         csite%rlong_g (ipa) = 0.0
+         csite%rlong_s (ipa) = csite%snowfac(ipa)*surface_netabs_longwave
+         csite%rlong_g (ipa) = (1.-csite%snowfac(ipa))*surface_netabs_longwave
       end if
       !------------------------------------------------------------------------------------!
    end do
