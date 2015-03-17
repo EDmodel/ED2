@@ -949,7 +949,7 @@ $ED_NL
    !			             CBR = cb/max(cb_lightmax, cb_moistmax)			               !
    !                                                                                       !
    !                                                                                       !
-   !  DDMORT_CONST   -- CBR_Scheme = 2 only                                                !
+   !  DDMORT_CONST   -- CBR_Scheme = 1 only                                                !
    !			        This constant (k) determines the relative contribution of light    !
    !                    and soil moisture to the density-dependent mortality rate.  Values !
    !                    range from 0 (soil moisture only) to 1 (light only).               !
