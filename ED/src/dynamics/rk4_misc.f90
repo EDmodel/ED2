@@ -860,11 +860,12 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    if (initp%total_sfcw_mass > rk4tiny_sfcw_mass) then
       bulk_sfcw_dens = max( fsdns8                                                         &
                           , min( wdns8, initp%total_sfcw_mass / initp%total_sfcw_depth ) )
-      initp%snowfac  = max( 0.d0, min( 9.9d-1                                              &
-!      initp%snowfac  = max( 0.d0, min( 1                                              &
-                          , tanh( initp%total_sfcw_depth                                   &
-                                / ( ny07_eq04_a8 * soil_rough8                             &
-                                  * (bulk_sfcw_dens * fsdnsi8) ** ny07_eq04_m8 ) ) ) )
+      initp%snowfac  = 1d0
+!      initp%snowfac  = max( 0.d0, min( 9.9d-1                                              &
+!!      initp%snowfac  = max( 0.d0, min( 1                                              &
+!                          , tanh( initp%total_sfcw_depth                                   &
+!                                / ( ny07_eq04_a8 * soil_rough8                             &
+!                                  * (bulk_sfcw_dens * fsdnsi8) ** ny07_eq04_m8 ) ) ) )
    else
       initp%snowfac  = 0.d0
    end if

@@ -4388,7 +4388,7 @@ subroutine init_soil_coms
    dewmax              = 3.0e-5         ! Maximum dew flux rate (deprecated)      [ kg/m2/s]
    soil_rough          = 0.01           ! Soil roughness height                   [       m]
    snow_rough          = 0.0024         ! Snowcover roughness height              [       m]
-   tiny_sfcwater_mass  = 1.0e-4         ! Minimum mass in temporary layers        [   kg/m2]
+   tiny_sfcwater_mass  = 1.0e-3         ! Minimum mass in temporary layers        [   kg/m2]
    infiltration_method = 0              ! Infiltration method, used in rk4_derivs [     0|1]
    freezecoef          = 7.0 * log(10.) ! Coeff. for infiltration of frozen water [     ---]
    !---------------------------------------------------------------------------------------!
