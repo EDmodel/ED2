@@ -484,8 +484,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                 ** ( dslz8(mzg) / (initp%sfcwater_depth(1)+ dslz8(mzg)))  
 
 	  ! This does ground-snow interaction; atm gets added after this step
-      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac &
-!      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond                                     &
+!      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac &
+      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond                                     &
                                 * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))        &
                                 / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )         
       rk4aux(ibuff)%h_flux_s   (1)     = rk4aux(ibuff)%h_flux_g(mzg+1)                               
