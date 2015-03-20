@@ -1574,8 +1574,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          energy_available   = wmass_available * (alvi8 - fracliq_needed * alli8)		
          depth_available    = wmass_available * ( fracliq_needed * wdnsi8                  &		
-                                                + (1.d0-fracliq_needed * fdnsi8)		
+                                                + (1.d0-fracliq_needed) * fdnsi8) 		
          !---------------------------------------------------------------------------------!
+         
          !----- Remove the energy. --------------------------------------------------------!
          energy_available = wmass_available * energy_needed / wmass_needed
          energy_latent    = wmass_available * ( (1.d0 - fracliq_needed)                    &
