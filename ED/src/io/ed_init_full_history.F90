@@ -5020,6 +5020,15 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                         ,'DMEAN_PAR_L_BEAM_CO       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_par_l_diff                                           &
                         ,'DMEAN_PAR_L_DIFF_CO       ',dsetrank,iparallel,.false.,foundvar)
+
+      call hdf_getslab_r(cpatch%dmean_par_level_beam                                       &
+                        ,'DMEAN_PAR_LEVEL_BEAM_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_par_level_diffu                                       &
+                        ,'DMEAN_PAR_LEVEL_DIFFU_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_par_level_diffd                                       &
+                        ,'DMEAN_PAR_LEVEL_DIFFD_CO   ',dsetrank,iparallel,.false.,foundvar)
+
+
       call hdf_getslab_r(cpatch%dmean_rshort_l                                             &
                         ,'DMEAN_RSHORT_L_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_rlong_l                                              &
@@ -5133,6 +5142,14 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                         ,'MMEAN_PAR_L_BEAM_CO       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_par_l_diff                                           &
                         ,'MMEAN_PAR_L_DIFF_CO       ',dsetrank,iparallel,.false.,foundvar)
+
+      call hdf_getslab_r(cpatch%mmean_par_level_beam                                       &
+                        ,'MMEAN_PAR_LEVEL_BEAM_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_par_level_diffu                                       &
+                        ,'MMEAN_PAR_LEVEL_DIFFU_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_par_level_diffd                                       &
+                        ,'MMEAN_PAR_LEVEL_DIFFD_CO   ',dsetrank,iparallel,.false.,foundvar)
+
       call hdf_getslab_r(cpatch%mmean_rshort_l                                             &
                         ,'MMEAN_RSHORT_L_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_rlong_l                                              &
@@ -5393,6 +5410,15 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                         ,'QMEAN_PAR_L_BEAM_CO       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_par_l_diff                                           &
                         ,'QMEAN_PAR_L_DIFF_CO       ',dsetrank,iparallel,.false.,foundvar)
+
+      call hdf_getslab_r(cpatch%qmean_par_level_beam                                       &
+                        ,'QMEAN_PAR_LEVEL_BEAM_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_par_level_diffu                                       &
+                        ,'QMEAN_PAR_LEVEL_DIFFU_CO   ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_par_level_diffd                                       &
+                        ,'QMEAN_PAR_LEVEL_DIFFD_CO   ',dsetrank,iparallel,.false.,foundvar)
+
+
       call hdf_getslab_r(cpatch%qmean_rshort_l                                             &
                         ,'QMEAN_RSHORT_L_CO         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_rlong_l                                              &
