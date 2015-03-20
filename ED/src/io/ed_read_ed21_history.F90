@@ -376,6 +376,8 @@ subroutine read_ed21_history_file
          is = 0
          siteloop: do isi=1,pysi_n(py_index)
 
+            si_index = pysi_id(py_index) + isi - 1
+
             if (islakesite(isi) == 0) then
                is=is+1
 
