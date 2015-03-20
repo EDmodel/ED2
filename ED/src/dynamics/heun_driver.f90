@@ -798,7 +798,7 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    call update_diagnostic_vars(integration_buff(ibuff)%ak3      ,csite,ipa)
    !---------------------------------------------------------------------------------------!
 
-
+   combh = heun_b21*h
 
 
    !---------------------------------------------------------------------------------------!
