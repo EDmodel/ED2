@@ -476,15 +476,27 @@ subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai,c
       !     Find the light level of the visible band, which is the one that the plants     !
       ! use, and the total light level, which includes the near-infrared.                  !
       !------------------------------------------------------------------------------------!
+!----------------------------------------------------!
+! These variables are causing problems with SMP, so going to try reverting to an older state
+!----------------------------------------------------!
+!      par_level_diffd(il)          = 5.d-1 * ( downward_par_diff(il  )                     &
+!                                 + downward_par_diff(il+1) ) / (par_diff_norm+par_beam_norm)
+!
+!      par_level_diffu(il)          = 5.d-1 * ( upward_par_diff(il  )                     &
+!                                 + upward_par_diff(il+1) ) / (par_diff_norm+par_beam_norm)
+!
+!      par_level_beam(il)          = 5.d-1 * ( downward_par_beam   (il  )                   &
+!                                        + downward_par_beam   (il+1) ) / (par_beam_norm+par_diff_norm)
+!----------------------------------------------------!
       par_level_diffd(il)          = 5.d-1 * ( downward_par_diff(il  )                     &
-                                 + downward_par_diff(il+1) ) / (par_diff_norm+par_beam_norm)
+                                 + downward_par_diff(il+1) ) / (par_beam_norm)
 
       par_level_diffu(il)          = 5.d-1 * ( upward_par_diff(il  )                     &
-                                 + upward_par_diff(il+1) ) / (par_diff_norm+par_beam_norm)
+                                 + upward_par_diff(il+1) ) / (par_beam_norm)
 
       par_level_beam(il)          = 5.d-1 * ( downward_par_beam   (il  )                   &
-                                        + downward_par_beam   (il+1) ) / (par_beam_norm+par_diff_norm)
-
+                                        + downward_par_beam   (il+1) ) / (par_beam_norm)
+!----------------------------------------------------!
       light_level(il)         = 5.d-1 * ( downward_par_diff(il  )                          &
                                         + downward_par_beam   (il  )                       &
                                         + downward_nir_diff(il  )                          &
