@@ -1574,7 +1574,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !    There is not enough water vapour. Dry down to the minimum, and hope for the  !
          ! best.                                                                           !
          !---------------------------------------------------------------------------------!
-         energy_available   = wmass_available * (alvi8 - fracliq_needed * alli8)		
+! this gets done differently in the next step.  the required alvi & alli8 have changed from
+!    the original implementation
+!         energy_available   = wmass_available * (alvi8 - fracliq_needed * alli8)		
          depth_available    = wmass_available * ( fracliq_needed * wdnsi8                  &		
                                                 + (1.d0-fracliq_needed) * fdnsi8) 		
          !---------------------------------------------------------------------------------!
