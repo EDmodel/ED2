@@ -1312,7 +1312,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
                             , wdnsi8                & ! intent(in)
                             , fdnsi8                & ! intent(in)
                             , fsdnsi8               & ! intent(in)
-                            , alvl8                 & ! intent(in)
+                            , alvi8                 & ! intent(in)
                             , alli8                 ! ! intent(in)
    use therm_lib8    , only : uint2tl8              & ! subroutine
                             , uextcm2tl8            & ! subroutine
