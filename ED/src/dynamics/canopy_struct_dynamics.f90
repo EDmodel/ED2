@@ -295,9 +295,10 @@ module canopy_struct_dynamics
       !     I think canopy roughness may need to be re-thought, but this was necessary     !
       ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
       !------------------------------------------------------------------------------------!
-      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
-      !------------------------------------------------------------------------------------!
 
+!      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+      snowfac_can     = csite%snowfac(ipa)
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -917,6 +918,9 @@ module canopy_struct_dynamics
          ! need the full integral of the leaf area density before we determine these       !
          ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
+         !----- Constant drag. ------------------------------------------------------------!
+         canstr(ibuff)%cdrag   (:) = cdrag0
+         ldga_bk     = 0.0
          !----- Decide whether to apply the sheltering effect or not. ---------------------!
          select case (icanturb)
          case (2)
@@ -1009,6 +1013,7 @@ module canopy_struct_dynamics
          !----- Find the actual displacement height and roughness. ------------------------!
          csite%veg_displace(ipa) = max( vh2dh  * veg_height_min                            &
                                       , d0ohgt * csite%veg_height(ipa) )
+
          csite%rough       (ipa) = max( vh2vr  * veg_height_min                            &
                                       , z0ohgt * csite%veg_height(ipa) )
          !---------------------------------------------------------------------------------!
@@ -1056,6 +1061,7 @@ module canopy_struct_dynamics
             htopcrown = dble(cpatch%hite(ico))
             hbotcrown = dble(h2crownbh(cpatch%hite(ico),cpatch%pft(ico)))
             !------------------------------------------------------------------------------!
+
 
 
             !------------------------------------------------------------------------------!
@@ -1577,7 +1583,8 @@ module canopy_struct_dynamics
       !     I think canopy roughness may need to be re-thought, but this was necessary     !
       ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
       !------------------------------------------------------------------------------------!
-      snowfac_can     = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+!      snowfac_can     = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+      snowfac_can     = initp%snowfac
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     Find the virtual potential temperatures and decide whether the canopy air is   !
@@ -1586,6 +1593,15 @@ module canopy_struct_dynamics
       atm_thetav = rk4site%atm_theta * (1.d0 + epim18 * rk4site%atm_shv)
       can_thetav = initp%can_theta * (1.d0 + epim18 * initp%can_shv  )
       stable     = atm_thetav >= can_thetav
+
+      !------------------------------------------------------------------------------------!
+      !     Find the fraction of the canopy covered in snow (original snowfac function)    !
+      !     I think canopy roughness may need to be re-thought, but this was necessary     !
+      ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
+      !------------------------------------------------------------------------------------!
+      snowfac_can     = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -1597,6 +1613,7 @@ module canopy_struct_dynamics
          initp%rough        = soil_rough8 *(1.d0 - snowfac_can)                            &
                             + snow_rough8 * snowfac_can
          initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
+
          
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &

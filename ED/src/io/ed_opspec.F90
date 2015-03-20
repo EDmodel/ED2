@@ -1185,6 +1185,7 @@ subroutine ed_opspec_misc
    use physiology_coms       , only : iphysiol                     & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
                                     , iddmort_scheme               & ! intent(in)
+                                    , cbr_scheme                   & ! intent(in)
                                     , ddmort_const                 & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact_c3                    & ! intent(in)
@@ -1695,6 +1696,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IDDMORT_SCHEME, it must be between 0 and 1.  Yours is set to' &
                     ,iddmort_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (cbr_scheme < 0 .or. cbr_scheme > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid CBR_SCHEME, it must be between 0 and 3.  Yours is set to' &
+                    ,cbr_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

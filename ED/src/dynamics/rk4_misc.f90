@@ -1311,7 +1311,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
                             , uiliqt38              & ! intent(in)
                             , wdnsi8                & ! intent(in)
                             , fdnsi8                & ! intent(in)
-                            , fsdnsi8               ! ! intent(in)
+                            , fsdnsi8               & ! intent(in)
+!                            , alvi8                 & ! intent(in)
+                            , alli8                 ! ! intent(in)
    use therm_lib8    , only : uint2tl8              & ! subroutine
                             , uextcm2tl8            & ! subroutine
                             , tl2uint8              & ! function
@@ -1539,6 +1541,46 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !     Find the latent heat associated with the phase change.                      !
          !---------------------------------------------------------------------------------!
          call uint2tl8(energy_needed/wmass_needed,tempk_needed,fracliq_needed)
+
+!
+!         !---------------------------------------------------------------------------------!
+!         ! IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT !
+!         ! IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT !
+!         !---------------------------------------------------------------------------------!
+!         ! BLOCK OF DELETED CODE LEADING TO UNITIALIZED DEPTH_AVAILABLE
+!         ! Guilty Party: M. Paiao
+!         ! commit 9c89ca595583afac6ed548dff87ba4bdcd0e07e3
+!         ! Date: 5 Jan 2012
+!         !---------------------------------------------------------------------------------!
+!         ! Note: This whole block is copied from a very old version;
+!         !       I'm going to let energy_available be overwritten in the next step, but 
+!         !       take a stab at initializing depth available below
+!         !---------------------------------------------------------------------------------!
+!         !---------------------------------------------------------------------------------!
+!         !    There is not enough water vapour. Dry down to the minimum, and hope for the  !
+!         ! best.                                                                           !
+!         !---------------------------------------------------------------------------------!
+!         energy_available   = wmass_available * (alvi8 - initp%soil_fracliq(nzg) * alli8)		
+!         depth_available    = wmass_available * ( initp%soil_fracliq(nzg) * wdnsi8         &		
+!                                                + (1.d0-initp%soil_fracliq(nzg)) * fdnsi8)		
+!         !---------------------------------------------------------------------------------!
+!         !---------------------------------------------------------------------------------!
+!         ! IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT !
+!         ! IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT !
+!         !---------------------------------------------------------------------------------!
+!         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !    There is not enough water vapour. Dry down to the minimum, and hope for the  !
+         ! best.                                                                           !
+         !---------------------------------------------------------------------------------!
+! this gets done differently in the next step.  the required alvi & alli8 have changed from
+!    the original implementation
+!         energy_available   = wmass_available * (alvi8 - fracliq_needed * alli8)		
+         depth_available    = wmass_available * ( fracliq_needed * wdnsi8                  &		
+                                                + (1.d0-fracliq_needed) * fdnsi8) 		
+         !---------------------------------------------------------------------------------!
+         
          !----- Remove the energy. --------------------------------------------------------!
          energy_available = wmass_available * energy_needed / wmass_needed
          energy_latent    = wmass_available * ( (1.d0 - fracliq_needed)                    &
@@ -2043,6 +2085,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          if ( initp%sfcwater_mass(k)   >=  rk4snowmin		             .and.             &
               rk4snowmin * fsdnsi8 <= initp%sfcwater_depth(k)            .and.             &
               initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
+
             newlayers = newlayers + 1
          end if
          !---------------------------------------------------------------------------------!

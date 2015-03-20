@@ -1217,10 +1217,13 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     CB, CB_lightmax, and CB_moistmax are scaled by population, as they are in      !
-      ! kgC/plant/yr.  The relative carbon balance, however, is no longer derived from the !
-      ! annual values of CB, CB_LightMax, and CB_MoistMax, but tracked independently as it !
-      ! used to be done in ED-1.0.                                                         !
+      !     CB and CB_Xmax are scaled by population, as they are in kgC/plant/yr.          !
+      !------------------------------------------------------------------------------------!
+      ! RK: I think the below comment is no longer true. Per gh-24 reverting again to      !
+      ! calculate CBR from running means of CB and CB_Xmax. 
+      ! "The relative carbon balance, however, is no longer derived from the annual values !
+      ! of CB, CB_LightMax, and CB_MoistMax, but tracked independently as it used to be    !
+      ! done in ED-1.0."                                                                   !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
          cpatch%cb         (imon,recc) = newni                                             &
@@ -1239,6 +1242,11 @@ module fuse_fiss_utils
                                        * ( cpatch%cb_moistmax (imon,recc)                  &
                                          * cpatch%nplant           (recc)                  &
                                          + cpatch%cb_moistmax (imon,donc)                  &
+                                         * cpatch%nplant           (donc) )
+         cpatch%cb_mlmax(imon,recc)    = newni                                             &
+                                       * ( cpatch%cb_mlmax    (imon,recc)                  &
+                                         * cpatch%nplant           (recc)                  &
+                                         + cpatch%cb_mlmax    (imon,donc)                  &
                                          * cpatch%nplant           (donc) )
       end do
       !------------------------------------------------------------------------------------!
@@ -1288,6 +1296,9 @@ module fuse_fiss_utils
 
       cpatch%today_gpp_moistmax (recc) = cpatch%today_gpp_moistmax (recc)                  &
                                        + cpatch%today_gpp_moistmax (donc)
+
+      cpatch%today_gpp_mlmax    (recc) = cpatch%today_gpp_mlmax    (recc)                  &
+                                       + cpatch%today_gpp_mlmax    (donc)
 
       cpatch%today_leaf_resp    (recc) = cpatch%today_leaf_resp    (recc)                  &
                                        + cpatch%today_leaf_resp    (donc)

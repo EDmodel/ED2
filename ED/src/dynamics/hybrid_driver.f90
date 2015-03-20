@@ -475,7 +475,7 @@ subroutine hybrid_timestep(cgrid)
          !--------------------------------------------------------------------!
          !   Integrate the forward step                                       !
          !--------------------------------------------------------------------!
-         call inc_fwd_patch(ytemp,dinitp,h,cpatch)
+         call inc_fwd_patch(ytemp,dinitp,h,cpatch,csite, ipa)
 
          !--------------------------------------------------------------------!
          !   Integrate the implicit/backwards step                            !
@@ -1043,7 +1043,7 @@ subroutine hybrid_timestep(cgrid)
 !=============================================================!
 
 
- subroutine inc_fwd_patch(rkp, inc, fac, cpatch)
+ subroutine inc_fwd_patch(rkp, inc, fac, cpatch, csite, ipa)
    use ed_state_vars , only : sitetype           & ! structure
                             , patchtype          ! ! structure
    use rk4_coms      , only : rk4patchtype       & ! structure
@@ -1057,21 +1057,35 @@ subroutine hybrid_timestep(cgrid)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype)            , target      :: csite   ! Current site
+
    type(rk4patchtype) , target     :: rkp    ! Temporary patch with previous state
    type(rk4patchtype) , target     :: inc    ! Temporary patch with its derivatives
    type(patchtype)    , target     :: cpatch ! Current patch (for characteristics)
    real(kind=8)       , intent(in) :: fac    ! Increment factor
+   integer                   , intent(in)  :: ipa     ! Current patch ID
    !----- Local variables -----------------------------------------------------------------!
    integer                         :: ico    ! Cohort ID
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-
-
+!	if(ipa == 5) 
+!    write (unit=*,fmt='(a)')   '-------------------------------------------'
+!!    write (unit=*,fmt='(a)')   '	INC FWD PATCH Can CO2'
+!!    write (unit=*,fmt='(a)')   '-------------------------------------------'
+!!    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 IN  =',rkp%can_co2
+!    write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 Increment  =',fac*inc%can_co2
+!	end if
 
    rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
+  
+!   if(ipa_now == 5)   
+!   write (unit=*,fmt='(a)')   '-------------------------------------------'
+!	write (unit=*,fmt='(a,1x,es12.5)') '  can_co2 OUT  =',rkp%can_co2
+!   write (unit=*,fmt='(a)')   '-------------------------------------------'
+!	end if
 
    do k=rk4site%lsl,nzg
       rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
