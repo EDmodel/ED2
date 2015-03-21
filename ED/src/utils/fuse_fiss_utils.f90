@@ -1893,6 +1893,22 @@ module fuse_fiss_utils
                                                + cpatch%dmean_light_level_diff(donc)       &
                                                * cpatch%nplant                (donc) )     &
                                              * newni
+         cpatch%dmean_par_level_beam     (recc) = ( cpatch%dmean_par_level_beam(recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%dmean_par_level_beam  (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+         cpatch%dmean_par_level_diffd(recc) = ( cpatch%dmean_par_level_diffd(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%dmean_par_level_diffd(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%dmean_par_level_diffu(recc) = ( cpatch%dmean_par_level_diffu(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%dmean_par_level_diffu(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2267,6 +2283,24 @@ module fuse_fiss_utils
                                                * cpatch%mmean_cb              (donc)       &
                                                * cpatch%nplant                (donc) )     &
                                              * newni
+
+         cpatch%mmean_par_level_beam     (recc) = ( cpatch%mmean_par_level_beam(recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%mmean_par_level_beam  (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+         cpatch%mmean_par_level_diffd(recc) = ( cpatch%mmean_par_level_diffd(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%mmean_par_level_diffd(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%mmean_par_level_diffu(recc) = ( cpatch%mmean_par_level_diffu(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%mmean_par_level_diffu(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2353,6 +2387,7 @@ module fuse_fiss_utils
                                              + cpatch%mmean_par_l_beam      (donc)
          cpatch%mmean_par_l_diff      (recc) = cpatch%mmean_par_l_diff      (recc)         &
                                              + cpatch%mmean_par_l_diff      (donc)
+
          cpatch%mmean_rshort_l        (recc) = cpatch%mmean_rshort_l        (recc)         &
                                              + cpatch%mmean_rshort_l        (donc)
          cpatch%mmean_rlong_l         (recc) = cpatch%mmean_rlong_l         (recc)         &
@@ -2614,7 +2649,25 @@ module fuse_fiss_utils
                                                  * cpatch%nplant                  (recc)   &
                                                  + cpatch%qmean_light_level_diff(:,donc)   &
                                                  * cpatch%nplant                  (donc) ) &
+                                                 * newni
+
+         cpatch%qmean_par_level_beam (:,recc) = ( cpatch%qmean_par_level_beam(:,recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%qmean_par_level_beam  (:,donc)     &
+                                               * cpatch%nplant                (donc) )     &
                                                * newni
+         cpatch%qmean_par_level_diffd(:,recc) = ( cpatch%qmean_par_level_diffd(:,recc)     &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%qmean_par_level_diffd(:,donc)      &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+         cpatch%qmean_par_level_diffu(:,recc) = ( cpatch%qmean_par_level_diffu(:,recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%qmean_par_level_diffu(:,donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2699,6 +2752,9 @@ module fuse_fiss_utils
                                              + cpatch%qmean_par_l_beam    (:,donc)
          cpatch%qmean_par_l_diff    (:,recc) = cpatch%qmean_par_l_diff    (:,recc)         &
                                              + cpatch%qmean_par_l_diff    (:,donc)
+
+ 
+
          cpatch%qmean_rshort_l      (:,recc) = cpatch%qmean_rshort_l      (:,recc)         &
                                              + cpatch%qmean_rshort_l      (:,donc)
          cpatch%qmean_rlong_l       (:,recc) = cpatch%qmean_rlong_l       (:,recc)         &

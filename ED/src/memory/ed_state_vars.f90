@@ -8791,13 +8791,11 @@ module ed_state_vars
          call fatal_error('Mask doesn''t have OSIZE .true. elements'                       &
                          ,'copy_sitetype_mask','ed_state_vars.f90')
       end if
+
       !----- Save the indices from where we are going to copy. ----------------------------!
       allind = (/ (i,i=1,isize) /)
       iindex = pack(allind,lmask)
       !------------------------------------------------------------------------------------!
-
-
-
 
       !------------------------------------------------------------------------------------!
       !      Copy the cohorts.                                                             !
