@@ -148,9 +148,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%light_level_beam      (ico) = 0.0
    cpatch%light_level_diff      (ico) = 0.0
 
-   cpatch%par_level_beam       (ico) = 0.0
-   cpatch%par_level_diffu      (ico) = 0.0
-   cpatch%par_level_diffd      (ico) = 0.0
+   cpatch%par_level_beam        (ico) = 0.0
+   cpatch%par_level_diffu       (ico) = 0.0
+   cpatch%par_level_diffd       (ico) = 0.0
 
    cpatch%gpp                   (ico) = 0.0
    cpatch%leaf_respiration      (ico) = 0.0
