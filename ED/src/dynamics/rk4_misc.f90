@@ -1311,7 +1311,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
                             , uiliqt38              & ! intent(in)
                             , wdnsi8                & ! intent(in)
                             , fdnsi8                & ! intent(in)
-                            , fsdnsi8               ! ! intent(in)
+                            , fsdnsi8               & ! intent(in)
+                            , alli8                 ! ! intent(in)
    use therm_lib8    , only : uint2tl8              & ! subroutine
                             , uextcm2tl8            & ! subroutine
                             , tl2uint8              & ! function
@@ -1544,6 +1545,14 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          energy_latent    = wmass_available * ( (1.d0 - fracliq_needed)                    &
                                               * alvi8(tempk_needed)                        &
                                               + fracliq_needed * alvl8(tempk_needed) )
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+		 ! Initialize depth_available based on available mass                              !
+		 !    NOTE: This should be double-checked                                          !
+         !---------------------------------------------------------------------------------!
+         depth_available    = wmass_available * ( fracliq_needed * wdnsi8                  &		
+                                                + (1.d0-fracliq_needed) * fdnsi8) 		
          !---------------------------------------------------------------------------------!
 
 

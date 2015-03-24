@@ -295,7 +295,9 @@ module canopy_struct_dynamics
       !     I think canopy roughness may need to be re-thought, but this was necessary     !
       ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
       !------------------------------------------------------------------------------------!
-      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+
+!      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+      snowfac_can     = csite%snowfac(ipa)
       !------------------------------------------------------------------------------------!
 
 
@@ -917,6 +919,9 @@ module canopy_struct_dynamics
          ! need the full integral of the leaf area density before we determine these       !
          ! variables.                                                                      !
          !---------------------------------------------------------------------------------!
+         !----- Constant drag. ------------------------------------------------------------!
+         canstr(ibuff)%cdrag   (:) = cdrag0
+         ldga_bk     = 0.0
          !----- Decide whether to apply the sheltering effect or not. ---------------------!
          select case (icanturb)
          case (2)
@@ -1577,7 +1582,8 @@ module canopy_struct_dynamics
       !     I think canopy roughness may need to be re-thought, but this was necessary     !
       ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
       !------------------------------------------------------------------------------------!
-      snowfac_can     = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+!      snowfac_can     = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+      snowfac_can     = initp%snowfac
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     Find the virtual potential temperatures and decide whether the canopy air is   !

@@ -553,8 +553,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    if ( ksn > 0 ) then
       dinitp%sfcwater_mass  (ksn) =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
-      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn)                            &
-                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc      &
+      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn)                         &
+                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc   &
                                   - hflxsc  + dble(csite%rlong_s(ipa))
       dinitp%sfcwater_depth (ksn) = ddewgnd + dwshed_tot + dthroughfall_tot
    else
@@ -1394,7 +1394,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                   !     If we ever have shedding, force wshed to cap out at that maximum   !
                   ! leaf water.  Assume this process happens before evaporation.           !
                   !------------------------------------------------------------------------!
-!! TURNIGN OFF SHEDDING FOR NOW
+!! TURNING OFF SHEDDING FOR NOW
 !!
 
 !!                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
@@ -1723,7 +1723,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
 
 
-              !---------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
                !       This is called by the hybrid solver only.                           !
                !---------------------------------------------------------------------------!
                if (is_hybrid) then
@@ -1734,7 +1734,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                   !     If we ever have shedding, force wshed to cap out at that maximum   !
                   ! leaf water.  Assume this process happens before evaporation.           !
                   !------------------------------------------------------------------------!
-!! TURNIGN OFF SHEDDING FOR NOW
+!! TURNING OFF SHEDDING FOR NOW
 !!
 
 !!                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &

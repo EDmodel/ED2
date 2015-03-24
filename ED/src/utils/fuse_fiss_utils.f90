@@ -2653,9 +2653,9 @@ module fuse_fiss_utils
                                                + cpatch%qmean_par_level_diffd(:,donc)      &
                                                * cpatch%nplant                (donc) )     &
                                                * newni
-         cpatch%qmean_par_level_diffu(:,recc) = ( cpatch%qmean_par_level_diffu(:,recc)       &
+         cpatch%qmean_par_level_diffu(:,recc) = ( cpatch%qmean_par_level_diffu(:,recc)     &
                                                * cpatch%nplant                (recc)       &
-                                               + cpatch%qmean_par_level_diffu(:,donc)        &
+                                               + cpatch%qmean_par_level_diffu(:,donc)      &
                                                * cpatch%nplant                (donc) )     &
                                                * newni
 
