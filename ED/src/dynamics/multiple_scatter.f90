@@ -887,18 +887,17 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
          !---------------------------------------------------------------------------------!
 
          !------ Integrate the visible light levels. --------------------------------------!
-         ! NEEDS TO BE CHECKED (PARTICULARLY THE UPWARD)
-         ! THIS SHOULD BE THE LEVEL (COHORT) CENTERED FLUX OF PAR
          do i=1,ncoh
             ip1 = i + 1
             im1 = i - 1
-            par_level_diffd(i) = 5.d-1 * (swd(i) + swd(ip1)) / (par_diff_norm + par_beam_norm)
-            par_level_diffu(i) = 5.d-1 * (swu(i) + swu(im1)) / (par_diff_norm + par_beam_norm)
-            par_level_beam (i) = 5.d-1 * (beam_down(i) + beam_down(ip1)) / (par_diff_norm+par_beam_norm)
+            par_level_diffd(i) = 5.d-1 * (swd(i) + swd(ip1)) /                             &
+                 (par_diff_norm + par_beam_norm)
+            par_level_diffu(i) = 5.d-1 * (swu(i) + swu(im1)) /                             &
+                 (par_diff_norm + par_beam_norm)
+            par_level_beam (i) = 5.d-1 * (beam_down(i) + beam_down(ip1)) /                 &
+                 (par_diff_norm+par_beam_norm)
          end do
          !---------------------------------------------------------------------------------!
-
-
 
          !------ Save the fluxes reaching the surface and leaving the top. ----------------!
          dw_parlo_beam = sngloff(beam_down      (1), tiny_offset)
