@@ -113,13 +113,14 @@ module physiology_coms
    !                                                                                       !
    !                                    mort1                                              !
    !                  mu_DD = -------------------------                                    !
-   !                            1 + exp [ mort2 * cr ]                                     !
+   !                            1 + exp [ mort2 * CBR ]                                    !
    !                                                                                       !
-   !                                 CB                      CB                            !
-   !                  cr    = k ------------- + (1 - k) -------------                      !
-   !                             CB_lightmax             CB_watermax                       !
+   !                  1              DDMORT_CONST         1 - DDMORT_CONST                 !
+   !             ------------  =  ------------------  +  ------------------                !
+   !             CBR - CBR_SS     CBR_LIGHT - CBR_SS     CBR_MOIST - CBR_SS                !
    !---------------------------------------------------------------------------------------!
    integer              :: iddmort_scheme
+   integer              :: cbr_scheme
    real                 :: ddmort_const
    !---------------------------------------------------------------------------------------!
 

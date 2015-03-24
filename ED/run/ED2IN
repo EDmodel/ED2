@@ -22,7 +22,7 @@ $ED_NL
    !            initial in the sense that exactly the same information written in the      !
    !            history will be used here.                                                 !
    !---------------------------------------------------------------------------------------!
-   NL%RUNTYPE  = 'INITIAL'
+   NL%RUNTYPE  = 'RUNFLAG'
    !---------------------------------------------------------------------------------------!
 
 
@@ -30,10 +30,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !     Start of simulation. Information must be given in UTC time.                       !
    !---------------------------------------------------------------------------------------!
-   NL%IMONTHA  = 01
-   NL%IDATEA   = 01
-   NL%IYEARA   = 1996
-   NL%ITIMEA   = 0000
+   NL%IMONTHA  = mymontha
+   NL%IDATEA   = mydatea
+   NL%IYEARA   = myyeara
+   NL%ITIMEA   = mytimea
    !---------------------------------------------------------------------------------------!
 
 
@@ -41,10 +41,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    !     End of simulation. Information must be given in UTC time.                         !
    !---------------------------------------------------------------------------------------!
-   NL%IMONTHZ  = 01    ! Month
-   NL%IDATEZ   = 01    ! Day
-   NL%IYEARZ   = 2000  ! Year
-   NL%ITIMEZ   = 0000  ! UTC
+   NL%IMONTHZ  = mymonthz ! Month
+   NL%IDATEZ   = mydatez  ! Day
+   NL%IYEARZ   = myyearz  ! Year
+   NL%ITIMEZ   = mytimez  ! UTC
    !---------------------------------------------------------------------------------------!
 
 
@@ -60,8 +60,8 @@ $ED_NL
    ! RADFRQ -- Time step to integrate radiation, in seconds.  This must be an integer      !
    !            multiple of DTLSM, and we recommend it to be exactly the same as DTLSM.    !
    !---------------------------------------------------------------------------------------!
-   NL%DTLSM  =  900
-   NL%RADFRQ  = 900
+   NL%DTLSM  =  mydtlsm
+   NL%RADFRQ  = mydtlsm
    !---------------------------------------------------------------------------------------!
 
 
@@ -77,7 +77,7 @@ $ED_NL
    !                1.  Polar-stereographic                                                !
    !---------------------------------------------------------------------------------------!
    NL%N_ED_REGION   =  0
-   NL%GRID_TYPE     =  0
+   NL%GRID_TYPE     =  1
 
       !------------------------------------------------------------------------------------!
       !     The following variables are used only when GRID_TYPE is set to 0.  You must    !
@@ -120,12 +120,12 @@ $ED_NL
       !------------------------------------------------------------------------------------!
       NL%NNXP    = 110
       NL%NNYP    =  70
-      NL%DELTAX  = 60000
-      NL%DELTAY  = 60000
-      NL%POLELAT =  -2.857
-      NL%POLELON = -54.959
-      NL%CENTLAT =  -2.857
-      NL%CENTLON = -54.959
+      NL%DELTAX  = 60000.
+      NL%DELTAY  = 60000.
+      NL%POLELAT = -2.609075
+      NL%POLELON = -60.2093
+      NL%CENTLAT  = -2.609075
+      NL%CENTLON  = -60.2093
       !------------------------------------------------------------------------------------!
 
 
@@ -157,10 +157,10 @@ $ED_NL
    ! POI_RES -- grid resolution of each POI (degrees).  This is used only to define the    !
    !            soil types                                                                 !
    !---------------------------------------------------------------------------------------!
-    NL%N_POI    =    1
-    NL%POI_LAT  =  35.5
-    NL%POI_LON  = -79.0
-    NL%POI_RES  = 1.00   
+   NL%N_POI    =    1
+   NL%POI_LAT  = platflag
+   NL%POI_LON  = plonflag
+   NL%POI_RES  = 1.00
    !---------------------------------------------------------------------------------------!
 
 
@@ -199,10 +199,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IFOUTPUT  =  0
    NL%IDOUTPUT  =  0
-   NL%IMOUTPUT  =  3
-   NL%IQOUTPUT  =  0
+   NL%IMOUTPUT  =  0
+   NL%IQOUTPUT  =  3
    NL%IYOUTPUT  =  0
-   NL%ITOUTPUT  =  3
+   NL%ITOUTPUT  =  0
    NL%ISOUTPUT  =  3
    !---------------------------------------------------------------------------------------!
 
@@ -240,13 +240,14 @@ $ED_NL
 
 
 
+
    !---------------------------------------------------------------------------------------!
    ! ATTACH_METADATA -- Flag for attaching metadata to HDF datasets.  Attaching metadata   !
    !                    will aid new users in quickly identifying dataset descriptions but !
    !                    will compromise I/O performance significantly.                     !
    !                    0 = no metadata, 1 = attach metadata                               !
    !---------------------------------------------------------------------------------------!
-   NL%ATTACH_METADATA = 1
+   NL%ATTACH_METADATA = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -265,7 +266,7 @@ $ED_NL
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    NL%UNITFAST   = 0
-   NL%UNITSTATE  = 1
+   NL%UNITSTATE  = 3
    !---------------------------------------------------------------------------------------!
 
 
@@ -280,8 +281,8 @@ $ED_NL
    !                         Multiple timepoints should not be used in the history files   !
    !                         if you intend to use these for HISTORY runs.                  !
    !---------------------------------------------------------------------------------------!
-   NL%OUTFAST    = -1
-   NL%OUTSTATE   = 0
+   NL%OUTFAST    = 0.
+   NL%OUTSTATE   = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -293,8 +294,8 @@ $ED_NL
    ! FRQSTATE -- time interval between history files, units defined by UNITSTATE.          !
    !---------------------------------------------------------------------------------------!
    NL%ICLOBBER  = 1
-   NL%FRQFAST   = 1800
-   NL%FRQSTATE  = 1
+   NL%FRQFAST   = 3600.
+   NL%FRQSTATE  = 1.
    !---------------------------------------------------------------------------------------!
 
 
@@ -303,10 +304,8 @@ $ED_NL
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-
-   NL%FFILOUT = '/mypath/generic-prefix'
-   NL%SFILOUT = '/mypath/generic-prefix'
-
+   NL%FFILOUT = 'paththere/thispoly/analy/thispoly'
+   NL%SFILOUT = 'paththere/thispoly/histo/thispoly'
    !---------------------------------------------------------------------------------------!
 
 
@@ -349,16 +348,8 @@ $ED_NL
    !                                                                                       !
    !    6 - Initialize with ED-2 style files without multiple sites, exactly like option   !
    !        2, except that the PFT types are preserved.                                    !
-   !	                                                                                   !
-   !    7.  Initialize from a list of both POI and gridded ED2.1 state files, organized    !
-   !        in the same manner as 5.  This method overrides the soil database info and     !
-   !        takes the soil texture and soil moisture information from the initializing     !
-   !        ED2.1 state file.  It allows for different layering, and assigns via nearest   !
-   !        neighbor.
-   !
-   !
    !---------------------------------------------------------------------------------------!
-   NL%IED_INIT_MODE   = 3
+   NL%IED_INIT_MODE   = myinitmode
    !---------------------------------------------------------------------------------------!
 
 
@@ -385,9 +376,7 @@ $ED_NL
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-
-   NL%SFILIN   = '/n/gstore/Labs/moorcroft_data_protected/mlongo/data/ed2_data/site_bio_data/s67_default.'
-
+   NL%SFILIN   = 'mysfilin'
    !---------------------------------------------------------------------------------------!
 
 
@@ -402,10 +391,10 @@ $ED_NL
    ! IYEARH     want to extend the run, but yo should NOT change IMONTHA and related.      !
    ! ITIMEH                                                                                !
    !---------------------------------------------------------------------------------------!
-   NL%ITIMEH   = 0000   ! UTC
-   NL%IDATEH   = 01     ! Day
-   NL%IMONTHH  = 08     ! Month
-   NL%IYEARH   = 2000   ! Year
+   NL%ITIMEH   = timehhhh     ! UTC
+   NL%IDATEH   = datehhhh     ! Day
+   NL%IMONTHH  = monthhhh     ! Month
+   NL%IYEARH   = yearhhhh     ! Year
    !---------------------------------------------------------------------------------------!
 
 
@@ -417,8 +406,8 @@ $ED_NL
    !           into a single layer, so if you are running for places where it doesn't snow !
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
-   NL%NZG = 9
-   NL%NZS = 1
+   NL%NZG = mynzg
+   NL%NZS = 4
    !---------------------------------------------------------------------------------------!
 
 
@@ -432,7 +421,7 @@ $ED_NL
    !                NSLCON or by prescribing the fraction of sand and clay (see SLXSAND    !
    !                and SLXCLAY).                                                          !
    !---------------------------------------------------------------------------------------!
-   NL%ISOILFLG = 2
+   NL%ISOILFLG = myisoilflg
    !---------------------------------------------------------------------------------------!
 
 
@@ -449,18 +438,15 @@ $ED_NL
    !   5 -- loam                |  11 -- clay                |  17 -- clayey silt          !
    !   6 -- sandy clay loam     |  12 -- peat                                              !
    !---------------------------------------------------------------------------------------!
-
-   NL%NSLCON   = 11      ! Default soil type if ISOILFLG = 2 (choices below:)
-
+   NL%NSLCON   = mynslcon      ! Default soil type if ISOILFLG = 2 (choices below:)
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes that the model will use when ISOILFLG !
-   !             is set to 2.  Soil classes are from 1 to 20 (1 = lightest; 20 = darkest). !
-   !             The values are the same as CLM-4.0.  The table is the albedo for visible  !
-   !             and near infra-red.                                                       !
+   ! ISOILCOL -- LEAF-3 and ED-2 soil colour classes.  Soil classes are from 1 to 20       !
+   !             (1 = lightest; 20 = darkest).  The values are the same as CLM-4.0.  The   !
+   !             table is the albedo for visible and near infra-red.                       !
    !---------------------------------------------------------------------------------------!
    !                                                                                       !
    !       |-----------------------------------------------------------------------|       !
@@ -483,8 +469,7 @@ $ED_NL
    !   Soil type 21 is a special case in which we use the albedo method that used to be    !
    ! the default in ED-2.1.                                                                !
    !---------------------------------------------------------------------------------------!
-
-   NL%ISOILCOL  = 21
+   NL%ISOILCOL  = mysoilcol
    !---------------------------------------------------------------------------------------!
 
 
@@ -500,8 +485,8 @@ $ED_NL
    !     They are used only when ISOILFLG is 2, both values are between 0. and 1., and     !
    ! theira sum doesn't exceed 1.  Otherwise standard ED values will be used instead.      !
    !---------------------------------------------------------------------------------------!
-   NL%SLXCLAY = 0.68
-   NL%SLXSAND = 0.20
+   NL%SLXCLAY = myslxclay
+   NL%SLXSAND = myslxsand
    !---------------------------------------------------------------------------------------!
 
 
@@ -521,9 +506,27 @@ $ED_NL
    !               2 = porosity (saturation)                                               !
    ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset)    !
    !---------------------------------------------------------------------------------------!
-   NL%SLZ     =  -2.307, -1.789, -1.340, -0.961, -0.648, -0.400, -0.215, -0.089, -0.020
-   NL%SLMSTR  =   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00,   1.00
-   NL%STGOFF  =   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00,   0.00
+   NL%SLZ     =   myslz1
+                  myslz2
+                  myslz3
+                  myslz4
+                  myslz5
+                  myslz6
+                  myslz7
+   NL%SLMSTR  =   myslmstr1
+                  myslmstr2
+                  myslmstr3
+                  myslmstr4
+                  myslmstr5
+                  myslmstr6
+                  myslmstr7
+   NL%STGOFF  =   mystgoff1
+                  mystgoff2
+                  mystgoff3
+                  mystgoff4
+                  mystgoff5
+                  mystgoff6
+                  mystgoff7
    !---------------------------------------------------------------------------------------!
 
 
@@ -552,10 +555,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_'
    NL%SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
-   NL%LU_DATABASE       = '/n/home00/mlongo/protected/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
+   NL%LU_DATABASE       = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/'
-   NL%ED_MET_DRIVER_DB  = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/ed2_data/met_driver/wmo+eft/eft/Santarem_Km67/Santarem_Km67_HEADER'
+   NL%ED_MET_DRIVER_DB  = 'mymetdriverdb'
    NL%SOILSTATE_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/STW1996OCT.dat'
    NL%SOILDEPTH_DB      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/soil_depths.dat'
    !---------------------------------------------------------------------------------------!
@@ -587,12 +590,12 @@ $ED_NL
    !                bottommost layer is due to gradient of height only.                    !
    !            2.  Lateral drainage.  Similar to free drainage, but the gradient is       !
    !                reduced by the slope not being completely vertical.  The reduction is  !
-   !                controlled by variable SLDRAIN.  In the future options 0, 1, and 2 may !
+   !                controlled by variable SLDRAIN.  In the future options 0, 1, and 5 may !
    !                be combined into a single option.                                      !
    !            3.  Aquifer.  Soil moisture of the ficticious layer beneath the bottom is  !
    !                always at saturation.                                                  !
    !---------------------------------------------------------------------------------------!
-   NL%ISOILBC        = 1
+   NL%ISOILBC        = mysoilbc
    !---------------------------------------------------------------------------------------!
 
 
@@ -605,7 +608,7 @@ $ED_NL
    !            then lateral drainage becomes free drainage.  SLDRAIN must be between 0    !
    !            and 90.                                                                    !
    !---------------------------------------------------------------------------------------!
-   NL%SLDRAIN        = 90.
+   NL%SLDRAIN        = mysldrain
    !---------------------------------------------------------------------------------------!
 
 
@@ -619,7 +622,7 @@ $ED_NL
    !                   1.  Normal ED vegetation dynamics (Moorcroft et al 2001).           !
    !                       The normal option for almost any simulation.                    !
    !---------------------------------------------------------------------------------------!
-   NL%IVEGT_DYNAMICS = 1
+   NL%IVEGT_DYNAMICS = myvegtdyn
    !---------------------------------------------------------------------------------------!
 
 
@@ -633,7 +636,7 @@ $ED_NL
    !                                                                                       !
    ! N.B. if you set IBIGLEAF to 1, you MUST turn off the crown model (CROWN_MOD = 0)      !
    !---------------------------------------------------------------------------------------!
-   NL%IBIGLEAF = 0
+   NL%IBIGLEAF = mybigleaf
    !---------------------------------------------------------------------------------------!
 
 
@@ -644,7 +647,7 @@ $ED_NL
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
    !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
-   !                       2.  Heun's method (DEPRECATED ATM - DO NOT USE)
+   !                       2.  Heun's method (a second-order Runge-Kutta).                 !
    !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
    !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
@@ -661,7 +664,7 @@ $ED_NL
    !                  between 1.e-7 and 1.e-1, but recommended values are between 1.e-4    !
    !                  and 1.e-2.                                                           !
    !---------------------------------------------------------------------------------------!
-   NL%RK4_TOLERANCE  = 0.01
+   NL%RK4_TOLERANCE  = mytoler
    !---------------------------------------------------------------------------------------!
 
 
@@ -677,7 +680,7 @@ $ED_NL
    !                   2.  Similar to 1, but branches are treated as separate pools in the !
    !                       biophysics (thus doubling the number of prognostic variables).  !
    !---------------------------------------------------------------------------------------!
-   NL%IBRANCH_THERMO = 1
+   NL%IBRANCH_THERMO = mybranch
    !---------------------------------------------------------------------------------------!
 
 
@@ -700,7 +703,7 @@ $ED_NL
    !      (2001).                                                                          !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
-   NL%IPHYSIOL = 0
+   NL%IPHYSIOL = 2
    !---------------------------------------------------------------------------------------!
 
 
@@ -728,7 +731,7 @@ $ED_NL
    !                  small classes ("saplings") and large classes ("trees"), like in Cole !
    !                  and Ewel (2006).                                                     !
    !---------------------------------------------------------------------------------------!
-   NL%IALLOM          = 0
+   NL%IALLOM          = myallom
    !---------------------------------------------------------------------------------------!
 
 
@@ -778,7 +781,7 @@ $ED_NL
    !  New scheme: plants shed their leaves once a 10-day running average of available      !
    !              water becomes less than a critical value.                                !
    !---------------------------------------------------------------------------------------!
-   NL%IPHEN_SCHEME    = 0     
+   NL%IPHEN_SCHEME    = myiphen     
    !---------------------------------------------------------------------------------------!
 
 
@@ -810,7 +813,7 @@ $ED_NL
    !                     drought deciduous plants.  This option is for testing purposes    !
    !                     only, think 50 times before using it...                           !
    !---------------------------------------------------------------------------------------!
-   NL%REPRO_SCHEME    = 1
+   NL%REPRO_SCHEME    = myrepro
    !---------------------------------------------------------------------------------------!
 
 
@@ -835,7 +838,7 @@ $ED_NL
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%CROWN_MOD       = 0
+   NL%CROWN_MOD       = mycrown
    !---------------------------------------------------------------------------------------!
 
 
@@ -847,7 +850,6 @@ $ED_NL
    !                 shortwave and longwave.                                               !
    !                 0.  Original two-stream model (Medvigy 2006), with the possibility to !
    !                     apply finite crown area to direct shortwave radiation.            !
-   !                     (deprecated - disable opspec to use 0)                            !
    !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
    !                     possibility to apply finite crown area to all radiation fluxes.   !
    !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
@@ -873,15 +875,15 @@ $ED_NL
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   NL%ICANRAD        =  0
-   NL%LTRANS_VIS     =  0.050
-   NL%LTRANS_NIR     =  0.230
-   NL%LREFLECT_VIS   =  0.100
-   NL%LREFLECT_NIR   =  0.460
-   NL%ORIENT_TREE    =  0.100
-   NL%ORIENT_GRASS   =  0.000
-   NL%CLUMP_TREE     =  0.800
-   NL%CLUMP_GRASS    =  1.000
+   NL%ICANRAD        =  mycanrad
+   NL%LTRANS_VIS     =  myltransvis
+   NL%LTRANS_NIR     =  myltransnir
+   NL%LREFLECT_VIS   =  mylreflectvis
+   NL%LREFLECT_NIR   =  mylreflectnir
+   NL%ORIENT_TREE    =  myorienttree
+   NL%ORIENT_GRASS   =  myorientgrass
+   NL%CLUMP_TREE     =  myclumptree
+   NL%CLUMP_GRASS    =  myclumpgrass
    !---------------------------------------------------------------------------------------!
 
 
@@ -900,7 +902,7 @@ $ED_NL
    !                      rates when it is close to the optimal, plumetting when it is     !
    !                      almost saturated.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%DECOMP_SCHEME   = 2
+   NL%DECOMP_SCHEME   = mydecomp
    !---------------------------------------------------------------------------------------!
 
 
@@ -921,9 +923,9 @@ $ED_NL
    !                      (psi(k) - (H - z(k)) - psi_wp) / (psi_fc - psi_wp)               !
    !                      where psi is the matric potentital at layer k, z is the layer    !
    !                      depth, H it the crown height and psi_fc and psi_wp are the       !
-   !                      matric potentials at wilting point and field capacity.           !
+   !                      matric potentials at wilting point and field capacity.  This is  !
    !---------------------------------------------------------------------------------------!
-   NL%H2O_PLANT_LIM   = 1
+   NL%H2O_PLANT_LIM   = myh2olimit
    !---------------------------------------------------------------------------------------!
 
 
@@ -937,20 +939,35 @@ $ED_NL
    !                         in negative carbon balance only when they run out of storage  !
    !                         and are still losing more carbon than gaining.                !
    !                                                                                       !
-   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !  CBR_SCHEME     -- This flag determines which carbon stress scheme is used:           !
+   !                    0 -- Single stress.  CBR = cb/cb_mlmax                             !
+   !                         cb_mlmax is the carbon balance in full sun and no moisture    !
+   !                         limitation                                                    !
+   !                    1 -- Co-limitation from light and moisture                         !
+   !                         CBR_LIGHT = cb/cb_lightmax and CBR_MOIST = cb/cb_moistmax     !
+   !                         CBR_LIGHT and CBR_MOIST are then weighted according to        !
+   !                         DDMORT_CONST (below)                                          !
+   !                    2 -- Leibig Style, i.e. limitation from either light or moisture   !
+   !                         depending on which is lower at a given point in time          !
+   !                         CBR = cb/max(cb_lightmax, cb_moistmax)                        !
+   !                                                                                       !
+   !                                                                                       !
+   !  DDMORT_CONST   -- CBR_Scheme = 1 only                                                !
+   !                    This constant (k) determines the relative contribution of light    !
    !                    and soil moisture to the density-dependent mortality rate.  Values !
    !                    range from 0 (soil moisture only) to 1 (light only).               !
    !                                                                                       !
    !                                    mort1                                              !
    !                  mu_DD = -------------------------                                    !
-   !                            1 + exp [ mort2 * cr ]                                     !
+   !                            1 + exp [ mort2 * CBR ]                                    !
    !                                                                                       !
-   !                                 CB                      CB                            !
-   !                  cr    = k ------------- + (1 - k) -------------                      !
-   !                             CB_lightmax             CB_watermax                       !
+   !                  1              DDMORT_CONST         1 - DDMORT_CONST                 !
+   !             ------------  =  ------------------  +  ------------------                !
+   !             CBR - CBR_SS     CBR_LIGHT - CBR_SS     CBR_MOIST - CBR_SS                !
    !---------------------------------------------------------------------------------------!
-   NL%IDDMORT_SCHEME  = 0
-   NL%DDMORT_CONST    = 0.8
+   NL%IDDMORT_SCHEME  = mymortscheme
+   NL%CBR_SCHEME      = mycbrscheme
+   NL%DDMORT_CONST    = myddmortconst
    !---------------------------------------------------------------------------------------!
 
 
@@ -995,30 +1012,30 @@ $ED_NL
    ! Q10_C3        -- Q10 factor for C3 plants (used only if IPHYSIOL is set to 2 or 3).   !
    ! Q10_C4        -- Q10 factor for C4 plants (used only if IPHYSIOL is set to 2 or 3).   !
    !---------------------------------------------------------------------------------------!
-   NL%VMFACT_C3       = 1.00
-   NL%VMFACT_C4       = 1.00
-   NL%MPHOTO_TRC3     = 9.0
-   NL%MPHOTO_TEC3     = 7.2
-   NL%MPHOTO_C4       = 5.2
-   NL%BPHOTO_BLC3     = 10000.
-   NL%BPHOTO_NLC3     = 1000.
-   NL%BPHOTO_C4       = 10000.
-   NL%KW_GRASS        = 900.
-   NL%KW_TREE         = 600.
-   NL%GAMMA_C3        = 0.0145
-   NL%GAMMA_C4        = 0.0350
-   NL%D0_GRASS        = 0.016
-   NL%D0_TREE         = 0.016
-   NL%ALPHA_C3        = 0.080
-   NL%ALPHA_C4        = 0.055
-   NL%KLOWCO2IN       = 4000.
-   NL%RRFFACT         = 1.000
-   NL%GROWTHRESP      = 0.333
-   NL%LWIDTH_GRASS    = 0.05
-   NL%LWIDTH_BLTREE   = 0.10
-   NL%LWIDTH_NLTREE   = 0.05
-   NL%Q10_C3          = 2.4
-   NL%Q10_C4          = 2.4
+   NL%VMFACT_C3       = myvmfactc3
+   NL%VMFACT_C4       = myvmfactc4
+   NL%MPHOTO_TRC3     = mymphototrc3
+   NL%MPHOTO_TEC3     = mymphototec3
+   NL%MPHOTO_C4       = mymphotoc4
+   NL%BPHOTO_BLC3     = mybphotoblc3
+   NL%BPHOTO_NLC3     = mybphotonlc3
+   NL%BPHOTO_C4       = mybphotoc4
+   NL%KW_GRASS        = mykwgrass
+   NL%KW_TREE         = mykwtree
+   NL%GAMMA_C3        = mygammac3
+   NL%GAMMA_C4        = mygammac4
+   NL%D0_GRASS        = myd0grass
+   NL%D0_TREE         = myd0tree
+   NL%ALPHA_C3        = myalphac3
+   NL%ALPHA_C4        = myalphac4
+   NL%KLOWCO2IN       = myklowco2
+   NL%RRFFACT         = myrrffact
+   NL%GROWTHRESP      = mygrowthresp
+   NL%LWIDTH_GRASS    = mylwidthgrass
+   NL%LWIDTH_BLTREE   = mylwidthbltree
+   NL%LWIDTH_NLTREE   = mylwidthnltree
+   NL%Q10_C3          = myq10c3
+   NL%Q10_C4          = myq10c4
    !---------------------------------------------------------------------------------------!
 
 
@@ -1034,7 +1051,7 @@ $ED_NL
    !                       ing point is by definition -1.5MPa, so make sure that the value !
    !                       is above -1.5.                                                  !
    !---------------------------------------------------------------------------------------!
-   NL%THETACRIT       = -1.20
+   NL%THETACRIT       = mythcrit
    !---------------------------------------------------------------------------------------!
 
 
@@ -1102,9 +1119,9 @@ $ED_NL
    !                   the minimum water deficit relative to the total rainfall, over the  !
    !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
-   NL%INCLUDE_FIRE    = 0
-   NL%FIRE_PARAMETER  = 0.5
-   NL%SM_FIRE         = 0.07
+   NL%INCLUDE_FIRE    = myfire
+   NL%FIRE_PARAMETER  = myfuel
+   NL%SM_FIRE         = mysmfire
    !---------------------------------------------------------------------------------------!
 
 
@@ -1137,7 +1154,7 @@ $ED_NL
    !             4.  Same as 0, but if finds the ground conductance following CLM          !
    !                 technical note (equations 5.98-5.100).                                !
    !---------------------------------------------------------------------------------------!
-   NL%ICANTURB        = 0
+   NL%ICANTURB        = myicanturb
    !---------------------------------------------------------------------------------------!
 
 
@@ -1156,7 +1173,7 @@ $ED_NL
    ! 4.  CLM (2004).  Similar to 2 and 3, but they have special functions to deal with     !
    !     very stable and very stable cases.                                                !
    !---------------------------------------------------------------------------------------!
-   NL%ISFCLYRM        = 3
+   NL%ISFCLYRM        = mysfclyrm
    !---------------------------------------------------------------------------------------!
 
 
@@ -1174,7 +1191,7 @@ $ED_NL
    !    In all cases the beta term is modified so it approaches zero as soil moisture goes !
    ! to dry air soil.                                                                      !
    !---------------------------------------------------------------------------------------!
-   NL%IED_GRNDVAP   = 0
+   NL%IED_GRNDVAP   = mygndvap
    !---------------------------------------------------------------------------------------!
 
 
@@ -1192,10 +1209,10 @@ $ED_NL
    ! RIBMAX      -- maximum bulk Richardson number.                                        !
    ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.         !
    !---------------------------------------------------------------------------------------!
-   NL%GAMM            = 13.0
-   NL%GAMH            = 13.0
-   NL%TPRANDTL        = 0.74
-   NL%RIBMAX          = 0.50
+   NL%GAMM            = mygamm
+   NL%GAMH            = mygamh
+   NL%TPRANDTL        = mytprandtl
+   NL%RIBMAX          = myribmax
    NL%LEAF_MAXWHC     = 0.11
    !---------------------------------------------------------------------------------------!
 
@@ -1215,7 +1232,7 @@ $ED_NL
    !            2.  Soil conductivity decreases with depth even for constant soil moisture !
    !                , otherwise it is the same as 1.                                       !
    !---------------------------------------------------------------------------------------!
-   NL%IPERCOL         = 0
+   NL%IPERCOL         = mypercol
    !---------------------------------------------------------------------------------------!
 
 
@@ -1241,9 +1258,9 @@ $ED_NL
    ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
-   NL%INCLUDE_THESE_PFT = 5,6,7,8,9,10,11
-   NL%AGRI_STOCK        = 5
-   NL%PLANTATION_STOCK  = 6
+   NL%INCLUDE_THESE_PFT = mytrees
+   NL%AGRI_STOCK        = mycrop
+   NL%PLANTATION_STOCK  = myplantation
    !---------------------------------------------------------------------------------------!
 
 
@@ -1256,7 +1273,7 @@ $ED_NL
    !                  1.  Add the PFT in the INCLUDE_THESE_PFT list                        !
    !                  2.  Ignore the cohort                                                !
    !---------------------------------------------------------------------------------------!
-   NL%PFT_1ST_CHECK = 1 
+   NL%PFT_1ST_CHECK = 0 
    !---------------------------------------------------------------------------------------!
 
 
@@ -1291,8 +1308,8 @@ $ED_NL
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
    NL%MAXSITE        =     1
-   NL%MAXPATCH       =     6
-   NL%MAXCOHORT      =    20
+   NL%MAXPATCH       = mymaxpatch
+   NL%MAXCOHORT      =    80
    NL%MIN_SITE_AREA  = 0.005
    NL%MIN_PATCH_AREA = 0.005
    !---------------------------------------------------------------------------------------!
@@ -1322,8 +1339,8 @@ $ED_NL
    !                              TREEFALL_DISTURBANCE_RATE is internally adjusted so the  !
    !                              average patch age is still 1/TREEFALL_DISTURBANCE_RATE   !
    !---------------------------------------------------------------------------------------!
-   NL%TREEFALL_DISTURBANCE_RATE  = 0.0
-   NL%TIME2CANOPY                = 0
+   NL%TREEFALL_DISTURBANCE_RATE  = mytreefall
+   NL%TIME2CANOPY    = 0.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1334,7 +1351,7 @@ $ED_NL
    !                -folding lifetime" of the TSW in seconds due to runoff.  If you don't  !
    !                want runoff to happen, set this to 0.                                  !
    !---------------------------------------------------------------------------------------!
-   NL%RUNOFF_TIME    = 28800
+   NL%RUNOFF_TIME    = myrunoff
    !---------------------------------------------------------------------------------------!
 
 
@@ -1349,9 +1366,9 @@ $ED_NL
    !  UGBMIN -- minimum wind speed at the leaf level                                [ m/s] !
    !  USTMIN -- minimum friction velocity, u*, in m/s.                              [ m/s] !
    !---------------------------------------------------------------------------------------!
-   NL%UBMIN          = 0.65
-   NL%UGBMIN         = 0.25
-   NL%USTMIN         = 0.05
+   NL%UBMIN          = myubmin
+   NL%UGBMIN         = myugbmin
+   NL%USTMIN         = myustmin
    !---------------------------------------------------------------------------------------!
 
 
@@ -1422,11 +1439,11 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IMETTYPE    = 1
    NL%ISHUFFLE    = 0
-   NL%METCYC1     = 1998
-   NL%METCYCF     = 2005
-   NL%IMETAVG     = 1
-   NL%IMETRAD     = 2
-   NL%INITIAL_CO2 = 370
+   NL%METCYC1     = mymetcyc1
+   NL%METCYCF     = mymetcycf
+   NL%IMETAVG     = mymetavg
+   NL%IMETRAD     = mymetrad
+   NL%INITIAL_CO2 = myatmco2
    !---------------------------------------------------------------------------------------!
 
 
@@ -1442,7 +1459,6 @@ $ED_NL
    !                                                                                       !
    ! If the years don't cover the entire simulation period, they will be recycled.         !
    !---------------------------------------------------------------------------------------!
-
    NL%IPHENYS1 = 1992
    NL%IPHENYSF = 2003
    NL%IPHENYF1 = 1992
@@ -1461,7 +1477,7 @@ $ED_NL
    ! PHENPATH   -- path and prefix of the prescribed phenology data.                       !
    !---------------------------------------------------------------------------------------!
    NL%IEDCNFGF   = 'config.xml'
-   NL%EVENT_FILE = ''
+   NL%EVENT_FILE = 'myevents.xml'
    !---------------------------------------------------------------------------------------!
 
 
@@ -1479,10 +1495,10 @@ $ED_NL
    ! MON1ST_CENSUS   -- In which month was the first census conducted?                     !
    ! MIN_RECRUIT_DBH -- Minimum DBH that is measured in the census, in cm.                 !
    !---------------------------------------------------------------------------------------!
-   NL%DT_CENSUS       = 1
-   NL%YR1ST_CENSUS    = 1901
-   NL%MON1ST_CENSUS   = 7
-   NL%MIN_RECRUIT_DBH = 10
+   NL%DT_CENSUS       = mydtcensus
+   NL%YR1ST_CENSUS    = myyr1stcensus
+   NL%MON1ST_CENSUS   = mymon1stcensus
+   NL%MIN_RECRUIT_DBH = myminrecruitdbh
    !---------------------------------------------------------------------------------------!
 
 
@@ -1524,7 +1540,7 @@ $ED_NL
    !                > 0.  Keep the patch with the provided index.  In case the index is    !
    !                      not valid, the model will crash.                                 !
    !---------------------------------------------------------------------------------------!
-   NL%IDETAILED  = 63
+   NL%IDETAILED  = 0
    NL%PATCH_KEEP = 0
    !---------------------------------------------------------------------------------------!
 

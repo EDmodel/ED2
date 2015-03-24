@@ -4820,6 +4820,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                      ,'TODAY_GPP_LIGHTMAX        ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%today_gpp_moistmax                                            &
                      ,'TODAY_GPP_MOISTMAX        ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%today_gpp_mlmax                                               &
+                     ,'TODAY_GPP_MLMAX           ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%today_nppleaf                                                 &
                      ,'TODAY_NPPLEAF             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%today_nppfroot                                                &
@@ -5237,6 +5239,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
                      ,'CB_LIGHTMAX               ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%cb_moistmax                                                   &
                      ,'CB_MOISTMAX               ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%cb_mlmax                                                      &
+                     ,'CB_MLMAX                  ',dsetrank,iparallel,.true. ,foundvar)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
