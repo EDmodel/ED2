@@ -1308,6 +1308,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    use consts_coms   , only : t3ple8                & ! intent(in)
                             , wdns8                 & ! intent(in)
                             , wdnsi8                & ! intent(in)
+                            , fdnsi8                & ! intent(in)
                             , uiliqt38              & ! intent(in)
                             , wdnsi8                & ! intent(in)
                             , fdnsi8                & ! intent(in)
@@ -1585,6 +1586,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          energy_latent    = wmass_available * ( (1.d0 - fracliq_needed)                    &
                                               * alvi8(tempk_needed)                        &
                                               + fracliq_needed * alvl8(tempk_needed) )
+         ! Using frost density for the frozon component
+         depth_available  = wmass_available *                                              &
+              ( fracliq_needed * wdnsi8 + (1.d0-fracliq_needed * fdnsi8))
          !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
