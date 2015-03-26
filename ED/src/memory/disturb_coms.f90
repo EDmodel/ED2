@@ -26,7 +26,7 @@ module disturb_coms
    ! runs longer than this, the missing years will be filled with zeroes.  The first and   !
    ! last year of each is checked in landuse_init.                                         !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: max_lu_years = 1000 
+   integer, parameter :: max_lu_years = 2000 
 
    !=======================================================================================!
    !=======================================================================================!
