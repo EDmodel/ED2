@@ -107,7 +107,21 @@ module physiology_coms
    !                         in negative carbon balance only when they run out of storage  !
    !                         and are still losing more carbon than gaining.                !
    !                                                                                       !
-   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !  CBR_SCHEME     -- This flag determines which carbon stress scheme is used:           !
+   !                    0 -- Single stress.  CBR = cb/cb_mlmax                             !
+   !                         cb_mlmax is the carbon balance in full sun and no moisture    !
+   !                         limitation                                                    !
+   !                    1 -- Co-limitation from light and moisture                         !
+   !                         CBR_LIGHT = cb/cb_lightmax and CBR_MOIST = cb/cb_moistmax     !
+   !                         CBR_LIGHT and CBR_MOIST are then weighted according to        !
+   !                         DDMORT_CONST (below)                                          !
+   !                    2 -- Leibig Style, i.e. limitation from either light or moisture   !
+   !                         depending on which is lower at a given point in time          !
+   !                         CBR = cb/max(cb_lightmax, cb_moistmax)                        !
+   !                                                                                       !
+   !                                                                                       !
+   !  DDMORT_CONST   -- CBR_Scheme = 2 only                                                !
+   !                    This constant (k) determines the relative contribution of light    !
    !                    and soil moisture to the density-dependent mortality rate.  Values !
    !                    range from 0 (soil moisture only) to 1 (light only).               !
    !                                                                                       !
@@ -208,16 +222,16 @@ module physiology_coms
    !----- Bounds for the new C3 solver. ---------------------------------------------------!
    real(kind=4) :: c34smin_lint_co2 ! Minimum carbon dioxide concentration      [  mol/mol]
    real(kind=4) :: c34smax_lint_co2 ! Maximum carbon dioxide concentration      [  mol/mol]
-   real(kind=4) :: c34smax_gsw      ! Maximum stom. conductance for water vap.  [ mol/m²/s]
+   real(kind=4) :: c34smax_gsw      ! Maximum stom. conductance for water vap.  [ mol/mâ‰¤/s]
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
    !     This is the minimum threshold for the photosynthetically active radiation, in     !
-   ! µmol/m²/s to consider non-night time conditions (day time or twilight).               !
+   ! Âµmol/mâ‰¤/s to consider non-night time conditions (day time or twilight).               !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) :: par_twilight_min ! Minimum non-nocturnal PAR.                [ mol/m²/s]
+   real(kind=4) :: par_twilight_min ! Minimum non-nocturnal PAR.                [ mol/mâ‰¤/s]
    !---------------------------------------------------------------------------------------!
 
 

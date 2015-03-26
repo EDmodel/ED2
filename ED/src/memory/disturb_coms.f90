@@ -26,7 +26,7 @@ module disturb_coms
    ! runs longer than this, the missing years will be filled with zeroes.  The first and   !
    ! last year of each is checked in landuse_init.                                         !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: max_lu_years = 1000 
+   integer, parameter :: max_lu_years = 2000 
 
    !=======================================================================================!
    !=======================================================================================!
@@ -202,26 +202,26 @@ module disturb_coms
       !------------------------------------------------------------------------------------!
       !    The land use information:  the current columns are:                             !
       !  ====== Disturbance rates ======                                                   !
-      !  1 - Cropland to pasture                                           [         1/yr] !
-      !  2 - Pasture to cropland                                           [         1/yr] !
-      !  3 - Pasture to primary forest                                     [         1/yr] !
-      !  4 - Primary forest to pasture                                     [         1/yr] !
-      !  5 - Primary forest to cropland                                    [         1/yr] !
-      !  6 - Cropland to primary forest                                    [         1/yr] !
-      !  7 - Secondary forest to cropland                                  [         1/yr] !
-      !  8 - Cropland to secondary forest                                  [         1/yr] !
-      !  9 - Secondary forest to pasture                                   [         1/yr] !
-      ! 10 - Pasture to secondary forest                                   [         1/yr] !
-      ! 11 - Primary forest to secondary forest                            [         1/yr] !
+      !  1 - Cropland to pasture (cp)                                      [         1/yr] !
+      !  2 - Pasture to cropland (pc)                                      [         1/yr] !
+      !  3 - Pasture to primary forest (pv)                                [         1/yr] !
+      !  4 - Primary forest to pasture (vp)                                [         1/yr] !
+      !  5 - Primary forest to cropland (vc)                               [         1/yr] !
+      !  6 - Cropland to primary forest (cv)                               [         1/yr] !
+      !  7 - Secondary forest to cropland (sc)                             [         1/yr] !
+      !  8 - Cropland to secondary forest (cs)                             [         1/yr] !
+      !  9 - Secondary forest to pasture (sp)                              [         1/yr] !
+      ! 10 - Pasture to secondary forest (ps)                              [         1/yr] !
+      ! 11 - Primary forest to secondary forest (vs)                       [         1/yr] !
       !  ====== Biomass to be harvested. ======                                            !
-      ! 12 - Wood harvest on primary forested land.                        [          kgC] !
-      ! 13 - Wood harvest on primary forested land.                        [       kgC/m²] !
-      ! 14 - Wood harvest on mature secondary forest land.                 [          kgC] !
-      ! 15 - Wood harvest on mature secondary forest land.                 [       kgC/m²] !
-      ! 16 - Wood harvest on primary non-forested land.                    [          kgC] !
-      ! 17 - Wood harvest on primary non-forested land.                    [       kgC/m²] !
-      ! 18 - Wood harvest on young secondary forest land.                  [          kgC] !
-      ! 19 - Wood harvest on young secondary forest land.                  [       kgC/m²] !
+      ! 12 - Wood harvest on mature secondary forest land. (sbh)           [          kgC] !
+      ! 13 - Wood harvest on mature secondary forest land. (f_sbh)         [       kgC/m²] !
+      ! 14 - Wood harvest on primary forested land. (vbh)                  [          kgC] !
+      ! 15 - Wood harvest on primary forested land. (f_vbh)                [       kgC/m²] !
+      ! 16 - Wood harvest on young secondary forest land. (sbh2)           [          kgC] !
+      ! 17 - Wood harvest on young secondary forest land. (f_sbh2)         [       kgC/m²] !
+      ! 18 - Wood harvest on primary non-forested land. (vbh2)             [          kgC] !
+      ! 19 - Wood harvest on primary non-forested land. (f_vbh2)           [       kgC/m²] !
       !  ====== Special flags. ======                                                      !
       ! 12 - Primary forest is harvested using the probability of harvesting when the DBH  !
       !      is above the minimum DBH.                                                     !

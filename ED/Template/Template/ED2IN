@@ -1435,7 +1435,7 @@ $ED_NL
    !                3.  Gloomy -- All radiation goes to diffuse.                           !
    !                4.  Sesame street -- all radiation goes to direct, except at night.    !
    ! INITIAL_CO2 -- Initial value for CO2 in case no CO2 is provided at the meteorological !
-   !                driver dataset [Units: µmol/mol]                                       !
+   !                driver dataset [Units: Âµmol/mol]                                       !
    !---------------------------------------------------------------------------------------!
    NL%IMETTYPE    = 1
    NL%ISHUFFLE    = 0

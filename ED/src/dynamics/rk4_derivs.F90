@@ -483,7 +483,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                 *  ( rk4aux(ibuff)%th_cond_p(1) / rk4aux(ibuff)%th_cond_s(mzg) )         &
                                 ** ( dslz8(mzg) / (initp%sfcwater_depth(1)+ dslz8(mzg)))  
 
-!      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac
+	  ! This does ground-snow interaction; atm gets added after this step
+!      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond * initp%snowfac &
       rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond                                     &
                                 * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))        &
                                 / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )         
@@ -671,7 +672,6 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
          elseif( rk4aux(ibuff)%w_flux_g(k) < 0. .and.                                             &
                 (rk4aux(ibuff)%satsoil(k-1) .or. rk4aux(ibuff)%drysoil(k)) ) then
             rk4aux(ibuff)%w_flux_g(k) = 0.d0
-
          end if
          !---------------------------------------------------------------------------------!
 
@@ -997,6 +997,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    cflxac    = rho_ustar      * initp%cstar * mmdryi8         ! CO2 flux [umol/m2/s]
    !------ Sensible heat flux. ------------------------------------------------------------!
    hflxac    = eflxac + wflxac * cph2o8 * tsupercool_vap8
+!   hflxac    = rho_ustar      * initp%tstar * initp%can_exner ! Sensible Heat flux
    !---------------------------------------------------------------------------------------!
 
 
@@ -1118,6 +1119,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    !     Sensible heat is defined by two variables, hflxgc (soil) and hflxsc (TSW)         !
    ! [J/m2/s], which can be either positive or negative.                                   !
    !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Set all heat fluxes to zero, we only add them if they occur and are allowed.      !
+   !---------------------------------------------------------------------------------------!
+   hflxsc         = 0.d0
+   hflxgc         = 0.d0
+   !---------------------------------------------------------------------------------------!
+
+
    ksn = initp%nlev_sfcwater
    if (ksn > 0) then
       hflxsc       = initp%snowfac * initp%ggnet * initp%can_rhos * initp%can_cp           &
@@ -1329,7 +1338,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          dthroughfall      = 0.d0
          !---------------------------------------------------------------------------------!
       
-      
+
 
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
          leaf_flux = initp%gpp(ico) - initp%leaf_resp(ico)
@@ -1397,16 +1406,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 !! TURNING OFF SHEDDING FOR NOW
 !!
 
-!!                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
-!!                                    - max_leaf_water) / dt)
-!!                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
-!!                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
-!!                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
+                  wshed  = max(0.d0,( (initp%leaf_water(ico) + leaf_intercepted*dt)        &
+                                    - max_leaf_water) / dt)
+                  qwshed = wshed * tl2uint8(initp%leaf_temp(ico),initp%leaf_fliq(ico))
+                  dwshed = wshed * ( initp%leaf_fliq(ico) * wdnsi8                         &
+                                   + (1.d0-initp%leaf_fliq(ico)) * fdnsi8)
                   !------------------------------------------------------------------------!
 
 
                   !----- Then constrain the amount that can be evaporated. ----------------!
                   wflxlc = min(wflxlc,max_dwdt+leaf_intercepted-wshed)
+!                  wflxlc = min(wflxlc,max_dwdt-wshed)
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1737,11 +1747,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 !! TURNING OFF SHEDDING FOR NOW
 !!
 
-!!                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
-!!                                    - max_wood_water) / dt)
-!!                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
-!!                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
-!!                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
+                  wshed  = max(0.d0,( (initp%wood_water(ico) + wood_intercepted*dt)        &
+                                    - max_wood_water) / dt)
+                  qwshed = wshed * tl2uint8(initp%wood_temp(ico),initp%wood_fliq(ico))
+                  dwshed = wshed * ( initp%wood_fliq(ico) * wdnsi8                         &
+                                   + (1.d0-initp%wood_fliq(ico)) * fdnsi8)
                   !------------------------------------------------------------------------!
 
 

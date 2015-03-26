@@ -1169,7 +1169,7 @@ module disturbance_utils
             ! harvesting is biomass-based, then we set the disturbance rate to zero,       !
             ! otherwise we read the disturbance rate.                                      !
             !------------------------------------------------------------------------------!
-            if (clutime%landuse(12) > 0.) then
+            if (clutime%landuse(14) > 0.) then
                cpoly%disturbance_rates(2,3,isi) = 0.0
             else
                cpoly%disturbance_rates(2,3,isi) = clutime%landuse(11)

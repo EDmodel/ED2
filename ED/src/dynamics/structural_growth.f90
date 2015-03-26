@@ -671,7 +671,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                   cpatch%cb_moistmax (13,ico) = 0.0
                   cpatch%cb_mlmax    (13,ico) = 0.0
                case (1)
-                  !------ Storage is accounted. ----------------------------------------------------!
+               !------ Storage is accounted. ----------------------------------------------------!
                   cpatch%cb          (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_lightmax (13,ico) = cpatch%bstorage(ico)
                   cpatch%cb_moistmax (13,ico) = cpatch%bstorage(ico)
