@@ -79,14 +79,14 @@ gridded.plot <<- function( x                = seq(from=0,to=1,len=nrow(z))
    #---------------------------------------------------------------------------------------#
 
    #----- Check whether the z matrix makes sense or not. ----------------------------------#
-   if (! (is.matrix(z) || is.data.frame(z)) || nrow(z) <= 1 || ncol(z) <= 1){
+   if (! (is.matrix(z) || is.data.frame(z))){
       stop("no proper `z' matrix specified")
    }#end if
    #---------------------------------------------------------------------------------------#
 
 
    #----- No messed-up axes are allowed, they must increase. ------------------------------#
-   if (any(diff(x) <= 0) || any(diff(y) <= 0)){
+   if (any(diff(x) %<=% 0) || any(diff(y) %<=% 0)){
        stop("increasing x and y values expected")
    }#end if
    #---------------------------------------------------------------------------------------#

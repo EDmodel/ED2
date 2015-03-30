@@ -40,8 +40,8 @@ read.las <<- function( lasfile
                      ){ 
 
 
-   #----- Stop if returnSP is true but package sp can't be loaded. ------------------------#
-   if (return.sp && ! returnHeaderOnly){
+   #----- Stop if return.sp is true but package sp can't be loaded. -----------------------#
+   if (return.sp && ! return.header){
       if (! "package:sp" %in% search()){
          isok = require(sp)
          if (! isok) stop("Function read.las requires package sp if return.sp = TRUE!")

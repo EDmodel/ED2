@@ -892,6 +892,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Paul Moorcroft"
                                                    )
                                        )#end list
+   flagvar[["npatch"]]           = list( descr  = "Initial patch count"
+                                       , numeric = TRUE
+                                       , values = c(1,4,25,100,2500)
+                                       , names  = c("1","4","25","100","2500")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1124,9 +1129,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(   10)
       }else if (lenici == 12){
          nparms = 1
-         param  = c("ianth.disturb")
-         na     = c(             11)
-         nz     = c(             12)
+         param  = c("npatch")
+         na     = c(       9)
+         nz     = c(      12)
       }else if (lenici == 14){
          nparms = 1
          param  = c("icanrad")
@@ -2258,6 +2263,27 @@ poitmp[[u]] = list( short           = "dourados"
                   , iphen           = 2
                   )#end list
 u           = u + 1
+poitmp[[u]] = list( short           = "ducke"            
+                  , longname        = "Ducke , AM"                  
+                  , iata            = "duc"
+                  , lon             = -59.925
+                  , lat             =  -2.955
+                  , alt             = 111
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1964
+                  , yearz           = 2009
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
 poitmp[[u]] = list( short           = "el_triunfo"        
                   , longname        = "El Triunfo, BOL"             
                   , iata            = "etf"
@@ -2662,6 +2688,27 @@ poitmp[[u]] = list( short           = "jamaraqua"
                   , iata            = "jmq"
                   , lon             = -55.036
                   , lat             =  -2.806
+                  , alt             = 15
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.000
+                  , clay            = -1.000
+                  , depth           = "F"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1964
+                  , yearz           = 2009
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "jamari"
+                  , longname        = "Jamari Natl. Forest, RO"
+                  , iata            = "jam"
+                  , lon             = -63.00
+                  , lat             =  -9.11
                   , alt             = 15
                   , wmo             = NA
                   , isoilflg        = 1
