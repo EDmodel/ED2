@@ -141,8 +141,6 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
                              + cai(i) * exp ( - etai(i) / ( cai(i) * mu_bar(ipft) ) ) )
       !------------------------------------------------------------------------------------!
 
-
-
       !------------------------------------------------------------------------------------!
       !      Black is the emission of a black body at the same temperature of the layer.   !
       !  The temperature is the weighted average where the weights are the product between !
@@ -366,7 +364,8 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
                         ,radprof_flip,par_beam_flip,par_diff_flip,sw_abs_beam_flip         &
                         ,sw_abs_diff_flip,dw_parlo_beam,dw_parlo_diff                      &
                         ,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff,uw_nirhi_diff           &
-                        ,par_beam_level,par_diff_level,light_level,light_beam_level        &
+                        ,par_level_beam,par_level_diffd,par_level_diffu                   &
+                        ,light_level,light_beam_level        &
                         ,light_diff_level)
    use ed_max_dims          , only : n_pft                   & ! intent(in)
                                    , n_radprof               ! ! intent(in)
@@ -412,8 +411,9 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
    real(kind=4)                              , intent(out)    :: dw_parlo_diff
    real(kind=4)                              , intent(out)    :: dw_nirlo_beam
    real(kind=4)                              , intent(out)    :: dw_nirlo_diff
-   real(kind=8), dimension(ncoh)             , intent(out)    :: par_beam_level
-   real(kind=8), dimension(ncoh)             , intent(out)    :: par_diff_level
+   real(kind=8), dimension(ncoh)             , intent(out)    :: par_level_beam
+   real(kind=8), dimension(ncoh)             , intent(out)    :: par_level_diffd
+   real(kind=8), dimension(ncoh)             , intent(out)    :: par_level_diffu
    real(kind=8), dimension(ncoh)             , intent(out)    :: light_level
    real(kind=8), dimension(ncoh)             , intent(out)    :: light_beam_level
    real(kind=8), dimension(ncoh)             , intent(out)    :: light_diff_level
@@ -490,14 +490,15 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
    iota_g_nir = dble(grnd_alb_nir4)
    !---------------------------------------------------------------------------------------!
 
-
-
    !---------------------------------------------------------------------------------------!
    !     Initialise the light level variables.                                             !
    !---------------------------------------------------------------------------------------!
    light_level     (:) = 0.d0
    light_beam_level(:) = 0.d0
    light_diff_level(:) = 0.d0
+!   par_level_beam (:) = 0.d0
+!   par_level_diffd(:) = 0.d0
+!   par_level_diffu(:) = 0.d0
    !---------------------------------------------------------------------------------------!
 
 
@@ -622,8 +623,6 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
       epsil0     (i) = 1.d0 - 2.d0 * beta0(i)
       expm0_minus(i) = 1.d0
       !------------------------------------------------------------------------------------!
-
-
 
       !------------------------------------------------------------------------------------!
       !     Find the direct radiation profile using the exponential attenuation curve.     !
@@ -839,14 +838,22 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
          !     Visible (PAR).                                                              !
          !---------------------------------------------------------------------------------!
 
-         !------ Integrate the visible light levels. --------------------------------------!
+         !------ Mean PAR centered on the different levels beam, up and down diffuse ------!
+         !------ these are fluxes, not absorbed, as a fraction of total PAR
+         !------ The current units of up and down are fraction of total rshort
+         !------ so we have to divide by the total PAR fraction of rshort, the
+         !------ units are fraction of total par
          do i=1,ncoh
             ip1 = i + 1
-            par_diff_level(i) = 5.d-1 * ( down (i) + down (ip1) ) / par_diff_norm
-            par_beam_level(i) = 5.d-1 * ( down0(i) + down0(ip1) ) / par_beam_norm
+            par_level_diffu(i) = 5.d-1*(up(i)    + up(ip1)) /(par_beam_norm+par_diff_norm)
+            par_level_diffd(i) = 5.d-1*(down(i)  + down(ip1)) /(par_beam_norm+par_diff_norm)
+            par_level_beam(i)  = 5.d-1*(down0(i) + down0(ip1)) /(par_beam_norm+par_diff_norm)
          end do
          !---------------------------------------------------------------------------------!
 
+         ! par_level_beam
+         ! par_level_diffu
+         ! par_level_diffd
 
          !---------------------------------------------------------------------------------!
          !     Save the radiation fluxes to the output variable.                           !

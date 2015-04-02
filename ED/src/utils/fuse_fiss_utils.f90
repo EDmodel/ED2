@@ -1,3 +1,8 @@
+!==========================================================================================!
+!==========================================================================================!
+!  Module fuse_fiss_utils.                                                                 !
+!  Routines to terminate and fuse patches, and to terminate, fuse and split cohorts.       !
+!------------------------------------------------------------------------------------------!
 module fuse_fiss_utils
 
    use ed_state_vars,only :   copy_patchtype        & ! subroutine
@@ -129,7 +134,7 @@ module fuse_fiss_utils
       type(patchtype)      , pointer     :: cpatch       ! Current patch
       type(patchtype)      , pointer     :: temppatch    ! Scratch patch structure
       logical, dimension(:), allocatable :: remain_table ! Flag: this cohort will remain.
-      integer                            :: ico, inew    ! Counters
+      integer                            :: ico          ! Counter
       integer                            :: ipft         ! PFT size
       real                               :: csize        ! Size of current cohort
       !------------------------------------------------------------------------------------!
@@ -230,8 +235,7 @@ module fuse_fiss_utils
       type(sitetype)       , target      :: csite        ! Current site
       !----- Local variables --------------------------------------------------------------!
       type(sitetype)       , pointer     :: tempsite     ! Scratch site
-      type(patchtype)      , pointer     :: cpatch       ! Pointer to current site
-      integer                            :: ipa,ico      ! Counters
+      integer                            :: ipa          ! Counters
       logical, dimension(:), allocatable :: remain_table ! Flag: this patch will remain.
       real                               :: total_area   ! Area of removed patches
       real                               :: elim_area    ! Area of removed patches
@@ -872,7 +876,8 @@ module fuse_fiss_utils
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer     :: temppatch         ! Temporary patch
       logical, dimension(:)  , allocatable :: split_mask        ! Flag: split this cohort
-      integer                              :: ipa,ico,inew      ! Counters
+      integer                              :: ico               ! Counter
+      integer                              :: inew              ! Counter
       integer                              :: ncohorts_new      ! New # of cohorts
       integer                              :: tobesplit         ! # of cohorts to be split
       integer                              :: ipft              ! PFT type
@@ -1061,7 +1066,6 @@ module fuse_fiss_utils
       integer                      :: t                 ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
       real                         :: newni             ! Inverse of new nplants
-      real                         :: veg_fliq          ! Liquid fraction
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
       real                         :: rlai              ! LAI of receiver
@@ -1089,14 +1093,14 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       if (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
          rlai    = cpatch%lai(recc) / ( cpatch%lai(recc) + cpatch%lai(donc) )
-         dlai    = cpatch%lai(donc) / ( cpatch%lai(recc) + cpatch%lai(donc) )
+         dlai    = 1.0 - rlai
       else
          rlai    = 0.5
          dlai    = 0.5
       end if
       if (cpatch%wai(recc) + cpatch%wai(donc) > 0 ) then
          rwai    = cpatch%wai(recc) / ( cpatch%wai(recc) + cpatch%wai(donc) )
-         dwai    = cpatch%wai(donc) / ( cpatch%wai(recc) + cpatch%wai(donc) )
+         dwai    = 1.0 - rwai
       else
          rwai    = 0.5
          dwai    = 0.5
@@ -1222,10 +1226,13 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     CB, CB_lightmax, and CB_moistmax are scaled by population, as they are in      !
-      ! kgC/plant/yr.  The relative carbon balance, however, is no longer derived from the !
-      ! annual values of CB, CB_LightMax, and CB_MoistMax, but tracked independently as it !
-      ! used to be done in ED-1.0.                                                         !
+      !     CB and CB_Xmax are scaled by population, as they are in kgC/plant/yr.          !
+      !------------------------------------------------------------------------------------!
+      ! RK: I think the below comment is no longer true. Per gh-24 reverting again to      !
+      ! calculate CBR from running means of CB and CB_Xmax. 
+      ! "The relative carbon balance, however, is no longer derived from the annual values !
+      ! of CB, CB_LightMax, and CB_MoistMax, but tracked independently as it used to be    !
+      ! done in ED-1.0."                                                                   !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
          cpatch%cb         (imon,recc) = newni                                             &
@@ -1369,6 +1376,16 @@ module fuse_fiss_utils
                                     * newni
       cpatch%light_level_diff(recc) = ( cpatch%light_level_diff(recc) *cpatch%nplant(recc) &
                                       + cpatch%light_level_diff(donc) *cpatch%nplant(donc))&
+                                    * newni
+      
+      cpatch%par_level_beam(recc)  = ( cpatch%par_level_beam(recc) *cpatch%nplant(recc)      &
+                                      + cpatch%par_level_beam(donc) *cpatch%nplant(donc) )    &
+                                    * newni
+      cpatch%par_level_diffd(recc) = ( cpatch%par_level_diffd(recc) *cpatch%nplant(recc) &
+                                      + cpatch%par_level_diffd(donc) *cpatch%nplant(donc))&
+                                    * newni
+      cpatch%par_level_diffu(recc) = ( cpatch%par_level_diffu(recc) *cpatch%nplant(recc) &
+                                      + cpatch%par_level_diffu(donc) *cpatch%nplant(donc))&
                                     * newni
       !------------------------------------------------------------------------------------!
 
@@ -1584,6 +1601,24 @@ module fuse_fiss_utils
                                                + cpatch%fmean_light_level_diff(donc)       &
                                                * cpatch%nplant                (donc) )     &
                                              * newni
+
+         cpatch%fmean_par_level_beam     (recc) = ( cpatch%fmean_par_level_beam(recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_par_level_beam  (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_par_level_diffd(recc) = ( cpatch%fmean_par_level_diffd(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_par_level_diffd(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%fmean_par_level_diffu(recc) = ( cpatch%fmean_par_level_diffu(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%fmean_par_level_diffu(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         
+
          !---------------------------------------------------------------------------------!
 
 
@@ -1838,6 +1873,22 @@ module fuse_fiss_utils
                                                + cpatch%dmean_light_level_diff(donc)       &
                                                * cpatch%nplant                (donc) )     &
                                              * newni
+         cpatch%dmean_par_level_beam     (recc) = ( cpatch%dmean_par_level_beam(recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%dmean_par_level_beam  (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+         cpatch%dmean_par_level_diffd(recc) = ( cpatch%dmean_par_level_diffd(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%dmean_par_level_diffd(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%dmean_par_level_diffu(recc) = ( cpatch%dmean_par_level_diffu(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%dmean_par_level_diffu(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2191,6 +2242,24 @@ module fuse_fiss_utils
                                                * cpatch%mmean_cb              (donc)       &
                                                * cpatch%nplant                (donc) )     &
                                              * newni
+
+         cpatch%mmean_par_level_beam     (recc) = ( cpatch%mmean_par_level_beam(recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%mmean_par_level_beam  (donc)       &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+         cpatch%mmean_par_level_diffd(recc) = ( cpatch%mmean_par_level_diffd(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%mmean_par_level_diffd(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+         cpatch%mmean_par_level_diffu(recc) = ( cpatch%mmean_par_level_diffu(recc)         &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%mmean_par_level_diffu(donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                             * newni
+
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2259,6 +2328,7 @@ module fuse_fiss_utils
                                              + cpatch%mmean_par_l_beam      (donc)
          cpatch%mmean_par_l_diff      (recc) = cpatch%mmean_par_l_diff      (recc)         &
                                              + cpatch%mmean_par_l_diff      (donc)
+
          cpatch%mmean_rshort_l        (recc) = cpatch%mmean_rshort_l        (recc)         &
                                              + cpatch%mmean_rshort_l        (donc)
          cpatch%mmean_rlong_l         (recc) = cpatch%mmean_rlong_l         (recc)         &
@@ -2517,7 +2587,25 @@ module fuse_fiss_utils
                                                  * cpatch%nplant                  (recc)   &
                                                  + cpatch%qmean_light_level_diff(:,donc)   &
                                                  * cpatch%nplant                  (donc) ) &
+                                                 * newni
+
+         cpatch%qmean_par_level_beam (:,recc) = ( cpatch%qmean_par_level_beam(:,recc)      &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%qmean_par_level_beam  (:,donc)     &
+                                               * cpatch%nplant                (donc) )     &
                                                * newni
+         cpatch%qmean_par_level_diffd(:,recc) = ( cpatch%qmean_par_level_diffd(:,recc)     &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%qmean_par_level_diffd(:,donc)      &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+         cpatch%qmean_par_level_diffu(:,recc) = ( cpatch%qmean_par_level_diffu(:,recc)       &
+                                               * cpatch%nplant                (recc)       &
+                                               + cpatch%qmean_par_level_diffu(:,donc)        &
+                                               * cpatch%nplant                (donc) )     &
+                                               * newni
+
+
          !---------------------------------------------------------------------------------!
 
 
@@ -2584,6 +2672,9 @@ module fuse_fiss_utils
                                              + cpatch%qmean_par_l_beam    (:,donc)
          cpatch%qmean_par_l_diff    (:,recc) = cpatch%qmean_par_l_diff    (:,recc)         &
                                              + cpatch%qmean_par_l_diff    (:,donc)
+
+ 
+
          cpatch%qmean_rshort_l      (:,recc) = cpatch%qmean_rshort_l      (:,recc)         &
                                              + cpatch%qmean_rshort_l      (:,donc)
          cpatch%qmean_rlong_l       (:,recc) = cpatch%qmean_rlong_l       (:,recc)         &
@@ -2827,7 +2918,6 @@ module fuse_fiss_utils
       type(sitetype)        , pointer     :: tempsite        ! Temporary site
       logical, dimension(:) , allocatable :: fuse_table      ! Flag: this will remain.
       character(len=str_len)              :: fuse_fout       ! Filename for detailed output
-      real   , dimension(ff_nhgt)         :: laimax_cum      ! Mean # of plants
       integer                             :: ipy             ! Counters
       integer                             :: isi             ! Counters
       integer                             :: jpy             ! Counters
@@ -2838,7 +2928,6 @@ module fuse_fiss_utils
       integer                             :: recp            ! Counters
       integer                             :: rec_lu          ! Land use of receptor patch
       integer                             :: don_lu          ! Land use of donor patch
-      integer                             :: ipft            ! Counters
       integer                             :: ihgt            ! Counters
       integer                             :: ifus            ! Counters
       integer                             :: npatches_new    ! New # of patches
@@ -3951,7 +4040,7 @@ module fuse_fiss_utils
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer     :: cpatch            ! Current patch
       type(patchtype)        , pointer     :: temppatch         ! Temporary patch
-      integer                              :: ico,iii           ! Counters
+      integer                              :: iii               ! Counters
       integer                              :: nsoil             ! Alias for soil texture
       integer                              :: t                 ! Counter for time of day
       integer                              :: ndc               ! # of cohorts - donp patch
@@ -4641,7 +4730,6 @@ module fuse_fiss_utils
       !    Daily means.                                                                    !
       !------------------------------------------------------------------------------------! 
       if (writing_long .and.  (.not. fuse_initial) ) then
-
          csite%dmean_A_decomp           (recp) = ( csite%dmean_A_decomp           (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_A_decomp           (donp)   &
@@ -4963,14 +5051,13 @@ module fuse_fiss_utils
             csite%dmean_sfcw_fliq  (recp)  = csite%dmean_soil_fliq(mzg,recp)
          end if
          !------------------------------------------------------------------------------------!
-
       end if
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------! 
       !    Monthly means.                                                                  !
       !------------------------------------------------------------------------------------! 
-      if (writing_eorq .and. all(csite%mmean_can_prss > 10.0) ) then
+      if (writing_eorq .and. (.not. fuse_initial)) then
 
          !---------------------------------------------------------------------------------!
          !    First we find the mean sum of squares, because they depend on the means too, !
@@ -5447,14 +5534,13 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
- 
-      
+
+
 
       !------------------------------------------------------------------------------------! 
       !    Mean diel.                                                                      !
       !------------------------------------------------------------------------------------! 
       if (writing_dcyc .and. (.not. fuse_initial)) then
-
          !---------------------------------------------------------------------------------!
          !      First we solve the mean sum of squares as they depend on the mean and the  !
          ! original receptor data is lost after fusion takes place.                        !

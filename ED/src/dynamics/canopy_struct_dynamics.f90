@@ -126,15 +126,8 @@ module canopy_struct_dynamics
                                   , zztop                & ! intent(in)
                                   , zzbot                & ! intent(in)
                                   , zzmid                & ! intent(in)
-                                  , opencan              & ! intent(out)
-                                  , lad                  & ! intent(out)
-                                  , cdrag                & ! intent(out)
-                                  , pshelter             & ! intent(out)
-                                  , cumldrag             & ! intent(out)
-                                  , windlyr              & ! intent(out)
-                                  , windext_full         & ! intent(out)
-                                  , windext_half         & ! intent(out)
-                                  , zero_canopy_layer    ! ! subroutine
+                                  , zero_canopy_layer    & ! subroutine
+                                  , canstr
       use consts_coms      , only : vonk                 & ! intent(in)
                                   , grav                 & ! intent(in)
                                   , t00                  & ! intent(in)
@@ -159,6 +152,7 @@ module canopy_struct_dynamics
                                   , size2bl              ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
+      !$ use omp_lib
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -248,17 +242,21 @@ module canopy_struct_dynamics
       real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real           :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       real           :: c3_cumldrag  ! c3 * cumulative drag.                    [      ---]
+      real           :: snowfac_can  ! percent vertical canopy covered in snow
+      integer        :: ibuff
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
       !------------------------------------------------------------------------------------!
 
+      ibuff = 1
+      !$ ibuff = OMP_get_thread_num()+1
+      
       !----- Assign some pointers. --------------------------------------------------------!
       csite  => cpoly%site(isi)
       cmet   => cpoly%met(isi)
       cpatch => csite%patch(ipa)
       !------------------------------------------------------------------------------------!
-
-
+      
       !------------------------------------------------------------------------------------!
       !     Find the virtual potential temperatures and decide whether the canopy air is   !
       ! stable or not.                                                                     !
@@ -292,6 +290,14 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     Find the fraction of the canopy covered in snow (original snowfac function)    !
+      !     I think canopy roughness may need to be re-thought, but this was necessary     !
+      ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
+      !------------------------------------------------------------------------------------!
+      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -307,8 +313,8 @@ module canopy_struct_dynamics
          end if
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
-         csite%rough       (ipa) = soil_rough * (1.0 - csite%snowfac(ipa))                 &
-                                 + snow_rough * csite%snowfac(ipa)
+         csite%rough       (ipa) = soil_rough * (1.0 - snowfac_can)                        &
+                                 + snow_rough * snowfac_can
          csite%veg_displace(ipa) = vh2dh * csite%rough(ipa) / vh2vr
          !---------------------------------------------------------------------------------!
 
@@ -348,7 +354,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       !     Reset scratch variables in canopy_layer_coms.                                  !
       !------------------------------------------------------------------------------------!
-      call zero_canopy_layer('canopy_turbulence')
+      call zero_canopy_layer('canopy_turbulence',canstr(ibuff))
       !------------------------------------------------------------------------------------!
 
 
@@ -374,10 +380,10 @@ module canopy_struct_dynamics
          ! ground, and apply the snow cover to further scale it.  The weighting factors    !
          ! are the fraction of open canopy and the fraction of the canopy buried in snow.  !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+         csite%rough(ipa) = snow_rough * snowfac_can                                       &
                           + ( soil_rough           * csite%opencan_frac(ipa)               &
                             + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
-                          * (1.0 - csite%snowfac(ipa))
+                          * (1.0 - snowfac_can)
          !---------------------------------------------------------------------------------!
 
 
@@ -409,7 +415,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Find the aerodynamic resistance due to vegetated ground.                    !
          !---------------------------------------------------------------------------------!
-         if (csite%snowfac(ipa) < 0.9) then
+         if (snowfac_can < 0.9) then
             select case (icanturb)
             case (0)
                !----- LEAF-3 method. ------------------------------------------------------!
@@ -548,7 +554,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+         if (csite%opencan_frac(ipa) > 0.999 .or. snowfac_can >= 0.9) then
             csite%ggnet(ipa) = csite%ggbare(ipa)
          else
             csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
@@ -573,17 +579,17 @@ module canopy_struct_dynamics
          ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
          ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+         csite%rough(ipa) = snow_rough * snowfac_can                                       &
                           + ( soil_rough           * csite%opencan_frac(ipa)               &
                             + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
-                          * (1.0 - csite%snowfac(ipa))
+                          * (1.0 - snowfac_can)
          !---------------------------------------------------------------------------------!
 
 
 
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
-                    + snow_rough * csite%snowfac(ipa)
+         surf_rough = soil_rough * (1.0 - snowfac_can)                                     &
+                    + snow_rough * snowfac_can
          !---------------------------------------------------------------------------------!
 
 
@@ -714,7 +720,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+         if (csite%opencan_frac(ipa) > 0.999 .or. snowfac_can >= 0.9) then
             csite%ggnet(ipa) = csite%ggbare(ipa)
          else
             csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
@@ -761,7 +767,7 @@ module canopy_struct_dynamics
          ! branches or not, and we do it outside the loop to make it more efficient.       !
          !---------------------------------------------------------------------------------!
          !----- Reset the leaf area density array. ----------------------------------------!
-         lad(:) = 0.0
+         canstr(ibuff)%lad(:) = 0.0
          select case (ibranch_thermo)
          case (0)
             !------------------------------------------------------------------------------!
@@ -803,7 +809,7 @@ module canopy_struct_dynamics
                !     Add the LAD for the full layers.                                      !
                !---------------------------------------------------------------------------!
                do k = kafull,kzfull
-                  lad(k) = lad(k) + ladcohort
+                  canstr(ibuff)%lad(k) = canstr(ibuff)%lad(k) + ladcohort
                end do
                !---------------------------------------------------------------------------!
 
@@ -814,14 +820,14 @@ module canopy_struct_dynamics
                ! they are both the same layer, which must be done separately.              !
                !---------------------------------------------------------------------------!
                if (kapartial == kzpartial) then
-                  lad(kapartial) = lad(kapartial)                                          &
+                  canstr(ibuff)%lad(kapartial) = canstr(ibuff)%lad(kapartial)              &
                                  + ladcohort * (htopcrown        - hbotcrown       )       &
                                              / (zztop(kapartial) - zzbot(kapartial))
                else
-                  lad(kapartial) = lad(kapartial)                                          &
+                  canstr(ibuff)%lad(kapartial) = canstr(ibuff)%lad(kapartial)              &
                                  + ladcohort * (zztop(kapartial) - hbotcrown       )       &
                                              / (zztop(kapartial) - zzbot(kapartial))
-                  lad(kzpartial) = lad(kzpartial)                                          &
+                  canstr(ibuff)%lad(kzpartial) = canstr(ibuff)%lad(kzpartial)              &
                                  + ladcohort * (htopcrown        - zzbot(kzpartial))       &
                                              / (zztop(kzpartial) - zzbot(kzpartial))
                end if
@@ -875,7 +881,7 @@ module canopy_struct_dynamics
                !     Add the LAD for the full layers.                                      !
                !---------------------------------------------------------------------------!
                do k = kafull,kzfull
-                  lad(k) = lad(k) + ladcohort
+                  canstr(ibuff)%lad(k) = canstr(ibuff)%lad(k) + ladcohort
                end do
                !---------------------------------------------------------------------------!
 
@@ -886,14 +892,14 @@ module canopy_struct_dynamics
                ! they are both the same layer, which must be done separately.              !
                !---------------------------------------------------------------------------!
                if (kapartial == kzpartial) then
-                  lad(kapartial) = lad(kapartial)                                          &
+                  canstr(ibuff)%lad(kapartial) = canstr(ibuff)%lad(kapartial)              &
                                  + ladcohort * (htopcrown        - hbotcrown       )       &
                                              / (zztop(kapartial) - zzbot(kapartial))
                else
-                  lad(kapartial) = lad(kapartial)                                          &
+                  canstr(ibuff)%lad(kapartial) = canstr(ibuff)%lad(kapartial)              &
                                  + ladcohort * (zztop(kapartial) - hbotcrown       )       &
                                              / (zztop(kapartial) - zzbot(kapartial))
-                  lad(kzpartial) = lad(kzpartial)                                          &
+                  canstr(ibuff)%lad(kzpartial) = canstr(ibuff)%lad(kzpartial)              &
                                  + ladcohort * (htopcrown        - zzbot(kzpartial))       &
                                              / (zztop(kzpartial) - zzbot(kzpartial))
                end if
@@ -915,7 +921,7 @@ module canopy_struct_dynamics
          select case (icanturb)
          case (2)
             !----- Drag when there are no plants. -----------------------------------------!
-            cdrag   (:) = cdrag1 + 0.5 * cdrag2
+            canstr(ibuff)%cdrag   (:) = cdrag1 + 0.5 * cdrag2
             ldga_bk     = 0.0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
@@ -930,17 +936,18 @@ module canopy_struct_dynamics
                ! Their cdeff is cdrag / pshelter, here we fix pshelter = 1 and dump the    !
                ! ratio to cdrag.                                                           !
                !---------------------------------------------------------------------------!
-               c3_lad       = max(lnexp_min,min(lnexp_max,cdrag3 * lad(k)))
-               cdrag   (k)  = cdrag1 + cdrag2 / (1.0 + exp(c3_lad))
-               pshelter(k)  = 1.
-               lyrhalf      = 0.5 * lad(k) * cdrag(k) / pshelter(k) * dzcan(k)
-               cumldrag(k)  = ldga_bk + lyrhalf
+               c3_lad       = max(lnexp_min,min(lnexp_max,cdrag3 * canstr(ibuff)%lad(k)))
+               canstr(ibuff)%cdrag   (k)  = cdrag1 + cdrag2 / (1.0 + exp(c3_lad))
+               canstr(ibuff)%pshelter(k)  = 1.
+               lyrhalf      = 0.5 * canstr(ibuff)%lad(k) * canstr(ibuff)%cdrag(k) /        &
+                     canstr(ibuff)%pshelter(k) * dzcan(k)
+               canstr(ibuff)%cumldrag(k)  = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.0 * lyrhalf
                !---------------------------------------------------------------------------!
             end do
          case (3)
             !----- Constant drag. ---------------------------------------------------------!
-            cdrag   (:) = cdrag0
+            canstr(ibuff)%cdrag   (:) = cdrag0
             ldga_bk     = 0.0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
@@ -953,9 +960,10 @@ module canopy_struct_dynamics
                ! and Massman), since the shelter factor should be always >= 1.             !
                ! Alpha_m97 is no longer 0.4 * h, but 5 so it becomes a constant.           !
                !---------------------------------------------------------------------------!
-               pshelter(k)  = 1. + alpha_m97 * lad(k)
-               lyrhalf      = 0.5 * lad(k) * cdrag(k) / pshelter(k) * dzcan(k)
-               cumldrag(k)  = ldga_bk + lyrhalf
+               canstr(ibuff)%pshelter(k)  = 1. + alpha_m97 * canstr(ibuff)%lad(k)
+               lyrhalf      = 0.5 * canstr(ibuff)%lad(k) * canstr(ibuff)%cdrag(k) /        &
+                     canstr(ibuff)%pshelter(k) * dzcan(k)
+               canstr(ibuff)%cumldrag(k)  = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.0 * lyrhalf
                !---------------------------------------------------------------------------!
             end do
@@ -968,14 +976,14 @@ module canopy_struct_dynamics
          !    Find the ratio between u* and u at the top cohort, using Massman's equation  !
          ! (6).                                                                            !
          !---------------------------------------------------------------------------------!
-         c3_cumldrag = min(lnexp_max,max(lnexp_min,c3_m97 * cumldrag(zcan)))
+         c3_cumldrag = min(lnexp_max,max(lnexp_min,c3_m97 * canstr(ibuff)%cumldrag(zcan)))
          ustarouh    = (c1_m97 - c2_m97 * exp(- c3_cumldrag))
          !---------------------------------------------------------------------------------!
 
 
 
          !----- NN is Massman's n, the coefficient of attenuation. ------------------------!
-         nn = 0.5 * cumldrag(zcan) / (ustarouh * ustarouh)
+         nn = 0.5 * canstr(ibuff)%cumldrag(zcan) / (ustarouh * ustarouh)
          !---------------------------------------------------------------------------------!
 
 
@@ -990,7 +998,8 @@ module canopy_struct_dynamics
          d0ohgt = 1.0
          do k=1,zcan
             d0ohgt = d0ohgt - dzcan(k) / htop                                              &
-                            * exp(-2.0 * nn * (1.0 - cumldrag(k) / cumldrag(zcan)))
+                            * exp(-2.0 * nn * (1.0 - canstr(ibuff)%cumldrag(k) /           &
+                            canstr(ibuff)%cumldrag(zcan)))
          end do
          z0ohgt = (1.0 - d0ohgt) * min(1.0, exp(- vonk / ustarouh + infunc))
          !---------------------------------------------------------------------------------!
@@ -1031,8 +1040,8 @@ module canopy_struct_dynamics
          !----- Get the wind profile. -----------------------------------------------------!
          do k=1,zcan
             !----- Normalised drag density fraction and wind for this layer. --------------!
-            nddfun     = 1.0 - cumldrag(k) / cumldrag(zcan)
-            windlyr(k) = max(ugbmin, uh * exp(- nn * nddfun))
+            nddfun     = 1.0 - canstr(ibuff)%cumldrag(k) / canstr(ibuff)%cumldrag(zcan)
+            canstr(ibuff)%windlyr(k) = max(ugbmin, uh * exp(- nn * nddfun))
          end do
          !---------------------------------------------------------------------------------!
 
@@ -1065,17 +1074,19 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             if ( kapartial == kzpartial ) then
                !----- Cohort crown is in a single layer, copy the layer wind speed. -------!
-               cpatch%veg_wind(ico) = windlyr(kapartial)
+               cpatch%veg_wind(ico) = canstr(ibuff)%windlyr(kapartial)
             else
                !---------------------------------------------------------------------------!
                !      Cohort spans through multiple layers.  Use the average, weighted by  !
                ! the thickness of the layer.                                               !
                !---------------------------------------------------------------------------!
                !----- Partial layers (bottom and top). ------------------------------------!
-               cpatch%veg_wind(ico) = windlyr(kapartial) * (zztop(kapartial) - hbotcrown)  &
-                                    + windlyr(kzpartial) * (htopcrown - zzbot(kzpartial))
+               cpatch%veg_wind(ico) =  &
+                     canstr(ibuff)%windlyr(kapartial)*(zztop(kapartial)-hbotcrown)  &
+                   + canstr(ibuff)%windlyr(kzpartial)*(htopcrown-zzbot(kzpartial))
                do k = kafull,kzfull
-                  cpatch%veg_wind(ico) = cpatch%veg_wind(ico) + windlyr(k) * dzcan(k)
+                  cpatch%veg_wind(ico) = cpatch%veg_wind(ico) +                            &
+                        canstr(ibuff)%windlyr(k) * dzcan(k)
                end do
                !----- Divide by the total crown length to obtain the average wind. --------!
                cpatch%veg_wind(ico) = cpatch%veg_wind(ico) / (htopcrown - hbotcrown)
@@ -1152,7 +1163,7 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                !    Find the normalised drag density fraction and wind for this layer.     !
                !---------------------------------------------------------------------------!
-               Kdiff      = sigmakh * windlyr(k) + kvwake
+               Kdiff      = sigmakh * canstr(ibuff)%windlyr(k) + kvwake
                rasveg     = rasveg + dzcan(k) / Kdiff
             end do
             csite%ggveg(ipa) = 1.0 / rasveg
@@ -1178,7 +1189,7 @@ module canopy_struct_dynamics
             ! greater than zcan.                                                           !
             !------------------------------------------------------------------------------!
             do k=zcan+1,zels
-               windlyr(k) = reduced_wind(csite%ustar(ipa),csite%zeta(ipa)                  &
+               canstr(ibuff)%windlyr(k) = reduced_wind(csite%ustar(ipa),csite%zeta(ipa)    &
                                         ,csite%ribulk(ipa),cmet%geoht                      &
                                         ,csite%veg_displace(ipa),zzmid(k),csite%rough(ipa))
             end do
@@ -1212,19 +1223,20 @@ module canopy_struct_dynamics
                   !------------------------------------------------------------------------!
                   !    Find the normalised drag density fraction and wind for this layer.  !
                   !------------------------------------------------------------------------!
-                  nddfun     = 1. - cumldrag(k) / cumldrag(zcan)
+                  nddfun     = 1. - canstr(ibuff)%cumldrag(k) / canstr(ibuff)%cumldrag(zcan)
 
                   !------------------------------------------------------------------------!
                   !    Integrate the wind speed.  It will be normalised outside the loop.  !
                   !------------------------------------------------------------------------!
-                  ure        = ure + windlyr(k) * dzcan(k)
+                  ure        = ure + canstr(ibuff)%windlyr(k) * dzcan(k)
                   !------------------------------------------------------------------------!
 
 
                   !----- Sigstar, as in equation 10 of MW99. ------------------------------!
-                  sigstar3   = nu_mw99(3) * exp( - lam * cumldrag(zcan) * nddfun)          &
-                             + b1_mw99 * ( exp( - 3.0 * nn * nddfun)                       &
-                                         - exp( - lam * cumldrag(zcan) * nddfun))
+                  sigstar3   = &
+                        nu_mw99(3) * exp( - lam * canstr(ibuff)%cumldrag(zcan) * nddfun)   &
+                        + b1_mw99 * ( exp( - 3.0 * nn * nddfun)                            &
+                        - exp( - lam * canstr(ibuff)%cumldrag(zcan) * nddfun))
                   !------------------------------------------------------------------------!
 
 
@@ -1251,7 +1263,7 @@ module canopy_struct_dynamics
                                 / ( tprandtl * uh                                          &
                                   * ( 1.0 - zetatop * dpsimdzeta(zetatop,stable)))
                         do kk=1,zcan
-                           Kdiff      = sigmakh * windlyr(kk) + kvwake
+                           Kdiff      = sigmakh * canstr(ibuff)%windlyr(kk) + kvwake
                            rasveg     = rasveg + dzcan(kk) / Kdiff
                         end do
                         csite%ggveg(ipa) = 1.0 / rasveg
@@ -1263,9 +1275,9 @@ module canopy_struct_dynamics
                   else
                      sigstar  = cbrt(sigstar3)
                      sigcomm  = csite%ustar(ipa) * sigstar * nu_mw99(1)
-                     sigma_uou2 = (sigcomm * gamma_mw99(1) / windlyr(k)) ** 2
-                     sigma_vou2 = (sigcomm * gamma_mw99(2) / windlyr(k)) ** 2
-                     sigma_wou2 = (sigcomm * gamma_mw99(3) / windlyr(k)) ** 2
+                     sigma_uou2 = (sigcomm * gamma_mw99(1) / canstr(ibuff)%windlyr(k)) ** 2
+                     sigma_vou2 = (sigcomm * gamma_mw99(2) / canstr(ibuff)%windlyr(k)) ** 2
+                     sigma_wou2 = (sigcomm * gamma_mw99(3) / canstr(ibuff)%windlyr(k)) ** 2
                      turbi    = turbi                                                      &
                               + sqrt(onethird * (sigma_uou2 + sigma_vou2 + sigma_wou2))    &
                               * dzcan(k)
@@ -1299,7 +1311,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+         if (csite%opencan_frac(ipa) > 0.999 .or. snowfac_can >= 0.9) then
             csite%ggnet(ipa) = csite%ggbare(ipa)
          else
             csite%ggnet(ipa) = csite%ggbare(ipa) * csite%ggveg(ipa)                        &
@@ -1322,7 +1334,7 @@ module canopy_struct_dynamics
 
 
       return
-   end subroutine canopy_turbulence
+    end subroutine canopy_turbulence
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1407,14 +1419,15 @@ module canopy_struct_dynamics
       use rk4_coms         , only : rk4patchtype         & ! structure
                                   , rk4eps               & ! structure
                                   , rk4site              & ! intent(in)
+                                  , rk4aux               & ! intent(out)
                                   , tiny_offset          & ! intent(in)
-                                  , ibranch_thermo       & ! intent(in)
-                                  , wcapcan              & ! intent(out)
-                                  , hcapcan              & ! intent(out)
-                                  , ccapcan              & ! intent(out)
-                                  , wcapcani             & ! intent(out)
-                                  , hcapcani             & ! intent(out)
-                                  , ccapcani             ! ! intent(out)
+                                  , ibranch_thermo        ! intent(in)
+!                                  , wcapcan              & ! intent(out)
+!                                  , hcapcan              & ! intent(out)
+!                                  , ccapcan              & ! intent(out)
+!                                  , wcapcani             & ! intent(out)
+!                                  , hcapcani             & ! intent(out)
+!                                  , ccapcani             ! ! intent(out)
       use grid_coms        , only : nzg                  ! ! intent(in)
       use canopy_air_coms  , only : icanturb             & ! intent(in), can. turb. scheme
                                   , ustmin8              & ! intent(in)
@@ -1450,14 +1463,7 @@ module canopy_struct_dynamics
                                   , zztop8               & ! intent(in)
                                   , zzbot8               & ! intent(in)
                                   , zzmid8               & ! intent(in)
-                                  , opencan8             & ! intent(out)
-                                  , lad8                 & ! intent(out)
-                                  , cdrag8               & ! intent(out)
-                                  , pshelter8            & ! intent(out)
-                                  , cumldrag8            & ! intent(out)
-                                  , windlyr8             & ! intent(out)
-                                  , windext_full8        & ! intent(out)
-                                  , windext_half8        & ! intent(out)
+                                  , canstr               &
                                   , zero_canopy_layer    ! ! subroutine
       use consts_coms      , only : vonk8                & ! intent(in)
                                   , grav8                & ! intent(in)
@@ -1478,6 +1484,8 @@ module canopy_struct_dynamics
                                   , size2bl              ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
+      !$ use omp_lib
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite         ! Current site
@@ -1552,24 +1560,33 @@ module canopy_struct_dynamics
       real(kind=8)   :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real(kind=8)   :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       real(kind=8)   :: c3_cumldrag  ! c3 * cumulative drag                     [      ---]
+      real(kind=8)   :: snowfac_can  ! percent vertical canopy covered in snow
+      integer        :: ibuff
       !------ External procedures ---------------------------------------------------------!
       real(kind=8), external :: cbrt8    ! Cubic root that works for negative numbers
       real(kind=4), external :: sngloff  ! Safe double -> simple precision.
       !------------------------------------------------------------------------------------!
 
-
+      ibuff = 1
+      !$ ibuff = OMP_get_thread_num()+1
 
       !----- Assign some pointers. --------------------------------------------------------!
       cpatch=>csite%patch(ipa)
       !------------------------------------------------------------------------------------!
 
-
+      !------------------------------------------------------------------------------------!
+      !     Find the fraction of the canopy covered in snow (original snowfac function)    !
+      !     I think canopy roughness may need to be re-thought, but this was necessary     !
+      ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
+      !------------------------------------------------------------------------------------!
+      snowfac_can     = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+      !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     Find the virtual potential temperatures and decide whether the canopy air is   !
       ! stable or not.                                                                     !
       !------------------------------------------------------------------------------------!
       atm_thetav = rk4site%atm_theta * (1.d0 + epim18 * rk4site%atm_shv)
-      can_thetav = initp%can_theta   * (1.d0 + epim18 * initp%can_shv  )
+      can_thetav = initp%can_theta * (1.d0 + epim18 * initp%can_shv  )
       stable     = atm_thetav >= can_thetav
 
       !------------------------------------------------------------------------------------!
@@ -1579,15 +1596,15 @@ module canopy_struct_dynamics
       if (cpatch%ncohorts == 0) then
 
          !----- Calculate the surface roughness and displacement height. ------------------!
-         initp%rough        = soil_rough8 *(1.d0 - initp%snowfac)                          &
-                            + snow_rough8 * initp%snowfac
+         initp%rough        = soil_rough8 *(1.d0 - snowfac_can)                            &
+                            + snow_rough8 * snowfac_can
          initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
          
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -1606,8 +1623,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
          
          return
@@ -1618,7 +1640,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       !     Reset scratch variables in canopy_layer_coms.                                  !
       !------------------------------------------------------------------------------------!
-      call zero_canopy_layer('canopy_turbulence8')
+      call zero_canopy_layer('canopy_turbulence8',canstr(ibuff))
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1642,10 +1664,10 @@ module canopy_struct_dynamics
          ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
          ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = snow_rough8 * initp%snowfac                                         &
+         initp%rough = snow_rough8 * snowfac_can                                           &
                      + ( soil_rough8     * initp%opencan_frac                              &
                        + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
-                     * (1.d0 - initp%snowfac)
+                     * (1.d0 - snowfac_can)
          !---------------------------------------------------------------------------------!
 
 
@@ -1653,10 +1675,10 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -1665,12 +1687,12 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Find the aerodynamic resistance due to vegetated ground.                    !
          !---------------------------------------------------------------------------------!
-         if (initp%snowfac < 9.d-1) then
+         if (snowfac_can < 9.d-1) then
             select case (icanturb)
             case (0)
                !----- LEAF-3 method. ------------------------------------------------------!
                factv        = log((rk4site%geoht-initp%veg_displace) / initp%rough)        &
-                            / (vonk8 * vonk8 * rk4site%vels)
+                            / (vonk8 * vonk8 * initp%vels)
                aux          = exp(exar8 * (1.d0 - (initp%veg_displace + initp%rough)       &
                                                 / initp%veg_height) )
                initp%ggveg  = (exar8 * (initp%veg_height - initp%veg_displace))            &
@@ -1807,17 +1829,20 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
-         !---------------------------------------------------------------------------------!
-
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
 
          !---------------------------------------------------------------------------------!
          !     Find the net ground conductance.  The net conductance is derived from the   !
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
+         if (initp%opencan_frac > 9.99d-1 .or. snowfac_can >= 9.d-1) then
             initp%ggnet = initp%ggbare
          else
             initp%ggnet = initp%ggbare * initp%ggveg                                       &
@@ -1841,14 +1866,14 @@ module canopy_struct_dynamics
          ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
          ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = snow_rough8 * initp%snowfac                                         &
+         initp%rough = snow_rough8 * snowfac_can                                           &
                      + ( soil_rough8     * initp%opencan_frac                              &
                        + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
-                     * (1.d0 - initp%snowfac)
+                     * (1.d0 - snowfac_can)
          !---------------------------------------------------------------------------------!
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
+         surf_rough = soil_rough8 * (1.d0 - snowfac_can) + snow_rough8 * snowfac_can
          !---------------------------------------------------------------------------------!
 
 
@@ -1857,10 +1882,10 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -1972,8 +1997,14 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
+
          !---------------------------------------------------------------------------------!
 
 
@@ -1982,7 +2013,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
+         if (initp%opencan_frac > 9.99d-1 .or. snowfac_can >= 9.d-1) then
             initp%ggnet = initp%ggbare
          else
             initp%ggnet = initp%ggbare * initp%ggveg                                       &
@@ -2016,7 +2047,7 @@ module canopy_struct_dynamics
          ! branches or not, and we do it outside the loop to make it more efficient.       !
          !---------------------------------------------------------------------------------!
          !----- Reset the leaf area density array. ----------------------------------------!
-         lad8(:) = 0.d0
+         canstr(ibuff)%lad8(:) = 0.d0
          select case (ibranch_thermo)
          case (0)
             !------------------------------------------------------------------------------!
@@ -2059,7 +2090,7 @@ module canopy_struct_dynamics
                !     Add the LAD for the full layers.                                      !
                !---------------------------------------------------------------------------!
                do k = kafull,kzfull
-                  lad8(k) = lad8(k) + ladcohort
+                  canstr(ibuff)%lad8(k) = canstr(ibuff)%lad8(k) + ladcohort
                end do
                !---------------------------------------------------------------------------!
 
@@ -2070,14 +2101,14 @@ module canopy_struct_dynamics
                ! they are both the same layer, which must be done separately.              !
                !---------------------------------------------------------------------------!
                if (kapartial == kzpartial) then
-                  lad8(kapartial) = lad8(kapartial)                                        &
+                  canstr(ibuff)%lad8(kapartial) = canstr(ibuff)%lad8(kapartial)            &
                                   + ladcohort * (htopcrown         - hbotcrown        )    &
                                               / (zztop8(kapartial) - zzbot8(kapartial))
                else
-                  lad8(kapartial) = lad8(kapartial)                                        &
+                  canstr(ibuff)%lad8(kapartial) = canstr(ibuff)%lad8(kapartial)            &
                                   + ladcohort * (zztop8(kapartial) - hbotcrown        )    &
                                               / (zztop8(kapartial) - zzbot8(kapartial))
-                  lad8(kzpartial) = lad8(kzpartial)                                        &
+                  canstr(ibuff)%lad8(kzpartial) = canstr(ibuff)%lad8(kzpartial)            &
                                   + ladcohort * (htopcrown         - zzbot8(kzpartial))    &
                                               / (zztop8(kzpartial) - zzbot8(kzpartial))
                end if
@@ -2132,7 +2163,7 @@ module canopy_struct_dynamics
                !     Add the LAD for the full layers.                                      !
                !---------------------------------------------------------------------------!
                do k = kafull,kzfull
-                  lad8(k) = lad8(k) + ladcohort
+                  canstr(ibuff)%lad8(k) = canstr(ibuff)%lad8(k) + ladcohort
                end do
                !---------------------------------------------------------------------------!
 
@@ -2143,14 +2174,14 @@ module canopy_struct_dynamics
                ! they are both the same layer, which must be done separately.              !
                !---------------------------------------------------------------------------!
                if (kapartial == kzpartial) then
-                  lad8(kapartial) = lad8(kapartial)                                        &
+                  canstr(ibuff)%lad8(kapartial) = canstr(ibuff)%lad8(kapartial)            &
                                   + ladcohort * (htopcrown         - hbotcrown        )    &
                                               / (zztop8(kapartial) - zzbot8(kapartial))
                else
-                  lad8(kapartial) = lad8(kapartial)                                        &
+                  canstr(ibuff)%lad8(kapartial) = canstr(ibuff)%lad8(kapartial)            &
                                   + ladcohort * (zztop8(kapartial) - hbotcrown        )    &
                                               / (zztop8(kapartial) - zzbot8(kapartial))
-                  lad8(kzpartial) = lad8(kzpartial)                                        &
+                  canstr(ibuff)%lad8(kzpartial) = canstr(ibuff)%lad8(kzpartial)            &
                                   + ladcohort * (htopcrown         - zzbot8(kzpartial))    &
                                               / (zztop8(kzpartial) - zzbot8(kzpartial))
                end if
@@ -2170,7 +2201,7 @@ module canopy_struct_dynamics
          select case (icanturb)
          case (2)
             !----- Drag when there are no plants. -----------------------------------------!
-            cdrag8  (:)  = cdrag18 + 5.d-1 * cdrag28
+            canstr(ibuff)%cdrag8  (:)  = cdrag18 + 5.d-1 * cdrag28
             ldga_bk      = 0.d0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
@@ -2185,17 +2216,19 @@ module canopy_struct_dynamics
                ! Their cdeff is cdrag / pshelter, here we fix pshelter = 1 and dump the    !
                ! ratio to cdrag.                                                           !
                !---------------------------------------------------------------------------!
-               c3_lad       = max(lnexp_min8,min(lnexp_max8,cdrag38 * lad8(k)))
-               cdrag8   (k) = cdrag18 + cdrag28 / (1.d0 + exp(c3_lad))
-               pshelter8(k) = 1.d0
-               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) / pshelter8(k) * dzcan8(k)
-               cumldrag8(k) = ldga_bk + lyrhalf
+               c3_lad       = &
+                     max(lnexp_min8,min(lnexp_max8,cdrag38 * canstr(ibuff)%lad8(k)))
+               canstr(ibuff)%cdrag8   (k) = cdrag18 + cdrag28 / (1.d0 + exp(c3_lad))
+               canstr(ibuff)%pshelter8(k) = 1.d0
+               lyrhalf      = 5.d-1 * canstr(ibuff)%lad8(k) * canstr(ibuff)%cdrag8(k) /    &
+                     canstr(ibuff)%pshelter8(k) * dzcan8(k)
+               canstr(ibuff)%cumldrag8(k) = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.d0 * lyrhalf
                !---------------------------------------------------------------------------!
             end do
          case (3)
             !----- Constant drag. ---------------------------------------------------------!
-            cdrag8   (:) = cdrag08
+            canstr(ibuff)%cdrag8   (:) = cdrag08
             ldga_bk      = 0.d0
             do k = 1,zcan
                !---------------------------------------------------------------------------!
@@ -2208,9 +2241,10 @@ module canopy_struct_dynamics
                ! and Massman), since the shelter factor should be always >= 1.             !
                ! Alpha_m97 is no longer 0.4 * h, but 5 so it becomes a constant.           !
                !---------------------------------------------------------------------------!
-               pshelter8(k) = 1.d0 + alpha_m97_8 * lad8(k)
-               lyrhalf      = 5.d-1 * lad8(k) * cdrag8(k) / pshelter8(k) * dzcan8(k)
-               cumldrag8(k) = ldga_bk + lyrhalf
+               canstr(ibuff)%pshelter8(k) = 1.d0 + alpha_m97_8 * canstr(ibuff)%lad8(k)
+               lyrhalf      = 5.d-1 * canstr(ibuff)%lad8(k) * canstr(ibuff)%cdrag8(k) /    &
+                     canstr(ibuff)%pshelter8(k) * dzcan8(k)
+               canstr(ibuff)%cumldrag8(k) = ldga_bk + lyrhalf
                ldga_bk      = ldga_bk + 2.d0 * lyrhalf
                !---------------------------------------------------------------------------!
             end do
@@ -2223,14 +2257,15 @@ module canopy_struct_dynamics
          !    Find the ratio between u* and u at the top cohort, using Massman's equation  !
          ! (6).                                                                            !
          !---------------------------------------------------------------------------------!
-         c3_cumldrag = min(lnexp_max8,max(lnexp_min8,c3_m978 * cumldrag8(zcan)))
-         ustarouh = (c1_m978 - c2_m978 * exp(- c3_cumldrag))
+         c3_cumldrag = min(lnexp_max8                                                      &
+                          ,max(lnexp_min8,c3_m978 * canstr(ibuff)%cumldrag8(zcan)))
+         ustarouh    = (c1_m978 - c2_m978 * exp(- c3_cumldrag))
          !---------------------------------------------------------------------------------!
 
 
 
          !----- NN is Massman's n, the coefficient of attenuation. ------------------------!
-         nn = 5.d-1 * cumldrag8(zcan) / (ustarouh * ustarouh)
+         nn = 5.d-1 * canstr(ibuff)%cumldrag8(zcan) / (ustarouh * ustarouh)
          !---------------------------------------------------------------------------------!
 
 
@@ -2245,7 +2280,8 @@ module canopy_struct_dynamics
          d0ohgt = 1.d0
          do k=1,zcan
             d0ohgt = d0ohgt - dzcan8(k) / htop                                             &
-                            * exp(-2.d0 * nn *(1.d0 - cumldrag8(k) / cumldrag8(zcan)))
+                            * exp(-2.d0 * nn *(1.d0 - canstr(ibuff)%cumldrag8(k) /         &
+                            canstr(ibuff)%cumldrag8(zcan)))
          end do
          z0ohgt = (1.d0 - d0ohgt) * min(1.d0,exp(- vonk8 / ustarouh + infunc_8))
          !---------------------------------------------------------------------------------!
@@ -2260,10 +2296,10 @@ module canopy_struct_dynamics
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
                        ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,rk4site%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
+                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
                        ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
@@ -2279,8 +2315,8 @@ module canopy_struct_dynamics
          !----- Get the wind profile. -----------------------------------------------------!
          do k=1,zcan
             !----- Normalised drag density fraction and wind for this layer. --------------!
-            nddfun      = 1.d0 - cumldrag8(k) / cumldrag8(zcan)
-            windlyr8(k) = max(ugbmin8, uh * exp(- nn * nddfun))
+            nddfun      = 1.d0 - canstr(ibuff)%cumldrag8(k) / canstr(ibuff)%cumldrag8(zcan)
+            canstr(ibuff)%windlyr8(k) = max(ugbmin8, uh * exp(- nn * nddfun))
          end do
          !---------------------------------------------------------------------------------!
 
@@ -2314,17 +2350,19 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             if ( kapartial == kzpartial ) then
                !----- Cohort crown is in a single layer, copy the layer wind speed. -------!
-               initp%veg_wind(ico) = windlyr8(kapartial)
+               initp%veg_wind(ico) = canstr(ibuff)%windlyr8(kapartial)
             else
                !---------------------------------------------------------------------------!
                !      Cohort spans through multiple layers.  Use the average, weighted by  !
                ! the thickness of the layer.                                               !
                !---------------------------------------------------------------------------!
                !----- Partial layers (bottom and top). ------------------------------------!
-               initp%veg_wind(ico) = windlyr8(kapartial) * (zztop8(kapartial) - hbotcrown) &
-                                   + windlyr8(kzpartial) * (htopcrown - zzbot8(kzpartial))
+               initp%veg_wind(ico) = &
+                     canstr(ibuff)%windlyr8(kapartial) * (zztop8(kapartial) - hbotcrown)   &
+                   + canstr(ibuff)%windlyr8(kzpartial) * (htopcrown - zzbot8(kzpartial))
                do k = kafull,kzfull
-                  initp%veg_wind(ico) = initp%veg_wind(ico) + windlyr8(k) * dzcan8(k)
+                  initp%veg_wind(ico) = initp%veg_wind(ico) +                              &
+                        canstr(ibuff)%windlyr8(k) * dzcan8(k)
                end do
                !----- Divide by the total crown length to obtain the average wind. --------!
                initp%veg_wind(ico) = initp%veg_wind(ico) / (htopcrown - hbotcrown)
@@ -2418,7 +2456,7 @@ module canopy_struct_dynamics
                !---------------------------------------------------------------------------!
                !    Find the normalised drag density fraction and wind for this layer.     !
                !---------------------------------------------------------------------------!
-               Kdiff      = sigmakh * windlyr8(k) + kvwake8
+               Kdiff      = sigmakh * canstr(ibuff)%windlyr8(k) + kvwake8
                rasveg     = rasveg + dzcan8(k) / Kdiff
             end do
             initp%ggveg = 1.d0 / rasveg
@@ -2445,9 +2483,10 @@ module canopy_struct_dynamics
             ! greater than zcan.                                                           !
             !------------------------------------------------------------------------------!
             do k=zcan+1,zels
-               windlyr8(k) = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk             &
-                                          ,rk4site%geoht,initp%veg_displace,zzmid8(k)      &
-                                          ,initp%rough)
+               canstr(ibuff)%windlyr8(k) = &
+                     reduced_wind8(initp%ustar,initp%zeta,initp%ribulk             &
+                     ,rk4site%geoht,initp%veg_displace,zzmid8(k)      &
+                     ,initp%rough)
             end do
             !------------------------------------------------------------------------------!
 
@@ -2479,17 +2518,19 @@ module canopy_struct_dynamics
                   !------------------------------------------------------------------------!
                   !    Find the normalised drag density fraction and wind for this layer.  !
                   !------------------------------------------------------------------------!
-                  nddfun      = 1.d0 - cumldrag8(k) / cumldrag8(zcan)
+                  nddfun      = 1.d0 - canstr(ibuff)%cumldrag8(k) /                        &
+                        canstr(ibuff)%cumldrag8(zcan)
 
                   !------------------------------------------------------------------------!
                   !    Integrate the wind speed.  It will be normalised outside the loop.  !
                   !------------------------------------------------------------------------!
-                  ure        = ure + windlyr8(k) * dzcan8(k)
+                  ure        = ure + canstr(ibuff)%windlyr8(k) * dzcan8(k)
                   
                   !----- Sigstar, as in equation 10 of MW99. ------------------------------!
-                  sigstar3   = nu_mw99_8(3) * exp( - lam * cumldrag8(zcan) * nddfun)       &
-                             + b1_mw99 * ( exp( - 3.d0 * nn * nddfun)                      &
-                                         - exp( - lam * cumldrag8(zcan) * nddfun))
+                  sigstar3   = &
+                        nu_mw99_8(3) * exp( - lam * canstr(ibuff)%cumldrag8(zcan) * nddfun)&
+                        + b1_mw99 * ( exp( - 3.d0 * nn * nddfun)                      &
+                        - exp( - lam * canstr(ibuff)%cumldrag8(zcan) * nddfun))
                   !------------------------------------------------------------------------!
 
 
@@ -2516,7 +2557,7 @@ module canopy_struct_dynamics
                                 / ( tprandtl8 * uh                                         &
                                   * ( 1.d0 - zetatop * dpsimdzeta8(zetatop,stable) ) )
                         do kk=1,zcan
-                           Kdiff       = sigmakh * windlyr8(kk) + kvwake8
+                           Kdiff       = sigmakh * canstr(ibuff)%windlyr8(kk) + kvwake8
                            rasveg      = rasveg + dzcan8(kk) / Kdiff
                         end do
                         initp%ggveg    = 1.d0 / rasveg
@@ -2528,9 +2569,12 @@ module canopy_struct_dynamics
                   else
                      sigstar  = cbrt8(sigstar3)
                      sigcomm  = initp%ustar * sigstar * nu_mw99_8(1)
-                     sigma_uou2 = (sigcomm * gamma_mw99_8(1) / windlyr8(k)) ** 2
-                     sigma_vou2 = (sigcomm * gamma_mw99_8(2) / windlyr8(k)) ** 2
-                     sigma_wou2 = (sigcomm * gamma_mw99_8(3) / windlyr8(k)) ** 2
+                     sigma_uou2 = (sigcomm * gamma_mw99_8(1) /                             &
+                           canstr(ibuff)%windlyr8(k)) ** 2
+                     sigma_vou2 = (sigcomm * gamma_mw99_8(2) /                             &
+                           canstr(ibuff)%windlyr8(k)) ** 2
+                     sigma_wou2 = (sigcomm * gamma_mw99_8(3) /                             &
+                           canstr(ibuff)%windlyr8(k)) ** 2
                      turbi    = turbi                                                      &
                               + sqrt(onethird8 * (sigma_uou2 + sigma_vou2 + sigma_wou2))   &
                               * dzcan8(k)
@@ -2565,7 +2609,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. initp%snowfac >= 9.d-1) then
+         if (initp%opencan_frac > 9.99d-1 .or. snowfac_can >= 9.d-1) then
             initp%ggnet = initp%ggbare
          else
             initp%ggnet = initp%ggbare * initp%ggveg                                       &
@@ -2578,8 +2622,13 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whccap8(initp%can_rhos,initp%can_depth                                   &
-                         ,wcapcan,hcapcan,ccapcan,wcapcani,hcapcani,ccapcani)
+         call can_whccap8(initp%can_rhos,initp%can_depth,                                  &
+                          rk4aux(ibuff)%wcapcan,                                           &
+                          rk4aux(ibuff)%hcapcan,                                           &
+                          rk4aux(ibuff)%ccapcan,                                           &
+                          rk4aux(ibuff)%wcapcani,                                          &
+                          rk4aux(ibuff)%hcapcani,                                          &
+                          rk4aux(ibuff)%ccapcani)
          !---------------------------------------------------------------------------------!
 
       end select
@@ -3109,6 +3158,7 @@ module canopy_struct_dynamics
       end if
       !------------------------------------------------------------------------------------!
 
+     
 
 
 
@@ -3235,8 +3285,6 @@ module canopy_struct_dynamics
                uconv_prev = uconv
                utotal     = sqrt(uuse*uuse + uconv_prev * uconv_prev)
                !---------------------------------------------------------------------------!
-
-
 
                !----- Update the Bulk Richardson number. ----------------------------------!
                rib        = 2.d0 * grav8 * (zstar-rough) * (thetav_atm-thetav_can)         &

@@ -19,8 +19,8 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine lw_multiple_scatter(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai      &
-                              ,leaf_temp,wood_temp,radprof_flip,tir_flip,dw_tirlo,uw_tirlo &
-                              ,uw_tirhi)
+                              ,leaf_temp,wood_temp,radprof_flip,tir_flip                   &
+                              ,dw_tirlo,uw_tirlo,uw_tirhi)
    use ed_max_dims          , only : n_pft                   & ! intent(in)
                                    , n_radprof               ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
@@ -390,7 +390,8 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
                               ,radprof_flip,par_beam_flip,par_diff_flip,sw_abs_beam_flip   &
                               ,sw_abs_diff_flip,dw_parlo_beam,dw_parlo_diff                &
                               ,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff,uw_nirhi_diff     &
-                              ,par_beam_level,par_diff_level,light_level,light_beam_level  &
+                              ,par_level_beam,par_level_diffd,par_level_diffu              &
+                              ,light_level,light_beam_level  &
                               ,light_diff_level)
    use ed_max_dims          , only : n_pft                   & ! intent(in)
                                    , n_radprof               ! ! intent(in)
@@ -436,8 +437,9 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
    real(kind=4)                              , intent(out)   :: dw_parlo_diff
    real(kind=4)                              , intent(out)   :: dw_nirlo_beam
    real(kind=4)                              , intent(out)   :: dw_nirlo_diff
-   real(kind=8), dimension(ncoh)             , intent(out)   :: par_beam_level
-   real(kind=8), dimension(ncoh)             , intent(out)   :: par_diff_level
+   real(kind=8), dimension(ncoh)             , intent(out)   :: par_level_beam
+   real(kind=8), dimension(ncoh)             , intent(out)   :: par_level_diffu
+   real(kind=8), dimension(ncoh)             , intent(out)   :: par_level_diffd
    real(kind=8), dimension(ncoh)             , intent(out)   :: light_level
    real(kind=8), dimension(ncoh)             , intent(out)   :: light_beam_level
    real(kind=8), dimension(ncoh)             , intent(out)   :: light_diff_level
@@ -887,13 +889,15 @@ subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,
          !------ Integrate the visible light levels. --------------------------------------!
          do i=1,ncoh
             ip1 = i + 1
-            par_diff_level      (i) = 5.d-1 * (swd(i) + swd(ip1)) / par_diff_norm
-            par_beam_level      (i) = 5.d-1 * (beam_down(i) + beam_down(ip1))              &
-                                    / par_beam_norm
+            im1 = i - 1
+            par_level_diffd(i) = 5.d-1 * (swd(i) + swd(ip1)) /                             &
+                 (par_diff_norm + par_beam_norm)
+            par_level_diffu(i) = 5.d-1 * (swu(i) + swu(im1)) /                             &
+                 (par_diff_norm + par_beam_norm)
+            par_level_beam (i) = 5.d-1 * (beam_down(i) + beam_down(ip1)) /                 &
+                 (par_diff_norm+par_beam_norm)
          end do
          !---------------------------------------------------------------------------------!
-
-
 
          !------ Save the fluxes reaching the surface and leaving the top. ----------------!
          dw_parlo_beam = sngloff(beam_down      (1), tiny_offset)

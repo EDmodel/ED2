@@ -144,6 +144,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%light_level           (ico) = 0.0
    cpatch%light_level_beam      (ico) = 0.0
    cpatch%light_level_diff      (ico) = 0.0
+
+   cpatch%par_level_beam        (ico) = 0.0
+   cpatch%par_level_diffu       (ico) = 0.0
+   cpatch%par_level_diffd       (ico) = 0.0
+
    cpatch%gpp                   (ico) = 0.0
    cpatch%leaf_respiration      (ico) = 0.0
    cpatch%root_respiration      (ico) = 0.0
@@ -255,6 +260,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%fmean_light_level       (ico) = 0.0
    cpatch%fmean_light_level_beam  (ico) = 0.0
    cpatch%fmean_light_level_diff  (ico) = 0.0
+
+   cpatch%fmean_par_level_beam    (ico) = 0.0
+   cpatch%fmean_par_level_diffu   (ico) = 0.0
+   cpatch%fmean_par_level_diffd   (ico) = 0.0
+
    cpatch%fmean_par_l             (ico) = 0.0
    cpatch%fmean_par_l_beam        (ico) = 0.0
    cpatch%fmean_par_l_diff        (ico) = 0.0
@@ -322,6 +332,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_light_level       (ico) = 0.0
       cpatch%dmean_light_level_beam  (ico) = 0.0
       cpatch%dmean_light_level_diff  (ico) = 0.0
+
+      cpatch%dmean_par_level_beam    (ico) = 0.0
+      cpatch%dmean_par_level_diffu   (ico) = 0.0
+      cpatch%dmean_par_level_diffd   (ico) = 0.0
+
       cpatch%dmean_par_l             (ico) = 0.0
       cpatch%dmean_par_l_beam        (ico) = 0.0
       cpatch%dmean_par_l_diff        (ico) = 0.0
@@ -382,6 +397,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_light_level         (ico) = 0.0
       cpatch%mmean_light_level_beam    (ico) = 0.0
       cpatch%mmean_light_level_diff    (ico) = 0.0
+
+      cpatch%mmean_par_level_beam      (ico) = 0.0
+      cpatch%mmean_par_level_diffu     (ico) = 0.0
+      cpatch%mmean_par_level_diffd     (ico) = 0.0
+
       cpatch%mmean_par_l               (ico) = 0.0
       cpatch%mmean_par_l_beam          (ico) = 0.0
       cpatch%mmean_par_l_diff          (ico) = 0.0
@@ -467,6 +487,11 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%qmean_light_level       (:,ico) = 0.0
       cpatch%qmean_light_level_beam  (:,ico) = 0.0
       cpatch%qmean_light_level_diff  (:,ico) = 0.0
+
+      cpatch%qmean_par_level_beam    (:,ico) = 0.0
+      cpatch%qmean_par_level_diffu   (:,ico) = 0.0
+      cpatch%qmean_par_level_diffd   (:,ico) = 0.0
+
       cpatch%qmean_par_l             (:,ico) = 0.0
       cpatch%qmean_par_l_beam        (:,ico) = 0.0
       cpatch%qmean_par_l_diff        (:,ico) = 0.0

@@ -24,6 +24,8 @@ subroutine euler_timestep(cgrid)
    use therm_lib             , only : tq2enthalpy        ! ! function
    use budget_utils          , only : update_budget      & ! function
                                     , compute_budget     ! ! function
+   ! OMP use omp_lib
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)             , target      :: cgrid
@@ -35,15 +37,9 @@ subroutine euler_timestep(cgrid)
    integer                                :: ipy
    integer                                :: isi
    integer                                :: ipa
-   integer                                :: ico
    integer                                :: nsteps
    integer                                :: imon
-   real                                   :: thetaatm
-   real                                   :: thetacan
-   real                                   :: rasveg
-   real                                   :: storage_decay
-   real                                   :: leaf_flux
-   real                                   :: veg_tai
+   real                                   :: patch_vels
    real                                   :: wcurr_loss2atm
    real                                   :: ecurr_netrad
    real                                   :: ecurr_loss2atm
@@ -58,10 +54,13 @@ subroutine euler_timestep(cgrid)
    real                                   :: old_can_rhos
    real                                   :: old_can_temp
    real                                   :: old_can_prss
-   real                                   :: fm
+   integer                                :: ibuff
+   ! OMP  integer(kind=OMP_integer_kind)   :: omp_ibuff
    !----- Local constants. ----------------------------------------------------------------!
    logical                  , parameter   :: test_energy_sanity = .false.
    !---------------------------------------------------------------------------------------!
+
+   ibuff = 1
 
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -78,29 +77,46 @@ subroutine euler_timestep(cgrid)
                                           + cmet%pcpg * dtlsm
          !---------------------------------------------------------------------------------!
 
+         !------------------------------------------------------------------------------!
+         !    Copy the meteorological variables to the rk4site structure.               !
+         !------------------------------------------------------------------------------!
+         call copy_met_2_rk4site(nzg,cmet%atm_ustar                                     &
+                                   ,cmet%atm_theiv,cmet%atm_vpdef,cmet%atm_theta           &
+                                   ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
+                                   ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
+                                   ,cmet%rshort,cmet%rlong,cmet%par_beam,cmet%par_diffuse  &
+                                   ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
+                                   ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
+                                   ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
+                                   ,cgrid%lat(ipy),cgrid%cosz(ipy))
+            !------------------------------------------------------------------------------!
+
          patchloop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
 
+            ibuff=1
 
             !----- Reset all buffers to zero, as a safety measure. ------------------------!
-            call zero_rk4_patch(integration_buff%initp)
-            call zero_rk4_patch(integration_buff%dinitp)
-            call zero_rk4_patch(integration_buff%ytemp)
-            call zero_rk4_patch(integration_buff%yerr)
-            call zero_rk4_patch(integration_buff%yscal)
-            call zero_rk4_patch(integration_buff%dydx)
-            call zero_rk4_cohort(integration_buff%initp)
-            call zero_rk4_cohort(integration_buff%dinitp)
-            call zero_rk4_cohort(integration_buff%ytemp)
-            call zero_rk4_cohort(integration_buff%yerr)
-            call zero_rk4_cohort(integration_buff%yscal)
-            call zero_rk4_cohort(integration_buff%dydx)
+            call zero_rk4_patch(integration_buff(ibuff)%initp)
+            call zero_rk4_patch(integration_buff(ibuff)%dinitp)
+            call zero_rk4_patch(integration_buff(ibuff)%ytemp)
+            call zero_rk4_patch(integration_buff(ibuff)%yerr)
+            call zero_rk4_patch(integration_buff(ibuff)%yscal)
+            call zero_rk4_patch(integration_buff(ibuff)%dydx)
+            call zero_rk4_cohort(integration_buff(ibuff)%initp)
+            call zero_rk4_cohort(integration_buff(ibuff)%dinitp)
+            call zero_rk4_cohort(integration_buff(ibuff)%ytemp)
+            call zero_rk4_cohort(integration_buff(ibuff)%yerr)
+            call zero_rk4_cohort(integration_buff(ibuff)%yscal)
+            call zero_rk4_cohort(integration_buff(ibuff)%dydx)
 
             !----- Get velocity for aerodynamic resistance. -------------------------------!
             if (csite%can_theta(ipa) < cmet%atm_theta) then
-               cmet%vels = cmet%vels_stab
+!               cmet%vels = cmet%vels_stab
+               patch_vels = cmet%vels_stab
             else
-               cmet%vels = cmet%vels_unstab
+!               cmet%vels = cmet%vels_unstab
+               patch_vels = cmet%vels_unstab
             end if
             !------------------------------------------------------------------------------!
 
@@ -124,24 +140,6 @@ subroutine euler_timestep(cgrid)
             old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
             !------------------------------------------------------------------------------!
 
-
-
-            !------------------------------------------------------------------------------!
-            !    Copy the meteorological variables to the rk4site structure.               !
-            !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(nzg,csite%can_theta(ipa),csite%can_shv(ipa)            &
-                                   ,csite%can_depth(ipa),cmet%atm_ustar,cmet%vels          &
-                                   ,cmet%atm_theiv,cmet%atm_vpdef,cmet%atm_theta           &
-                                   ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
-                                   ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
-                                   ,cmet%rshort,cmet%rlong,cmet%par_beam,cmet%par_diffuse  &
-                                   ,cmet%nir_beam,cmet%nir_diffuse,cmet%geoht              &
-                                   ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)                 &
-                                   ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
-                                   ,cgrid%lat(ipy),cgrid%cosz(ipy))
-            !------------------------------------------------------------------------------!
-
-
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
             !------------------------------------------------------------------------------!
@@ -157,10 +155,11 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
 
 
+
             !------------------------------------------------------------------------------!
             !     Set up the integration patch.                                            !
             !------------------------------------------------------------------------------!
-            call copy_patch_init(csite,ipa,integration_buff%initp)
+            call copy_patch_init(csite,ipa,integration_buff(ibuff)%initp,patch_vels)
             !------------------------------------------------------------------------------!
 
 
@@ -179,11 +178,10 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
 
 
-
             !------------------------------------------------------------------------------!
             !     Set up the remaining, carbon-dependent variables to the buffer.          !
             !------------------------------------------------------------------------------!
-            call copy_patch_init_carbon(csite,ipa,integration_buff%initp)
+            call copy_patch_init_carbon(csite,ipa,integration_buff(ibuff)%initp)
             !------------------------------------------------------------------------------!
 
 
@@ -191,10 +189,13 @@ subroutine euler_timestep(cgrid)
             !     This is the step in which the derivatives are computed, we a structure   !
             ! that is very similar to the Runge-Kutta, though a simpler one.               !
             !------------------------------------------------------------------------------!
-            call integrate_patch_euler(csite,integration_buff%initp                        &
-                                      ,integration_buff%dinitp,integration_buff%ytemp      &
-                                      ,integration_buff%yscal,integration_buff%yerr        &
-                                      ,integration_buff%dydx,ipa,cpoly%nighttime(isi)      &
+            call integrate_patch_euler(csite,integration_buff(ibuff)%initp                 &
+                                      ,integration_buff(ibuff)%dinitp                      &
+                                      ,integration_buff(ibuff)%ytemp                       &
+                                      ,integration_buff(ibuff)%yscal                       &
+                                      ,integration_buff(ibuff)%yerr                        &
+                                      ,integration_buff(ibuff)%dydx                        &
+                                      ,ipa,isi,cpoly%nighttime(isi)                        &
                                       ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm          &
                                       ,co2curr_loss2atm,wcurr_loss2drainage                &
                                       ,ecurr_loss2drainage,wcurr_loss2runoff               &
@@ -251,8 +252,8 @@ end subroutine euler_timestep
 !     This subroutine will drive the integration process using the Euler method.  Notice   !
 ! that most of the Euler method utilises the subroutines from Runge-Kutta.                 !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nighttime    &
-                                ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                &
+subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi          &
+                                ,nighttime,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm      &
                                 ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage  &
                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
@@ -282,6 +283,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,ni
    type(rk4patchtype)    , target      :: yerr
    type(rk4patchtype)    , target      :: dydx
    integer               , intent(in)  :: ipa
+   integer               , intent(in)  :: isi
    logical               , intent(in)  :: nighttime
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
@@ -324,7 +326,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,ni
    initp%wpwp = 0.d0
 
    !----- Go into the ODE integrator using Euler. -----------------------------------------!
-   call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
+   call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
 
    !---------------------------------------------------------------------------------------!
    !      Normalize canopy-atmosphere flux values.  These values are updated every         !
@@ -360,7 +362,7 @@ end subroutine integrate_patch_euler
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
+subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype            ! ! structure
@@ -395,7 +397,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                              , nzs                    & ! intent(in)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
-                             , runoff_time            ! ! intent(in)
+                             , runoff_time            & ! intent(in)
+                             , runoff_time_i          & ! intent(in)
+                             , simplerunoff           ! ! intent(in)
    use consts_coms    , only : t3ple8                 & ! intent(in)
                              , wdnsi8                 ! ! intent(in)
    use therm_lib8     , only : tl2uint8               ! ! intent(in)
@@ -409,6 +413,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    type(rk4patchtype)        , target      :: yerr             ! Patch integration error
    type(rk4patchtype)        , target      :: dydx             ! Patch integration error
    integer                   , intent(in)  :: ipa              ! Current patch ID
+   integer                   , intent(in)  :: isi              ! Current patch ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
@@ -426,29 +431,13 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    real(kind=8)                            :: oldh             ! Old time step
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
-   real(kind=8)                            :: hdid             ! delta-t that worked (???)
    real(kind=8)                            :: qwfree           ! Free water internal energy
    real(kind=8)                            :: wfreeb           ! Free water 
    real(kind=8)                            :: errmax           ! Maximum error of this step
    real(kind=8)                            :: elaptime         ! Absolute elapsed time.
-   !----- Saved variables -----------------------------------------------------------------!
-   logical                   , save        :: first_time=.true.
-   logical                   , save        :: simplerunoff
-   real(kind=8)              , save        :: runoff_time_i
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
    !---------------------------------------------------------------------------------------!
-   
-   !----- Checking whether we will use runoff or not, and saving this check to save time. -!
-   if (first_time) then
-      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
-      if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
-      else 
-         runoff_time_i = 0.d0
-      end if
-      first_time   = .false.
-   end if
 
    !----- Use some aliases for simplicity. ------------------------------------------------!
    cpatch => csite%patch(ipa)
@@ -600,7 +589,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
                call norm_rk4_fluxes(ytemp,h)
-               call print_rk4_state(initp,ytemp,csite,ipa,x,h)
+               call print_rk4_state(initp,ytemp,csite,ipa,isi,x,h)
             end if
 
             !----- 3e. Copy the temporary structure to the intermediate state. ------------!
@@ -632,8 +621,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          !---------------------------------------------------------------------------------!
          !   Make temporary surface liquid water disappear.  This will not happen          !
          ! immediately, but liquid water will decay with the time scale defined by         !
-         ! runoff_time scale. If the time scale is too tiny, then it will be forced to be  !
-         ! hdid (no reason to be faster than that).                                        !
+         ! runoff_time scale.                                                              !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
 

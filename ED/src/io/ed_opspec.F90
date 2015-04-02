@@ -1614,7 +1614,7 @@ end do
       end if
    case default
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-               'Invalid INTEGRATION_SCHEME, it must be 0, 1, or 2. Yours is set to'        &
+               'Invalid INTEGRATION_SCHEME, it must be 0, 1, 2, or 3. Yours is set to'     &
                ,integration_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -2101,9 +2101,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if  (icanrad <0 .or. icanrad > 2) then
+   if  (icanrad <1 .or. icanrad > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid ICANRAD, it must be between 0 and 2.  Yours is set to'        &
+                    'Invalid ICANRAD, it must be between 1 and 2.  Yours is set to'        &
                     ,icanrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')

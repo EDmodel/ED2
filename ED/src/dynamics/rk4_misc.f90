@@ -3,7 +3,7 @@
 !    This subroutine copies that variables that are integrated by the Runge-Kutta solver   !
 ! to a buffer structure.                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_patch_init(sourcesite,ipa,targetp)
+subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
    use ed_state_vars         , only : sitetype               & ! structure
                                     , patchtype              ! ! structure
    use grid_coms             , only : nzg                    & ! intent(in)
@@ -18,15 +18,15 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use rk4_coms              , only : rk4patchtype           & ! structure
                                     , rk4site                & ! structure
                                     , rk4eps                 & ! intent(in)
-                                    , any_resolvable         & ! intent(out)
-                                    , wcapcan                & ! intent(out)
-                                    , wcapcani               & ! intent(out)
+!                                    , wcapcan                & ! intent(out)
+!                                    , wcapcani               & ! intent(out)
                                     , rk4water_stab_thresh   & ! intent(in)
                                     , rk4tiny_sfcw_mass      & ! intent(in)
                                     , checkbudget            & ! intent(in)
                                     , print_detailed         & ! intent(in)
-                                    , rk4min_soil_water      & ! intent(in)
-                                    , rk4max_soil_water      & ! intent(in)
+                                    , rk4aux                 & 
+!                                    , rk4min_soil_water      & ! intent(in)
+!                                    , rk4max_soil_water      & ! intent(in)
                                     , find_derived_thbounds  & ! sub-routine
                                     , reset_rk4_fluxes       ! ! sub-routine
    use ed_max_dims           , only : n_pft                  ! ! intent(in)
@@ -42,23 +42,29 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , tq2enthalpy8           ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
+   use canopy_air_coms       , only : ubmin8
    use canopy_struct_dynamics, only : canopy_turbulence8     ! ! subroutine
+   !$ use omp_lib
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)    , target     :: targetp
    type(sitetype)        , target     :: sourcesite
    integer               , intent(in) :: ipa
+   real                  , intent(in) :: vels
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    real(kind=8)                       :: rsat
+   real(kind=8)                       :: atm_tmp_zcan
    integer                            :: ico
    integer                            :: ipft
    integer                            :: k
    integer                            :: ksn
+   integer                            :: ibuff
    !---------------------------------------------------------------------------------------!
 
-
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
 
    !---- Alias for the current patch. -----------------------------------------------------!
    cpatch => sourcesite%patch(ipa)
@@ -80,15 +86,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
    !---------------------------------------------------------------------------------------!
 
-
-
    !----- Update the vegetation properties used for roughness. ----------------------------!
    targetp%veg_height   = dble(sourcesite%veg_height  (ipa))
    targetp%veg_displace = dble(sourcesite%veg_displace(ipa))
    targetp%veg_rough    = dble(sourcesite%veg_rough   (ipa))
    !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !      Update the canopy pressure and Exner function.                                   !
@@ -99,6 +101,18 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_exner = press2exner8 (targetp%can_prss)
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the pressure and Exner functions at the canopy depth, find the temperature   !
+   ! of the air above canopy at the canopy depth, and the specific enthalpy at that level. !
+   !---------------------------------------------------------------------------------------!
+   
+
+   atm_tmp_zcan         = extheta2temp8(targetp%can_exner,rk4site%atm_theta)
+   targetp%atm_enthalpy = tq2enthalpy8 (atm_tmp_zcan,rk4site%atm_shv,.true.)
+
+   !----- Get velocity for aerodynamic resistance. ----------------------------------------!
+   targetp%vels  = max(ubmin8,dble(vels))
 
    !---------------------------------------------------------------------------------------!
    !      Initialise canopy air temperature and enthalpy.  Enthalpy is the actual          !
@@ -149,9 +163,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! to double precision.  Therefore at this time only we must ensure that we bound it, !
       ! otherwise the model will crash due to the round-off error.                         !            
       !------------------------------------------------------------------------------------!
-      targetp%soil_water  (k) = min( rk4max_soil_water(k)                                  &
-                                   , max( rk4min_soil_water(k)                             &
-                                        , dble(sourcesite%soil_water(k,ipa)) ) )
+      targetp%soil_water  (k) = min( rk4aux(ibuff)%rk4max_soil_water(k)                                  &
+                                   , max( rk4aux(ibuff)%rk4min_soil_water(k)                             &
+                                   , dble(sourcesite%soil_water(k,ipa)) ) )
       targetp%soil_energy (k) = dble(sourcesite%soil_energy (k,ipa))
       targetp%soil_mstpot (k) = dble(sourcesite%soil_mstpot (k,ipa))
       targetp%soil_tempk  (k) = dble(sourcesite%soil_tempk  (k,ipa))
@@ -249,13 +263,13 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! integrator, so it preserves the proportional heat capacity and prevents the pool to   !
    ! be too small.                                                                         !
    !---------------------------------------------------------------------------------------!
-   any_resolvable = .false.
+   rk4aux(ibuff)%any_resolvable = .false.
    do ico=1, cpatch%ncohorts
       !----- Copying the flag that determines whether this cohort is numerically stable. --!
       targetp%leaf_resolvable(ico) = cpatch%leaf_resolvable(ico)
       targetp%wood_resolvable(ico) = cpatch%wood_resolvable(ico)
       if (targetp%leaf_resolvable(ico) .or. targetp%wood_resolvable(ico)) then
-         any_resolvable = .true.
+         rk4aux(ibuff)%any_resolvable = .true.
       end if
    end do
 
@@ -445,7 +459,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    end if
    !---------------------------------------------------------------------------------------!
 
-
    !----- Water deficit, always start with zero. ------------------------------------------!
    targetp%water_deficit = 0.d0
    !---------------------------------------------------------------------------------------!
@@ -561,17 +574,18 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4min_virt_water     & ! intent(in)
                                     , rk4min_can_shv        & ! intent(in)
                                     , rk4max_can_shv        & ! intent(in)
-                                    , rk4min_can_enthalpy   & ! intent(in)
-                                    , rk4max_can_enthalpy   & ! intent(in)
-                                    , rk4min_can_theta      & ! intent(in)
-                                    , rk4max_can_theta      & ! intent(in)
+!                                    , rk4min_can_enthalpy   & ! intent(in)
+!                                    , rk4max_can_enthalpy   & ! intent(in)
+!                                    , rk4min_can_theta      & ! intent(in)
+!                                    , rk4max_can_theta      & ! intent(in)
                                     , rk4min_veg_lwater     & ! intent(in)
                                     , rk4min_veg_temp       & ! intent(in)
                                     , rk4max_veg_temp       & ! intent(in)
                                     , rk4min_soil_temp      & ! intent(in)
                                     , rk4max_soil_temp      & ! intent(in)
-                                    , rk4min_soil_water     & ! intent(in)
-                                    , rk4max_soil_water     & ! intent(in)
+                                    , rk4aux                & 
+!                                    , rk4min_soil_water     & ! intent(in)
+!                                    , rk4max_soil_water     & ! intent(in)
                                     , rk4min_sfcw_temp      & ! intent(in)
                                     , rk4max_sfcw_temp      & ! intent(in)
                                     , rk4water_stab_thresh  & ! intent(in)
@@ -610,6 +624,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , toodry8               ! ! intent(in)
    use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
+   !$ use omp_lib
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: initp
@@ -644,13 +659,17 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: wgt_leaf
    real(kind=8)                     :: wgt_wood
    real(kind=8)                     :: bulk_sfcw_dens
+   integer                          :: ibuff
    !---------------------------------------------------------------------------------------!
+
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
    ok_shv      = initp%can_shv      >= rk4min_can_shv        .and.                         &
                  initp%can_shv      <= rk4max_can_shv
-   ok_enthalpy = initp%can_enthalpy >= rk4min_can_enthalpy   .and.                         &
-                 initp%can_enthalpy <= rk4max_can_enthalpy
+   ok_enthalpy = initp%can_enthalpy >= rk4aux(ibuff)%rk4min_can_enthalpy   .and.           &
+                 initp%can_enthalpy <= rk4aux(ibuff)%rk4max_can_enthalpy
 
    !---------------------------------------------------------------------------------------!
    !     Here we convert theta into temperature, potential temperature, and density, and   !
@@ -676,8 +695,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
       !----- Check whether the potential temperature makes sense or not. ------------------!
-      ok_theta = initp%can_theta >= rk4min_can_theta .and.                                 &
-                 initp%can_theta <= rk4max_can_theta
+      ok_theta = initp%can_theta >= rk4aux(ibuff)%rk4min_can_theta .and.                   &
+                 initp%can_theta <= rk4aux(ibuff)%rk4max_can_theta
       !------------------------------------------------------------------------------------!
 
 
@@ -714,8 +733,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       nsoil = rk4site%ntext_soil(k)
       !----- Check whether soil water is fine. --------------------------------------------!
       ok_slwater = ok_slwater                                  .and.                       &
-                   initp%soil_water(k) >= rk4min_soil_water(k) .and.                       &
-                   initp%soil_water(k) <= rk4max_soil_water(k)
+                   initp%soil_water(k) >= rk4aux(ibuff)%rk4min_soil_water(k) .and.                       &
+                   initp%soil_water(k) <= rk4aux(ibuff)%rk4max_soil_water(k)
       if (ok_slwater) then
          initp%soil_mstpot(k) = matric_potential8(nsoil,initp%soil_water(k))
       end if
@@ -886,8 +905,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                       &
                initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                       &
-               initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                       &
-               initp%soil_water(nzg) <= rk4max_soil_water(nzg)
+               initp%soil_water(nzg) >= rk4aux(ibuff)%rk4min_soil_water(nzg) .and.                       &
+               initp%soil_water(nzg) <= rk4aux(ibuff)%rk4max_soil_water(nzg)
    if (ksn > 0) then
       ok_ground = ok_ground                                     .and.                      &
                   initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
@@ -1284,11 +1303,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
                             , rk4min_can_shv        & ! intent(in)
                             , rk4snowmin            & ! intent(in)
                             , ipercol               & ! intent(in)
-                            , rk4eps2               & ! intent(in)
-                            , wcapcan               & ! intent(in)
-                            , hcapcan               & ! intent(in)
-                            , wcapcani              & ! intent(in)
-                            , hcapcani              ! ! intent(in)
+                            , rk4eps                & ! intent(in)
+                            , rk4aux
    use ed_state_vars , only : sitetype              & ! structure
                             , patchtype             ! ! structure
    use soil_coms     , only : soil8                 & ! intent(in)
@@ -1299,15 +1315,19 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    use consts_coms   , only : t3ple8                & ! intent(in)
                             , wdns8                 & ! intent(in)
                             , wdnsi8                & ! intent(in)
+                            , fdnsi8                & ! intent(in)
                             , uiliqt38              & ! intent(in)
                             , wdnsi8                & ! intent(in)
-                            , fdnsi8                ! ! intent(in)
+                            , fdnsi8                & ! intent(in)
+                            , fsdnsi8               ! ! intent(in)
    use therm_lib8    , only : uint2tl8              & ! subroutine
                             , uextcm2tl8            & ! subroutine
                             , tl2uint8              & ! function
                             , tq2enthalpy8          & ! function
                             , alvi8                 & ! function
                             , alvl8                 ! ! function
+   !$ use omp_lib
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp
@@ -1323,6 +1343,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    integer                             :: ksn
    integer                             :: ksnnew
    integer                             :: k
+   integer                             :: ibuff
    !----- Control variables ---------------------------------------------------------------!
    real(kind=8)                        :: hdidi
    real(kind=8)                        :: wtold
@@ -1401,6 +1422,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    real(kind=8)           , parameter  :: ge      = 2.d2
    !---------------------------------------------------------------------------------------!
 
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
 
    !----- Find the inverse of the time step. ----------------------------------------------!
    hdidi      = 1.d0 / hdid
@@ -1438,8 +1461,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    !---------------------------------------------------------------------------------------!
    !      Initialise the budget variables.                                                 !
    !---------------------------------------------------------------------------------------!
-   wmass_cas_beg      = initp%can_shv * wcapcan
-   enthalpy_cas_beg   = initp%can_enthalpy * hcapcan
+   wmass_cas_beg      = initp%can_shv * rk4aux(ibuff)%wcapcan
+   enthalpy_cas_beg   = initp%can_enthalpy * rk4aux(ibuff)%hcapcan
    wmass_virtual_beg  = initp%virtual_water
    energy_virtual_beg = initp%virtual_energy
    wmass_sfcw_beg     = sum_sfcw_mass
@@ -1484,7 +1507,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
 
       !----- Find the amount available at the canopy air space. ---------------------------!
-      wmass_available  = wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
+      wmass_available  = rk4aux(ibuff)%wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
       !------------------------------------------------------------------------------------!
 
       if ( wmass_available >= wmass_needed) then
@@ -1506,9 +1529,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          ! the virtual+temporary surface water layer must go somewhere, so we add it to    !
          ! the soil because it is the closest to the pounding layer.                       !
          !---------------------------------------------------------------------------------!
-         initp%can_shv          = initp%can_shv - wmass_needed * wcapcani
+         initp%can_shv          = initp%can_shv - wmass_needed * rk4aux(ibuff)%wcapcani
          initp%can_enthalpy     = initp%can_enthalpy                                       &
-                                - (energy_needed + energy_latent) * hcapcani
+                                - (energy_needed + energy_latent) * rk4aux(ibuff)%hcapcani
          initp%avg_vapor_gc     = initp%avg_vapor_gc - wmass_needed * hdidi
          initp%soil_energy(nzg) = initp%soil_energy(nzg)  + energy_latent * dslzi8(nzg)
          !---------------------------------------------------------------------------------!
@@ -1529,6 +1552,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          energy_latent    = wmass_available * ( (1.d0 - fracliq_needed)                    &
                                               * alvi8(tempk_needed)                        &
                                               + fracliq_needed * alvl8(tempk_needed) )
+         ! Using frost density for the frozon component
+         depth_available  = wmass_available *                                              &
+              ( fracliq_needed * wdnsi8 + (1.d0-fracliq_needed * fdnsi8))
          !---------------------------------------------------------------------------------!
 
 
@@ -1538,9 +1564,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          ! heat associated with this condensation to the soil, because otherwise we could  !
          ! end up with energy and water mass with opposite signs.                          !
          !---------------------------------------------------------------------------------!
-         initp%can_shv          = initp%can_shv - wmass_available  * wcapcani
+         initp%can_shv          = initp%can_shv - wmass_available  * rk4aux(ibuff)%wcapcani
          initp%can_enthalpy     = initp%can_enthalpy                                       &
-                                - ( energy_available + energy_latent ) * hcapcani
+                                - ( energy_available + energy_latent ) * rk4aux(ibuff)%hcapcani
          initp%avg_vapor_gc     = initp%avg_vapor_gc  - wmass_available * hdidi
          initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_latent * dslzi8(nzg)
          !---------------------------------------------------------------------------------!
@@ -1862,9 +1888,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !     Boil the remaining.                                                         !
          !---------------------------------------------------------------------------------!
          !------ Update the canopy air space properties. ----------------------------------!
-         initp%can_shv      = initp%can_shv       + wmass_free   * wcapcani
+         initp%can_shv      = initp%can_shv       + wmass_free   * rk4aux(ibuff)%wcapcani
          initp%can_enthalpy = initp%can_enthalpy                                           &
-                            + ( energy_free + energy_latent )    * hcapcani
+                            + ( energy_free + energy_latent )    * rk4aux(ibuff)%hcapcani
          !---------------------------------------------------------------------------------!
 
 
@@ -1930,9 +1956,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !     Condense the remaining, and hope for the best.                              !
          !---------------------------------------------------------------------------------!
          !----- Update the canopy air space properties. -----------------------------------!
-         initp%can_shv      = initp%can_shv       - wmass_needed   * wcapcani
+         initp%can_shv      = initp%can_shv       - wmass_needed   * rk4aux(ibuff)%wcapcani
          initp%can_enthalpy = initp%can_enthalpy                                           &
-                            - ( energy_needed + energy_latent ) * hcapcani
+                            - ( energy_needed + energy_latent ) * rk4aux(ibuff)%hcapcani
          !----- Update the fluxes. --------------------------------------------------------!
          initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed   * hdidi
          !---------------------------------------------------------------------------------!
@@ -2022,8 +2048,11 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          !     Check whether the layer as is meet the minimum requirements to stand as a   !
          ! new layer by itself.                                                            !
          !---------------------------------------------------------------------------------!
-         if ( initp%sfcwater_mass(k)   >  rk4tiny_sfcw_mass              .and.             &
-              rk4snowmin * thicknet(k) <= sum_sfcw_mass                  .and.             &
+!         if ( initp%sfcwater_mass(k)   >  rk4tiny_sfcw_mass              .and.             &
+!              rk4snowmin * thicknet(k) <= sum_sfcw_mass                  .and.             &
+!              initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
+         if ( initp%sfcwater_mass(k)   >=  rk4snowmin		             .and.             &
+              rk4snowmin * fsdnsi8 <= initp%sfcwater_depth(k)            .and.             &
               initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*uiliqt38      ) then
             newlayers = newlayers + 1
          end if
@@ -2095,8 +2124,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    !---------------------------------------------------------------------------------------!
    !      Compute the budget variables after the adjustments.                              !
    !---------------------------------------------------------------------------------------!
-   wmass_cas_end      = initp%can_shv      * wcapcan
-   enthalpy_cas_end   = initp%can_enthalpy * hcapcan
+   wmass_cas_end      = initp%can_shv      * rk4aux(ibuff)%wcapcan
+   enthalpy_cas_end   = initp%can_enthalpy * rk4aux(ibuff)%hcapcan
    wmass_virtual_end  = initp%virtual_water
    energy_virtual_end = initp%virtual_energy
    wmass_sfcw_end     = sum_sfcw_mass
@@ -2189,11 +2218,12 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                                    , rk4tiny_sfcw_mass    & ! intent(in)
                                    , rk4min_sfcw_mass     & ! intent(in)
                                    , rk4min_can_shv       & ! intent(in)
-                                   , rk4min_soil_water    & ! intent(in)
-                                   , rk4max_soil_water    & ! intent(in)
-                                   , wcapcan              & ! intent(in)
-                                   , wcapcani             & ! intent(in)
-                                   , hcapcani             ! ! intent(in)
+                                   , rk4aux               
+!                                   , rk4min_soil_water    & ! intent(in)
+!                                   , rk4max_soil_water    & ! intent(in)
+!                                   , wcapcan              & ! intent(in)
+!                                   , wcapcani             & ! intent(in)
+!                                   , hcapcani             ! ! intent(in)
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
    use consts_coms          , only : t3ple8               & ! intent(in)
@@ -2211,6 +2241,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    use soil_coms            , only : soil8                & ! intent(in)
                                    , dslzi8               & ! intent(in)
                                    , dslz8                ! ! intent(in)
+   !$ use omp_lib
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
@@ -2244,7 +2275,12 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    real(kind=8)                        :: virtual_latent
    logical                             :: slightlymoist
    logical                             :: slightlydry
+   integer                             :: ibuff
+
    !---------------------------------------------------------------------------------------!
+
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
 
    !----- Inverse of time increment -------------------------------------------------------!
    hdidi = 1.d0 / hdid
@@ -2464,7 +2500,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! space.  The water available is not everything above the minimum mixing ratio       !
       ! because we don't want to risk having the canopy air space crashing.                !
       !------------------------------------------------------------------------------------!
-      water_available = wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
+      water_available = rk4aux(ibuff)%wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
       if (water_available > water_needed) then
          !---------------------------------------------------------------------------------!
          !    There is enough water vapour. The transfer will require phase change, so the !
@@ -2486,8 +2522,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
          !     Remove mass and energy from the canopy air space.                           !
          !---------------------------------------------------------------------------------!
-         initp%can_shv         = initp%can_shv        - water_needed   * wcapcani
-         initp%can_enthalpy    = initp%can_enthalpy   - energy_needed  * hcapcani
+         initp%can_shv         = initp%can_shv        - water_needed   * rk4aux(ibuff)%wcapcani
+         initp%can_enthalpy    = initp%can_enthalpy   - energy_needed  * rk4aux(ibuff)%hcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc   - water_needed   * hdidi
          !---------------------------------------------------------------------------------!
 
@@ -2519,8 +2555,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                                + water_available  * dslzi8(kt) * wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) + energy_available * dslzi8(kt)
 
-         initp%can_shv         = initp%can_shv        - water_available  * wcapcani
-         initp%can_enthalpy    = initp%can_enthalpy   - energy_available * hcapcani
+         initp%can_shv         = initp%can_shv        - water_available  * rk4aux(ibuff)%wcapcani
+         initp%can_enthalpy    = initp%can_enthalpy   - energy_available * rk4aux(ibuff)%hcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc   - water_available  * hdidi
          !---------------------------------------------------------------------------------!
 
@@ -2601,9 +2637,9 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
 
 
          !----- Correct the canopy air space and fluxes. ----------------------------------!
-         initp%can_shv          = initp%can_shv      + initp%virtual_water  * wcapcani
+         initp%can_shv          = initp%can_shv      + initp%virtual_water  * rk4aux(ibuff)%wcapcani
          initp%can_enthalpy     = initp%can_enthalpy                                       &
-                                + ( initp%virtual_energy + virtual_latent ) * hcapcani
+                                + ( initp%virtual_energy + virtual_latent ) * rk4aux(ibuff)%hcapcani
          initp%soil_energy(nzg) = initp%soil_energy(nzg) - virtual_latent * dslz8(nzg)
          initp%avg_vapor_gc     = initp%avg_vapor_gc + initp%virtual_water  * hdidi
          !---------------------------------------------------------------------------------!
@@ -2695,8 +2731,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !----- Send the water and energy to the canopy. ----------------------------------!
          initp%soil_water(kt)  = initp%soil_water(kt)  - water_excess  * dslzi8(kt)*wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_excess * dslzi8(kt)
-         initp%can_shv         = initp%can_shv         + water_excess  * wcapcani
-         initp%can_enthalpy    = initp%can_enthalpy    + energy_excess * hcapcani
+         initp%can_shv         = initp%can_shv         + water_excess  * rk4aux(ibuff)%wcapcani
+         initp%can_enthalpy    = initp%can_enthalpy    + energy_excess * rk4aux(ibuff)%hcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc    + water_excess  * hdidi
          !---------------------------------------------------------------------------------!
       end if
@@ -2726,13 +2762,14 @@ end subroutine adjust_topsoil_properties
 subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    use rk4_coms             , only : rk4patchtype       & ! structure
                                    , rk4site            & ! intent(in)
+                                   , rk4aux             &
                                    , checkbudget        & ! intent(in)
                                    , rk4eps             & ! intent(in)
                                    , rk4min_veg_lwater  & ! intent(in)
                                    , rk4min_veg_temp    & ! intent(in)
                                    , rk4max_veg_temp    & ! intent(in)
-                                   , hcapcani           & ! intent(in)
-                                   , wcapcani           & ! intent(in)
+!                                   , hcapcani           & ! intent(in)
+!                                   , wcapcani           & ! intent(in)
                                    , rk4leaf_drywhc     & ! intent(in)
                                    , rk4leaf_maxwhc     & ! intent(in)
                                    , print_detailed     ! ! intent(in)
@@ -2747,6 +2784,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , tq2enthalpy8       ! ! function
    use grid_coms            , only : nzg                ! ! intent(in)
    use soil_coms            , only : dslzi8             ! ! intent(in)
+   !$ use omp_lib
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
@@ -2800,7 +2838,11 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    real(kind=8)                        :: old_wood_temp
    real(kind=8)                        :: old_wood_fliq
    real(kind=8)                        :: hdidi
+   integer                             :: ibuff
    !---------------------------------------------------------------------------------------!
+
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
 
    cpatch => csite%patch(ipa)
    
@@ -3082,10 +3124,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    !----- Update the canopy air specific humidity and enthalpy. ---------------------------!
    initp%can_shv      = initp%can_shv                                                      &
                       + (leaf_boil_tot  + wood_boil_tot  - leaf_dew_tot  - wood_dew_tot)   &
-                      * wcapcani
+                      * rk4aux(ibuff)%wcapcani
    initp%can_enthalpy = initp%can_enthalpy                                                 &
                       + (leaf_qboil_tot + wood_qboil_tot - leaf_qdew_tot - wood_qdew_tot)  &
-                      * hcapcani
+                      * rk4aux(ibuff)%hcapcani
    !---------------------------------------------------------------------------------------!
 
    return
@@ -3677,16 +3719,13 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Longitude                  : ',rk4site%lon
    write (unit=*,fmt='(a,1x,es12.4)') ' Latitude                   : ',rk4site%lat
    write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature (Ref. hgt.): ',rk4site%atm_tmp
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature (Can. hgt.): ',rk4site%atm_tmp_zcan
    write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp.        : ',rk4site%atm_theta
    write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv              : ',rk4site%atm_theiv
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air sp. enthalpy (can.hgt.): ',rk4site%atm_enthalpy
    write (unit=*,fmt='(a,1x,es12.4)') ' Air vapour pres. deficit   : ',rk4site%atm_vpdef
    write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio          : ',rk4site%atm_shv
    write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio          : ',rk4site%atm_co2
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure                   : ',rk4site%atm_prss
    write (unit=*,fmt='(a,1x,es12.4)') ' Exner function             : ',rk4site%atm_exner
-   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed                 : ',rk4site%vels
    write (unit=*,fmt='(a,1x,es12.4)') ' Prescribed u*              : ',rk4site%atm_ustar
    write (unit=*,fmt='(a,1x,es12.4)') ' Height                     : ',rk4site%geoht
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux         : ',rk4site%pcpg
@@ -3915,7 +3954,7 @@ end subroutine print_rk4patch
 ! purposes.  This will create one file for each patch.  This sub-routine will not print    !
 ! the temperature of each cohort, instead it will just compute the average.                !
 !------------------------------------------------------------------------------------------!
-subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
+subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
    use consts_coms  , only : t3ple8        ! ! intent(in)
    use ed_max_dims  , only : str_len       ! ! intent(in)
    use ed_misc_coms , only : current_time  ! ! intent(in)
@@ -3936,6 +3975,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    type(rk4patchtype)    , target     :: fluxp
    type(sitetype)        , target     :: csite
    integer               , intent(in) :: ipa
+   integer               , intent(in) :: isi
    real(kind=8)          , intent(in) :: elapsed
    real(kind=8)          , intent(in) :: hdid
    !----- Local variables -----------------------------------------------------------------!
@@ -3980,47 +4020,14 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),76(es13.6,1x))'
    character(len=10), parameter :: chfmt='(57(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
-   !----- Locally saved variables. --------------------------------------------------------!
-   logical          , save      :: first_time=.true.
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !     First time here.  Delete all files.                                               !
-   !---------------------------------------------------------------------------------------!
-   if (first_time) then
-      do jpa = 1, csite%npatches
-         !---------------------------------------------------------------------------------!
-         ! Patch level files.                                                              !
-         !---------------------------------------------------------------------------------!
-         write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'prk4_patch_',jpa,'.txt'
-         inquire(file=trim(detail_fout),exist=isthere)
-         if (isthere) then
-            !---- Open the file to delete when closing. -----------------------------------!
-            open (unit=83,file=trim(detail_fout),status='old',action='write')
-            close(unit=83,status='delete')
-         end if
-         !---------------------------------------------------------------------------------!
 
-
-         !---------------------------------------------------------------------------------!
-         ! Cohort level files.                                                             !
-         !---------------------------------------------------------------------------------!
-         jpatch => csite%patch(jpa)
-         do jco = 1, jpatch%ncohorts
-            write (detail_fout,fmt='(a,2(a,i4.4),a)')                                      &
-                  trim(detail_pref),'crk4_patch_',jpa,'_cohort_',jco,'.txt'
-            inquire(file=trim(detail_fout),exist=isthere)
-            if (isthere) then
-               !---- Open the file to delete when closing. --------------------------------!
-               open (unit=84,file=trim(detail_fout),status='old',action='write')
-               close(unit=84,status='delete')
-            end if
-         end do
-         !---------------------------------------------------------------------------------!
-      end do
-      first_time = .false.
-   end if
+   !---------------------------------------------------------------------------------------!
+   !    Old files are now deleted by sub-routine initialize_misc_stepvars.  This output is !
+   ! extremely large, so think twice before turning it for multiple polygons, and for      !
+   ! long-term simulations.                                                                !
    !---------------------------------------------------------------------------------------!
 
 
@@ -4132,13 +4139,10 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    nsoil   = rk4site%ntext_soil(nzg)
    !---------------------------------------------------------------------------------------!
 
-
-
    !----- Create the file name. -----------------------------------------------------------!
-   write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'prk4_patch_',ipa,'.txt'
+   write (detail_fout,fmt='(2a,2(i4.4,a))')                                                &
+                                    trim(detail_pref),'prk4_site_',isi,'_patch_',ipa,'.txt'
    !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !    Check whether the file exists or not.  In case it doesn't, create it and add the   !
@@ -4176,12 +4180,6 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'        &
                                , ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'        &
                                , ' NIR.DIFF.BOT'
-                               
-                               
-                               
-                               
-                               
-                               
       close (unit=83,status='keep')
    end if
    !---------------------------------------------------------------------------------------!
@@ -4197,7 +4195,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , elapsec               , hdid                  , sum_lai               &
                    , sum_wai               , initp%nlev_sfcwater   , initp%flag_sfcwater   &
                    , initp%flag_wflxgc     , rk4site%atm_prss      , rk4site%atm_tmp       &
-                   , rk4site%atm_shv       , rk4site%atm_co2       , rk4site%vels          &
+                   , rk4site%atm_shv       , rk4site%atm_co2       , initp%vels            &
                    , rk4site%pcpg          , rk4site%geoht         , rk4site%atm_rhos      &
                    , rk4site%atm_rhv       , rk4site%atm_theta     , rk4site%atm_theiv     &
                    , rk4site%atm_vpdef     , rk4site%rshort        , rk4site%rlong         &
@@ -4250,8 +4248,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
       qintercepted = fluxp%cfx_qintercepted(ico)
 
       !----- Create the file name. --------------------------------------------------------!
-      write (detail_fout,fmt='(a,2(a,i4.4),a)')                                            &
-                                trim(detail_pref),'crk4_patch_',ipa,'_cohort_',ico,'.txt'
+      write (detail_fout,fmt='(2a,3(i4.4,a))')                                             &
+                     trim(detail_pref),'crk4_site_',isi,'_patch_',ipa,'_cohort_',ico,'.txt'
       !------------------------------------------------------------------------------------!
 
 

@@ -644,7 +644,7 @@ $ED_NL
    !                       0.  Euler step.  The fastest, but it doesn't estimate           !
    !                           errors.                                                     !
    !                       1.  Fourth-order Runge-Kutta method.  ED-2.1 default method     !
-   !                       2.  Heun's method (a second-order Runge-Kutta).                 !
+   !                       2.  Heun's method (DEPRECATED ATM - DO NOT USE)
    !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
    !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
@@ -847,6 +847,7 @@ $ED_NL
    !                 shortwave and longwave.                                               !
    !                 0.  Original two-stream model (Medvigy 2006), with the possibility to !
    !                     apply finite crown area to direct shortwave radiation.            !
+   !                     (deprecated - disable opspec to use 0)                            !
    !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
    !                     possibility to apply finite crown area to all radiation fluxes.   !
    !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
@@ -1510,8 +1511,12 @@ $ED_NL
    !               photosynthesis and detailed output from the integrator, set IDETAILED   !
    !               to 6 (2 + 4).  Any combination of the above outputs is acceptable, al-  !
    !               though all but the last produce a sheer amount of txt files, in which   !
-   !               case you may want to look at variable PATCH_KEEP.  It is also a good    !
-   !               idea to set IVEGT_DYNAMICS to 0 when using the first five outputs.      !
+   !               case you may want to look at variable PATCH_KEEP.                       !
+   !                                                                                       !
+   !               IMPORTANT:  The first five options will only work for single site       !
+   !                           simulations, and it is strongly recommended to set          !
+   !                           IVEGT_DYNAMICS to 0.  These options generate tons of        !
+   !                           output, so don't try these options with long simulations.   !
    !                                                                                       !
    !                                                                                       !
    ! PATCH_KEEP -- This option will eliminate all patches except one from the initial-     !

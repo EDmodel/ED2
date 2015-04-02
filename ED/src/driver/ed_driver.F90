@@ -81,8 +81,9 @@ subroutine ed_driver()
 #else
    write (unit=*,fmt='(a)') ' [+] Checking for XML config...'
 #endif
+
    call overwrite_with_xml_config(mynum)
-   
+
 #if defined(RAMS_MPI)
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,80,MPI_COMM_WORLD,ierr)
    if (nnodetot /= 1 )    call MPI_Barrier(MPI_COMM_WORLD,ierr)

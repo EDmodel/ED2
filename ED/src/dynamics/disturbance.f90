@@ -478,21 +478,34 @@ module disturbance_utils
 
 
                !---------------------------------------------------------------------------!
-               !    In case the area would become smaller than the minimum area, assume    !
-               ! that the entire patch is disturbed.                                       !
+               !    In case the area would become smaller than the minimum area, the patch !
+               ! must be eliminated.  The commented section below adjusts the disturbance  !
+               ! rate to completely eliminate the patch.                                   !
+               !---------------------------------------------------------------------------!
+               ! pot_area_remain = csite%area(ipa) - sum(act_area_loss(ipa,:))
+               ! if ( sum(act_area_loss(ipa,:)) > tiny_num       .and.                     &
+               !      pot_area_remain           < min_patch_area ) then
+               !    area_fac             = csite%area(ipa) / sum(act_area_loss(ipa,:))
+               !    act_area_loss(ipa,:) = act_area_loss(ipa,:) * area_fac
+               ! 
+               !    !----------------------------------------------------------------------!
+               !    !     Set disturb_mask to false, so this patch is purged from csite    !
+               !    ! later in this sub-routine.                                           !
+               !    !----------------------------------------------------------------------!
+               !    disturb_mask (ipa)   = .false.
+               !    !----------------------------------------------------------------------!
+               ! end if
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    In case the area would become smaller than the minimum area,  the      !
+               ! patch must be eliminated. Set disturb_mask to false, so this patch is     !
+               ! purged from csite later in this sub-routine.                              !
                !---------------------------------------------------------------------------!
                pot_area_remain = csite%area(ipa) - sum(act_area_loss(ipa,:))
-               if ( sum(act_area_loss(ipa,:)) > tiny_num       .and.                       &
-                    pot_area_remain           < min_patch_area ) then
-                  area_fac             = csite%area(ipa) / sum(act_area_loss(ipa,:))
-                  act_area_loss(ipa,:) = act_area_loss(ipa,:) * area_fac
-
-                  !------------------------------------------------------------------------!
-                  !     Set disturb_mask to false, so this patch is purged from csite      !
-                  ! later in this sub-routine.                                             !
-                  !------------------------------------------------------------------------!
+               if ( pot_area_remain < min_patch_area ) then
                   disturb_mask (ipa)   = .false.
-                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
             end do old_lu_l2nd

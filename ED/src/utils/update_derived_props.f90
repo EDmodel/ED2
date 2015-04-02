@@ -98,9 +98,6 @@ subroutine update_patch_derived_props(csite,ipa)
    end do
    !---------------------------------------------------------------------------------------!
 
-
-
-
    !----- Reset properties. ---------------------------------------------------------------!
    csite%veg_height      (ipa) = 0.0
    weight_sum                  = 0.0

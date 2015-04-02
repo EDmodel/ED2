@@ -534,12 +534,11 @@ subroutine h5_output(vtype)
 
                      call h5aclose_f(attr_id,hdferr)
                      call h5sclose_f(aspace_id,hdferr)
-		     call h5tclose_f(atype_id,hdferr)
+                     call h5tclose_f(atype_id,hdferr)
+
                   elseif (verbose) then
                      write (unit=*,fmt='(a)') '      # Skipping metadata...'
                   end if
-
-                  if (verbose) write (unit=*,fmt='(a)') '      # Creating dataset...'
 
                   if (hdferr /= 0) then
                      write (unit=*,fmt=*) 'File name:           ',trim(anamel)
@@ -747,6 +746,7 @@ subroutine h5_output(vtype)
                              ,', as it doesn''t belong to this file...'
             end if
          end do varloop
+
          !---------------------------------------------------------------------------------!
 
          if (verbose) write (unit=*,fmt='(a)') '    > Closing file...'

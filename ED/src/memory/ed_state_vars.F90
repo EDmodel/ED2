@@ -326,6 +326,11 @@ module ed_state_vars
       real, pointer, dimension(:) :: light_level_beam
       real, pointer, dimension(:) :: light_level_diff
 
+      ! PAR flux density centered on cohort, diurnal and monthly means
+      real, pointer, dimension(:) :: par_level_beam    ! beam
+      real, pointer, dimension(:) :: par_level_diffu   ! diffuse down
+      real, pointer, dimension(:) :: par_level_diffd   ! diffuse up
+
       ! Photosynthetically active radiation (PAR) absorbed by the 
       ! cohort leaves(units are W/m2)
       real ,pointer,dimension(:)   :: par_l
@@ -507,6 +512,9 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_light_level      ! Light lev. (Tot.) [        --]
       real,pointer,dimension(:)   :: fmean_light_level_beam ! Light lev. (Beam) [        --]
       real,pointer,dimension(:)   :: fmean_light_level_diff ! Lighy lev. (Diff) [        --]
+      real,pointer,dimension(:)   :: fmean_par_level_beam   ! Par lev. (beam)   [- or W/m2?]
+      real,pointer,dimension(:)   :: fmean_par_level_diffu  ! Par lev. (Diff Up)[- or W/m2?]
+      real,pointer,dimension(:)   :: fmean_par_level_diffd  ! Par lev. (Diff Dn)[- or W/m2?]
       real,pointer,dimension(:)   :: fmean_par_l            ! Abs. PAR (Leaf)   [     W/m2g]
       real,pointer,dimension(:)   :: fmean_par_l_beam       ! Abs. Dir. PAR     [     W/m2g]
       real,pointer,dimension(:)   :: fmean_par_l_diff       ! Abs. Diffuse PAR  [     W/m2g]
@@ -577,6 +585,11 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_light_level
       real,pointer,dimension(:)     :: dmean_light_level_beam
       real,pointer,dimension(:)     :: dmean_light_level_diff
+      
+      real,pointer,dimension(:)     :: dmean_par_level_beam
+      real,pointer,dimension(:)     :: dmean_par_level_diffu
+      real,pointer,dimension(:)     :: dmean_par_level_diffd
+      
       real,pointer,dimension(:)     :: dmean_par_l
       real,pointer,dimension(:)     :: dmean_par_l_beam
       real,pointer,dimension(:)     :: dmean_par_l_diff
@@ -629,6 +642,11 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_light_level
       real,pointer,dimension(:)     :: mmean_light_level_beam
       real,pointer,dimension(:)     :: mmean_light_level_diff
+
+      real,pointer,dimension(:)     :: mmean_par_level_beam
+      real,pointer,dimension(:)     :: mmean_par_level_diffu
+      real,pointer,dimension(:)     :: mmean_par_level_diffd
+
       real,pointer,dimension(:)     :: mmean_par_l
       real,pointer,dimension(:)     :: mmean_par_l_beam
       real,pointer,dimension(:)     :: mmean_par_l_diff
@@ -697,6 +715,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_light_level
       real,pointer,dimension(:,:)   :: qmean_light_level_beam
       real,pointer,dimension(:,:)   :: qmean_light_level_diff
+
+      ! ADDED RGK 11-2014
+      real,pointer,dimension(:,:)   :: qmean_par_level_beam
+      real,pointer,dimension(:,:)   :: qmean_par_level_diffu
+      real,pointer,dimension(:,:)   :: qmean_par_level_diffd
+
       real,pointer,dimension(:,:)   :: qmean_par_l
       real,pointer,dimension(:,:)   :: qmean_par_l_beam
       real,pointer,dimension(:,:)   :: qmean_par_l_diff
@@ -4422,6 +4446,11 @@ module ed_state_vars
       allocate(cpatch%light_level                  (                    ncohorts))
       allocate(cpatch%light_level_beam             (                    ncohorts))
       allocate(cpatch%light_level_diff             (                    ncohorts))
+
+      allocate(cpatch%par_level_beam               (                    ncohorts))
+      allocate(cpatch%par_level_diffu              (                    ncohorts))
+      allocate(cpatch%par_level_diffd              (                    ncohorts))
+
       allocate(cpatch%par_l                        (                    ncohorts))
       allocate(cpatch%par_l_beam                   (                    ncohorts))
       allocate(cpatch%par_l_diffuse                (                    ncohorts))
@@ -4498,6 +4527,11 @@ module ed_state_vars
       allocate(cpatch%fmean_light_level            (                    ncohorts))
       allocate(cpatch%fmean_light_level_beam       (                    ncohorts))
       allocate(cpatch%fmean_light_level_diff       (                    ncohorts))
+
+      allocate(cpatch%fmean_par_level_beam         (                    ncohorts))
+      allocate(cpatch%fmean_par_level_diffu        (                    ncohorts))
+      allocate(cpatch%fmean_par_level_diffd        (                    ncohorts))
+
       allocate(cpatch%fmean_par_l                  (                    ncohorts))
       allocate(cpatch%fmean_par_l_beam             (                    ncohorts))
       allocate(cpatch%fmean_par_l_diff             (                    ncohorts))
@@ -4559,6 +4593,11 @@ module ed_state_vars
          allocate(cpatch%dmean_light_level         (                    ncohorts))
          allocate(cpatch%dmean_light_level_beam    (                    ncohorts))
          allocate(cpatch%dmean_light_level_diff    (                    ncohorts))
+         
+         allocate(cpatch%dmean_par_level_beam      (                    ncohorts))
+         allocate(cpatch%dmean_par_level_diffu     (                    ncohorts))
+         allocate(cpatch%dmean_par_level_diffd     (                    ncohorts))
+
          allocate(cpatch%dmean_par_l               (                    ncohorts))
          allocate(cpatch%dmean_par_l_beam          (                    ncohorts))
          allocate(cpatch%dmean_par_l_diff          (                    ncohorts))
@@ -4622,6 +4661,11 @@ module ed_state_vars
          allocate(cpatch%mmean_light_level         (                    ncohorts))
          allocate(cpatch%mmean_light_level_beam    (                    ncohorts))
          allocate(cpatch%mmean_light_level_diff    (                    ncohorts))
+
+         allocate(cpatch%mmean_par_level_beam      (                    ncohorts))
+         allocate(cpatch%mmean_par_level_diffu     (                    ncohorts))
+         allocate(cpatch%mmean_par_level_diffd     (                    ncohorts))
+
          allocate(cpatch%mmean_par_l               (                    ncohorts))
          allocate(cpatch%mmean_par_l_beam          (                    ncohorts))
          allocate(cpatch%mmean_par_l_diff          (                    ncohorts))
@@ -4691,6 +4735,13 @@ module ed_state_vars
          allocate(cpatch%qmean_light_level         (            ndcycle,ncohorts))
          allocate(cpatch%qmean_light_level_beam    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_light_level_diff    (            ndcycle,ncohorts))
+
+         ! ADDED RGK 11-2014
+         allocate(cpatch%qmean_par_level_beam      (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_par_level_diffu     (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_par_level_diffd     (            ndcycle,ncohorts))        
+
+
          allocate(cpatch%qmean_par_l               (            ndcycle,ncohorts))
          allocate(cpatch%qmean_par_l_beam          (            ndcycle,ncohorts))
          allocate(cpatch%qmean_par_l_diff          (            ndcycle,ncohorts))
@@ -6116,6 +6167,11 @@ module ed_state_vars
       nullify(cpatch%light_level           )
       nullify(cpatch%light_level_beam      )
       nullify(cpatch%light_level_diff      )
+
+      nullify(cpatch%par_level_beam        )
+      nullify(cpatch%par_level_diffu       )
+      nullify(cpatch%par_level_diffd       )
+
       nullify(cpatch%par_l                 )
       nullify(cpatch%par_l_beam            )
       nullify(cpatch%par_l_diffuse         )
@@ -6192,6 +6248,11 @@ module ed_state_vars
       nullify(cpatch%fmean_light_level     )
       nullify(cpatch%fmean_light_level_beam)
       nullify(cpatch%fmean_light_level_diff)
+      
+      nullify(cpatch%fmean_par_level_beam  )
+      nullify(cpatch%fmean_par_level_diffu )
+      nullify(cpatch%fmean_par_level_diffd )
+
       nullify(cpatch%fmean_par_l           )
       nullify(cpatch%fmean_par_l_beam      )
       nullify(cpatch%fmean_par_l_diff      )
@@ -6250,6 +6311,11 @@ module ed_state_vars
       nullify(cpatch%dmean_light_level     )
       nullify(cpatch%dmean_light_level_beam)
       nullify(cpatch%dmean_light_level_diff)
+
+      nullify(cpatch%dmean_par_level_beam  )
+      nullify(cpatch%dmean_par_level_diffu )
+      nullify(cpatch%dmean_par_level_diffd )
+
       nullify(cpatch%dmean_par_l           )
       nullify(cpatch%dmean_par_l_beam      )
       nullify(cpatch%dmean_par_l_diff      )
@@ -6310,6 +6376,11 @@ module ed_state_vars
       nullify(cpatch%mmean_light_level     )
       nullify(cpatch%mmean_light_level_beam)
       nullify(cpatch%mmean_light_level_diff)
+
+      nullify(cpatch%mmean_par_level_beam  )
+      nullify(cpatch%mmean_par_level_diffu )
+      nullify(cpatch%mmean_par_level_diffd )
+
       nullify(cpatch%mmean_par_l           )
       nullify(cpatch%mmean_par_l_beam      )
       nullify(cpatch%mmean_par_l_diff      )
@@ -6376,6 +6447,11 @@ module ed_state_vars
       nullify(cpatch%qmean_light_level     )
       nullify(cpatch%qmean_light_level_beam)
       nullify(cpatch%qmean_light_level_diff)
+
+      nullify(cpatch%qmean_par_level_beam  )
+      nullify(cpatch%qmean_par_level_diffu )
+      nullify(cpatch%qmean_par_level_diffd )
+
       nullify(cpatch%qmean_par_l           )
       nullify(cpatch%qmean_par_l_beam      )
       nullify(cpatch%qmean_par_l_diff      )
@@ -7844,6 +7920,11 @@ module ed_state_vars
       if(associated(cpatch%light_level         )) deallocate(cpatch%light_level         )
       if(associated(cpatch%light_level_beam    )) deallocate(cpatch%light_level_beam    )
       if(associated(cpatch%light_level_diff    )) deallocate(cpatch%light_level_diff    )
+
+      if(associated(cpatch%par_level_beam      )) deallocate(cpatch%par_level_beam      )
+      if(associated(cpatch%par_level_diffu     )) deallocate(cpatch%par_level_diffu     )
+      if(associated(cpatch%par_level_diffd     )) deallocate(cpatch%par_level_diffd     )
+
       if(associated(cpatch%par_l               )) deallocate(cpatch%par_l               )
       if(associated(cpatch%par_l_beam          )) deallocate(cpatch%par_l_beam          )
       if(associated(cpatch%par_l_diffuse       )) deallocate(cpatch%par_l_diffuse       )
@@ -7922,6 +8003,11 @@ module ed_state_vars
                                                 deallocate(cpatch%fmean_light_level_beam)
       if(associated(cpatch%fmean_light_level_diff))                                        &
                                                 deallocate(cpatch%fmean_light_level_diff)
+
+      if(associated(cpatch%fmean_par_level_beam ))deallocate(cpatch%fmean_par_level_beam )
+      if(associated(cpatch%fmean_par_level_diffu))deallocate(cpatch%fmean_par_level_diffu)
+      if(associated(cpatch%fmean_par_level_diffd))deallocate(cpatch%fmean_par_level_diffd)
+
       if(associated(cpatch%fmean_par_l         )) deallocate(cpatch%fmean_par_l         )
       if(associated(cpatch%fmean_par_l_beam    )) deallocate(cpatch%fmean_par_l_beam    )
       if(associated(cpatch%fmean_par_l_diff    )) deallocate(cpatch%fmean_par_l_diff    )
@@ -7982,6 +8068,11 @@ module ed_state_vars
                                                 deallocate(cpatch%dmean_light_level_beam)
       if(associated(cpatch%dmean_light_level_diff))                                        &
                                                 deallocate(cpatch%dmean_light_level_diff)
+
+      if(associated(cpatch%dmean_par_level_beam ))deallocate(cpatch%dmean_par_level_beam )
+      if(associated(cpatch%dmean_par_level_diffu))deallocate(cpatch%dmean_par_level_diffu)
+      if(associated(cpatch%dmean_par_level_diffd))deallocate(cpatch%dmean_par_level_diffd)
+
       if(associated(cpatch%dmean_par_l         )) deallocate(cpatch%dmean_par_l         )
       if(associated(cpatch%dmean_par_l_beam    )) deallocate(cpatch%dmean_par_l_beam    )
       if(associated(cpatch%dmean_par_l_diff    )) deallocate(cpatch%dmean_par_l_diff    )
@@ -8046,6 +8137,11 @@ module ed_state_vars
                                                 deallocate(cpatch%mmean_light_level_beam)
       if(associated(cpatch%mmean_light_level_diff))                                        &
                                                 deallocate(cpatch%mmean_light_level_diff)
+      
+      if(associated(cpatch%mmean_par_level_beam ))deallocate(cpatch%mmean_par_level_beam )
+      if(associated(cpatch%mmean_par_level_diffu))deallocate(cpatch%mmean_par_level_diffu)
+      if(associated(cpatch%mmean_par_level_diffd))deallocate(cpatch%mmean_par_level_diffd)
+
       if(associated(cpatch%mmean_par_l         )) deallocate(cpatch%mmean_par_l         )
       if(associated(cpatch%mmean_par_l_beam    )) deallocate(cpatch%mmean_par_l_beam    )
       if(associated(cpatch%mmean_par_l_diff    )) deallocate(cpatch%mmean_par_l_diff    )
@@ -8114,6 +8210,11 @@ module ed_state_vars
                                                 deallocate(cpatch%qmean_light_level_beam)
       if(associated(cpatch%qmean_light_level_diff))                                        &
                                                 deallocate(cpatch%qmean_light_level_diff)
+
+      if(associated(cpatch%qmean_par_level_beam ))deallocate(cpatch%qmean_par_level_beam )
+      if(associated(cpatch%qmean_par_level_diffu))deallocate(cpatch%qmean_par_level_diffu)
+      if(associated(cpatch%qmean_par_level_diffd))deallocate(cpatch%qmean_par_level_diffd)
+
       if(associated(cpatch%qmean_par_l         )) deallocate(cpatch%qmean_par_l         )
       if(associated(cpatch%qmean_par_l_beam    )) deallocate(cpatch%qmean_par_l_beam    )
       if(associated(cpatch%qmean_par_l_diff    )) deallocate(cpatch%qmean_par_l_diff    )
@@ -8780,13 +8881,11 @@ module ed_state_vars
          call fatal_error('Mask doesn''t have OSIZE .true. elements'                       &
                          ,'copy_sitetype_mask','ed_state_vars.f90')
       end if
+
       !----- Save the indices from where we are going to copy. ----------------------------!
       allind = (/ (i,i=1,isize) /)
       iindex = pack(allind,lmask)
       !------------------------------------------------------------------------------------!
-
-
-
 
       !------------------------------------------------------------------------------------!
       !      Copy the cohorts.                                                             !
@@ -9619,6 +9718,11 @@ module ed_state_vars
          opatch%light_level           (oco) = ipatch%light_level           (ico)
          opatch%light_level_beam      (oco) = ipatch%light_level_beam      (ico)
          opatch%light_level_diff      (oco) = ipatch%light_level_diff      (ico)
+         
+         opatch%par_level_beam        (oco) = ipatch%par_level_beam        (ico)
+         opatch%par_level_diffu       (oco) = ipatch%par_level_diffu       (ico)
+         opatch%par_level_diffd       (oco) = ipatch%par_level_diffd       (ico)
+
          opatch%par_l                 (oco) = ipatch%par_l                 (ico)
          opatch%par_l_beam            (oco) = ipatch%par_l_beam            (ico)
          opatch%par_l_diffuse         (oco) = ipatch%par_l_diffuse         (ico)
@@ -9694,6 +9798,11 @@ module ed_state_vars
          opatch%fmean_light_level     (oco) = ipatch%fmean_light_level     (ico)
          opatch%fmean_light_level_beam(oco) = ipatch%fmean_light_level_beam(ico)
          opatch%fmean_light_level_diff(oco) = ipatch%fmean_light_level_diff(ico)
+         
+         opatch%fmean_par_level_beam  (oco) = ipatch%fmean_par_level_beam  (ico)
+         opatch%fmean_par_level_diffu (oco) = ipatch%fmean_par_level_diffu (ico)
+         opatch%fmean_par_level_diffd (oco) = ipatch%fmean_par_level_diffd (ico)
+
          opatch%fmean_par_l           (oco) = ipatch%fmean_par_l           (ico)
          opatch%fmean_par_l_beam      (oco) = ipatch%fmean_par_l_beam      (ico)
          opatch%fmean_par_l_diff      (oco) = ipatch%fmean_par_l_diff      (ico)
@@ -9784,6 +9893,11 @@ module ed_state_vars
             opatch%dmean_light_level     (oco) = ipatch%dmean_light_level     (ico)
             opatch%dmean_light_level_beam(oco) = ipatch%dmean_light_level_beam(ico)
             opatch%dmean_light_level_diff(oco) = ipatch%dmean_light_level_diff(ico)
+
+            opatch%dmean_par_level_beam  (oco) = ipatch%dmean_par_level_beam  (ico)
+            opatch%dmean_par_level_diffu (oco) = ipatch%dmean_par_level_diffu (ico)
+            opatch%dmean_par_level_diffd (oco) = ipatch%dmean_par_level_diffd (ico)
+
             opatch%dmean_par_l           (oco) = ipatch%dmean_par_l           (ico)
             opatch%dmean_par_l_beam      (oco) = ipatch%dmean_par_l_beam      (ico)
             opatch%dmean_par_l_diff      (oco) = ipatch%dmean_par_l_diff      (ico)
@@ -9860,6 +9974,11 @@ module ed_state_vars
             opatch%mmean_light_level     (oco) = ipatch%mmean_light_level     (ico)
             opatch%mmean_light_level_beam(oco) = ipatch%mmean_light_level_beam(ico)
             opatch%mmean_light_level_diff(oco) = ipatch%mmean_light_level_diff(ico)
+
+            opatch%mmean_par_level_beam  (oco) = ipatch%mmean_par_level_beam  (ico)
+            opatch%mmean_par_level_diffu (oco) = ipatch%mmean_par_level_diffu (ico)
+            opatch%mmean_par_level_diffd (oco) = ipatch%mmean_par_level_diffd (ico)
+
             opatch%mmean_par_l           (oco) = ipatch%mmean_par_l           (ico)
             opatch%mmean_par_l_beam      (oco) = ipatch%mmean_par_l_beam      (ico)
             opatch%mmean_par_l_diff      (oco) = ipatch%mmean_par_l_diff      (ico)
@@ -9947,6 +10066,11 @@ module ed_state_vars
                opatch%qmean_light_level     (n,oco) = ipatch%qmean_light_level     (n,ico)
                opatch%qmean_light_level_beam(n,oco) = ipatch%qmean_light_level_beam(n,ico)
                opatch%qmean_light_level_diff(n,oco) = ipatch%qmean_light_level_diff(n,ico)
+
+               opatch%qmean_par_level_beam  (n,oco) = ipatch%qmean_par_level_beam  (n,ico)
+               opatch%qmean_par_level_diffu (n,oco) = ipatch%qmean_par_level_diffu (n,ico)
+               opatch%qmean_par_level_diffd (n,oco) = ipatch%qmean_par_level_diffd (n,ico)
+
                opatch%qmean_par_l           (n,oco) = ipatch%qmean_par_l           (n,ico)
                opatch%qmean_par_l_beam      (n,oco) = ipatch%qmean_par_l_beam      (n,ico)
                opatch%qmean_par_l_diff      (n,oco) = ipatch%qmean_par_l_diff      (n,ico)
@@ -10159,6 +10283,11 @@ module ed_state_vars
       opatch%light_level           (1:z) = pack(ipatch%light_level               ,lmask)
       opatch%light_level_beam      (1:z) = pack(ipatch%light_level_beam          ,lmask)
       opatch%light_level_diff      (1:z) = pack(ipatch%light_level_diff          ,lmask)
+
+      opatch%par_level_beam        (1:z) = pack(ipatch%par_level_beam            ,lmask)
+      opatch%par_level_diffu       (1:z) = pack(ipatch%par_level_diffu           ,lmask)
+      opatch%par_level_diffd       (1:z) = pack(ipatch%par_level_diffd           ,lmask)
+
       opatch%par_l                 (1:z) = pack(ipatch%par_l                     ,lmask)
       opatch%par_l_beam            (1:z) = pack(ipatch%par_l_beam                ,lmask)
       opatch%par_l_diffuse         (1:z) = pack(ipatch%par_l_diffuse             ,lmask)
@@ -10290,6 +10419,11 @@ module ed_state_vars
       opatch%fmean_light_level     (1:z) = pack(ipatch%fmean_light_level         ,lmask)
       opatch%fmean_light_level_beam(1:z) = pack(ipatch%fmean_light_level_beam    ,lmask)
       opatch%fmean_light_level_diff(1:z) = pack(ipatch%fmean_light_level_diff    ,lmask)
+
+      opatch%fmean_par_level_beam  (1:z) = pack(ipatch%fmean_par_level_beam      ,lmask)
+      opatch%fmean_par_level_diffu (1:z) = pack(ipatch%fmean_par_level_diffu     ,lmask)
+      opatch%fmean_par_level_diffd (1:z) = pack(ipatch%fmean_par_level_diffd     ,lmask)
+
       opatch%fmean_par_l           (1:z) = pack(ipatch%fmean_par_l               ,lmask)
       opatch%fmean_par_l_beam      (1:z) = pack(ipatch%fmean_par_l_beam          ,lmask)
       opatch%fmean_par_l_diff      (1:z) = pack(ipatch%fmean_par_l_diff          ,lmask)
@@ -10388,6 +10522,11 @@ module ed_state_vars
       opatch%dmean_light_level     (1:z) = pack(ipatch%dmean_light_level         ,lmask)
       opatch%dmean_light_level_beam(1:z) = pack(ipatch%dmean_light_level_beam    ,lmask)
       opatch%dmean_light_level_diff(1:z) = pack(ipatch%dmean_light_level_diff    ,lmask)
+
+      opatch%dmean_par_level_beam  (1:z) = pack(ipatch%dmean_par_level_beam      ,lmask)
+      opatch%dmean_par_level_diffu (1:z) = pack(ipatch%dmean_par_level_diffu     ,lmask)
+      opatch%dmean_par_level_diffd (1:z) = pack(ipatch%dmean_par_level_diffd     ,lmask)
+
       opatch%dmean_par_l           (1:z) = pack(ipatch%dmean_par_l               ,lmask)
       opatch%dmean_par_l_beam      (1:z) = pack(ipatch%dmean_par_l_beam          ,lmask)
       opatch%dmean_par_l_diff      (1:z) = pack(ipatch%dmean_par_l_diff          ,lmask)
@@ -10487,6 +10626,11 @@ module ed_state_vars
       opatch%mmean_light_level     (1:z) = pack(ipatch%mmean_light_level         ,lmask)
       opatch%mmean_light_level_beam(1:z) = pack(ipatch%mmean_light_level_beam    ,lmask)
       opatch%mmean_light_level_diff(1:z) = pack(ipatch%mmean_light_level_diff    ,lmask)
+
+      opatch%mmean_par_level_beam  (1:z) = pack(ipatch%mmean_par_level_beam      ,lmask)
+      opatch%mmean_par_level_diffu (1:z) = pack(ipatch%mmean_par_level_diffu     ,lmask)
+      opatch%mmean_par_level_diffd (1:z) = pack(ipatch%mmean_par_level_diffd     ,lmask)
+
       opatch%mmean_par_l           (1:z) = pack(ipatch%mmean_par_l               ,lmask)
       opatch%mmean_par_l_beam      (1:z) = pack(ipatch%mmean_par_l_beam          ,lmask)
       opatch%mmean_par_l_diff      (1:z) = pack(ipatch%mmean_par_l_diff          ,lmask)
@@ -10602,6 +10746,11 @@ module ed_state_vars
                                             pack(ipatch%qmean_light_level_beam(n,:),lmask)
          opatch%qmean_light_level_diff(n,1:z) =                                            &
                                             pack(ipatch%qmean_light_level_diff(n,:),lmask)
+
+         opatch%qmean_par_level_beam  (n,1:z) = pack(ipatch%qmean_par_level_beam(n,:)     ,lmask)
+         opatch%qmean_par_level_diffu (n,1:z) = pack(ipatch%qmean_par_level_diffu(n,:)    ,lmask)
+         opatch%qmean_par_level_diffd (n,1:z) = pack(ipatch%qmean_par_level_diffd(n,:)    ,lmask)
+
          opatch%qmean_par_l         (n,1:z) = pack(ipatch%qmean_par_l         (n,:),lmask)
          opatch%qmean_par_l_beam    (n,1:z) = pack(ipatch%qmean_par_l_beam    (n,:),lmask)
          opatch%qmean_par_l_diff    (n,1:z) = pack(ipatch%qmean_par_l_diff    (n,:),lmask)
@@ -24232,6 +24381,27 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
       end if
 
+      if (associated(cpatch%par_level_beam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%par_level_beam,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'PAR_LEVEL_BEAM :41:hist') 
+         call metadata_edio(nvar,igr,'PAR flux density (cohort centered), beam','[W/m2]','icohort') 
+      end if
+      
+      if (associated(cpatch%par_level_diffu)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%par_level_diffu,nvar,igr,init,cpatch%coglob_id, &
+               var_len,var_len_global,max_ptrs,'PAR_LEVEL_DIFFU :41:hist') 
+         call metadata_edio(nvar,igr,'PAR flux density (cohort centered), upward diffuse','[W/m2]','icohort') 
+      end if
+      
+      if (associated(cpatch%par_level_diffd)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%par_level_diffd,nvar,igr,init,cpatch%coglob_id, &
+               var_len,var_len_global,max_ptrs,'PAR_LEVEL_DIFFD :41:hist') 
+         call metadata_edio(nvar,igr,'PAR flux density (cohort centered), downward diffuse','[W/m2]','icohort') 
+      end if
+      
       if (associated(cpatch%par_l)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%par_l,nvar,igr,init,cpatch%coglob_id, &
@@ -24888,6 +25058,32 @@ module ed_state_vars
                            ,'Sub-daily mean - Light level (diffuse radiation)'             &
                            ,'[         --]','(icohort)'            )
       end if
+
+      if (associated(cpatch%fmean_par_level_beam)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_par_level_beam,nvar,igr,init,cpatch%coglob_id, &
+               var_len,var_len_global,max_ptrs,'FMEAN_PAR_LEVEL_BEAM :41:'//trim(fast_keys)) 
+         call metadata_edio(nvar,igr, &
+               'Sub-daily mean PAR flux density (cohort centered), beam','[W/m2]','icohort') 
+      end if
+
+      if (associated(cpatch%fmean_par_level_diffu)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_par_level_diffu,nvar,igr,init,cpatch%coglob_id, &
+               var_len,var_len_global,max_ptrs,'FMEAN_PAR_LEVEL_DIFFU :41:'//trim(fast_keys)) 
+         call metadata_edio(nvar,igr, &
+               'Sub-daily mean PAR flux density (cohort centered), diff up','[W/m2]','icohort') 
+      end if
+      
+      if (associated(cpatch%fmean_par_level_diffd)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_par_level_diffd,nvar,igr,init,cpatch%coglob_id, &
+               var_len,var_len_global,max_ptrs,'FMEAN_PAR_LEVEL_DIFFD :41:'//trim(fast_keys)) 
+         call metadata_edio(nvar,igr, &
+               'Sub-daily mean PAR flux density (cohort centered), diff down','[W/m2]','icohort') 
+      end if
+
+
       if (associated(cpatch%fmean_par_l           )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_par_l                                        &
@@ -25470,6 +25666,37 @@ module ed_state_vars
                            ,'Daily mean - Light level (diffuse radiation)'                 &
                            ,'[         --]','(icohort)'            )
       end if
+
+      if (associated(cpatch%dmean_par_level_beam)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_par_level_beam                             &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'DMEAN_PAR_LEVEL_BEAM_CO  :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Daily mean - PAR flux density, beam'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+      if (associated(cpatch%dmean_par_level_diffu)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_par_level_diffu                              &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'DMEAN_PAR_LEVEL_DIFFU_CO  :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Daily mean - PAR flux density, diffuse up'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+      if (associated(cpatch%dmean_par_level_diffd)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_par_level_diffd                             &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'DMEAN_PAR_LEVEL_DIFFD_CO  :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Daily mean - PAR flux density, diffuse down'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+      
       if (associated(cpatch%dmean_par_l           )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_par_l                                        &
@@ -25991,6 +26218,37 @@ module ed_state_vars
                            ,'Monthly mean - Light level (diffuse radiation)'               &
                            ,'[         --]','(icohort)'            )
       end if
+
+      if (associated(cpatch%mmean_par_level_beam)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_par_level_beam                             &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'MMEAN_PAR_LEVEL_BEAM_CO  :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Monthly mean - PAR flux density, beam'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+      if (associated(cpatch%mmean_par_level_diffu)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_par_level_diffu                              &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'MMEAN_PAR_LEVEL_DIFFU_CO  :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Monthly mean - PAR flux density, diffuse up'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+      if (associated(cpatch%mmean_par_level_diffd)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_par_level_diffd                             &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'MMEAN_PAR_LEVEL_DIFFD_CO  :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Monthly mean - PAR flux density, diffuse down'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
       if (associated(cpatch%mmean_par_l           )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_par_l                                        &
@@ -26711,6 +26969,38 @@ module ed_state_vars
                            ,'Mean diel - Light level (diffuse radiation)'                  &
                            ,'[         --]','(ndcycle,icohort)'    )
       end if
+
+      if (associated(cpatch%qmean_par_level_beam)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_par_level_beam                             &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'QMEAN_PAR_LEVEL_BEAM_CO  :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                     &
+               ,'Mean diel - PAR flux density, beam'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+      if (associated(cpatch%qmean_par_level_diffu)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_par_level_diffu                              &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'QMEAN_PAR_LEVEL_DIFFU_CO  :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Mean diel - PAR flux density, diffuse up'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+      if (associated(cpatch%qmean_par_level_diffd)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_par_level_diffd                             &
+               ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+               ,'QMEAN_PAR_LEVEL_DIFFD_CO  :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+               ,'Mean diel - PAR flux density, diffuse down'                  &
+               ,'[ W/m2 ]','(icohort)'            )
+      end if
+
+
       if (associated(cpatch%qmean_par_l           )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_par_l                                        &

@@ -23,7 +23,7 @@ subdirs="ED BRAMS Ramspost R-utils"
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
 here="/n/home00/mlongo/EDBRAMS"
-there="/n/home00/mlongo/bazaar/EDBRAMS"
+there="/n/home00/mlongo/.backupscripts/.model_backup/EDBRAMS"
 #------------------------------------------------------------------------------------------#
 
 
@@ -45,14 +45,14 @@ do
    #---------------------------------------------------------------------------------------#
    for ext in ${exts}
    do
-     if [ ${subdir} == "R-utils" ] && [ ${ext} == ".r" ]
-     then
-        srchere="${here}/${subdir}"
-        srcthere="${there}/${subdir}"
-     elif [ ${subdir} == "R-utils" ] && [ ${ext} == ".txt" ]
+     if [ ${subdir} == "R-utils" ] && [ ${ext} == ".txt" ]
      then
         srchere="${here}/${subdir}/samap"
         srcthere="${there}/${subdir}/samap"
+     elif [ ${subdir} == "R-utils" ]
+     then
+        srchere="${here}/${subdir}"
+        srcthere="${there}/${subdir}"
      else
         srchere="${here}/${subdir}/src"
         srcthere="${there}/${subdir}/src"

@@ -194,7 +194,13 @@ subroutine ed_model()
    call initialize_rk4patches(.true.)
    !---------------------------------------------------------------------------------------!
    
-   
+   !---------------------------------------------------------------------------------------!
+   !    Initialize some stepping variables.                                                !
+   !---------------------------------------------------------------------------------------!
+   call initialize_misc_stepvars()
+   !---------------------------------------------------------------------------------------!
+
+
    if (ifoutput /= 0) call h5_output('INST')
 
    if (isoutput /= 0) then
@@ -265,7 +271,7 @@ subroutine ed_model()
          end do
       case (1)
          do ifm=1,ngrids
-            call rk4_timestep(edgrid_g(ifm),ifm)
+            call rk4_timestep(edgrid_g(ifm))
          end do
       case (2)
          do ifm=1,ngrids

@@ -311,6 +311,16 @@ module pft_coms
    real, dimension(n_pft) :: mort3 
 
    !---------------------------------------------------------------------------------------!
+   ! This is the way to initialize mort3 through hard parameterization (ie. non dependent) !
+   ! the atlernative is to let mort3 for tropical pfts be controlled by wood density (rho),!
+   ! a slope parameter (m3_slope) and a scale parameter (m3_scale).                        !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: mort3_pft_init
+
+   real :: m3_scale
+   real :: m3_slope
+
+   !---------------------------------------------------------------------------------------!
    !     This variable sets up the relative carbon balance when plants are experiencing    !
    ! severe stress (i.e., when the maximum carbon balance is negative due to severe light  !
    ! or water stress).                                                                     !
@@ -404,6 +414,8 @@ module pft_coms
    real   , dimension(n_pft)    :: rho
    !----- Specific Leaf Area (m²leaf/kg_C]. -----------------------------------------------!
    real   , dimension(n_pft)    :: SLA
+   !----- The initialization parameters for SLA:  SLA = sla_pft_init for non-trop PFTs
+   real   , dimension(n_pft)    :: sla_pft_init
    !----- Mass ratio between fine root and leaves [kg_fine_roots]/[kg_leaves]. ------------!
    real   , dimension(n_pft)    :: q
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!

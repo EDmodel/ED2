@@ -29,6 +29,9 @@ subroutine hybrid_timestep(cgrid)
   use therm_lib             , only : tq2enthalpy        ! ! function
   use budget_utils          , only : update_budget      & ! function
                                    , compute_budget     ! ! function
+
+!$  use omp_lib
+
   implicit none
   !----- Arguments ----------------------------------------------------------!
   type(edtype)             , target      :: cgrid
@@ -47,6 +50,7 @@ subroutine hybrid_timestep(cgrid)
   integer                                :: ico
   integer                                :: imon
   integer                                :: nsteps
+  real                                   :: patch_vels
   real                                   :: thetaatm
   real                                   :: thetacan
   real                                   :: rasveg
@@ -71,28 +75,22 @@ subroutine hybrid_timestep(cgrid)
   real                                   :: fm
   real                                   :: wtime0
   real(kind=8)                           :: hbeg
-  logical                  , save     :: first_time=.true.
+  integer                                :: ibuff
   !----- Local constants. -----------------------------------------------!
   logical                  , parameter   :: test_energy_sanity = .false.
   !----- External functions. --------------------------------------------!
   real, external                         :: walltime
   !----------------------------------------------------------------------!
   
-  initp => integration_buff%initp
-  ytemp => integration_buff%ytemp
-  dinitp => integration_buff%dinitp
-  yprev  => integration_buff%yprev
-
-
-  !- Assigning some constants which will remain the same throughout      !
-  !      the run.                                                    ----!
-  if (first_time) then
-     first_time = .false.
-     tbeg   = 0.d0
-     tend   = dble(dtlsm)
-     dtrk4  = tend - tbeg
-     dtrk4i = 1.d0/dtrk4
-  end if
+!- Assigning some constants which will remain the same throughout      !
+!      the run.                                                    ----!
+!!  if (first_time) then
+!!     first_time = .false.
+!!     tbeg   = 0.d0
+!!     tend   = dble(dtlsm)
+!!     dtrk4  = tend - tbeg
+!!     dtrk4i = 1.d0/dtrk4
+!!  end if
             
   polyloop: do ipy = 1,cgrid%npolygons
      cpoly => cgrid%polygon(ipy)
@@ -111,8 +109,41 @@ subroutine hybrid_timestep(cgrid)
                                          + cmet%pcpg * dtlsm
         !---------------------------------------------------------------------!
 
+        call copy_met_2_rk4site(nzg,cmet%atm_ustar,cmet%atm_theiv,         &
+             cmet%atm_vpdef      &
+             ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv   &
+             ,cmet%atm_co2,cmet%geoht,cmet%exner         &
+             ,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss  &
+             ,cmet%rshort,cmet%rlong,cmet%par_beam       &
+             ,cmet%par_diffuse,cmet%nir_beam             &
+             ,cmet%nir_diffuse,cmet%geoht                &
+             ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)     &
+             ,cpoly%green_leaf_factor(:,isi)             &
+             ,cgrid%lon(ipy),cgrid%lat(ipy)              &
+             ,cgrid%cosz(ipy))
+
+
+
+        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE( &
+        !$OMP initp,ytemp,dinitp,yprev,hbeg,nsteps,ibuff,&
+        !$OMP patch_vels,old_can_shv,                    &
+        !$OMP old_can_co2,old_can_rhos,old_can_temp,     &
+        !$OMP old_can_prss,old_can_enthalpy,             &
+        !$OMP wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm,&
+        !$OMP co2curr_loss2atm,wcurr_loss2drainage,      &
+        !$OMP ecurr_loss2drainage,wcurr_loss2runoff,     &
+        !$OMP ecurr_loss2runoff,cpatch)
+
         patchloop: do ipa = 1,csite%npatches
            cpatch => csite%patch(ipa)
+
+           ibuff = 1
+           !$ ibuff = OMP_get_thread_num()+1
+
+           initp => integration_buff(ibuff)%initp
+           ytemp => integration_buff(ibuff)%ytemp
+           dinitp => integration_buff(ibuff)%dinitp
+           yprev  => integration_buff(ibuff)%yprev
 
            !----- Reset all buffers to zero, as a safety measure. ------------!
            call zero_rk4_patch(initp)
@@ -126,10 +157,13 @@ subroutine hybrid_timestep(cgrid)
            
            !----- Get velocity for aerodynamic resistance. -------------------!
            if (csite%can_theta(ipa) < cmet%atm_theta) then
-              cmet%vels = cmet%vels_stab
+              patch_vels = cmet%vels_stab
+              cmet%vels  = cmet%vels_stab
            else
-              cmet%vels = cmet%vels_unstab
+              patch_vels = cmet%vels_unstab
+              cmet%vels  = cmet%vels_unstab
            end if
+
            !------------------------------------------------------------------!
            
            !------------------------------------------------------------------!
@@ -139,7 +173,7 @@ subroutine hybrid_timestep(cgrid)
                 cpoly%ntext_soil(:,isi))
            call update_patch_derived_props(csite,ipa)
            !------------------------------------------------------------------!
-           
+
            !----- Save the previous thermodynamic state. ---------------------!
            old_can_shv      = csite%can_shv(ipa)
            old_can_co2      = csite%can_co2(ipa)
@@ -149,28 +183,11 @@ subroutine hybrid_timestep(cgrid)
            old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
                                          ,csite%can_shv(ipa),.true.)
            !------------------------------------------------------------------!
-           
-           !------------------------------------------------------------------!
-           !    Copy the meteorological variables to the rk4site structure.   !
-           !------------------------------------------------------------------!
-           call copy_met_2_rk4site(nzg,csite%can_theta(ipa)                   &
-                                  ,csite%can_shv(ipa)                         &
-                                  ,csite%can_depth(ipa),cmet%atm_ustar        &
-                                  ,cmet%vels,cmet%atm_theiv,cmet%atm_vpdef    &
-                                  ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv   &
-                                  ,cmet%atm_co2,cmet%geoht,cmet%exner         &
-                                  ,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss  &
-                                  ,cmet%rshort,cmet%rlong,cmet%par_beam       &
-                                  ,cmet%par_diffuse,cmet%nir_beam             &
-                                  ,cmet%nir_diffuse,cmet%geoht                &
-                                  ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)     &
-                                  ,cpoly%green_leaf_factor(:,isi)             &
-                                  ,cgrid%lon(ipy),cgrid%lat(ipy)              &
-                                  ,cgrid%cosz(ipy))
-           
-           
+
+
            !----- Compute current storage terms. -----------------------------!
            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+           !------------------------------------------------------------------!
 
 
 
@@ -183,10 +200,11 @@ subroutine hybrid_timestep(cgrid)
            !------------------------------------------------------------------!
 
 
+
            !------------------------------------------------------------------!
            !     Set up the integration patch.                                !
            !------------------------------------------------------------------!
-           call copy_patch_init(csite,ipa,initp)
+           call copy_patch_init(csite,ipa,initp,patch_vels)
            
            !------------------------------------------------------------------!
            !     Set up the buffer for the previous step's leaf temperature   !
@@ -213,8 +231,8 @@ subroutine hybrid_timestep(cgrid)
            !  4) check stability and error 5) repeat as shorter or continue   !
            !------------------------------------------------------------------!
 !            call integrate_patch_hybrid(csite,                                 &
-!                 integration_buff%yprev,integration_buff%initp,                &
-!                 integration_buff%dinitp,integration_buff%ytemp,               &
+!                 integration_buff(ibuff)%yprev,integration_buff(ibuff)%initp,                &
+!                 integration_buff(ibuff)%dinitp,integration_buff(ibuff)%ytemp,               &
 !                 ipa,wcurr_loss2atm,                                           &
 !                 ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,          &
 !                 ecurr_loss2drainage,wcurr_loss2runoff,                        &
@@ -243,7 +261,7 @@ subroutine hybrid_timestep(cgrid)
             !----- Go into the ODE integrator using Euler. ----------------------------!
             
             call hybrid_integ(hbeg,csite,yprev,initp,dinitp,                         &
-                 ytemp,ipa,nsteps)
+                 ytemp,ipa,isi,nsteps)
    
             !--------------------------------------------------------------------------!
             !  Normalize canopy-atmosphere flux values.  These values are updated ever !
@@ -287,6 +305,10 @@ subroutine hybrid_timestep(cgrid)
                  ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
       
          end do patchloop
+
+         !$OMP END PARALLEL DO
+
+
          !-------------------------------------------------------------------!
       end do siteloop
       !----------------------------------------------------------------------!
@@ -306,7 +328,7 @@ subroutine hybrid_timestep(cgrid)
  !  This subroutine will drive the integration of several ODEs that drive     !
  !  the fast-scale state variables.                                           !
  !----------------------------------------------------------------------------!
- subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,nsteps)
+ subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,isi,nsteps)
    
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype                ! structure
@@ -342,11 +364,14 @@ subroutine hybrid_timestep(cgrid)
                              , nzs                    & ! intent(in)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
-                             , runoff_time            ! ! intent(in)
+                             , runoff_time            & ! intent(in)
+                             , runoff_time_i          & ! intent(in)
+                             , simplerunoff           ! ! intent(in)
    use consts_coms    , only : cliq8                  & ! intent(in)
                              , t3ple8                 & ! intent(in)
                              , tsupercool_liq8            & ! intent(in)
                              , wdnsi8                 ! ! intent(in)
+   !$ use omp_lib
    implicit none
    !----- Arguments ----------------------------------------------------------!
    type(sitetype)            , target      :: csite   ! Current site
@@ -357,6 +382,7 @@ subroutine hybrid_timestep(cgrid)
    type(bdf2patchtype)       , target      :: yprev   ! Patch at n-1
 
    integer                   , intent(in)  :: ipa     ! Current patch ID
+   integer                   , intent(in)  :: isi     ! Current site ID
    real(kind=8)              , intent(in)  :: h1      ! First guess of delta-t
    integer                   , intent(out) :: nsteps  ! Number of steps taken.
    !----- Local variables ----------------------------------------------------!
@@ -389,26 +415,14 @@ subroutine hybrid_timestep(cgrid)
    real(kind=8)                            :: elaptime     ! Absolute elapsed 
                                                            ! time.
    integer                                 :: nsolve       ! Size of a badger
-   !----- Saved variables ----------------------------------------------------!
-   logical                   , save        :: first_time=.true.
-   logical                   , save        :: simplerunoff
-   real(kind=8)              , save        :: runoff_time_i
+
+   integer                                 :: ibuff
    !----- External function. -------------------------------------------------!
    real                      , external    :: sngloff
    !--------------------------------------------------------------------------!
-   
-   !----- Checking whether we will use runoff or not,                         !
-   !                                     and saving this check to save time. -!
-   if (first_time) then
-      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
 
-      if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
-      else 
-         runoff_time_i = 0.d0
-      end if
-      first_time   = .false.
-   end if
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
    
    !----- Use some aliases for simplicity. -----------------------------------!
    cpatch => csite%patch(ipa)
@@ -423,7 +437,6 @@ subroutine hybrid_timestep(cgrid)
    !----- Define total elapsed time. -----------------------------------------!
    elaptime = time + x
 
-
    !--------------------------------------------------------------------------!
    ! Begin timestep loop                                                      !
    !--------------------------------------------------------------------------!
@@ -434,8 +447,7 @@ subroutine hybrid_timestep(cgrid)
 
       reject_step =  .false.
       hstep:   do
-
-
+         
          call leaf_derivs(initp,dinitp,csite,ipa,h,.true.)
 
          !---------------------------------------------------------------------!
@@ -443,7 +455,7 @@ subroutine hybrid_timestep(cgrid)
          ! changes in key state variables.
          !---------------------------------------------------------------------!
          call fb_dy_step_trunc(initp,restart_step,csite,ipa,dinitp,h,htrunc)
-
+         
          if (restart_step) then
 
             oldh    = h
@@ -484,11 +496,10 @@ subroutine hybrid_timestep(cgrid)
          !--------------------------------------------------------------------!
          call bdf2_solver(cpatch,yprev,initp,ytemp,dinitp,h, &
               dble(csite%hprev(ipa)))
-          
-         
+
          !----- Perform a sanity check on canopy,leaf and wood stuff ---------!
          call fb_sanity_check(ytemp,reject_step,csite,ipa,dinitp,h,print_diags)
-            
+
          !---------------------------------------------------------------------------------!
          !     Here we check the error of this step.  Three outcomes are possible:         !
          ! 1.  The updated values make no sense.  Reject step, assign a large error and    !
@@ -504,6 +515,7 @@ subroutine hybrid_timestep(cgrid)
             ! ly, so we assign a standard large error (10.0).                              !
             !------------------------------------------------------------------------------!
             errmax = 1.d1
+
          else
 
             errmax = 1.d-1
@@ -597,13 +609,14 @@ subroutine hybrid_timestep(cgrid)
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
                call norm_rk4_fluxes(ytemp,h)
-               call print_rk4_state(initp,ytemp,csite,ipa,x,h)
+               call print_rk4_state(initp,ytemp,csite,ipa,isi,x,h)
             end if
-
+            
             !----- 3e. Copy the temporary structure to the intermediate state. ------------!
             call copy_initp2prev(initp,yprev,csite%patch(ipa))
-            call copy_rk4_patch(ytemp, initp,csite%patch(ipa))
 
+            call copy_rk4_patch(ytemp, initp,csite%patch(ipa))
+            
             !------------------------------------------------------------------------------!
             !    3f. Flush step-by-step fluxes to zero if the user wants detailed          !
             !        debugging.                                                            !
@@ -621,6 +634,7 @@ subroutine hybrid_timestep(cgrid)
             exit hstep
          end if
       end do hstep
+
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
@@ -744,6 +758,10 @@ subroutine hybrid_timestep(cgrid)
    targetp%opencan_frac     = sourcep%opencan_frac
    targetp%total_sfcw_depth = sourcep%total_sfcw_depth
    targetp%snowfac          = sourcep%snowfac
+
+   targetp%atm_enthalpy     = sourcep%atm_enthalpy
+   targetp%vels             = sourcep%vels
+
 
    targetp%ggbare           = sourcep%ggbare
    targetp%ggveg            = sourcep%ggveg
@@ -1243,6 +1261,7 @@ subroutine hybrid_timestep(cgrid)
    use rk4_coms              , only : rk4patchtype          & ! structure
         , integration_vars      & ! structure
         , rk4site               & ! intent(in)
+        , rk4aux                & ! intent(in)
         , rk4eps                & ! intent(in)
         , toocold               & ! intent(in)
         , rk4max_can_shv        & ! intent(in)
@@ -1251,8 +1270,6 @@ subroutine hybrid_timestep(cgrid)
         , rk4max_can_rhv        & ! intent(in)
         , rk4min_can_temp       & ! intent(in)
         , rk4max_can_temp       & ! intent(in)
-        , rk4min_can_prss       & ! intent(in)
-        , rk4max_can_prss       & ! intent(in)
         , rk4min_can_co2        & ! intent(in)
         , rk4max_can_co2        & ! intent(in)
         , rk4max_veg_temp       & ! intent(in)
@@ -1262,8 +1279,6 @@ subroutine hybrid_timestep(cgrid)
         , rk4max_sfcw_temp      & ! intent(in)
         , rk4max_soil_temp      & ! intent(in)
         , rk4min_soil_temp      & ! intent(in)
-        , rk4max_soil_water     & ! intent(in)
-        , rk4min_soil_water     & ! intent(in)
         , rk4min_sfcw_mass      & ! intent(in)
         , rk4min_virt_water     & ! intent(in)
         , rk4tiny_sfcw_mass     & ! intent(in)
@@ -1361,6 +1376,7 @@ subroutine hybrid_timestep(cgrid)
    use rk4_coms              , only : rk4patchtype          & ! structure
         , integration_vars      & ! structure
         , rk4site               & ! intent(in)
+        , rk4aux                & ! intent(in)
         , rk4eps                & ! intent(in)
         , toocold               & ! intent(in)
         , rk4max_can_shv        & ! intent(in)
@@ -1369,8 +1385,6 @@ subroutine hybrid_timestep(cgrid)
         , rk4max_can_rhv        & ! intent(in)
         , rk4min_can_temp       & ! intent(in)
         , rk4max_can_temp       & ! intent(in)
-        , rk4min_can_prss       & ! intent(in)
-        , rk4max_can_prss       & ! intent(in)
         , rk4min_can_co2        & ! intent(in)
         , rk4max_can_co2        & ! intent(in)
         , rk4max_veg_temp       & ! intent(in)
@@ -1380,8 +1394,6 @@ subroutine hybrid_timestep(cgrid)
         , rk4max_sfcw_temp      & ! intent(in)
         , rk4max_soil_temp      & ! intent(in)
         , rk4min_soil_temp      & ! intent(in)
-        , rk4max_soil_water     & ! intent(in)
-        , rk4min_soil_water     & ! intent(in)
         , rk4min_sfcw_mass      & ! intent(in)
         , rk4min_virt_water     & ! intent(in)
         , rk4tiny_sfcw_mass     & ! intent(in)
@@ -1397,7 +1409,8 @@ subroutine hybrid_timestep(cgrid)
    use grid_coms             , only : nzg                   ! ! intent(in)
    use therm_lib8             , only : eslif8
    use consts_coms            , only : ep8
-   
+   !$ use omp_lib
+
    implicit none
    !----- Arguments --------------------------------------------------------------------!
    type(rk4patchtype) , target      :: y
@@ -1419,11 +1432,14 @@ subroutine hybrid_timestep(cgrid)
    integer                          :: ipa
    integer                          :: ico
    integer                          :: section ! either 1 or 2 or 3
-
    logical                          :: cflag7
    logical                          :: cflag8
    logical                          :: cflag9
    logical                          :: cflag10
+   integer                          :: ibuff
+
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
    !------------------------------------------------------------------------------------!
    
    !----- Be optimistic and start assuming that things are fine. -----------------------!
@@ -1495,7 +1511,7 @@ subroutine hybrid_timestep(cgrid)
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air pressure is off.                                    !
       !------------------------------------------------------------------------------------!
-      if (y%can_prss > rk4max_can_prss .or. y%can_prss < rk4min_can_prss) then
+      if (y%can_prss > rk4aux(ibuff)%rk4max_can_prss .or. y%can_prss < rk4aux(ibuff)%rk4min_can_prss) then
          reject_step = .true.
          if(record_err) integ_err(5,2) = integ_err(5,2) + 1_8
          if (print_problems) then
@@ -1792,8 +1808,8 @@ subroutine hybrid_timestep(cgrid)
    !------------------------------------------------------------------------------------!
    do k=rk4site%lsl,nzg
       !----- Soil moisture -------------------------------------------------------------!
-      if (y%soil_water(k)< rk4min_soil_water(k) .or.                                    &
-           y%soil_water(k)> rk4max_soil_water(k) ) then
+      if (y%soil_water(k)< rk4aux(ibuff)%rk4min_soil_water(k) .or.                                    &
+           y%soil_water(k)> rk4aux(ibuff)%rk4max_soil_water(k) ) then
          reject_step = .true.
          if(record_err) integ_err(osow+k,2) = integ_err(osow+k,2) + 1_8
          if (print_problems) then
@@ -1930,7 +1946,7 @@ subroutine hybrid_timestep(cgrid)
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
            ,'     MAX_CO2'
-      write(unit=*,fmt='(4(f12.5,1x))') rk4min_can_prss ,rk4max_can_prss               &
+      write(unit=*,fmt='(4(f12.5,1x))') rk4aux(ibuff)%rk4min_can_prss ,rk4aux(ibuff)%rk4max_can_prss               &
            ,rk4min_can_co2  ,rk4max_can_co2
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)')         ('-',k=1,78)
@@ -1952,7 +1968,7 @@ subroutine hybrid_timestep(cgrid)
       write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
       write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'    &
            ,'    MAX_TEMP'
-      write(unit=*,fmt='(4(f12.5,1x))') rk4min_soil_water(nzg),rk4max_soil_water(nzg)  &
+      write(unit=*,fmt='(4(f12.5,1x))') rk4aux(ibuff)%rk4min_soil_water(nzg),rk4aux(ibuff)%rk4max_soil_water(nzg)  &
            ,rk4min_soil_temp      ,rk4max_soil_temp
       write(unit=*,fmt='(a)')           ' '
       write(unit=*,fmt='(78a)')         ('=',k=1,78)

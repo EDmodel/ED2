@@ -5,7 +5,7 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,nsteps)
+subroutine odeint(h1,csite,ipa,isi,nsteps)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
@@ -29,13 +29,18 @@ subroutine odeint(h1,csite,ipa,nsteps)
    use grid_coms      , only : nzg                    & ! intent(in)
                              , nzs                    ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
-                             , runoff_time            ! ! intent(in)
+                             , runoff_time            & ! intent(in)
+                             , runoff_time_i          &
+                             , simplerunoff
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
    use therm_lib8     , only : tl2uint8               ! ! intent(in)
+   !$ use omp_lib
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
    integer                   , intent(in)  :: ipa              ! Current patch ID
+   integer                   , intent(in)  :: isi              ! Current site ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
@@ -48,37 +53,22 @@ subroutine odeint(h1,csite,ipa,nsteps)
    real(kind=8)                            :: hdid             ! delta-t that worked (???)
    real(kind=8)                            :: qwfree           ! Free water internal energy
    real(kind=8)                            :: wfreeb           ! Free water 
-   !----- Saved variables -----------------------------------------------------------------!
-   logical                   , save        :: first_time=.true.
-   logical                   , save        :: simplerunoff
-   real(kind=8)              , save        :: runoff_time_i
+   integer                                 :: ibuff
+
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
+   
    !---------------------------------------------------------------------------------------!
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Check whether we will use runoff or not, and saving this check to save time.      !
-   !---------------------------------------------------------------------------------------!
-   if (first_time) then
-      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
-      if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
-      else 
-         runoff_time_i = 0.d0
-      end if
-      first_time   = .false.
-   end if
-   !---------------------------------------------------------------------------------------!
-
+   ibuff = 1
+   !$ ibuff = OMP_get_thread_num()+1
 
    cpatch => csite%patch(ipa)
 
    !---------------------------------------------------------------------------------------!
    !     Copy the initial patch to the one we use for integration.                         !
    !---------------------------------------------------------------------------------------!
-   call copy_rk4_patch(integration_buff%initp, integration_buff%y,cpatch)
+   call copy_rk4_patch(integration_buff(ibuff)%initp, integration_buff(ibuff)%y,cpatch)
    !---------------------------------------------------------------------------------------!
 
 
@@ -98,22 +88,22 @@ subroutine odeint(h1,csite,ipa,nsteps)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,h,.false.)
+      call leaf_derivs(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,csite,ipa,h,.false.)
 
       !----- Get scalings used to determine stability -------------------------------------!
-      call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal    &
+      call get_yscal(integration_buff(ibuff)%y, integration_buff(ibuff)%dydx,h,integration_buff(ibuff)%yscal    &
                        ,cpatch)
 
       !----- Be sure not to overstep ------------------------------------------------------!
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs(x,h,hdid,hnext,csite,ipa)
+      call rkqs(x,h,hdid,hnext,csite,ipa,isi)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
 
-         ksn = integration_buff%y%nlev_sfcwater
+         ksn = integration_buff(ibuff)%y%nlev_sfcwater
 
          !---------------------------------------------------------------------------------!
          !   Make temporary surface liquid water disappear.  This will not happen          !
@@ -122,29 +112,29 @@ subroutine odeint(h1,csite,ipa,nsteps)
          ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
-            if (integration_buff%y%sfcwater_mass(ksn)    > 0.d0   .and.                    &
-                integration_buff%y%sfcwater_fracliq(ksn) > 1.d-1) then
+            if (integration_buff(ibuff)%y%sfcwater_mass(ksn)    > 0.d0   .and.                    &
+                integration_buff(ibuff)%y%sfcwater_fracliq(ksn) > 1.d-1) then
 
                wfreeb = min(1.d0, dtrk4 * runoff_time_i)                                   &
-                      * integration_buff%y%sfcwater_mass(ksn)                              &
-                      * (integration_buff%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
+                      * integration_buff(ibuff)%y%sfcwater_mass(ksn)                              &
+                      * (integration_buff(ibuff)%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
 
-               qwfree = wfreeb * tl2uint8(integration_buff%y%sfcwater_tempk(ksn),1.d0)
+               qwfree = wfreeb * tl2uint8(integration_buff(ibuff)%y%sfcwater_tempk(ksn),1.d0)
 
-               integration_buff%y%sfcwater_mass(ksn) =                                     &
-                                   integration_buff%y%sfcwater_mass(ksn)                   &
+               integration_buff(ibuff)%y%sfcwater_mass(ksn) =                                     &
+                                   integration_buff(ibuff)%y%sfcwater_mass(ksn)                   &
                                  - wfreeb
 
-               integration_buff%y%sfcwater_depth(ksn) =                                    &
-                                   integration_buff%y%sfcwater_depth(ksn)                  &
+               integration_buff(ibuff)%y%sfcwater_depth(ksn) =                                    &
+                                   integration_buff(ibuff)%y%sfcwater_depth(ksn)                  &
                                  - wfreeb*wdnsi8
 
                !----- Remove internal energy lost due to runoff. --------------------------!
-               integration_buff%y%sfcwater_energy(ksn) =                                   &
-                                     integration_buff%y%sfcwater_energy(ksn) - qwfree
+               integration_buff(ibuff)%y%sfcwater_energy(ksn) =                                   &
+                                     integration_buff(ibuff)%y%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,dtrk4,csite,ipa)
-               call update_diagnostic_vars(integration_buff%y,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,csite,ipa)
+               call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
@@ -164,20 +154,20 @@ subroutine odeint(h1,csite,ipa,nsteps)
                   !      To make sure that the previous values of wbudget_loss2runoff and  !
                   ! ebudget_loss2runoff are accumulated to the next time step.             !
                   !------------------------------------------------------------------------!
-                  integration_buff%y%wbudget_loss2runoff = wfreeb                          &
-                                    + integration_buff%y%wbudget_loss2runoff
-                  integration_buff%y%ebudget_loss2runoff = qwfree                          &
-                                    + integration_buff%y%ebudget_loss2runoff
-                  integration_buff%y%wbudget_storage =                                     &
-                                      integration_buff%y%wbudget_storage - wfreeb
-                  integration_buff%y%ebudget_storage =                                     &
-                                      integration_buff%y%ebudget_storage - qwfree
+                  integration_buff(ibuff)%y%wbudget_loss2runoff = wfreeb                          &
+                                    + integration_buff(ibuff)%y%wbudget_loss2runoff
+                  integration_buff(ibuff)%y%ebudget_loss2runoff = qwfree                          &
+                                    + integration_buff(ibuff)%y%ebudget_loss2runoff
+                  integration_buff(ibuff)%y%wbudget_storage =                                     &
+                                      integration_buff(ibuff)%y%wbudget_storage - wfreeb
+                  integration_buff(ibuff)%y%ebudget_storage =                                     &
+                                      integration_buff(ibuff)%y%ebudget_storage - qwfree
                end if
             end if
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!
-         call copy_rk4_patch(integration_buff%y,integration_buff%initp, cpatch)
+         call copy_rk4_patch(integration_buff(ibuff)%y,integration_buff(ibuff)%initp, cpatch)
          !------ Update the substep for next time and leave -------------------------------!
          csite%htry(ipa) = sngl(hnext)
 
@@ -198,7 +188,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
 
    !----- If it reached this point, that is really bad news... ----------------------------!
    write (unit=*,fmt='(a)') ' ==> Too many steps in routine odeint'
-   call print_rk4patch(integration_buff%y, csite,ipa)
+   call print_rk4patch(integration_buff(ibuff)%y, csite,ipa)
 
    return
 end subroutine odeint
@@ -216,11 +206,37 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,atm_ustar,vels,atm_theiv     &
-                             ,atm_vpdef,atm_theta,atm_tmp,atm_shv,atm_co2,zoff,exner,pcpg  &
-                             ,qpcpg,dpcpg,prss,rshort,rlong,par_beam,par_diffuse,nir_beam  &
-                             ,nir_diffuse,geoht,lsl,ntext_soil,green_leaf_factor,lon,lat   &
-                             ,cosz)
+subroutine copy_met_2_rk4site(mzg,                                            &
+                              atm_ustar,                                      &
+                              atm_theiv,                                      & 
+                              atm_vpdef,                                      & 
+                              atm_theta,                                      &
+                              atm_tmp,                                        &
+                              atm_shv,                                        &
+                              atm_co2,                                        &
+                              zoff,                                           &
+                              exner,                                          &
+                              pcpg,                                           &
+                              qpcpg,                                          &
+                              dpcpg,                                          &
+                              prss,                                           &
+                              rshort,                                        &
+                              rlong,                                          &
+                              par_beam,                                       &
+                              par_diffuse,                                    &
+                              nir_beam,                                       &
+                              nir_diffuse,                                    &
+                              geoht,                                          &
+                              lsl,                                            &
+                              ntext_soil,                                     &
+                              green_leaf_factor,                              &
+                              lon,                                            &
+                              lat,                                            &
+                              cosz)
+
+
+
+
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        & ! intent(in)
@@ -235,11 +251,8 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,atm_ustar,vels,atm
    !----- Arguments -----------------------------------------------------------------------!
    integer                  , intent(in) :: mzg
    integer                  , intent(in) :: lsl
-   real                     , intent(in) :: can_theta
-   real                     , intent(in) :: can_shv
-   real                     , intent(in) :: can_depth
    real                     , intent(in) :: atm_ustar
-   real                     , intent(in) :: vels
+!   real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
    real                     , intent(in) :: atm_vpdef
    real                     , intent(in) :: atm_theta
@@ -264,13 +277,6 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,atm_ustar,vels,atm
    real                     , intent(in) :: lon
    real                     , intent(in) :: lat
    real                     , intent(in) :: cosz
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                               :: ipft
-   real(kind=8)                          :: can_theta8
-   real(kind=8)                          :: can_shv8
-   real(kind=8)                          :: can_depth8
-   real(kind=8)                          :: can_prss8
-   real(kind=8)                          :: can_exner8
    !---------------------------------------------------------------------------------------!
 
    
@@ -310,29 +316,28 @@ subroutine copy_met_2_rk4site(mzg,can_theta,can_shv,can_depth,atm_ustar,vels,atm
    !---------------------------------------------------------------------------------------!
    !     Copy the canopy air space properties to double precision scratch variables.       !
    !---------------------------------------------------------------------------------------!
-   can_theta8 = dble(can_theta)
-   can_shv8   = dble(can_shv  )
-   can_depth8 = dble(can_depth)
+!!   can_theta8 = dble(can_theta)
+!!   can_shv8   = dble(can_shv  )
+!!   can_depth8 = dble(can_depth)
    !---------------------------------------------------------------------------------------!
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the pressure and Exner functions at the canopy depth, find the temperature   !
-   ! of the air above canopy at the canopy depth, and the specific enthalpy at that level. !
-   !---------------------------------------------------------------------------------------!
-   can_prss8            = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
-                                       ,rk4site%geoht,can_theta8,can_shv8,can_depth8)
-   can_exner8           = press2exner8 (can_prss8)
-   rk4site%atm_tmp_zcan = extheta2temp8(can_exner8,rk4site%atm_theta)
-   rk4site%atm_enthalpy = tq2enthalpy8 (rk4site%atm_tmp_zcan,rk4site%atm_shv,.true.)
-   !---------------------------------------------------------------------------------------!
+!!   !---------------------------------------------------------------------------------------!
+!!   !     Find the pressure and Exner functions at the canopy depth, find the temperature   !
+!!   ! of the air above canopy at the canopy depth, and the specific enthalpy at that level. !
+!!   !---------------------------------------------------------------------------------------!
+!!   can_prss8            = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
+!!                                       ,rk4site%geoht,can_theta8,can_shv8,can_depth8)
+!!   can_exner8           = press2exner8 (can_prss8)
+!!   rk4site%atm_tmp_zcan = extheta2temp8(can_exner8,rk4site%atm_theta)
+!!   rk4site%atm_enthalpy = tq2enthalpy8 (rk4site%atm_tmp_zcan,rk4site%atm_shv,.true.)
+!!   !---------------------------------------------------------------------------------------!
 
 
 
    !----- Find the other variables that require a little math. ----------------------------!
    rk4site%atm_ustar = max(ustmin8,dble(atm_ustar))
-   rk4site%vels      = max(ubmin8,dble(vels))
+
+!!   rk4site%vels      = max(ubmin8,dble(vels))  (moved to rk4patch RGK)
    rk4site%atm_rhv   = rehuil8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv,.true.)
    rk4site%atm_rhos  = idealdenssh8(rk4site%atm_prss,rk4site%atm_tmp,rk4site%atm_shv)
    !---------------------------------------------------------------------------------------!
@@ -967,7 +972,6 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    real(kind=8)                     :: err              ! Scratch error variable
    real(kind=8)                     :: errh2oMAX        ! Scratch error variable
    real(kind=8)                     :: erreneMAX        ! Scratch error variable
-   real(kind=8)                     :: scal_err_prss    ! Scaling factor for CAS pressure
    integer                          :: k                ! Counter
    !---------------------------------------------------------------------------------------!
 
@@ -1195,10 +1199,10 @@ end subroutine get_errmax
 !------------------------------------------------------------------------------------------!
 subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
-   use rk4_coms      , only : rk4site           & ! intent(in)
-                            , rk4patchtype      & ! structure
+   use rk4_coms      , only : rk4patchtype      & ! structure
                             , checkbudget       & ! intent(in)
-                            , print_detailed    ! ! intent(in)
+                            , print_detailed    & ! intent(in)
+                            , rk4site
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -1234,6 +1238,10 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%total_sfcw_depth = sourcep%total_sfcw_depth
    targetp%total_sfcw_mass  = sourcep%total_sfcw_mass
    targetp%snowfac          = sourcep%snowfac
+
+!  These are not incremented
+   targetp%vels             = sourcep%vels
+   targetp%atm_enthalpy     = sourcep%atm_enthalpy
 
    targetp%ggbare           = sourcep%ggbare
    targetp%ggveg            = sourcep%ggveg
@@ -1473,9 +1481,31 @@ subroutine initialize_rk4patches(init)
                             , allocate_rk4_coh      & ! structure
                             , allocate_rk4_aux      & ! structure
                             , allocate_bdf2_patch   &
-                            , deallocate_bdf2_patch
-   use ed_misc_coms  , only : integration_scheme    ! ! intent(in)
+                            , deallocate_bdf2_patch & 
+                            , rk4aux                &
+                            , rk4site
+
+   use canopy_layer_coms,only : canstr              & 
+                              , alloc_canopy_layer_mbs &
+                              , tai_lyr_max          ! ! intent(in)
+   use ed_misc_coms  , only : integration_scheme,    & ! intent(in)
+                              ibigleaf
    use grid_coms     , only : ngrids                ! ! intent(in)
+   use c34constants  , only : thispft,              &
+                              met,                  &
+                              aparms,               &
+                              stopen,               &
+                              stclosed,             &
+                              rubiscolim,           &
+                              co2lim,               &
+                              lightlim
+   use canopy_radiation_coms ,only : radscr,        &
+                              alloc_radscratch,     &
+                              dealloc_radscratch,   &
+                              nullify_radscratch
+
+   !$ use omp_lib
+
    implicit none
    !----- Argument ------------------------------------------------------------------------!
    logical           , intent(in) :: init
@@ -1485,41 +1515,85 @@ subroutine initialize_rk4patches(init)
    type(sitetype)    , pointer    :: csite
    type(patchtype)   , pointer    :: cpatch
    integer                        :: maxcohort
+   integer                        :: cohort_count
    integer                        :: igr
    integer                        :: ipy
    integer                        :: isi
    integer                        :: ipa
+   integer                        :: nbuff
+   integer                        :: ibuff
    !---------------------------------------------------------------------------------------!
 
+   ! With openmp, we need to initialize as many buffers as there are threads
+
+   nbuff = 1
+   !$ nbuff= OMP_get_max_threads()
+
+
    if (init) then
+
+      !------------------------------------------------------------------------------------!
+      ! Initialize the photosynthesis arrays.
+      !------------------------------------------------------------------------------------!
+      allocate(thispft(nbuff))
+      allocate(met(nbuff))
+      allocate(aparms(nbuff))
+      allocate(stopen(nbuff))
+      allocate(stclosed(nbuff))
+      allocate(rubiscolim(nbuff))
+      allocate(co2lim(nbuff))
+      allocate(lightlim(nbuff))
+
+!      !------------------------------------------------------------------------------------!
+!      ! Initialize the canopy structure arrays
+!      !------------------------------------------------------------------------------------!
+!      allocate(canstr(nbuff))
+!      do ibuff=1,nbuff
+!         call alloc_canopy_layer_mbs(canstr(ibuff))   ! The arrays in this structure DO NOT
+!                                                      ! change in size (currently)
+!      end do
+
+      !------------------------------------------------------------------------------------!
+      ! Initialize radiation scratch space                                                 !
+      !------------------------------------------------------------------------------------!
+      allocate(radscr(nbuff))
+      do ibuff=1,nbuff
+         call nullify_radscratch(radscr(ibuff))
+      end do
+
       !------------------------------------------------------------------------------------!
       !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
       !------------------------------------------------------------------------------------!
 
+      allocate(integration_buff(nbuff))
+      allocate(rk4aux(nbuff))
+
       select case (integration_scheme)
       case (3)
 
-         allocate(integration_buff%initp)
-         allocate(integration_buff%ytemp)
-
-         call allocate_rk4_patch(integration_buff%initp )
-         call allocate_rk4_patch(integration_buff%ytemp )
+         do ibuff=1,nbuff
+            allocate(integration_buff(ibuff)%initp)
+            allocate(integration_buff(ibuff)%ytemp)
+            call allocate_rk4_patch(integration_buff(ibuff)%initp )
+            call allocate_rk4_patch(integration_buff(ibuff)%ytemp )
+         end do
       
       case default
-
-         allocate(integration_buff%initp )
-         allocate(integration_buff%yscal )
-         allocate(integration_buff%y     )
-         allocate(integration_buff%dydx  )
-         allocate(integration_buff%yerr  )
-         allocate(integration_buff%ytemp )
          
-         call allocate_rk4_patch(integration_buff%initp )
-         call allocate_rk4_patch(integration_buff%yscal )
-         call allocate_rk4_patch(integration_buff%y     )
-         call allocate_rk4_patch(integration_buff%dydx  )
-         call allocate_rk4_patch(integration_buff%yerr  )
-         call allocate_rk4_patch(integration_buff%ytemp )
+         do ibuff=1,nbuff
+            allocate(integration_buff(ibuff)%initp )
+            allocate(integration_buff(ibuff)%yscal )
+            allocate(integration_buff(ibuff)%y     )
+            allocate(integration_buff(ibuff)%dydx  )
+            allocate(integration_buff(ibuff)%yerr  )
+            allocate(integration_buff(ibuff)%ytemp )
+            call allocate_rk4_patch(integration_buff(ibuff)%initp )
+            call allocate_rk4_patch(integration_buff(ibuff)%yscal )
+            call allocate_rk4_patch(integration_buff(ibuff)%y     )
+            call allocate_rk4_patch(integration_buff(ibuff)%dydx  )
+            call allocate_rk4_patch(integration_buff(ibuff)%yerr  )
+            call allocate_rk4_patch(integration_buff(ibuff)%ytemp )
+         end do
 
       end select
 
@@ -1530,38 +1604,46 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
       select case(integration_scheme) 
       case (0) !----- Euler. --------------------------------------------------------------!
-         allocate(integration_buff%dinitp)
 
-         call allocate_rk4_patch(integration_buff%dinitp)
+         do ibuff=1,nbuff
+            allocate(integration_buff(ibuff)%dinitp)
+            call allocate_rk4_patch(integration_buff(ibuff)%dinitp)
+         end do
 
       case (1) !----- Runge-Kutta. --------------------------------------------------------!
-         allocate(integration_buff%ak2)
-         allocate(integration_buff%ak3)
-         allocate(integration_buff%ak4)
-         allocate(integration_buff%ak5)
-         allocate(integration_buff%ak6)
-         allocate(integration_buff%ak7)
 
-         call allocate_rk4_patch(integration_buff%ak2)
-         call allocate_rk4_patch(integration_buff%ak3)
-         call allocate_rk4_patch(integration_buff%ak4)
-         call allocate_rk4_patch(integration_buff%ak5)
-         call allocate_rk4_patch(integration_buff%ak6)
-         call allocate_rk4_patch(integration_buff%ak7)
-
+         do ibuff=1,nbuff
+            allocate(integration_buff(ibuff)%ak2)
+            allocate(integration_buff(ibuff)%ak3)
+            allocate(integration_buff(ibuff)%ak4)
+            allocate(integration_buff(ibuff)%ak5)
+            allocate(integration_buff(ibuff)%ak6)
+            allocate(integration_buff(ibuff)%ak7)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak2)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak3)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak4)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak5)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak6)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak7)
+         end do
+         
       case (2) !----- Heun's. -------------------------------------------------------------!
-         allocate(integration_buff%ak2)
-         allocate(integration_buff%ak3)
 
-         call allocate_rk4_patch(integration_buff%ak2)
-         call allocate_rk4_patch(integration_buff%ak3)
+         do ibuff=1,nbuff
+            allocate(integration_buff(ibuff)%ak2)
+            allocate(integration_buff(ibuff)%ak3)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak2)
+            call allocate_rk4_patch(integration_buff(ibuff)%ak3)
+         end do
 
       case (3) !----- Hybrid (forward Euler/BDF2)------------------------------------------!
-
-         allocate(integration_buff%dinitp)
-         call allocate_rk4_patch(integration_buff%dinitp)
-         allocate(integration_buff%yprev)
-
+         
+         do ibuff=1,nbuff
+            allocate(integration_buff(ibuff)%dinitp)
+            call allocate_rk4_patch(integration_buff(ibuff)%dinitp)
+            allocate(integration_buff(ibuff)%yprev)
+         end do
+            
       end select
       !------------------------------------------------------------------------------------!
    else
@@ -1571,19 +1653,27 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
 
       if(integration_scheme == 3)then
-         call deallocate_rk4_coh(integration_buff%initp )
-         call deallocate_rk4_coh(integration_buff%ytemp )
+
+         do ibuff=1,nbuff
+            call deallocate_rk4_coh(integration_buff(ibuff)%initp )
+            call deallocate_rk4_coh(integration_buff(ibuff)%ytemp )
+         end do
+
       else
-         call deallocate_rk4_coh(integration_buff%initp )
-         call deallocate_rk4_coh(integration_buff%yscal )
-         call deallocate_rk4_coh(integration_buff%y     )
-         call deallocate_rk4_coh(integration_buff%dydx  )
-         call deallocate_rk4_coh(integration_buff%yerr  )
-         call deallocate_rk4_coh(integration_buff%ytemp )
+         do ibuff=1,nbuff
+            call deallocate_rk4_coh(integration_buff(ibuff)%initp )
+            call deallocate_rk4_coh(integration_buff(ibuff)%yscal )
+            call deallocate_rk4_coh(integration_buff(ibuff)%y     )
+            call deallocate_rk4_coh(integration_buff(ibuff)%dydx  )
+            call deallocate_rk4_coh(integration_buff(ibuff)%yerr  )
+            call deallocate_rk4_coh(integration_buff(ibuff)%ytemp )
+         end do
       end if
 
       !------ De-allocate the auxiliary structure. ----------------------------------------!
-      call deallocate_rk4_aux()
+      do ibuff=1,nbuff
+         call deallocate_rk4_aux(rk4aux(ibuff))
+      end do
 
       !------------------------------------------------------------------------------------!
       !     The following structures are allocated/deallocated depending on the            !
@@ -1591,21 +1681,30 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
       select case(integration_scheme) 
       case (0) !----- Euler. --------------------------------------------------------------!
-         call deallocate_rk4_coh(integration_buff%dinitp)
+         do ibuff=1,nbuff
+            call deallocate_rk4_coh(integration_buff(ibuff)%dinitp)
+         end do
       case (1) !----- Runge-Kutta. --------------------------------------------------------!
-         call deallocate_rk4_coh(integration_buff%ak2)
-         call deallocate_rk4_coh(integration_buff%ak3)
-         call deallocate_rk4_coh(integration_buff%ak4)
-         call deallocate_rk4_coh(integration_buff%ak5)
-         call deallocate_rk4_coh(integration_buff%ak6)
-         call deallocate_rk4_coh(integration_buff%ak7)
+         do ibuff=1,nbuff
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak2)
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak3)
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak4)
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak5)
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak6)
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak7)
+         end do
       case (2) !----- Heun's. -------------------------------------------------------------!
-         call deallocate_rk4_coh(integration_buff%ak2)
-         call deallocate_rk4_coh(integration_buff%ak3)
+         do ibuff=1,nbuff
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak2)
+            call deallocate_rk4_coh(integration_buff(ibuff)%ak3)
+         end do
       case (3) !----- Hybrid --------------------------------------------------------------!
-         call deallocate_rk4_coh(integration_buff%dinitp)
-         call deallocate_bdf2_patch(integration_buff%yprev)
+         do ibuff=1,nbuff
+            call deallocate_rk4_coh(integration_buff(ibuff)%dinitp)
+            call deallocate_bdf2_patch(integration_buff(ibuff)%yprev)
+         end do
       end select
+
       !------------------------------------------------------------------------------------!
    end if
 
@@ -1628,15 +1727,19 @@ subroutine initialize_rk4patches(init)
 
    !----- Create new memory in each of the integration patches. ---------------------------!
    if(integration_scheme == 3)then
-      call allocate_rk4_coh(maxcohort,integration_buff%initp )
-      call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+      do ibuff=1,nbuff
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%initp )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ytemp )
+      end do
    else
-      call allocate_rk4_coh(maxcohort,integration_buff%initp )
-      call allocate_rk4_coh(maxcohort,integration_buff%yscal )
-      call allocate_rk4_coh(maxcohort,integration_buff%y     )
-      call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
-      call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
-      call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+      do ibuff=1,nbuff
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%initp )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%yscal )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%y     )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%dydx  )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%yerr  )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ytemp )
+      end do
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1647,26 +1750,65 @@ subroutine initialize_rk4patches(init)
    !---------------------------------------------------------------------------------------!
    select case(integration_scheme) 
    case (0) !----- Euler. -----------------------------------------------------------------!
-      call allocate_rk4_coh(maxcohort,integration_buff%dinitp)
+      do ibuff=1,nbuff
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%dinitp)
+      end do
    case (1) !----- Runge-Kutta. -----------------------------------------------------------!
-      call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
-      call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
-      call allocate_rk4_coh(maxcohort,integration_buff%ak4   )
-      call allocate_rk4_coh(maxcohort,integration_buff%ak5   )
-      call allocate_rk4_coh(maxcohort,integration_buff%ak6   )
-      call allocate_rk4_coh(maxcohort,integration_buff%ak7   )
+      do ibuff=1,nbuff
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak2   )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak3   )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak4   )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak5   )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak6   )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak7   )
+      end do
    case (2) !----- Heun's. ----------------------------------------------------------------!
-      call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
-      call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
+      do ibuff=1,nbuff
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak2   )
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%ak3   )
+      end do
    case (3) !----- Hybrid -----------------------------------------------------------------!
-      call allocate_rk4_coh(maxcohort,integration_buff%dinitp)
-      call allocate_bdf2_patch(integration_buff%yprev,maxcohort)
+      do ibuff=1,nbuff
+         call allocate_rk4_coh(maxcohort,integration_buff(ibuff)%dinitp)
+         call allocate_bdf2_patch(integration_buff(ibuff)%yprev,maxcohort)
+      end do
    end select
    !---------------------------------------------------------------------------------------!
 
+   !------------------------------------------------------------------------------------!
+   ! Initialize radiation scratch space                                                 !
+   !------------------------------------------------------------------------------------!
+   select case (ibigleaf)
+   case (1)
+      !---- Big leaf.  Use the maximum LAI. -----------------------------------------------!
+      maxcohort = 0
+      do igr = 1,ngrids
+         cgrid => edgrid_g(igr)
+         do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
+            do isi = 1,cpoly%nsites
+               csite => cpoly%site(isi)
+               do ipa = 1,csite%npatches
+                  cpatch => csite%patch(ipa)
+                  cohort_count = ceiling( (cpatch%lai(1) + cpatch%wai(1)) / tai_lyr_max )
+                  maxcohort = max(maxcohort, cohort_count)
+               end do
+            end do
+         end do
+      end do
+   end select
+ 
+   do ibuff=1,nbuff
+      call dealloc_radscratch(radscr(ibuff))
+   end do
+   do ibuff=1,nbuff
+      call alloc_radscratch(radscr(ibuff),maxcohort)
+   end do
 
    !------ Allocate and initialise the auxiliary structure. -------------------------------!
-   call allocate_rk4_aux(nzg,nzs,maxcohort)
+   do ibuff=1,nbuff
+      call allocate_rk4_aux(rk4aux(ibuff),nzg,nzs,maxcohort)
+   end do
    !---------------------------------------------------------------------------------------!
 
    return
@@ -1674,3 +1816,147 @@ end subroutine initialize_rk4patches
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine initialize the multiple time step-related variables.               !
+!                                                                                          !
+!  MLO.  RGK, I changed a couple of things in this sub-routine.  I didn't see any reason   !
+!        to define the runoff and time variables inside the select case (all schemes can   !
+!        access variables from rk4_coms).  Also, I moved the detailed output outside the   !
+!        case selection, but check whether it should print detailed output.  You are right !
+!        about it not working for multiple polygons, and ed_opspec.F90 already checks      !
+!        this.  It would overwrite in case of multiple sites per run, but I fixed this.    !
+!------------------------------------------------------------------------------------------!
+subroutine initialize_misc_stepvars()
+   use ed_misc_coms  , only  : integration_scheme  ! ! intent(in)
+   use rk4_coms      , only  : tbeg                & ! intent(inout)
+                             , tend                & ! intent(inout)
+                             , dtrk4               & ! intent(inout)
+                             , dtrk4i              & ! intent(inout)
+                             , print_detailed      & ! intent(in)
+                             , detail_pref         & ! intent(in)
+                             , print_thbnd         & ! intent(in)
+                             , thbnds_fout         ! ! intent(in)
+   use ed_misc_coms   , only : dtlsm               ! ! intent(in)
+   use ed_max_dims    , only : str_len             ! ! intent(in)
+   use soil_coms      , only : runoff_time         & ! intent(in)
+                             , runoff_time_i       & ! intent(out)
+                             , simplerunoff        ! ! intent(out)
+   use hydrology_coms , only : useRUNOFF           ! ! intent(in)
+   use ed_state_vars,   only : edgrid_g            ! ! structure
+   use grid_coms,       only : ngrids              ! ! intent(in)
+
+   implicit none
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                :: igr
+   integer                :: ipy
+   integer                :: isi
+   integer                :: ipa
+   integer                :: ico
+   character(len=str_len) :: detail_fout
+   logical                :: isthere
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether printing detailed output.  Despite the loop, this type of output    !
+   ! works for single polygon runs.                                                        !
+   !---------------------------------------------------------------------------------------!
+   if (print_detailed) then
+      do igr=1,ngrids
+         do ipy=1,edgrid_g(igr)%npolygons
+            do isi=1,edgrid_g(igr)%polygon(ipy)%nsites
+               do ipa = 1,edgrid_g(igr)%polygon(ipy)%site(isi)%npatches
+                  !------------------------------------------------------------------------!
+                  ! Patch level files.                                                     !
+                  !------------------------------------------------------------------------!
+                  write (detail_fout,fmt='(2a,2(i4.4,a))')                                 &
+                        trim(detail_pref),'prk4_site_',isi,'_patch_',ipa,'.txt'
+                  
+                  inquire(file=trim(detail_fout),exist=isthere)
+                  if (isthere) then
+                     !---- Open the file to delete when closing. --------------------------!
+                     open (unit=83,file=trim(detail_fout),status='old',action='write')
+                     close(unit=83,status='delete')
+                  end if
+                  !------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
+                  ! Cohort level files.                                                    !
+                  !------------------------------------------------------------------------!
+                  do ico = 1,edgrid_g(igr)%polygon(ipy)%site(isi)%patch(ipa)%ncohorts
+                     write (detail_fout,fmt='(2a,3(i4.4,a))')                              &
+                        trim(detail_pref),'crk4_site_',isi,'_patch_',ipa,'_cohort_',ico    &
+                                         ,'.txt'
+                     inquire(file=trim(detail_fout),exist=isthere)
+                     if (isthere) then
+                        !---- Open the file to delete when closing. -----------------------!
+                        open (unit=84,file=trim(detail_fout),status='old',action='write')
+                        close(unit=84,status='delete')
+                     end if
+                  end do
+                  !------------------------------------------------------------------------!
+               end do
+               !---------------------------------------------------------------------------!
+            end do
+            !------------------------------------------------------------------------------!
+         end do
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Write header for thermodynamic boundaries in case this output is active.          !
+   !---------------------------------------------------------------------------------------!
+   if (print_thbnd) then
+      open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
+      write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
+                                      ,'        HOUR','        MINU','        SECO'  &
+                                      ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
+                                      ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
+                                      ,'    MIN_PRSS','    MAX_PRSS','MIN_ENTHALPY'  &
+                                      ,'MAX_ENTHALPY'
+      close(unit=39,status='keep')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether we will use runoff or not, and saving this check to save time.      !
+   !---------------------------------------------------------------------------------------!
+   simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
+   if (runoff_time /= 0.) then
+      runoff_time_i = 1.d0/dble(runoff_time)
+   else 
+      runoff_time_i = 0.d0
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Set time-step related variables, which shall remain constant throughout the entire !
+   ! simulation.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   tbeg   = 0.d0
+   tend   = dble(dtlsm)
+   dtrk4  = tend - tbeg
+   dtrk4i = 1.d0/dtrk4
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine initialize_misc_stepvars
+!==========================================================================================!
+!==========================================================================================!

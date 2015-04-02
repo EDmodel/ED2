@@ -49,37 +49,9 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !     Fraction of solar radiation in the PAR band.  Used every time step.               !
-   !---------------------------------------------------------------------------------------!
-   real :: visible_fraction
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !----- Fraction of direct solar radiation in the PAR band. -----------------------------!
-   real :: visible_fraction_dir
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Fraction of diffuse solar radiation in the PAR band.  Used every time step        !
-   !---------------------------------------------------------------------------------------!
-   real :: visible_fraction_dif
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
    !---------------------------------------------------------------------------------------!
    !     Fraction of diffuse solar radiation in the PAR band.  Used when you don't know    !
-   ! the direct/diffuse breakdown.                                                         !
+   ! the direct/diffuse breakdown. (parameters)                                            !
    !---------------------------------------------------------------------------------------!
    real :: fvis_beam_def
    real :: fvis_diff_def
@@ -88,6 +60,33 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !    Structure with scratch variables for radiation (Thanks RGK!).                      !
+   !---------------------------------------------------------------------------------------!
+   type radscrtype
+      integer         , pointer, dimension(:)   :: pft_array
+      real(kind=8)    , pointer, dimension(:)   :: leaf_temp_array
+      real(kind=8)    , pointer, dimension(:)   :: wood_temp_array
+      real(kind=8)    , pointer, dimension(:)   :: lai_array
+      real(kind=8)    , pointer, dimension(:)   :: wai_array 
+      real(kind=8)    , pointer, dimension(:)   :: CA_array
+      real(kind=8)    , pointer, dimension(:)   :: htop_array
+      real(kind=8)    , pointer, dimension(:)   :: hbot_array
+      real(kind=8)    , pointer, dimension(:)   :: par_level_beam
+      real(kind=8)    , pointer, dimension(:)   :: par_level_diffd
+      real(kind=8)    , pointer, dimension(:)   :: par_level_diffu
+      real(kind=8)    , pointer, dimension(:)   :: light_level_array
+      real(kind=8)    , pointer, dimension(:)   :: light_beam_level_array
+      real(kind=8)    , pointer, dimension(:)   :: light_diff_level_array
+      real            , pointer, dimension(:)   :: par_v_beam_array
+      real            , pointer, dimension(:)   :: rshort_v_beam_array
+      real            , pointer, dimension(:)   :: par_v_diffuse_array
+      real            , pointer, dimension(:)   :: rshort_v_diffuse_array
+      real            , pointer, dimension(:)   :: lw_v_array
+      real            , pointer, dimension(:,:) :: radprof_array
+   end type radscrtype
+   type(radscrtype)   , pointer,dimension(:)    :: radscr(:)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -98,9 +97,6 @@ module canopy_radiation_coms
    real(kind=8) :: nir_beam_norm
    real(kind=8) :: nir_diff_norm
    !---------------------------------------------------------------------------------------!
-
-
-
 
    !---------------------------------------------------------------------------------------!
    !     Factors that define the orientation and clumping of leaves.                       !
@@ -214,6 +210,142 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+   contains
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine allocates the scratch variables after all pointers have been     !
+   ! nullified.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   subroutine alloc_radscratch(cradscr,maxcohort)
+      
+      use ed_max_dims          , only : n_radprof            ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(radscrtype), target     :: cradscr
+      integer         , intent(in) :: maxcohort
+      !------------------------------------------------------------------------------------!
+
+      call nullify_radscratch(cradscr)
+
+      allocate (cradscr%pft_array                 (          maxcohort))
+      allocate (cradscr%leaf_temp_array           (          maxcohort))
+      allocate (cradscr%wood_temp_array           (          maxcohort))
+      allocate (cradscr%lai_array                 (          maxcohort))
+      allocate (cradscr%wai_array                 (          maxcohort))
+      allocate (cradscr%CA_array                  (          maxcohort))
+      allocate (cradscr%htop_array                (          maxcohort))
+      allocate (cradscr%hbot_array                (          maxcohort))
+      allocate (cradscr%par_level_beam            (          maxcohort))
+      allocate (cradscr%par_level_diffu           (          maxcohort))
+      allocate (cradscr%par_level_diffd           (          maxcohort))
+      allocate (cradscr%light_level_array         (          maxcohort))
+      allocate (cradscr%light_beam_level_array    (          maxcohort))
+      allocate (cradscr%light_diff_level_array    (          maxcohort))
+      allocate (cradscr%par_v_beam_array          (          maxcohort))
+      allocate (cradscr%rshort_v_beam_array       (          maxcohort))
+      allocate (cradscr%par_v_diffuse_array       (          maxcohort))
+      allocate (cradscr%rshort_v_diffuse_array    (          maxcohort))
+      allocate (cradscr%lw_v_array                (          maxcohort))
+      allocate (cradscr%radprof_array             (n_radprof,maxcohort))
+      
+      return
+   end subroutine alloc_radscratch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine de-allocates the scratch variables.                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine dealloc_radscratch(cradscr)
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(radscrtype), target :: cradscr
+      !------------------------------------------------------------------------------------!
+
+      if (associated(cradscr%pft_array             )) deallocate(cradscr%pft_array        )
+      if (associated(cradscr%leaf_temp_array       )) deallocate(cradscr%leaf_temp_array  )
+      if (associated(cradscr%wood_temp_array       )) deallocate(cradscr%wood_temp_array  )
+      if (associated(cradscr%lai_array             )) deallocate(cradscr%lai_array        )
+      if (associated(cradscr%wai_array             )) deallocate(cradscr%wai_array        )
+      if (associated(cradscr%CA_array              )) deallocate(cradscr%CA_array         )
+      if (associated(cradscr%htop_array            )) deallocate(cradscr%htop_array       )
+      if (associated(cradscr%hbot_array            )) deallocate(cradscr%hbot_array       )
+      if (associated(cradscr%par_level_beam        )) deallocate(cradscr%par_level_beam   )
+      if (associated(cradscr%par_level_diffu       )) deallocate(cradscr%par_level_diffu  )
+      if (associated(cradscr%par_level_diffd       )) deallocate(cradscr%par_level_diffd  )
+      if (associated(cradscr%light_level_array     )) deallocate(cradscr%light_level_array)
+      if (associated(cradscr%light_beam_level_array))                                      &
+                                                 deallocate(cradscr%light_beam_level_array)
+      if (associated(cradscr%light_diff_level_array))                                      &
+                                                 deallocate(cradscr%light_diff_level_array)
+      if (associated(cradscr%par_v_beam_array      )) deallocate(cradscr%par_v_beam_array )
+      if (associated(cradscr%rshort_v_beam_array   ))                                      &
+                                                 deallocate(cradscr%rshort_v_beam_array   )
+      if (associated(cradscr%par_v_diffuse_array   ))                                      &
+                                                 deallocate(cradscr%par_v_diffuse_array   )
+      if (associated(cradscr%rshort_v_diffuse_array))                                      &
+                                                 deallocate(cradscr%rshort_v_diffuse_array)
+      if (associated(cradscr%lw_v_array            )) deallocate(cradscr%lw_v_array       )
+      if (associated(cradscr%radprof_array         )) deallocate(cradscr%radprof_array    )
+      return
+   end subroutine dealloc_radscratch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine nullifies the pointers, for a safe allocation.                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_radscratch(cradscr)
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(radscrtype), target :: cradscr
+      !------------------------------------------------------------------------------------!
+
+      nullify(cradscr%pft_array                 )
+      nullify(cradscr%leaf_temp_array           )
+      nullify(cradscr%wood_temp_array           )
+      nullify(cradscr%lai_array                 )
+      nullify(cradscr%wai_array                 )
+      nullify(cradscr%CA_array                  )
+      nullify(cradscr%htop_array                )
+      nullify(cradscr%hbot_array                )
+      nullify(cradscr%par_level_beam            )
+      nullify(cradscr%par_level_diffu           )
+      nullify(cradscr%par_level_diffd           )
+      nullify(cradscr%light_level_array         )
+      nullify(cradscr%light_beam_level_array    )
+      nullify(cradscr%light_diff_level_array    )
+      nullify(cradscr%par_v_beam_array          )
+      nullify(cradscr%rshort_v_beam_array       )
+      nullify(cradscr%par_v_diffuse_array       )
+      nullify(cradscr%rshort_v_diffuse_array    )
+      nullify(cradscr%lw_v_array                )
+      nullify(cradscr%radprof_array             )
+      return
+   end subroutine nullify_radscratch
+   !=======================================================================================!
+   !=======================================================================================!
 end module canopy_radiation_coms
 !==========================================================================================!
 !==========================================================================================!

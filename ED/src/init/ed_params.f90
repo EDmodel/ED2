@@ -338,11 +338,15 @@ subroutine init_ed_misc_coms
    max_poihist_dist   = 250.
    !---------------------------------------------------------------------------------------!
 
-   ! If you dont want to read a million warnings about certain initialization
-   ! variables not being available in the history input file, set this to 
-   ! true.  Its better for new users to see what is missing though.
-   
+
+
+   !---------------------------------------------------------------------------------------!
+   !      If you don't want to read a million warnings about certain initialization        !
+   ! variables not being available in the history input file, set this to .true. .  It's   !
+   ! better for new users to see what is missing though.                                   !
+   !---------------------------------------------------------------------------------------!
    suppress_h5_warnings = .true.
+   !---------------------------------------------------------------------------------------!
 
 
    return

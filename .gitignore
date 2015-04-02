@@ -146,3 +146,6 @@ BRAMS/i12build
 ED/cs6_build/bin/include.mk.opt
 ED/cs6_build/ed_2.1-cs6
 notthesame.txt
+ED/build/bin/configure
+ED/build/rad_param.data
+ED/slurmdbg

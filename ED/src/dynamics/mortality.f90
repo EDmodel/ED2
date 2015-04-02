@@ -36,7 +36,7 @@ module mortality
       real           , intent(in) :: patch_age       ! Patch age
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft            ! PFT 
-      real                        :: temp_dep        ! Temp. function (frost mortality)
+      real                        :: temp_dep        ! Temp. function  (frost mortality)
       real                        :: expmort         ! Carbon-balance term
       !------------------------------------------------------------------------------------!
 

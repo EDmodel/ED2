@@ -1476,6 +1476,11 @@ module average_utils
                   cpatch%fmean_light_level       (ico) = 0.0
                   cpatch%fmean_light_level_beam  (ico) = 0.0
                   cpatch%fmean_light_level_diff  (ico) = 0.0
+
+                  cpatch%fmean_par_level_beam    (ico) = 0.0                  
+                  cpatch%fmean_par_level_diffd   (ico) = 0.0                  
+                  cpatch%fmean_par_level_diffu   (ico) = 0.0
+
                   cpatch%fmean_par_l             (ico) = 0.0
                   cpatch%fmean_par_l_beam        (ico) = 0.0
                   cpatch%fmean_par_l_diff        (ico) = 0.0
@@ -2239,6 +2244,17 @@ module average_utils
                   cpatch%dmean_par_l_diff    (ico) = cpatch%dmean_par_l_diff    (ico)      &
                                                    + cpatch%fmean_par_l_diff    (ico)      &
                                                    * frqsum_o_daysec
+
+                  cpatch%dmean_par_level_beam(ico) = cpatch%dmean_par_level_beam(ico)      &
+                                                   + cpatch%fmean_par_level_beam(ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_par_level_diffd(ico)= cpatch%dmean_par_level_diffd(ico)     &
+                                                   + cpatch%fmean_par_level_diffd(ico)     &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_par_level_diffu(ico) = cpatch%dmean_par_level_diffu(ico)    &
+                                                   + cpatch%fmean_par_level_diffu(ico)     &
+                                                   * frqsum_o_daysec
+
                   cpatch%dmean_rshort_l      (ico) = cpatch%dmean_rshort_l      (ico)      &
                                                    + cpatch%fmean_rshort_l      (ico)      &
                                                    * frqsum_o_daysec
@@ -2719,6 +2735,14 @@ module average_utils
                                                      * daylight_i
                   cpatch%dmean_light_level_diff(ico) = cpatch%dmean_light_level_diff(ico)  &
                                                      * daylight_i
+
+                  cpatch%dmean_par_level_beam(ico)   = cpatch%dmean_par_level_beam  (ico)  &
+                                                     * daylight_i
+                  cpatch%dmean_par_level_diffu(ico)   = cpatch%dmean_par_level_diffu  (ico)  &
+                                                     * daylight_i
+                  cpatch%dmean_par_level_diffd(ico)   = cpatch%dmean_par_level_diffd  (ico)  &
+                                                     * daylight_i
+
                   cpatch%dmean_fs_open         (ico) = cpatch%dmean_fs_open         (ico)  &
                                                      * daylight_i
                   cpatch%dmean_fsw             (ico) = cpatch%dmean_fsw             (ico)  &
@@ -3334,6 +3358,11 @@ module average_utils
                   cpatch%dmean_light_level       (ico) = 0.0
                   cpatch%dmean_light_level_beam  (ico) = 0.0
                   cpatch%dmean_light_level_diff  (ico) = 0.0
+
+                  cpatch%dmean_par_level_beam    (ico) = 0.0
+                  cpatch%dmean_par_level_diffd   (ico) = 0.0
+                  cpatch%dmean_par_level_diffu   (ico) = 0.0
+
                   cpatch%dmean_par_l             (ico) = 0.0
                   cpatch%dmean_par_l_beam        (ico) = 0.0
                   cpatch%dmean_par_l_diff        (ico) = 0.0
@@ -3420,17 +3449,17 @@ module average_utils
                               , simtime       ! ! structure
       implicit none
       !----- Argument. --------------------------------------------------------------------!
-      type(edtype)      , target  :: cgrid
+      type(edtype)      , target    :: cgrid
       !----- Local variables. -------------------------------------------------------------!
-      type(polygontype) , pointer :: cpoly
-      type(sitetype)    , pointer :: csite
-      type(patchtype)   , pointer :: cpatch
-      type(simtime)               :: daybefore
-      integer                     :: ipy
-      integer                     :: isi
-      integer                     :: ipa
-      integer                     :: ico
-      real                        :: ndaysi
+      type(polygontype) , pointer   :: cpoly
+      type(sitetype)    , pointer   :: csite
+      type(patchtype)   , pointer   :: cpatch
+      type(simtime)                 :: daybefore
+      integer                       :: ipy
+      integer                       :: isi
+      integer                       :: ipa
+      integer                       :: ico
+      real                          :: ndaysi
       !------------------------------------------------------------------------------------!
 
 
@@ -3899,102 +3928,82 @@ module average_utils
          cgrid%mmean_dpcpg            (ipy) = cgrid%mmean_dpcpg            (ipy)           &
                                             + cgrid%dmean_dpcpg            (ipy)           &
                                             * ndaysi
-         !----- Now the mean sum of squares. ----------------------------------------------!
-         cgrid%mmsqu_gpp              (ipy) = cgrid%mmsqu_gpp              (ipy)           &
-                                            + cgrid%dmean_gpp              (ipy)           &
-                                            * cgrid%dmean_gpp              (ipy)           &
+         !---------------------------------------------------------------------------------!
+         !     Mean sum of squares.  Use double precision to integrating term, then        !
+         ! convert the term back to single precision.  This step is needed to avoid under- !
+         ! flows.                                                                          !
+         !---------------------------------------------------------------------------------!
+         cgrid%mmsqu_gpp              (ipy) = cgrid%mmsqu_gpp                 (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_gpp        (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_npp              (ipy) = cgrid%mmsqu_npp              (ipy)           &
-                                            + cgrid%dmean_npp              (ipy)           &
-                                            * cgrid%dmean_npp              (ipy)           &
+         cgrid%mmsqu_npp              (ipy) = cgrid%mmsqu_npp                 (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_npp        (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_plresp           (ipy) = cgrid%mmsqu_plresp           (ipy)           &
-                                            + cgrid%dmean_plresp           (ipy)           &
-                                            * cgrid%dmean_plresp           (ipy)           &
+         cgrid%mmsqu_plresp           (ipy) = cgrid%mmsqu_plresp              (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_plresp     (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_sensible_lc      (ipy) = cgrid%mmsqu_sensible_lc      (ipy)           &
-                                            + cgrid%dmean_sensible_lc      (ipy)           &
-                                            * cgrid%dmean_sensible_lc      (ipy)           &
+         cgrid%mmsqu_sensible_lc      (ipy) = cgrid%mmsqu_sensible_lc         (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_sensible_lc(ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_vapor_lc         (ipy) = cgrid%mmsqu_vapor_lc         (ipy)           &
-                                            + cgrid%dmean_vapor_lc         (ipy)           &
-                                            * cgrid%dmean_vapor_lc         (ipy)           &
+         cgrid%mmsqu_vapor_lc         (ipy) = cgrid%mmsqu_vapor_lc            (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_vapor_lc   (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_transp           (ipy) = cgrid%mmsqu_transp           (ipy)           &
-                                            + cgrid%dmean_transp           (ipy)           &
-                                            * cgrid%dmean_transp           (ipy)           &
+         cgrid%mmsqu_transp           (ipy) = cgrid%mmsqu_transp              (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_transp     (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_sensible_wc      (ipy) = cgrid%mmsqu_sensible_wc      (ipy)           &
-                                            + cgrid%dmean_sensible_wc      (ipy)           &
-                                            * cgrid%dmean_sensible_wc      (ipy)           &
+         cgrid%mmsqu_sensible_wc      (ipy) = cgrid%mmsqu_sensible_wc         (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_sensible_wc(ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_vapor_wc         (ipy) = cgrid%mmsqu_vapor_wc         (ipy)           &
-                                            + cgrid%dmean_vapor_wc         (ipy)           &
-                                            * cgrid%dmean_vapor_wc         (ipy)           &
+         cgrid%mmsqu_vapor_wc         (ipy) = cgrid%mmsqu_vapor_wc            (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_vapor_wc   (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_rh               (ipy) = cgrid%mmsqu_rh               (ipy)           &
-                                            + cgrid%dmean_rh               (ipy)           &
-                                            * cgrid%dmean_rh               (ipy)           &
+         cgrid%mmsqu_rh               (ipy) = cgrid%mmsqu_rh                  (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_rh         (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_cwd_rh           (ipy) = cgrid%mmsqu_cwd_rh           (ipy)           &
-                                            + cgrid%dmean_cwd_rh           (ipy)           &
-                                            * cgrid%dmean_cwd_rh           (ipy)           &
+         cgrid%mmsqu_cwd_rh           (ipy) = cgrid%mmsqu_cwd_rh              (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_cwd_rh     (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_nep              (ipy) = cgrid%mmsqu_nep              (ipy)           &
-                                            + cgrid%dmean_nep              (ipy)           &
-                                            * cgrid%dmean_nep              (ipy)           &
+         cgrid%mmsqu_nep              (ipy) = cgrid%mmsqu_nep                 (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_nep        (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_rlongup          (ipy) = cgrid%mmsqu_rlongup          (ipy)           &
-                                            + cgrid%dmean_rlongup          (ipy)           &
-                                            * cgrid%dmean_rlongup          (ipy)           &
+         cgrid%mmsqu_rlongup          (ipy) = cgrid%mmsqu_rlongup             (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_rlongup    (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_parup            (ipy) = cgrid%mmsqu_parup            (ipy)           &
-                                            + cgrid%dmean_parup            (ipy)           &
-                                            * cgrid%dmean_parup            (ipy)           &
+         cgrid%mmsqu_parup            (ipy) = cgrid%mmsqu_parup               (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_parup      (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_nirup            (ipy) = cgrid%mmsqu_nirup            (ipy)           &
-                                            + cgrid%dmean_nirup            (ipy)           &
-                                            * cgrid%dmean_nirup            (ipy)           &
+         cgrid%mmsqu_nirup            (ipy) = cgrid%mmsqu_nirup               (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_nirup      (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_rshortup         (ipy) = cgrid%mmsqu_rshortup         (ipy)           &
-                                            + cgrid%dmean_rshortup         (ipy)           &
-                                            * cgrid%dmean_rshortup         (ipy)           &
+         cgrid%mmsqu_rshortup         (ipy) = cgrid%mmsqu_rshortup            (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_rshortup   (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_rnet             (ipy) = cgrid%mmsqu_rnet             (ipy)           &
-                                            + cgrid%dmean_rnet             (ipy)           &
-                                            * cgrid%dmean_rnet             (ipy)           &
+         cgrid%mmsqu_rnet             (ipy) = cgrid%mmsqu_rnet                (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_rnet       (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_albedo           (ipy) = cgrid%mmsqu_albedo           (ipy)           &
-                                            + cgrid%dmean_albedo           (ipy)           &
-                                            * cgrid%dmean_albedo           (ipy)           &
+         cgrid%mmsqu_albedo           (ipy) = cgrid%mmsqu_albedo              (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_albedo     (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_ustar            (ipy) = cgrid%mmsqu_ustar            (ipy)           &
-                                            + cgrid%dmean_ustar            (ipy)           &
-                                            * cgrid%dmean_ustar            (ipy)           &
+         cgrid%mmsqu_ustar            (ipy) = cgrid%mmsqu_ustar               (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_ustar      (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_carbon_ac        (ipy) = cgrid%mmsqu_carbon_ac        (ipy)           &
-                                            + cgrid%dmean_carbon_ac        (ipy)           &
-                                            * cgrid%dmean_carbon_ac        (ipy)           &
+         cgrid%mmsqu_carbon_ac        (ipy) = cgrid%mmsqu_carbon_ac           (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_carbon_ac  (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_carbon_st        (ipy) = cgrid%mmsqu_carbon_st        (ipy)           &
-                                            + cgrid%dmean_carbon_st        (ipy)           &
-                                            * cgrid%dmean_carbon_st        (ipy)           &
+         cgrid%mmsqu_carbon_st        (ipy) = cgrid%mmsqu_carbon_st           (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_carbon_st  (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_vapor_gc         (ipy) = cgrid%mmsqu_vapor_gc         (ipy)           &
-                                            + cgrid%dmean_vapor_gc         (ipy)           &
-                                            * cgrid%dmean_vapor_gc         (ipy)           &
+         cgrid%mmsqu_vapor_gc         (ipy) = cgrid%mmsqu_vapor_gc            (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_vapor_gc   (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_vapor_ac         (ipy) = cgrid%mmsqu_vapor_ac         (ipy)           &
-                                            + cgrid%dmean_vapor_ac         (ipy)           &
-                                            * cgrid%dmean_vapor_ac         (ipy)           &
+         cgrid%mmsqu_vapor_ac         (ipy) = cgrid%mmsqu_vapor_ac            (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_vapor_ac   (ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_sensible_gc      (ipy) = cgrid%mmsqu_sensible_gc      (ipy)           &
-                                            + cgrid%dmean_sensible_gc      (ipy)           &
-                                            * cgrid%dmean_sensible_gc      (ipy)           &
+         cgrid%mmsqu_sensible_gc      (ipy) = cgrid%mmsqu_sensible_gc         (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_sensible_gc(ipy))       &
                                             * ndaysi
-         cgrid%mmsqu_sensible_ac      (ipy) = cgrid%mmsqu_sensible_ac      (ipy)           &
-                                            + cgrid%dmean_sensible_ac      (ipy)           &
-                                            * cgrid%dmean_sensible_ac      (ipy)           &
+         cgrid%mmsqu_sensible_ac      (ipy) = cgrid%mmsqu_sensible_ac         (ipy)        &
+                                            + isqu_ftz(cgrid%dmean_sensible_ac(ipy))       &
                                             * ndaysi
          !---------------------------------------------------------------------------------!
 
@@ -4279,70 +4288,59 @@ module average_utils
                csite%mmean_water_residual   (ipa) = csite%mmean_water_residual   (ipa)     &
                                                   + csite%dmean_water_residual   (ipa)     &
                                                   * ndaysi
-               !----- Integrate the sum of squares. ---------------------------------------!
-               csite%mmsqu_rh               (ipa) = csite%mmsqu_rh               (ipa)     &
-                                                  + csite%dmean_rh               (ipa)     &
-                                                  * csite%dmean_rh               (ipa)     &
+               !---------------------------------------------------------------------------!
+               !     Integrate the sum of squares.                                         !
+               !---------------------------------------------------------------------------!
+               csite%mmsqu_rh               (ipa) = csite%mmsqu_rh                  (ipa)  &
+                                                  + isqu_ftz(csite%dmean_rh         (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_cwd_rh           (ipa) = csite%mmsqu_cwd_rh           (ipa)     &
-                                                  + csite%dmean_cwd_rh           (ipa)     &
-                                                  * csite%dmean_cwd_rh           (ipa)     &
+               csite%mmsqu_cwd_rh           (ipa) = csite%mmsqu_cwd_rh              (ipa)  &
+                                                  + isqu_ftz(csite%dmean_cwd_rh     (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_nep              (ipa) = csite%mmsqu_nep              (ipa)     &
-                                                  + csite%dmean_nep              (ipa)     &
-                                                  * csite%dmean_nep              (ipa)     &
+               csite%mmsqu_nep              (ipa) = csite%mmsqu_nep                 (ipa)  &
+                                                  + isqu_ftz(csite%dmean_nep        (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_rlongup          (ipa) = csite%mmsqu_rlongup          (ipa)     &
-                                                  + csite%dmean_rlongup          (ipa)     &
-                                                  * csite%dmean_rlongup          (ipa)     &
+               csite%mmsqu_rlongup          (ipa) = csite%mmsqu_rlongup             (ipa)  &
+                                                  + isqu_ftz(csite%dmean_rlongup    (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_parup            (ipa) = csite%mmsqu_parup            (ipa)     &
-                                                  + csite%dmean_parup            (ipa)     &
-                                                  * csite%dmean_parup            (ipa)     &
+               csite%mmsqu_parup            (ipa) = csite%mmsqu_parup               (ipa)  &
+                                                  + isqu_ftz(csite%dmean_parup      (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_nirup            (ipa) = csite%mmsqu_nirup            (ipa)     &
-                                                  + csite%dmean_nirup            (ipa)     &
-                                                  * csite%dmean_nirup            (ipa)     &
+               csite%mmsqu_nirup            (ipa) = csite%mmsqu_nirup               (ipa)  &
+                                                  + isqu_ftz(csite%dmean_nirup      (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_rshortup         (ipa) = csite%mmsqu_rshortup         (ipa)     &
-                                                  + csite%dmean_rshortup         (ipa)     &
-                                                  * csite%dmean_rshortup         (ipa)     &
+               csite%mmsqu_rshortup         (ipa) = csite%mmsqu_rshortup            (ipa)  &
+                                                  + isqu_ftz(csite%dmean_rshortup   (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_rnet             (ipa) = csite%mmsqu_rnet             (ipa)     &
-                                                  + csite%dmean_rnet             (ipa)     &
-                                                  * csite%dmean_rnet             (ipa)     &
+               csite%mmsqu_rnet             (ipa) = csite%mmsqu_rnet                (ipa)  &
+                                                  + isqu_ftz(csite%dmean_rnet       (ipa)  &
+                                                  * csite%dmean_rnet                (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_albedo           (ipa) = csite%mmsqu_albedo           (ipa)     &
-                                                  + csite%dmean_albedo           (ipa)     &
-                                                  * csite%dmean_albedo           (ipa)     &
+               csite%mmsqu_albedo           (ipa) = csite%mmsqu_albedo              (ipa)  &
+                                                  + isqu_ftz(csite%dmean_albedo     (ipa)  &
+                                                  * csite%dmean_albedo              (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_ustar            (ipa) = csite%mmsqu_ustar            (ipa)     &
-                                                  + csite%dmean_ustar            (ipa)     &
-                                                  * csite%dmean_ustar            (ipa)     &
+               csite%mmsqu_ustar            (ipa) = csite%mmsqu_ustar               (ipa)  &
+                                                  + isqu_ftz(csite%dmean_ustar      (ipa)  &
+                                                  * csite%dmean_ustar               (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_carbon_ac        (ipa) = csite%mmsqu_carbon_ac        (ipa)     &
-                                                  + csite%dmean_carbon_ac        (ipa)     &
-                                                  * csite%dmean_carbon_ac        (ipa)     &
+               csite%mmsqu_carbon_ac        (ipa) = csite%mmsqu_carbon_ac           (ipa)  &
+                                                  + isqu_ftz(csite%dmean_carbon_ac  (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_carbon_st        (ipa) = csite%mmsqu_carbon_st        (ipa)     &
-                                                  + csite%dmean_carbon_st        (ipa)     &
-                                                  * csite%dmean_carbon_st        (ipa)     &
+               csite%mmsqu_carbon_st        (ipa) = csite%mmsqu_carbon_st           (ipa)  &
+                                                  + isqu_ftz(csite%dmean_carbon_st  (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_vapor_gc         (ipa) = csite%mmsqu_vapor_gc         (ipa)     &
-                                                  + csite%dmean_vapor_gc         (ipa)     &
-                                                  * csite%dmean_vapor_gc         (ipa)     &
+               csite%mmsqu_vapor_gc         (ipa) = csite%mmsqu_vapor_gc            (ipa)  &
+                                                  + isqu_ftz(csite%dmean_vapor_gc   (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_vapor_ac         (ipa) = csite%mmsqu_vapor_ac         (ipa)     &
-                                                  + csite%dmean_vapor_ac         (ipa)     &
-                                                  * csite%dmean_vapor_ac         (ipa)     &
+               csite%mmsqu_vapor_ac         (ipa) = csite%mmsqu_vapor_ac            (ipa)  &
+                                                  + isqu_ftz(csite%dmean_vapor_ac   (ipa)) &
                                                   * ndaysi
-               csite%mmsqu_sensible_gc      (ipa) = csite%mmsqu_sensible_gc      (ipa)     &
-                                                  + csite%dmean_sensible_gc      (ipa)     &
-                                                  * csite%dmean_sensible_gc      (ipa)     &
+               csite%mmsqu_sensible_gc      (ipa) = csite%mmsqu_sensible_gc         (ipa)  &
+                                                  + isqu_ftz(csite%dmean_sensible_gc(ipa)) &
                                                   * ndaysi
-               csite%mmsqu_sensible_ac      (ipa) = csite%mmsqu_sensible_ac      (ipa)     &
-                                                  + csite%dmean_sensible_ac      (ipa)     &
-                                                  * csite%dmean_sensible_ac      (ipa)     &
+               csite%mmsqu_sensible_ac      (ipa) = csite%mmsqu_sensible_ac         (ipa)  &
+                                                  + isqu_ftz(csite%dmean_sensible_ac(ipa)) &
                                                   * ndaysi
                !---------------------------------------------------------------------------!
 
@@ -4489,6 +4487,19 @@ module average_utils
                   cpatch%mmean_water_supply    (ico) = cpatch%mmean_water_supply    (ico)  &
                                                      + cpatch%dmean_water_supply    (ico)  &
                                                      * ndaysi
+
+                  cpatch%mmean_par_level_beam  (ico) = cpatch%mmean_par_level_beam  (ico)  &
+                                                     + cpatch%dmean_par_level_beam  (ico)  &
+                                                     * ndaysi
+
+                  cpatch%mmean_par_level_diffd (ico) = cpatch%mmean_par_level_diffd  (ico)  &
+                                                     + cpatch%dmean_par_level_diffd  (ico)  &
+                                                     * ndaysi
+
+                  cpatch%mmean_par_level_diffu (ico) = cpatch%mmean_par_level_diffu  (ico)  &
+                                                     + cpatch%dmean_par_level_diffu  (ico)  &
+                                                     * ndaysi
+
                   cpatch%mmean_light_level     (ico) = cpatch%mmean_light_level     (ico)  &
                                                      + cpatch%dmean_light_level     (ico)  &
                                                      * ndaysi
@@ -4498,6 +4509,8 @@ module average_utils
                   cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)  &
                                                      + cpatch%dmean_light_level_diff(ico)  &
                                                      * ndaysi
+
+
                   cpatch%mmean_par_l           (ico) = cpatch%mmean_par_l           (ico)  &
                                                      + cpatch%dmean_par_l           (ico)  &
                                                      * ndaysi
@@ -4570,38 +4583,31 @@ module average_utils
                   cpatch%mmean_nppdaily        (ico) = cpatch%mmean_nppdaily        (ico)  &
                                                      + cpatch%dmean_nppdaily        (ico)  &
                                                      * ndaysi
-                  cpatch%mmsqu_gpp             (ico) = cpatch%mmsqu_gpp             (ico)  &
-                                                     + cpatch%dmean_gpp             (ico)  &
-                                                     * cpatch%dmean_gpp             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_npp             (ico) = cpatch%mmsqu_npp             (ico)  &
-                                                     + cpatch%dmean_npp             (ico)  &
-                                                     * cpatch%dmean_npp             (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_plresp          (ico) = cpatch%mmsqu_plresp          (ico)  &
-                                                     + cpatch%dmean_plresp          (ico)  &
-                                                     * cpatch%dmean_plresp          (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_sensible_lc     (ico) = cpatch%mmsqu_sensible_lc     (ico)  &
-                                                     + cpatch%dmean_sensible_lc     (ico)  &
-                                                     * cpatch%dmean_sensible_lc     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_vapor_lc        (ico) = cpatch%mmsqu_vapor_lc        (ico)  &
-                                                     + cpatch%dmean_vapor_lc        (ico)  &
-                                                     * cpatch%dmean_vapor_lc        (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_transp          (ico) = cpatch%mmsqu_transp          (ico)  &
-                                                     + cpatch%dmean_transp          (ico)  &
-                                                     * cpatch%dmean_transp          (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_sensible_wc     (ico) = cpatch%mmsqu_sensible_wc     (ico)  &
-                                                     + cpatch%dmean_sensible_wc     (ico)  &
-                                                     * cpatch%dmean_sensible_wc     (ico)  &
-                                                     * ndaysi
-                  cpatch%mmsqu_vapor_wc        (ico) = cpatch%mmsqu_vapor_wc        (ico)  &
-                                                     + cpatch%dmean_vapor_wc        (ico)  &
-                                                     * cpatch%dmean_vapor_wc        (ico)  &
-                                                     * ndaysi
+                  !----- Integrate mean sum of squares. -----------------------------------!
+                  cpatch%mmsqu_gpp        (ico) = cpatch%mmsqu_gpp                  (ico)  &
+                                                + isqu_ftz(cpatch%dmean_gpp         (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_npp        (ico) = cpatch%mmsqu_npp                  (ico)  &
+                                                + isqu_ftz(cpatch%dmean_npp         (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_plresp     (ico) = cpatch%mmsqu_plresp               (ico)  &
+                                                + isqu_ftz(cpatch%dmean_plresp      (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_sensible_lc(ico) = cpatch%mmsqu_sensible_lc          (ico)  &
+                                                + isqu_ftz(cpatch%dmean_sensible_lc (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_vapor_lc   (ico) = cpatch%mmsqu_vapor_lc             (ico)  &
+                                                + isqu_ftz(cpatch%dmean_vapor_lc    (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_transp     (ico) = cpatch%mmsqu_transp               (ico)  &
+                                                + isqu_ftz(cpatch%dmean_transp      (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_sensible_wc(ico) = cpatch%mmsqu_sensible_wc          (ico)  &
+                                                + isqu_ftz(cpatch%dmean_sensible_wc (ico)) &
+                                                * ndaysi
+                  cpatch%mmsqu_vapor_wc   (ico) = cpatch%mmsqu_vapor_wc             (ico)  &
+                                                + isqu_ftz(cpatch%dmean_vapor_wc    (ico)) &
+                                                * ndaysi
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -5335,6 +5341,11 @@ module average_utils
                   cpatch%mmean_light_level       (ico) = 0.0
                   cpatch%mmean_light_level_beam  (ico) = 0.0
                   cpatch%mmean_light_level_diff  (ico) = 0.0
+
+                  cpatch%mmean_par_level_beam    (ico) = 0.0
+                  cpatch%mmean_par_level_diffd   (ico) = 0.0
+                  cpatch%mmean_par_level_diffu   (ico) = 0.0
+
                   cpatch%mmean_par_l             (ico) = 0.0
                   cpatch%mmean_par_l_beam        (ico) = 0.0
                   cpatch%mmean_par_l_diff        (ico) = 0.0
@@ -5807,101 +5818,77 @@ module average_utils
                                               + cgrid%fmean_dpcpg              (ipy)       &
                                               * ndaysi
          !----- Mean sum of squares. ------------------------------------------------------#
-         cgrid%qmsqu_gpp              (t,ipy) = cgrid%qmsqu_gpp              (t,ipy)       &
-                                              + cgrid%fmean_gpp                (ipy)       &
-                                              * cgrid%fmean_gpp                (ipy)       &
+         cgrid%qmsqu_gpp              (t,ipy) = cgrid%qmsqu_gpp                 (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_gpp          (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_npp              (t,ipy) = cgrid%qmsqu_npp              (t,ipy)       &
-                                              + cgrid%fmean_npp                (ipy)       &
-                                              * cgrid%fmean_npp                (ipy)       &
+         cgrid%qmsqu_npp              (t,ipy) = cgrid%qmsqu_npp                 (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_npp          (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_plresp           (t,ipy) = cgrid%qmsqu_plresp           (t,ipy)       &
-                                              + cgrid%fmean_plresp             (ipy)       &
-                                              * cgrid%fmean_plresp             (ipy)       &
+         cgrid%qmsqu_plresp           (t,ipy) = cgrid%qmsqu_plresp              (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_plresp       (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_sensible_lc      (t,ipy) = cgrid%qmsqu_sensible_lc      (t,ipy)       &
-                                              + cgrid%fmean_sensible_lc        (ipy)       &
-                                              * cgrid%fmean_sensible_lc        (ipy)       &
+         cgrid%qmsqu_sensible_lc      (t,ipy) = cgrid%qmsqu_sensible_lc         (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_sensible_lc  (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_vapor_lc         (t,ipy) = cgrid%qmsqu_vapor_lc         (t,ipy)       &
-                                              + cgrid%fmean_vapor_lc           (ipy)       &
-                                              * cgrid%fmean_vapor_lc           (ipy)       &
+         cgrid%qmsqu_vapor_lc         (t,ipy) = cgrid%qmsqu_vapor_lc            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_vapor_lc     (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_transp           (t,ipy) = cgrid%qmsqu_transp           (t,ipy)       &
-                                              + cgrid%fmean_transp             (ipy)       &
-                                              * cgrid%fmean_transp             (ipy)       &
+         cgrid%qmsqu_transp           (t,ipy) = cgrid%qmsqu_transp              (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_transp       (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_sensible_wc      (t,ipy) = cgrid%qmsqu_sensible_wc      (t,ipy)       &
-                                              + cgrid%fmean_sensible_wc        (ipy)       &
-                                              * cgrid%fmean_sensible_wc        (ipy)       &
+         cgrid%qmsqu_sensible_wc      (t,ipy) = cgrid%qmsqu_sensible_wc         (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_sensible_wc  (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_vapor_wc         (t,ipy) = cgrid%qmsqu_vapor_wc         (t,ipy)       &
-                                              + cgrid%fmean_vapor_wc           (ipy)       &
-                                              * cgrid%fmean_vapor_wc           (ipy)       &
+         cgrid%qmsqu_vapor_wc         (t,ipy) = cgrid%qmsqu_vapor_wc            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_vapor_wc     (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_rh               (t,ipy) = cgrid%qmsqu_rh               (t,ipy)       &
-                                              + cgrid%fmean_rh                 (ipy)       &
-                                              * cgrid%fmean_rh                 (ipy)       &
+         cgrid%qmsqu_rh               (t,ipy) = cgrid%qmsqu_rh                  (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_rh           (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_cwd_rh           (t,ipy) = cgrid%qmsqu_cwd_rh           (t,ipy)       &
-                                              + cgrid%fmean_cwd_rh             (ipy)       &
-                                              * cgrid%fmean_cwd_rh             (ipy)       &
+         cgrid%qmsqu_cwd_rh           (t,ipy) = cgrid%qmsqu_cwd_rh              (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_cwd_rh       (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_nep              (t,ipy) = cgrid%qmsqu_nep              (t,ipy)       &
-                                              + cgrid%fmean_nep                (ipy)       &
-                                              * cgrid%fmean_nep                (ipy)       &
+         cgrid%qmsqu_nep              (t,ipy) = cgrid%qmsqu_nep                 (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_nep          (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_rlongup          (t,ipy) = cgrid%qmsqu_rlongup          (t,ipy)       &
-                                              + cgrid%fmean_rlongup            (ipy)       &
-                                              * cgrid%fmean_rlongup            (ipy)       &
+         cgrid%qmsqu_rlongup          (t,ipy) = cgrid%qmsqu_rlongup             (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_rlongup      (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_parup            (t,ipy) = cgrid%qmsqu_parup            (t,ipy)       &
-                                              + cgrid%fmean_parup              (ipy)       &
-                                              * cgrid%fmean_parup              (ipy)       &
+         cgrid%qmsqu_parup            (t,ipy) = cgrid%qmsqu_parup               (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_parup        (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_nirup            (t,ipy) = cgrid%qmsqu_nirup            (t,ipy)       &
-                                              + cgrid%fmean_nirup              (ipy)       &
-                                              * cgrid%fmean_nirup              (ipy)       &
+         cgrid%qmsqu_nirup            (t,ipy) = cgrid%qmsqu_nirup               (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_nirup        (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_rshortup         (t,ipy) = cgrid%qmsqu_rshortup         (t,ipy)       &
-                                              + cgrid%fmean_rshortup           (ipy)       &
-                                              * cgrid%fmean_rshortup           (ipy)       &
+         cgrid%qmsqu_rshortup         (t,ipy) = cgrid%qmsqu_rshortup            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_rshortup     (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_rnet             (t,ipy) = cgrid%qmsqu_rnet             (t,ipy)       &
-                                              + cgrid%fmean_rnet               (ipy)       &
-                                              * cgrid%fmean_rnet               (ipy)       &
+         cgrid%qmsqu_rnet             (t,ipy) = cgrid%qmsqu_rnet                (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_rnet         (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_albedo           (t,ipy) = cgrid%qmsqu_albedo           (t,ipy)       &
-                                              + cgrid%fmean_albedo             (ipy)       &
-                                              * cgrid%fmean_albedo             (ipy)       &
+         cgrid%qmsqu_albedo           (t,ipy) = cgrid%qmsqu_albedo              (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_albedo       (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_ustar            (t,ipy) = cgrid%qmsqu_ustar            (t,ipy)       &
-                                              + cgrid%fmean_ustar              (ipy)       &
-                                              * cgrid%fmean_ustar              (ipy)       &
+         cgrid%qmsqu_ustar            (t,ipy) = cgrid%qmsqu_ustar               (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_ustar        (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_carbon_ac        (t,ipy) = cgrid%qmsqu_carbon_ac        (t,ipy)       &
-                                              + cgrid%fmean_carbon_ac          (ipy)       &
-                                              * cgrid%fmean_carbon_ac          (ipy)       &
+         cgrid%qmsqu_carbon_ac        (t,ipy) = cgrid%qmsqu_carbon_ac           (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_carbon_ac    (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_carbon_st        (t,ipy) = cgrid%qmsqu_carbon_st        (t,ipy)       &
-                                              + cgrid%fmean_carbon_st          (ipy)       &
-                                              * cgrid%fmean_carbon_st          (ipy)       &
+         cgrid%qmsqu_carbon_st        (t,ipy) = cgrid%qmsqu_carbon_st           (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_carbon_st    (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_vapor_gc         (t,ipy) = cgrid%qmsqu_vapor_gc         (t,ipy)       &
-                                              + cgrid%fmean_vapor_gc           (ipy)       &
-                                              * cgrid%fmean_vapor_gc           (ipy)       &
+         cgrid%qmsqu_vapor_gc         (t,ipy) = cgrid%qmsqu_vapor_gc            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_vapor_gc     (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_vapor_ac         (t,ipy) = cgrid%qmsqu_vapor_ac         (t,ipy)       &
-                                              + cgrid%fmean_vapor_ac           (ipy)       &
-                                              * cgrid%fmean_vapor_ac           (ipy)       &
+         cgrid%qmsqu_vapor_ac         (t,ipy) = cgrid%qmsqu_vapor_ac            (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_vapor_ac     (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_sensible_gc      (t,ipy) = cgrid%qmsqu_sensible_gc      (t,ipy)       &
-                                              + cgrid%fmean_sensible_gc        (ipy)       &
-                                              * cgrid%fmean_sensible_gc        (ipy)       &
+         cgrid%qmsqu_sensible_gc      (t,ipy) = cgrid%qmsqu_sensible_gc         (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_sensible_gc  (ipy))   &
                                               * ndaysi
-         cgrid%qmsqu_sensible_ac      (t,ipy) = cgrid%qmsqu_sensible_ac      (t,ipy)       &
-                                              + cgrid%fmean_sensible_ac        (ipy)       &
-                                              * cgrid%fmean_sensible_ac        (ipy)       &
+         cgrid%qmsqu_sensible_ac      (t,ipy) = cgrid%qmsqu_sensible_ac         (t,ipy)    &
+                                              + isqu_ftz(cgrid%fmean_sensible_ac  (ipy))   &
                                               * ndaysi
          !---------------------------------------------------------------------------------!
 
@@ -6130,70 +6117,54 @@ module average_utils
                                                     + csite%fmean_qdrainage          (ipa) &
                                                     * ndaysi
                !------ Integrate the mean sum of squares. ---------------------------------!
-               csite%qmsqu_rh               (t,ipa) = csite%qmsqu_rh               (t,ipa) &
-                                                    + csite%fmean_rh                 (ipa) &
-                                                    * csite%fmean_rh                 (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_cwd_rh           (t,ipa) = csite%qmsqu_cwd_rh           (t,ipa) &
-                                                    + csite%fmean_cwd_rh             (ipa) &
-                                                    * csite%fmean_cwd_rh             (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_nep              (t,ipa) = csite%qmsqu_nep              (t,ipa) &
-                                                    + csite%fmean_nep                (ipa) &
-                                                    * csite%fmean_nep                (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_rlongup          (t,ipa) = csite%qmsqu_rlongup          (t,ipa) &
-                                                    + csite%fmean_rlongup            (ipa) &
-                                                    * csite%fmean_rlongup            (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_parup            (t,ipa) = csite%qmsqu_parup            (t,ipa) &
-                                                    + csite%fmean_parup              (ipa) &
-                                                    * csite%fmean_parup              (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_nirup            (t,ipa) = csite%qmsqu_nirup            (t,ipa) &
-                                                    + csite%fmean_nirup              (ipa) &
-                                                    * csite%fmean_nirup              (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_rshortup         (t,ipa) = csite%qmsqu_rshortup         (t,ipa) &
-                                                    + csite%fmean_rshortup           (ipa) &
-                                                    * csite%fmean_rshortup           (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_rnet             (t,ipa) = csite%qmsqu_rnet             (t,ipa) &
-                                                    + csite%fmean_rnet               (ipa) &
-                                                    * csite%fmean_rnet               (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_albedo           (t,ipa) = csite%qmsqu_albedo           (t,ipa) &
-                                                    + csite%fmean_albedo             (ipa) &
-                                                    * csite%fmean_albedo             (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_ustar            (t,ipa) = csite%qmsqu_ustar            (t,ipa) &
-                                                    + csite%fmean_ustar              (ipa) &
-                                                    * csite%fmean_ustar              (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_carbon_ac        (t,ipa) = csite%qmsqu_carbon_ac        (t,ipa) &
-                                                    + csite%fmean_carbon_ac          (ipa) &
-                                                    * csite%fmean_carbon_ac          (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_carbon_st        (t,ipa) = csite%qmsqu_carbon_st        (t,ipa) &
-                                                    + csite%fmean_carbon_st          (ipa) &
-                                                    * csite%fmean_carbon_st          (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_vapor_gc         (t,ipa) = csite%qmsqu_vapor_gc         (t,ipa) &
-                                                    + csite%fmean_vapor_gc           (ipa) &
-                                                    * csite%fmean_vapor_gc           (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_vapor_ac         (t,ipa) = csite%qmsqu_vapor_ac         (t,ipa) &
-                                                    + csite%fmean_vapor_ac           (ipa) &
-                                                    * csite%fmean_vapor_ac           (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_sensible_gc      (t,ipa) = csite%qmsqu_sensible_gc      (t,ipa) &
-                                                    + csite%fmean_sensible_gc        (ipa) &
-                                                    * csite%fmean_sensible_gc        (ipa) &
-                                                    * ndaysi
-               csite%qmsqu_sensible_ac      (t,ipa) = csite%qmsqu_sensible_ac      (t,ipa) &
-                                                    + csite%fmean_sensible_ac        (ipa) &
-                                                    * csite%fmean_sensible_ac        (ipa) &
-                                                    * ndaysi
+               csite%qmsqu_rh           (t,ipa) = csite%qmsqu_rh                  (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_rh           (ipa)) &
+                                                * ndaysi                                 
+               csite%qmsqu_cwd_rh       (t,ipa) = csite%qmsqu_cwd_rh              (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_cwd_rh       (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_nep          (t,ipa) = csite%qmsqu_nep                 (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_nep          (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_rlongup      (t,ipa) = csite%qmsqu_rlongup             (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_rlongup      (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_parup        (t,ipa) = csite%qmsqu_parup               (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_parup        (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_nirup        (t,ipa) = csite%qmsqu_nirup               (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_nirup        (ipa)) &
+                                                * ndaysi                                 
+               csite%qmsqu_rshortup     (t,ipa) = csite%qmsqu_rshortup            (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_rshortup     (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_rnet         (t,ipa) = csite%qmsqu_rnet                (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_rnet         (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_albedo       (t,ipa) = csite%qmsqu_albedo              (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_albedo       (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_ustar        (t,ipa) = csite%qmsqu_ustar               (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_ustar        (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_carbon_ac    (t,ipa) = csite%qmsqu_carbon_ac           (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_carbon_ac    (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_carbon_st    (t,ipa) = csite%qmsqu_carbon_st           (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_carbon_st    (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_vapor_gc     (t,ipa) = csite%qmsqu_vapor_gc            (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_vapor_gc     (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_vapor_ac     (t,ipa) = csite%qmsqu_vapor_ac            (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_vapor_ac     (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_sensible_gc  (t,ipa) = csite%qmsqu_sensible_gc         (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_sensible_gc  (ipa)) &
+                                                * ndaysi
+               csite%qmsqu_sensible_ac  (t,ipa) = csite%qmsqu_sensible_ac         (t,ipa)  &
+                                                + isqu_ftz(csite%fmean_sensible_ac  (ipa)) &
+                                                * ndaysi
                !---------------------------------------------------------------------------!
 
 
@@ -6286,9 +6257,23 @@ module average_utils
                   cpatch%qmean_water_supply  (t,ico) = cpatch%qmean_water_supply  (t,ico)  &
                                                      + cpatch%fmean_water_supply    (ico)  &
                                                      * ndaysi
+                  
+                  cpatch%qmean_par_level_beam(t,ico) = cpatch%qmean_par_level_beam(t,ico) &
+                                                     + cpatch%fmean_par_level_beam(ico)    &
+                                                     * ndaysi
+
+                  cpatch%qmean_par_level_diffd(t,ico)= cpatch%qmean_par_level_diffd(t,ico) &
+                                                     + cpatch%fmean_par_level_diffd(ico)    &
+                                                     * ndaysi
+
+                  cpatch%qmean_par_level_diffu(t,ico)= cpatch%qmean_par_level_diffu(t,ico) &
+                                                     + cpatch%fmean_par_level_diffu(ico)    &
+                                                     * ndaysi
+
                   cpatch%qmean_light_level   (t,ico) = cpatch%qmean_light_level   (t,ico)  &
                                                      + cpatch%fmean_light_level     (ico)  &
                                                      * ndaysi
+
                   cpatch%qmean_light_level_beam(t,ico) =                                   &
                                                       cpatch%qmean_light_level_beam(t,ico) &
                                                     + cpatch%fmean_light_level_beam  (ico) &
@@ -6349,38 +6334,30 @@ module average_utils
                                                      + cpatch%fmean_wshed_wg        (ico)  &
                                                      * ndaysi
                   !------ Mean sum of squares. --------------------------------------------!
-                  cpatch%qmsqu_gpp           (t,ico) = cpatch%qmsqu_gpp           (t,ico)  &
-                                                     + cpatch%fmean_gpp             (ico)  &
-                                                     * cpatch%fmean_gpp             (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_npp           (t,ico) = cpatch%qmsqu_npp           (t,ico)  &
-                                                     + cpatch%fmean_npp             (ico)  &
-                                                     * cpatch%fmean_npp             (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_plresp        (t,ico) = cpatch%qmsqu_plresp        (t,ico)  &
-                                                     + cpatch%fmean_plresp          (ico)  &
-                                                     * cpatch%fmean_plresp          (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_sensible_lc   (t,ico) = cpatch%qmsqu_sensible_lc   (t,ico)  &
-                                                     + cpatch%fmean_sensible_lc     (ico)  &
-                                                     * cpatch%fmean_sensible_lc     (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_vapor_lc      (t,ico) = cpatch%qmsqu_vapor_lc      (t,ico)  &
-                                                     + cpatch%fmean_vapor_lc        (ico)  &
-                                                     * cpatch%fmean_vapor_lc        (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_transp        (t,ico) = cpatch%qmsqu_transp        (t,ico)  &
-                                                     + cpatch%fmean_transp          (ico)  &
-                                                     * cpatch%fmean_transp          (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_sensible_wc   (t,ico) = cpatch%qmsqu_sensible_wc   (t,ico)  &
-                                                     + cpatch%fmean_sensible_wc     (ico)  &
-                                                     * cpatch%fmean_sensible_wc     (ico)  &
-                                                     * ndaysi
-                  cpatch%qmsqu_vapor_wc      (t,ico) = cpatch%qmsqu_vapor_wc      (t,ico)  &
-                                                     + cpatch%fmean_vapor_wc        (ico)  &
-                                                     * cpatch%fmean_vapor_wc        (ico)  &
-                                                     * ndaysi
+                  cpatch%qmsqu_gpp        (t,ico) = cpatch%qmsqu_gpp              (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_gpp       (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_npp        (t,ico) = cpatch%qmsqu_npp              (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_npp       (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_plresp     (t,ico) = cpatch%qmsqu_plresp           (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_plresp    (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_sensible_lc(t,ico) = cpatch%qmsqu_sensible_lc      (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_sensible_lc (ico)) &
+                                                * ndaysi
+                  cpatch%qmsqu_vapor_lc   (t,ico) = cpatch%qmsqu_vapor_lc         (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_vapor_lc  (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_transp     (t,ico) = cpatch%qmsqu_transp           (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_transp    (ico)) &
+                                                  * ndaysi
+                  cpatch%qmsqu_sensible_wc(t,ico) = cpatch%qmsqu_sensible_wc      (t,ico)  &
+                                                + isqu_ftz(cpatch%fmean_sensible_wc (ico)) &
+                                                * ndaysi
+                  cpatch%qmsqu_vapor_wc   (t,ico) = cpatch%qmsqu_vapor_wc         (t,ico)  &
+                                                  + isqu_ftz(cpatch%fmean_vapor_wc  (ico)) &
+                                                  * ndaysi
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -7064,6 +7041,11 @@ module average_utils
                   cpatch%qmean_psi_open            (:,ico) = 0.0
                   cpatch%qmean_psi_closed          (:,ico) = 0.0
                   cpatch%qmean_water_supply        (:,ico) = 0.0
+
+                  cpatch%qmean_par_level_beam      (:,ico) = 0.0
+                  cpatch%qmean_par_level_diffu     (:,ico) = 0.0
+                  cpatch%qmean_par_level_diffd     (:,ico) = 0.0
+
                   cpatch%qmean_light_level         (:,ico) = 0.0
                   cpatch%qmean_light_level_beam    (:,ico) = 0.0
                   cpatch%qmean_light_level_diff    (:,ico) = 0.0
@@ -7342,6 +7324,46 @@ module average_utils
 
       return
    end subroutine zero_ed_yearly_vars
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the intergrator for sum of squares.  This checks that the     !
+   ! squared term does not cause underflow, and if it does, it flushes results to zero.    !
+   ! This is very similar to sngloff.                                                      !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function isqu_ftz(x)
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=4), intent(in) :: x
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: x8
+      real(kind=8)             :: xsqu8
+      !----- Local parameters. ------------------------------------------------------------!
+      real(kind=8), parameter  :: off8 = 1.d-30
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Convert values to double precision. ------------------------------------------!
+      x8    = dble(x)
+      xsqu8 = x8 * x8
+      !------------------------------------------------------------------------------------!
+
+      !----- Check whether overflow is about to happen. -----------------------------------!
+      if (abs(xsqu8) < off8) then
+         isqu_ftz = 0.
+      else
+         isqu_ftz = sngl(xsqu8)
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function isqu_ftz
    !=======================================================================================!
    !=======================================================================================!
 end module average_utils
