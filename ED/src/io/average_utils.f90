@@ -4384,9 +4384,7 @@ module average_utils
                                                        - cpatch%leaf_maintenance    (ico)  &
                                                        - cpatch%root_maintenance    (ico)  &
                                                        - cpatch%leaf_drop           (ico)  &
-                                                       + cpatch%bstorage            (ico)  &
-                                                       / yr_day )                          &
-                                                     * ndaysi
+                                                       ) / yr_day * ndaysi
                   !------------------------------------------------------------------------!
 
 
@@ -4964,10 +4962,11 @@ module average_utils
    ! integration.                                                                          !
    !---------------------------------------------------------------------------------------!
    subroutine zero_ed_mmean_vars(cgrid)
-      use ed_state_vars , only : edtype        & ! structure
-                               , polygontype   & ! structure
-                               , sitetype      & ! structure
-                               , patchtype     ! ! structure
+      use ed_state_vars  , only : edtype         & ! structure
+                                , polygontype    & ! structure
+                                , sitetype       & ! structure
+                                , patchtype      ! ! structure
+      use physiology_coms, only : iddmort_scheme ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid
@@ -5306,7 +5305,12 @@ module average_utils
                   cpatch%mmean_leaf_maintenance  (ico) = 0.0
                   cpatch%mmean_root_maintenance  (ico) = 0.0
                   cpatch%mmean_leaf_drop         (ico) = 0.0
-                  cpatch%mmean_cb                (ico) = 0.0
+                  select case (iddmort_scheme)
+                  case (0)
+                     cpatch%mmean_cb             (ico) = 0.0
+                  case (1)
+                     cpatch%mmean_cb             (ico) = cpatch%bstorage(ico)
+                  end select
                   cpatch%mmean_gpp               (ico) = 0.0
                   cpatch%mmean_npp               (ico) = 0.0
                   cpatch%mmean_leaf_resp         (ico) = 0.0

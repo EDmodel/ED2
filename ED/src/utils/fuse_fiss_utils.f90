@@ -1072,6 +1072,8 @@ module fuse_fiss_utils
       real                         :: dlai              ! LAI of donor
       real                         :: rwai              ! WAI of receiver
       real                         :: dwai              ! WAI of donor
+      real                         :: rnplant           ! nplant of receiver
+      real                         :: dnplant           ! nplant of donor
       !------------------------------------------------------------------------------------!
 
 
@@ -1084,6 +1086,10 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
       newni   = 1.0 / newn
+      rnplant = cpatch%nplant(recc) * newni
+      dnplant = 1.0 - rnplant
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !    This is a fix for when two cohorts with very very low LAI are fused             !
@@ -1109,21 +1115,31 @@ module fuse_fiss_utils
 
 
 
-      !----- Conserve carbon by calculating bdead first. ----------------------------------!
-      !----- Then get dbh and hite from bdead. --------------------------------------------!
-      if (is_grass(cpatch%pft(donc)) .and. igrass==1) then
-          !--use bleaf for grass
-          cpatch%bleaf(recc) = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
-                               + cpatch%nplant(donc) * cpatch%bleaf(donc) ) * newni
+
+      !------------------------------------------------------------------------------------!
+      !      Find DBH and height.  Make sure that carbon is conserved.                     !
+      !------------------------------------------------------------------------------------!
+      if (is_grass(cpatch%pft(donc)) .and. igrass == 1) then
+          !----- New grass scheme, use bleaf then find DBH and height. --------------------!
+          cpatch%bleaf(recc) = cpatch%bleaf(recc) * rnplant + cpatch%bleaf(donc) * dnplant
           cpatch%dbh(recc)   = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
           cpatch%hite(recc)  = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+          !--------------------------------------------------------------------------------!
       else
-          !--use bdead for trees
-          cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                  &
-                               + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
+          !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
+          cpatch%bdead(recc) = cpatch%bdead(recc) * rnplant + cpatch%bdead(donc) * dnplant
           cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
           cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+          !--------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Rooting depth. ---------------------------------------------------------------!
+      cpatch%krdepth(recc) = dbh2krdepth(cpatch%hite(recc),cpatch%dbh(recc)                &
+                                        ,cpatch%pft(recc),lsl)
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -1132,27 +1148,24 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Conserving carbon to get balive, bleaf, and bstorage.                          !
       !------------------------------------------------------------------------------------!
-      cpatch%balive(recc)    = ( cpatch%nplant(recc) * cpatch%balive(recc)                 &
-                               + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
-      cpatch%broot(recc)     = ( cpatch%nplant(recc) * cpatch%broot(recc)                  &
-                               + cpatch%nplant(donc) * cpatch%broot(donc) ) *newni
-      cpatch%bsapwooda(recc) = ( cpatch%nplant(recc) * cpatch%bsapwooda(recc)              &
-                             + cpatch%nplant(donc) * cpatch%bsapwooda(donc) ) *newni
-      cpatch%bsapwoodb(recc) = ( cpatch%nplant(recc) * cpatch%bsapwoodb(recc)              &
-                             + cpatch%nplant(donc) * cpatch%bsapwoodb(donc) ) *newni
-      cpatch%bstorage(recc)  = ( cpatch%nplant(recc) * cpatch%bstorage(recc)               &
-                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
-      cpatch%bseeds(recc)    = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                 &
-                               + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
-      cpatch%leaf_maintenance(recc) = newni                                                &
-                            * ( cpatch%nplant(recc) * cpatch%leaf_maintenance(recc)        &
-                              + cpatch%nplant(donc) * cpatch%leaf_maintenance(donc) )
-      cpatch%root_maintenance(recc) = newni                                                &
-                            * ( cpatch%nplant(recc) * cpatch%root_maintenance(recc)        &
-                              + cpatch%nplant(donc) * cpatch%root_maintenance(donc) )
-      cpatch%leaf_drop(recc) = newni                                                       &
-                             * ( cpatch%nplant(recc) * cpatch%leaf_drop(recc)              &
-                               + cpatch%nplant(donc) * cpatch%leaf_drop(donc) )  
+      cpatch%balive           (recc) = cpatch%balive          (recc) * rnplant             &
+                                     + cpatch%balive          (donc) * dnplant
+      cpatch%broot            (recc) = cpatch%broot           (recc) * rnplant             &
+                                     + cpatch%broot           (donc) * dnplant
+      cpatch%bsapwooda        (recc) = cpatch%bsapwooda       (recc) * rnplant             &
+                                     + cpatch%bsapwooda       (donc) * dnplant
+      cpatch%bsapwoodb        (recc) = cpatch%bsapwoodb       (recc) * rnplant             &
+                                     + cpatch%bsapwoodb       (donc) * dnplant
+      cpatch%bstorage         (recc) = cpatch%bstorage        (recc) * rnplant             &
+                                     + cpatch%bstorage        (donc) * dnplant
+      cpatch%bseeds           (recc) = cpatch%bseeds          (recc) * rnplant             &
+                                     + cpatch%bseeds          (donc) * dnplant
+      cpatch%leaf_maintenance (recc) = cpatch%leaf_maintenance(recc) * rnplant             &
+                                     + cpatch%leaf_maintenance(donc) * dnplant
+      cpatch%root_maintenance (recc) = cpatch%root_maintenance(recc) * rnplant             &
+                                     + cpatch%root_maintenance(donc) * dnplant
+      cpatch%leaf_drop        (recc) = cpatch%leaf_drop       (recc) * rnplant             &
+                                     + cpatch%leaf_drop       (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1162,19 +1175,25 @@ module fuse_fiss_utils
       ! throughout the code, but being safe here.                                          !
       !------------------------------------------------------------------------------------!
       if (cpatch%phenology_status(recc) /= -2) then
-         cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
-                               + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
+         cpatch%bleaf(recc)  = rnplant * cpatch%bleaf(recc) + dnplant * cpatch%bleaf(donc)
       else
-         cpatch%bleaf(recc)      = 0.
+         cpatch%bleaf(recc)  = 0.
       end if
       !------------------------------------------------------------------------------------!
 
+
+
+      !------ Energy, water, and heat capacity are extensive, add them. -------------------!
       cpatch%leaf_energy(recc) = cpatch%leaf_energy(recc) + cpatch%leaf_energy(donc)
       cpatch%leaf_water (recc) = cpatch%leaf_water (recc) + cpatch%leaf_water (donc)
       cpatch%leaf_hcap  (recc) = cpatch%leaf_hcap  (recc) + cpatch%leaf_hcap  (donc)
       cpatch%wood_energy(recc) = cpatch%wood_energy(recc) + cpatch%wood_energy(donc)
       cpatch%wood_water (recc) = cpatch%wood_water (recc) + cpatch%wood_water (donc)
       cpatch%wood_hcap  (recc) = cpatch%wood_hcap  (recc) + cpatch%wood_hcap  (donc)
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !      We update temperature and liquid water fraction.  We check whether the heat   !
@@ -1191,9 +1210,8 @@ module fuse_fiss_utils
          
       else 
          !----- Leaf temperature cannot be found using uextcm2tl, this is a singularity. --!
-         cpatch%leaf_temp(recc)  = newni                                                   &
-                                 * ( cpatch%leaf_temp(recc)  * cpatch%nplant(recc)         &
-                                   + cpatch%leaf_temp(donc)  * cpatch%nplant(donc))
+         cpatch%leaf_temp(recc)  = cpatch%leaf_temp(recc) * rnplant                        &
+                                 + cpatch%leaf_temp(donc) * dnplant
          cpatch%leaf_fliq(recc)  = 0.0
       end if
 
@@ -1205,9 +1223,8 @@ module fuse_fiss_utils
                        ,cpatch%wood_fliq(recc))
       else 
          !----- Wood temperature cannot be found using uextcm2tl, this is a singularity. --!
-         cpatch%wood_temp(recc)  = newni                                                   &
-                                 * ( cpatch%wood_temp(recc)  * cpatch%nplant(recc)         &
-                                   + cpatch%wood_temp(donc)  * cpatch%nplant(donc))
+         cpatch%wood_temp(recc)  = cpatch%wood_temp(recc) * rnplant                        &
+                                 + cpatch%wood_temp(donc)  * dnplant
          cpatch%wood_fliq(recc)  = 0.0
       end if
       
@@ -1235,23 +1252,12 @@ module fuse_fiss_utils
       ! done in ED-1.0."                                                                   !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
-         cpatch%cb         (imon,recc) = newni                                             &
-                                       * ( cpatch%cb          (imon,recc)                  &
-                                         * cpatch%nplant           (recc)                  &
-                                         + cpatch%cb          (imon,donc)                  &
-                                         * cpatch%nplant           (donc) )
-
-         cpatch%cb_lightmax(imon,recc) = newni                                             &
-                                       * ( cpatch%cb_lightmax (imon,recc)                  &
-                                         * cpatch%nplant           (recc)                  &
-                                         + cpatch%cb_lightmax (imon,donc)                  &
-                                         * cpatch%nplant           (donc) )
-
-         cpatch%cb_moistmax(imon,recc) = newni                                             &
-                                       * ( cpatch%cb_moistmax (imon,recc)                  &
-                                         * cpatch%nplant           (recc)                  &
-                                         + cpatch%cb_moistmax (imon,donc)                  &
-                                         * cpatch%nplant           (donc) )
+         cpatch%cb         (imon,recc) = cpatch%cb          (imon,recc) * rnplant          &
+                                       + cpatch%cb          (imon,donc) * dnplant
+         cpatch%cb_lightmax(imon,recc) = cpatch%cb_lightmax (imon,recc) * rnplant          &
+                                       + cpatch%cb_lightmax (imon,donc) * dnplant
+         cpatch%cb_moistmax(imon,recc) = cpatch%cb_moistmax (imon,recc) * rnplant          &
+                                       + cpatch%cb_moistmax (imon,donc) * dnplant
       end do
       !------------------------------------------------------------------------------------!
 
@@ -1262,12 +1268,14 @@ module fuse_fiss_utils
       ! oscillations in mortality when cohorts are fused.  This is the original method     !
       ! used in ED-1.0.                                                                    !
       !------------------------------------------------------------------------------------!
-      cpatch%cbr_bar(recc) = ( cpatch%cbr_bar(recc) * cpatch%nplant(recc)                  &
-                             + cpatch%cbr_bar(donc) * cpatch%nplant(donc) ) * newni
+      cpatch%cbr_bar(recc) = cpatch%cbr_bar(recc) * rnplant + cpatch%cbr_bar(donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
 
+      !------------------------------------------------------------------------------------!
+      !    Today variables are extensive.                                                  !
+      !------------------------------------------------------------------------------------!
       cpatch%today_gpp          (recc) = cpatch%today_gpp          (recc)                  &
                                        + cpatch%today_gpp          (donc)
                                   
@@ -1357,9 +1365,8 @@ module fuse_fiss_utils
          exp_mort_donc = exp(max(lnexp_min,min(lnexp_max,cpatch%mort_rate(imty,donc))))
          exp_mort_recc = exp(max(lnexp_min,min(lnexp_max,cpatch%mort_rate(imty,recc))))
 
-         cpatch%mort_rate(imty,recc) = log( ( cpatch%nplant (recc) * exp_mort_recc         &
-                                            + cpatch%nplant (donc) * exp_mort_donc )       &
-                                            * newni )
+         cpatch%mort_rate(imty,recc) = log( rnplant * exp_mort_recc                        &
+                                          + dnplant * exp_mort_donc )
       end do
       !------------------------------------------------------------------------------------!
 
@@ -1368,46 +1375,31 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Light level.  Using the intensive way of fusing.                                !
       !------------------------------------------------------------------------------------!
-      cpatch%light_level(recc)      = ( cpatch%light_level(recc) *cpatch%nplant(recc)      &
-                                      + cpatch%light_level(donc) *cpatch%nplant(donc) )    &
-                                    * newni
-      cpatch%light_level_beam(recc) = ( cpatch%light_level_beam(recc) *cpatch%nplant(recc) &
-                                      + cpatch%light_level_beam(donc) *cpatch%nplant(donc))&
-                                    * newni
-      cpatch%light_level_diff(recc) = ( cpatch%light_level_diff(recc) *cpatch%nplant(recc) &
-                                      + cpatch%light_level_diff(donc) *cpatch%nplant(donc))&
-                                    * newni
-      
-      cpatch%par_level_beam(recc)  = ( cpatch%par_level_beam(recc) *cpatch%nplant(recc)      &
-                                      + cpatch%par_level_beam(donc) *cpatch%nplant(donc) )    &
-                                    * newni
-      cpatch%par_level_diffd(recc) = ( cpatch%par_level_diffd(recc) *cpatch%nplant(recc) &
-                                      + cpatch%par_level_diffd(donc) *cpatch%nplant(donc))&
-                                    * newni
-      cpatch%par_level_diffu(recc) = ( cpatch%par_level_diffu(recc) *cpatch%nplant(recc) &
-                                      + cpatch%par_level_diffu(donc) *cpatch%nplant(donc))&
-                                    * newni
+      cpatch%light_level     (recc) = cpatch%light_level      (recc) * rnplant             &
+                                    + cpatch%light_level      (donc) * dnplant
+      cpatch%light_level_beam(recc) = cpatch%light_level_beam (recc) * rnplant             &
+                                    + cpatch%light_level_beam (donc) * dnplant
+      cpatch%light_level_diff(recc) = cpatch%light_level_diff (recc) * rnplant             &
+                                    + cpatch%light_level_diff (donc) * dnplant
+      cpatch%par_level_beam  (recc) = cpatch%par_level_beam   (recc) * rnplant             &
+                                    + cpatch%par_level_beam   (donc) * dnplant
+      cpatch%par_level_diffd (recc) = cpatch%par_level_diffd  (recc) * rnplant             &
+                                    + cpatch%par_level_diffd  (donc) * dnplant
+      cpatch%par_level_diffu (recc) = cpatch%par_level_diffu  (recc) * rnplant             &
+                                    + cpatch%par_level_diffu  (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !    Not sure about the following variables.  From ed_state_vars, I would say that   !
-      ! they should be averaged, not added because there it's written that these are per   !
-      ! plant.  But from the fuse_2_patches subroutine here it seems they are per unit     !
-      ! area.                                                                              !
+      !    Long-trm respiration terms are in kgC/plant/yr, use nplant to fuse them.        !
       !------------------------------------------------------------------------------------!
-      cpatch%growth_respiration(recc)  = newni *                                           &
-                                ( cpatch%growth_respiration(recc)  * cpatch%nplant(recc)   &
-                                + cpatch%growth_respiration(donc)  * cpatch%nplant(donc) )
-     
-      cpatch%storage_respiration(recc) = newni *                                           &
-                                ( cpatch%storage_respiration(recc) * cpatch%nplant(recc)   &
-                                + cpatch%storage_respiration(donc) * cpatch%nplant(donc) )
-     
-      cpatch%vleaf_respiration(recc)   = newni *                                           &
-                                ( cpatch%vleaf_respiration(recc)   * cpatch%nplant(recc)   &
-                                + cpatch%vleaf_respiration(donc)   * cpatch%nplant(donc) )
+      cpatch%growth_respiration (recc) = cpatch%growth_respiration (recc) * rnplant        &
+                                       + cpatch%growth_respiration (donc) * dnplant
+      cpatch%storage_respiration(recc) = cpatch%storage_respiration(recc) * rnplant        &
+                                       + cpatch%storage_respiration(donc) * dnplant
+      cpatch%vleaf_respiration  (recc) = cpatch%vleaf_respiration  (recc) * rnplant        &
+                                       + cpatch%vleaf_respiration  (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1453,21 +1445,16 @@ module fuse_fiss_utils
       ! these variables are "intensive" (or per plant) at the cohort level, so we must     !
       ! average them.                                                                      !
       !------------------------------------------------------------------------------------!
-      cpatch%agb(recc)          = ( cpatch%agb(recc)         * cpatch%nplant(recc)         &
-                                  + cpatch%agb(donc)         * cpatch%nplant(donc) )       &
-                                * newni
-      cpatch%basarea(recc)      = ( cpatch%basarea(recc)     * cpatch%nplant(recc)         &
-                                  + cpatch%basarea(donc)     * cpatch%nplant(donc) )       &
-                                * newni
-      cpatch%dagb_dt(recc)      = ( cpatch%dagb_dt(recc)     * cpatch%nplant(recc)         &
-                                  + cpatch%dagb_dt(donc)     * cpatch%nplant(donc) )       &
-                                * newni
-      cpatch%dba_dt(recc)       = ( cpatch%dba_dt(recc)      * cpatch%nplant(recc)         &
-                                  + cpatch%dba_dt(donc)      * cpatch%nplant(donc) )       &
-                                * newni
-      cpatch%dlndbh_dt(recc)    = ( cpatch%dlndbh_dt(recc)   * cpatch%nplant(recc)         &
-                                  + cpatch%dlndbh_dt(donc)   * cpatch%nplant(donc) )       &
-                                * newni
+      cpatch%agb      (recc) = cpatch%agb      (recc) * rnplant                            &
+                             + cpatch%agb      (donc) * dnplant
+      cpatch%basarea  (recc) = cpatch%basarea  (recc) * rnplant                            &
+                             + cpatch%basarea  (donc) * dnplant
+      cpatch%dagb_dt  (recc) = cpatch%dagb_dt  (recc) * rnplant                            &
+                             + cpatch%dagb_dt  (donc) * dnplant
+      cpatch%dba_dt   (recc) = cpatch%dba_dt   (recc) * rnplant                            &
+                             + cpatch%dba_dt   (donc) * dnplant
+      cpatch%dlndbh_dt(recc) = cpatch%dlndbh_dt(recc) * rnplant                            &
+                             + cpatch%dlndbh_dt(donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1477,11 +1464,10 @@ module fuse_fiss_utils
       ! first is extensive (i.e. per unit of area), so it must be added, not scaled.  The  !
       ! second is intensive so it must be scaled.                                          !
       !------------------------------------------------------------------------------------!
-      cpatch%monthly_dndt  (recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
-      cpatch%monthly_dlnndt(recc) = ( cpatch%monthly_dlnndt(recc) * cpatch%nplant(recc)    &
-                                    + cpatch%monthly_dlnndt(donc) * cpatch%nplant(donc) )  &
-                                    * newni
-      
+      cpatch%monthly_dndt  (recc) = cpatch%monthly_dndt  (recc)                            &
+                                  + cpatch%monthly_dndt  (donc)
+      cpatch%monthly_dlnndt(recc) = cpatch%monthly_dlnndt(recc) * rnplant                  &
+                                  + cpatch%monthly_dlnndt(donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1490,8 +1476,8 @@ module fuse_fiss_utils
       !     Update the carbon fluxes. They are fluxes per unit of area, so they should be  !
       ! added, not scaled.                                                                 !
       !------------------------------------------------------------------------------------!
-      cpatch%gpp             (recc) = cpatch%gpp(recc) + cpatch%gpp(donc)
-
+      cpatch%gpp             (recc) = cpatch%gpp             (recc)                        &
+                                    + cpatch%gpp             (donc)
       cpatch%leaf_respiration(recc) = cpatch%leaf_respiration(recc)                        &
                                     + cpatch%leaf_respiration(donc)
       cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
@@ -1503,36 +1489,23 @@ module fuse_fiss_utils
       !     Potential available water and elongation factor can be consider "intensive"    !
       ! variable water.                                                                    !
       !------------------------------------------------------------------------------------!
-      cpatch%paw_avg(recc) = ( cpatch%paw_avg(recc)     * cpatch%nplant(recc)              &
-                             + cpatch%paw_avg(donc)     * cpatch%nplant(donc) )            &
-                           * newni
-      cpatch%elongf(recc)  = ( cpatch%elongf(recc)     * cpatch%nplant(recc)               &
-                             + cpatch%elongf(donc)     * cpatch%nplant(donc) )             &
-                           * newni
+      cpatch%paw_avg(recc) = cpatch%paw_avg(recc) * rnplant + cpatch%paw_avg(donc) * dnplant
+      cpatch%elongf (recc) = cpatch%elongf(recc)  * rnplant + cpatch%elongf (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !    Light-phenology characteristics (MLO I am not sure if they should be scaled by  !
-      ! nplant or LAI, it seems LAI would make more sense...)
+      ! nplant or LAI, it seems LAI would make more sense...).                             !
       !------------------------------------------------------------------------------------!
-      cpatch%turnover_amp(recc)  = ( cpatch%turnover_amp(recc) * cpatch%nplant(recc)       &
-                                   + cpatch%turnover_amp(donc) * cpatch%nplant(donc) )     &
-                                 * newni
-
-      cpatch%llspan(recc)        = ( cpatch%llspan(recc)       * cpatch%nplant(recc)       &
-                                   + cpatch%llspan(donc)       * cpatch%nplant(donc) )     &
-                                 * newni
-
-      cpatch%vm_bar(recc)        = ( cpatch%vm_bar(recc) * cpatch%nplant(recc)             &
-                                   + cpatch%vm_bar(donc) * cpatch%nplant(donc) )           &
-                                 * newni
-
-      cpatch%sla(recc)           = ( cpatch%sla(recc) * cpatch%nplant(recc)                &
-                                   + cpatch%sla(donc) * cpatch%nplant(donc) ) * newni
-    
-      cpatch%krdepth(recc)       = dbh2krdepth(cpatch%hite(recc),cpatch%dbh(recc)          &
-                                              ,cpatch%pft(recc),lsl)
+      cpatch%turnover_amp(recc) = cpatch%turnover_amp(recc) * rnplant                      &
+                                + cpatch%turnover_amp(donc) * dnplant
+      cpatch%llspan      (recc) = cpatch%llspan      (recc) * rnplant                      &
+                                + cpatch%llspan      (donc) * dnplant
+      cpatch%vm_bar      (recc) = cpatch%vm_bar      (recc) * rnplant                      &
+                                + cpatch%vm_bar      (donc) * dnplant
+      cpatch%sla         (recc) = cpatch%sla         (recc) * rnplant                      &
+                                + cpatch%sla         (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1546,79 +1519,62 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%fmean_gpp             (recc) = ( cpatch%fmean_gpp             (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_gpp             (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_npp             (recc) = ( cpatch%fmean_npp             (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_npp             (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_leaf_resp       (recc) = ( cpatch%fmean_leaf_resp       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_leaf_resp       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_root_resp       (recc) = ( cpatch%fmean_root_resp       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_root_resp       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_growth_resp     (recc) = ( cpatch%fmean_growth_resp     (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_growth_resp     (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_storage_resp    (recc) = ( cpatch%fmean_storage_resp    (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_storage_resp    (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_vleaf_resp      (recc) = ( cpatch%fmean_vleaf_resp      (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_vleaf_resp      (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_plresp          (recc) = ( cpatch%fmean_plresp          (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_plresp          (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_light_level     (recc) = ( cpatch%fmean_light_level     (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_light_level     (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_light_level_beam(recc) = ( cpatch%fmean_light_level_beam(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_light_level_beam(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_light_level_diff(recc) = ( cpatch%fmean_light_level_diff(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_light_level_diff(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-
-         cpatch%fmean_par_level_beam     (recc) = ( cpatch%fmean_par_level_beam(recc)      &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_par_level_beam  (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_par_level_diffd(recc) = ( cpatch%fmean_par_level_diffd(recc)         &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_par_level_diffd(donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%fmean_par_level_diffu(recc) = ( cpatch%fmean_par_level_diffu(recc)         &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%fmean_par_level_diffu(donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         
-
+         cpatch%fmean_gpp             (recc) = cpatch%fmean_gpp             (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_gpp             (donc)         &
+                                             * dnplant
+         cpatch%fmean_npp             (recc) = cpatch%fmean_npp             (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_npp             (donc)         &
+                                             * dnplant
+         cpatch%fmean_leaf_resp       (recc) = cpatch%fmean_leaf_resp       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_leaf_resp       (donc)         &
+                                             * dnplant
+         cpatch%fmean_root_resp       (recc) = cpatch%fmean_root_resp       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_root_resp       (donc)         &
+                                             * dnplant
+         cpatch%fmean_growth_resp     (recc) = cpatch%fmean_growth_resp     (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_growth_resp     (donc)         &
+                                             * dnplant
+         cpatch%fmean_storage_resp    (recc) = cpatch%fmean_storage_resp    (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_storage_resp    (donc)         &
+                                             * dnplant
+         cpatch%fmean_vleaf_resp      (recc) = cpatch%fmean_vleaf_resp      (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_vleaf_resp      (donc)         &
+                                             * dnplant
+         cpatch%fmean_plresp          (recc) = cpatch%fmean_plresp          (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_plresp          (donc)         &
+                                             * dnplant
+         cpatch%fmean_light_level     (recc) = cpatch%fmean_light_level     (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_light_level     (donc)         &
+                                             * dnplant
+         cpatch%fmean_light_level_beam(recc) = cpatch%fmean_light_level_beam(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_light_level_beam(donc)         &
+                                             * dnplant
+         cpatch%fmean_light_level_diff(recc) = cpatch%fmean_light_level_diff(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_light_level_diff(donc)         &
+                                             * dnplant
+         cpatch%fmean_par_level_beam  (recc) = cpatch%fmean_par_level_beam  (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_par_level_beam  (donc)         &
+                                             * dnplant
+         cpatch%fmean_par_level_diffd (recc) = cpatch%fmean_par_level_diffd (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_par_level_diffd (donc)         &
+                                             * dnplant
+         cpatch%fmean_par_level_diffu (recc) = cpatch%fmean_par_level_diffu (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_par_level_diffu (donc)         &
+                                             * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -1738,17 +1694,11 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
-            cpatch%fmean_leaf_temp (recc) = ( cpatch%fmean_leaf_temp (recc)                &
-                                            * cpatch%nplant          (recc)                &
-                                            + cpatch%fmean_leaf_temp (donc)                &
-                                            * cpatch%nplant          (donc) )              &
-                                          * newni
+            cpatch%fmean_leaf_temp (recc) = cpatch%fmean_leaf_temp (recc) * rnplant        &
+                                          + cpatch%fmean_leaf_temp (donc) * dnplant
             cpatch%fmean_leaf_fliq (recc) = 0.0
-            cpatch%fmean_leaf_vpdef(recc) = ( cpatch%fmean_leaf_vpdef(recc)                &
-                                            * cpatch%nplant          (recc)                &
-                                            + cpatch%fmean_leaf_vpdef(donc)                &
-                                            * cpatch%nplant          (donc) )              &
-                                            * newni
+            cpatch%fmean_leaf_vpdef(recc) = cpatch%fmean_leaf_vpdef(recc) * rnplant        &
+                                          + cpatch%fmean_leaf_vpdef(donc) * dnplant
             !------------------------------------------------------------------------------!
          end if
          !------ Wood. --------------------------------------------------------------------!
@@ -1760,11 +1710,8 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else                                                                              
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
-            cpatch%fmean_wood_temp(recc) = ( cpatch%fmean_wood_temp(recc)                  &
-                                           * cpatch%nplant         (recc)                  &
-                                           + cpatch%fmean_wood_temp(donc)                  &
-                                           * cpatch%nplant         (donc) )                &
-                                         * newni                 
+            cpatch%fmean_wood_temp(recc) = cpatch%fmean_wood_temp(recc) * rnplant          &
+                                         + cpatch%fmean_wood_temp(donc) * dnplant
             cpatch%fmean_wood_fliq(recc) = 0.0
             !------------------------------------------------------------------------------!
          end if
@@ -1783,112 +1730,90 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%dmean_nppleaf         (recc) = ( cpatch%dmean_nppleaf         (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppleaf         (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_nppfroot        (recc) = ( cpatch%dmean_nppfroot        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppfroot        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_nppsapwood      (recc) = ( cpatch%dmean_nppsapwood      (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppsapwood      (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_nppcroot        (recc) = ( cpatch%dmean_nppcroot        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppcroot        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_nppseeds        (recc) = ( cpatch%dmean_nppseeds        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppseeds        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_nppwood         (recc) = ( cpatch%dmean_nppwood         (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppwood         (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_nppdaily        (recc) = ( cpatch%dmean_nppdaily        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%dmean_nppdaily        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_gpp             (recc) = ( cpatch%dmean_gpp             (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_gpp             (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_npp             (recc) = ( cpatch%dmean_npp             (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_npp             (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_leaf_resp       (recc) = ( cpatch%dmean_leaf_resp       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_leaf_resp       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_root_resp       (recc) = ( cpatch%dmean_root_resp       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_root_resp       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_growth_resp     (recc) = ( cpatch%dmean_growth_resp     (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_growth_resp     (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_storage_resp    (recc) = ( cpatch%dmean_storage_resp    (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_storage_resp    (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_vleaf_resp      (recc) = ( cpatch%dmean_vleaf_resp      (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_vleaf_resp      (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_plresp          (recc) = ( cpatch%dmean_plresp          (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_plresp          (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_light_level     (recc) = ( cpatch%dmean_light_level     (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_light_level     (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_light_level_beam(recc) = ( cpatch%dmean_light_level_beam(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_light_level_beam(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_light_level_diff(recc) = ( cpatch%dmean_light_level_diff(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_light_level_diff(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_par_level_beam     (recc) = ( cpatch%dmean_par_level_beam(recc)      &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_par_level_beam  (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                               * newni
-         cpatch%dmean_par_level_diffd(recc) = ( cpatch%dmean_par_level_diffd(recc)         &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_par_level_diffd(donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%dmean_par_level_diffu(recc) = ( cpatch%dmean_par_level_diffu(recc)         &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%dmean_par_level_diffu(donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-
+         cpatch%dmean_nppleaf         (recc) = cpatch%dmean_nppleaf         (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppleaf         (donc)         &
+                                             * dnplant
+         cpatch%dmean_nppfroot        (recc) = cpatch%dmean_nppfroot        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppfroot        (donc)         &
+                                             * dnplant
+         cpatch%dmean_nppsapwood      (recc) = cpatch%dmean_nppsapwood      (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppsapwood      (donc)         &
+                                             * dnplant
+         cpatch%dmean_nppcroot        (recc) = cpatch%dmean_nppcroot        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppcroot        (donc)         &
+                                             * dnplant
+         cpatch%dmean_nppseeds        (recc) = cpatch%dmean_nppseeds        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppseeds        (donc)         &
+                                             * dnplant
+         cpatch%dmean_nppwood         (recc) = cpatch%dmean_nppwood         (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppwood         (donc)         &
+                                             * dnplant
+         cpatch%dmean_nppdaily        (recc) = cpatch%dmean_nppdaily        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppdaily        (donc)         &
+                                             * dnplant
+         cpatch%dmean_gpp             (recc) = cpatch%dmean_gpp             (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_gpp             (donc)         &
+                                             * dnplant
+         cpatch%dmean_npp             (recc) = cpatch%dmean_npp             (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_npp             (donc)         &
+                                             * dnplant
+         cpatch%dmean_leaf_resp       (recc) = cpatch%dmean_leaf_resp       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_leaf_resp       (donc)         &
+                                             * dnplant
+         cpatch%dmean_root_resp       (recc) = cpatch%dmean_root_resp       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_root_resp       (donc)         &
+                                             * dnplant
+         cpatch%dmean_growth_resp     (recc) = cpatch%dmean_growth_resp     (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_growth_resp     (donc)         &
+                                             * dnplant
+         cpatch%dmean_storage_resp    (recc) = cpatch%dmean_storage_resp    (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_storage_resp    (donc)         &
+                                             * dnplant
+         cpatch%dmean_vleaf_resp      (recc) = cpatch%dmean_vleaf_resp      (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_vleaf_resp      (donc)         &
+                                             * dnplant
+         cpatch%dmean_plresp          (recc) = cpatch%dmean_plresp          (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_plresp          (donc)         &
+                                             * dnplant
+         cpatch%dmean_light_level     (recc) = cpatch%dmean_light_level     (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_light_level     (donc)         &
+                                             * dnplant
+         cpatch%dmean_light_level_beam(recc) = cpatch%dmean_light_level_beam(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_light_level_beam(donc)         &
+                                             * dnplant
+         cpatch%dmean_light_level_diff(recc) = cpatch%dmean_light_level_diff(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_light_level_diff(donc)         &
+                                             * dnplant
+         cpatch%dmean_par_level_beam  (recc) = cpatch%dmean_par_level_beam  (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_par_level_beam  (donc)         &
+                                             * dnplant
+         cpatch%dmean_par_level_diffd (recc) = cpatch%dmean_par_level_diffd (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_par_level_diffd (donc)         &
+                                             * dnplant
+         cpatch%dmean_par_level_diffu (recc) = cpatch%dmean_par_level_diffu (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_par_level_diffu (donc)         &
+                                             * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -2008,17 +1933,11 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
-            cpatch%dmean_leaf_temp (recc) = ( cpatch%dmean_leaf_temp (recc)                &
-                                            * cpatch%nplant          (recc)                &
-                                            + cpatch%dmean_leaf_temp (donc)                &
-                                            * cpatch%nplant          (donc) )              &
-                                          * newni
+            cpatch%dmean_leaf_temp (recc) = cpatch%nplant          (recc) * rnplant        &
+                                          + cpatch%dmean_leaf_temp (donc) * dnplant
             cpatch%dmean_leaf_fliq (recc) = 0.0
-            cpatch%dmean_leaf_vpdef(recc) = ( cpatch%dmean_leaf_vpdef(recc)                &
-                                            * cpatch%nplant          (recc)                &
-                                            + cpatch%dmean_leaf_vpdef(donc)                &
-                                            * cpatch%nplant          (donc) )              &
-                                            * newni
+            cpatch%dmean_leaf_vpdef(recc) = cpatch%dmean_leaf_vpdef(recc) * rnplant        &
+                                          + cpatch%dmean_leaf_vpdef(donc) * dnplant
             !------------------------------------------------------------------------------!
          end if                                                                            
          !------ Wood. --------------------------------------------------------------------!
@@ -2030,11 +1949,8 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else                                                                              
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
-            cpatch%dmean_wood_temp(recc) = ( cpatch%dmean_wood_temp(recc)                  &
-                                           * cpatch%nplant         (recc)                  &
-                                           + cpatch%dmean_wood_temp(donc)                  &
-                                           * cpatch%nplant         (donc) )                &
-                                         * newni                 
+            cpatch%dmean_wood_temp(recc) = cpatch%dmean_wood_temp(recc) * rnplant          &
+                                         + cpatch%dmean_wood_temp(donc) * dnplant
             cpatch%dmean_wood_fliq(recc) = 0.0
             !------------------------------------------------------------------------------!
          end if
@@ -2055,60 +1971,60 @@ module fuse_fiss_utils
          !----- Intensive. ----------------------------------------------------------------!
          cpatch%mmsqu_gpp        (recc) = fuse_msqu( cpatch%mmean_gpp        (recc)        &
                                                    , cpatch%mmsqu_gpp        (recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_gpp        (donc)        &
                                                    , cpatch%mmsqu_gpp        (donc)        &
                                                    , cpatch%nplant           (donc)        &
                                                    , corr_cohort, .false.)
          cpatch%mmsqu_npp        (recc) = fuse_msqu( cpatch%mmean_npp        (recc)        &
                                                    , cpatch%mmsqu_npp        (recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_npp        (donc)        &
                                                    , cpatch%mmsqu_npp        (donc)        &
                                                    , cpatch%nplant           (donc)        &
                                                    , corr_cohort, .false.)
          cpatch%mmsqu_plresp     (recc) = fuse_msqu( cpatch%mmean_plresp     (recc)        &
                                                    , cpatch%mmsqu_plresp     (recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_plresp     (donc)        &
                                                    , cpatch%mmsqu_plresp     (donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .false.)
          !----- Extensive variables. ------------------------------------------------------!
          cpatch%mmsqu_sensible_lc(recc) = fuse_msqu( cpatch%mmean_sensible_lc(recc)        &
                                                    , cpatch%mmsqu_sensible_lc(recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_sensible_lc(donc)        &
                                                    , cpatch%mmsqu_sensible_lc(donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .true. )
          cpatch%mmsqu_vapor_lc   (recc) = fuse_msqu( cpatch%mmean_vapor_lc   (recc)        &
                                                    , cpatch%mmsqu_vapor_lc   (recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_vapor_lc   (donc)        &
                                                    , cpatch%mmsqu_vapor_lc   (donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .true. )
          cpatch%mmsqu_transp     (recc) = fuse_msqu( cpatch%mmean_transp     (recc)        &
                                                    , cpatch%mmsqu_transp     (recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_transp     (donc)        &
                                                    , cpatch%mmsqu_transp     (donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .true. )
          cpatch%mmsqu_sensible_wc(recc) = fuse_msqu( cpatch%mmean_sensible_wc(recc)        &
                                                    , cpatch%mmsqu_sensible_wc(recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_sensible_wc(donc)        &
                                                    , cpatch%mmsqu_sensible_wc(donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .true. )
          cpatch%mmsqu_vapor_wc   (recc) = fuse_msqu( cpatch%mmean_vapor_wc   (recc)        &
                                                    , cpatch%mmsqu_vapor_wc   (recc)        &
-                                                   , cpatch%nplant           (recc)        &
+                                                   , rnplant                               &
                                                    , cpatch%mmean_vapor_wc   (donc)        &
                                                    , cpatch%mmsqu_vapor_wc   (donc)        &
-                                                   , cpatch%nplant           (donc)        &
+                                                   , dnplant                               &
                                                    , corr_cohort, .true. )
          !---------------------------------------------------------------------------------!
 
@@ -2117,149 +2033,118 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%mmean_nppleaf         (recc) = ( cpatch%mmean_nppleaf         (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppleaf         (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_nppfroot        (recc) = ( cpatch%mmean_nppfroot        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppfroot        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_nppsapwood      (recc) = ( cpatch%mmean_nppsapwood      (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppsapwood      (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_nppcroot        (recc) = ( cpatch%mmean_nppcroot        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppcroot        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_nppseeds        (recc) = ( cpatch%mmean_nppseeds        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppseeds        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_nppwood         (recc) = ( cpatch%mmean_nppwood         (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppwood         (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_nppdaily        (recc) = ( cpatch%mmean_nppdaily        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_nppdaily        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_gpp             (recc) = ( cpatch%mmean_gpp             (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_gpp             (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_npp             (recc) = ( cpatch%mmean_npp             (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_npp             (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_leaf_resp       (recc) = ( cpatch%mmean_leaf_resp       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_leaf_resp       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_root_resp       (recc) = ( cpatch%mmean_root_resp       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_root_resp       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_growth_resp     (recc) = ( cpatch%mmean_growth_resp     (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_growth_resp     (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_storage_resp    (recc) = ( cpatch%mmean_storage_resp    (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_storage_resp    (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_vleaf_resp      (recc) = ( cpatch%mmean_vleaf_resp      (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_vleaf_resp      (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_plresp          (recc) = ( cpatch%mmean_plresp          (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_plresp          (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_light_level     (recc) = ( cpatch%mmean_light_level     (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_light_level     (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_light_level_beam(recc) = ( cpatch%mmean_light_level_beam(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_light_level_beam(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_light_level_diff(recc) = ( cpatch%mmean_light_level_diff(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_light_level_diff(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_bleaf           (recc) = ( cpatch%mmean_bleaf           (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_bleaf           (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_broot           (recc) = ( cpatch%mmean_broot           (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_broot           (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_bstorage        (recc) = ( cpatch%mmean_bstorage        (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_bstorage        (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_leaf_maintenance(recc) = ( cpatch%mmean_leaf_maintenance(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_leaf_maintenance(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_root_maintenance(recc) = ( cpatch%mmean_root_maintenance(recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_root_maintenance(donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_leaf_drop       (recc) = ( cpatch%mmean_leaf_drop       (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_leaf_drop       (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_cb              (recc) = ( cpatch%mmean_cb              (recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               * cpatch%mmean_cb              (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-
-         cpatch%mmean_par_level_beam     (recc) = ( cpatch%mmean_par_level_beam(recc)      &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_par_level_beam  (donc)       &
-                                               * cpatch%nplant                (donc) )     &
-                                               * newni
-         cpatch%mmean_par_level_diffd(recc) = ( cpatch%mmean_par_level_diffd(recc)         &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_par_level_diffd(donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-         cpatch%mmean_par_level_diffu(recc) = ( cpatch%mmean_par_level_diffu(recc)         &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%mmean_par_level_diffu(donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                             * newni
-
-
+         cpatch%mmean_nppleaf         (recc) = cpatch%mmean_nppleaf         (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppleaf         (donc)         &
+                                             * dnplant
+         cpatch%mmean_nppfroot        (recc) = cpatch%mmean_nppfroot        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppfroot        (donc)         &
+                                             * dnplant
+         cpatch%mmean_nppsapwood      (recc) = cpatch%mmean_nppsapwood      (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppsapwood      (donc)         &
+                                             * dnplant
+         cpatch%mmean_nppcroot        (recc) = cpatch%mmean_nppcroot        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppcroot        (donc)         &
+                                             * dnplant
+         cpatch%mmean_nppseeds        (recc) = cpatch%mmean_nppseeds        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppseeds        (donc)         &
+                                             * dnplant
+         cpatch%mmean_nppwood         (recc) = cpatch%mmean_nppwood         (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppwood         (donc)         &
+                                             * dnplant
+         cpatch%mmean_nppdaily        (recc) = cpatch%mmean_nppdaily        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppdaily        (donc)         &
+                                             * dnplant
+         cpatch%mmean_gpp             (recc) = cpatch%mmean_gpp             (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_gpp             (donc)         &
+                                             * dnplant
+         cpatch%mmean_npp             (recc) = cpatch%mmean_npp             (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_npp             (donc)         &
+                                             * dnplant
+         cpatch%mmean_leaf_resp       (recc) = cpatch%mmean_leaf_resp       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_leaf_resp       (donc)         &
+                                             * dnplant
+         cpatch%mmean_root_resp       (recc) = cpatch%mmean_root_resp       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_root_resp       (donc)         &
+                                             * dnplant
+         cpatch%mmean_growth_resp     (recc) = cpatch%mmean_growth_resp     (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_growth_resp     (donc)         &
+                                             * dnplant
+         cpatch%mmean_storage_resp    (recc) = cpatch%mmean_storage_resp    (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_storage_resp    (donc)         &
+                                             * dnplant
+         cpatch%mmean_vleaf_resp      (recc) = cpatch%mmean_vleaf_resp      (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_vleaf_resp      (donc)         &
+                                             * dnplant
+         cpatch%mmean_plresp          (recc) = cpatch%mmean_plresp          (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_plresp          (donc)         &
+                                             * dnplant
+         cpatch%mmean_light_level     (recc) = cpatch%mmean_light_level     (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_light_level     (donc)         &
+                                             * dnplant
+         cpatch%mmean_light_level_beam(recc) = cpatch%mmean_light_level_beam(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_light_level_beam(donc)         &
+                                             * dnplant
+         cpatch%mmean_light_level_diff(recc) = cpatch%mmean_light_level_diff(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_light_level_diff(donc)         &
+                                             * dnplant
+         cpatch%mmean_bleaf           (recc) = cpatch%mmean_bleaf           (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_bleaf           (donc)         &
+                                             * dnplant
+         cpatch%mmean_broot           (recc) = cpatch%mmean_broot           (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_broot           (donc)         &
+                                             * dnplant
+         cpatch%mmean_bstorage        (recc) = cpatch%mmean_bstorage        (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_bstorage        (donc)         &
+                                             * dnplant
+         cpatch%mmean_leaf_maintenance(recc) = cpatch%mmean_leaf_maintenance(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_leaf_maintenance(donc)         &
+                                             * dnplant
+         cpatch%mmean_root_maintenance(recc) = cpatch%mmean_root_maintenance(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_root_maintenance(donc)         &
+                                             * dnplant
+         cpatch%mmean_leaf_drop       (recc) = cpatch%mmean_leaf_drop       (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_leaf_drop       (donc)         &
+                                             * dnplant
+         cpatch%mmean_cb              (recc) = cpatch%mmean_cb              (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_cb              (donc)         &
+                                             * dnplant
+         cpatch%mmean_par_level_beam  (recc) = cpatch%mmean_par_level_beam  (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_par_level_beam  (donc)         &
+                                             * dnplant
+         cpatch%mmean_par_level_diffd (recc) = cpatch%mmean_par_level_diffd (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_par_level_diffd (donc)         &
+                                             * dnplant
+         cpatch%mmean_par_level_diffu (recc) = cpatch%mmean_par_level_diffu (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_par_level_diffu (donc)         &
+                                             * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -2382,17 +2267,11 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
-            cpatch%mmean_leaf_temp (recc) = ( cpatch%mmean_leaf_temp (recc)                &
-                                            * cpatch%nplant          (recc)                &
-                                            + cpatch%mmean_leaf_temp (donc)                &
-                                            * cpatch%nplant          (donc) )              &
-                                          * newni
+            cpatch%mmean_leaf_temp (recc) = cpatch%mmean_leaf_temp (recc) * rnplant        &
+                                          + cpatch%mmean_leaf_temp (donc) * dnplant
             cpatch%mmean_leaf_fliq (recc) = 0.0
-            cpatch%mmean_leaf_vpdef(recc) = ( cpatch%mmean_leaf_vpdef(recc)                &
-                                            * cpatch%nplant          (recc)                &
-                                            + cpatch%mmean_leaf_vpdef(donc)                &
-                                            * cpatch%nplant          (donc) )              &
-                                            * newni
+            cpatch%mmean_leaf_vpdef(recc) = cpatch%mmean_leaf_vpdef(recc) * rnplant        &
+                                          + cpatch%mmean_leaf_vpdef(donc) * dnplant
             !------------------------------------------------------------------------------!
          end if                                                                            
          !------ Wood. --------------------------------------------------------------------!
@@ -2404,11 +2283,8 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else                                                                              
             !----- Wood temperature can't be found using uextcm2tl (singularity). ---------!
-            cpatch%mmean_wood_temp(recc) = ( cpatch%mmean_wood_temp(recc)                  &
-                                           * cpatch%nplant         (recc)                  &
-                                           + cpatch%mmean_wood_temp(donc)                  &
-                                           * cpatch%nplant         (donc) )                &
-                                         * newni                 
+            cpatch%mmean_wood_temp(recc) = cpatch%mmean_wood_temp(recc) * rnplant          &
+                                         + cpatch%mmean_wood_temp(donc) * dnplant
             cpatch%mmean_wood_fliq(recc) = 0.0
             !------------------------------------------------------------------------------!
          end if
@@ -2444,12 +2320,8 @@ module fuse_fiss_utils
                                                  ,cpatch%mmean_mort_rate(imty,donc))))
             exp_mort_recc = exp(max(lnexp_min,min(lnexp_max                                &
                                                  ,cpatch%mmean_mort_rate(imty,recc))))
-
-            cpatch%mmean_mort_rate(imty,recc) = log( ( cpatch%nplant (recc)                &
-                                                     * exp_mort_recc                       &
-                                                     + cpatch%nplant (donc)                &
-                                                     * exp_mort_donc       )               &
-                                                     * newni )
+            cpatch%mmean_mort_rate(imty,recc) = log( exp_mort_recc * rnplant               &
+                                                   + exp_mort_donc * dnplant )
          end do
          !------------------------------------------------------------------------------------!
       end if
@@ -2469,60 +2341,60 @@ module fuse_fiss_utils
             !----- Intensive. -------------------------------------------------------------!
             cpatch%qmsqu_gpp        (t,recc) = fuse_msqu(cpatch%qmean_gpp        (t,recc)  &
                                                         ,cpatch%qmsqu_gpp        (t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_gpp        (t,donc)  &
                                                         ,cpatch%qmsqu_gpp        (t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.false.)
             cpatch%qmsqu_npp        (t,recc) = fuse_msqu(cpatch%qmean_npp        (t,recc)  &
                                                         ,cpatch%qmsqu_npp        (t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_npp        (t,donc)  &
                                                         ,cpatch%qmsqu_npp        (t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.false.)
             cpatch%qmsqu_plresp     (t,recc) = fuse_msqu(cpatch%qmean_plresp     (t,recc)  &
                                                         ,cpatch%qmsqu_plresp     (t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_plresp     (t,donc)  &
                                                         ,cpatch%qmsqu_plresp     (t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.false.)
             !----- Extensive variables. ---------------------------------------------------!
             cpatch%qmsqu_sensible_lc(t,recc) = fuse_msqu(cpatch%qmean_sensible_lc(t,recc)  &
                                                         ,cpatch%qmsqu_sensible_lc(t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_sensible_lc(t,donc)  &
                                                         ,cpatch%qmsqu_sensible_lc(t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.true. )
             cpatch%qmsqu_vapor_lc   (t,recc) = fuse_msqu(cpatch%qmean_vapor_lc   (t,recc)  &
                                                         ,cpatch%qmsqu_vapor_lc   (t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_vapor_lc   (t,donc)  &
                                                         ,cpatch%qmsqu_vapor_lc   (t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.true. )
             cpatch%qmsqu_transp     (t,recc) = fuse_msqu(cpatch%qmean_transp     (t,recc)  &
                                                         ,cpatch%qmsqu_transp     (t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_transp     (t,donc)  &
                                                         ,cpatch%qmsqu_transp     (t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.true. )
             cpatch%qmsqu_sensible_wc(t,recc) = fuse_msqu(cpatch%qmean_sensible_wc(t,recc)  &
                                                         ,cpatch%qmsqu_sensible_wc(t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_sensible_wc(t,donc)  &
                                                         ,cpatch%qmsqu_sensible_wc(t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.true. )
             cpatch%qmsqu_vapor_wc   (t,recc) = fuse_msqu(cpatch%qmean_vapor_wc   (t,recc)  &
                                                         ,cpatch%qmsqu_vapor_wc   (t,recc)  &
-                                                        ,cpatch%nplant             (recc)  &
+                                                        ,rnplant                           &
                                                         ,cpatch%qmean_vapor_wc   (t,donc)  &
                                                         ,cpatch%qmsqu_vapor_wc   (t,donc)  &
-                                                        ,cpatch%nplant             (donc)  &
+                                                        ,dnplant                           &
                                                         ,corr_cohort,.true. )
             !------------------------------------------------------------------------------!
          end do
@@ -2533,79 +2405,62 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
          !    Intensive variables, scaled by plant density.                                !
          !---------------------------------------------------------------------------------!
-         cpatch%qmean_gpp             (:,recc) = ( cpatch%qmean_gpp             (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_gpp             (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_npp             (:,recc) = ( cpatch%qmean_npp             (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_npp             (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_leaf_resp       (:,recc) = ( cpatch%qmean_leaf_resp       (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_leaf_resp       (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_root_resp       (:,recc) = ( cpatch%qmean_root_resp       (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_root_resp       (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_growth_resp     (:,recc) = ( cpatch%qmean_growth_resp     (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_growth_resp     (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_storage_resp    (:,recc) = ( cpatch%qmean_storage_resp    (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_storage_resp    (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_vleaf_resp      (:,recc) = ( cpatch%qmean_vleaf_resp      (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_vleaf_resp      (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_plresp          (:,recc) = ( cpatch%qmean_plresp          (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_plresp          (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_light_level     (:,recc) = ( cpatch%qmean_light_level     (:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_light_level     (:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_light_level_beam(:,recc) = ( cpatch%qmean_light_level_beam(:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_light_level_beam(:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                               * newni
-         cpatch%qmean_light_level_diff(:,recc) = ( cpatch%qmean_light_level_diff(:,recc)   &
-                                                 * cpatch%nplant                  (recc)   &
-                                                 + cpatch%qmean_light_level_diff(:,donc)   &
-                                                 * cpatch%nplant                  (donc) ) &
-                                                 * newni
-
-         cpatch%qmean_par_level_beam (:,recc) = ( cpatch%qmean_par_level_beam(:,recc)      &
-                                               * cpatch%nplant                (recc)       &
+         cpatch%qmean_gpp             (:,recc) = cpatch%qmean_gpp             (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_gpp             (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_npp             (:,recc) = cpatch%qmean_npp             (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_npp             (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_leaf_resp       (:,recc) = cpatch%qmean_leaf_resp       (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_leaf_resp       (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_root_resp       (:,recc) = cpatch%qmean_root_resp       (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_root_resp       (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_growth_resp     (:,recc) = cpatch%qmean_growth_resp     (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_growth_resp     (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_storage_resp    (:,recc) = cpatch%qmean_storage_resp    (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_storage_resp    (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_vleaf_resp      (:,recc) = cpatch%qmean_vleaf_resp      (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_vleaf_resp      (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_plresp          (:,recc) = cpatch%qmean_plresp          (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_plresp          (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_light_level     (:,recc) = cpatch%qmean_light_level     (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_light_level     (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_light_level_beam(:,recc) = cpatch%qmean_light_level_beam(:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_light_level_beam(:,donc)     &
+                                               * dnplant
+         cpatch%qmean_light_level_diff(:,recc) = cpatch%qmean_light_level_diff(:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_light_level_diff(:,donc)     &
+                                               * dnplant
+         cpatch%qmean_par_level_beam  (:,recc) = cpatch%qmean_par_level_beam  (:,recc)     &
+                                               * rnplant                                   &
                                                + cpatch%qmean_par_level_beam  (:,donc)     &
-                                               * cpatch%nplant                (donc) )     &
-                                               * newni
-         cpatch%qmean_par_level_diffd(:,recc) = ( cpatch%qmean_par_level_diffd(:,recc)     &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%qmean_par_level_diffd(:,donc)      &
-                                               * cpatch%nplant                (donc) )     &
-                                               * newni
-         cpatch%qmean_par_level_diffu(:,recc) = ( cpatch%qmean_par_level_diffu(:,recc)       &
-                                               * cpatch%nplant                (recc)       &
-                                               + cpatch%qmean_par_level_diffu(:,donc)        &
-                                               * cpatch%nplant                (donc) )     &
-                                               * newni
-
-
+                                               * dnplant
+         cpatch%qmean_par_level_diffd (:,recc) = cpatch%qmean_par_level_diffd (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_par_level_diffd (:,donc)     &
+                                               * dnplant
+         cpatch%qmean_par_level_diffu (:,recc) = cpatch%qmean_par_level_diffu (:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_par_level_diffu (:,donc)     &
+                                               * dnplant
          !---------------------------------------------------------------------------------!
 
 
@@ -2731,19 +2586,13 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
             else
                !----- None of the cohorts has leaf biomass use nplant to scale them. ------!
-               cpatch%qmean_leaf_temp (t,recc) = ( cpatch%qmean_leaf_temp (t,recc)         &
-                                                 * cpatch%nplant            (recc)         &
-                                                 + cpatch%qmean_leaf_temp (t,donc)         &
-                                                 * cpatch%nplant            (donc) )       &
-                                               * newni
+               cpatch%qmean_leaf_temp (t,recc) = cpatch%qmean_leaf_temp (t,recc) * rnplant &
+                                               + cpatch%qmean_leaf_temp (t,donc) * dnplant
                cpatch%qmean_leaf_fliq (t,recc) = 0.0
-               cpatch%qmean_leaf_vpdef(t,recc) = ( cpatch%qmean_leaf_vpdef(t,recc)         &
-                                                 * cpatch%nplant            (recc)         &
-                                                 + cpatch%qmean_leaf_vpdef(t,donc)         &
-                                                 * cpatch%nplant            (donc) )       &
-                                               * newni
+               cpatch%qmean_leaf_vpdef(t,recc) = cpatch%qmean_leaf_vpdef(t,recc) * rnplant &
+                                               + cpatch%qmean_leaf_vpdef(t,donc) * dnplant
                !---------------------------------------------------------------------------!
-            end if                                                                         
+            end if
             !------ Wood. -----------------------------------------------------------------!
             if ( cpatch%qmean_wood_hcap(t,recc) > 0. ) then
                !----- Update temperature and liquid fraction. -----------------------------!
@@ -2755,11 +2604,8 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
             else
                !----- None of the cohorts has leaf biomass use nplant to scale them. ------!
-               cpatch%qmean_wood_temp (t,recc) = ( cpatch%qmean_wood_temp (t,recc)         &
-                                                 * cpatch%nplant            (recc)         &
-                                                 + cpatch%qmean_wood_temp (t,donc)         &
-                                                 * cpatch%nplant            (donc) )       &
-                                               * newni
+               cpatch%qmean_wood_temp (t,recc) = cpatch%qmean_wood_temp (t,recc) * rnplant &
+                                               + cpatch%qmean_wood_temp (t,donc) * dnplant
                cpatch%qmean_wood_fliq (t,recc) = 0.0
                !---------------------------------------------------------------------------!
             end if
