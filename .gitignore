@@ -149,3 +149,4 @@ notthesame.txt
 ED/build/bin/configure
 ED/build/rad_param.data
 ED/slurmdbg
+R-utils/read.q.temporary.r
