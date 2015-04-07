@@ -534,19 +534,16 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! Update surface water U values [J/m²/s] from sensible heat, longwave, and shortwave    !
+   ! Update surface water U values [J/m²/s] from sensible heat and shortwave               !
    ! fluxes.  This excludes effects of dew/frost, latent heat flux, precipitation,         !
-   ! shedding and percolation (and any mass fluxes).                                       !
+   ! shedding and percolation (and any mass fluxes). Right now, thermal radiation only     !
+   ! affects the top layer.                                                                !
    !---------------------------------------------------------------------------------------!
-   if(ksn>0) then
-      tot_sfcwater_depth = sum(initp%sfcwater_depth(1:ksn))
-      do k = 1,ksn
+   do k = 1,ksn
          dinitp%sfcwater_energy(k) =                                                       &
                rk4aux(ibuff)%h_flux_s(k) - rk4aux(ibuff)%h_flux_s(k+1)                     &
-               + dble(csite%rshort_s(k,ipa))                                               &
-               + dble(csite%rlong_s(ipa))*(initp%sfcwater_depth(k)/tot_sfcwater_depth)
-      end do
-   end if
+               + dble(csite%rshort_s(k,ipa))
+   end do
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -555,8 +552,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    if ( ksn > 0 ) then
       dinitp%sfcwater_mass  (ksn) =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
-      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn)                            &
-                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc      
+      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn) + dble(csite%rlong_s(ipa)) &
+                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc
       dinitp%sfcwater_depth (ksn) = ddewgnd + dwshed_tot + dthroughfall_tot
    else
       dinitp%virtual_water        =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
