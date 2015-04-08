@@ -525,3 +525,12 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
 
 }
 
+/* This is for the omp thread/processor pinning check. */
+#include <utmpx.h>
+int sched_getcpu();
+int findmycpu_ ()
+{
+    int cpu;
+    cpu = sched_getcpu();
+    return cpu;
+}
