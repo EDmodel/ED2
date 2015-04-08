@@ -426,7 +426,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       initp%soil_water   (kben) = soil8(nsoil)%slmsts
       initp%soil_mstpot  (kben) = soil8(nsoil)%slpots
       initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = ( soil8(nsoil)%thcond0                                   &
+      rk4aux(ibuff)%th_cond_s   (kben) = ( soil8(nsoil)%thcond0                            &
                                   + soil8(nsoil)%thcond1 * initp%soil_water(kben) )        &
                                 / ( soil8(nsoil)%thcond2                                   &
                                   + soil8(nsoil)%thcond3 * initp%soil_water(kben) )
@@ -503,7 +503,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
 
       ! This is just sensible heat flux loss from top surface layer
       ! The layer's energy budget (shown below) will include the other terms
-      rk4aux(ibuff)%h_flux_s        (ksn+1) = rk4aux(ibuff)%h_flux_s(ksn+1) - hflxsc
+      ! Convention is positive up
+      rk4aux(ibuff)%h_flux_s        (ksn+1) = rk4aux(ibuff)%h_flux_s(ksn+1) + hflxsc
 
    end if
    !---------------------------------------------------------------------------------------!
