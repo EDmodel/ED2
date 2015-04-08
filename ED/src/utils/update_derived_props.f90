@@ -1242,6 +1242,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
       cpatch%today_gpp_pot      (ico) = cpatch%today_gpp_pot      (ico) * mult
       cpatch%today_gpp_lightmax (ico) = cpatch%today_gpp_lightmax (ico) * mult
       cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico) * mult
+      cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax    (ico) * mult
       cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico) * mult
       cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico) * mult
       cpatch%gpp                (ico) = cpatch%gpp                (ico) * mult

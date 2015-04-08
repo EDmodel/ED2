@@ -87,27 +87,13 @@ USE_MPIWTIME=1
 CMACH=PC_GFORTRAN
 F_COMP=mpif90
 F_OPTS=-g -ffree-line-length-none -fno-whole-file -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
-C_COMP=mpicc -fopenmp
-C_OPTS=-g -O2 #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
+C_COMP=mpicc 
+C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
 LOADER=mpif90
 LOADER_OPTS=${F_OPTS}
 C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod
-
-
-#----------------- gfortran on Linux (debugging build)-----------
-#CMACH=PC_GFORTRAN
-#F_COMP=mpif90
-#F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-0
-#C_COMP=mpicc
-#C_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-0
-#LOADER=mpif90
-#LOADER_OPTS=${F_OPTS}
-#C_LOADER=mpicc
-#LIBS=
-#MOD_EXT=mod
-
 
 # Ancillary Compiler options
 #USE_INTERF=1
