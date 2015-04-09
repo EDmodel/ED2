@@ -1,6 +1,8 @@
 More information about ED can be found in the paper written by
 [moorecroft et al.](http://flux.aos.wisc.edu/~adesai/documents/macrosys_papers-ankur/modeling/Moorcroft-EcolMono-EDmodel.pdf)
 
+r956 is considered "somewhat stable", see report: https://github.com/EDmodel/ED2Documents/blob/master/EDTS/r956vr922rapid.pdf
+
 This document describes the contents of the folders containing the 
 ED code. You should have a directory called ED with the following 
 structure: 
