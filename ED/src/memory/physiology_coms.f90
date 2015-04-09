@@ -106,8 +106,20 @@ module physiology_coms
    !                    1 -- Carbon balance is offset by the storage pool.  Plants will be !
    !                         in negative carbon balance only when they run out of storage  !
    !                         and are still losing more carbon than gaining.                !
+   !  CBR_SCHEME     -- This flag determines which carbon stress scheme is used:           !
+   !                    0 -- Single stress. CBR = cb/cb_mlmax                              !
+   !                         cb_mlmax is the carbon balance in full sun and no moisture    !
+   !                         limitation                                                    !
+   !                    1 -- Co-limitation from light and moisture                         !
+   !                         CBR_LIGHT = cb/cb_lightmax and CBR_MOIST = cb/cb_moistmax     !
+   !                         CBR_LIGHT and CBR_MOIST are then weighted according to        !
+   !                         DDMORT_CONST (below)                                          !
+   !                    2 -- Leibig Style, i.e. limitation from either light or moisture   !
+   !                         depending on which is lower at a given point in time          !
+   !                         CBR = cb/max(cb_lightmax, cb_moistmax)                        !
    !                                                                                       !
-   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !  DDMORT_CONST   -- CBR_Scheme = 1 only                                                !
+   !                    This constant (k) determines the relative contribution of light    !
    !                    and soil moisture to the density-dependent mortality rate.  Values !
    !                    range from 0 (soil moisture only) to 1 (light only).               !
    !                                                                                       !
@@ -121,6 +133,7 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
    integer              :: iddmort_scheme
    real                 :: ddmort_const
+   integer              :: cbr_scheme
    !---------------------------------------------------------------------------------------!
 
 
