@@ -176,6 +176,7 @@ default = list( run           = "unnamed"
               , h2o.limit     = 2
               , imort.scheme  = 1
               , ddmort.const  = 0.8
+              , cbr.scheme    = 0
               , isfclyrm      = 3
               , icanturb      = 2
               , ubmin         = 0.65

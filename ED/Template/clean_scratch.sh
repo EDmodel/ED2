@@ -1,10 +1,10 @@
 #!/bin/sh
-myself=`whoami`
+myself=$(whoami)
 
 #----- Check which queue we will clean. ---------------------------------------------------#
-if [ 'x'${1} == 'x' ]
+if [ "x${1}" == "x" ]
 then
-   echo -n 'Which queue do you want to clean?'
+   echo -n "Which queue do you want to clean?"
    read queue
 else
    queue=${1}
@@ -67,7 +67,7 @@ long_serial)
           soph51 soph52 soph53 soph54 soph55 soph56"
    ;;
 *)
-   echo ' I cannot recognise queue '${queue}'...'
+   echo " I cannot recognise queue ${queue}..."
    exit 39
    ;;
 esac
@@ -80,9 +80,9 @@ esac
 #------------------------------------------------------------------------------------------#
 for node in ${nodes}
 do
-   echo -n ' Scheduling files for deletion - node '${node}'...'
+   echo -n " Scheduling files for deletion - node ${node}..."
    ssh ${node} /bin/mv /scratch/${myself} /scratch/goodbye-${myself} 1> /dev/null 2>&1
    ssh ${node} rm -fr /scratch/goodbye-${myself}                     1> /dev/null 2>&1 &
-   echo 'Done!'
+   echo "Done!"
 done
 #------------------------------------------------------------------------------------------#

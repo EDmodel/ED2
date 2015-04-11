@@ -2394,6 +2394,8 @@ module average_utils
                                                   * dtlsm_o_daysec
                   cpatch%today_gpp_moistmax (ico) = cpatch%today_gpp_moistmax (ico)        &
                                                   * dtlsm_o_daysec
+                  cpatch%today_gpp_mlmax    (ico) = cpatch%today_gpp_mlmax (ico)           &
+                                                  * dtlsm_o_daysec
                   cpatch%today_leaf_resp    (ico) = cpatch%today_leaf_resp    (ico)        &
                                                   * dtlsm_o_daysec
                   cpatch%today_root_resp    (ico) = cpatch%today_root_resp    (ico)        &
@@ -3032,6 +3034,7 @@ module average_utils
                   cpatch%today_gpp_pot      (ico) = 0.0
                   cpatch%today_gpp_lightmax (ico) = 0.0
                   cpatch%today_gpp_moistmax (ico) = 0.0
+                  cpatch%today_gpp_mlmax (ico) = 0.0
                   cpatch%today_leaf_resp    (ico) = 0.0
                   cpatch%today_root_resp    (ico) = 0.0
                end do

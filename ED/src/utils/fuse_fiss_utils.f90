@@ -1258,6 +1258,8 @@ module fuse_fiss_utils
                                        + cpatch%cb_lightmax (imon,donc) * dnplant
          cpatch%cb_moistmax(imon,recc) = cpatch%cb_moistmax (imon,recc) * rnplant          &
                                        + cpatch%cb_moistmax (imon,donc) * dnplant
+         cpatch%cb_mlmax   (imon,recc) = cpatch%cb_mlmax    (imon,recc) * rnplant          &
+                                       + cpatch%cb_mlmax    (imon,donc) * dnplant
       end do
       !------------------------------------------------------------------------------------!
 
@@ -1308,6 +1310,9 @@ module fuse_fiss_utils
 
       cpatch%today_gpp_moistmax (recc) = cpatch%today_gpp_moistmax (recc)                  &
                                        + cpatch%today_gpp_moistmax (donc)
+
+      cpatch%today_gpp_mlmax    (recc) = cpatch%today_gpp_mlmax    (recc)                  &
+                                       + cpatch%today_gpp_mlmax    (donc)
 
       cpatch%today_leaf_resp    (recc) = cpatch%today_leaf_resp    (recc)                  &
                                        + cpatch%today_leaf_resp    (donc)

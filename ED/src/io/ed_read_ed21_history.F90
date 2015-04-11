@@ -665,9 +665,11 @@ subroutine read_ed21_history_file
                            cpatch%cb          (1:12,ico) = 1.0
                            cpatch%cb_lightmax (1:12,ico) = 1.0
                            cpatch%cb_moistmax (1:12,ico) = 1.0
+                           cpatch%cb_mlmax    (1:12,ico) = 1.0
                            cpatch%cb          (  13,ico) = 0.0
                            cpatch%cb_lightmax (  13,ico) = 0.0
                            cpatch%cb_moistmax (  13,ico) = 0.0
+                           cpatch%cb_mlmax    (  13,ico) = 0.0
                         end do
                         !------------------------------------------------------------------!
 
@@ -1881,9 +1883,11 @@ subroutine read_ed21_history_unstruct
                            cpatch%cb          (1:12,ico) = 1.0
                            cpatch%cb_lightmax (1:12,ico) = 1.0
                            cpatch%cb_moistmax (1:12,ico) = 1.0
+                           cpatch%cb_mlmax    (1:12,ico) = 1.0
                            cpatch%cb          (  13,ico) = 0.0
                            cpatch%cb_lightmax (  13,ico) = 0.0
                            cpatch%cb_moistmax (  13,ico) = 0.0
+                           cpatch%cb_mlmax    (  13,ico) = 0.0
                         end do
                         !------------------------------------------------------------------!
 
@@ -3081,9 +3085,11 @@ subroutine read_ed21_polyclone
                            cpatch%cb          (1:12,ico) = 1.0
                            cpatch%cb_lightmax (1:12,ico) = 1.0
                            cpatch%cb_moistmax (1:12,ico) = 1.0
+                           cpatch%cb_mlmax    (1:12,ico) = 1.0
                            cpatch%cb          (  13,ico) = 0.0
                            cpatch%cb_lightmax (  13,ico) = 0.0
                            cpatch%cb_moistmax (  13,ico) = 0.0
+                           cpatch%cb_mlmax    (  13,ico) = 0.0
                         end do
                         !------------------------------------------------------------------!
 

@@ -242,7 +242,7 @@ module canopy_struct_dynamics
       real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real           :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       real           :: c3_cumldrag  ! c3 * cumulative drag.                    [      ---]
-      real           :: snowfac_can  ! percent vertical canopy covered in snow
+      real           :: snowfac_can  ! fraction of canopy covered in snow
       integer        :: ibuff
       !----- External functions. ----------------------------------------------------------!
       real(kind=4), external :: cbrt ! Cubic root that works for negative numbers
@@ -292,12 +292,18 @@ module canopy_struct_dynamics
 
       !------------------------------------------------------------------------------------!
       !     Find the fraction of the canopy covered in snow (original snowfac function)    !
-      !     I think canopy roughness may need to be re-thought, but this was necessary     !
+      ! I think canopy roughness may need to be re-thought, but this was necessary         !
       ! for turbulence & CO2 mixing to not occasionally fail sanity checks in young patches!
+      ! (CR)
+      ! Calculation of surface roughness should use the planar snow fraction, as this      !
+      ! should be entailing an area weighted average.  If there is instability, I argue we !
+      ! should address how the horizontal planar fraction is calculated, not use the       !
+      ! vertical as a surrogate. (RGK) I Will leave as is for now. But this needs to be    !
+      ! fixed.                                                                             !
       !------------------------------------------------------------------------------------!
-      snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+       snowfac_can     = min(9.9d-1,csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+      !snowfac_can       = csite%snowfac(ipa)
       !------------------------------------------------------------------------------------!
-
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
