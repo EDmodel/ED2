@@ -10,6 +10,7 @@ program main
   !   destroy processes
   !
 
+  !$ use omp_lib
   implicit none
 
   ! command line arguments
@@ -60,6 +61,15 @@ program main
   character(len=*), parameter :: h="**(main)**"
   character(len=8) :: c0, c1
 
+  ! OMP information
+  integer :: max_threads      !<= omp_get_max_threads()
+  integer :: num_procs        !<= omp_get_num_procs()
+  integer :: thread
+  integer :: cpu
+  integer, dimension(64) :: thread_use
+  integer, dimension(64) :: cpu_use
+  integer, external      :: findmycpu
+
   ! For MPI interface 
   integer :: ierr
   include 'mpif.h'
@@ -107,10 +117,46 @@ program main
      machnum=0
      machsize=1
   end if
-  write (*,'(a)')       '+--- Parallel info: -------------------------------------+'
+
+
+  !----------------------------------------------------------------------------------------!
+  ! Check OMP thread and processor use and availability.                                   !
+  !                                                                                        !
+  ! Note: One could use omp_get_num_threads() in loop, but that would depend on how many   !
+  ! threads were open at the time of its call.                                             !
+  !----------------------------------------------------------------------------------------!
+  max_threads   = 1
+  num_procs     = 1
+  thread        = 1
+  cpu           = 1
+  thread_use(:) = 0
+  cpu_use(:)    = 0
+
+  !$ max_threads = omp_get_max_threads()
+  !$ num_procs   = omp_get_num_procs()
+
+  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(thread,cpu)
+  do n = 1,max_threads
+    !$ thread = omp_get_thread_num() + 1
+    !$ cpu    = findmycpu() + 1
+
+    thread_use(thread) = 1
+    cpu_use(cpu)       = 1
+  end do
+  !$OMP END PARALLEL DO
+  !----------------------------------------------------------------------------------------!
+
+  write (*,'(a)')       '+---------------- MPI parallel info: --------------------+'
   write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
   write (*,'(a,1x,i6)') '+  - Machsize =',machsize
+  write (*,'(a)')       '+---------------- OMP parallel info: --------------------+'
+  write (*,'(a,1x,i6)') '+  - thread  use: ', sum(thread_use)
+  write (*,'(a,1x,i6)') '+  - threads max: ', max_threads
+  write (*,'(a,1x,i6)') '+  - cpu     use: ', sum(cpu_use)
+  write (*,'(a,1x,i6)') '+  - cpus    max: ', num_procs
+  write (*,'(a)')       '+  Note: Max vals are for node, not sockets.'
   write (*,'(a)')       '+--------------------------------------------------------+'
+
   ! if MPI run, define master or slave process
   ! if sequential run, keep default (sigle process does full model)
 
