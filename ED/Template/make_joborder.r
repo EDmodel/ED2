@@ -36,7 +36,7 @@ if (! defjob && is.null(lonlat)){
                   , iage      = c(1,25)
                   , isizepft  = c(2 ,5)
                   , ivegtdyn  = 0
-                  , queue     = "moorcroft_6100b"
+                  , queue     = "moorcroft_6100"
                   )#end list
    varlabel = list( iata      = varrun$iata
                   , iscenario = c("wmo")
@@ -44,7 +44,7 @@ if (! defjob && is.null(lonlat)){
                   , iage      = paste("iage" , sprintf( "%2.2i",varrun$iage     ), sep="" )
                   , isizepft  = paste("pft"  , sprintf( "%2.2i",varrun$isizepft ), sep="" )
                   , ivegtdyn  = 0
-                  , queue     = "moorcroft_6100b"
+                  , queue     = "moorcroft_6100"
                   )#end list
 }else if(! defjob){
    #----- Regional run.  Read in the list of polygons, and complete the settings. ---------#
@@ -145,7 +145,7 @@ default = list( run           = "unnamed"
               , sldrain       = 90.
               , scolour       = 16
               , slzres        = 0
-              , queue         = "moorcroft2c"
+              , queue         = "general"
               , met.driver    = "tower"
               , dtlsm         = 600.
               , vmfact.c3     = 1.00

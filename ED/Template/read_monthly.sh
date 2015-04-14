@@ -1,10 +1,13 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here="xxxxxxxxxxxxxxxxxxxxx"                  # ! Main path
-myself=$(whoami)                               # ! You
-diskthere=""                                  # ! Disk where the output files are
-thisqueue="qqqqqqqqqq"                        # ! Queue where jobs should be submitted
-lonlat="${here}/joborder.txt"                 # ! File with the job instructions
+here="xxxxxxxxxxxxxxxxxxxxx"          # ! Main path
+myself=$(whoami)                      # ! You
+diskthere=""                          # ! Disk where the output files are
+thisqueue="qqqqqqqqqq"                # ! Queue where jobs should be submitted
+runtime="7-00:00:00"                  # ! Run time request
+memory=2048                           # ! Requested memory (Mb)
+sbatch=$(which sbatch)                # ! SLURM command to submit job.
+lonlat="${here}/joborder.txt"         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot="xxxxxxxxxxxxxxxxxxxx"
 submit="y"       # y = Submit the script; n = Copy the script
@@ -695,11 +698,10 @@ do
          #---------------------------------------------------------------------------------#
          if [ "x${submit}" == "xy" ] || [ "x${submit}" == "xY" ]
          then
-            #------ Check whether to use openlava or LSF. ---------------------------------#
-            bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${here}/${polyname}/${epostlsf}"
-            bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
-            #------------------------------------------------------------------------------#
-            ${bsub}
+            sbatchout="${here}/${polyname}/${epostlsf}"
+            epostnow="${here}/${polyname}/${epostsh}"
+            sbatch -p ${thisqueue} --mem-per-cpu=${memory} -t ${runtime} -J ${epostjob}    \
+                -o ${sbatchout} -n 1 --wrap="${epostnow}"
          fi
          #---------------------------------------------------------------------------------#
       fi

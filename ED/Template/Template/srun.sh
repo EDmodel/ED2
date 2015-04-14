@@ -1,14 +1,15 @@
 #!/bin/bash
 #--------------------------------- Change settings here -----------------------------------#
-here='pathhere/thispoly'                            # Folder to start the run
-queue='thisqueue'                                   # Queue name
-options=''                                          # Options, or leave it blank...
-bsub='/lsf/7.0/linux2.6-glibc2.3-x86_64/bin/bsub'   # bsub, command to submit the job
-joblog="${here}/serial_lsf.out"                     # Name of the job output
-jobname='thisdesc-thispoly'                         # Job name
-callserial="${here}/callserial.sh"                  # Name of executable
-initrc='myinitrc'                                   # Script to load before doing anything
-thisnum=myorder
+here="pathhere/thispoly"                  # Folder to start the run
+queue="thisqueue"                         # Queue name
+joblog="${here}/serial_lsf.out"           # Name of the job output
+jobname="thisdesc-thispoly"               # Job name
+callserial="${here}/callserial.sh"        # Name of executable
+initrc="myinitrc"                         # Script to load before doing anything
+thisnum=myorder                           # No longer used
+sbatch=$(which sbatch)                    # SLURM command to submit job.
+memory=thismemory                         # Requested memory (per CPU)
+runtime=thistime                          # Requested time
 #------------------------------------------------------------------------------------------#
 
 
@@ -27,10 +28,6 @@ fi
 
 
 #----- Submit the job, we use a shell script so we can track the run on the fly -----------#
-if [ 'x'${options} == 'x' ]
-then
-   ${bsub} -q ${queue} -o ${joblog} -J ${jobname} -n 1 ${callserial} zzzzzzzz
-else
-   ${bsub} -q ${queue} -R ${options} -o ${joblog} -J ${jobname} -n 1 ${callserial} zzzzzzzz
-fi
+${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog} -J ${jobname}     \
+          -n 1 --wrap="${callserial} zzzzzzzz"
 #------------------------------------------------------------------------------------------#

@@ -11,6 +11,7 @@ echo ${ncol}
 here=$(pwd)
 lonlat="${here}/joborder.txt"
 desc=$(basename ${here})
+moi=$(whoami)
 
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
@@ -25,6 +26,25 @@ while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
+
+   #---------------------------------------------------------------------------------------#
+   #    Format count.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   else
+      ffout=${ff}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
 
    #----- Make two columns. ---------------------------------------------------------------#
    let col=${ff}%${ncol}
@@ -160,7 +180,7 @@ do
    if [ -s ${stdout} ]
    then
       #----- Check whether the simulation is running, and when in model time it is. -------#
-      running=$(bjobs -J ${jobname} 2> /dev/null | grep RUN | wc -l)
+      running=$(squeue -h -u ${moi} -n ${jobname} -t RUNNING | wc -l)
       simline=$(grep "Simulating: "   ${stdout} | tail -1)
       runtime=$(echo ${simline} | awk '{print $3}')
       #------------------------------------------------------------------------------------#
@@ -189,9 +209,9 @@ do
 
 
       #----- Check for other possible outcomes. -------------------------------------------#
-      stopped=`grep "FATAL ERROR"           ${stdout} | wc -l`
-      crashed=`grep "IFLAG1 problem."       ${stdout} | wc -l`
-      the_end=`grep "ED-2.2 execution ends" ${stdout} | wc -l`
+      stopped=$(grep "FATAL ERROR"           ${stdout} | wc -l)
+      crashed=$(grep "IFLAG1 problem."       ${stdout} | wc -l)
+      the_end=$(grep "ED-2.2 execution ends" ${stdout} | wc -l)
       #------------------------------------------------------------------------------------#
 
 
@@ -201,27 +221,30 @@ do
       #------------------------------------------------------------------------------------#
       if [ ${running} -gt 0 ] || [ -s ${skipper} ] && [ ${sigsegv} -eq 0 ]
       then
-         echo -e ${opt} "${off} :-) ${polyname} is running (${runtime})..."
+         echo -e ${opt} "${off} ${ffout}: ${polyname} is running (${runtime})..."
       elif [ ${sigsegv} -gt 0 ]
       then
-         echo -e ${opt} "${off}>:-# ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+         echo -e ${opt} "${off} ${ffout}: ${polyname} HAD SEGMENTATION VIOLATION... <==========="
       elif [ ${crashed} -gt 0 ]
       then 
-         echo -e ${opt} "${off} :-( ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
+         echo -e ${opt} "${off} ${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
       elif [ ${metmiss} -gt 0 ]
       then 
-         echo -e ${opt} "${off} :-/ ${polyname} DID NOT FIND MET DRIVERS... <==========="
+         echo -e ${opt} "${off} ${ffout}: ${polyname} DID NOT FIND MET DRIVERS... <==========="
       elif [ ${stopped} -gt 0 ]
       then
-         echo -e ${opt} "${off} :-S ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+         echo -e ${opt} "${off} ${ffout}: ${polyname} STOPPED (UNKNOWN REASON)... <==========="
       elif [ ${the_end} -gt 0 ]
       then
-         echo -e ${opt} "${off}o/\o ${polyname} has finished..."
+         echo -e ${opt} "${off} ${ffout}: ${polyname} has finished o/\o..."
       else
-         echo -e ${opt} "${off}<:-| ${polyname} status is unknown..."
+         echo -e ${opt} "${off} ${ffout}: ${polyname} status is unknown..."
       fi
+      #------------------------------------------------------------------------------------#
    else
-      echo -e ${opt} "${off} :-| ${polyname} is pending ..."
+      echo -e ${opt} "${off} ${ffout}: ${polyname} is pending ..."
    fi
+   #---------------------------------------------------------------------------------------#
 done
+#------------------------------------------------------------------------------------------#
 

@@ -9,10 +9,10 @@
 # VERSION -- This is the unique identifier tag for this test environment.  It should       #
 #            indicate the revision number branched from, the users initials and a test     #
 #            number.  For git versions, use the first 7 characters instance if you         #
-#            branched from 3e31dd3, your initials are mlo, your local branch is b13aac2    #
+#            branched from 3e31dd3, your initials are xyz, your local branch is b13aac2    #
 #            and this is your 1st attempt to run the test suite, you may use:              #
 #------------------------------------------------------------------------------------------#
-VERSION="3e31dd3_mlo_b13aac2_v1"
+VERSION="3e31dd3_xyz_b13aac2_v1"
 #------------------------------------------------------------------------------------------#
 
 
@@ -52,7 +52,7 @@ TESTTYPE="rapid"
 #------------------------------------------------------------------------------------------#
 #  DATAPATH -- Location with all data sets.                                                #
 #------------------------------------------------------------------------------------------#
-DATAPATH="/n/gstore/Labs/moorcroft_lab_protected/ed_mainline/test_suit/datasets"
+DATAPATH="/n/gstore/Labs/moorcroft_lab_protected/ed_mainline/test_suite/datasets"
 #------------------------------------------------------------------------------------------#
 
 
@@ -110,9 +110,9 @@ PPN=12
 #------------------------------------------------------------------------------------------#
 #     The following variables are the time required by each simulation, hh:mm:ss.          #
 #------------------------------------------------------------------------------------------#
-POI_FAST_TIME="60:00:00"
+POI_FAST_TIME="168:00:00"
 POI_LONG_TIME="168:00:00"
-GRID_FAST_TIME="96:00:00"
+GRID_FAST_TIME="168:00:00"
 GRID_LONG_TIME="312:00:00"
 #------------------------------------------------------------------------------------------#
 
@@ -140,7 +140,7 @@ TEST_DESCRIPTION="1. Changed minimum height for reproduction based on BCI measur
 #                          We know that may had indicated which version you branched from, #
 #                          but indicate it here too.                                       #
 #------------------------------------------------------------------------------------------#
-VERSION_BRANCHED_FROM='3e31dd3'
+VERSION_BRANCHED_FROM="3e31dd3"
 #------------------------------------------------------------------------------------------#
 
 
@@ -150,8 +150,8 @@ VERSION_BRANCHED_FROM='3e31dd3'
 # COMMITTER_NAME -- Who were the developers that actually made the changes to the code     #
 #                   that is being tested?                                                  #
 #------------------------------------------------------------------------------------------#
-TESTER_NAME='Marcos Longo'
-COMMITTER_NAME='Marcos Longo'
+TESTER_NAME="John Harvard"
+COMMITTER_NAME="Drew Faust"
 #------------------------------------------------------------------------------------------#
 
 
@@ -161,7 +161,7 @@ COMMITTER_NAME='Marcos Longo'
 #                   y or Y -- Generate script then run the script.                         #
 #                   n or N -- Generate script but don't submit the jobs.                   #
 #------------------------------------------------------------------------------------------#
-SUBMIT_JOBS='n'
+SUBMIT_JOBS="n"
 #------------------------------------------------------------------------------------------#
 
 
@@ -664,7 +664,7 @@ do
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/${SITEID[i]}_main.out
       joberr=${HERE}/${VERSION}/${SITEID[i]}_main.out
-      jobname=${VERSION}/${SITEID[i]}_main
+      jobname=${VERSION}_${SITEID[i]}_main
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${SITEQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_MAIN_EXE} -f ${FILEMAIN})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
