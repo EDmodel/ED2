@@ -13,15 +13,16 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 program main
+   !$ use omp_lib
    implicit none
 
    !---------------------------------------------------------------------------------------!
    !      Local constants.                                                                 !
    !---------------------------------------------------------------------------------------!
    !----- Maximum number of input arguments, including MPI own arguments. -----------------!
-   integer, parameter :: max_input_args       = 63
+   integer, parameter                    :: max_input_args       = 63
    !----- Maximum length of each input argument. ------------------------------------------!
-   integer, parameter :: max_input_arg_length = 256
+   integer, parameter                    :: max_input_arg_length = 256
    !----- Local variables. ----------------------------------------------------------------!
    integer                               :: numarg                  ! actual # input args
    character(len=max_input_arg_length)   :: cargs(0:max_input_args) ! args 
@@ -32,13 +33,23 @@ program main
    integer                               :: ipara
    integer                               :: icall
    integer                               :: nslaves
+   integer                               :: isingle
    integer                               :: n
    integer                               :: ierr
    !------ Intrinsic function to return number of arguments (numarg). ---------------------!
    integer                               :: iargc
    !------ MPI interface. -----------------------------------------------------------------!
 #if defined(RAMS_MPI)
-  include 'mpif.h'
+   !----- OMP information. ----------------------------------------------------------------!
+   integer                               :: max_threads      !<= omp_get_max_threads()
+   integer                               :: num_procs        !<= omp_get_num_procs()
+   integer                               :: thread
+   integer                               :: cpu
+   integer, dimension(64)                :: thread_use
+   integer, dimension(64)                :: cpu_use
+   integer, external                     :: findmycpu
+   !---------------------------------------------------------------------------------------!
+   include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!
 
@@ -65,6 +76,21 @@ program main
       !    1 iff slave on MPI run
       !------------------------------------------------------------------------------------!
       icall    = 0
+
+      !------------------------------------------------------------------------------------!
+      ! ISINGLE: force non mpi run                                                         !
+      !    0 iff normal run with potential MPI                                             !
+      !    1 iff no MPI init is called                                                     !
+      !                                                                                    !
+      ! MLO: Not sure if this will bring conflicts.  I implemented the non-MPI option as   !
+      !      a preprocessor feature, and this skips the MPI commands everywhere in the     !
+      !      code.  I tried to reconcile this to the best of my knowledge, it would be     !
+      !      good if someone who knows MPI better than me could check.                     !
+      !------------------------------------------------------------------------------------!
+      isingle  = 0
+      !------------------------------------------------------------------------------------!
+
+
       !------------------------------------------------------------------------------------!
       ! Summary of execution strategy and process function:                                !
       !           ipara=0        ipara=1                                                   !
@@ -105,20 +131,93 @@ program main
 
 
 
-
+#if defined(RAMS_MPI)
    !---------------------------------------------------------------------------------------!
    !      Find out if sequential or MPI run; if MPI run, enroll this process.  If          !
    ! sequential execution, machnum and machsize return untouched (both zero); if MPI       !
    ! execution, machnum returns process rank and machsize process size.                    !
    !---------------------------------------------------------------------------------------!
-#if defined(RAMS_MPI)
-   call MPI_Init(ierr)
-   call MPI_Comm_rank(MPI_COMM_WORLD,machnum,ierr)
-   call MPI_Comm_size(MPI_COMM_WORLD,machsize,ierr)
-   write (unit=*,fmt='(a)')       '+--- Parallel info: ----------------------------------+'
-   write (unit=*,fmt='(a,1x,i6)') '+  - Machnum  =',machnum
-   write (unit=*,fmt='(a,1x,i6)') '+  - Machsize =',machsize
-   write (unit=*,fmt='(a)')       '+-----------------------------------------------------+'
+   do n = 1, numarg
+       if (cargs(n)(1:2) == '-s') then
+          isingle=1
+       end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Decide whether to call MPI.                                                       !
+   !---------------------------------------------------------------------------------------!
+   select case (isingle)
+   case (0)
+      call MPI_Init(ierr)
+      call MPI_Comm_rank(MPI_COMM_WORLD,machnum,ierr)
+      call MPI_Comm_size(MPI_COMM_WORLD,machsize,ierr)
+   case default
+      machnum  = 0
+      machsize = 1
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Check OMP thread and processor use and availability.                                  !
+   !                                                                                       !
+   ! Note: One could use omp_get_num_threads() in loop, but that would depend on how many  !
+   ! threads were open at the time of its call.                                            !
+   !---------------------------------------------------------------------------------------!
+   max_threads   = 1
+   num_procs     = 1
+   thread        = 1
+   cpu           = 1
+   thread_use(:) = 0
+   cpu_use(:)    = 0
+
+   !$ max_threads = omp_get_max_threads()
+   !$ num_procs   = omp_get_num_procs()
+
+   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(thread,cpu)
+   do n = 1,max_threads
+     !$ thread = omp_get_thread_num() + 1
+     !$ cpu    = findmycpu() + 1
+
+     thread_use(thread) = 1
+     cpu_use(cpu)       = 1
+   end do
+   !$OMP END PARALLEL DO
+   !---------------------------------------------------------------------------------------!
+
+   write (*,'(a)')       '+---------------- MPI parallel info: --------------------+'
+   write (*,'(a,1x,i6)') '+  - Machnum  =',machnum
+   write (*,'(a,1x,i6)') '+  - Machsize =',machsize
+   write (*,'(a)')       '+---------------- OMP parallel info: --------------------+'
+   write (*,'(a,1x,i6)') '+  - thread  use: ', sum(thread_use)
+   write (*,'(a,1x,i6)') '+  - threads max: ', max_threads
+   write (*,'(a,1x,i6)') '+  - cpu     use: ', sum(cpu_use)
+   write (*,'(a,1x,i6)') '+  - cpus    max: ', num_procs
+   write (*,'(a)')       '+  Note: Max vals are for node, not sockets.'
+   write (*,'(a)')       '+--------------------------------------------------------+'
+#else
+
+
+   !---------------------------------------------------------------------------------------!
+   !   Set dummy values for all OMP variables.                                             !
+   !---------------------------------------------------------------------------------------!
+   isingle       = 1
+   machnum       = 0
+   machsize      = 1
+   max_threads   = 1
+   num_procs     = 1
+   thread        = 1
+   cpu           = 1
+   thread_use(:) = 0
+   cpu_use(:)    = 0
+   do n = 1,max_threads
+     thread_use(thread) = 1
+     cpu_use(cpu)       = 1
+   end do
+   !---------------------------------------------------------------------------------------!
+
 #endif
    !---------------------------------------------------------------------------------------!
 
