@@ -178,6 +178,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    real(kind=8)                     :: int_sfcw_u       ! Intensive sfc. water internal en.
    real(kind=8)                     :: surface_water    ! Temp. variable. Available liquid 
                                                         !   water on the soil sfc (kg/m2)
+   real(kind=8)                     :: tot_sfcwater_depth ! Temp variable. Total depth of
+                                                        ! surface water (1:ksn) layers
    real(kind=8)                     :: avg_th_cond      ! Mean thermal conductivity
    real(kind=8)                     :: avg_hydcond      ! Mean thermal conductivity
    integer                          :: ibuff            ! The shared memory processor index
@@ -376,14 +378,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       !    Bedrock.  Make the potential exactly the same as the bottom layer, and the flux !
       ! will be zero.                                                                      !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = initp%soil_water   (klsl)
-      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = rk4aux(ibuff)%th_cond_s   (klsl)
-      rk4aux(ibuff)%hydcond     (kben) = rk4aux(ibuff)%hydcond     (klsl)
-      rk4aux(ibuff)%psiplusz    (kben) = rk4aux(ibuff)%psiplusz    (klsl)
-      rk4aux(ibuff)%drysoil     (kben) = .true.
-      rk4aux(ibuff)%satsoil     (kben) = .true.
+      initp%soil_water       (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot      (kben) = initp%soil_mstpot  (klsl)
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = rk4aux(ibuff)%th_cond_s   (klsl)
+      rk4aux(ibuff)%hydcond  (kben) = rk4aux(ibuff)%hydcond     (klsl)
+      rk4aux(ibuff)%psiplusz (kben) = rk4aux(ibuff)%psiplusz    (klsl)
+      rk4aux(ibuff)%drysoil  (kben) = .true.
+      rk4aux(ibuff)%satsoil  (kben) = .true.
       !------------------------------------------------------------------------------------!
 
    case (1)
@@ -391,14 +393,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       !     Free drainage.   Make the water potential at the layer beneath to be at the    !
       ! same soil moisture as the bottom layer.                                            !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = initp%soil_water   (klsl)
-      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = rk4aux(ibuff)%th_cond_s   (klsl)
-      rk4aux(ibuff)%hydcond     (kben) = rk4aux(ibuff)%hydcond     (klsl)
-      rk4aux(ibuff)%psiplusz    (kben) = slzt8(kben) + initp%soil_mstpot(kben)
-      rk4aux(ibuff)%drysoil     (kben) = .false.
-      rk4aux(ibuff)%satsoil     (kben) = .false.
+      initp%soil_water       (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot      (kben) = initp%soil_mstpot  (klsl)
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = rk4aux(ibuff)%th_cond_s   (klsl)
+      rk4aux(ibuff)%hydcond  (kben) = rk4aux(ibuff)%hydcond     (klsl)
+      rk4aux(ibuff)%psiplusz (kben) = slzt8(kben) + initp%soil_mstpot(kben)
+      rk4aux(ibuff)%drysoil  (kben) = .false.
+      rk4aux(ibuff)%satsoil  (kben) = .false.
       !------------------------------------------------------------------------------------!
 
    case (2)
@@ -409,32 +411,32 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       ! is zero this becomes the flat bedrock condition, and when sldrain is 90 degrees,   !
       ! then it becomes free drainage.                                                     !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = initp%soil_water   (klsl)
-      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = rk4aux(ibuff)%th_cond_s   (klsl)
-      rk4aux(ibuff)%hydcond     (kben) = rk4aux(ibuff)%hydcond     (klsl)
-      rk4aux(ibuff)%psiplusz    (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8         &
-                                       + initp%soil_mstpot(kben)
-      rk4aux(ibuff)%drysoil     (kben) = .false.
-      rk4aux(ibuff)%satsoil     (kben) = .false.
+      initp%soil_water       (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot      (kben) = initp%soil_mstpot  (klsl)
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = rk4aux(ibuff)%th_cond_s   (klsl)
+      rk4aux(ibuff)%hydcond  (kben) = rk4aux(ibuff)%hydcond     (klsl)
+      rk4aux(ibuff)%psiplusz (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8            &
+                                    + initp%soil_mstpot(kben)
+      rk4aux(ibuff)%drysoil  (kben) = .false.
+      rk4aux(ibuff)%satsoil  (kben) = .false.
       !------------------------------------------------------------------------------------!
 
    case (3)
       !------------------------------------------------------------------------------------!
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = soil8(nsoil)%slmsts
-      initp%soil_mstpot  (kben) = soil8(nsoil)%slpots
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = ( soil8(nsoil)%thcond0                            &
-                                         + soil8(nsoil)%thcond1 * initp%soil_water(kben) ) &
-                                       / ( soil8(nsoil)%thcond2                            &
-                                         + soil8(nsoil)%thcond3 * initp%soil_water(kben) )
-      rk4aux(ibuff)%hydcond            (kben) = slcons18(kben,nsoil)
-      rk4aux(ibuff)%psiplusz    (kben) = slzt8(kben) + initp%soil_mstpot(kben)
-      rk4aux(ibuff)%drysoil     (kben) = .false.
-      rk4aux(ibuff)%satsoil     (kben) = .false.
+      initp%soil_water       (kben) = soil8(nsoil)%slmsts
+      initp%soil_mstpot      (kben) = soil8(nsoil)%slpots
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = ( soil8(nsoil)%thcond0                               &
+                                      + soil8(nsoil)%thcond1 * initp%soil_water(kben) )    &
+                                    / ( soil8(nsoil)%thcond2                               &
+                                      + soil8(nsoil)%thcond3 * initp%soil_water(kben) )
+      rk4aux(ibuff)%hydcond  (kben) = slcons18(kben,nsoil)
+      rk4aux(ibuff)%psiplusz (kben) = slzt8(kben) + initp%soil_mstpot(kben)
+      rk4aux(ibuff)%drysoil  (kben) = .false.
+      rk4aux(ibuff)%satsoil  (kben) = .false.
 
    end select
    !---------------------------------------------------------------------------------------!
@@ -504,6 +506,12 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                                     / ( initp%sfcwater_depth(k)+initp%sfcwater_depth(k-1))
       end do
       !------------------------------------------------------------------------------------!
+
+      ! This is just sensible heat flux loss from top surface layer
+      ! The layer's energy budget (shown below) will include the other terms
+      ! Convention is positive up
+      rk4aux(ibuff)%h_flux_s        (ksn+1) = rk4aux(ibuff)%h_flux_s(ksn+1) + hflxsc
+
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -516,13 +524,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    rk4aux(ibuff)%h_flux_g(mzg+1) = rk4aux(ibuff)%h_flux_g(mzg+1)                           &
                                  + dinitp%avg_sensible_gg (mzg)
    !---------------------------------------------------------------------------------------!
-   rk4aux(ibuff)%h_flux_s(ksn+1) = rk4aux(ibuff)%h_flux_s(ksn+1) + hflxsc + qwflxsc        &
-                                 - dble(csite%rlong_s(ipa))
 
 
 
    !---------------------------------------------------------------------------------------!
-   !    Update soil U values [J/m³] from sensible heat, upward water vapor (latent heat)   !
+   !    Update soil U values [J/m³/s] from sensible heat, upward water vapor (latent heat) !
    ! and longwave fluxes. This excludes effects of dew/frost formation, precipitation,     !
    ! shedding, and percolation.                                                            !
    !---------------------------------------------------------------------------------------!
@@ -532,13 +538,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    end do
    !---------------------------------------------------------------------------------------!
 
-
-
-
    !---------------------------------------------------------------------------------------!
-   !    Update surface water U values [J/m²] from sensible heat, upward water vapor        !
-   ! (latent heat), longwave, and shortwave fluxes.  This excludes effects of dew/frost    !
-   ! formation, precipitation, shedding and percolation.                                   !
+   ! Update surface water U values [J/m²/s] from sensible heat and shortwave               !
+   ! fluxes.  This excludes effects of dew/frost, latent heat flux, precipitation,         !
+   ! shedding and percolation (and any mass fluxes). Right now, thermal radiation only     !
+   ! affects the top layer.                                                                !
    !---------------------------------------------------------------------------------------!
    do k = 1,ksn
      dinitp%sfcwater_energy(k) = rk4aux(ibuff)%h_flux_s(k) - rk4aux(ibuff)%h_flux_s(k+1)   &
@@ -552,17 +556,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    !     Calculate the fluxes of water with their associated heat fluxes. Update top soil  !
    ! or snow moisture from evaporation only.                                               !
-   !                                                                                       !
-   !     New moisture, qw, and depth from dew/frost formation, precipitation, shedding,    !
-   ! and percolation.  ksnnew is the layer that receives the new condensate that comes     !
-   ! directly from the air above.  If there is no pre-existing snowcover, this is a        !
-   ! temporary "snow" layer.                                                               !
    !---------------------------------------------------------------------------------------!
    if ( ksn > 0 ) then
       dinitp%sfcwater_mass  (ksn) =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc
-      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn)                            &
-                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc      &
-                                  - hflxsc  + dble(csite%rlong_s(ipa))
+      dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn) + dble(csite%rlong_s(ipa)) &
+                                  + qdewgnd + qwshed_tot + qthroughfall_tot - qwflxsc
       dinitp%sfcwater_depth (ksn) = ddewgnd + dwshed_tot + dthroughfall_tot
    else
       dinitp%virtual_water        =  dewgnd +  wshed_tot +  throughfall_tot -  wflxsc

@@ -1,9 +1,9 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here=`pwd`
-thisqueue='moorcroft2b'               # ! Queue where jobs should be submitted
+here=$(pwd)
+thisqueue="moorcroft2b"               # ! Queue where jobs should be submitted
 #----- Check whether to use openlava or typical job submission. ---------------------------#
-openlava='y'
+openlava="y"
 #------------------------------------------------------------------------------------------#
 
 
@@ -22,7 +22,7 @@ rdata="RData_scenario"
 #------------------------------------------------------------------------------------------#
 #     Check whether this machine supports openlava or not (in case this is a openlava.     #
 #------------------------------------------------------------------------------------------#
-thismach=`hostname -s`
+thismach=$(hostname -s)
 if [ ${thismach} == "rclogin01" ] && [ ${openlava} == "y" -o ${openlava} == "Y" ]
 then
    . /opt/openlava-2.0/etc/openlava-client.sh
@@ -252,11 +252,11 @@ R_Submit="${here}/.${job}.r"
 #     Switch settings to the current configuration.                                        #
 #------------------------------------------------------------------------------------------#
 /bin/cp ${R_Orig} ${R_Submit}
-stext_ostr=`grep stext.default ${R_Submit} | head -1`
-temp_ostr=`grep use.global ${R_Submit} | head -1`
-rain_ostr=`grep drain.default ${R_Submit} | head -1`
-bg_ostr=`grep ibackground ${R_Submit} | head -1`
-rdata_ostr=`grep rdata.path ${R_Submit} | head -1`
+stext_ostr=$(grep stext.default ${R_Submit} | head -1)
+temp_ostr=$(grep use.global ${R_Submit} | head -1)
+rain_ostr=$(grep drain.default ${R_Submit} | head -1)
+bg_ostr=$(grep ibackground ${R_Submit} | head -1)
+rdata_ostr=$(grep rdata.path ${R_Submit} | head -1)
 
 stext_nstr="stext.default = \"${stext}\"                   # Default soil texture"
 temp_nstr="use.global       = ${idxtemp}   # Which global to use (TRUE means all of them)"

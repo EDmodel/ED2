@@ -881,9 +881,9 @@ subroutine seed_dispersal(cpoly,late_spring)
    integer                       :: donpa       ! Donor patch counter           [      ---]
    integer                       :: donco       ! Donor cohort counter          [      ---]
    integer                       :: donpft      ! Donor PFT                     [      ---]
-   real                          :: nseedling   ! Total surviving seedling dens.[ plant/m²]
-   real                          :: nseed_stays ! Seedling density that stays   [ plant/m²]
-   real                          :: nseed_maygo ! Seedling density that may go  [ plant/m²]
+   real                          :: bseedling   ! Surviving seedling biomass    [   kgC/m2]
+   real                          :: bseed_stays ! Seedling biomass that stays   [   kgC/m2]
+   real                          :: bseed_maygo ! Seedling biomass that may go  [   kgC/m2]
    !---------------------------------------------------------------------------------------!
 
 
@@ -915,26 +915,26 @@ subroutine seed_dispersal(cpoly,late_spring)
                donpft = donpatch%pft(donco)
 
                !---------------------------------------------------------------------------!
-               !    Find the density of survivor seedlings.  Units: seedlings/m².          !
+               !    Find the biomass of survivor seedlings.  Units: kgC/m2                 !
                !---------------------------------------------------------------------------!
                if (phenology(donpft) /= 2 .or. late_spring) then
-                  nseedling   = donpatch%nplant(donco) * donpatch%bseeds(donco)            &
+                  bseedling   = donpatch%nplant(donco) * donpatch%bseeds(donco)            &
                               * (1.0 - seedling_mortality(donpft))
                   select case (ibigleaf)
                   case (0)
-                     nseed_stays = nseedling * (1.0 - nonlocal_dispersal(donpft))
-                     nseed_maygo = nseedling * nonlocal_dispersal(donpft)
+                     bseed_stays = bseedling * (1.0 - nonlocal_dispersal(donpft))
+                     bseed_maygo = bseedling * nonlocal_dispersal(donpft)
                   case (1)
                      !---- if bigleaf cannot disperse seedlings to other patches ----------!
-                     nseed_stays = nseedling
-                     nseed_maygo = 0.
+                     bseed_stays = bseedling
+                     bseed_maygo = 0.
                   end select
 
                else
                   !----- Not a good time for reproduction.  No seedlings. -----------------!
-                  nseedling     = 0.
-                  nseed_stays   = 0.
-                  nseed_maygo   = 0.
+                  bseedling     = 0.
+                  bseed_stays   = 0.
+                  bseed_maygo   = 0.
                end if
                !---------------------------------------------------------------------------!
 
@@ -945,11 +945,11 @@ subroutine seed_dispersal(cpoly,late_spring)
 
                   !------------------------------------------------------------------------!
                   !     Add the non-local dispersal evenly across all patches, including   !
-                  ! the donor patch.  We must scale the density by the combined area of    !
+                  ! the donor patch.  We must scale the biomass by the combined area of    !
                   ! this patch and site so the total carbon is preserved.                  !
                   !------------------------------------------------------------------------!
                   csite%repro(donpft,recpa) = csite%repro(donpft,recpa)                    &
-                                            + nseed_maygo * csite%area(donpa)
+                                            + bseed_maygo * csite%area(donpa)
                   !------------------------------------------------------------------------!
 
 
@@ -959,7 +959,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                   !      Include the local dispersal if this is the donor patch.           !
                   !------------------------------------------------------------------------!
                   if (recpa == donpa) then
-                     csite%repro(donpft,recpa) = csite%repro(donpft,recpa) + nseed_stays
+                     csite%repro(donpft,recpa) = csite%repro(donpft,recpa) + bseed_stays
                   end if
                   !------------------------------------------------------------------------!
 
@@ -995,26 +995,26 @@ subroutine seed_dispersal(cpoly,late_spring)
                donpft = donpatch%pft(donco)
 
                !---------------------------------------------------------------------------!
-               !    Find the density of survivor seedlings.  Units: seedlings/m².          !
+               !    Find the biomass of survivor seedlings.  Units: kgC/m2                 !
                !---------------------------------------------------------------------------!
                if (phenology(donpft) /= 2 .or. late_spring) then
-                  nseedling   = donpatch%nplant(donco) * donpatch%bseeds(donco)            &
+                  bseedling   = donpatch%nplant(donco) * donpatch%bseeds(donco)            &
                               * (1.0 - seedling_mortality(donpft))
 
                   select case (ibigleaf)
                   case (0)
-                     nseed_stays = nseedling * (1.0 - nonlocal_dispersal(donpft))
-                     nseed_maygo = nseedling * nonlocal_dispersal(donpft)
+                     bseed_stays = bseedling * (1.0 - nonlocal_dispersal(donpft))
+                     bseed_maygo = bseedling * nonlocal_dispersal(donpft)
                   case (1)
                      !---- if bigleaf cannot disperse seedlings to other patches ----------!
-                     nseed_stays = nseedling
-                     nseed_maygo = 0.
+                     bseed_stays = bseedling
+                     bseed_maygo = 0.
                   end select
                else
                   !----- Not a good time for reproduction.  No seedlings. -----------------!
-                  nseedling   = 0.
-                  nseed_stays = 0.
-                  nseed_maygo = 0.
+                  bseedling   = 0.
+                  bseed_stays = 0.
+                  bseed_maygo = 0.
                end if
                !---------------------------------------------------------------------------!
                
@@ -1027,12 +1027,12 @@ subroutine seed_dispersal(cpoly,late_spring)
 
                      !---------------------------------------------------------------------!
                      !     Add the non-local dispersal evenly across all patches,          !
-                     ! including the donor patch.  We must scale the density by the        !
+                     ! including the donor patch.  We must scale the biomass by the        !
                      ! combined area of this patch and site so the total carbon is         !
                      ! preserved.                                                          !
                      !---------------------------------------------------------------------!
                      recsite%repro(donpft,recpa) = recsite%repro(donpft,recpa)             &
-                                                 + nseed_maygo * recsite%area(donpa)       &
+                                                 + bseed_maygo * recsite%area(donpa)       &
                                                  * cpoly%area(donsi)
                      !---------------------------------------------------------------------!
 
@@ -1041,7 +1041,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                      !---------------------------------------------------------------------!
                      if (recpa == donpa .and. recsi == donsi) then
                         recsite%repro(donpft,recpa) = recsite%repro(donpft,recpa)          &
-                                                    + nseed_stays
+                                                    + bseed_stays
                      end if
                      !---------------------------------------------------------------------!
                      

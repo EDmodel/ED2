@@ -1,9 +1,12 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here=$(pwd)                            # ! Main path
-myself=$(whoami)                       # ! You
+here=$(pwd)                           # ! Main path
+myself=$(whoami)                      # ! You
 diskthere=""                          # ! Disk where the output files are
-thisqueue="moorcroft_6100b"           # ! Queue where jobs should be submitted
+thisqueue="moorcroft_amd"             # ! Queue where jobs should be submitted
+runtime="7-00:00:00"                  # ! Run time request
+memory=2048                           # ! Requested memory (Mb)
+sbatch=$(which sbatch)                # ! SLURM command to submit job.
 lonlat="${here}/joborder.txt"         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot="/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX"
@@ -257,43 +260,44 @@ do
    h2olimit=$(echo ${oi}     | awk '{print $54}')
    imortscheme=$(echo ${oi}  | awk '{print $55}')
    ddmortconst=$(echo ${oi}  | awk '{print $56}')
-   isfclyrm=$(echo ${oi}     | awk '{print $57}')
-   icanturb=$(echo ${oi}     | awk '{print $58}')
-   ubmin=$(echo ${oi}        | awk '{print $59}')
-   ugbmin=$(echo ${oi}       | awk '{print $60}')
-   ustmin=$(echo ${oi}       | awk '{print $61}')
-   gamm=$(echo ${oi}         | awk '{print $62}')
-   gamh=$(echo ${oi}         | awk '{print $63}')
-   tprandtl=$(echo ${oi}     | awk '{print $64}')
-   ribmax=$(echo ${oi}       | awk '{print $65}')
-   atmco2=$(echo ${oi}       | awk '{print $66}')
-   thcrit=$(echo ${oi}       | awk '{print $67}')
-   smfire=$(echo ${oi}       | awk '{print $68}')
-   ifire=$(echo ${oi}        | awk '{print $69}')
-   fireparm=$(echo ${oi}     | awk '{print $70}')
-   ipercol=$(echo ${oi}      | awk '{print $71}')
-   runoff=$(echo ${oi}       | awk '{print $72}')
-   imetrad=$(echo ${oi}      | awk '{print $73}')
-   ibranch=$(echo ${oi}      | awk '{print $74}')
-   icanrad=$(echo ${oi}      | awk '{print $75}')
-   crown=$(echo   ${oi}      | awk '{print $76}')
-   ltransvis=$(echo ${oi}    | awk '{print $77}')
-   lreflectvis=$(echo ${oi}  | awk '{print $78}')
-   ltransnir=$(echo ${oi}    | awk '{print $79}')
-   lreflectnir=$(echo ${oi}  | awk '{print $80}')
-   orienttree=$(echo ${oi}   | awk '{print $81}')
-   orientgrass=$(echo ${oi}  | awk '{print $82}')
-   clumptree=$(echo ${oi}    | awk '{print $83}')
-   clumpgrass=$(echo ${oi}   | awk '{print $84}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $85}')
-   igndvap=$(echo ${oi}      | awk '{print $86}')
-   iphen=$(echo ${oi}        | awk '{print $87}')
-   iallom=$(echo ${oi}       | awk '{print $88}')
-   ibigleaf=$(echo ${oi}     | awk '{print $89}')
-   irepro=$(echo ${oi}       | awk '{print $90}')
-   treefall=$(echo ${oi}     | awk '{print $91}')
-   ianthdisturb=$(echo ${oi} | awk '{print $92}')
-   ianthdataset=$(echo ${oi} | awk '{print $93}')
+   cbrscheme=$(echo ${oi}    | awk '{print $57}')
+   isfclyrm=$(echo ${oi}     | awk '{print $58}')
+   icanturb=$(echo ${oi}     | awk '{print $59}')
+   ubmin=$(echo ${oi}        | awk '{print $60}')
+   ugbmin=$(echo ${oi}       | awk '{print $61}')
+   ustmin=$(echo ${oi}       | awk '{print $62}')
+   gamm=$(echo ${oi}         | awk '{print $63}')
+   gamh=$(echo ${oi}         | awk '{print $64}')
+   tprandtl=$(echo ${oi}     | awk '{print $65}')
+   ribmax=$(echo ${oi}       | awk '{print $66}')
+   atmco2=$(echo ${oi}       | awk '{print $67}')
+   thcrit=$(echo ${oi}       | awk '{print $68}')
+   smfire=$(echo ${oi}       | awk '{print $69}')
+   ifire=$(echo ${oi}        | awk '{print $70}')
+   fireparm=$(echo ${oi}     | awk '{print $71}')
+   ipercol=$(echo ${oi}      | awk '{print $72}')
+   runoff=$(echo ${oi}       | awk '{print $73}')
+   imetrad=$(echo ${oi}      | awk '{print $74}')
+   ibranch=$(echo ${oi}      | awk '{print $75}')
+   icanrad=$(echo ${oi}      | awk '{print $76}')
+   crown=$(echo   ${oi}      | awk '{print $77}')
+   ltransvis=$(echo ${oi}    | awk '{print $78}')
+   lreflectvis=$(echo ${oi}  | awk '{print $79}')
+   ltransnir=$(echo ${oi}    | awk '{print $80}')
+   lreflectnir=$(echo ${oi}  | awk '{print $81}')
+   orienttree=$(echo ${oi}   | awk '{print $82}')
+   orientgrass=$(echo ${oi}  | awk '{print $83}')
+   clumptree=$(echo ${oi}    | awk '{print $84}')
+   clumpgrass=$(echo ${oi}   | awk '{print $85}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
+   igndvap=$(echo ${oi}      | awk '{print $87}')
+   iphen=$(echo ${oi}        | awk '{print $88}')
+   iallom=$(echo ${oi}       | awk '{print $89}')
+   ibigleaf=$(echo ${oi}     | awk '{print $90}')
+   irepro=$(echo ${oi}       | awk '{print $91}')
+   treefall=$(echo ${oi}     | awk '{print $92}')
+   ianthdisturb=$(echo ${oi} | awk '{print $93}')
+   ianthdataset=$(echo ${oi} | awk '{print $94}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -927,9 +931,10 @@ do
       #------------------------------------------------------------------------------------#
       if [ "x${submitnow}" == "xy" ] || [ "x${submitnow}" == "xY" ]
       then
-         bsub="bsub -q ${thisqueue} -J ${epostjob} -o ${polyname}/${epostlsf}"
-         bsub="${bsub} ${here}/${polyname}/${epostsh} 1> /dev/null 2> /dev/null"
-         ${bsub}
+         sbatchout="${here}/${polyname}/${epostlsf}"
+         epostnow="${here}/${polyname}/${epostsh}"
+         sbatch -p ${thisqueue} --mem-per-cpu=${memory} -t ${runtime} -J ${epostjob}       \
+             -o ${sbatchout} -n 1 --wrap="${epostnow}"
       fi
       #------------------------------------------------------------------------------------#
    done

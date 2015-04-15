@@ -5,7 +5,8 @@
 cloud.metrics <<- function( x
                           , zmah.stats = TRUE
                           , z1st.stats = TRUE
-                          , tree.stats = TRUE
+                          , zveg.stats = TRUE
+                          , zvfr.stats = TRUE
                           , probs      = c(0.01,0.05,0.10,0.25,0.50,0.75,0.90,0.95,0.99)
                           , zbreaks    = c(1.0,2.5,5.0,7.5,10.0,15.0,20.0,25.0,30.0)
                           , n.dens     = 256
@@ -25,9 +26,11 @@ cloud.metrics <<- function( x
    #----- Remove missing values. ----------------------------------------------------------#
    z     = x$z
    i     = x$intensity
+   ptc   = x$pt.class
    keep  = is.finite(z) & z >= zmin & z <= zmax & is.finite(i) & i >= intmin & i <= intmax
    z     = z[keep]
    i     = i[keep]
+   ptc   = ptc[keep]
    x     = x[keep,]
    nz    = length(z)
    nzmah = sum(i)
@@ -62,7 +65,8 @@ cloud.metrics <<- function( x
       ans        = cloud.metrics( x          = dummy
                                 , zmah.stats = zmah.stats
                                 , z1st.stats = z1st.stats
-                                , tree.stats = tree.stats
+                                , zveg.stats = zveg.stats
+                                , zvfr.stats = zvfr.stats
                                 , probs      = probs
                                 , zbreaks    = zbreaks
                                 , n.dens     = n.dens
@@ -90,7 +94,8 @@ cloud.metrics <<- function( x
          ans["elev.count"] = nz
          if (zmah.stats) ans["zmah.count"] = nz
          if (z1st.stats) ans["z1st.count"] = nz
-         if (tree.stats) ans["tree.count"] = nz
+         if (zveg.stats) ans["zveg.count"] = nz
+         if (zvfr.stats) ans["zvfr.count"] = nz
       }#end if
       return(ans)
       #------------------------------------------------------------------------------------#
@@ -100,6 +105,7 @@ cloud.metrics <<- function( x
 
    #----- Find the general metrics. -------------------------------------------------------#
    every = .Int.cloud.metrics( z     = z
+                             , ptc   = ptc
                              , pref  = "elev"
                              , probs = probs
                              , zbreaks = zbreaks
@@ -125,13 +131,15 @@ cloud.metrics <<- function( x
       if (is.null(mhdens)){
          mhdens = macarthur.horn(pt.cloud=x,zl= zl.dens,zh=zh.dens,zo=zo.dens,nz=n.dens)
       }#end if (is.null(mhdens))
-      zmah  = jitter( x      = sample(x=mhdens$x,size=nzmah,replace=TRUE,prob=mhdens$y)
-                    , amount = 0.5*mean(diff(mhdens$x)))
+      zmah   = jitter( x      = sample(x=mhdens$x,size=nzmah,replace=TRUE,prob=mhdens$y)
+                     , amount = 0.5*mean(diff(mhdens$x)))
+      ptcmah = rep(5,times=nzmah)
       #------------------------------------------------------------------------------------#
 
 
       #----- Find the general metrics. ----------------------------------------------------#
       mah = .Int.cloud.metrics( z       = zmah
+                              , ptc     = ptcmah
                               , pref    = "zmah"
                               , probs   = probs
                               , zbreaks = zbreaks
@@ -158,13 +166,16 @@ cloud.metrics <<- function( x
       #------------------------------------------------------------------------------------#
       #     Keep only the first returns.                                                   #
       #------------------------------------------------------------------------------------#
-      z1st = x$z[x$retn.number %in% min(x$retn.number)]
+      sel1st = x$retn.number %in% min(x$retn.number)
+      z1st   = x$z[sel1st]
+      ptc1st = x$pt.class[sel1st]
       #------------------------------------------------------------------------------------#
 
 
       #----- Find the general metrics. ----------------------------------------------------#
       if (length(z1st) > min.pts){
          first = .Int.cloud.metrics( z       = z1st
+                                   , ptc     = ptc1st
                                    , pref    = "z1st"
                                    , probs   = probs
                                    , zbreaks = zbreaks
@@ -177,6 +188,7 @@ cloud.metrics <<- function( x
                                    )#end .Int.cloud.metrics
       }else{
          first = .Int.cloud.metrics( z       = x$z
+                                   , ptc     = x$pt.class
                                    , pref    = "z1st"
                                    , probs   = probs
                                    , zbreaks = zbreaks
@@ -199,57 +211,112 @@ cloud.metrics <<- function( x
 
 
    #---------------------------------------------------------------------------------------#
-   #     Find metrics for points flagged as medium and high vegetation only.               #
+   #     Find metrics only for those points flagged as vegetation.                         #
    #---------------------------------------------------------------------------------------#
-   if (tree.stats){
+   if (zveg.stats){
       #------------------------------------------------------------------------------------#
       #     Keep only the first returns.                                                   #
       #------------------------------------------------------------------------------------#
-      zveg = x$z[x$pt.class %in% c(4,5)]
+      selveg = x$pt.class %in% c(3,4,5)
+      zveg   = x$z[selveg]
+      ptcveg = x$pt.class[selveg]
       #------------------------------------------------------------------------------------#
 
 
       #----- Find the general metrics. ----------------------------------------------------#
       if (length(zveg) > min.pts){
-         tree = .Int.cloud.metrics( z       = zveg
-                                  , pref    = "tree"
-                                  , probs   = probs
-                                  , zbreaks = zbreaks
-                                  , n.dens  = n.dens
-                                  , zl.dens = zl.dens
-                                  , zh.dens = zh.dens
-                                  , zzdens  = NULL
-                                  , zmin    = zmin
-                                  , zmax    = zmax
-                                  )#end .Int.cloud.metrics
+         plant = .Int.cloud.metrics( z       = zveg
+                                   , ptc     = ptcveg
+                                   , pref    = "zveg"
+                                   , probs   = probs
+                                   , zbreaks = zbreaks
+                                   , n.dens  = n.dens
+                                   , zl.dens = zl.dens
+                                   , zh.dens = zh.dens
+                                   , zzdens  = NULL
+                                   , zmin    = zmin
+                                   , zmax    = zmax
+                                   )#end .Int.cloud.metrics
       }else{
-         tree = .Int.cloud.metrics( z       = x$z
-                                  , pref    = "tree"
-                                  , probs   = probs
-                                  , zbreaks = zbreaks
-                                  , n.dens  = n.dens
-                                  , zl.dens = zl.dens
-                                  , zh.dens = zh.dens
-                                  , zzdens  = NULL
-                                  , zmin    = zmin
-                                  , zmax    = zmax
-                                  )#end .Int.cloud.metrics
-         tree = tree + NA
+         plant = .Int.cloud.metrics( z       = x$z
+                                   , ptc     = x$pt.class
+                                   , pref    = "zveg"
+                                   , probs   = probs
+                                   , zbreaks = zbreaks
+                                   , n.dens  = n.dens
+                                   , zl.dens = zl.dens
+                                   , zh.dens = zh.dens
+                                   , zzdens  = NULL
+                                   , zmin    = zmin
+                                   , zmax    = zmax
+                                   )#end .Int.cloud.metrics
+         plant = plant + NA
       }#end if
       #------------------------------------------------------------------------------------#
 
    }else{
-      tree = NULL
-   }#end if (tree.stats)
+      plant = NULL
+   }#end if (zveg.stats)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Find metrics only for those points flagged as vegetation AND first return.        #
+   #---------------------------------------------------------------------------------------#
+   if (zvfr.stats){
+      #------------------------------------------------------------------------------------#
+      #     Keep only the first returns.                                                   #
+      #------------------------------------------------------------------------------------#
+      selvfr = (x$pt.class %in% c(3,4,5)) & (x$retn.number %in% min(x$retn.number))
+      zvfr   = x$z[selvfr]
+      ptcvfr = x$pt.class[selvfr]
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Find the general metrics. ----------------------------------------------------#
+      if (length(zvfr) > min.pts){
+         pl1st = .Int.cloud.metrics( z       = zvfr
+                                   , ptc     = ptcvfr
+                                   , pref    = "zvfr"
+                                   , probs   = probs
+                                   , zbreaks = zbreaks
+                                   , n.dens  = n.dens
+                                   , zl.dens = zl.dens
+                                   , zh.dens = zh.dens
+                                   , zzdens  = NULL
+                                   , zmin    = zmin
+                                   , zmax    = zmax
+                                   )#end .Int.cloud.metrics
+      }else{
+         pl1st = .Int.cloud.metrics( z       = x$z
+                                   , ptc     = x$pt.class
+                                   , pref    = "zvfr"
+                                   , probs   = probs
+                                   , zbreaks = zbreaks
+                                   , n.dens  = n.dens
+                                   , zl.dens = zl.dens
+                                   , zh.dens = zh.dens
+                                   , zzdens  = NULL
+                                   , zmin    = zmin
+                                   , zmax    = zmax
+                                   )#end .Int.cloud.metrics
+         pl1st = pl1st + NA
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+   }else{
+      pl1st = NULL
+   }#end if (zvfr.stats)
    #---------------------------------------------------------------------------------------#
 
 
 
    #----- Return the answer as a vector or a matrix, depending on the user's choice. ------#
    if (mat.out){
-      ans = cbind(elev = every, zmah = mah, z1st = first, tree = tree)
+      ans = cbind(elev = every, zmah = mah, z1st = first, zveg = plant, zvfr = pl1st)
    }else{
-      ans = c(every,mah,first,tree)
+      ans = c(every,mah,first,plant,pl1st)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -268,7 +335,7 @@ cloud.metrics <<- function( x
 #      This is the internal routine that computes the metrics for a given dataset.  This   #
 # routine cannot be called directly, it can only be called by cloud.metrics.               #
 #------------------------------------------------------------------------------------------#
-.Int.cloud.metrics <<- function(z,pref,probs,zbreaks,n.dens,zl.dens,zh.dens,zzdens
+.Int.cloud.metrics <<- function(z,ptc,pref,probs,zbreaks,n.dens,zl.dens,zh.dens,zzdens
                                ,zmin,zmax){
 
 
@@ -325,7 +392,9 @@ cloud.metrics <<- function( x
 
 
    #----- Labels for mode probability. ----------------------------------------------------#
-   pmode = c("prob","pmah","p1st","pveg")[match(pref,c("elev","zmah","z1st","tree"))]
+   plist = c("prob","pmah","p1st","pveg","pvfr")
+   zlist = c("elev","zmah","z1st","zveg","zvfr")
+   pmode = plist[match(pref,zlist)]
    #---------------------------------------------------------------------------------------#
 
 
@@ -342,8 +411,9 @@ cloud.metrics <<- function( x
    zbreaks = sort(unique(c(zmin,zbreaks,zmax)))
    zbreaks = zbreaks[zbreaks >= zmin & zbreaks <= zmax]
    nbreaks = length(zbreaks)
-   zlabels = ifelse(is.finite(zbreaks),sprintf("%.1f",zbreaks),zbreaks)
-   zlabels = paste(zlabels[-nbreaks],".to.",zlabels[-1],".m",sep="")
+   llabels = ifelse(is.finite(zbreaks),sprintf("%.1f",zbreaks),zbreaks)
+   zlabels = paste0(llabels[-nbreaks],".to.",llabels[-1],".m")
+   alabels = paste0("above.",llabels[-nbreaks],".m")
    #---------------------------------------------------------------------------------------#
 
 
@@ -396,28 +466,48 @@ cloud.metrics <<- function( x
    #---------------------------------------------------------------------------------------#
 
 
-
-   #----- Use heights to break the return signal in classes. ------------------------------#
-   zcut         = cut(x=z,breaks=zbreaks,right=FALSE)
-   zprop        = lapply( X   = tapply(X=z,INDEX=zcut,FUN=length,simplify=FALSE)
-                        , FUN = '/'
-                        , e2  = nz
-                        )#end lapply
-   zprop        = lapply( X   = zprop
-                        , FUN = function(x) if(length(x) == 0){x = 0}else{x=x}
-                        )#end lapply
-   names(zprop) = paste("fret.elev.",zlabels,sep="")
-   ans          = modifyList(x=ans,val=zprop)
    #---------------------------------------------------------------------------------------#
+   #      Find the tree cover.                                                             #
+   #---------------------------------------------------------------------------------------#
+   if (! is.null(ptc)){
+      #----- Discard data that are not classified as vegetation. --------------------------#
+      zveg    = ifelse( ptc %in% c(3,4,5),z,NA)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Use heights to break the return signal in classes. ---------------------------#
+      zcut         = cut(x=zveg,breaks=zbreaks,right=FALSE)
+      zprop        = lapply( X   = tapply(X=z,INDEX=zcut,FUN=length,simplify=FALSE)
+                           , FUN = '/'
+                           , e2  = nz
+                           )#end lapply
+      zprop        = lapply( X   = zprop
+                           , FUN = function(x) if(length(x) == 0){x = 0}else{x=x}
+                           )#end lapply
+      names(zprop) = paste("fcan.elev.",zlabels,sep="")
+      ans          = modifyList(x=ans,val=zprop)
+      #------------------------------------------------------------------------------------#
 
 
 
 
-   #----- Use proportion to find the canopy fraction. -------------------------------------#
-   zfcan         = as.list(rev(cumsum(rev(unlist(zprop)))))
-   if (length(zfcan) != length(zlabels)) browser()
-   names(zfcan)  = paste("fcan.elev.",zlabels,sep="")
-   ans           = modifyList(x=ans,val=zfcan)
+      #----- Use proportion to find the canopy fraction. ----------------------------------#
+      zfcan         = as.list(rev(cumsum(rev(unlist(zprop)))))
+      if (length(zfcan) != length(alabels)) browser()
+      names(zfcan)  = paste("fcan.elev.",alabels,sep="")
+      ans           = modifyList(x=ans,val=zfcan)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Point cloud classes have not been provided, make variables undefined. --------#
+      zprop              = replicate(n=length(zlabels),list(NA))
+      names(zprop)       = paste("fcan.elev.",zlabels,sep="")
+      ans                = modifyList(x=ans,val=zprop)
+      zfcan              = replicate(n=length(alabels),list(NA))
+      names(zfcan)       = paste("fcan.elev.",alabels,sep="")
+      ans                = modifyList(x=ans,val=zfcan)
+      #------------------------------------------------------------------------------------#
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -450,8 +540,8 @@ cloud.metrics <<- function( x
 #      This function finds the canopy opening as a function of height breaks.              #
 #------------------------------------------------------------------------------------------#
 open.fcan <<- function( pt.cloud
-                           , zabove    = seq(from=0,to=35,by=5)
-                           ){
+                      , zabove    = seq(from=0,to=35,by=5)
+                      ){
 
    #----- Breaks.  Ensure the last break is Infinity. -------------------------------------#
    if (any(! is.finite(zabove))){

@@ -812,7 +812,7 @@ $ED_NL
    !              1.  Dietze (2008) model.  Cohorts have a finite radius, and cohorts are  !
    !                  stacked on the top of each other.                                    !
    !---------------------------------------------------------------------------------------!
-   NL%CROWN_MOD       = 1
+   NL%CROWN_MOD       = 0
    !---------------------------------------------------------------------------------------!
 
     NL%VMFACT_C3       = 1.00
@@ -871,7 +871,7 @@ $ED_NL
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   NL%ICANRAD        =  0
+   NL%ICANRAD        =  2
    NL%LTRANS_VIS     =  0.060
    NL%LTRANS_NIR     =  0.200
    NL%LREFLECT_VIS   =  0.120
@@ -935,20 +935,35 @@ $ED_NL
    !                         in negative carbon balance only when they run out of storage  !
    !                         and are still losing more carbon than gaining.                !
    !                                                                                       !
-   !  DDMORT_CONST   -- This constant (k) determines the relative contribution of light    !
+   !  CBR_SCHEME     -- This flag determines which carbon stress scheme is used:           !
+   !                    0 -- Single stress. CBR = cb/cb_mlmax                              !
+   !                         cb_mlmax is the carbon balance in full sun and no moisture    !
+   !                         limitation                                                    !
+   !                    1 -- Co-limitation from light and moisture                         !
+   !                         CBR_LIGHT = cb/cb_lightmax and CBR_MOIST = cb/cb_moistmax     !
+   !                         CBR_LIGHT and CBR_MOIST are then weighted according to        !
+   !                         DDMORT_CONST (below)                                          !
+   !                    2 -- Leibig Style, i.e. limitation from either light or moisture   !
+   !                         depending on which is lower at a given point in time          !
+   !                         CBR = cb/max(cb_lightmax, cb_moistmax)                        !
+   !                                                                                       !
+   !  DDMORT_CONST   -- CBR_Scheme = 1 only                                                !
+   !                    This constant (k) determines the relative contribution of light    !
    !                    and soil moisture to the density-dependent mortality rate.  Values !
    !                    range from 0 (soil moisture only) to 1 (light only).               !
    !                                                                                       !
    !                                    mort1                                              !
    !                  mu_DD = -------------------------                                    !
-   !                            1 + exp [ mort2 * cr ]                                     !
+   !                            1 + exp [ mort2 * CBR ]                                    !
    !                                                                                       !
-   !                                 CB                      CB                            !
-   !                  cr    = k ------------- + (1 - k) -------------                      !
-   !                             CB_lightmax             CB_watermax                       !
+   !                1         DDMORT_CONST         1 - DDMORT_CONST                        !
+   !           ------------ = ------------------ + ------------------                      !
+   !           CBR - CBR_SS   CBR_LIGHT - CBR_SS   CBR_MOIST - CBR_SS                      !
+   !                                                                                       ! 
    !---------------------------------------------------------------------------------------!
    NL%IDDMORT_SCHEME  = 0
    NL%DDMORT_CONST    = 1.0
+   NL%CBR_SCHEME      = 0
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

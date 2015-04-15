@@ -1204,12 +1204,13 @@ module disturbance_utils
 
 
             !----- Free memory before re-allocating for the next site... ------------------!
-            deallocate(disturb_mask)
-            deallocate(original_area)
-            deallocate(original_lu  )
-            deallocate(pot_area_harv)
-            deallocate(pot_area_loss)
-            deallocate(act_area_loss)
+            deallocate(disturb_mask   )
+            deallocate(original_area  )
+            deallocate(original_lu    )
+            deallocate(harvestable_agb)
+            deallocate(pot_area_harv  )
+            deallocate(pot_area_loss  )
+            deallocate(act_area_loss  )
             !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!

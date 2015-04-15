@@ -525,28 +525,26 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !     - today_gpp_moistmax: productivity of this cohort if the soil moisture   !
             !                           was such that fsw would be 1 (full moisture), with !
             !                           the actual light.                                  !
+            !     - today_gpp_mlmax:    productivity of this cohort if it was at the top   !
+            !                           of the canopy (full light) AND the soil moisture   !
+            !                           was such that fsw would be 1 (full moisture).      !
             !                                                                              !
             !     These productivites are used to scale the relative carbon balance, which !
             ! will control density-dependent mortality.                                    !
             !------------------------------------------------------------------------------!
-            ! cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)                &
-            !                                + cpatch%lai(ico)                               &
-            !                                * ( cpatch%fs_open(ico)                         &
-            !                                  * csite%A_o_max(ipft,ipa)                     &
-            !                                  + (1.0 - cpatch%fs_open(ico))                 &
-            !                                  * csite%A_c_max(ipft,ipa) )                   &
-            !                                + cpatch%leaf_respiration(ico)
-            ! cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
-            !                                + cpatch%lai(ico) * cpatch%A_open(ico)          &
-            !                                + cpatch%leaf_respiration(ico)
-            !------------------------------------------------------------------------------!
-            !      Temporary test.  Make the maximum productivity to be if the cohort were !
-            ! at the top of the canopy (full light) with fsw = 1 (no water limitation).    !
-            !------------------------------------------------------------------------------!
             cpatch%today_gpp_lightmax(ico) = cpatch%today_gpp_lightmax(ico)                &
+                                           + cpatch%lai(ico)                               &
+                                           * ( cpatch%fs_open(ico)                         &
+                                             * csite%A_o_max(ipft,ipa)                     &
+                                             + (1.0 - cpatch%fs_open(ico))                 &
+                                             * csite%A_c_max(ipft,ipa) )                   &
+                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_moistmax(ico)                &
+                                           + cpatch%lai(ico) * cpatch%A_open(ico)          &
+                                           + cpatch%leaf_respiration(ico)
+            cpatch%today_gpp_mlmax(ico)    = cpatch%today_gpp_mlmax(ico)                   &
                                            + cpatch%lai(ico) * csite%A_o_max(ipft,ipa)     &
                                            + cpatch%leaf_respiration(ico)
-            cpatch%today_gpp_moistmax(ico) = cpatch%today_gpp_lightmax(ico)
             !------------------------------------------------------------------------------!
 
       else
