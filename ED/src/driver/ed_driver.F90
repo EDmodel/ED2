@@ -72,8 +72,8 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot-1) sendnum = 0
 
-   if (mynum /= 1) then
 #if defined(RAMS_MPI)
+   if (mynum /= 1) then
       call MPI_RECV(ping,1,MPI_INTEGER,recvnum,80,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
    else
       write (unit=*,fmt='(a)') ' [+] Checking for XML config...'

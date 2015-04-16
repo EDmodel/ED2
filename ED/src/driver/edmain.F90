@@ -38,8 +38,6 @@ program main
    integer                               :: ierr
    !------ Intrinsic function to return number of arguments (numarg). ---------------------!
    integer                               :: iargc
-   !------ MPI interface. -----------------------------------------------------------------!
-#if defined(RAMS_MPI)
    !----- OMP information. ----------------------------------------------------------------!
    integer                               :: max_threads      !<= omp_get_max_threads()
    integer                               :: num_procs        !<= omp_get_num_procs()
@@ -48,7 +46,8 @@ program main
    integer, dimension(64)                :: thread_use
    integer, dimension(64)                :: cpu_use
    integer, external                     :: findmycpu
-   !---------------------------------------------------------------------------------------!
+   !------ MPI interface. -----------------------------------------------------------------!
+#if defined(RAMS_MPI)
    include 'mpif.h'
 #endif
    !---------------------------------------------------------------------------------------!

@@ -162,9 +162,8 @@ subroutine print_fields(ifm,cgrid)
                                      ,mast_idmax-mast_idmin+1,MPI_REAL                     &
                                      ,machs(nm),123,MPI_COMM_WORLD,status,ierr)
                      end if
-#endif
-
                   end do
+#endif
                end if
             else
                
