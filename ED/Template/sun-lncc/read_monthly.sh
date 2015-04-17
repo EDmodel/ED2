@@ -4,10 +4,7 @@ here="xxxxxxxxxxxxxxxxxxxxx"          # ! Main path
 myself=$(whoami)                      # ! You
 diskthere=""                          # ! Disk where the output files are
 thisqueue="qqqqqqqqqq"                # ! Queue where jobs should be submitted
-runtime="7-00:00:00"                  # ! Run time request
-memory=2048                           # ! Requested memory (Mb)
-sbatch=$(which sbatch)                # ! SLURM command to submit job.
-lonlat="${here}/joborder.txt"         # ! File with the job instructions
+joborder="${here}/joborder.txt"       # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot="xxxxxxxxxxxxxxxxxxxx"
 submit="y"       # y = Submit the script; n = Copy the script
@@ -56,6 +53,8 @@ simple=0                       # 0 -- default
                                # 1 -- simplified output
 #----- Path with R scripts that are useful. -----------------------------------------------#
 rscpath="${HOME}/EDBRAMS/R-utils"
+#----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
+initrc="${HOME}/.bashrc"
 #------------------------------------------------------------------------------------------#
 
 
@@ -79,9 +78,9 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "mlongo" ]
+if [ ${myself} == "marcosl" ]
 then
-   rscpath="/n/home00/mlongo/util/Rsc"
+   rscpath="/prj/prjidfca/marcosl/Util/Rsc"
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -89,8 +88,9 @@ fi
 #------------------------------------------------------------------------------------------#
 #     Make sure the paths are set.                                                         #
 #------------------------------------------------------------------------------------------#
-if [ ${here} == "xxxxxxxxxxxxxxxxxxxxx" ] || [ ${outroot} == "xxxxxxxxxxxxxxxxxxxxx" ] ||
-   [ ${thisqueue} =="qqqqqqqqqq" ]
+if [ "y${here}"      == "yxxxxxxxxxxxxxxxxxxxxx" ] || [ "y${here}"      == "y" ]
+   [ "y${outroot}"   == "yxxxxxxxxxxxxxxxxxxxxx" ] || [ "y${outroot}"   == "y" ]
+   [ "y${thisqueue}" == "yqqqqqqqqqq" ]            || [ "y${thisqueue}" == "y" ]
 then
    echo " here    = ${here}"
    echo " outroot = ${outroot}"
@@ -167,7 +167,7 @@ fi
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
-let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
+let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
 echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 
@@ -204,12 +204,30 @@ do
    let ff=${ff}+1
    let line=${ff}+3
 
+
+   #---------------------------------------------------------------------------------------#
+   #    Format count.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   else
+      ffout=${ff}
+   fi
+   #---------------------------------------------------------------------------------------#
+
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${lonlat} | tail -1)
+   oi=$(head -${line} ${joborder} | tail -1)
    polyname=$(echo ${oi}     | awk '{print $1 }')
    polyiata=$(echo ${oi}     | awk '{print $2 }')
    polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -515,12 +533,37 @@ do
       #------------------------------------------------------------------------------------#
       #     Check the status of the run.                                                   #
       #------------------------------------------------------------------------------------#
-      statrun=${here}/${polyname}/statusrun.txt
-      if [ -s ${statrun} ]
+      /bin/rm -f ${here}/${polyname}/statusrun.txt
+      /bin/rm -f ${here}/${polyname}/whichrun.r
+      /bin/cp -f ${here}/Template/whichrun.r ${here}/${polyname}/whichrun.r
+      whichrun="${here}/${polyname}/whichrun.r"
+      outwhich="${here}/${polyname}/outwhichrun.txt"
+      sed -i s@thispoly@${polyname}@g           ${whichrun}
+      sed -i s@thisqueue@${queue}@g             ${whichrun}
+      sed -i s@pathhere@${here}@g               ${whichrun}
+      sed -i s@paththere@${there}@g             ${whichrun}
+      sed -i s@thisyeara@${yeara}@g             ${whichrun}
+      sed -i s@thismontha@${montha}@g           ${whichrun}
+      sed -i s@thisdatea@${datea}@g             ${whichrun}
+      sed -i s@thistimea@${timea}@g             ${whichrun}
+      sed -i s@thischecksteady@FALSE@g          ${whichrun}
+      sed -i s@thismetcyc1@${metcyc1}@g         ${whichrun}
+      sed -i s@thismetcycf@${metcycf}@g         ${whichrun}
+      sed -i s@thisnyearmin@10000@g             ${whichrun}
+      sed -i s@thisststcrit@0.0@g               ${whichrun}
+      R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
+      while [ ! -s ${here}/${polyname}/statusrun.txt ]
+      do
+         sleep 0.5
+      done
+      year=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $2}')
+      month=$(cat ${here}/${polyname}/statusrun.txt | awk '{print $3}')
+      date=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}')
+      time=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}')
+      runt=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}')
+      if [ ${runt} != "INITIAL" ]
       then
-         runt=$(cat ${statrun} | awk '{print $6}')
-      else
-         runt="INITIAL"
+         runt="HISTORY"
       fi
       #------------------------------------------------------------------------------------#
 
@@ -542,7 +585,9 @@ do
          else
             cestfini="n"
          fi
+         lasttime=${monthl}/${yearl}
       else
+         lasttime="Never"
          cestfini="n"
       fi
       #------------------------------------------------------------------------------------#
@@ -551,9 +596,9 @@ do
 
 
       #----- Print banner. ----------------------------------------------------------------#
-      echo " ${ff} - ${polyname}"
+      echo " ${fflab} - ${polyname}"
       echo "   - ED-2.2 Status:             ${runt}"
-      echo "   - Last time processed:       ${monthl}/${yearl}.  Finished: ${cestfini}"
+      echo "   - Last time processed:       ${lasttime}.  Finished: ${cestfini}"
       #------------------------------------------------------------------------------------#
 
 
@@ -683,12 +728,22 @@ do
 
 
          #---------------------------------------------------------------------------------#
-         #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.  #
-         # Run it several times until it is complete.                                      #
+         #      Create shell script with job instructions.                                 #
          #---------------------------------------------------------------------------------#
-         echo "#!/bin/bash" > ${here}/${polyname}/${epostsh}
-         echo ${comm} >> ${here}/${polyname}/${epostsh}
-         chmod +x ${here}/${polyname}/${epostsh}
+         sbatchout="${here}/${polyname}/${epostlsf}"
+         epostnow="${here}/${polyname}/${epostsh}"
+         complete="${here}/${polyname}/eval_load_complete.txt"
+         rm -f ${epostnow}
+         echo "#$ -S /bin/bash"                > ${epostnow}
+         echo "#$ -q ${thisqueue}"            >> ${epostnow}
+         echo "#$ -o ${sbatchout}"            >> ${epostnow}
+         echo "#$ -N ${epostjob}"             >> ${epostnow}
+         echo "#$ -j y"                       >> ${epostnow}
+         echo "#$ -r n"                       >> ${epostnow}
+         echo " "                             >> ${epostnow}
+         echo ". ${initrc}"                   >> ${epostnow}
+         echo ${comm}                         >> ${epostnow}
+         chmod +x ${epostnow}
          #---------------------------------------------------------------------------------#
 
 
@@ -698,16 +753,15 @@ do
          #---------------------------------------------------------------------------------#
          if [ "x${submit}" == "xy" ] || [ "x${submit}" == "xY" ]
          then
-            sbatchout="${here}/${polyname}/${epostlsf}"
-            epostnow="${here}/${polyname}/${epostsh}"
-            sbatch -p ${thisqueue} --mem-per-cpu=${memory} -t ${runtime} -J ${epostjob}    \
-                -o ${sbatchout} -n 1 --wrap="${epostnow}"
+            qsub ${epostnow} 1> /dev/null 2> /dev/null
+            sleep 3
          fi
          #---------------------------------------------------------------------------------#
+
       fi
       #------------------------------------------------------------------------------------#
    else
-      echo "${ff} - ${polyname}: directory not found."
+      echo "${fflab} - ${polyname}: directory not found."
    fi
    #---------------------------------------------------------------------------------------#
 done

@@ -3,13 +3,10 @@
 here=$(pwd)                           # ! Main path
 myself=$(whoami)                      # ! You
 diskthere=""                          # ! Disk where the output files are
-thisqueue="moorcroft_amd"             # ! Queue where jobs should be submitted
-runtime="7-00:00:00"                  # ! Run time request
-memory=2048                           # ! Requested memory (Mb)
-sbatch=$(which sbatch)                # ! SLURM command to submit job.
-lonlat="${here}/joborder.txt"         # ! File with the job instructions
+thisqueue="linux.q"                   # ! Queue where jobs should be submitted
+joborder="${here}/joborder.txt"         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot="/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX"
+outroot=""
 submit="y"       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
 useperiod="t"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
@@ -54,6 +51,8 @@ correct_gs=1.0                 # Correction factor for growth and storage respir
 oldgrowth="FALSE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
 rscpath="${HOME}/EDBRAMS/R-utils"
+#----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
+initrc="${HOME}/.bashrc"
 #------------------------------------------------------------------------------------------#
 
 
@@ -85,8 +84,8 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscripts="plot_yearly.r"
-#rscripts="plot_monthly.r"
+#rscripts="plot_yearly.r"
+rscripts="plot_monthly.r"
 #rscripts="plot_census.r" 
 #rscripts="plot_ycomp.r"
 #rscripts="plot_eval_ed.r"
@@ -114,9 +113,9 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "mlongo" ]
+if [ ${myself} == "marcosl" ]
 then
-   rscpath="/n/home00/mlongo/util/Rsc"
+   rscpath="/prj/prjidfca/marcosl/Util/Rsc"
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -180,7 +179,7 @@ fi
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
-let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
+let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
 echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 
@@ -195,15 +194,34 @@ while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
-   
-   fflab="${ff}/${npolys}"
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Format count.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   else
+      ffout=${ff}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
 
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${lonlat} | tail -1)
+   oi=$(head -${line} ${joborder} | tail -1)
    polyname=$(echo ${oi}     | awk '{print $1 }')
    polyiata=$(echo ${oi}     | awk '{print $2 }')
    polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -455,12 +473,12 @@ do
       #----- Print a banner. --------------------------------------------------------------#
       if [ ${script} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
       then
-         echo "${fflab} - Skipping submission of ${script} for polygon: ${polyname}..."
+         echo "${ffout} - Skipping submission of ${script} for polygon: ${polyname}..."
       elif [ "x${submit}" == "xy" ] || [ "x${submit}" == "xY" ]
       then
-         echo "${fflab} - Submitting script ${script} for polygon: ${polyname}..."
+         echo "${ffout} - Submitting script ${script} for polygon: ${polyname}..."
       else
-         echo "${fflab} - Copying script ${script} to polygon: ${polyname}..."
+         echo "${ffout} - Copying script ${script} to polygon: ${polyname}..."
       fi
       #------------------------------------------------------------------------------------#
 
@@ -893,24 +911,34 @@ do
       #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
       # Run it several times until it is complete.                                         #
       #------------------------------------------------------------------------------------#
+      sbatchout="${here}/${polyname}/${epostlsf}"
+      epostnow="${here}/${polyname}/${epostsh}"
+      complete="${here}/${polyname}/eval_load_complete.txt"
+      rm -f ${epostnow}
+      echo "#$ -S /bin/bash"                > ${epostnow}
+      echo "#$ -q ${thisqueue}"            >> ${epostnow}
+      echo "#$ -o ${sbatchout}"            >> ${epostnow}
+      echo "#$ -N ${epostjob}"             >> ${epostnow}
+      echo "#$ -j y"                       >> ${epostnow}
+      echo "#$ -r n"                       >> ${epostnow}
+      echo " "                             >> ${epostnow}
+      echo ". ${initrc}"                   >> ${epostnow}
+
+
       case ${script} in
       plot_eval_ed.r)
-         complete="${here}/${polyname}/eval_load_complete.txt"
-         echo "#!/bin/bash"                >  ${here}/${polyname}/${epostsh}
-         echo "/bin/rm -fr ${complete}"    >> ${here}/${polyname}/${epostsh}
-         echo "while [ ! -s ${complete} ]" >> ${here}/${polyname}/${epostsh}
-         echo "do"                         >> ${here}/${polyname}/${epostsh}
-         echo "   sleep 3"                 >> ${here}/${polyname}/${epostsh}
-         echo "   ${comm}"                 >> ${here}/${polyname}/${epostsh}
-         echo "done"                       >> ${here}/${polyname}/${epostsh}
-         chmod +x ${here}/${polyname}/${epostsh}
+         echo "/bin/rm -fr ${complete}"    >> ${epostnow}
+         echo "while [ ! -s ${complete} ]" >> ${epostnow}
+         echo "do"                         >> ${epostnow}
+         echo "   sleep 3"                 >> ${epostnow}
+         echo "   ${comm}"                 >> ${epostnow}
+         echo "done"                       >> ${epostnow}
          ;;
       *)
-         echo "#!/bin/bash" > ${here}/${polyname}/${epostsh}
-         echo ${comm} >> ${here}/${polyname}/${epostsh}
-         chmod +x ${here}/${polyname}/${epostsh}
+         echo ${comm}                      >> ${epostnow}
          ;;
       esac
+      chmod +x ${epostnow}
       #------------------------------------------------------------------------------------#
 
 
@@ -931,13 +959,12 @@ do
       #------------------------------------------------------------------------------------#
       if [ "x${submitnow}" == "xy" ] || [ "x${submitnow}" == "xY" ]
       then
-         sbatchout="${here}/${polyname}/${epostlsf}"
-         epostnow="${here}/${polyname}/${epostsh}"
-         sbatch -p ${thisqueue} --mem-per-cpu=${memory} -t ${runtime} -J ${epostjob}       \
-             -o ${sbatchout} -n 1 --wrap="${epostnow}"
+         qsub ${epostnow} 1> /dev/null 2> /dev/null
+         sleep 3
       fi
       #------------------------------------------------------------------------------------#
    done
    #---------------------------------------------------------------------------------------#
+
 done
 #------------------------------------------------------------------------------------------#

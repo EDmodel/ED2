@@ -57,12 +57,12 @@ module mod_ncep
 
    !----- Variable names ------------------------------------------------------------------!
    character(len=maxstr), parameter, dimension(nvars_ncep) :: vars_ncep =                  &
-                       (/ 'air'              & ! Air temperature                  [      K]
-                        , 'pres'             & ! Pressure                         [     Pa]
-                        , 'rhum'             & ! Relative humidity                [      %]
-                        , 'uwnd'             & ! Zonal wind                       [    m/s]
-                        , 'vwnd'             & ! Zonal wind                       [    m/s]
-                        , 'pres'             & ! Pressure                         [     Pa]
+                       (/ 'air  '            & ! Air temperature                  [      K]
+                        , 'pres '            & ! Pressure                         [     Pa]
+                        , 'rhum '            & ! Relative humidity                [      %]
+                        , 'uwnd '            & ! Zonal wind                       [    m/s]
+                        , 'vwnd '            & ! Zonal wind                       [    m/s]
+                        , 'pres '            & ! Pressure                         [     Pa]
                         , 'dlwrf'            & ! Downward long wave radiation     [   W/m2]
                         , 'nbdsf'            & ! Near-IR beam radiation           [   W/m2]
                         , 'nddsf'            & ! Near-IR diffuse radiation        [   W/m2]
@@ -78,12 +78,18 @@ module mod_ncep
    ! path, but only what is after INPATH.  This    
    !---------------------------------------------------------------------------------------!
    character(len=maxstr), parameter, dimension(nvars_ncep) :: prefvars_ncep =              &
-                (/ 'air.sig995/air.sig995'           , 'pres.sfc/pres.sfc'                 & 
-                 , 'rhum.sig995/rhum.sig995'         , 'uwnd.sig995/uwnd.sig995'           & 
-                 , 'vwnd.sig995/vwnd.sig995'         , 'pres.sfc.gauss/pres.sfc.gauss'     & 
-                 , 'dlwrf.sfc.gauss/dlwrf.sfc.gauss' , 'nbdsf.sfc.gauss/nbdsf.sfc.gauss'   & 
-                 , 'nddsf.sfc.gauss/nddsf.sfc.gauss' , 'vbdsf.sfc.gauss/vbdsf.sfc.gauss'   & 
-                 , 'vddsf.sfc.gauss/vddsf.sfc.gauss' , 'prate.sfc.gauss/prate.sfc.gauss' /)  
+                (/ 'air.sig995/air.sig995          '                                       &
+                 , 'pres.sfc/pres.sfc              '                                       &
+                 , 'rhum.sig995/rhum.sig995        '                                       &
+                 , 'uwnd.sig995/uwnd.sig995        '                                       &
+                 , 'vwnd.sig995/vwnd.sig995        '                                       &
+                 , 'pres.sfc.gauss/pres.sfc.gauss  '                                       &
+                 , 'dlwrf.sfc.gauss/dlwrf.sfc.gauss'                                       &
+                 , 'nbdsf.sfc.gauss/nbdsf.sfc.gauss'                                       &
+                 , 'nddsf.sfc.gauss/nddsf.sfc.gauss'                                       &
+                 , 'vbdsf.sfc.gauss/vbdsf.sfc.gauss'                                       &
+                 , 'vddsf.sfc.gauss/vddsf.sfc.gauss'                                       &
+                 , 'prate.sfc.gauss/prate.sfc.gauss'                                      /)  
    !---------------------------------------------------------------------------------------!
 
 
@@ -101,28 +107,28 @@ module mod_ncep
    !---------------------------------------------------------------------------------------!
    !----- State grid. ---------------------------------------------------------------------!
    character(len=maxstr), parameter, dimension(nvars_ol1) :: vars_ol1 =                    &
-                       (/ 'lon'              & ! Longitude                        [    deg]
-                        , 'lat'              & ! Latitude                         [    deg]
-                        , 'hgt'              & ! Reference height                 [  m AGL]
-                        , 'tmp'              & ! Air temperature                  [      K]
-                        , 'pres'             & ! Pressure                         [     Pa]
-                        , 'sh'               & ! Specific humidity                [  kg/kg]
-                        , 'ugrd'             & ! Zonal wind                       [    m/s]
-                        , 'vgrd'             & ! Zonal wind                       [    m/s]
+                       (/ 'lon  '            & ! Longitude                        [    deg]
+                        , 'lat  '            & ! Latitude                         [    deg]
+                        , 'hgt  '            & ! Reference height                 [  m AGL]
+                        , 'tmp  '            & ! Air temperature                  [      K]
+                        , 'pres '            & ! Pressure                         [     Pa]
+                        , 'sh   '            & ! Specific humidity                [  kg/kg]
+                        , 'ugrd '            & ! Zonal wind                       [    m/s]
+                        , 'vgrd '            & ! Zonal wind                       [    m/s]
                         , 'prate'            & ! Precipitation rate               [kg/m2/s]
                         , 'dlwrf'           /) ! Downward long wave radiation     [   W/m2]
    !----- Flux grid. ----------------------------------------------------------------------!
    character(len=maxstr), parameter, dimension(nvars_ol2) :: vars_ol2 =                   &
-                       (/ 'lon'              & ! Longitude                        [    deg]
-                        , 'lat'              & ! Latitude                         [    deg]
+                       (/ 'lon  '            & ! Longitude                        [    deg]
+                        , 'lat  '            & ! Latitude                         [    deg]
                         , 'nbdsf'            & ! Near-IR beam radiation           [   W/m2]
                         , 'nddsf'            & ! Near-IR diffuse radiation        [   W/m2]
                         , 'vbdsf'            & ! Visible beam radiation           [   W/m2]
                         , 'vddsf'           /) ! Visible beam radiation           [   W/m2]
    !----- State grid. ---------------------------------------------------------------------!
    character(len=maxstr), parameter, dimension(nvars_ol4) :: vars_ol4 =                    &
-                       (/ 'lon'              & ! Longitude                        [    deg]
-                        , 'lat'              & ! Latitude                         [    deg]
+                       (/ 'lon  '            & ! Longitude                        [    deg]
+                        , 'lat  '            & ! Latitude                         [    deg]
                         , 'prate'           /) ! Precipitation rate               [kg/m2/s]
    !---------------------------------------------------------------------------------------!
 
