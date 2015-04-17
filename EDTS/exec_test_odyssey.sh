@@ -12,7 +12,7 @@
 #            branched from 3e31dd3, your initials are xyz, your local branch is b13aac2    #
 #            and this is your 1st attempt to run the test suite, you may use:              #
 #------------------------------------------------------------------------------------------#
-VERSION="3e31dd3_xyz_b13aac2_v1"
+VERSION="3e31dd3-xyz-b13aac2-v1"
 #------------------------------------------------------------------------------------------#
 
 

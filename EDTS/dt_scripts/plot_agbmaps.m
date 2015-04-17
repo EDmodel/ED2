@@ -61,8 +61,14 @@ text(0.5,0.45,sprintf('AGB - %s',grid_name),...
 patch_agb_dgt = zeros(4,npoly);
 patch_agb_gc = zeros(4,npoly);
 for ipy=1:npoly
-    patch_agb_dgt(:,ipy) = 100*(sum(agb_gt(ipy,:))-sum(agb_gc(ipy,:)))...
-        ./(sum(agb_gc(ipy,:)));
+    tot_agb_gc = sum(agb_gc(ipy,:));
+    tot_agb_gt = sum(agb_gt(ipy,:));
+    if (tot_agb_gc == 0. && tot_agb_gt == 0.)
+       patch_agb_dgt(:,ipy) = 0.;
+    else
+       patch_agb_dgt(:,ipy) = 200.*(sum(agb_gt(ipy,:))-sum(agb_gc(ipy,:)))...
+                            ./(tot_agb_gc+tot_agb_gt);
+    end
     patch_agb_gc(:,ipy) = sum(agb_gc(ipy,:));
 end
 minc = 0.0;
@@ -110,7 +116,7 @@ end
 hold off;
 xlim([minlon maxlon])
 ylim([minlat maxlat]);
-ylabel('100(Test-Main)/Ave(Main)','FontSize',fasz);
+ylabel('100(Test-Main)/(Test+Main)','FontSize',fasz);
 freezeColors;
 cbfreeze;
 
@@ -127,9 +133,12 @@ patch_agb_dgt = zeros(4,npoly);
 patch_agb_gc = zeros(4,npoly);
 
 for ipy=1:npoly
-    patch_agb_dgt(:,ipy) = 100*(agb_gt(ipy,ipft)-agb_gc(ipy,ipft))...
-        ./(agb_gc(ipy,ipft));
-    
+    if (agb_gt(ipy,ipft) == 0. && agb_gc(ipy,ipft) == 0.)
+      patch_agb_dgt(:,ipy) = 0.;
+    else
+      patch_agb_dgt(:,ipy) = 200.*(agb_gt(ipy,ipft)-agb_gc(ipy,ipft))...
+                           ./(agb_gt(ipy,ipft)+agb_gc(ipy,ipft));
+    end
 %    patch_agb_dgt(:,ipy) = agb_gt(ipy,ipft)-agb_gc(ipy,ipft);
     patch_agb_gc(:,ipy) = agb_gc(ipy,ipft);
 end

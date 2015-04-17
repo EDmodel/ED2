@@ -61,8 +61,14 @@ text(0.5,0.45,sprintf('LAI - %s',grid_name),...
 patch_lai_dgt = zeros(4,npoly);
 patch_lai_gc = zeros(4,npoly);
 for ipy=1:npoly
-    patch_lai_dgt(:,ipy) = 100*(sum(lai_gt(ipy,:))-sum(lai_gc(ipy,:)))...
-        ./(mean(sum(lai_gc(ipy,:))));
+    tot_lai_gc = sum(lai_gc(ipy,:));
+    tot_lai_gt = sum(lai_gt(ipy,:));
+    if (tot_lai_gc == 0. && tot_lai_gt == 0.)
+       patch_lai_dgt(:,ipy) = 0.0;
+    else
+       patch_lai_dgt(:,ipy) = 200.*(sum(lai_gt(ipy,:))-sum(lai_gc(ipy,:)))...
+                           ./ (tot_lai_gc + tot_lai_gt);
+    end
     patch_lai_gc(:,ipy) = sum(lai_gc(ipy,:));
 end
 minc = 0.0;
@@ -110,7 +116,7 @@ end
 hold off;
 xlim([minlon maxlon])
 ylim([minlat maxlat]);
-ylabel('100(Test-Main)/Ave(Main)','FontSize',fasz);
+ylabel('200(Test-Main)/(Test+Main)','FontSize',fasz);
 freezeColors;
 cbfreeze;
 
@@ -127,9 +133,12 @@ patch_lai_dgt = zeros(4,npoly);
 patch_lai_gc = zeros(4,npoly);
 
 for ipy=1:npoly
-    patch_lai_dgt(:,ipy) = 100*(lai_gt(ipy,ipft)-lai_gc(ipy,ipft))...
-        ./(mean(lai_gc(ipy,ipft)));
-    
+    if (lai_gc(ipy,ipft) == 0. && lai_gt(ipy,ipft) == 0.)
+       patch_lai_dgt(:,ipy) = 0.;
+    else
+       patch_lai_dgt(:,ipy) = 200. * (lai_gt(ipy,ipft)-lai_gc(ipy,ipft))...
+                           ./ (lai_gt(ipy,ipft)+lai_gc(ipy,ipft));
+    end
 %    patch_lai_dgt(:,ipy) = lai_gt(ipy,ipft)-lai_gc(ipy,ipft);
     patch_lai_gc(:,ipy) = lai_gc(ipy,ipft);
 end
