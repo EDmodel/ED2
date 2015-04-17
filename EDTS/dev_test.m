@@ -307,7 +307,7 @@ if nsite>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 spass(is,1) = 1;
             end
         end
@@ -321,7 +321,7 @@ if nsite>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 spass(is,2) = 1;
             end
         end
@@ -336,7 +336,7 @@ if nsite>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 spass(is,3) = 1;
             end
         end
@@ -361,7 +361,7 @@ if ngrid>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 gpass(ig,1)=1;
             end
         end
@@ -375,7 +375,7 @@ if ngrid>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 gpass(ig,2)=1;
             end
         end
@@ -389,7 +389,7 @@ if ngrid>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 gpass(ig,3)=1;
             end
         end
@@ -412,7 +412,7 @@ if nhifr>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 hpass(ih,1) = 1;
             end
         end
@@ -426,7 +426,7 @@ if nhifr>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 hpass(ih,2) = 1;
             end
         end
@@ -440,7 +440,7 @@ if nhifr>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 hpass(ih,3) = 1;
             end
         end
