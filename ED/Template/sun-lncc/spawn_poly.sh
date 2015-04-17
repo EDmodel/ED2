@@ -11,30 +11,24 @@ moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
+bioinit='/prj/prjidfca/marcosl/Data/ed2_data/site_bio_data'
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
-restart='/n/home00/mlongo/data/ed2_data/restarts_XXX'
+restart='/prj/prjidfca/marcosl/Data/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
 lonlat="${here}/joborder.txt"
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
 outthere="n"
-#----- Disk name (usually just the path until right before your own directory). -----------#
-diskthere="/n/moorcroftfs2"
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with drivers for each scenario. -----------------------------------------------#
-metmaindef="/n/home00/mlongo/data/ed2_data"
-packdatasrc="/n/home00/mlongo/data/2scratch"
+metmaindef="/prj/prjidfca/marcosl/Data/ed2_data"
+packdatasrc="/prj/prjidfca/marcosl/Data/2scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
-lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
+lumain="/prj/prjidfca/marcosl/Data/lu_scenarios"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch="n"
-#----- Requested memory and time. ---------------------------------------------------------#
-memory=2048                 # Requested memory per cpu
-runtime_own="30-00:00:00"   # Runtime for lab owned nodes
-runtime_gen="7-00:00:00"    # Runtime for general nodes
 #----- Force submit? Or just submit those that would normally be submitted?. --------------#
 forcesubmit="n"
 #------------------------------------------------------------------------------------------#
@@ -45,7 +39,7 @@ forcesubmit="n"
 #----- Force history run (0 = no, 1 = yes). -----------------------------------------------#
 forcehisto=0
 #----- Path with the history file to be used. ---------------------------------------------#
-fullygrown="/n/moorcroftfs1/mlongo/EDBRAMS/debug/dbg_033/pdg_crash/histo/pedegigante"
+fullygrown="/prj/prjidfca/marcosl/Simulations/debug/dbg_033/pdg_crash/histo/pedegigante"
 #----- Time that we shall use. ------------------------------------------------------------#
 yearh="1510"  # Year
 monthh="07"   # Month
@@ -96,7 +90,13 @@ initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
 if [ "x${copy2scratch}" == "xy" ]  || [ "x${copy2scratch}" == "xY" ]
 then
-   metmain="/scratch/mlongo"
+   #----- Keep the capability, but turn off for now. --------------------------------------#
+   echo "This is not odyssey, you cannot copy to scratch!"
+   exit 99
+   #---------------------------------------------------------------------------------------#
+
+
+   metmain="/scratch/${moi}"
 else
    metmain=${metmaindef}
 fi
@@ -126,68 +126,22 @@ fi
 
 
 #------------------------------------------------------------------------------------------#
-#    Check whether we must create the "there" directory.                                   #
+#   here/there is not an option at sunhpc.                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${outthere} == "y" ] || [ ${outthere} == "Y" ]
-then
-
-   basehere=$(basename ${here})
-   dirhere=$(dirname ${here})
-   while [ ${basehere} != ${moi} ]
-   do
-      basehere=$(basename ${dirhere})
-      dirhere=$(dirname ${dirhere})
-   done
-   diskhere=${dirhere}
-   echo "-------------------------------------------------------------------------------"
-   echo " - Simulation control on disk: ${diskhere}"
-   echo " - Output on disk:             ${diskthere}"
-   echo "-------------------------------------------------------------------------------"
-   there=$(echo ${here} | sed s@${diskhere}@${diskthere}@g)
-else
-   basehere=$(basename ${here})
-   dirhere=$(dirname ${here})
-   while [ ${basehere} != ${moi} ]
-   do
-      basehere=$(basename ${dirhere})
-      dirhere=$(dirname ${dirhere})
-   done
-   diskhere=${dirhere}
-   diskthere=${dirhere}
-   echo "-------------------------------------------------------------------------------"
-   echo " - Simulation control on disk: ${diskhere}"
-   echo " - Output on disk:             ${diskthere}"
-   echo "-------------------------------------------------------------------------------"
-   there=${here}
-fi
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#    Make sure that the directory there exists, if not, create all parent directories      #
-# needed.                                                                                  #
-#------------------------------------------------------------------------------------------#
-while [ ! -s ${there} ]
+basehere=$(basename ${here})
+dirhere=$(dirname ${here})
+while [ ${basehere} != ${moi} ]
 do
-   namecheck=$(basename ${there})
-   dircheck=$(dirname ${there})
-   while [ ! -s ${dircheck} ] && [ ${namecheck} != '/' ]
-   do
-      namecheck=$(basename ${dircheck})
-      dircheck=$(dirname ${dircheck})
-   done
-   
-   if [ ${namecheck} == '/' ]
-   then
-      echo "Invalid disk for variable there:"
-      echo " DISK = ${diskhere}"
-      exit 58
-   else
-      echo "Making directory: ${dircheck}/${namecheck}"
-      mkdir ${dircheck}/${namecheck}
-   fi
+   basehere=$(basename ${dirhere})
+   dirhere=$(dirname ${dirhere})
 done
+diskhere=${dirhere}
+diskthere=${dirhere}
+echo "-------------------------------------------------------------------------------"
+echo " - Simulation control on disk: ${diskhere}"
+echo " - Output on disk:             ${diskthere}"
+echo "-------------------------------------------------------------------------------"
+there=${here}
 #------------------------------------------------------------------------------------------#
 
 
@@ -757,54 +711,54 @@ do
    glu-331)
       case ${polyiata} in
       tzi|zmh|nqn|hvd|wch|tqh)
-         ludatabase="${lumain}/glu/outglu/glu-"
+         ludatabase="${lumain}/glu/glu-"
          ;;
       *)
-         ludatabase="${lumain}/glu-3.3.1/one/glu-3.3.1-"
+         ludatabase="${lumain}/glu-3.3.1/glu-3.3.1-"
          ;;
       esac
       ;;
    glu-sa1)
       case ${polyiata} in
       tzi|zmh|nqn|hvd|wch|tqh)
-         ludatabase="${lumain}/glu/outglu/glu-"
+         ludatabase="${lumain}/glu/glu-"
          ;;
       *)
-         ludatabase="${lumain}/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-"
+         ludatabase="${lumain}/glu-3.3.1+sa1.bau/glu-3.3.1+sa1.bau-"
          ;;
       esac
       ;;
    glu-sag)
       case ${polyiata} in
       tzi|zmh|nqn|hvd|wch|tqh)
-         ludatabase="${lumain}/glu/outglu/glu-"
+         ludatabase="${lumain}/glu/glu-"
          ;;
       *)
-         ludatabase="${lumain}/glu-3.3.1+sa1.gov/one/glu-3.3.1+sa1.gov-"
+         ludatabase="${lumain}/glu-3.3.1+sa1.gov/glu-3.3.1+sa1.gov-"
          ;;
       esac
       ;;
    glu-sa2)
       case ${polyiata} in
       tzi|zmh|nqn|hvd|wch|tqh)
-         ludatabase="${lumain}/glu/outglu/glu-"
+         ludatabase="${lumain}/glu/glu-"
          ;;
       *)
-         ludatabase="${lumain}/glu-3.3.1+sa2.bau/one/glu-3.3.1+sa2.bau-"
+         ludatabase="${lumain}/glu-3.3.1+sa2.bau/glu-3.3.1+sa2.bau-"
          ;;
       esac
       ;;
    lurcp26)
-      ludatabase="${lumain}/luha-v1/luh-1.1+rcp26_image/half/luh-1.1+rcp26_image-"
+      ludatabase="${lumain}/luh-1.1+rcp26_image/luh-1.1+rcp26_image-"
       ;;
    lurcp45)
-      ludatabase="${lumain}/luha-v1/luh-1.1+rcp45_minicam/half/luh-1.1+rcp45_minicam-"
+      ludatabase="${lumain}/luh-1.1+rcp45_minicam/luh-1.1+rcp45_minicam-"
       ;;
    lurcp60)
-      ludatabase="${lumain}/luha-v1/luh-1.1+rcp60_aim/half/luh-1.1+rcp60_aim-"
+      ludatabase="${lumain}/luh-1.1+rcp60_aim/luh-1.1+rcp60_aim-"
       ;;
    lurcp85)
-      ludatabase="${lumain}/luha-v1/luh-1.1+rcp85_message/half/luh-1.1+rcp85_message-"
+      ludatabase="${lumain}/luh-1.1+rcp85_message/luh-1.1+rcp85_message-"
       ;;
    *)
       #------------------------------------------------------------------------------------#
@@ -1399,50 +1353,39 @@ do
       [ ${forcesubmit} == "y" -o ${forcesubmit} == "Y" ]
    then
 
-      #---- Decide which runtime to request. ----------------------------------------------#
-      if [ "x${queue}" == "xgeneral" ]
-      then
-         runtime=${runtime_gen}
-      else
-         runtime=${runtime_own}
-      fi
+
       #------------------------------------------------------------------------------------#
-
-
-
-      #----- Change the srun.sh file. -----------------------------------------------------#
-      srun="${here}/${polyname}/srun.sh"
-      sed -i s@pathhere@${here}@g      ${srun}
-      sed -i s@paththere@${there}@g    ${srun}
-      sed -i s@thispoly@${polyname}@g  ${srun}
-      sed -i s@thisdesc@${desc}@g      ${srun}
-      sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-      sed -i s@myorder@${ff}@g         ${srun}
-      sed -i s@myinitrc@${initrc}@g    ${srun}
-      sed -i s@thisqueue@${queue}@g    ${srun}
-      sed -i s@thismemory@${memory}@g  ${srun}
-      sed -i s@thistime@${runtime}@g   ${srun}
+      #      Reset callserial.sh.                                                          #
+      #------------------------------------------------------------------------------------#
+      callserial="${here}/${polyname}/callserial.sh"
+      rm -f ${callserial}
+      cp -f ${here}/Template/callserial.sh ${callserial}
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Change the callserial.sh file. -----------------------------------------------#
+      /bin/rm -f 
       callserial="${here}/${polyname}/callserial.sh"
+      sed -i s@pathhere@${here}@g          ${callserial}
+      sed -i s@thisdesc@${desc}@g          ${callserial}
       sed -i s@thisroot@${here}@g          ${callserial}
       sed -i s@thispoly@${polyname}@g      ${callserial}
+      sed -i s@thisqueue@${queue}@g        ${callserial}
       sed -i s@myexec@${execname}@g        ${callserial}
       sed -i s@myinitrc@${initrc}@g        ${callserial}
       sed -i s@myname@${moi}@g             ${callserial}
       sed -i s@mypackdata@${packdatasrc}@g ${callserial}
       sed -i s@myscenario@${iscenario}@g   ${callserial}
       sed -i s@myscenmain@${scentype}@g    ${callserial}
+      sed -i s@zzzzzzzz@${wtime}@g         ${callserial}
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Check whether I should submit from this path or not. -------------------------#
       blah="  Polygon job submitted."
-      ${here}/${polyname}/srun.sh 1> /dev/null 2> /dev/null
+      qsub ${callserial} 1> /dev/null 2> /dev/null
       #------------------------------------------------------------------------------------#
    elif [ ${runt} == "THE_END" ]
    then
@@ -1459,5 +1402,9 @@ do
    #---------------------------------------------------------------------------------------#
 
    echo ${blah}
+
+   #----- Take a quick nap to avoid submitting too many jobs at once. ---------------------#
+   sleep 5
+   #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#
