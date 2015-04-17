@@ -16,8 +16,9 @@ RAPP_ROOT=../../../../EDBRAMS/RAPP
 # blank.                                                                                   #
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
-HDF5_INCS=
-HDF5_LIBS=-lm -lz -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_PATH=/n/sw/hdf5/hdf5-1.8.2_intel-11.0.083
+HDF5_INCS=-I$(HDF5_PATH)/include
+HDF5_LIBS=-lm -lz -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 
 #------------------------------------------------------------------------------------------#
 #    NetCDF libraries. You don't have to include them if you don't want to use anything in #
@@ -25,8 +26,9 @@ HDF5_LIBS=-lm -lz -lhdf5 -lhdf5_fortran -lhdf5_hl
 # blank.                                                                                   #
 #------------------------------------------------------------------------------------------#
 USE_NCDF=1
-NCDF_INCS=
-NCDF_LIBS=-lnetcdf
+NCDF_PATH=/n/sw/netcdf-3.6.3_intel-11.0.083
+NCDF_INCS=-I$(NCDF_PATH)/include
+NCDF_LIBS=-L-I$(NCDF_PATH)/lib -lnetcdf
 
 #------ Defining the compiler and library paths in case they are not in LD_LIBRARY_PATH ---#
 CMACH=PC_LINUX1

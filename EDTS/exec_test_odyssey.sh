@@ -98,12 +98,9 @@ Q_RJG="general"     # Gridded 12x12 simulation centred on Reserva Jaru
 
 
 #------------------------------------------------------------------------------------------#
-# NNODES -- How many nodes (not cores) do you want to use for the gridded simulations?     #
-# PPN    -- Processors per node.                                                           #
-#          Currently there are 3 (RJG-MAIN RJG-TEST and RJG-DBUG)                          #
+# NPROC -- How many cores do you want to use for the gridded simulations?                  #
 #------------------------------------------------------------------------------------------#
-NNODES=3
-PPN=12
+NPROC=27
 #------------------------------------------------------------------------------------------#
 
 
@@ -227,7 +224,7 @@ declare -a SITEQ=( ${Q_M34} ${Q_S67} ${Q_HAR} ${Q_PDG} ${Q_TON} \
 #----- POI debug time. --------------------------------------------------------------------#
 declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005)
 declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006)
-declare -a D_INITMDS=(5    0    6    0    6    0    5    0    6   )
+declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6   )
 declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL )
 #------------------------------------------------------------------------------------------#
@@ -243,11 +240,6 @@ declare -a IDATEAH=(21 01)
 declare -a IDATEZH=(28 08)
 declare -a INITMDH=(6  5)
 declare -a RUNTYPH=(INITIAL INITIAL)
-#------------------------------------------------------------------------------------------#
-
-
-#----- Number of processors. --------------------------------------------------------------#
-let NPROC=${NNODES}*${PPN}
 #------------------------------------------------------------------------------------------#
 
 
@@ -275,7 +267,7 @@ rapid)
    #----- POI tests will run for two years. -----------------------------------------------#
    declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005)
    declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007)
-   declare -a INITMDS=(5    0    6    0    6    0    5    0    6   )
+   declare -a INITMDS=(5    0    6    0    4    0    5    0    6   )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
