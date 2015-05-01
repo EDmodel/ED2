@@ -10,7 +10,8 @@
 !==========================================================================================!
 !==========================================================================================!
 module fusion_fission_coms
-   use ed_max_dims, only : str_len
+   use ed_max_dims, only : str_len      & ! intent(in)
+                         , n_dist_types ! ! intent(in)
 
    implicit none
 
@@ -60,6 +61,17 @@ module fusion_fission_coms
    real    :: corr_patch
    real    :: corr_cohort
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum age above which we disregard the disturbance type (land use) and assume  !
+   ! old growth, thus allowing patch fusion to occur.                                      !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_dist_types) :: min_oldgrowth
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Flag to decide whether we should print the full details of the patch fusion       !

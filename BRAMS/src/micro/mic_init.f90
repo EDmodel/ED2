@@ -444,74 +444,90 @@ end subroutine jnmbinit
 !------------------------------------------------------------------------------------------!
 subroutine micinit()
 
-   use micphys, only : &
-           parm        & ! intent(out)
-          ,cparm       & ! intent(in)
-          ,rparm       & ! intent(in)
-          ,sparm       & ! intent(in)
-          ,aparm       & ! intent(in)
-          ,gparm       & ! intent(in)
-          ,hparm       & ! intent(in)
-          ,icloud      & ! intent(in)
-          ,irain       & ! intent(in)
-          ,isnow       & ! intent(in)
-          ,iaggr       & ! intent(in)
-          ,igraup      & ! intent(in)
-          ,ihail       & ! intent(in)
-          ,dps         & ! intent(out)
-          ,dps2        & ! intent(out)
-          ,rictmin     & ! intent(out)
-          ,rictmax     & ! intent(out)
-          ,nembc       & ! intent(in)
-          ,nhcat       & ! intent(in)
-          ,cfden       & ! intent(out)
-          ,cfmas       & ! intent(in)
-          ,pwden       & ! intent(out)
-          ,pwmas       & ! intent(in)
-          ,emb0log     & ! intent(out)
-          ,emb0        & ! intent(in)
-          ,emb1log     & ! intent(out)
-          ,emb1        & ! intent(in)
-          ,pwmasi      & ! intent(out)
-          ,pwen0       & ! intent(out)
-          ,pwemb0      & ! intent(out)
-          ,pwvt        & ! intent(in)
-          ,gnu         & ! intent(in)
-          ,jnmb        & ! intent(in)
-          ,cfemb0      & ! intent(out)
-          ,cfen0       & ! intent(out)
-          ,dnfac       & ! intent(out)
-          ,vtfac       & ! intent(out)
-          ,cfvt        & ! intent(in)
-          ,frefac1     & ! intent(out)
-          ,shapefac    & ! intent(in)
-          ,frefac2     & ! intent(out)
-          ,sipfac      & ! intent(out)
-          ,cfmasft     & ! intent(out)
-          ,dict        & ! intent(out)
-          ,dpsmi       & ! intent(out)
-          ,gamm        & ! intent(inout)
-          ,gamn1       & ! intent(out)
-          ,ngam        & ! intent(in)
-          ,gam         & ! intent(out)
-          ,gaminc      & ! intent(out)
-          ,gamsip13    & ! intent(out)
-          ,gamsip24    & ! intent(out)
-          ,cfmasi      & ! intent(out)
-          ,pwmasi      & ! intent(out)
-          ,ch3         & ! intent(out)
-          ,cdp1        & ! intent(out)
-          ,pwvtmasi    ! ! intent(out)
-   use rconstants, only: pio6i
-   use micro_coms, only : lcat_lhcat
+   use micphys   , only : parm        & ! intent(out)
+                        , cparm       & ! intent(in)
+                        , rparm       & ! intent(in)
+                        , sparm       & ! intent(in)
+                        , aparm       & ! intent(in)
+                        , gparm       & ! intent(in)
+                        , hparm       & ! intent(in)
+                        , icloud      & ! intent(in)
+                        , irain       & ! intent(in)
+                        , isnow       & ! intent(in)
+                        , iaggr       & ! intent(in)
+                        , igraup      & ! intent(in)
+                        , ihail       & ! intent(in)
+                        , dps         & ! intent(out)
+                        , dps2        & ! intent(out)
+                        , rictmin     & ! intent(out)
+                        , rictmax     & ! intent(out)
+                        , nembc       & ! intent(in)
+                        , nhcat       & ! intent(in)
+                        , cfden       & ! intent(out)
+                        , cfmas       & ! intent(in)
+                        , pwden       & ! intent(out)
+                        , pwmas       & ! intent(in)
+                        , emb0log     & ! intent(out)
+                        , emb0        & ! intent(in)
+                        , emb1log     & ! intent(out)
+                        , emb1        & ! intent(in)
+                        , pwmasi      & ! intent(out)
+                        , pwen0       & ! intent(out)
+                        , pwemb0      & ! intent(out)
+                        , pwvt        & ! intent(in)
+                        , gnu         & ! intent(in)
+                        , jnmb        & ! intent(in)
+                        , cfemb0      & ! intent(out)
+                        , cfen0       & ! intent(out)
+                        , dnfac       & ! intent(out)
+                        , vtfac       & ! intent(out)
+                        , cfvt        & ! intent(in)
+                        , frefac1     & ! intent(out)
+                        , shapefac    & ! intent(in)
+                        , frefac2     & ! intent(out)
+                        , sipfac      & ! intent(out)
+                        , cfmasft     & ! intent(out)
+                        , dict        & ! intent(out)
+                        , dpsmi       & ! intent(out)
+                        , gamm        & ! intent(inout)
+                        , gamn1       & ! intent(out)
+                        , ngam        & ! intent(in)
+                        , gam         & ! intent(out)
+                        , gaminc      & ! intent(out)
+                        , gamsip13    & ! intent(out)
+                        , gamsip24    & ! intent(out)
+                        , cfmasi      & ! intent(out)
+                        , pwmasi      & ! intent(out)
+                        , ch3         & ! intent(out)
+                        , cdp1        & ! intent(out)
+                        , pwvtmasi    ! ! intent(out)
+   use rconstants, only : pio6i      & ! intent(in)
+                        , lnexp_min  & ! intent(in)
+                        , lnexp_max  ! ! intent(in)
+   use micro_coms, only : lcat_lhcat ! ! intent(in)
    
    implicit none
 
    !----- Local Variables: ----------------------------------------------------------------!
-   integer :: lhcat,lcat,ia
-   real :: c1,glg,glg1,glg2,glgm,glgc,glgmv,flngi,dpsi,embsip,dnsip
-   real :: gammln,gammp,gammq
-   real :: aux_loop1, aux_loop2
+   integer      :: lhcat
+   integer      :: lcat
+   integer      :: ie
+   real(kind=4) :: c1
+   real(kind=4) :: glg
+   real(kind=4) :: glg1
+   real(kind=4) :: glg2
+   real(kind=4) :: glgm
+   real(kind=4) :: glgc
+   real(kind=4) :: glgmv
+   real(kind=4) :: flngi
+   real(kind=4) :: dpsi
+   real(kind=4) :: embsip
+   real(kind=4) :: dnsip
+   real(kind=4) :: gammln
+   real(kind=4) :: gammp
+   real(kind=4) :: gammq
+   real(kind=4) :: aux_loop1
+   real(kind=4) :: aux_loop2
    !---------------------------------------------------------------------------------------!
 
 
@@ -595,20 +611,20 @@ subroutine micinit()
    aux_loop1 = dps * 1.e6
    aux_loop2 = emb1(1) * flngi
 
-   do ia=1,ngam
-      dpsi = aux_loop1 / float(ia)
+   do ie=1,ngam
+      dpsi         = aux_loop1 / float(ie)
 
-      gam(ia,1) = gammq(gnu(3) + 1., dpsi)
-      gam(ia,2) = gammp(gnu(4) + 1., dpsi)
-      gam(ia,3) = exp(-dpsi)
+      gam(ie,1)    = gammq(gnu(3) + 1., dpsi)
+      gam(ie,2)    = gammp(gnu(4) + 1., dpsi)
+      gam(ie,3)    = exp(- max(lnexp_min,min(lnexp_max,dpsi)))
 
-      gaminc(ia,1)=gammq(gnu(3),dpsi)
-      gaminc(ia,2)=gammp(gnu(4),dpsi)
+      gaminc(ie,1) = gammq(gnu(3),dpsi)
+      gaminc(ie,2) = gammp(gnu(4),dpsi)
 
-      embsip       = aux_loop2 * float(ia)
+      embsip       = aux_loop2 * float(ie)
       dnsip        = dnfac(1) * embsip ** pwmasi(1)
-      gamsip13(ia) = gammp(gnu(1),13.e-6/dnsip)
-      gamsip24(ia) = gammq(gnu(1),24.e-6/dnsip)
+      gamsip13(ie) = gammp(gnu(1),13.e-6/dnsip)
+      gamsip24(ie) = gammq(gnu(1),24.e-6/dnsip)
    end do
 
    return

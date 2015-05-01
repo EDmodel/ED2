@@ -11,7 +11,7 @@ module rk4_driver
    !      Main driver of short-time scale dynamics of the Runge-Kutta integrator           !
    !      for the land surface model.                                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine rk4_timestep(cgrid,ifm)
+   subroutine rk4_timestep(cgrid)
       use rk4_coms               , only : integration_vars     & ! structure
                                         , rk4patchtype         & ! structure
                                         , zero_rk4_patch       & ! subroutine
@@ -33,11 +33,8 @@ module rk4_driver
       !$ use omp_lib
       implicit none
 
-      !----------- Use MPI timing calls, need declarations --------------------------------!
-      include 'mpif.h'
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)              , target      :: cgrid
-      integer                   , intent (in) :: ifm
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)         , pointer     :: cpoly
       type(sitetype)            , pointer     :: csite
@@ -59,7 +56,6 @@ module rk4_driver
       integer                                 :: ipy
       integer                                 :: isi
       integer                                 :: ipa
-      integer                                 :: iun
       integer                                 :: nsteps
       integer                                 :: imon
       real                                    :: wcurr_loss2atm
@@ -70,16 +66,16 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
-      real                                    :: ecurr_prsseffect
       real                                    :: old_can_enthalpy
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
       real                                    :: old_can_temp
       real                                    :: old_can_prss
-      real                                    :: old_can_depth
       real                                    :: patch_vels
       integer                                 :: ibuff
+      !----- Local constants. -------------------------------------------------------------!
+      logical                   , parameter   :: test_energy_sanity = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
@@ -102,19 +98,20 @@ module rk4_driver
                                              + cmet%pcpg * dtlsm
             !------------------------------------------------------------------------------!
 
-            !---------------------------------------------------------------------------!
-            !    Copy the meteorological variables to the rk4site structure.            !
-            !---------------------------------------------------------------------------!
-            call copy_met_2_rk4site(nzg,cmet%atm_ustar,cmet%atm_theiv,cmet%atm_vpdef,   &
-                  cmet%atm_theta,        &
-                  cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht,   &
-                  cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,          &
-                  cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam,      &
-                  cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse,     &
-                  cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi),   &
-                  cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy),       &
-                  cgrid%lat(ipy),cgrid%cosz(ipy))
-            !---------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    Copy the meteorological variables to the rk4site structure.               !
+            !------------------------------------------------------------------------------!
+            call copy_met_2_rk4site(nzg,cmet%atm_ustar,cmet%atm_theiv,cmet%atm_vpdef       &
+                                   ,cmet%atm_theta,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2  &
+                                   ,cmet%geoht,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg  &
+                                   ,cmet%prss,cmet%rshort,cmet%rlong,cmet%par_beam         &
+                                   ,cmet%par_diffuse,cmet%nir_beam,cmet%nir_diffuse        &
+                                   ,cmet%geoht,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)      &
+                                   ,cpoly%green_leaf_factor(:,isi),cgrid%lon(ipy)          &
+                                   ,cgrid%lat(ipy),cgrid%cosz(ipy))
+            !------------------------------------------------------------------------------!
 
             !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(      &
             !$OMP initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,    &
@@ -187,7 +184,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                        &
                                              ,cpoly%ntext_soil(:,isi))
-               call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               call update_patch_derived_props(csite,ipa)
                !---------------------------------------------------------------------------!
 
 
@@ -204,6 +201,15 @@ module rk4_driver
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
                !---------------------------------------------------------------------------!
 
+
+
+               !---------------------------------------------------------------------------!
+               !      Test whether temperature and energy are reasonable.                  !
+               !---------------------------------------------------------------------------!
+               if (test_energy_sanity) then
+                  call sanity_check_veg_energy(csite,ipa)
+               end if
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
@@ -235,7 +241,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch_rk4(csite,initp,ipa                                    &
+               call integrate_patch_rk4(csite,initp,ipa,isi                                &
                                        ,cpoly%nighttime(isi),wcurr_loss2atm                &
                                        ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm       &
                                        ,wcurr_loss2drainage,ecurr_loss2drainage            &
@@ -292,10 +298,10 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch_rk4(csite,initp,ipa,nighttime,wcurr_loss2atm,ecurr_netrad    &
-                                 ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage      &
-                                 ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff  &
-                                 ,nsteps)
+   subroutine integrate_patch_rk4(csite,initp,ipa,isi,nighttime,wcurr_loss2atm             &
+                                 ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm             &
+                                 ,wcurr_loss2drainage,ecurr_loss2drainage                  &
+                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -316,6 +322,7 @@ module rk4_driver
       type(sitetype)        , target      :: csite
       type(rk4patchtype)    , target      :: initp
       integer               , intent(in)  :: ipa
+      integer               , intent(in)  :: isi
       logical               , intent(in)  :: nighttime
       real                  , intent(out) :: wcurr_loss2atm
       real                  , intent(out) :: ecurr_netrad
@@ -327,19 +334,8 @@ module rk4_driver
       real                  , intent(out) :: ecurr_loss2runoff
       integer               , intent(out) :: nsteps
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                          :: hbeg
-      !----- Locally saved variable -------------------------------------------------------!
-      logical                  , save       :: first_time=.true.
+      real(kind=8)                        :: hbeg
       !------------------------------------------------------------------------------------!
-
-      !----- Assign some constants which will remain the same throughout the run. ---------!
-      if (first_time) then
-         first_time = .false.
-         tbeg   = 0.d0
-         tend   = dble(dtlsm)
-         dtrk4  = tend - tbeg
-         dtrk4i = 1.d0/dtrk4
-      end if
 
       !------------------------------------------------------------------------------------!
       !      Initial step size.  Experience has shown that giving this too large a value   !
@@ -360,7 +356,7 @@ module rk4_driver
 
       !----- Go into the ODE integrator. --------------------------------------------------!
 
-      call odeint(hbeg,csite,ipa,nsteps)
+      call odeint(hbeg,csite,ipa,isi,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -448,16 +444,13 @@ module rk4_driver
       real              , intent(out) :: ebudget_loss2runoff
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
-      integer                         :: mould
       integer                         :: ico
       integer                         :: ipft
       integer                         :: k
       integer                         :: ka
       integer                         :: kroot
       integer                         :: kclosest
-      integer                         :: ksn
       integer                         :: nsoil
-      integer                         :: nlsw1
       real(kind=8)                    :: tmp_energy
       real(kind=8)                    :: available_water
       real(kind=8)                    :: gnd_water
@@ -1474,6 +1467,12 @@ module rk4_driver
                                        + cpatch%fsw              (ico) * dtlsm_o_frqsum
          cpatch%fmean_fsn        (ico) = cpatch%fmean_fsn        (ico)                     &
                                        + cpatch%fsn              (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_light    (ico) = cpatch%fmean_A_light    (ico)                     &
+                                       + cpatch%A_light          (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_rubp     (ico) = cpatch%fmean_A_rubp     (ico)                     &
+                                       + cpatch%A_rubp           (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_co2      (ico) = cpatch%fmean_A_co2      (ico)                     &
+                                       + cpatch%A_co2            (ico) * dtlsm_o_frqsum
          !---------------------------------------------------------------------------------!
          !     The penalty factor for water and nitrogen are meaningful only during the    !
          ! day.  For the daily means we must add only when it is daytime, so we integrate  !
@@ -1508,7 +1507,7 @@ module rk4_driver
      return
    end subroutine initp2modelp
    !=======================================================================================!
-   !=======================================================================================! 
+   !=======================================================================================!
 end module rk4_driver
 
 !==========================================================================================!

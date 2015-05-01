@@ -37,16 +37,9 @@ subroutine euler_timestep(cgrid)
    integer                                :: ipy
    integer                                :: isi
    integer                                :: ipa
-   integer                                :: ico
    integer                                :: nsteps
    integer                                :: imon
    real                                   :: patch_vels
-   real                                   :: thetaatm
-   real                                   :: thetacan
-   real                                   :: rasveg
-   real                                   :: storage_decay
-   real                                   :: leaf_flux
-   real                                   :: veg_tai
    real                                   :: wcurr_loss2atm
    real                                   :: ecurr_netrad
    real                                   :: ecurr_loss2atm
@@ -61,9 +54,10 @@ subroutine euler_timestep(cgrid)
    real                                   :: old_can_rhos
    real                                   :: old_can_temp
    real                                   :: old_can_prss
-   real                                   :: fm
    integer                                :: ibuff
    ! OMP  integer(kind=OMP_integer_kind)   :: omp_ibuff
+   !----- Local constants. ----------------------------------------------------------------!
+   logical                  , parameter   :: test_energy_sanity = .false.
    !---------------------------------------------------------------------------------------!
 
    ibuff = 1
@@ -132,7 +126,7 @@ subroutine euler_timestep(cgrid)
             !    Update roughness and canopy depth.                                        !
             !------------------------------------------------------------------------------!
             call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
-            call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            call update_patch_derived_props(csite,ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -149,6 +143,18 @@ subroutine euler_timestep(cgrid)
             !----- Compute current storage terms. -----------------------------------------!
             call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
             !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Test whether temperature and energy are reasonable.                     !
+            !------------------------------------------------------------------------------!
+            if (test_energy_sanity) then
+               call sanity_check_veg_energy(csite,ipa)
+            end if
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !     Set up the integration patch.                                            !
@@ -183,10 +189,13 @@ subroutine euler_timestep(cgrid)
             !     This is the step in which the derivatives are computed, we a structure   !
             ! that is very similar to the Runge-Kutta, though a simpler one.               !
             !------------------------------------------------------------------------------!
-            call integrate_patch_euler(csite,integration_buff(ibuff)%initp                        &
-                                      ,integration_buff(ibuff)%dinitp,integration_buff(ibuff)%ytemp      &
-                                      ,integration_buff(ibuff)%yscal,integration_buff(ibuff)%yerr        &
-                                      ,integration_buff(ibuff)%dydx,ipa,cpoly%nighttime(isi)      &
+            call integrate_patch_euler(csite,integration_buff(ibuff)%initp                 &
+                                      ,integration_buff(ibuff)%dinitp                      &
+                                      ,integration_buff(ibuff)%ytemp                       &
+                                      ,integration_buff(ibuff)%yscal                       &
+                                      ,integration_buff(ibuff)%yerr                        &
+                                      ,integration_buff(ibuff)%dydx                        &
+                                      ,ipa,isi,cpoly%nighttime(isi)                        &
                                       ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm          &
                                       ,co2curr_loss2atm,wcurr_loss2drainage                &
                                       ,ecurr_loss2drainage,wcurr_loss2runoff               &
@@ -243,8 +252,8 @@ end subroutine euler_timestep
 !     This subroutine will drive the integration process using the Euler method.  Notice   !
 ! that most of the Euler method utilises the subroutines from Runge-Kutta.                 !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nighttime    &
-                                ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                &
+subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi          &
+                                ,nighttime,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm      &
                                 ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage  &
                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
    use ed_state_vars   , only : sitetype             & ! structure
@@ -274,6 +283,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,ni
    type(rk4patchtype)    , target      :: yerr
    type(rk4patchtype)    , target      :: dydx
    integer               , intent(in)  :: ipa
+   integer               , intent(in)  :: isi
    logical               , intent(in)  :: nighttime
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_netrad
@@ -316,7 +326,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,ni
    initp%wpwp = 0.d0
 
    !----- Go into the ODE integrator using Euler. -----------------------------------------!
-   call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
+   call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
 
    !---------------------------------------------------------------------------------------!
    !      Normalize canopy-atmosphere flux values.  These values are updated every         !
@@ -352,7 +362,7 @@ end subroutine integrate_patch_euler
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
+subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype            ! ! structure
@@ -387,7 +397,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                              , nzs                    & ! intent(in)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
-                             , runoff_time            ! ! intent(in)
+                             , runoff_time            & ! intent(in)
+                             , runoff_time_i          & ! intent(in)
+                             , simplerunoff           ! ! intent(in)
    use consts_coms    , only : t3ple8                 & ! intent(in)
                              , wdnsi8                 ! ! intent(in)
    use therm_lib8     , only : tl2uint8               ! ! intent(in)
@@ -401,6 +413,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    type(rk4patchtype)        , target      :: yerr             ! Patch integration error
    type(rk4patchtype)        , target      :: dydx             ! Patch integration error
    integer                   , intent(in)  :: ipa              ! Current patch ID
+   integer                   , intent(in)  :: isi              ! Current patch ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
@@ -418,29 +431,13 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    real(kind=8)                            :: oldh             ! Old time step
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
-   real(kind=8)                            :: hdid             ! delta-t that worked (???)
    real(kind=8)                            :: qwfree           ! Free water internal energy
    real(kind=8)                            :: wfreeb           ! Free water 
    real(kind=8)                            :: errmax           ! Maximum error of this step
    real(kind=8)                            :: elaptime         ! Absolute elapsed time.
-   !----- Saved variables -----------------------------------------------------------------!
-   logical                   , save        :: first_time=.true.
-   logical                   , save        :: simplerunoff
-   real(kind=8)              , save        :: runoff_time_i
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
    !---------------------------------------------------------------------------------------!
-   
-   !----- Checking whether we will use runoff or not, and saving this check to save time. -!
-   if (first_time) then
-      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
-      if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
-      else 
-         runoff_time_i = 0.d0
-      end if
-      first_time   = .false.
-   end if
 
    !----- Use some aliases for simplicity. ------------------------------------------------!
    cpatch => csite%patch(ipa)
@@ -592,7 +589,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
                call norm_rk4_fluxes(ytemp,h)
-               call print_rk4_state(initp,ytemp,csite,ipa,x,h)
+               call print_rk4_state(initp,ytemp,csite,ipa,isi,x,h)
             end if
 
             !----- 3e. Copy the temporary structure to the intermediate state. ------------!
@@ -624,8 +621,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          !---------------------------------------------------------------------------------!
          !   Make temporary surface liquid water disappear.  This will not happen          !
          ! immediately, but liquid water will decay with the time scale defined by         !
-         ! runoff_time scale. If the time scale is too tiny, then it will be forced to be  !
-         ! hdid (no reason to be faster than that).                                        !
+         ! runoff_time scale.                                                              !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
 

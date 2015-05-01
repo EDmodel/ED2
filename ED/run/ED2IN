@@ -1526,8 +1526,12 @@ $ED_NL
    !               photosynthesis and detailed output from the integrator, set IDETAILED   !
    !               to 6 (2 + 4).  Any combination of the above outputs is acceptable, al-  !
    !               though all but the last produce a sheer amount of txt files, in which   !
-   !               case you may want to look at variable PATCH_KEEP.  It is also a good    !
-   !               idea to set IVEGT_DYNAMICS to 0 when using the first five outputs.      !
+   !               case you may want to look at variable PATCH_KEEP.                       !
+   !                                                                                       !
+   !               IMPORTANT:  The first five options will only work for single site       !
+   !                           simulations, and it is strongly recommended to set          !
+   !                           IVEGT_DYNAMICS to 0.  These options generate tons of        !
+   !                           output, so don't try these options with long simulations.   !
    !                                                                                       !
    !                                                                                       !
    ! PATCH_KEEP -- This option will eliminate all patches except one from the initial-     !

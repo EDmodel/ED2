@@ -57,15 +57,12 @@ qapply <<- function(X,INDEX,DIM,FUN,...){
                    , zFUN    = FUN
                    ,...
                    )#end apply
-      if (is.list(INDEX) && length(INDEX) > 1){
-         uniqlist       = lapply(X=lapply(X=INDEX,FUN=sort),FUN=unique)
-         dimuniq        = sapply(X=uniqlist,FUN=length,simplify=TRUE)
-         eout           = array (data=eout,dim=c(dimuniq,dim(X)[margin]))
-         dimnames(eout) = uniqlist
-         off            = length(dimuniq) - 1
-      }else{
-         off            = 0
-      }#end if
+      if (! is.list(INDEX)) INDEX = list(INDEX)
+      uniqlist       = lapply(X=lapply(X=INDEX,FUN=sort),FUN=unique)
+      dimuniq        = sapply(X=uniqlist,FUN=length,simplify=TRUE)
+      eout           = array (data=eout,dim=c(dimuniq,dim(X)[margin]))
+      dimnames(eout) = uniqlist
+      off            = length(dimuniq) - 1
       #------------------------------------------------------------------------------------#
 
 
@@ -78,13 +75,12 @@ qapply <<- function(X,INDEX,DIM,FUN,...){
                      ,seq(from =         1,to =   1+off,by=1)
                      ,seq(from = DIM+off+1,to =   ndims,by=1)
                      )#end c
-            eout  = aperm(a=eout,perm=perm)
          }else{
             perm  = c(seq(from=2+off,to=DIM+off,by=1)
                      ,seq(from=    1,to=  1+off,by=1)
                      )#end c
-            eout  = aperm(a=eout,perm=perm)
          }#end if (DIM < ndims)
+         eout  = aperm(a=eout,perm=perm)
       }#end if (DIM > 1)
       #------------------------------------------------------------------------------------#
    }#end if

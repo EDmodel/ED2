@@ -75,7 +75,7 @@ ed.zen = function (lon,lat,when,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=
          nz = floor(nmean/2) + 0.5 * ((nmean %% 2) - 1.0)
          na = - nz
       }else{
-         print(paste(" ---> In function ed.zen: imetavg =",imetavg,".",sep=""))
+         cat(" ---> In function ed.zen: imetavg =",imetavg,".","\n",sep="")
          stop ("Invalid imetavg, it must be 1, 2, or 3!")
       }#end if
       #------------------------------------------------------------------------------------#

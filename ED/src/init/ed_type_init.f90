@@ -185,6 +185,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%wood_gbw              (ico) = 0.0
    cpatch%A_open                (ico) = 0.0
    cpatch%A_closed              (ico) = 0.0
+   cpatch%A_light               (ico) = 0.0
+   cpatch%A_rubp                (ico) = 0.0
+   cpatch%A_co2                 (ico) = 0.0
    cpatch%psi_open              (ico) = 0.0
    cpatch%psi_closed            (ico) = 0.0
    cpatch%water_supply          (ico) = 0.0
@@ -251,6 +254,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%fmean_fs_open           (ico) = 0.0
    cpatch%fmean_fsw               (ico) = 0.0
    cpatch%fmean_fsn               (ico) = 0.0
+   cpatch%fmean_a_light           (ico) = 0.0
+   cpatch%fmean_a_rubp            (ico) = 0.0
+   cpatch%fmean_a_co2             (ico) = 0.0
    cpatch%fmean_psi_open          (ico) = 0.0
    cpatch%fmean_psi_closed        (ico) = 0.0
    cpatch%fmean_water_supply      (ico) = 0.0
@@ -320,6 +326,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_fs_open           (ico) = 0.0
       cpatch%dmean_fsw               (ico) = 0.0
       cpatch%dmean_fsn               (ico) = 0.0
+      cpatch%dmean_a_light           (ico) = 0.0
+      cpatch%dmean_a_rubp            (ico) = 0.0
+      cpatch%dmean_a_co2             (ico) = 0.0
       cpatch%dmean_psi_open          (ico) = 0.0
       cpatch%dmean_psi_closed        (ico) = 0.0
       cpatch%dmean_water_supply      (ico) = 0.0
@@ -382,6 +391,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_fs_open             (ico) = 0.0
       cpatch%mmean_fsw                 (ico) = 0.0
       cpatch%mmean_fsn                 (ico) = 0.0
+      cpatch%mmean_a_light             (ico) = 0.0
+      cpatch%mmean_a_rubp              (ico) = 0.0
+      cpatch%mmean_a_co2               (ico) = 0.0
       cpatch%mmean_psi_open            (ico) = 0.0
       cpatch%mmean_psi_closed          (ico) = 0.0
       cpatch%mmean_water_supply        (ico) = 0.0
@@ -469,6 +481,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%qmean_fs_open           (:,ico) = 0.0
       cpatch%qmean_fsw               (:,ico) = 0.0
       cpatch%qmean_fsn               (:,ico) = 0.0
+      cpatch%qmean_a_light           (:,ico) = 0.0
+      cpatch%qmean_a_rubp            (:,ico) = 0.0
+      cpatch%qmean_a_co2             (:,ico) = 0.0
       cpatch%qmean_psi_open          (:,ico) = 0.0
       cpatch%qmean_psi_closed        (:,ico) = 0.0
       cpatch%qmean_water_supply      (:,ico) = 0.0
@@ -705,7 +720,11 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%can_vpdef                       (ipaa:ipaz) = 0.0
    csite%can_temp                        (ipaa:ipaz) = 0.0
    csite%can_temp_pv                     (ipaa:ipaz) = 0.0
+   csite%can_shv                         (ipaa:ipaz) = 0.0
+   csite%can_co2                         (ipaa:ipaz) = 0.0
    csite%can_rhos                        (ipaa:ipaz) = 0.0
+   csite%can_prss                        (ipaa:ipaz) = 0.0
+   csite%can_theta                       (ipaa:ipaz) = 0.0
    csite%can_depth                       (ipaa:ipaz) = 0.0
    csite%opencan_frac                    (ipaa:ipaz) = 0.0
    csite%ground_shv                      (ipaa:ipaz) = 0.0
@@ -716,6 +735,7 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%ggveg                           (ipaa:ipaz) = 0.0
    csite%ggnet                           (ipaa:ipaz) = 0.0
    csite%ggsoil                          (ipaa:ipaz) = 0.0
+   csite%rough                           (ipaa:ipaz) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1062,8 +1082,7 @@ end subroutine init_ed_patch_vars
 subroutine init_ed_site_vars(cpoly, lat)
    use ed_state_vars, only : polygontype      ! ! intent(in)
    use ed_max_dims  , only : n_pft            & ! intent(in)
-                           , n_dbh            & ! intent(in)
-                           , n_dist_types     ! ! intent(in)
+                           , n_dbh            ! ! intent(in)
    use pft_coms     , only : agri_stock       & ! intent(in)
                            , plantation_stock ! ! intent(in)
    use grid_coms    , only : nzs              & ! intent(in)
@@ -1151,13 +1170,12 @@ subroutine init_ed_site_vars(cpoly, lat)
    cpoly%agri_stocking_density            (:) = 10.0
    cpoly%plantation_stocking_pft          (:) = plantation_stock
    cpoly%plantation_stocking_density      (:) = 4.0
+   cpoly%primary_harvest_target           (:) = 0.0
+   cpoly%secondary_harvest_target         (:) = 0.0
    cpoly%primary_harvest_memory           (:) = 0.0
    cpoly%secondary_harvest_memory         (:) = 0.0
-   cpoly%fire_disturbance_rate            (:) = 0.0
    cpoly%ignition_rate                    (:) = 0.0
    cpoly%lambda_fire                    (:,:) = 0.0
-   cpoly%nat_disturbance_rate             (:) = 0.0
-   cpoly%nat_dist_type                    (:) = 0
    cpoly%disturbance_memory           (:,:,:) = 0.0
    cpoly%disturbance_rates            (:,:,:) = 0.0
    !---------------------------------------------------------------------------------------!
@@ -1349,14 +1367,14 @@ subroutine init_ed_poly_vars(cgrid)
       !------------------------------------------------------------------------------------!
       !       Hydrology stuff.                                                             !
       !------------------------------------------------------------------------------------!
- !     cgrid%wbar     (ipy) = 0.0
- !     cgrid%Te       (ipy) = 0.0
- !     cgrid%zbar     (ipy) = 0.0
- !     cgrid%sheat    (ipy) = 0.0
- !     cgrid%baseflow (ipy) = 0.0
- !     cgrid%runoff   (ipy) = 0.0
- !     cgrid%qrunoff  (ipy) = 0.0
- !     cgrid%swliq    (ipy) = 0.0
+      cgrid%wbar     (ipy) = 0.0
+      cgrid%Te       (ipy) = 0.0
+      cgrid%zbar     (ipy) = 0.0
+      cgrid%sheat    (ipy) = 0.0
+      cgrid%baseflow (ipy) = 0.0
+      cgrid%runoff   (ipy) = 0.0
+      cgrid%qrunoff  (ipy) = 0.0
+      cgrid%swliq    (ipy) = 0.0
       !------------------------------------------------------------------------------------!
 
 
@@ -1442,6 +1460,9 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%fmean_fs_open              (ipy) = 0.0
       cgrid%fmean_fsw                  (ipy) = 0.0
       cgrid%fmean_fsn                  (ipy) = 0.0
+      cgrid%fmean_a_light              (ipy) = 0.0
+      cgrid%fmean_a_rubp               (ipy) = 0.0
+      cgrid%fmean_a_co2                (ipy) = 0.0
       cgrid%fmean_psi_open             (ipy) = 0.0
       cgrid%fmean_psi_closed           (ipy) = 0.0
       cgrid%fmean_water_supply         (ipy) = 0.0
@@ -1583,6 +1604,9 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%dmean_fs_open              (ipy) = 0.0
          cgrid%dmean_fsw                  (ipy) = 0.0
          cgrid%dmean_fsn                  (ipy) = 0.0
+         cgrid%dmean_a_light              (ipy) = 0.0
+         cgrid%dmean_a_rubp               (ipy) = 0.0
+         cgrid%dmean_a_co2                (ipy) = 0.0
          cgrid%dmean_psi_open             (ipy) = 0.0
          cgrid%dmean_psi_closed           (ipy) = 0.0
          cgrid%dmean_water_supply         (ipy) = 0.0
@@ -1711,6 +1735,9 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%mmean_fs_open              (ipy) = 0.0
          cgrid%mmean_fsw                  (ipy) = 0.0
          cgrid%mmean_fsn                  (ipy) = 0.0
+         cgrid%mmean_a_light              (ipy) = 0.0
+         cgrid%mmean_a_rubp               (ipy) = 0.0
+         cgrid%mmean_a_co2                (ipy) = 0.0
          cgrid%mmean_psi_open             (ipy) = 0.0
          cgrid%mmean_psi_closed           (ipy) = 0.0
          cgrid%mmean_water_supply         (ipy) = 0.0
@@ -1893,6 +1920,9 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%qmean_fs_open            (:,ipy) = 0.0
          cgrid%qmean_fsw                (:,ipy) = 0.0
          cgrid%qmean_fsn                (:,ipy) = 0.0
+         cgrid%qmean_a_light            (:,ipy) = 0.0
+         cgrid%qmean_a_rubp             (:,ipy) = 0.0
+         cgrid%qmean_a_co2              (:,ipy) = 0.0
          cgrid%qmean_psi_open           (:,ipy) = 0.0
          cgrid%qmean_psi_closed         (:,ipy) = 0.0
          cgrid%qmean_water_supply       (:,ipy) = 0.0

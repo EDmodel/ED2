@@ -120,6 +120,7 @@ subroutine harr_radinit1(ng,nb,ns,npsb,nuum,prf,alpha,trf,beta,xp,  &
   !     mg   --   maximum active gasses in scheme (different from
   !               the max number of active gasses in any given band)
   !     mk   --   maximum number of pseudobands allowed for any gas
+  use harr_coms, only : top, tm
   use mem_harr, only : mb,mg,mk
   implicit none
 
@@ -129,7 +130,6 @@ subroutine harr_radinit1(ng,nb,ns,npsb,nuum,prf,alpha,trf,beta,xp,  &
   !
   !     Rewritten and modified: J.H. 1995/1996
   !
-  real, parameter :: top=1800.,tm=1800./296.
   !
   !     (H2O - gas 1;  CO2 plus other gases - gas 2;  Ozone - gas 3)
   !

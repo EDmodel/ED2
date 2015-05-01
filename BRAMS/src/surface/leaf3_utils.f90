@@ -30,7 +30,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm                     &
                       ,theta_can,enthalpy_can,shv_can,rvap_can,co2_can                     &
-                      ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar    &
+                      ,zref,dheight,uref,dtl3,rough,ustar,tstar,estar,qstar,rstar,cstar    &
                       ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
@@ -66,7 +66,7 @@ subroutine leaf3_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm          
    real, intent(in)  :: zref         ! Height at reference point                [        m]
    real, intent(in)  :: dheight      ! Displacement height                      [        m]
    real, intent(in)  :: uref         ! Wind speed at reference height           [      m/s]
-   real, intent(in)  :: dtll         ! Time step                                [        m]
+   real, intent(in)  :: dtl3         ! Time step                                [        m]
    real, intent(in)  :: rough        ! z0, the roughness                        [        m]
    real, intent(out) :: ustar        ! U*, friction velocity                    [      m/s]
    real, intent(out) :: tstar        ! Temperature friction scale               [        K]
@@ -412,7 +412,7 @@ end subroutine leaf3_sfclmcv
 !      layer.  J. Atm. Sci., 34, 331-334.                                                  !
 !------------------------------------------------------------------------------------------!
 real function leaf3_sflux_w(zeta,tstar,ustar)
-   use consts_coms , only : vonk ! intent(in)
+   use rconstants , only : vonk ! intent(in)
   
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -474,24 +474,29 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
                         ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap           &
                         ,ground_temp,ground_fliq)
 
-   use leaf_coms  , only : slcpd       & ! intent(in)
-                         , slpots      & ! intent(in)
-                         , slmsts      & ! intent(in)
-                         , soilcp      & ! intent(in)
-                         , slbs        & ! intent(in)
-                         , sfldcap     & ! intent(in)
-                         , ggsoil      & ! intent(in)
-                         , ggsoil0     & ! intent(in)
-                         , kksoil      ! ! intent(in)
-   use rconstants , only : gorh2o      & ! intent(in)
-                         , pi1         & ! intent(in)
-                         , wdns        & ! intent(in)
-                         , lnexp_min   & ! intent(in)
-                         , huge_num    ! ! intent(in)
-   use therm_lib  , only : rslif       & ! function
-                         , uextcm2tl   & ! function
-                         , uint2tl     ! ! function
-   use mem_leaf   , only : igrndvap    ! ! intent(in)
+   use leaf_coms  , only : slcpd                  & ! intent(in)
+                         , slpots                 & ! intent(in)
+                         , slmsts                 & ! intent(in)
+                         , soilcp                 & ! intent(in)
+                         , slbs                   & ! intent(in)
+                         , sfldcap                & ! intent(in)
+                         , snowfac                & ! intent(in)
+                         , ggsoil                 & ! intent(in)
+                         , ggsoil0                & ! intent(in)
+                         , kksoil                 & ! intent(in)
+                         , can_shv                & ! intent(inout)
+                         , leaf3_matric_potential ! ! intent(inout)
+   use rconstants , only : gorh2o                 & ! intent(in)
+                         , pi1                    & ! intent(in)
+                         , wdns                   & ! intent(in)
+                         , lnexp_min              & ! intent(in)
+                         , huge_num               & ! intent(in)
+                         , tiny_num               & ! intent(in)
+                         , toodry                 ! ! intent(in)
+   use therm_lib  , only : qslif                  & ! function
+                         , uextcm2tl              & ! function
+                         , uint2tl                ! ! function
+   use mem_leaf   , only : igrndvap               ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -509,126 +514,139 @@ subroutine leaf3_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcwater_ener
    !----- Local variables. ----------------------------------------------------------------!
    integer           :: ksn                 ! # active levels of surface water
    integer           :: nsoil               ! Soil texture class                [      ---]
-   real              :: slpotvn             ! soil water potential              [        m]
-   real              :: alpha               ! "alpha" term in LP92
-   real              :: beta                ! "beta" term in LP92
-   real              :: lnalpha             ! ln(alpha)
-   real              :: smterm              ! soil moisture term                [     ----]
+   real(kind=4)      :: slpotvn             ! soil water potential              [        m]
+   real(kind=4)      :: alpha               ! "alpha" term in LP92
+   real(kind=4)      :: beta                ! "beta" term in LP92
+   real(kind=4)      :: lnalpha             ! ln(alpha)
+   real(kind=4)      :: smterm              ! soil moisture term                [     ----]
+   real(kind=4)      :: ground_shv          ! ground equilibrium spec hum       [kg_vap/kg]
+   real(kind=4)      :: ground_ssh          ! sfc. saturation spec. hum.        [kg_vap/kg]
+   real(kind=4)      :: sfcwater_temp       ! Surface temperature               [        K]
+   real(kind=4)      :: sfcwater_shv        ! ground equilibrium spec hum       [kg_vap/kg]
+   real(kind=4)      :: sfcwater_ssh        ! sfc. saturation spec. hum.        [kg_vap/kg]
+   real(kind=4)      :: sfcwater_fliq       ! Frac. of sfc H2O in liquid phase  [      ---]
    !---------------------------------------------------------------------------------------!
 
 
    !----- Set the number of temporary surface water (or snow) layers. ---------------------!
    ksn = nint(sfcwater_nlev)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find top soil temperature and canopy air space specific humidity. ---------------!
+   nsoil = nint(topsoil_text)
+   call uextcm2tl(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
+   can_shv = can_rvap / (1.0 + can_rvap)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !    Ground_rsat is the saturation mixing ratio of the top soil/snow surface and is     !
-   ! used for dew formation and snow evaporation.  
+   !      Topsoil_shv is the effective specific humidity of soil.  This value is a         !
+   ! combination of the canopy air specific humidity, the saturation specific humidity at  !
+   ! the soil temperature.  When the soil tends to dry air soil moisture, topsoil_shv      !
+   ! tends to the canopy air space specific humidity, whereas topsoil_shv tends to the     !
+   ! saturation value when the soil moisture is near or above field capacity.  These       !
+   ! tendencies are determined by the alpha and beta parameters.                           !
    !---------------------------------------------------------------------------------------!
-   select case (ksn)
+   !----- Compute the saturation specific humidity at top soil temperature. ---------------!
+   ground_ssh  = qslif(can_prss,ground_temp)
+   !----- Determine alpha. ----------------------------------------------------------------!
+   slpotvn      = leaf3_matric_potential(nsoil,topsoil_water)
+   lnalpha      = gorh2o * slpotvn / ground_temp
+   if (lnalpha > lnexp_min) then
+      alpha   = exp(lnalpha)
+   else
+      alpha   = 0.0
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Determine Beta, following NP89.  However, because we want evaporation to be shut  !
+   ! down when the soil approaches the dry air soil moisture, we offset both the soil      !
+   ! moisture and field capacity to the soil moisture above dry air soil.  This is         !
+   ! necessary to avoid evaporation to be large just slightly above the dry air soil,      !
+   ! which would otherwise happen, especially for those soil types rich in clay.           !
+   !---------------------------------------------------------------------------------------!
+   smterm = min(1.0, max(0.0, (topsoil_water  - soilcp(nsoil))                             &
+                            / (sfldcap(nsoil) - soilcp(nsoil)) ))
+   beta   = 0.5 * (1.0 - cos (smterm * pi1))
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Decide which method to use to find the ground water vapour mixing ratio.          !
+   !---------------------------------------------------------------------------------------!
+   select case (igrndvap)
    case (0)
-      !------------------------------------------------------------------------------------!
-      !      Without snowcover or water ponding, ground_shv is the effective specific      !
-      ! humidity of soil and is used for soil evaporation.  This value is a combination of !
-      ! the canopy air specific humidity, the saturation specific humidity at the soil     !
-      ! temperature.  When the soil tends to dry air soil moisture, ground_shv tends to    !
-      ! the canopy air space specific humidity, whereas it tends to the saturation value   !
-      ! when the soil moisture is near or above field capacity.  These tendencies will be  !
-      ! determined by the alpha and beta parameters.                                       !
-      !------------------------------------------------------------------------------------!
-      nsoil = nint(topsoil_text)
-      call uextcm2tl(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
-      !----- Compute the saturation mixing ratio at ground temperature. -------------------!
-      ground_rsat = rslif(can_prss,ground_temp)
+      !----- LP92 method. -----------------------------------------------------------------!
+      ground_shv = max(can_shv, ground_ssh * alpha * beta + (1.0 - beta) * can_shv)
+      ggsoil     = huge_num
       !------------------------------------------------------------------------------------!
 
-
-      !----- Determine alpha. -------------------------------------------------------------!
-      slpotvn  = slpots(nsoil) * (slmsts(nsoil) / topsoil_water) ** slbs(nsoil)
-      lnalpha  = gorh2o * slpotvn / ground_temp
-      if (lnalpha > lnexp_min) then
-         alpha = exp(lnalpha)
-      else
-         alpha = 0.0
-      end if
+   case (1)
+      !----- MH91, test 1. ----------------------------------------------------------------!
+      ground_shv = max(can_shv, ground_ssh * beta)
+      ggsoil     = huge_num
       !------------------------------------------------------------------------------------!
 
-
-
-      !------------------------------------------------------------------------------------!
-      !     Determine Beta, following NP89.  However, because we want evaporation to be    !
-      ! shut down when the soil approaches the dry air soil moisture, we offset both the   !
-      ! soil moisture and field capacity to the soil moisture above dry air soil.  This is !
-      ! necessary to avoid evaporation to be large just slightly above the dry air soil,   !
-      ! which was happening especially for those clay-rich soil types.                     !
-      !------------------------------------------------------------------------------------!
-      smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
-      beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
+   case (2)
+      !----- MH91, test 2. ----------------------------------------------------------------!
+      ground_shv = ground_ssh
+      ggsoil     = ggsoil0 * exp(kksoil * smterm)
       !------------------------------------------------------------------------------------!
 
-
-
-
+   case (3)
+      !----- MH91, test 3. ----------------------------------------------------------------!
+      ground_shv = max(can_shv, ground_ssh * beta + (1.0 - beta) * can_shv)
+      ggsoil     = huge_num
       !------------------------------------------------------------------------------------!
-      !     Decide which method to use to find the ground water vapour mixing ratio.       !
+
+   case (4)
       !------------------------------------------------------------------------------------!
-      select case (igrndvap)
-      case (0)
-         !----- LP92 method. --------------------------------------------------------------!
-         ground_rvap = max(can_rvap, ground_rsat * alpha * beta + (1. - beta) * can_rvap)
-         !---------------------------------------------------------------------------------!
-
-      case (1)
-         !----- MH91, test 1. -------------------------------------------------------------!
-         ground_rvap = max(can_rvap, ground_rsat * beta)
-         ggsoil      = huge_num
-         !---------------------------------------------------------------------------------!
-
-      case (2)
-         !----- MH91, test 2. -------------------------------------------------------------!
-         ground_rvap = ground_rsat
-         ggsoil      = ggsoil0 * exp(kksoil * smterm)
-         !---------------------------------------------------------------------------------!
-
-      case (3)
-         !----- MH91, test 3. -------------------------------------------------------------!
-         ground_rvap = max(can_rvap, ground_rsat * beta + (1. - beta) * can_rvap)
-         ggsoil      = huge_num
-         !---------------------------------------------------------------------------------!
-
-      case (4)
-         !---------------------------------------------------------------------------------!
-         !     MH91, test 4.                                                               !
-         !---------------------------------------------------------------------------------!
-         ground_rvap = max(can_rvap, ground_rsat * alpha)
-         ggsoil      = ggsoil0 * exp(kksoil * smterm)
-         !---------------------------------------------------------------------------------!
-
-      case (5)
-         !---------------------------------------------------------------------------------!
-         !     Combination of NP89 and P86.                                                !
-         !---------------------------------------------------------------------------------!
-         ground_rvap = max(can_rvap, ground_rsat * beta)
-         ggsoil      = ggsoil0 * exp(kksoil * smterm)
-         !---------------------------------------------------------------------------------!
-
-      end select
-
-   case default
+      !     MH91, test 4.                                                                  !
       !------------------------------------------------------------------------------------!
-      !    If a temporary layer exists, we use the top layer as the surface.  Since this   !
-      ! is "pure" water or snow, we let it evaporate freely.  We can understand  this as   !
-      ! the limit of alpha and beta tending to one.                                        !
+      ground_shv = max(can_shv, ground_ssh * alpha)
+      ggsoil     = ggsoil0 * exp(kksoil * smterm)
       !------------------------------------------------------------------------------------!
-      call uint2tl(sfcwater_energy_int,ground_temp,ground_fliq)
-      !----- Compute the saturation specific humidity at ground temperature. --------------!
-      ground_rsat = rslif(can_prss,ground_temp)
-      !----- The ground specific humidity in this case is just the saturation value. ------!
-      ground_rvap = ground_rsat
-      !----- The conductance should be large so it won't contribute to the net value. -----!
-      ggsoil      = huge_num
+
+   case (5)
+      !------------------------------------------------------------------------------------!
+      !     Combination of NP89 and P86.                                                   !
+      !------------------------------------------------------------------------------------!
+      ground_shv = max(can_shv, ground_ssh * beta)
+      ggsoil     = ggsoil0 * exp(kksoil * smterm)
       !------------------------------------------------------------------------------------!
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Ground mixing ratio and saturation mixing ratio. --------------------------------!
+   ground_rvap = max(toodry, ground_shv / (1.0 - ground_shv))
+   ground_rsat = max(toodry, ground_ssh / (1.0 - ground_ssh))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !   Update conductance in case there is snowpack.                                       !
+   !---------------------------------------------------------------------------------------!
+   if (ggsoil /= huge_num .and. ksn > 0) then
+      call uint2tl(sfcwater_energy_int,sfcwater_temp,sfcwater_fliq)
+      !----- Compute the saturation specific humidity at ground temperature. --------------!
+      sfcwater_ssh = qslif(can_prss,sfcwater_temp)
+      !----- The ground specific humidity in this case is just the saturation value. ------!
+      sfcwater_shv = sfcwater_ssh
+      !------------------------------------------------------------------------------------!
+
+      ggsoil      = min(huge_num, ggsoil / max(tiny_num,(1.0 - snowfac)))
+   end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine leaf3_grndvap
@@ -839,8 +857,11 @@ end subroutine sfc_fields_adap
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conprr,bulkpcpg &
-                  ,bulkqpcpg,bulkdpcpg,leafpcpg,leafqpcpg,leafdpcpg)
+!     This sub-routine finds the precipitation rate.  Unlike original LEAF-3, now we store !
+! the rates, not the total, so we can easily scale for each nested time step.              !
+!------------------------------------------------------------------------------------------!
+subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtlt,theta2,exner2,conprr,bulkpcpg,bulkqpcpg     &
+                  ,bulkdpcpg,leafpcpg,leafqpcpg,leafdpcpg)
    use rconstants, only : t3ple        & ! intent(in)
                         , t00          & ! intent(in)
                         , hr_sec       & ! intent(in)
@@ -858,8 +879,7 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
    integer                       , intent(in)    :: iz
    integer                       , intent(in)    :: ja
    integer                       , intent(in)    :: jz
-   real                          , intent(in)    :: dtime
-   real                          , intent(in)    :: dtime_factor
+   real                          , intent(in)    :: dtlt
    real   , dimension(m2,m3)     , intent(in)    :: theta2
    real   , dimension(m2,m3)     , intent(in)    :: exner2
    real   , dimension(m2,m3,mcld), intent(in)    :: conprr
@@ -882,8 +902,8 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
    real                                          :: cumdpcpg
    !----- Local constants. ----------------------------------------------------------------!
    logical                       , parameter     :: print_rain = .false.
-   character(len=10)             , parameter     :: fmth       = '(17(a,1x))' 
-   character(len=25)             , parameter     :: fmtb       = '(2(i5,1x),15(es12.5,1x))' 
+   character(len=10)             , parameter     :: fmth       = '(16(a,1x))' 
+   character(len=25)             , parameter     :: fmtb       = '(2(i5,1x),14(es12.5,1x))' 
    !----- Locally saved variables. --------------------------------------------------------!
    logical                       , save          :: first_time = .true. 
    !---------------------------------------------------------------------------------------!
@@ -895,7 +915,7 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
       write (rainfile,fmt='(a,i3.3,a)') 'rainleaf-',mynum,'.txt'
 
       open  (unit=63,file=trim(rainfile),status='replace',action='write')
-      write (unit=63,fmt=fmth) '    I','    J','       DTIME','DTIME_FACTOR'               &
+      write (unit=63,fmt=fmth) '    I','    J','        DTLT'                              &
                                ,'       THETA','       EXNER','       RTEMP'               &
                                ,'      CONPRR','    CUM_PCPG','   CUM_QPCPG'               &
                                ,'   CUM_DPCPG','   BULK_PCPG','  BULK_QPCPG'               &
@@ -924,7 +944,7 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
          !----- Integrate precipitation rate. ---------------------------------------------!
          cumpcpg = 0.
          cloop: do icld =1,mcld
-            cumpcpg = cumpcpg + conprr(i,j,icld) * dtime
+            cumpcpg = cumpcpg + conprr(i,j,icld)
          end do cloop
 
 
@@ -986,16 +1006,16 @@ subroutine sfc_pcp(m2,m3,mcld,ia,iz,ja,jz,dtime,dtime_factor,theta2,exner2,conpr
          !     Leaf total precipitation, and associated internal energy and depth, is the  !
          ! total amount integrated over one leaf time step.                                !
          !---------------------------------------------------------------------------------!
-         leafpcpg(i,j)  = cumpcpg   + dtime_factor * bulkpcpg (i,j)
-         leafqpcpg(i,j) = cumqpcpg  + dtime_factor * bulkqpcpg(i,j)
-         leafdpcpg(i,j) = cumdpcpg  + dtime_factor * bulkdpcpg(i,j)
+         leafpcpg(i,j)  = cumpcpg   + bulkpcpg (i,j) / dtlt
+         leafqpcpg(i,j) = cumqpcpg  + bulkqpcpg(i,j) / dtlt
+         leafdpcpg(i,j) = cumdpcpg  + bulkdpcpg(i,j) / dtlt
          !---------------------------------------------------------------------------------!
 
          if (leafpcpg(i,j) > 0.0 .and. print_rain) then
             write (rainfile,fmt='(a,i3.3,a)') 'rainleaf-',mynum,'.txt'
             open  (unit=63,file=trim(rainfile),status='old',action='write'                 &
                   ,position='append')
-            write (unit=63,fmt=fmtb)  i,j,dtime,dtime_factor,theta2(i,j),exner2(i,j)       &
+            write (unit=63,fmt=fmtb)  i,j,dtlt,theta2(i,j),exner2(i,j)                     &
                                     , rain_temp-t00,conprr(i,j,1)*hr_sec                   &
                                     , cumpcpg      ,cumqpcpg      ,cumdpcpg*1000.          &
                                     , bulkpcpg(i,j),bulkqpcpg(i,j),bulkdpcpg(i,j)*1000.    &
@@ -1017,19 +1037,48 @@ end subroutine sfc_pcp
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine computes the NDVI-related variables such as LAI, TAI, roughness,     !
-! and albedo.                                                                              !
+!     This subroutine updates several vegetation properties such as LAI, heat capacity,    !
+! roughness, displacement height, and internal energy.                                     !
 !------------------------------------------------------------------------------------------!
-subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough        &
-                  ,veg_height,veg_displace,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif        &
-                  ,psibar_10d)
+subroutine veg_misc_update(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai          &
+                          ,veg_rough,veg_height,veg_displace,veg_albedo,veg_ndvip          &
+                          ,veg_ndvic,veg_ndvif,veg_agb,veg_energy,veg_water,veg_hcap       &
+                          ,psibar_10d)
 
-   use leaf_coms
-   use rconstants
-   use io_params
-   use mem_grid
-   use catt_start, only: catt  ! INTENT(IN)
-
+   use leaf_coms , only : nvtyp          & ! intent(in)
+                        , nvtyp_teb      & ! intent(in)
+                        , veg_temp       & ! intent(inout)
+                        , veg_fliq       & ! intent(inout)
+                        , timefac_ndvi   & ! intent(in)
+                        , tai_min        & ! intent(in)
+                        , sr_max         & ! intent(in)
+                        , tai_max        & ! intent(in)
+                        , veg_clump      & ! intent(in)
+                        , glai_max       & ! intent(in)
+                        , dead_frac      & ! intent(in)
+                        , phenology      & ! intent(in)
+                        , sai            & ! intent(in)
+                        , vh2dh          & ! intent(in)
+                        , albv_green     & ! intent(in)
+                        , albv_brown     & ! intent(in)
+                        , veg_frac       & ! intent(in)
+                        , hcapveg_ref    & ! intent(in)
+                        , hcapveg_hmin   & ! intent(in)
+                        , sla_0          & ! intent(in)
+                        , sla_m          & ! intent(in)
+                        , agb_am14_a     & ! intent(in)
+                        , agb_am14_b     & ! intent(in)
+                        , gu_spheat_leaf & ! intent(in)
+                        , gu_spheat_wood ! ! intent(in)
+   use therm_lib , only : uextcm2tl      & ! function
+                        , cmtl2uext      ! ! function
+   use io_params , only : ndvitime1      & ! intent(in)
+                        , ndvitime2      & ! intent(in)
+                        , iupdndvi       & ! intent(in)
+                        , ndviflg        & ! intent(in)
+                        , iuselai        ! ! intent(in)
+   use mem_leaf  , only : isfcl          ! ! intent(in)
+   use mem_grid  , only : time           ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                         , intent(in)    :: ifm
@@ -1045,6 +1094,10 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                            , intent(out)   :: veg_rough
    real                            , intent(out)   :: veg_albedo
    real                            , intent(inout) :: veg_ndvic
+   real                            , intent(out)   :: veg_agb
+   real                            , intent(inout) :: veg_energy
+   real                            , intent(in)    :: veg_water
+   real                            , intent(inout) :: veg_hcap
    real                            , intent(in)    :: psibar_10d
    !----- Local variables. ----------------------------------------------------------------!
    integer                                         :: nveg
@@ -1052,6 +1105,11 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                                            :: fpar
    real                                            :: dead_lai
    real                                            :: green_frac
+   real                                            :: bleaf
+   real                                            :: btwig
+   real                                            :: spheat_leaf
+   real                                            :: spheat_wood
+   real                                            :: vhgt_dum
    !----- Local constants. ----------------------------------------------------------------!
    real                            , parameter     :: sr_min     =  1.081
    real                            , parameter     :: fpar_min   =  0.001
@@ -1061,9 +1119,11 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                            , parameter     :: bz         =  0.91
    real                            , parameter     :: hz         =  0.0075
    real                            , parameter     :: extinc_veg = 0.75
+   real                            , parameter     :: fbranch    = 0.20
    !----- Locally saved variables. --------------------------------------------------------!
    logical                         , save          :: nvcall     = .true.
    real, dimension(nvtyp+nvtyp_teb), save          :: dfpardsr
+   logical                         , save          :: first_time = .true.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1074,12 +1134,20 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
          dfpardsr(nveg) = (fpar_max - fpar_min) / (sr_max(nveg) - sr_min)
       end do
    end if
+   !---------------------------------------------------------------------------------------!
 
 
 
    !----- Find the time interpolation factor for updating NDVI or LAI. --------------------!
    if (iupdndvi == 0) then
       timefac_ndvi = 0.
+   else if ( ndvitime1(ifm) == ndvitime2(ifm) ) then
+      write(unit=*,fmt="(a)"          ) "-------------------------------------------------"
+      write(unit=*,fmt="(a,1x,i14)"   ) " IFM      = ",ifm
+      write(unit=*,fmt="(a,1x,es14.7)") " NDVITIME1 = ",ndvitime1(ifm)
+      write(unit=*,fmt="(a,1x,es14.7)") " NDVITIME2 = ",ndvitime2(ifm)
+      write(unit=*,fmt="(a)")           "-------------------------------------------------"
+      call abort_run("NDVI/LAI times must be different!","vegndvi","leaf3_utils.f90")
    else
       timefac_ndvi = sngl((time - ndvitime1(ifm)) / (ndvitime2(ifm) - ndvitime1(ifm)))
    end if
@@ -1089,18 +1157,20 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
 
    !----- Alias for vegetation class. -----------------------------------------------------!
    nveg = nint(leaf_class)
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    We only compute LAI and related variables for those vegetation types that can hold !
    ! some actual vegetation.                                                               !
    !---------------------------------------------------------------------------------------!
-   if (tai_max(nveg) < .1) then
+   if (tai_max(nveg) < tai_min) then
       veg_lai      = 0.
       veg_tai      = 0.
       veg_rough    = 0.
       veg_albedo   = 0.
       veg_fracarea = 0.
-
    else
       
       !------------------------------------------------------------------------------------!
@@ -1158,6 +1228,7 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
             veg_lai    = glai_max(nveg) * (       veg_clump(nveg)  * fpar / fpar_max       &
                                           + (1. - veg_clump(nveg)) * alog(1. - fpar)       &
                                           * fpcon )
+            !------------------------------------------------------------------------------!
          end if
 
       case default
@@ -1172,11 +1243,14 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
          case default
             !----- Evergreen. -------------------------------------------------------------!
             veg_lai = glai_max(nveg)
+            !------------------------------------------------------------------------------!
          end select
       end select
       dead_lai   = (glai_max(nveg) - veg_lai) * dead_frac(nveg)
       veg_tai    = veg_lai + sai(nveg) + dead_lai
       green_frac = veg_lai / veg_tai
+      !------------------------------------------------------------------------------------!
+
 
       !----- Compute vegetation roughness height, albedo, and fractional area. ------------!
       veg_rough    = veg_height * (1. - bz * exp(-hz * veg_tai))
@@ -1184,276 +1258,73 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
       veg_albedo   = albv_green(nveg) * green_frac + albv_brown(nveg) * (1. - green_frac)
       veg_fracarea = veg_frac(nveg) * (1. - exp(-extinc_veg * veg_tai))
    end if
-
-   return
-end subroutine vegndvi
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This routine is called by the radiation parameterization and by LEAF.  It computes   !
-! net surface albedo plus radiative exchange between the atmosphere, vegetation, and the   !
-! snow/ground given previously computed downward longwave and shortwave fluxes from the    !
-! atmosphere.  Also computed are functions of snowcover that are required for the above    !
-! radiation calculations as well as other calculations in LEAF.                            !
-!     The shortwave parameterizations are only valid if the cosine of the zenith angle is  !
-! greater than .03 .  Water albedo from Atwater and Bell (1981) alg, als, and alv are the  !
-! albedos of the ground, snow, and vegetation (als needs a better formula based on age of  !
-! the surface snow).  absg and vctr32 are the actual fractions of shortwave incident on    !
-! snow plus ground that get absorbed by the ground and each snow layer, respectively.      !
-! They currently use the variable fractrans, which is the fraction of light transmitted    !
-! through each layer based on mass per square meter.  algs is the resultant albedo from    !
-! snow plus ground.                                                                        !
-!------------------------------------------------------------------------------------------!
-subroutine leaf3_sfcrad(mzg,mzs,ip,soil_water,soil_color,soil_text,sfcwater_depth          &
-                       ,patch_area,veg_fracarea,leaf_class,veg_albedo,sfcwater_nlev,rshort &
-                       ,rlong,cosz,albedt,rlongup,rshort_gnd,rlong_gnd)
-   use mem_leaf
-   use leaf_coms
-   use rconstants
-   use mem_scratch
-   use node_mod     , only : mynum         ! ! intent(in)
-   use therm_lib    , only : uextcm2tl     & ! subroutine
-                           , idealdenssh   ! ! function
-   use catt_start   , only : CATT          ! ! intent(in)
-   use teb_spm_start, only : TEB_SPM       ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer                , intent(in)    :: mzg
-   integer                , intent(in)    :: mzs
-   integer                , intent(in)    :: ip
-   real   , dimension(mzg), intent(in)    :: soil_water
-   real                   , intent(in)    :: soil_color
-   real   , dimension(mzg), intent(in)    :: soil_text
-   real   , dimension(mzs), intent(in)    :: sfcwater_depth 
-   real                   , intent(in)    :: patch_area
-   real                   , intent(in)    :: veg_fracarea
-   real                   , intent(in)    :: leaf_class
-   real                   , intent(in)    :: veg_albedo
-   real                   , intent(in)    :: sfcwater_nlev
-   real                   , intent(in)    :: rshort
-   real                   , intent(in)    :: rlong
-   real                   , intent(in)    :: cosz
-   real                   , intent(inout) :: albedt
-   real                   , intent(inout) :: rlongup
-   real                   , intent(inout) :: rshort_gnd
-   real                   , intent(inout) :: rlong_gnd
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                                :: k
-   integer                                :: m
-   integer                                :: nsoil
-   integer                                :: colour
-   integer                                :: nveg
-   integer                                :: ksn
-   real                                   :: alb
-   real                                   :: vf
-   real                                   :: vfc
-   real                                   :: fcpct
-   real                                   :: alg
-   real                                   :: rad
-   real                                   :: als
-   real                                   :: fractrans
-   real                                   :: absg
-   real                                   :: algs
-   real                                   :: emv
-   real                                   :: emgs
-   real                                   :: gslong
-   real                                   :: vlong
-   real                                   :: alv
-   !----- Local constants. ----------------------------------------------------------------!
-   character(len=9)      , parameter   :: fmti='(a,1x,i6)'
-   character(len=13)     , parameter   :: fmtf='(a,1x,es12.5)'
-   character(len=3)      , parameter   :: fmtc='(a)'
-   character(len=9)      , parameter   :: fmtl='(a,1x,l1)'
-   character(len=9)      , parameter   :: fmth='(7(a,1x))'
-   character(len=23)     , parameter   :: fmts='(2(i5,1x),5(es12.5,1x))'
-   character(len=9)      , parameter   :: fmte='(5(a,1x))'
-   character(len=23)     , parameter   :: fmtw='(1(i5,1x),4(es12.5,1x))'
    !---------------------------------------------------------------------------------------!
 
-   if (ip == 1) then
-      !----- Compute the albedo and upward longwave for water patches. --------------------!
-      if (cosz > .03) then
-         alb     = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
-         albedt  = albedt + patch_area * alb
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Now we update the AGB, energy, and heat capacity.                                  !
+   !---------------------------------------------------------------------------------------!
+   veg_agb      = agb_am14_a * veg_height ** agb_am14_b
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Save temperature and liquid water fraction, before we update heat capacity.        !
+   !---------------------------------------------------------------------------------------!
+   call uextcm2tl(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Calculate the heat capacity.                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (isfcl == 4 .and. veg_tai >= tai_min .and. sla_0(nveg) > 0.0) then
+      !------------------------------------------------------------------------------------!
+      !     Heat capacity is based on ED for leaves, using CLM-4 SLA profile.  For the     !
+      ! woody component, we use the TCH->AGB equation from Asner and Mascaro (2014).       !
+      !------------------------------------------------------------------------------------!
+      if (sla_m(nveg) == 0.) then
+         bleaf = veg_lai / sla_0(nveg)
       else
-         alb     = 0.0
+         bleaf = 2.0 * log(1.0 + sla_m(nveg) * veg_lai / sla_0(nveg) ) / sla_m(nveg)
       end if
-      rlongup    = rlongup + patch_area * stefan * soil_tempk(mzg) ** 4
+      btwig    = 2.0 * fbranch * veg_agb
+      veg_hcap = bleaf * gu_spheat_leaf + btwig * gu_spheat_wood
+      !------------------------------------------------------------------------------------!
 
-      rshort_gnd = (1.0 - alb) * rshort
-      rlong_gnd  = 0.0
-
-   elseif (isfcl == 0) then
-      !------ Not running a land surface model, use prescribed value of can_temp. ---------!
-      albedt     = albedt  + patch_area * albedo
-      rlongup    = rlongup + patch_area * stefan * can_temp ** 4
-
-      rshort_gnd = (1.0 - albedo) * rshort
-      rlong_gnd  = 0.0
+      !if (first_time) then
+      !   first_time = .false.
+      !   write(unit=61,fmt='(a5,7(1x,a12))')                                               &
+      !          ' NVEG','     VEG_LAI','     VEG_TAI','     VEG_AGB','       BLEAF'        &
+      !                 ,'       BTWIG','    VEG_HCAP','    VHGT_DUM'
+      !end if
+      !vhgt_dum = hcapveg_ref * max(veg_height,hcapveg_hmin)
+      !write(unit=61,fmt='(i5,7(1x,es12.5))')                                               &
+      !   nveg,veg_lai,veg_tai,veg_agb,bleaf,btwig,veg_hcap,vhgt_dum
    else
-      !------ Running an actual land surface model... -------------------------------------!
-
-
-      !------ Diagnose snow temperature and the influence of snow covering veg. -----------!
-      nveg  = nint(leaf_class)
-      nsoil = nint(soil_text(mzg))
-      ksn   = nint(sfcwater_nlev)
-
-      !------ Defining the exposed area. --------------------------------------------------!
-      vf  = veg_fracarea * (1. - snowfac)
-      vfc = 1. - vf
-
+      !----- Use the old style. -----------------------------------------------------------!
+      veg_hcap = hcapveg_ref * max(veg_height,hcapveg_hmin)
       !------------------------------------------------------------------------------------!
-      !     Ground albedo.  Experimental value ranging from dry to wet soil albedo, and    !
-      ! using some soil texture dependence, even though soil colour depends on a lot more  !
-      ! things.                                                                            !
-      !------------------------------------------------------------------------------------!
-      select case (nsoil)
-      case (13)
-         !----- Bedrock, use constants soil value for granite. ----------------------------!
-         alg = 0.32
-      case (12)
-         !----- Peat, follow McCumber and Pielke (1981). ----------------------------------!
-         fcpct = soil_water(mzg) / slmsts(nsoil)
-         alg   = max (0.07, 0.14 * (1.0 - fcpct))
-      case default
-         !----- Other soils. --------------------------------------------------------------!
-         colour = nint(soil_color)
-         select case (colour)
-         case (21)
-            fcpct = soil_water(mzg) / slmsts(nsoil)
-            alg   = max(0.14, 0.31 - 0.34 * fcpct)
-         case default
-            fcpct  = max (0.00, 0.11 - 0.40 * soil_water(mzg))
-            alg    = min (0.5 * (alb_nir_dry(nscol) + alb_vis_dry(nscol))                  &
-                         ,0.5 * (alb_nir_wet(nscol) + alb_vis_wet(nscol)) + fcpct )
-         end select
-      end select
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Vegetation albedo.                                                            !
-      !------------------------------------------------------------------------------------!
-      alv = veg_albedo
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !       Snow/surface water albedo.                                                   !
-      !------------------------------------------------------------------------------------!
-      rad = 1.
-      if (ksn > 0) then
-         !------ als = .14 (the wet soil value) for all-liquid. ---------------------------!
-         als = .5 - .36 * sfcwater_fracliq(ksn)
-         rad = 1. - als
-      end if
-      do k = ksn,1,-1
-         fractrans = exp(-20. * sfcwater_depth(k))
-         vctr32(k) = rad * (1. - fractrans)
-         rad = rad * fractrans
-      end do
-      absg = (1. - alg) * rad
-      algs = 1. - absg
-      do k = ksn,1,-1
-         algs = algs - vctr32(k)
-         rshort_s(k) = rshort * vfc * vctr32(k)
-      end do
-      rshort_g = rshort * vfc * absg
-      rshort_v = rshort * vf * (1. - alv + vfc * algs)
-      alb      = vf * alv + vfc * vfc * algs
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Adding urban contribution if running TEB. ------------------------------------!
-      if (teb_spm==1) then
-         if (nint(g_urban) == 0) then
-            albedt = albedt + patch_area * alb
-         else
-            albedt = albedt + patch_area * alb_town
-         endif
-      else
-         albedt = albedt + patch_area * alb
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Longwave radiation calculations.                                               !
-      !------------------------------------------------------------------------------------!
-      emv  = emisv(nveg)
-      emgs = emisg(nsoil)
-      if (ksn > 0) then
-         emgs = 1.0
-         gslong = emgs * stefan * sfcwater_tempk(ksn) ** 4
-      else
-         gslong = emgs * stefan * soil_tempk(mzg) ** 4
-      end if
-      vlong  = emv * stefan * veg_temp ** 4
-
-      rlonga_v  = rlong  * vf * (emv + vfc * (1. - emgs))
-      rlonga_gs = rlong  * vfc * emgs
-      rlongv_gs = vlong  * vf * emgs
-      rlongv_a  = vlong  * vf * (2. - emgs - vf + emgs * vf)
-      rlonggs_v = gslong * vf * emv
-      rlonggs_a = gslong * vfc
-      rlonga_a  = rlong  * (vf * (1. - emv) + vfc * vfc * (1. - emgs))
-
-      !----- Add urban contribution if running TEB. ---------------------------------------!
-      if (teb_spm==1) then
-         if (nint(g_urban) == 0) then
-            rlongup = rlongup + patch_area * (rlongv_a + rlonggs_a + rlonga_a)
-         else
-            rlongup = rlongup + patch_area * emis_town * stefan * ts_town**4
-         endif
-      else
-         rlongup = rlongup + patch_area * (rlongv_a + rlonggs_a + rlonga_a)
-      endif
-
-      !------------------------------------------------------------------------------------!
-      !      In case rlong is not computed, zero out all longwave fluxes other than        !
-      ! rlongup.  [On the first timestep, radiative fluxes may not be available until      !
-      ! microphysics is called, and zeroing these fluxes avoids the imbalance of having    !
-      ! upward longwave without downward longwave in LEAF-3.  Also, this allows LEAF-3 to  !
-      ! run without radiation for all timesteps, if desired for testing.].                 !
-      !------------------------------------------------------------------------------------!
-      if (rlong < .1) then
-         rlonga_v  = 0.
-         rlonga_gs = 0.
-         rlongv_gs = 0.
-         rlongv_a  = 0.
-         rlonggs_v = 0.
-         rlonggs_a = 0.
-         rlonga_a  = 0.
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !----- Integrate the total absorbed light by ground (top soil plus TSW layers). -----!
-      rshort_gnd = rshort_g
-      do k=1,ksn
-         rshort_gnd = rshort_gnd + rshort_s(k)
-      end do
-      rlong_gnd  = rlonga_gs + rlongv_gs - rlonggs_a - rlonggs_v
-      !------------------------------------------------------------------------------------!
-
-
-
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Since vegetation heat capacity may have changed, we must update energy.           !
+   !---------------------------------------------------------------------------------------!
+   if (veg_hcap > 0.0) then
+      veg_energy = cmtl2uext(veg_hcap,veg_water,veg_temp,veg_fliq)
+   else
+      veg_energy = 0.0
+   end if
+   !---------------------------------------------------------------------------------------!
 
    return
-end subroutine leaf3_sfcrad
+end subroutine veg_misc_update
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1465,37 +1336,46 @@ end subroutine leaf3_sfcrad
 !==========================================================================================!
 !==========================================================================================!
 !    This function determines the wind at a given height, given that the stars are al-     !
-! ready known, as well as the Richardson number and the zetas.                             !
+! ready known, as well as the Richardson number and the zetas to find the wind at the top  !
+! of the canopy.  The result is the TAI weighted average wind profile, following the       !
+! exponential decay proposed by Leuning (1995).                                            !
 !------------------------------------------------------------------------------------------!
-real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
-   use rconstants     , only : vonk     ! ! intent(in)
-   use leaf_coms      , only : bl79     & ! intent(in)
-                             , csm      & ! intent(in)
-                             , csh      & ! intent(in)
-                             , dl79     & ! intent(in)
-                             , ugbmin   & ! intent(in)
-                             , psim     ! ! function
-   use mem_leaf       , only : istar    ! ! intent(in)
+real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough,vfarea   &
+                                        ,stai)
+   use rconstants     , only : vonk      & ! intent(in)
+                             , lnexp_min ! ! intent(in)
+   use leaf_coms      , only : bl79      & ! intent(in)
+                             , csm       & ! intent(in)
+                             , csh       & ! intent(in)
+                             , dl79      & ! intent(in)
+                             , ugbmin    & ! intent(in)
+                             , tai_min   & ! intent(in)
+                             , psim      ! ! function
+   use mem_leaf       , only : istar     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4), intent(in) :: ustar     ! Friction velocity                      [    m/s]
-   real(kind=4), intent(in) :: zeta      ! Normalised height                      [    ---]
-   real(kind=4), intent(in) :: rib       ! Bulk Richardson number                 [    ---]
-   real(kind=4), intent(in) :: zref      ! Reference height                       [      m]
-   real(kind=4), intent(in) :: dheight   ! Displacement height                    [      m]
-   real(kind=4), intent(in) :: height    ! Height to determine the red. wind      [      m]
-   real(kind=4), intent(in) :: rough     ! Roughness scale                        [      m]
+   real(kind=4), intent(in) :: ustar        ! Friction velocity                   [    m/s]
+   real(kind=4), intent(in) :: zeta         ! Normalised height                   [    ---]
+   real(kind=4), intent(in) :: rib          ! Bulk Richardson number              [    ---]
+   real(kind=4), intent(in) :: zref         ! Reference height                    [      m]
+   real(kind=4), intent(in) :: dheight      ! Displacement height                 [      m]
+   real(kind=4), intent(in) :: height       ! Height to determine the red. wind   [      m]
+   real(kind=4), intent(in) :: rough        ! Roughness scale                     [      m]
+   real(kind=4), intent(in) :: vfarea       ! Vegetation fraction                 [  m2/m2]
+   real(kind=4), intent(in) :: stai         ! Exposed TAI                         [  m2/m2]
    !----- Local variables. ----------------------------------------------------------------!
-   logical                  :: stable    ! Canopy air space is stable             [    T|F]
-   real(kind=4)             :: zetah     ! Zeta for h=height                      [    ---]
-   real(kind=4)             :: zeta0     ! Zeta for h=rough                       [    ---]
-   real(kind=4)             :: hoz0      ! ((h-d0)/z0)                            [    ---]
-   real(kind=4)             :: lnhoz0    ! ln ((h-d0)/z0)                         [    ---]
-   real(kind=4)             :: a2        ! Drag coeff. in neutral conditions
-   real(kind=4)             :: fm        ! Stability parameter for momentum
-   real(kind=4)             :: c2        ! Part of the c coefficient.
-   real(kind=4)             :: cm        ! c coefficient times |Rib|^1/2
-   real(kind=4)             :: ee        ! (z/z0)^1/3 -1. for eqn. 20 (L79)
+   logical                  :: stable       ! Canopy air space is stable          [    T|F]
+   real(kind=4)             :: zetah        ! Zeta for h=height                   [    ---]
+   real(kind=4)             :: zeta0        ! Zeta for h=rough                    [    ---]
+   real(kind=4)             :: hoz0         ! ((h-d0)/z0)                         [    ---]
+   real(kind=4)             :: lnhoz0       ! ln ((h-d0)/z0)                      [    ---]
+   real(kind=4)             :: a2           ! Drag coeff. in neutral conditions
+   real(kind=4)             :: fm           ! Stability parameter for momentum
+   real(kind=4)             :: c2           ! Part of the c coefficient.
+   real(kind=4)             :: cm           ! c coefficient times |Rib|^1/2
+   real(kind=4)             :: ee           ! (z/z0)^1/3 -1. for eqn. 20 (L79)
+   real(kind=4)             :: veg_wind_top ! Wind at the top of the canopy       [    m/s]
+   real(kind=4)             :: lnexp_now    ! Exponential term                    [    ---]
    !----- External functions. -------------------------------------------------------------!
    real(kind=4), external   :: cbrt      ! Cubic root
    !---------------------------------------------------------------------------------------!
@@ -1541,7 +1421,7 @@ real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,roug
       end if
       
       !----- Find the wind. ---------------------------------------------------------------!
-      leaf3_reduced_wind = (ustar/vonk) * (lnhoz0/sqrt(fm))
+      veg_wind_top = (ustar/vonk) * (lnhoz0/sqrt(fm))
 
    case default  !----- Other methods. ----------------------------------------------------!
 
@@ -1550,8 +1430,7 @@ real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,roug
       zeta0 = zeta * rough            / (zref-dheight)
       !------------------------------------------------------------------------------------!
 
-      leaf3_reduced_wind = (ustar/vonk)                                                    &
-                         * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
+      veg_wind_top = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
 
    end select
    !---------------------------------------------------------------------------------------!
@@ -1559,7 +1438,14 @@ real(kind=4) function leaf3_reduced_wind(ustar,zeta,rib,zref,dheight,height,roug
 
 
    !----- Impose the wind to be more than the minimum. ------------------------------------!
-   leaf3_reduced_wind = max(leaf3_reduced_wind, ugbmin)
+   if (stai > tai_min .and. vfarea > 0.1) then
+      lnexp_now = max(lnexp_min,-stai/vfarea)
+      leaf3_reduced_wind = max( veg_wind_top                                               &
+                              * ( 1. - vfarea + vfarea * vfarea * exp(lnexp_now) / stai )  &
+                              , ugbmin )
+   else
+      leaf3_reduced_wind = max(veg_wind_top, ugbmin)
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -1588,8 +1474,8 @@ end function leaf3_reduced_wind
 ! - gbh is in J/(K m2 s), and                                                              !
 ! - gbw is in kg_H2O/m2/s.                                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos &
-                                         ,can_cp)
+subroutine leaf3_aerodynamic_conductances(leaf_class,veg_wind,veg_temp,can_temp,can_shv    &
+                                         ,can_rhos,can_cp)
    use leaf_coms , only : leaf_width & ! intent(in)
                         , aflat_turb & ! intent(in)
                         , aflat_lami & ! intent(in)
@@ -1610,7 +1496,7 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
                         , dth_diff   ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                      :: iveg            ! Vegetation class           [      ---]
+   real(kind=4)   , intent(in)  :: leaf_class      ! Vegetation class           [      ---]
    real(kind=4)   , intent(in)  :: veg_wind        ! Wind at cohort height      [      m/s]
    real(kind=4)   , intent(in)  :: veg_temp        ! Leaf temperature           [        K]
    real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature     [        K]
@@ -1618,6 +1504,7 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density         [    kg/m³]
    real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat      [   J/kg/K]
    !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iveg            ! Vegetation class           [      ---]
    real(kind=4)                 :: lwidth          ! Leaf width                 [        m]
    real(kind=4)                 :: kin_visc        ! Kinematic viscosity        [     m²/s]
    real(kind=4)                 :: th_diff         ! Kinematic viscosity        [     m²/s]
@@ -1631,6 +1518,11 @@ subroutine leaf3_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_sh
    real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond.    [      m/s]
    real(kind=4)                 :: free_gbh_mos    ! Free convection cond.      [      m/s]
    real(kind=4)                 :: gbh_mos         ! Total convection cond.     [      m/s]
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Vegetation class. ---------------------------------------------------------------!
+   iveg   = nint(leaf_class)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1946,20 +1838,28 @@ subroutine leaf3_roughness(ip,veg_fracarea,patch_area,ustar,topzo,veg_rough,soil
    !---------------------------------------------------------------------------------------!
 
 
-   if (ip == 1) then
+   select case (ip)
+   case (1)
       !------------------------------------------------------------------------------------!
       !    For water surfaces (patch 1), compute roughness length based on previous ustar. !
       !------------------------------------------------------------------------------------!
       patch_rough = max(z0fac_water * ustar ** 2, min_waterrough)
-   elseif (isfcl >= 1) then
-      !----- Possibly land, and with sufficient area. -------------------------------------!
-      summer_rough = max( topzo                                                            &
-                        , veg_rough * veg_fracarea + soil_rough * (1.0 - veg_fracarea) )
-      patch_rough  = summer_rough * (1. - snowfac) + snowrough * snowfac
-   else
-      !----- This is just to dump something in the roughness, not really used. ------------!
-      patch_rough  = snowrough
-   end if
+      !------------------------------------------------------------------------------------!
+   case default
+      select case (isfcl)
+      case (0)
+         !----- This is just to dump something in the roughness, not really used. ---------!
+         patch_rough  = snowrough
+         !---------------------------------------------------------------------------------!
+      case default
+         !----- Possibly land, and with sufficient area. -------------------------------------!
+         summer_rough = max( topzo                                                         &
+                           , veg_rough * veg_fracarea + soil_rough * (1.0 - veg_fracarea) )
+         patch_rough  = summer_rough * (1. - snowfac) + snowrough * snowfac
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+   end select
 
    return
 end subroutine leaf3_roughness
@@ -1978,7 +1878,7 @@ end subroutine leaf3_roughness
 !------------------------------------------------------------------------------------------!
 subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,sflux_v     &
                            ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
-   use leaf_coms  , only : dtll_factor    & ! intent(in)
+   use leaf_coms  , only : dtl3_factor    & ! intent(in)
                          , min_patch_area ! ! intent(in)
    use mem_radiate, only : iswrtyp        & ! intent(in)
                          , ilwrtyp        ! ! intent(in)
@@ -2027,7 +1927,7 @@ subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,s
          end do
          solarea_i = 1.0 / solarea
 
-         rho_dtlt = atm_rhos(i,j) * dtll_factor
+         rho_dtlt = atm_rhos(i,j) * dtl3_factor
 
          sflux_u(i,j) = sflux_u(i,j) * rho_dtlt * solarea_i
          sflux_v(i,j) = sflux_v(i,j) * rho_dtlt * solarea_i
@@ -2037,8 +1937,8 @@ subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,s
          sflux_c(i,j) = sflux_c(i,j) * rho_dtlt * solarea_i
 
           if (rad_on) then
-             albedt (i,j) = albedt (i,j) * dtll_factor * solarea_i
-             rlongup(i,j) = rlongup(i,j) * dtll_factor * solarea_i
+             albedt (i,j) = albedt (i,j) * dtl3_factor * solarea_i
+             rlongup(i,j) = rlongup(i,j) * dtl3_factor * solarea_i
           end if
 
       end do lonloop

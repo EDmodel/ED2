@@ -22,7 +22,7 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    type rk4patchtype
 
-      !----- Canopy air variables. -------------------------------------------------------!
+      !----- Canopy air variables. --------------------------------------------------------!
       real(kind=8)                        :: can_enthalpy ! Canopy sp. enthalpy  [    J/kg]
       real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
@@ -35,14 +35,15 @@ module rk4_coms
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
       real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
       real(kind=8)                        :: can_cp       ! Specific heat        [  J/kg/K]
-      !-----------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
-      !------ Above Canopy Air Variables -------------------------------------------------!
+      !------ Above Canopy Air Variables --------------------------------------------------!
       real(kind=8)                        :: vels         ! wind speed [m/s]
       real(kind=8)                        :: atm_enthalpy ! Specific enthalpy of the air
                                                           ! above the canopy, dependent
                                                           ! on canopy geometry, so not a
                                                           ! site variable        [    J/kg]
+      !------------------------------------------------------------------------------------!
 
       !----- Vegetation properties. -------------------------------------------------------!
       real(kind=8)                        :: veg_height   ! Vegetation height    [       m]
@@ -363,12 +364,7 @@ module rk4_coms
       integer     , dimension(nzgmax) :: ntext_soil
       real(kind=8), dimension(n_pft)  :: green_leaf_factor
       real(kind=8)                    :: atm_rhos
-!!      real(kind=8)                    :: vels
       real(kind=8)                    :: atm_ustar
-!!      real(kind=8)                    :: atm_enthalpy  ! this is actually
-                                                         ! affected by canopy geometry so
-                                                         ! is really patch level
-!!      real(kind=8)                    :: atm_tmp_zcan  ! Same, patch level, not used either
       real(kind=8)                    :: atm_tmp
       real(kind=8)                    :: atm_theta
       real(kind=8)                    :: atm_theiv
@@ -773,35 +769,6 @@ module rk4_coms
    real(kind=8), dimension(n_pft) :: effarea_transp ! Evaporation area: related to LAI
    !---------------------------------------------------------------------------------------!
 
-
-   !---------------------------------------------------------------------------------------!
-   !     Flag to determine whether the patch is too sparsely populated to be computed at   !
-   ! the cohort level.  The decision is made based on the difference in order of magnitude !
-   ! between the patch "natural" leaf heat capacity and the minimum heat capacity for the  !
-   ! Runge-Kutta solver (checked at copy_patch_init).                                      !
-   !---------------------------------------------------------------------------------------!
-!!!   logical :: toosparse  ! NEVER USED RGK
-   !---------------------------------------------------------------------------------------!
-
-   !----- Flag to tell whether there is at least one "resolvable" cohort in this patch ----!
-!!!   logical :: any_resolvable   ! MOVED TO RK4AUX FOR MULTI-THREADING
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Canopy air space capacities.  These variables are used to convert the intensive  !
-   ! version of canopy air space prognostic variables (specific enthalpy, water vapour     !
-   ! specific humidity and CO2 mixing ratio) into extensive variables.                     ! 
-   !---------------------------------------------------------------------------------------!
-   !! MOVED TO RK4AUX FOR MULTI-THREADING
-!   real(kind=8) :: wcapcan  ! Water capacity                               [  kg_air/m²gnd]
-!   real(kind=8) :: hcapcan  ! Enthalpy capacity                            [  kg_air/m²gnd]
-!   real(kind=8) :: ccapcan  ! CO2 capacity                                 [ mol_air/m²gnd]
-!   real(kind=8) :: wcapcani ! Inverse of water capacity                    [  m²gnd/kg_air]
-!   real(kind=8) :: hcapcani ! Inverse of enthalpy capacity                 [  m²gnd/kg_air]
-!   real(kind=8) :: ccapcani ! Inverse of CO2 capacity                      [ m²gnd/mol_air]
-   !---------------------------------------------------------------------------------------!
-
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1038,9 +1005,6 @@ module rk4_coms
       y%can_exner                      = 0.d0
       y%can_cp                         = 0.d0
       y%veg_height                     = 0.d0
-
-!      y%vels                           = 0.d0
-!      y%atm_enthalpy                   = 0.d0
 
       y%veg_displace                   = 0.d0
       y%veg_rough                      = 0.d0
@@ -1852,16 +1816,6 @@ module rk4_coms
      if (associated(crk4aux%w_flux_g        )) crk4aux%w_flux_g        (:  ) = 0.d0
      if (associated(crk4aux%qw_flux_g       )) crk4aux%qw_flux_g       (:  ) = 0.d0
      if (associated(crk4aux%extracted_water )) crk4aux%extracted_water (:,:) = 0.d0
-     
-!     crk4aux%rk4min_can_prss          = 0.d0
-!     crk4aux%rk4max_can_prss          = 0.d0
-!     crk4aux%rk4min_can_theta        = 0.d0
-!     crk4aux%rk4max_can_theta        = 0.d0
-!     crk4aux%rk4min_can_enthalpy     = 0.d0
-!     crk4aux%rk4max_can_enthalpy     = 0.d0
-
-!     if (associated(crk4aux%rk4min_soil_water))crk4aux%rk4min_soil_water(:)  = 0.d0
-!     if (associated(crk4aux%rk4min_soil_water))crk4aux%rk4max_soil_water(:)  = 0.d0
 
      return
    end subroutine zero_rk4_aux
@@ -2059,35 +2013,18 @@ module rk4_coms
       integer                                  :: second
       integer                                  :: nsoil
       integer                                  :: ibuff
-      !----- Local parameters and locally saved variables. --------------------------------!
-      logical                     , save       :: firsttime    = .true.
       !------------------------------------------------------------------------------------!
 
       ibuff=1
       !$ ibuff = OMP_get_thread_num()+1
 
+
+
       !------------------------------------------------------------------------------------!
-      !     When we call this sub-routine for the first time, we must allocate the sanity  !
-      ! check bounds for soil moisture.  Also, if the debugger of the sanity check is      !
-      ! going to be used, we write the file header.                                        !
+      !     File header is now written by initialize_misc_stepvars.                        !
       !------------------------------------------------------------------------------------!
-!      if (firsttime) then
-!
-!         allocate(rk4min_soil_water(nzg))
-!         allocate(rk4max_soil_water(nzg))
-!
-!         if (print_thbnd) then
-!            open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
-!            write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
-!                                            ,'        HOUR','        MINU','        SECO'  &
-!                                            ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
-!                                            ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
-!                                            ,'    MIN_PRSS','    MAX_PRSS','MIN_ENTHALPY'  &
-!                                            ,'MAX_ENTHALPY'
-!            close(unit=39,status='keep')
-!         end if
-!         firsttime = .false.
-!      end if
+
+
 
       !------------------------------------------------------------------------------------!
       !     Find the bounds for pressure.  To avoid the pressure range to be too relaxed,  !
@@ -2096,12 +2033,12 @@ module rk4_coms
       ! in case the reference height was different by the order of 10%.                    !
       !------------------------------------------------------------------------------------!
       !----- 1. Initial value, the most extreme one. --------------------------------------!
-      rk4aux(ibuff)%rk4min_can_prss = &
-            reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
-            ,9.d-1*rk4site%geoht,can_theta,can_shv,can_depth)
-      rk4aux(ibuff)%rk4max_can_prss = &
-            reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
-            ,1.1d0*rk4site%geoht,can_theta,can_shv,can_depth)
+      rk4aux(ibuff)%rk4min_can_prss =                                                      &
+            reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv               &
+                         ,9.d-1*rk4site%geoht,can_theta,can_shv,can_depth)
+      rk4aux(ibuff)%rk4max_can_prss =                                                      &
+            reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv               &
+                         ,1.1d0*rk4site%geoht,can_theta,can_shv,can_depth)
       !------------------------------------------------------------------------------------!
 
 
@@ -2143,20 +2080,28 @@ module rk4_coms
       rk4aux(ibuff)%rk4max_can_enthalpy = - huge(1.d0)
       !----- 2. Minimum temperature. ------------------------------------------------------!
       can_enthalpy_try    = tq2enthalpy8(rk4min_can_temp,can_shv,.true.)
-      rk4aux(ibuff)%rk4min_can_enthalpy = min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
-      rk4aux(ibuff)%rk4max_can_enthalpy = max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
       !----- 3. Maximum temperature. ------------------------------------------------------!
       can_enthalpy_try    = tq2enthalpy8(rk4max_can_temp,can_shv,.true.)
-      rk4aux(ibuff)%rk4min_can_enthalpy = min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
-      rk4aux(ibuff)%rk4max_can_enthalpy = max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
       !----- 4. Minimum specific humidity. ------------------------------------------------!
       can_enthalpy_try    = tq2enthalpy8(can_temp,rk4min_can_shv,.true.)
-      rk4aux(ibuff)%rk4min_can_enthalpy = min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
-      rk4aux(ibuff)%rk4max_can_enthalpy = max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
       !----- 5. Maximum specific humidity. ------------------------------------------------!
       can_enthalpy_try    = tq2enthalpy8(can_temp,rk4max_can_shv,.true.)
-      rk4aux(ibuff)%rk4min_can_enthalpy = min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
-      rk4aux(ibuff)%rk4max_can_enthalpy = max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4min_can_enthalpy =                                                  &
+                    min(rk4aux(ibuff)%rk4min_can_enthalpy,can_enthalpy_try)
+      rk4aux(ibuff)%rk4max_can_enthalpy =                                                  &
+                    max(rk4aux(ibuff)%rk4max_can_enthalpy,can_enthalpy_try)
       !------------------------------------------------------------------------------------!
 
       if (print_thbnd) then
@@ -2171,8 +2116,10 @@ module rk4_coms
                               ,               hour,             minute,             second &
                               ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
                               ,     rk4max_can_shv,   rk4aux(ibuff)%rk4min_can_theta       &
-                              , rk4aux(ibuff)%rk4max_can_theta, rk4aux(ibuff)%rk4min_can_prss &
-                              , rk4aux(ibuff)%rk4max_can_prss,rk4aux(ibuff)%rk4min_can_enthalpy &
+                              , rk4aux(ibuff)%rk4max_can_theta                             &
+                              , rk4aux(ibuff)%rk4min_can_prss                              &
+                              , rk4aux(ibuff)%rk4max_can_prss                              &
+                              , rk4aux(ibuff)%rk4min_can_enthalpy                          &
                               , rk4aux(ibuff)%rk4max_can_enthalpy
          close (unit=39,status='keep')
       end if

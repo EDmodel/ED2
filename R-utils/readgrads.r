@@ -4,10 +4,27 @@
 # This function extracts the variablem, within the asked interval, using the processed ctl #
 # information.                                                                             #
 #------------------------------------------------------------------------------------------#
-readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
+readgrads <<- function( vari           # Variable(s) to be read.
+                      , info           # The output from readctl function
+                      , coord = "grid" # Coordinate system:
+                                       #   "grid"  -- Limits below are indices
+                                       #   "coord" -- Limits below are the actual numbers
+                      , xlim  = NA     # Limits for X (longitude)
+                      , ylim  = NA     # Limits for Y (latitude)
+                      , zlim  = NA     # Limits for Z (height/pressure)
+                      , tlim  = NA     # Limits for T (time)
+                      ){
+
+   #----- Tiny number. --------------------------------------------------------------------#
+   seps = 2^-24
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Assign the number of variables. -------------------------------------------------#
    nvars = length(vari)
+   #---------------------------------------------------------------------------------------#
+
+
 
    #----- Check whether all requested variables are present. ------------------------------#
    isthere = tolower(vari) %in% info$varname
@@ -18,6 +35,7 @@ readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
    }else{
      varid = match(tolower(vari),info$varname)
    } #end if (! tolower(vari) in info$varname)
+   #---------------------------------------------------------------------------------------#
 
 
    #----- Find the boundaries of the subset to be retrieved. ------------------------------#
@@ -26,52 +44,55 @@ readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
    zlim = sort(zlim)
    tlim = sort(tlim)
    if (tolower(coord) == "grid"){
-     options(warn=-1)
-     ta = max(tlim[1],1        ,na.rm=TRUE)
-     tz = min(tlim[2],info$tmax,na.rm=TRUE)
-     xa = max(xlim[1],1        ,na.rm=TRUE)
-     xz = min(xlim[2],info$xmax,na.rm=TRUE)
-     ya = max(ylim[1],1        ,na.rm=TRUE)
-     yz = min(ylim[2],info$ymax,na.rm=TRUE)
-     za = max(zlim[1],1        ,na.rm=TRUE)
+      options(warn=-1)
+      ta = max(tlim[1],1        ,na.rm=TRUE)
+      tz = min(tlim[2],info$tmax,na.rm=TRUE)
+      xa = max(xlim[1],1        ,na.rm=TRUE)
+      xz = min(xlim[2],info$xmax,na.rm=TRUE)
+      ya = max(ylim[1],1        ,na.rm=TRUE)
+      yz = min(ylim[2],info$ymax,na.rm=TRUE)
+      za = max(zlim[1],1        ,na.rm=TRUE)
 
-     #-------------------------------------------------------------------------------------#
-     #     The number of levels may vary for each variable.  Ensure that it never exceeds  #
-     # the maximum number of levels for each variable.                                     #
-     #-------------------------------------------------------------------------------------#
-     zz = info$zmax[varid]
-     zz[zz > zlim[2]] = zlim[2]
-     options(warn=0)
+      #------------------------------------------------------------------------------------#
+      #     The number of levels may vary for each variable.  Ensure that it never exceeds #
+      # the maximum number of levels for each variable.                                    #
+      #------------------------------------------------------------------------------------#
+      zz = info$zmax[varid]
+      zz[zz > zlim[2]] = zlim[2]
+      options(warn=0)
    }else if (tolower(coord) == "coord"){
-     options(warn=-1)
-     ta = max(1,which.min(abs(info$gtime-tlim[1]),na.rm=TRUE))
-     tz = min(tmax,which.min(abs(info$gtime-tlim[2]),na.rm=TRUE))
+      options(warn=-1)
+      ta = max(1,which.min(abs(info$gtime-tlim[1]),na.rm=TRUE))
+      tz = min(tmax,which.min(abs(info$gtime-tlim[2]),na.rm=TRUE))
 
-     xa = max(1,which.min(abs(info$glon-xlim[1]),na.rm=TRUE))
-     xz = min(xmax,which.min(abs(info$glon-xlim[2]),na.rm=TRUE))
-     ya = max(1,which.min(abs(info$glat-ylim[1]),na.rm=TRUE))
-     yz = min(ymax,which.min(abs(info$glat-ylim[2]),na.rm=TRUE))
-     za = max(1,which.min(abs(info$glev-zlim[1]),na.rm=TRUE))
+      xa = max(1,which.min(abs(info$glon-xlim[1]),na.rm=TRUE))
+      xz = min(xmax,which.min(abs(info$glon-xlim[2]),na.rm=TRUE))
+      ya = max(1,which.min(abs(info$glat-ylim[1]),na.rm=TRUE))
+      yz = min(ymax,which.min(abs(info$glat-ylim[2]),na.rm=TRUE))
+      za = max(1,which.min(abs(info$glev-zlim[1]),na.rm=TRUE))
 
-     #-------------------------------------------------------------------------------------#
-     #     The number of levels may vary for each variable.  Ensure that it never exceeds  #
-     # the maximum number of levels for each variable.                                     #
-     #-------------------------------------------------------------------------------------#
-     ze          = which.min(abs(info$glev-zlim[2]),na.rm=TRUE)
-     zz          = info$zmax[varid]
-     zz[zz > ze] = ze
+      #------------------------------------------------------------------------------------#
+      #     The number of levels may vary for each variable.  Ensure that it never exceeds #
+      # the maximum number of levels for each variable.                                    #
+      #------------------------------------------------------------------------------------#
+      ze          = which.min(abs(info$glev-zlim[2]),na.rm=TRUE)
+      zz          = info$zmax[varid]
+      zz[zz > ze] = ze
 
-     options(warn=0)
+      options(warn=0)
    }else{
-     stop(paste("Error in coord! The value",coord,"is invalid!",
-                "Choose 'grid' for grid points or 'coord' for grid coordinates"))
-   } #end if (tolower(coord) == "grid")
+      stop(paste("Error in coord! The value",coord,"is invalid!",
+                 "Choose 'grid' for grid points or 'coord' for grid coordinates"))
+   }#end if (tolower(coord) == "grid")
+   #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #     Initialise the output, which will contain the data and information about the      #
    # boundaries of the subset.                                                             #
    #---------------------------------------------------------------------------------------#
-   outd = list()
+   outd       = list()
    outd$tmax  = (tz-ta)+1
    outd$zmax  = (zz-za)+1
    outd$xmax  = (xz-xa)+1
@@ -96,6 +117,7 @@ readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
          assign(x=vari[v],value=data)
          rm(data)
       } #end for (v in 1:nvars)
+      #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
@@ -169,7 +191,7 @@ readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
                thisdata = aperm(a=thisdata,perm=c(3,1,2))
 
                #----- Assign NA to missing data. ------------------------------------------#
-               thisdata[abs((thisdata-(info$undef))/info$undef) < eps()] = NA
+               thisdata[abs((thisdata-(info$undef))/info$undef) < seps] = NA
 
                dmin = min(thisdata,na.rm=TRUE)
                dmax = max(thisdata,na.rm=TRUE)
@@ -192,8 +214,10 @@ readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
          }else{
             warning(paste("Skipping the non-existent file",basename(info$binary[tabs]),
                           "and adding NA..."))
-         } #end if
+         }#end if
+         #---------------------------------------------------------------------------------#
       }#end for (tt in ta:tz)
+      #------------------------------------------------------------------------------------#
    }else{
       #------------------------------------------------------------------------------------#
       #     Non-template case.  We will now  assign scratch variables with the entire      #
@@ -284,7 +308,7 @@ readgrads <<- function(vari,info,coord="grid",xlim=NA,ylim=NA,zlim=NA,tlim=NA){
             pr          = info$posica[tabs,varid[v]]:info$posicz[tabs,varid[v]]
             tt          = tt + 1
             thisdata    = aux[pr]
-            thisdata[abs((thisdata-info$undef)/info$undef) < eps()] = NA
+            thisdata[abs((thisdata-info$undef)/info$undef) < seps] = NA
             datascr[tt,,,] = thisdata
          }#end for (tt in ta:tz)
 

@@ -64,7 +64,7 @@ gendep:
 
 $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
-	$(LOADER) -o $(EXE) $(MAINOBJ) $(LOADER_OPTS) $(LIBMODEL) $(ALL_LIBS)
+	$(LOADER) -o $(EXE) $(MAINOBJ) $(LOADER_OPTS) $(INCLUDES) $(LIBMODEL) $(ALL_LIBS)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""

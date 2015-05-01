@@ -138,6 +138,11 @@ rpost_misc.o: $(RPOST_DRIVER)/rpost_misc.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+rpost_utils.o: $(RPOST_UTILS)/rpost_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 rsys.o: $(RPOST_UTILS)/rsys.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)

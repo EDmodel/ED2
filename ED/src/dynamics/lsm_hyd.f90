@@ -524,7 +524,6 @@ end subroutine calcHydroSubsurface
 !!!!!!   use grid_coms, only: ngrids
 !!!!!!   use ed_misc_coms, only: dtlsm
 !!!!!!   implicit none
-!!!!!!   include "mpif.h"
 !!!!!! !  include 'rcommons.h'
 !!!!!! !  include 'rpara.h'
 !!!!!!   type(plist), dimension(ngrids) :: polygon_list
@@ -1488,7 +1487,6 @@ end subroutine calcHydroSurface
 !!!!!!   use ed_para_coms,only: mainnum,nmachs,machnum
 !!!!!!   use grid_coms,only:ngrids
 !!!!!!   implicit none
-!!!!!!   include "mpif.h"
 !!!!!!   type(plist),target,dimension(ngrids)::polygon_list
 !!!!!!   type(polygon),pointer :: cpoly
 !!!!!!   type(site),pointer :: cs
@@ -1576,7 +1574,6 @@ end subroutine calcHydroSurface
 !!!!!!   use const_coms, only : g, 
 !!!!!!   use therm_lib, only: uint2tl
 !!!!!!   implicit none
-!!!!!!   include "mpif.h"
 !!!!!!   type(plist),dimension(ngrids) :: polygon_list
 !!!!!!   type(polygon), pointer ::cpoly
 !!!!!!   type(site), pointer ::cs
@@ -1822,7 +1819,7 @@ subroutine updateHydroParms (cgrid)
   use hydrology_constants
   use hydrology_coms, only: useRUNOFF, grassLAImax
   use consts_coms, only: grav
-  use pft_coms, only: include_pft_ag
+  use pft_coms, only: is_grass
   implicit none
   type(edtype)      , target  :: cgrid           ! Alias for current grid
   type(polygontype) , pointer :: cpoly           ! Alias for current polygon
@@ -1861,7 +1858,7 @@ subroutine updateHydroParms (cgrid)
            n4    = 0.0   
            sigma = 0.0
            do ico=1,cpatch%ncohorts
-              if(include_pft_ag(cpatch%pft(ico))) then
+              if(is_grass(cpatch%pft(ico))) then
                  !! update non-woody correction
                  n4 = n4 + 0.01*cpatch%LAI(ico)/GrassLAImax
               else

@@ -1,17 +1,17 @@
 #------------------------------------------------------------------------------------------#
 #     This function plots a scatter plot adding error bars.                                #
 #------------------------------------------------------------------------------------------#
-error.bar = function(x, y,xerr=NULL,yerr=NULL,xlow=NULL,xhigh=NULL,ylow=NULL,yhigh=NULL
-                    ,xlim=NULL,ylim=NULL,cap=0.015,main=NULL,sub=NULL
-                    ,xlab = as.character(substitute(x))
-                    ,ylab = if (is.factor(x) || is.character(x)){
-                               ""
-                            }else{
-                               as.character(substitute(y))
-                            }#end if
-                    ,add = FALSE, lty = 1, type = "p", lwd = 1
-                    ,pch = 16,col="black",err.col=col
-                    ,...){
+error.bar <<- function(x, y,xerr=NULL,yerr=NULL,xlow=NULL,xhigh=NULL,ylow=NULL,yhigh=NULL
+                      ,xlim=NULL,ylim=NULL,cap=0.015,main=NULL,sub=NULL
+                      ,xlab = as.character(substitute(x))
+                      ,ylab = if (is.factor(x) || is.character(x)){
+                                 ""
+                              }else{
+                                 as.character(substitute(y))
+                              }#end if
+                      ,add = FALSE, lty = 1, type = "p", lwd = 1
+                      ,pch = 16,col="black",err.col=col
+                      ,...){
 
     #--------------------------------------------------------------------------------------#
     #     Decide whether to start a new plot window or put over an existing plot.          #
@@ -24,14 +24,14 @@ error.bar = function(x, y,xerr=NULL,yerr=NULL,xlow=NULL,xhigh=NULL,ylow=NULL,yhi
        #----- Find range for x and y in case none has been provided. ----------------------#
        if (is.null(xlim)){
           if ((! is.null(xlow)) & (! is.null(xhigh))){
-             xlim = c(x,xlow,xhigh)
+             xlim = range(c(x,xlow,xhigh),na.rm=TRUE)
            }else{
              xlim = range(c(x,x+xerr,x-xerr),na.rm=TRUE)
           }#end if
        }#end if
        if (is.null(ylim)){
           if ((! is.null(ylow)) & (! is.null(yhigh))){
-             ylim = c(y,ylow,yhigh)
+             ylim = range(c(y,ylow,yhigh),na.rm=TRUE)
           }else{
              ylim = range(c(y,y+yerr,y-yerr),na.rm=TRUE)
           }#end if

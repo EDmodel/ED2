@@ -245,7 +245,7 @@ subroutine initlz (name_name)
       !     Fill land surface data for all grids that have no standard input files.        !
       !------------------------------------------------------------------------------------!
       select case (isfcl)
-      case (1,2,5)
+      case (1,2,4,5)
          call sfcdata
       case (3)
          !call sfcdata_sib_driver
@@ -423,7 +423,7 @@ subroutine initlz (name_name)
       !     Fill land surface data for all grids that have no standard input files.        !
       !------------------------------------------------------------------------------------!
         select case (isfcl)
-      case (1,2,5)
+      case (1,2,4,5)
          call sfcdata
       case (3)
          !call sfcdata_sib_driver
@@ -793,6 +793,7 @@ subroutine read_nl(filename)
    use grell_coms         , only : closure_type            & ! intent(out)
                                  , maxclouds               & ! intent(out)
                                  , iupmethod               & ! intent(out)
+                                 , ilourec                 & ! intent(out)
                                  , depth_min               & ! intent(out)
                                  , cap_maxs                & ! intent(out)
                                  , cld2prec                & ! intent(out)
@@ -800,7 +801,6 @@ subroutine read_nl(filename)
                                  , maxens_eff              & ! intent(out)
                                  , maxens_dyn              & ! intent(out)
                                  , maxens_cap              & ! intent(out)
-                                 , iupmethod               & ! intent(out)
                                  , radius                  & ! intent(out)
                                  , zkbmax                  & ! intent(out)
                                  , max_heat                & ! intent(out)
@@ -870,6 +870,7 @@ subroutine read_nl(filename)
                                  , dthcon                  & ! intent(out)
                                  , isfcl                   & ! intent(out)
                                  , dtleaf                  & ! intent(out)
+                                 , ndtveg                  & ! intent(out)
                                  , istar                   & ! intent(out)
                                  , igrndvap                & ! intent(out)
                                  , nslcon                  & ! intent(out)
@@ -947,7 +948,6 @@ subroutine read_nl(filename)
                                  , nud_hfile               & ! intent(out)
                                  , nud_type                & ! intent(out)
                                  , nudlat                  & ! intent(out)
-                                 , t_nudge_rc              & ! intent(out)
                                  , tcond_beg               & ! intent(out)
                                  , tcond_end               & ! intent(out)
                                  , tnudcent                & ! intent(out)
@@ -962,6 +962,13 @@ subroutine read_nl(filename)
                                  , wt_nudge_th             & ! intent(out)
                                  , wt_nudge_uv             & ! intent(out)
                                  , wt_nudge_co2            & ! intent(out)
+                                 , zb_nudge_pi             & ! intent(out)
+                                 , zb_nudge_rt             & ! intent(out)
+                                 , zb_nudge_th             & ! intent(out)
+                                 , zb_nudge_uv             & ! intent(out)
+                                 , zb_nudge_co2            & ! intent(out)
+                                 , wt_nudge_rc             & ! intent(out)
+                                 , zb_nudge_rc             & ! intent(out)
                                  , wt_nudgec_grid          & ! intent(out)
                                  , znudtop                 ! ! intent(out)
    use micphys            , only : aparm                   & ! intent(out)
@@ -1108,30 +1115,32 @@ subroutine read_nl(filename)
    namelist /MODEL_FILE_INFO/     initial,nud_type,varfpfx,vwait1,vwaittot,nud_hfile       &
                                  ,nudlat,tnudlat,tnudcent,tnudtop,znudtop,wt_nudge_grid    &
                                  ,wt_nudge_uv,wt_nudge_th,wt_nudge_pi,wt_nudge_rt          &
-                                 ,wt_nudge_co2,nud_cond,cond_hfile,tcond_beg,tcond_end     &
-                                 ,t_nudge_rc,wt_nudgec_grid,if_oda,oda_upaprefix           &
-                                 ,oda_sfcprefix,frqoda,todabeg,todaend,tnudoda,wt_oda_grid &
-                                 ,wt_oda_uv,wt_oda_th,wt_oda_pi,wt_oda_rt,roda_sfce        &
-                                 ,roda_sfc0,roda_upae,roda_upa0,roda_hgt,roda_zfact        &
-                                 ,oda_sfc_til,oda_sfc_tel,oda_upa_til,oda_upa_tel,if_cuinv &
-                                 ,cu_prefix,tnudcu,wt_cu_grid,tcu_beg,tcu_end,cu_tel       &
-                                 ,cu_til,imonthh,idateh,iyearh,itimeh,hfilin,ipastin       &
-                                 ,pastfn,ioutput,hfilout,afilout,iclobber,ihistdel,frqhis  &
-                                 ,frqanl,frqlite,xlite,ylite,zlite,nlite_vars,lite_vars    &
-                                 ,avgtim,frqmean,frqboth,kwrite,frqprt,initfld,topfiles    &
-                                 ,sfcfiles,sstfpfx,ndvifpfx,itoptflg,isstflg,ivegtflg      &
-                                 ,isoilflg,ndviflg,nofilflg,iupdndvi,iupdsst,iuselai       &
-                                 ,itoptfn,isstfn,ivegtfn,isoilfn,ndvifn,itopsflg,toptenh   &
-                                 ,toptwvl,iz0flg,z0max,z0fact,mkcoltab,coltabfn
+                                 ,wt_nudge_co2,zb_nudge_uv,zb_nudge_th,zb_nudge_pi         &
+                                 ,zb_nudge_rt,zb_nudge_co2,nud_cond,cond_hfile,tcond_beg   &
+                                 ,tcond_end,wt_nudge_rc,zb_nudge_rc,wt_nudgec_grid,if_oda  &
+                                 ,oda_upaprefix,oda_sfcprefix,frqoda,todabeg,todaend       &
+                                 ,tnudoda,wt_oda_grid,wt_oda_uv,wt_oda_th,wt_oda_pi        &
+                                 ,wt_oda_rt,roda_sfce,roda_sfc0,roda_upae,roda_upa0        &
+                                 ,roda_hgt,roda_zfact,oda_sfc_til,oda_sfc_tel,oda_upa_til  &
+                                 ,oda_upa_tel,if_cuinv,cu_prefix,tnudcu,wt_cu_grid,tcu_beg &
+                                 ,tcu_end,cu_tel,cu_til,imonthh,idateh,iyearh,itimeh       &
+                                 ,hfilin,ipastin,pastfn,ioutput,hfilout,afilout,iclobber   &
+                                 ,ihistdel,frqhis,frqanl,frqlite,xlite,ylite,zlite         &
+                                 ,nlite_vars,lite_vars,avgtim,frqmean,frqboth,kwrite       &
+                                 ,frqprt,initfld,topfiles,sfcfiles,sstfpfx,ndvifpfx        &
+                                 ,itoptflg,isstflg,ivegtflg,isoilflg,ndviflg,nofilflg      &
+                                 ,iupdndvi,iupdsst,iuselai,itoptfn,isstfn,ivegtfn,isoilfn  &
+                                 ,ndvifn,itopsflg,toptenh,toptwvl,iz0flg,z0max,z0fact      &
+                                 ,mkcoltab,coltabfn
 
    namelist /CUPARM_OPTIONS/      nnqparm,nclouds,ndeepest,nshallowest,wcldbs,confrq       &
-                                 ,cptime,iupmethod,radius,depth_min,cap_maxs,cld2prec      &
-                                 ,zkbmax,zcutdown,z_detr,max_heat,closure_type,maxens_lsf  &
-                                 ,maxens_eff,maxens_cap
+                                 ,cptime,iupmethod,ilourec,radius,depth_min,cap_maxs       &
+                                 ,cld2prec,zkbmax,zcutdown,z_detr,max_heat,closure_type    &
+                                 ,maxens_lsf,maxens_eff,maxens_cap
 
    namelist /MODEL_OPTIONS/       naddsc,icorflg,iadvec,iexev,imassflx,ibnd,jbnd,cphas     &
                                  ,lsflg,nfpt,distim,iswrtyp,ilwrtyp,icumfdbk,radfrq,lonrad &
-                                 ,npatch,nvegpat,min_patch_area,isfcl,dtleaf,istar         &
+                                 ,npatch,nvegpat,min_patch_area,isfcl,dtleaf,ndtveg,istar  &
                                  ,igrndvap,ubmin,ugbmin,ustmin,gamm,gamh,tprandtl,ribmax   &
                                  ,leaf_maxwhc,ico2,co2con,nvgcon,pctlcon,nslcon,isoilcol   &
                                  ,drtcon,zrough,albedo,seatmp,dthcon,soil_moist            &
@@ -1628,11 +1637,17 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' wt_nudge_pi    =',wt_nudge_pi
       write (unit=*,fmt=*) ' wt_nudge_rt    =',wt_nudge_rt
       write (unit=*,fmt=*) ' wt_nudge_co2   =',wt_nudge_co2
+      write (unit=*,fmt=*) ' zb_nudge_uv    =',zb_nudge_uv
+      write (unit=*,fmt=*) ' zb_nudge_th    =',zb_nudge_th
+      write (unit=*,fmt=*) ' zb_nudge_pi    =',zb_nudge_pi
+      write (unit=*,fmt=*) ' zb_nudge_rt    =',zb_nudge_rt
+      write (unit=*,fmt=*) ' zb_nudge_co2   =',zb_nudge_co2
       write (unit=*,fmt=*) ' nud_cond       =',nud_cond
       write (unit=*,fmt=*) ' cond_hfile     =',trim(cond_hfile)
       write (unit=*,fmt=*) ' tcond_beg      =',tcond_beg
       write (unit=*,fmt=*) ' tcond_end      =',tcond_end
-      write (unit=*,fmt=*) ' t_nudge_rc     =',t_nudge_rc
+      write (unit=*,fmt=*) ' wt_nudge_rc    =',wt_nudge_rc
+      write (unit=*,fmt=*) ' zb_nudge_rc    =',zb_nudge_rc
       write (unit=*,fmt=*) ' wt_nudgec_grid =',wt_nudgec_grid
       write (unit=*,fmt=*) ' if_oda         =',if_oda
       write (unit=*,fmt=*) ' oda_upaprefix  =',trim(oda_upaprefix)
@@ -1742,6 +1757,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' confrq       =',confrq
       write (unit=*,fmt=*) ' cptime       =',cptime
       write (unit=*,fmt=*) ' iupmethod    =',iupmethod
+      write (unit=*,fmt=*) ' ilourec      =',ilourec
       write (unit=*,fmt=*) ' radius       =',radius
       write (unit=*,fmt=*) ' depth_min    =',depth_min
       write (unit=*,fmt=*) ' cap_maxs     =',depth_min
@@ -1793,6 +1809,7 @@ subroutine read_nl(filename)
       write (unit=*,fmt=*) ' min_patch_area  =',min_patch_area
       write (unit=*,fmt=*) ' isfcl           =',isfcl
       write (unit=*,fmt=*) ' dtleaf          =',dtleaf
+      write (unit=*,fmt=*) ' ndtveg          =',ndtveg
       write (unit=*,fmt=*) ' istar           =',istar
       write (unit=*,fmt=*) ' igrndvap        =',igrndvap
       write (unit=*,fmt=*) ' ubmin           =',ubmin

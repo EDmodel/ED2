@@ -55,7 +55,9 @@ subroutine h5_output(vtype)
    implicit none
 
    !------ Include standard common blocks. ------------------------------------------------!
+#if defined(RAMS_MPI)
    include 'mpif.h'
+#endif
    !------ Arguments. ---------------------------------------------------------------------!
    character(len=*)                                 , intent(in) :: vtype
    !------ Local variables. ---------------------------------------------------------------!
@@ -66,7 +68,9 @@ subroutine h5_output(vtype)
    character(len=1)                                              :: vnam
    character(len=64)                                             :: c0
    character(len=64)     , dimension(3)                          :: metadata
+#if defined(RAMS_MPI)
    integer               ,dimension(MPI_STATUS_SIZE)             :: status
+#endif
    integer                                                       :: ngr
    integer                                                       :: nv
    integer                                                       :: nvcnt
@@ -124,8 +128,13 @@ subroutine h5_output(vtype)
 
 
    !----- Initialise some variables. ------------------------------------------------------!
+#if defined(RAMS_MPI)
    comm    = MPI_COMM_WORLD
    info    = MPI_INFO_NULL
+#else
+   comm    = 0
+   info    = 0
+#endif
    !---------------------------------------------------------------------------------------!
 
 
@@ -171,9 +180,11 @@ subroutine h5_output(vtype)
 
       !----- Wait until the previous node has finished writing. ---------------------------!
       new_file=.true.
+#if defined(RAMS_MPI)
       if (mynum /= 1) then
          call MPI_Recv(new_file,1,MPI_LOGICAL,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
       end if
+#endif
       !------------------------------------------------------------------------------------!
 
 
@@ -342,7 +353,7 @@ subroutine h5_output(vtype)
          if (verbose) write (unit=*,fmt='(a)') '    > Opening HDF5 environment...'
          call h5open_f(hdferr)
          if (hdferr /= 0) then
-            write(unit=*,fmt='(a,1x,i6)') ' - HDF5 Open error #:',hdferr
+            write(unit=*,fmt='(a,1x,i8)') ' - HDF5 Open error #:',hdferr
             call fatal_error('Could not initialize the hdf environment'                    &
                             ,'h5_output','h5_output.F90')
          end if
@@ -361,8 +372,8 @@ subroutine h5_output(vtype)
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not create the HDF5 file.'
                write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
-               write(unit=*,fmt='(a,1x,i6)' ) ' - file_id: ',file_id
-               write(unit=*,fmt='(a,1x,i6)' ) ' - hdferr : ',hdferr
+               write(unit=*,fmt='(a,1x,i8)') ' - file_id: ',file_id
+               write(unit=*,fmt='(a,1x,i8)') ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                call fatal_error('Failed creating the HDF file','h5_output','h5_output.F90')
             end if
@@ -373,8 +384,8 @@ subroutine h5_output(vtype)
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                write(unit=*,fmt='(a)'      ) ' Could not open the HDF5 file.'
                write(unit=*,fmt='(a,1x,a)' ) ' - File   : ',trim(anamel)
-               write(unit=*,fmt='(a,1x,i6)' ) ' - file_id: ',file_id
-               write(unit=*,fmt='(a,1x,i6)' ) ' - hdferr : ',hdferr
+               write(unit=*,fmt='(a,1x,i8)') ' - file_id: ',file_id
+               write(unit=*,fmt='(a,1x,i8)') ' - hdferr : ',hdferr
                write(unit=*,fmt='(a)'      ) '--------------------------------------------'
                call fatal_error('Failed opening the HDF file','h5_output','h5_output.F90')
             end if
@@ -426,12 +437,13 @@ subroutine h5_output(vtype)
                if (verbose) write (unit=*,fmt='(a)') '      # Creating data set...'
                call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
                if (hdferr /= 0 .or. globdims(1) < 1 ) then
-                  write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
-                  write (unit=*,fmt='(a,1x,a)') ' VAR NAME: ',trim(varn)
-                  write (unit=*,fmt='(a,1x,i6)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
-                  write (unit=*,fmt='(a,1x,i6)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
-                  write (unit=*,fmt=*)          ' DSETRANK: ',dsetrank
-                  write (unit=*,fmt=*)          ' GLOBDIMS: ',globdims
+                  write (unit=*,fmt='(a,1x,a)')  ' VTYPE:    ',trim(vtype)
+                  write (unit=*,fmt='(a,1x,a)')  ' VAR NAME: ',trim(varn)
+                  write (unit=*,fmt='(a,1x,i8)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
+                  write (unit=*,fmt='(a,1x,i8)') ' VLEN_GLOB:'                             &
+                                                            ,vt_info(nv,ngr)%var_len_global
+                  write (unit=*,fmt=*)           ' DSETRANK: ',dsetrank
+                  write (unit=*,fmt=*)           ' GLOBDIMS: ',globdims
                   call fatal_error('Could not create the first filespace'                  &
                                   ,'h5_output','h5_output.f90')
                end if
@@ -737,8 +749,6 @@ subroutine h5_output(vtype)
 
          !---------------------------------------------------------------------------------!
 
-         call h5fflush_f(file_id,H5F_SCOPE_LOCAL_F, hdferr)
-
          if (verbose) write (unit=*,fmt='(a)') '    > Closing file...'
          call h5fclose_f(file_id,hdferr)
          if (hdferr /= 0) then
@@ -761,9 +771,11 @@ subroutine h5_output(vtype)
 
 
       !----- Send message for the next node that it is time for it to write the output. ---!
+#if defined(RAMS_MPI)
       if (mynum < nnodetot) then
          call MPI_Send(new_file,1,MPI_LOGICAL,sendnum,3510+ngr,MPI_COMM_WORLD,ierr)
       end if
+#endif
    end do gridloop
 
    select case (trim(vtype))

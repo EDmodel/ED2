@@ -92,10 +92,10 @@ $MODEL_GRIDS
    !           a lot, leave this set to 1.  One value for all grids.                       ! 
    !---------------------------------------------------------------------------------------!
    NGRIDS   =    1,
-   NNXP     =   64,  68, 230,
-   NNYP     =   75,  56, 161,
-   NNZP     =   52,  52,  52,
-   NZG      =   16,
+   NNXP     =  160,
+   NNYP     =  120,
+   NNZP     =   50,
+   NZG      =   12,
    NZS      =    1,
    !---------------------------------------------------------------------------------------!
 
@@ -154,10 +154,10 @@ $MODEL_GRIDS
    ! DZMAX  -- maximum grid spacing in metres.                                             !
    ! ZZ     -- discrete layers in case you set DELTAZ to zero.                             !
    !---------------------------------------------------------------------------------------!
-   DELTAX   =    22239.,
-   DELTAY   =    22239.,
-   DELTAZ   =       90.,
-   DZRAT    =      1.06,
+   DELTAX   =    25000.,
+   DELTAY   =    25000.,
+   DELTAZ   =      120.,
+   DZRAT    =      1.05,
    DZMAX    =     1000.,
    ZZ       =       0.0,      20.0,      46.0,      80.0,     120.0,     165.0,     220.0,
                   290.0,     380.0,     480.0,     590.0,     720.0,     870.0,    1030.0,
@@ -185,7 +185,7 @@ $MODEL_GRIDS
    !                  vary as needed.  It is useful for a first  guess of DTLONG, but not  !
    !                  a good option for actual runs because NACOUST tends to be too small. !
    !---------------------------------------------------------------------------------------!
-   DTLONG   = 25.,
+   DTLONG   = 30.,
    NACOUST  =   4,
    IDELTAT  =   0,
    !---------------------------------------------------------------------------------------!
@@ -232,10 +232,10 @@ $MODEL_GRIDS
    ! CENTLAT -- Latitude of the central point.  One value for each grid.                   !
    ! CENTLON -- Longitude of the central point.  One value for each grid.                  !
    !---------------------------------------------------------------------------------------!
-   POLELAT  =  -7.50,
-   POLELON  = -61.50,
-   CENTLAT  =  -7.50,
-   CENTLON  = -61.50,
+   POLELAT  = -23.00,
+   POLELON  = -55.00,
+   CENTLAT  = -23.00,
+   CENTLON  = -55.00,
    !---------------------------------------------------------------------------------------!
 
 
@@ -415,18 +415,33 @@ $END
    ! WT_NUDGE_PI   -- Relative weight for the Exner function                               !
    ! WT_NUDGE_RT   -- Relative weight for the total water mixing ratio                     !
    ! WT_NUDGE_CO2  -- Relative weight for CO2 mixing ratio.                                !
+   !                                                                                       !
+   ! ZB_NUDGE_???  -- Lower boundary nudging.  Nudging intensity at the inner part of the  !
+   !                  domain will decrease quadratically below ZB_NUDGE_??, becoming zero  !
+   !                  at the surface.  In case ZB_NUDGE_??? = 0., no quadratic attenuation !
+   !                  will occur.                                                          !
+   ! ZB_NUDGE_UV   -- Lower boundary for u and v                                           !
+   ! ZB_NUDGE_TH   -- Lower boundary for theta                                             !
+   ! ZB_NUDGE_PI   -- Lower boundary for pi                                                !
+   ! ZB_NUDGE_RT   -- Lower boundary for r_tot                                             !
+   ! ZB_NUDGE_CO2  -- Lower boundary for CO2                                               !
    !---------------------------------------------------------------------------------------!
-   NUDLAT        =      5 ,
-   TNUDLAT       =   3600.,
-   TNUDCENT      =  64800.,
+   NUDLAT        =      8 ,
+   TNUDLAT       =    900.,
+   TNUDCENT      =  86400.,
    TNUDTOP       =  10800.,
    ZNUDTOP       =  18000.,
    WT_NUDGE_GRID =      1., 0.80,
    WT_NUDGE_UV  =       1.,
    WT_NUDGE_TH  =       1.,
-   WT_NUDGE_PI  =       1.,
+   WT_NUDGE_PI  =       4.,
    WT_NUDGE_RT  =       1.,
    WT_NUDGE_CO2 =       1.,
+   ZB_NUDGE_UV  =       0.,
+   ZB_NUDGE_TH  =       0.,
+   ZB_NUDGE_PI  =       0.,
+   ZB_NUDGE_RT  =       0.,
+   ZB_NUDGE_CO2 =       0.,
    !---------------------------------------------------------------------------------------!
 
 
@@ -443,15 +458,16 @@ $END
    !                     used.                                                             !
    ! TCOND_BEG       --  Run time when we should start applying nudging                    !
    ! TCOND_END       --  Run time when we should stop nudging                              !
-   ! T_NUDGE_RC      --  time scale for the condensed nudging.  It works the same way as   !
-   !                     TNUDLAT                                                           !
+   ! WT_NUDGE_RC     --  Similar to the weighting factor for the other variables.          !
+   ! ZB_NUDGE_RC     --  Similar to the lower boundary height for the other variables.     !
    ! WT_NUDGEC_GRID  --  Grid relative weights for nudging of condensed/frozen water.      !
    !---------------------------------------------------------------------------------------!
    NUD_COND       = 0,
    COND_HFILE     = 'myoutpath/histo/mysimul-H-2001-07-21-000000-head.txt',
    TCOND_BEG      = 0.,
    TCOND_END      = 21600.,
-   T_NUDGE_RC     = 3600.,
+   WT_NUDGE_RC    = 0.01,
+   ZB_NUDGE_RC    = 0.,
    WT_NUDGEC_GRID =  1., 0.8,
    !---------------------------------------------------------------------------------------!
 
@@ -788,7 +804,7 @@ $END
    !---------------------------------------------------------------------------------------!
    ITOPTFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/topo/EL',
    ISSTFN   = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/weeklysst/W',
-   IVEGTFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/veg_defsce/bau2002/BAU-2002_',
+   IVEGTFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/veg_MCD12Q1/2012/MCD12Q1LU1_2012_',
    ISOILFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/soil_brams406/RADAM+Quesada+IGBP/RADAM+Quesada+IGBP_',
     NDVIFN  = '/n/gstore/Labs/moorcroft_lab_protected/data/brams_data/lai-modis/2001LAI',
    !---------------------------------------------------------------------------------------!
@@ -918,20 +934,25 @@ $CUPARM_OPTIONS
    ! CPTIME: when I should start computing the cumulus parametrisation.                    !
    !---------------------------------------------------------------------------------------!
    CONFRQ =  1200.,
-   CPTIME =     0.,
+   CPTIME =  1200.,
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !    How to find the level in which updrafts originate:                                 !
-   ! 1. Maximum moist static energy;                                                       !
-   ! 2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)                             !
-   ! 3. Most turbulent layer                                                               !
-   ! 4. Max w+sigw within the PBL.                                                         !
-   ! 5. Start from the bottom, move upwards (5 is available only if CAP_MAXS < 0)          !
+   ! IUPMETHOD --  How to find the level in which updrafts originate:                      !
+   !               1. Maximum moist static energy;                                         !
+   !               2. PBL top (if IDIFFK=7, uses the pblhgt from turbulence)               !
+   !               3. Most turbulent layer                                                 !
+   !               4. Max w+sigw within the PBL.                                           !
+   !               5. Start from the bottom, move upwards (5 is available only if          !
+   !                  CAP_MAXS < 0)                                                        !
+   ! ILOUREC   --  Should the search for level of origin of updrafts (LOU) be recursive?   !
+   !               0. No                                                                   !
+   !               1. Yes.                                                                 !
    !---------------------------------------------------------------------------------------!
    IUPMETHOD   = 1,
+   ILOUREC     = 1,
    !---------------------------------------------------------------------------------------!
 
 
@@ -971,11 +992,11 @@ $CUPARM_OPTIONS
    !---------------------------------------------------------------------------------------!
    !     The following variables are scalars.                                              !
    !---------------------------------------------------------------------------------------!
-   CLD2PREC = -0.10,  ! Ratio of conversion of condensates to precipitation.       [   ---]
+   CLD2PREC = -0.30,  ! Ratio of conversion of condensates to precipitation.       [   ---]
    ZKBMAX   = 4000.,  ! Maximum AGL height in which updrafts can originate.        [     m]
    ZCUTDOWN = 3000.,  ! Maximum AGL height in which downdrafts can originate.      [     m]
    Z_DETR   = 1250.,  ! Top of the downdraft detrainment layer                     [     m]
-   MAX_HEAT =  600.,  ! Maximum heating rate allowed for feedback                  [ K/day]
+   MAX_HEAT =  400.,  ! Maximum heating rate allowed for feedback                  [ K/day]
    !---------------------------------------------------------------------------------------!
 
 
@@ -1156,26 +1177,24 @@ $MODEL_OPTIONS
    !         underestimate  the longwave radiation in the tropics.                         !
    !     4.  CARMA, after Toon et al. (1988).  This method takes into account ice and      !
    !         liquid hydrometeors even though it doesn't distinguish them.  It is as fast   !
-   !         as Harrington.  The shortwave tends to be a bit too low, but it is the best   !
-   !         method for longwave.                                                          !
+   !         as Harrington and they seem to give more reasonable results than Harrington. 
    !                                                                                       !
    ! ICUMFDBK -- This flag checks whethet to include the effect of clouds from the cumulus !
    !             parametrisation, by calling the radiation model for each cumulus cloud    !
    !             plus the cumulus free environment and averaging them according to the     !
    !             fraction of area.                                                         !
    !             0 -- ignore cumulus effect.                                               !
-   !             1 -- include cumulus effect.  This works only for Harrington and for      !
-   !                  longwave CARMA.                                                      !
+   !             1 -- include cumulus effect.  This works only for Harrington and CARMA.   !
    !                                                                                       !
    ! RADFRQ   -- How often is the radiation model called (in seconds).                     !
    ! LONRAD   -- Should the radiation change with longitude?                               !
    !             0 -- no.  Useful for theoretical and idealised runs only                  !
    !             1 -- yes.  That's the standard for most runs.                             !
    !---------------------------------------------------------------------------------------!
-   ISWRTYP  = 3,
+   ISWRTYP  = 4,
    ILWRTYP  = 4,
    ICUMFDBK = 1,
-   RADFRQ   = 150.,
+   RADFRQ   = 600.,
    LONRAD   = 1,
    !---------------------------------------------------------------------------------------!
 
@@ -1224,18 +1243,24 @@ $MODEL_OPTIONS
       !               model, but it is promising... Feel free to fix the code and let me   !
       !               know ;-).                                                            !
       !           3.  SiB. (defunct).  Taken off because there were bugs.                  !
-      !           4.  GEMTM. Not available in this version                                 !
+      !           4.  "LEAF-4" model.  Similar to option 1, but vegetation radiation is    !
+      !               solved by two-stream, and transpiration is derived from the Farquhar !
+      !               model.  Simple decomposition function to close the carbon budget.    !
+      !               It is somewhat similar to big-leaf version of ED, though it doesn't  !
+      !               have dynamic vegetation and is faster.                               !
       !           5.  ED-2.  This is a full plant community model, but otherwise shares    !
       !               most of the biophysics with LEAF-3.  Useful when ecological response !
       !               and carbon balance are sought, but it runs a lot slower than LEAF-3. !
       !               Additional settings on ED2_INFO namelist.                            !
-      ! DTLEAF -- Used only when ISFCL is 1 or 2, this is the nominal time step for        !
+      ! DTLEAF -- Used only when ISFCL is 1, 2, or 4, this is the nominal time step for    !
       !           LEAF-3 in seconds.  This should never be greater than 30 seconds, and it !
       !           must not exceed DTLONG.  In case DTLONG < DTLEAF, DTLONG will be used    !
-      !           instead
+      !           instead                                                                  !
+      ! NDTVEG -- Time nesting for vegetation fluxes and thermodynamic state.              !
       !------------------------------------------------------------------------------------!
       ISFCL  = myisfcl,
-      DTLEAF = 5.,
+      DTLEAF = 10.,
+      NDTVEG =   5,
       !------------------------------------------------------------------------------------!
 
 
@@ -1255,7 +1280,7 @@ $MODEL_OPTIONS
       ! 4.  CLM (2004).  Similar to 2 and 3, but they have special functions to deal with !
       !     very stable and very stable cases.                                            !
       !------------------------------------------------------------------------------------!
-      ISTAR   = 3,
+      ISTAR   = 4,
       !------------------------------------------------------------------------------------!
 
 
@@ -1309,8 +1334,8 @@ $MODEL_OPTIONS
       !             Ignored when ISTAR = 1                                                 !
       ! RIBMAX   -- maximum bulk Richardson number.                                        !
       !------------------------------------------------------------------------------------!
-      GAMM     =  13.,
-      GAMH     =  13.,
+      GAMM     =  15.,
+      GAMH     =   9.,
       TPRANDTL = 0.74,
       RIBMAX   = 0.50,
       !------------------------------------------------------------------------------------!
@@ -1321,7 +1346,7 @@ $MODEL_OPTIONS
       !------------------------------------------------------------------------------------!
       ! LEAF_MAXWHC -- Maximum water that can be intercepted by leaves, in kg/m2leaf.      !
       !------------------------------------------------------------------------------------!
-      LEAF_MAXWHC     = 0.11,
+      LEAF_MAXWHC     = 0.10,
       !------------------------------------------------------------------------------------!
 
 
@@ -1342,7 +1367,7 @@ $MODEL_OPTIONS
       !           provide one value per level.  Unit here is µmol/mol.                     !
       !------------------------------------------------------------------------------------!
       ICO2   =    1,
-      CO2CON = 380.,
+      CO2CON = 395.,
       !------------------------------------------------------------------------------------!
 
 
@@ -1422,7 +1447,7 @@ $MODEL_OPTIONS
       !   Soil type 21 is a special case in which we use the albedo method that used to be !
       ! the default in ED-2.1.                                                             !
       !------------------------------------------------------------------------------------!
-      ISOILCOL  = 14,
+      ISOILCOL  = 10,
       !------------------------------------------------------------------------------------!
 
 
@@ -1504,12 +1529,12 @@ $MODEL_OPTIONS
       !               2 = porosity (saturation)                                            !
       ! STGOFF  - initial temperature offset (soil temperature = air temperature + offset) !
       !------------------------------------------------------------------------------------!
-      SLZ     =   -6.000,-5.254,-4.559,-3.914,-3.320,-2.776,-2.282,-1.837,-1.442,-1.095,
-                  -0.798,-0.548,-0.346,-0.192,-0.083,-0.020,
+      SLZ     =   -6.000,-4.914,-3.948,-3.100,-2.366,-1.741,-1.222,-0.804,-0.482,-0.249,
+                  -0.098,-0.020,
       SLMSTR  =    1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
-                   1.000, 1.000, 1.000, 1.000, 1.000, 1.000,
+                   1.000, 1.000,
       STGOFF  =    0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
-                   0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
+                   0.000, 0.000,
       !------------------------------------------------------------------------------------!
 
 
@@ -1845,7 +1870,7 @@ $ED2_INFO
    !          If time is a problem, i.e., the runs are too slow, then try making it        !
    !          larger, but not much larger so to avoid problems...                          !
    !---------------------------------------------------------------------------------------!
-   DTLSM  = 150.0,
+   DTLSM  = 600.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1881,7 +1906,7 @@ $ED2_INFO
    IQOUTPUT  =  3,
    IYOUTPUT  =  0,
    ITOUTPUT  =  0,
-   ISOUTPUT  =  3,
+   ISOUTPUT  =  0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -1951,8 +1976,8 @@ $ED2_INFO
    ! FFILOUT -- Path and prefix for analysis files (all but history/restart).              !
    ! SFILOUT -- Path and prefix for history files.                                         !
    !---------------------------------------------------------------------------------------!
-   FFILOUT   = 'myoutpath/ecoss/mysimul',
-   SFILOUT   = 'myoutpath/ecort/mysimul',
+   FFILOUT   = '/mypath/ecoss/support',
+   SFILOUT   = '/mypath/ecort/support',
    !---------------------------------------------------------------------------------------!
 
 
@@ -1995,6 +2020,13 @@ $ED2_INFO
    !                                                                                       !
    !    6 - Initialize with ED-2 style files without multiple sites, exactly like option   !
    !        2, except that the PFT types are preserved.                                    !
+   !                                                                                       !
+   !    7.  Initialize from a list of both POI and gridded ED2.1 state files, organized    !
+   !        in the same manner as 5.  This method overrides the soil database info and     !
+   !        takes the soil texture and soil moisture information from the initializing     !
+   !        ED2.1 state file.  It allows for different layering, and assigns via nearest   !
+   !        neighbor.  Set ISOILSTATE=0 for compatibility purposes.                        !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
    IED_INIT_MODE   = 5,
    !---------------------------------------------------------------------------------------!
@@ -2022,8 +2054,7 @@ $ED2_INFO
    !              path+prefix will be used, as the history for every grid must have come   !
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
-   SFILIN   = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/brams_data/ed22_restarts/sa1_myyeara/SA1_',
-   ! SFILIN   = 'myoutpath/ecort/mysimul'
+   SFILIN   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/potveg/PVE_',
    !---------------------------------------------------------------------------------------!
 
 
@@ -2050,9 +2081,9 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/oge2OLD/OGE2_',
    SOIL_DATABASE     = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_',
-   LU_DATABASE       = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios/glu-3.3.1+sa1.bau/fifth/glu-3.3.1+sa1.bau-',
+   LU_DATABASE       = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios/glu-3.3.1+sa1.bau/one/glu-3.3.1+sa1.bau-',
    PLANTATION_FILE   = '',
-   LU_RESCALE_FILE   = '/n/gstore/Labs/moorcroft_lab_protected/mlongo/data/brams_data/ed22_restarts/rescale/SA1relative.lu.area-22km-myyeara.txt',
+   LU_RESCALE_FILE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/restarts_sci_006/rescale/SA1relative.lu.area-22km-2008.txt',
    THSUMS_DATABASE   = '/n/gstore/Labs/moorcroft_lab_protected/data/ed2_data/ed_inputs/',
    !---------------------------------------------------------------------------------------!
 
@@ -2179,8 +2210,8 @@ $ED2_INFO
    !      coefficients for CO2 and O2, as in Farquhar et al. (1980) and in CLM.            !
    ! 2 -- Collatz et al. (1991).  We use the power (Q10) equations, with Collatz et al.    !
    !      parameters for compensation point, and the Michaelis-Mentel coefficients.  The   !
-   !      correction for high and low temperatures are the same as in Moorcroft et al.     !
-   !      (2001).                                                                          !
+   !      leaf respiration correction for high and low temperatures are the same as in     !
+   !      Moorcroft et al. (2001), but the correction for Vm is done like in Collatz.      !
    ! 3 -- Same as 2, except that we find Gamma* as in Farquhar et al. (1980) and in CLM.   !
    !---------------------------------------------------------------------------------------!
    IPHYSIOL = 2,
@@ -2211,8 +2242,9 @@ $ED2_INFO
    !                  small classes ("saplings") and large classes ("trees"), like in Cole !
    !                  and Ewel (2006).                                                     !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 2,
+   IALLOM          = 3,
    !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -2266,11 +2298,11 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameters that control the phenology response to radiation, used only when 
-   ! IPHEN_SCHEME = 3.
-   !
-   ! RADINT -- Intercept
-   ! RADSLP -- Slope.
+   !     Parameters that control the phenology response to radiation, used only when       !
+   ! IPHEN_SCHEME = 3.                                                                     !
+   !                                                                                       !
+   ! RADINT -- Intercept                                                                   !
+   ! RADSLP -- Slope.                                                                      !
    !---------------------------------------------------------------------------------------!
    RADINT = -11.3868,
    RADSLP =   0.0824,
@@ -2330,10 +2362,8 @@ $ED2_INFO
    !                 shortwave and longwave.                                               !
    !                 0.  Original two-stream model (Medvigy 2006), with the possibility to !
    !                     apply finite crown area to direct shortwave radiation.            !
-   !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
-   !                     possibility to apply finite crown area to all radiation fluxes.   !
-   !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
-   !                     apply finite crown area to all radiation fluxes.                  !
+   !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006).            !
+   !                 2.  Updated two-stream model (Liou 2002).                             !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
@@ -2355,13 +2385,13 @@ $ED2_INFO
    !                 lim -> 0.  Black hole (0 itself is unacceptable)                      !
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
-   ICANRAD        =      2,
+   ICANRAD        =  2,
    LTRANS_VIS     =  0.050,
-   LTRANS_NIR     =  0.230,
+   LTRANS_NIR     =  0.200,
    LREFLECT_VIS   =  0.100,
-   LREFLECT_NIR   =  0.460,
+   LREFLECT_NIR   =  0.400,
    ORIENT_TREE    =  0.100,
-   ORIENT_GRASS   = -0.100,
+   ORIENT_GRASS   =  0.000,
    CLUMP_TREE     =  0.800,
    CLUMP_GRASS    =  1.000,
    !---------------------------------------------------------------------------------------!
@@ -2392,10 +2422,9 @@ $ED2_INFO
    !                  soil moisture, the FSW, defined as FSW = Supply / (Demand + Supply). !
    !                                                                                       !
    !                  Demand is always the transpiration rates in case soil moisture is    !
-   !                  not limiting (the psi_0 term times LAI).  The supply is determined   !
-   !                  by Kw * nplant * Broot * Available_Water, and the definition of      !
-   !                  available water changes depending on H2O_PLANT_LIM:                  !
-   !                  0.  Force FSW = 1 (effectively available water is infinity).         !
+   !                  not limiting (the psi_0 term).  The supply is determined differently !
+   !                  depending on the H2O_PLANT_LIM flag:                                 !
+   !                  0.  Supply = Infinity (FSW = 1).                                     !
    !                  1.  Available water is the total soil water above wilting point,     !
    !                      integrated across all layers within the rooting zone.            !
    !                  2.  Available water is the soil water at field capacity minus        !
@@ -2431,10 +2460,9 @@ $ED2_INFO
    !                  cr    = k ------------- + (1 - k) -------------                      !
    !                             CB_lightmax             CB_watermax                       !
    !---------------------------------------------------------------------------------------!
-   IDDMORT_SCHEME  = 1,
-   DDMORT_CONST    = 0.8,
+   IDDMORT_SCHEME  = 0,
+   DDMORT_CONST    = 1.,
    !---------------------------------------------------------------------------------------!
-
 
 
 
@@ -2490,7 +2518,7 @@ $ED2_INFO
    KW_GRASS        = 900.,
    KW_TREE         = 600.,
    GAMMA_C3        = 0.0145,
-   GAMMA_C4        = 0.035,
+   GAMMA_C4        = 0.0350,
    D0_GRASS        = 0.016,
    D0_TREE         = 0.016,
    ALPHA_C3        = 0.080,
@@ -2504,6 +2532,7 @@ $ED2_INFO
    Q10_C3          = 2.4,
    Q10_C4          = 2.4,
    !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -2585,8 +2614,8 @@ $ED2_INFO
    !                   the minimum water deficit relative to the total rainfall, over the  !
    !                   past 12 months, to trigger fires.                                   !
    !---------------------------------------------------------------------------------------!
-   INCLUDE_FIRE    =   0,
-   FIRE_PARAMETER  =   0.5,
+   INCLUDE_FIRE    = 2,
+   FIRE_PARAMETER  = 0.5,
    SM_FIRE         = -1.40,
    !---------------------------------------------------------------------------------------!
 
@@ -2598,7 +2627,7 @@ $ED2_INFO
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
    !---------------------------------------------------------------------------------------!
-   IANTH_DISTURB   = 1,
+   IANTH_DISTURB   = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2709,8 +2738,8 @@ $ED2_INFO
    !                              TREEFALL_DISTURBANCE_RATE is internally adjusted so the  !
    !                              average patch age is still 1/TREEFALL_DISTURBANCE_RATE   !
    !---------------------------------------------------------------------------------------!
-   TREEFALL_DISTURBANCE_RATE  = 0.014,
-   TIME2CANOPY                =   0.0,
+   TREEFALL_DISTURBANCE_RATE  = -0.014,
+   TIME2CANOPY                =    0.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2742,7 +2771,6 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
 
 
-
    !---------------------------------------------------------------------------------------!
    ! IMETRAD -- What should the model do with the input short wave radiation?              !
    !            0.  Nothing, use it as is.                                                 !
@@ -2751,12 +2779,14 @@ $ED2_INFO
    !                NIR diffuse).                                                          !
    !            2.  Add then together, then use the method by Weiss and Norman (1985) to   !
    !                break radiation down to the four components.                           !
+   !            3.  Gloomy -- All radiation goes to diffuse.                               !
+   !            4.  Sesame street -- all radiation goes to direct, except at night.        !
    !                                                                                       !
-   !      This option is used only when ISWRTYP is not 3.  In case it is, the split        !
-   ! between direct and diffuse is done by the Harrington scheme, and we just do a split   !
-   ! between NIR and PAR using some standard factors.                                      !
+   !      Options 0 and 2 are different only when ISWRTYP = 4 (CARMA).  Otherwise, option  !
+   ! 2 is the default.  This could change in the future if someone with good understanding !
+   ! of radiative transfer models retrieve the components from the native model.           !
    !---------------------------------------------------------------------------------------!
-   IMETRAD      = 2,
+   IMETRAD      = 0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2790,9 +2820,10 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    IEDCNFGF   = 'config.xml',
    EVENT_FILE = '',
-   PHENPATH   = 'myoutpath/inputs',
+   PHENPATH   = '/mypath/inputs',
    !---------------------------------------------------------------------------------------!
 $END
+!------------------------------------------------------------------------------------------!
 !==========================================================================================!
 !==========================================================================================!
 

@@ -19,11 +19,19 @@
 module leaf_coms
 
    use grid_dims
-   use rconstants, only: grav      & ! intent(in)
-                       , vonk      & ! intent(in)
-                       , alvl3     & ! intent(in)
-                       , onethird  & ! intent(in)
-                       , twothirds ! ! intent(in)
+   use rconstants, only: grav        & ! intent(in)
+                       , vonk        & ! intent(in)
+                       , alvl3       & ! intent(in)
+                       , onethird    & ! intent(in)
+                       , twothirds   & ! intent(in)
+                       , umol_2_mol  & ! intent(in)
+                       , t00         & ! intent(in)
+                       , cliq        & ! intent(in)
+                       , mmcod       & ! intent(in)
+                       , prefsea     & ! intent(in)
+                       , mmo2        & ! intent(in)
+                       , mmdryi      & ! intent(in)
+                       , Watts_2_Ein ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
    real    :: ugbmin          ! Minimum leaf-level velocity                     [      m/s]
@@ -43,15 +51,17 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Commons used by LEAF-3.                                                           !
    !---------------------------------------------------------------------------------------!
-   integer :: niter_leaf       ! ! number of leaf timesteps
+   integer :: niter_leaf3      ! ! number of LEAF-3 timesteps
+   real    :: ndtvegi          ! ! inverse of the vegetation time steps
    integer :: flag_sfcwater    ! ! flag to determine the pounding water stability.
    logical :: resolvable       ! ! Flag to determine whether to resolve vegetation or not.
 
-   real    :: dtll             & ! leaf timestep
-            , dtll_factor      & ! leaf timestep factor (leaf timestep / model timestep)
-            , dtllowcc         & ! leaf timestep   / (can_depth * can_rhos)
-            , dtllohcc         & ! leaf timestep   / (can_depth * can_rhos)
-            , dtlloccc         & ! mmdry * leaf timestep   / (can_depth * can_rhos)
+   real    :: dtl3             & ! LEAF-3 time step for most pools (ground, CAS, snow)
+            , dtl3_factor      & ! Timestep factor for most pools (dtgc/dtlong)
+            , dtvg             & ! LEAF-3 time step for vegetation
+            , dtl3owcc         & ! leaf timestep   / (can_depth * can_rhos)
+            , dtl3ohcc         & ! leaf timestep   / (can_depth * can_rhos)
+            , dtl3occc         & ! mmdry * leaf timestep   / (can_depth * can_rhos)
 
             , atm_up           & ! U velocity at top of surface layer            [     m/s]
             , atm_vp           & ! V velocity at top of surface layer            [     m/s]
@@ -104,15 +114,13 @@ module leaf_coms
             , rshort_g         & ! net SW radiation absorbed by grnd
             , rshort_v         & ! net SW radiation absorbed by veg
             , rshort_a         & ! net SW rad. reflected to atm by veg +grnd
-            
-            , rlonga_v         & ! net atm LW rad. absorbed by veg
-            , rlonga_gs        & ! net atm LW rad. absorbed by grnd OR snow
-            , rlongv_gs        & ! net veg LW rad. absorbed by grnd OR snow
-            , rlongv_a         & ! net veg LW radiation to atm
-            , rlonggs_v        & ! net grnd OR snow LW rad. absorbed by veg
-            , rlonggs_a        & ! net grnd OR snow LW radiation to atm
-            , rlonga_a         & ! net LW rad. refl. to atm by veg + grnd/snow
+            , rlong_v          & ! net LW rad. absorbed by veg
+            , rlong_g          & ! net LW rad. absorbed by ground
+            , rlong_s          & ! net LW rad. absorbed by snow
 
+            , hflxsc           & ! sensible heat from snowpack to canopy        [   J/m²/s]
+            , wflxsc           & ! water vapor from snowpack to canopy          [  kg/m²/s]
+            , qwflxsc          & ! latent heat from snowpack to canopy          [   J/m²/s]
             , hflxgc           & ! sensible heat from ground to canopy          [   J/m²/s]
             , wflxgc           & ! water vapor from ground to canopy            [  kg/m²/s]
             , qwflxgc          & ! latent heat from ground to canopy            [   J/m²/s]
@@ -120,18 +128,28 @@ module leaf_coms
             , eflxac           & ! enthalpy flux from atmosphere to canopy      [   J/m²/s]
             , hflxac           & ! sens. heat flux from atmosphere to canopy    [   J/m²/s]
             , wflxac           & ! water flux from atmosphere to canopy         [  kg/m²/s]
+            , qwflxac          & ! water flux from atmosphere to canopy         [   J/m²/s]
             , cflxac           & ! carbon flux from atmosphere to canopy        [µmol/m²/s]
             , hflxvc           & ! sensible heat from vegetation to canopy      [   J/m²/s]
             , wflxvc           & ! water vapor from veg. to canopy (evap.)      [  kg/m²/s]
             , qwflxvc          & ! latent heat from veg. to canopy (evap.)      [   J/m²/s]
             , cflxvc           & ! carbon from vegetation to canopy             [µmol/m²/s]
-            , cflxcv           & ! carbon from canopy to vegetation             [µmol/m²/s]
-            , transp_loc       & ! water flux due to transpiration              [  kg/m²/s]
-            , qtransp_loc      & ! latent heat flux due to transpiration        [  kg/m²/s]
-            , transp_tot       & ! water flux due to transp. in 1 leaf ts.      [  kg/m²/s]
+            , gpp              & ! water flux due to transpiration              [  kg/m²/s]
+            , transp           & ! water flux due to transpiration              [  kg/m²/s]
+            , qtransp          & ! latent heat flux due to transpiration        [  kg/m²/s]
+            , wshed            & ! mass flux due to canopy dripping             [  kg/m²/s]
+            , qwshed           & ! energy flux due to canopy dripping           [   J/m²/s]
+            , dwshed           & ! depth flux due to canopy dripping            [      m/s]
+            , hflxvc_tot       & ! sensible heat from vegetation to canopy      [   J/m²/s]
+            , wflxvc_tot       & ! water vapor from veg. to canopy (evap.)      [  kg/m²/s]
+            , qwflxvc_tot      & ! latent heat from veg. to canopy (evap.)      [   J/m²/s]
+            , cflxvc_tot       & ! carbon from vegetation to canopy             [µmol/m²/s]
+            , cflxgc_tot       & ! carbon from vegetation to canopy             [µmol/m²/s]
+            , transp_tot       & ! water flux due to transpiration              [  kg/m²/s]
+            , qtransp_tot      & ! latent heat flux due to transpiration        [   J/m²/s]
             , wshed_tot        & ! water shed from vegetation to ground         [  kg/m²/s]
             , qwshed_tot       & ! energy from shed water                       [   J/m²/s]
-            , dwshed_tot       & ! total depth of water shed                    [        m]
+            , dwshed_tot       & ! total depth of water shed                    [      m/s]
             , throughfall_tot  & ! Total throughfall water                      [  kg/m²/s]
             , qthroughfall_tot & ! Total throughfall internal energy            [  kg/m²/s]
             , dthroughfall_tot & ! Total throughfall depth                      [  kg/m²/s]
@@ -140,22 +158,43 @@ module leaf_coms
             , dintercepted_tot & ! Total intercepted depth                      [  kg/m²/s]
             , dewgnd_tot       & ! dew formation on ground                      [  kg/m²/s]
             , qdewgnd_tot      & ! energy from dew formation on ground          [   J/m²/s]
-            , ddewgnd_tot      & ! depth gain from dew formation on ground      [        m]
+            , ddewgnd_tot      & ! depth gain from dew formation on ground      [      m/s]
             , virtual_energy   & ! "virtual layer" internal energy              [     J/m²]
             , virtual_water    & ! "virtual layer" water mass                   [    kg/m²]
             , virtual_depth    & ! "virtual layer" depth                        [        m]
 
-            , emis_town        & ! Urban emissivity (for TEB)
-            , alb_town         & ! Urban albedo (for TEB)
-            , ts_town          & ! Urban temperature
-            , g_urban          ! ! Urban something... 
+            , emis_town        & ! Urban emissivity (for TEB)                   [     ----]
+            , alb_town         & ! Urban albedo (for TEB)                       [     ----]
+            , ts_town          & ! Urban temperature                            [        K]
+            , g_urban          & ! Urban something...                           [     ????]
+
+            , transp_o         & ! Transpiration rate                           [  kg/m²/s]
+            , gpp_o            & ! Gross primary productivity                   [µmol/m²/s]
+            , leaf_resp_o      & ! Leaf respiration rate                        [µmol/m²/s]
+            , root_resp_o      & ! Root respiration rate                        [µmol/m²/s]
+            , het_resp_o       ! ! Heterotrophic respiration rate               [µmol/m²/s]
+
+
+   !---------------------------------------------------------------------------------------!
+   !    For LEAF-4, we use sun and shade variables for vegetation, then we aggregate the   !
+   ! variables for output.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   !----- Variables that must be split into sun and shade. --------------------------------!
+   real(kind=4), dimension(2) :: sla_ss
+   real(kind=4), dimension(2) :: lai_ss
+   real(kind=4), dimension(2) :: par_l_ss
+   real(kind=4), dimension(2) :: vm0_ss
+   real(kind=4), dimension(2) :: rd0_ss
+   real(kind=4), dimension(2) :: gpp_ss
+   real(kind=4), dimension(2) :: leaf_resp_ss
+   real(kind=4), dimension(2) :: transp_ss
+   !---------------------------------------------------------------------------------------!
+
 
    !----- These are used for the soil bottom boundary condition. --------------------------!
-   real    :: slzt_0
    real    :: soil_water_0
+   real    :: soil_tempk_0
    real    :: soil_fracliq_0
-   real    :: psiplusz_0
-   real    :: hydcond_0
 
    real, allocatable, dimension(:) ::  &
               dslz                 & ! soil layer thickness at T point
@@ -172,19 +211,18 @@ module leaf_coms
             , sfcwater_fracliq     & ! diagnosed liquid fraction surface water
             , soil_tempk           & ! diagnosed temp (K) of soil
             , soil_fracliq         & ! diagnosed liquid fraction of soil water
-      
-            , psiplusz             & ! soil water potential plus geopotential [m]
-            , half_soilair         & ! half of available airspace in soil [m]
-            , soilair99            & ! 99% of of available airspace in soil [m]
-            , soilair01            & !  1% of of available airspace in soil [m]
-            , soil_liq             & ! soil liquid water content [m]
-            , hydcond              & ! hydraulic conductivity    [m/s]
 
-            , rfactor              & ! soil, sfcwater thermal resistance    
-            , hfluxgsc             & ! sensible heat flux between soil, sfcwater, canopy
-            , w_flux               & ! soil water flux [m]
-            , qw_flux              & ! soil energy flux from water flux [J/m2] 
-            , d_flux               ! ! soil energy flux from water flux [J/m2] 
+            , psiplusz             & ! soil water potential plus geopotential [      m]
+            , hydcond              & ! hydraulic conductivity                 [    m/s]
+            , th_cond_s            & ! Thermal conductivity                   [  W/m/K]
+            , th_cond_p            & ! Thermal conductivity                   [  W/m/K]
+            , h_flux_g             & ! Sensible heat flux at staggered layer  [   W/m2]
+            , h_flux_s             & ! Sensible heat flux at staggered layer  [   W/m2]
+            , w_flux_g             & ! Water flux at staggered layers         [kg/m2/s]
+            , qw_flux_g            ! ! Energy flux at staggered layers        [kg/m2/s]
+
+   logical, dimension(:), allocatable :: drysoil ! Soil is too dry
+   logical, dimension(:), allocatable :: satsoil ! Soil is too wet
 
    !----- Variables to define the snow layers. --------------------------------------------!
    real, dimension(:,:) , allocatable   :: thick
@@ -208,10 +246,11 @@ module leaf_coms
    real, dimension(nstyp)           :: slden,slcpd,slbs,slcond,sfldcap,slcons,slmsts,slpots
    real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilwp,soilcp,slfc,emisg
    real, dimension(nstyp)           :: slcons00,slcons0,fhydraul,xsilt,xsand,xclay
-   real, dimension(nstyp)           :: psild,psiwp
-   real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2,slcons1_0
-   real, dimension(nzgmax,nstyp)    :: slcons1
-   real, dimension(nscol)           :: alb_vis_dry,alb_nir_dry,alb_vis_wet,alb_nir_wet
+   real, dimension(nstyp)           :: psild,psiwp,psifc
+   real, dimension(nstyp)           :: thcond0,thcond1,thcond2,thcond3
+   real, dimension(0:nzgmax,nstyp)  :: slcons1
+   real, dimension(nscol)           :: alb_vis_dry,alb_vis_wet
+   real, dimension(nscol)           :: alb_nir_dry,alb_nir_wet
    !---------------------------------------------------------------------------------------!
 
 
@@ -224,6 +263,187 @@ module leaf_coms
    real   , dimension(nzgmax,nvtyp+nvtyp_teb) :: root
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Optical properties of leaves and wood.                                            !
+   !                                                                                       !
+   ! CLUMPING FACTOR - factor indicating the degree of clumpiness of leaves.               !
+   ! ORIENT_FACTOR   - mean leaf orientation.                                              !
+   !                     0 -- leaves are randomly oriented                                 !
+   !                     1 -- all leaves are perfectly horizontal                          !
+   !                    -1 -- all leaves are perfectly vertical.                           !
+   ! PHI1            - The phi1 term from the CLM technical manual                         !
+   ! PHI2            - The phi2 term from the CLM technical manual                         !
+   ! MU_BAR          - average cosine of incidence angle for hemispheric (diffuse)         !
+   !                   radiation (for both short wave and long wave)                       !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: clumping_factor
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: orient_factor
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: phi1
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: phi2
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: mu_bar
+   !---------------------------------------------------------------------------------------!
+   !     Reflectance coefficients.                                                         !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: leaf_reflect_vis
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: wood_reflect_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: leaf_reflect_nir
+   real(kind=8), dimension(nvtyp+nvtyp_teb)   :: wood_reflect_nir
+   !---------------------------------------------------------------------------------------!
+   !     Transmittance coefficients.                                                       !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_trans_vis
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_trans_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_trans_nir
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_trans_nir
+   !----- Emissivity of the vegetation (TIR). ---------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_emiss_tir
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_emiss_tir
+   !---------------------------------------------------------------------------------------!
+   !     Scattering coefficients.                                                          !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_scatter_vis
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_scatter_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_scatter_nir
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_scatter_nir
+   !----- Thermal infrared. ---------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_scatter_tir
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_scatter_tir
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of diffuse radiation that is upscattered.                                !
+   !---------------------------------------------------------------------------------------!
+   !----- Visible (PAR). ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_backscatter_vis
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_backscatter_vis
+   !----- Near infrared. ------------------------------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_backscatter_nir
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_backscatter_nir
+   !----- Backscattering of thermal infrared. ---------------------------------------------!
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: leaf_backscatter_tir
+   real(kind=8), dimension(nvtyp+nvtyp_teb) :: wood_backscatter_tir
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Photosynthesis parameters.                                                       !
+   !---------------------------------------------------------------------------------------!
+   integer     , dimension(nvtyp+nvtyp_teb) :: pathway       ! photosyn_pathway
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: leaf_supply    ! d0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: dr_gamma       ! dark_respiration_factor
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: gsw_0          ! cuticular_cond
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: gsw_m          ! stomatal_slope
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: quantum_yield  ! quantum_efficiency
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: cn_l           ! CLM-4 CN_L
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: f_lnr          ! CLM-4 F_LNR
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: fun_nitro      ! CLM-4 f(N)
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: sla_0          ! SLA_0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: sla_m          ! SLA_m
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: vm0_qten       ! Q10 for Vm0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: vm0_dec        ! Decay factor for Vm0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: rd0_qten       ! Q10 for Rd0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: rd0_dec        ! Decay factor for Rd0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: rr0_0          ! Reference value for Rr0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: rr0_qten       ! Q10 for Rr0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: rr0_dec        ! Decay factor for Rr0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: gr_factor      ! Growth respiration factor
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: phys_low_temp  ! Decay factor for Vm0
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: phys_high_temp ! Decay factor for Vm0
+   !----- Derived quantities. -------------------------------------------------------------!
+   real(kind=4), dimension(nvtyp+nvtyp_teb) :: vm0_0         ! Vm0 coefficient
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Variables needed for photosynthesis.  Suggested references:                        !
+   !                                                                                       !
+   ! - M09 - Medvigy, D.M., S. C. Wofsy, J. W. Munger, D. Y. Hollinger, P. R. Moorcroft,   !
+   !         2009: Mechanistic scaling of ecosystem function and dynamics in space and     !
+   !         time: Ecosystem Demography model version 2.  J. Geophys. Res., 114, G01002,   !
+   !         doi:10.1029/2008JG000812.                                                     !
+   ! - M06 - Medvigy, D.M., 2006: The State of the Regional Carbon Cycle: results from a   !
+   !         constrained coupled ecosystem-atmosphere model, 2006.  Ph.D. dissertation,    !
+   !         Harvard University, Cambridge, MA, 322pp.                                     !
+   ! - M01 - Moorcroft, P. R., G. C. Hurtt, S. W. Pacala, 2001: A method for scaling       !
+   !         vegetation dynamics: the ecosystem demography model, Ecological Monographs,   !
+   !         71, 557-586.                                                                  !
+   ! - F96 - Foley, J. A., I. Colin Prentice, N. Ramankutty, S. Levis, D. Pollard,         !
+   !         S. Sitch, A. Haxeltime, 1996: An integrated biosphere model of land surface   !
+   !         processes, terrestrial carbon balance, and vegetation dynamics. Glob.         !
+   !         Biogeochem. Cycles, 10, 603-602.                                              !
+   ! - L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf      !
+   !         nitrogen, photosynthesis, conductance, and transpiration: scaling from leaves !
+   !         to canopies. Plant, Cell, and Environ., 18, 1183-1200.                        !
+   ! - F80 - Farquhar, G. D., S. von Caemmerer, J. A. Berry, 1980: A biochemical model of  !
+   !         photosynthetic  CO2 assimilation in leaves of C3 species. Planta, 149, 78-90. !
+   ! - C91 - Collatz, G. J., J. T. Ball, C. Grivet, J. A. Berry, 1991: Physiology and      !
+   !         environmental regulation of stomatal conductance, photosynthesis and          !
+   !         transpiration: a model that includes a laminar boundary layer, Agric. and     !
+   !         Forest Meteorol., 54, 107-136.                                                !
+   ! - C92 - Collatz, G. J., M. Ribas-Carbo, J. A. Berry, 1992: Coupled photosynthesis-    !
+   !         stomatal conductance model for leaves of C4 plants.  Aust. J. Plant Physiol., !
+   !         19, 519-538.                                                                  !
+   ! - E78 - Ehleringer, J. R., 1978: Implications of quantum yield differences on the     !
+   !         distributions of C3 and C4 grasses.  Oecologia, 31, 255-267.                  !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   !----- Bounds for internal carbon and water stomatal conductance. ----------------------!
+   real(kind=4), parameter :: c34smin_lint_co2 = 0.500 * umol_2_mol
+   real(kind=4), parameter :: c34smax_lint_co2 = 1200. * umol_2_mol
+   real(kind=4), parameter :: c34smax_gsw      = 100.
+   !----- Reference temperature for the Q10 functions. ------------------------------------!
+   real(kind=4), parameter :: temp0_q10        = 25.0 + t00
+   real(kind=4), parameter :: slope_q10        = 0.10
+   !----- Oxygen concentration. -----------------------------------------------------------!
+   real(kind=4), parameter :: o2_ref           = 0.209
+   !----- Michaelis-Mentel constants for CO2, O2, and compensation point. -----------------!
+   real(kind=4), parameter :: kco2_q10         = 2.1
+   real(kind=4), parameter :: ko2_q10          = 1.2
+   real(kind=4), parameter :: kco2_refval      = 30. * mmcod / prefsea
+   real(kind=4), parameter :: ko2_refval       = 30000. * mmo2 * mmdryi / prefsea
+   real(kind=4), parameter :: tau_refval_c91   =  2600.
+   real(kind=4), parameter :: tau_q10          =  0.57 
+   real(kind=4), parameter :: compp_refval     = o2_ref * tau_q10 / (2. * tau_refval_c91)
+   real(kind=4), parameter :: compp_q10        = 1. / tau_q10
+   !----- Coefficient for near saturated conditions for C4 photosynthesis. ----------------!
+   real(kind=4), parameter :: klowco2          = 4000. * mmcod
+   !----- Ratios between different conductances, based on L95 and C91. --------------------!
+   real(kind=4), parameter :: gbh_2_gbw        = 1.075
+   real(kind=4), parameter :: gbw_2_gbc        = 1.0 / 1.4
+   real(kind=4), parameter :: gsw_2_gsc        = 1.0 / 1.6
+   real(kind=4), parameter :: gsc_2_gsw        = 1./gsw_2_gsc
+   !----- Minimum PAR to even think about opening stomata. --------------------------------!
+   real(kind=4), parameter :: par_twilight_min = 0.5 * Watts_2_Ein
+   !===== Double precision version of the parameters. =====================================!
+   real(kind=8), parameter :: c34smin_lint_co28 = dble(c34smin_lint_co2)
+   real(kind=8), parameter :: c34smax_lint_co28 = dble(c34smax_lint_co2)
+   real(kind=8), parameter :: c34smax_gsw8      = dble(c34smax_gsw     )
+   real(kind=8), parameter :: temp0_q108        = dble(temp0_q10       )
+   real(kind=8), parameter :: slope_q108        = dble(slope_q10       )
+   real(kind=8), parameter :: o2_ref8           = dble(o2_ref          )
+   real(kind=8), parameter :: kco2_q108         = dble(kco2_q10        )
+   real(kind=8), parameter :: ko2_q108          = dble(ko2_q10         )
+   real(kind=8), parameter :: kco2_refval8      = dble(kco2_refval     )
+   real(kind=8), parameter :: ko2_refval8       = dble(ko2_refval      )
+   real(kind=8), parameter :: tau_refval_c918   = dble(tau_refval_c91  )
+   real(kind=8), parameter :: tau_q108          = dble(tau_q10         )
+   real(kind=8), parameter :: compp_refval8     = dble(compp_refval    )
+   real(kind=8), parameter :: compp_q108        = dble(compp_q10       )
+   real(kind=8), parameter :: klowco28          = dble(klowco2         )
+   real(kind=8), parameter :: gbh_2_gbw8        = dble(gbh_2_gbw       )
+   real(kind=8), parameter :: gbw_2_gbc8        = dble(gbw_2_gbc       )
+   real(kind=8), parameter :: gsw_2_gsc8        = dble(gsw_2_gsc       )
+   real(kind=8), parameter :: gsc_2_gsw8        = dble(gsc_2_gsw       )
+   real(kind=8), parameter :: par_twilight_min8 = dble(par_twilight_min)
+   !---------------------------------------------------------------------------------------!
 
    !----- Other variables -----------------------------------------------------------------!
    real                             :: cmin,corg,cwat,cair,cka,ckw
@@ -249,15 +469,56 @@ module leaf_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     Vegetation heat capacity.  A constant, but it could be scaled by LAI, height,     !
-   ! etc...                                                                                !
+   !     Original LEAF-3 parameters for heat capacity of vegetation.                       !
    !---------------------------------------------------------------------------------------!
    real, parameter :: hcapveg_ref  = 3.e3      ! [J/m2/K]
    real, parameter :: hcapveg_hmin = 1.5
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     New parameters for heat capacity, based on ED-2.  AGB is a simple estimate, based !
+   ! on lidar allometric equations for tropical environments.                              !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Gu, L., T. Meyers, S. G. Pallardy, 2007: Influences of biomass heat and biochemical   !
+   !      energy storages on the land surface fluxes and radiative temperature.            !
+   !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
+   !                                                                                       !
+   ! Longo, M., 2013: Amazon forest response to changes in rainfall regime: results from   !
+   !    an individual-based dynamic vegetation model.   Ph.D. dissertation, Harvard        !
+   !    University, Cambridge, MA, Dec 2013.                                               !
+   !                                                                                       !
+   ! Asner, G. P. J. Mascaro, 2014: Mapping tropical forest carbon: calibrating plot       !
+   !    estimates to a simple LiDar metric.  Remote Sens. Environ., v. 140, 614-624,       !
+   !    doi: 10.1016/j.rse.2013.09.023.                                                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: agb_am14_a      = 0.685
+   real, parameter :: agb_am14_b      = 0.952
+   real, parameter :: gu_tref         = t00 + 15.0
+   real, parameter :: gu_c_leaf_dry   = 3218.
+   real, parameter :: gu_wat2dry_leaf = 1.85
+   real, parameter :: gu_wat2dry_wood = 0.7
+   real, parameter :: gu_c_wood_dry   = 103.1 + 3.867 * gu_tref
+   real, parameter :: gu_delta_c      = 1.e5 * gu_wat2dry_wood                             &
+                                      * ( - 0.06191                                        &
+                                          + 2.36e-4 * gu_tref                              &
+                                          - 0.0133  * gu_wat2dry_wood )
+   real, parameter :: gu_spheat_leaf  = ( gu_c_leaf_dry + gu_wat2dry_leaf * cliq )         &
+                                      / ( 1. + gu_wat2dry_leaf )
+   real, parameter :: gu_spheat_wood  = ( gu_c_wood_dry + gu_wat2dry_wood * cliq )         &
+                                      / (1. + gu_wat2dry_wood ) + gu_delta_c
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Minimum canopy air space depth.                                                   !
    !---------------------------------------------------------------------------------------!
    real, parameter :: can_depth_min = 5.0 ! [J/m2/K]
+   !---------------------------------------------------------------------------------------!
 
    !----- Some constants to ensure the model good behaviour -------------------------------!
    real, parameter :: min_sfcwater_mass     = 1.e-6
@@ -340,7 +601,7 @@ module leaf_coms
    real, parameter                   :: btlo =   281.5,  stlo =   0.26
    real, parameter                   :: bthi =   310.1,  sthi =  -0.124
    real, parameter                   :: bvpd =  4850.0,  svpd =  -0.0051
-   real, parameter                   :: bswp = -1.07e6,  sswp =   7.42e-6
+   real, parameter                   :: bsmp = -1.07e6,  ssmp =   7.42e-6
    !---------------------------------------------------------------------------------------!
 
 
@@ -360,17 +621,8 @@ module leaf_coms
    real(kind=4), parameter :: nflat_turb = 0.800    ! n (forced convection), turbulent flow
    real(kind=4), parameter :: bflat_lami = 0.500    ! B (free   convection), laminar   flow
    real(kind=4), parameter :: mflat_lami = 0.250    ! m (free   convection), laminar   flow
-   real(kind=4), parameter :: bflat_turb = 0.130    ! B (free   convection), turbulent flow
+   real(kind=4), parameter :: bflat_turb = 0.190    ! B (free   convection), turbulent flow
    real(kind=4), parameter :: mflat_turb = onethird ! m (free   convection), turbulent flow
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     This constant was obtained in Leuning et al. (1995) and Collatz et al. (1991)     !
-   ! to convert different conductivities.                                                  !
-   !---------------------------------------------------------------------------------------!
-   real(kind=4), parameter :: gbh_2_gbw  = 1.075    ! heat  to water  - leaf boundary layer
    !---------------------------------------------------------------------------------------!
 
 
@@ -390,6 +642,7 @@ module leaf_coms
 
    !-----  Bounds for solving the vegetation. ---------------------------------------------!
    real(kind=4)              , parameter :: tai_min     = 0.1
+   real(kind=8)              , parameter :: tai_min8    = dble(tai_min)
    real(kind=4)              , parameter :: snowfac_max = 0.9
    !---------------------------------------------------------------------------------------!
 
@@ -425,11 +678,64 @@ module leaf_coms
    !    These are the parameters in equation 4.  Fresh snow density is defined at          !
    ! consts_coms.f90                                                                       !
    !---------------------------------------------------------------------------------------!
-   real(kind=4)              , parameter :: ny07_eq04_a = 2.5
-   real(kind=4)              , parameter :: ny07_eq04_m = 1.0
+   real(kind=4)              , parameter :: ny07_eq04_a  = 2.5
+   real(kind=4)              , parameter :: ny07_eq04_m  = 1.0
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Ocean optical parameters.                                                         !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)              , parameter :: alb_oc_inter = -0.0139
+   real(kind=4)              , parameter :: alb_oc_slope =  0.0467
+   real(kind=4)              , parameter :: alb_oc_min   =  0.0300
+   real(kind=4)              , parameter :: alb_oc_max   =  0.9999
+   real(kind=4)              , parameter :: emiss_oc     =  0.97
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Optical properties for snow.  Values are a first guess, and a more thorough snow  !
+   ! model that takes snow age and snow melt into account (like in CLM-4 or ECHAM-5) are   !
+   ! very welcome.                                                                         !
+   !                                                                                       !
+   !  References for current snow values:                                                  !
+   !  Roesch, A., et al., 2002: Comparison of spectral surface albedos and their           !
+   !      impact on the general circulation model simulated surface climate.  J.           !
+   !      Geophys. Res.-Atmosph., 107(D14), 4221, 10.1029/2001JD000809.                    !
+   !      Average between minimum and maximum snow albedo on land, af = 0. and af=1.       !
+   !                                                                                       !
+   !  Oleson, K.W., et al., 2010: Technical description of version 4.0 of the              !
+   !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.                 !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)              , parameter :: alb_snow_par = 0.518
+   real(kind=4)              , parameter :: alb_snow_nir = 0.430
+   real(kind=4)              , parameter :: alb_snow     = 0.500
+   real(kind=4)              , parameter :: emiss_snow   = 0.970
+   !----- Water pounding parameter (LEAF-3 only). -----------------------------------------!
+   real(kind=4)              , parameter :: alb_damp     = 0.14
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Soil heterotrophic respiration parameters.                                        !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)              , parameter :: rhmax_0         = 1.20
+   real(kind=4)              , parameter :: rhmax_m         = 2.58
+   real(kind=4)              , parameter :: depth_hetresp   = -0.20
+   integer                               :: k_hetresp
+   real(kind=4)              , parameter :: decay_low_rh    = 0.24
+   real(kind=4)              , parameter :: decay_high_rh   = 0.60
+   real(kind=4)              , parameter :: low_temp_rh     = 18.0 + t00
+   real(kind=4)              , parameter :: high_temp_rh    = 45.0 + t00
+   real(kind=4)              , parameter :: decay_dry_rh    = 12.0 ! 18.0
+   real(kind=4)              , parameter :: decay_wet_rh    = 36.0 ! 36.0
+   real(kind=4)              , parameter :: dry_smoist_rh   = 0.48 ! 0.36
+   real(kind=4)              , parameter :: wet_smoist_rh   = 0.98 ! 0.96
+   !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
    !=======================================================================================!
@@ -457,10 +763,10 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
 
       !----- Allocate leaf column arrays. -------------------------------------------------!
-      allocate (dslz                (nzg)      )
-      allocate (dslzi               (nzg)      )
-      allocate (dslzidt             (nzg)      )
-      allocate (slzt                (nzg)      )
+      allocate (dslz                (0:nzg)    )
+      allocate (dslzi               (0:nzg)    )
+      allocate (dslzidt             (0:nzg)    )
+      allocate (slzt                (0:nzg)    )
       allocate (dslzt               (nzg)      )
       allocate (dslzti              (nzg)      )
       allocate (dslztidt            (nzg)      )
@@ -472,18 +778,16 @@ module leaf_coms
       allocate (sfcwater_tempk      (nzs)      )
       allocate (sfcwater_fracliq    (nzs)      )
 
-      allocate (psiplusz            (nzg)      )
-      allocate (half_soilair        (nzg)      )
-      allocate (soilair99           (nzg)      )
-      allocate (soilair01           (nzg)      )
-      allocate (soil_liq            (nzg)      )
-      allocate (hydcond             (nzg)      )
-
-      allocate (rfactor             (nzg+nzs)  )
-      allocate (hfluxgsc            (nzg+nzs+1))
-      allocate (w_flux              (nzg+nzs+1))
-      allocate (qw_flux             (nzg+nzs+1))
-      allocate (d_flux              (    nzs+1))
+      allocate (psiplusz            (0:nzg)    )
+      allocate (hydcond             (0:nzg)    )
+      allocate (th_cond_s           (0:nzg)    )
+      allocate (th_cond_p           (0:nzs)    )
+      allocate (drysoil             (0:nzg)    )
+      allocate (satsoil             (0:nzg)    )
+      allocate (h_flux_g            (nzg+1)    )
+      allocate (h_flux_s            (nzs+1)    )
+      allocate (w_flux_g            (nzg+1)    )
+      allocate (qw_flux_g           (nzg+1)    )
 
       allocate (thick             (nzs+1,nzs+1))
       allocate (thicknet                (nzs+1))
@@ -543,9 +847,11 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       select case (trim(idel))
       case ('INITIAL')
-         niter_leaf    = 0
-         dtll          = 0.
-         dtll_factor   = 0.
+         niter_leaf3   = 0
+         ndtvegi       = 0.
+         dtl3          = 0.
+         dtl3_factor   = 0.
+         dtvg          = 0.
          timefac_sst   = 0.
          timefac_ndvi  = 0.
 
@@ -625,9 +931,9 @@ module leaf_coms
       !     The following variables are reset every time.  These are mostly diagnostic     !
       ! variables that should be computed from scratch every time the time step is called. !
       !------------------------------------------------------------------------------------!
-      dtllowcc               = 0
-      dtllohcc               = 0.
-      dtlloccc               = 0.
+      dtl3owcc               = 0
+      dtl3ohcc               = 0.
+      dtl3occc               = 0.
       snowfac                = 0.
 
       can_cp                 = 0.
@@ -641,27 +947,21 @@ module leaf_coms
       estar                  = 0.
       qstar                  = 0.
 
+      soil_water_0           = 0.
+      soil_tempk_0           = 0.
+      soil_fracliq_0         = 0.
+
       gbh                    = 0.
       gbw                    = 0
-      gsw                    = 0.
       ggnet                  = 0.
       ggbare                 = 0.
       ggsoil                 = 0.
       ggveg                  = 0.
       rho_ustar              = 0.
 
-      rshort_g               = 0.
-      rshort_v               = 0.
-      rshort_a               = 0.
-   
-      rlonga_v               = 0.
-      rlonga_gs              = 0
-      rlongv_gs              = 0.
-      rlongv_a               = 0.
-      rlonggs_v              = 0.
-      rlonggs_a              = 0.
-      rlonga_a               = 0.
-
+      hflxsc                 = 0
+      wflxsc                 = 0.
+      qwflxsc                = 0.
       hflxgc                 = 0
       wflxgc                 = 0.
       qwflxgc                = 0.
@@ -669,16 +969,26 @@ module leaf_coms
       eflxac                 = 0
       hflxac                 = 0.
       wflxac                 = 0.
+      qwflxac                = 0.
       cflxac                 = 0.
       hflxvc                 = 0.
       wflxvc                 = 0
       qwflxvc                = 0.
       cflxvc                 = 0.
-      cflxcv                 = 0.
+      transp                 = 0
+      qtransp                = 0.
+      gpp                    = 0.
+      wshed                  = 0
+      qwshed                 = 0.
+      dwshed                 = 0.
 
-      transp_loc             = 0
-      qtransp_loc            = 0.
+      hflxvc_tot             = 0.
+      wflxvc_tot             = 0
+      qwflxvc_tot            = 0.
+      cflxvc_tot             = 0.
+      cflxgc_tot             = 0.
       transp_tot             = 0.
+      qtransp_tot            = 0.
 
       wshed_tot              = 0.
       qwshed_tot             = 0.
@@ -704,18 +1014,44 @@ module leaf_coms
       soil_fracliq     (:)   = 0.
 
       psiplusz         (:)   = 0.
-      half_soilair     (:)   = 0.
-      soilair99        (:)   = 0.
-      soilair01        (:)   = 0.
-      soil_liq         (:)   = 0.
       hydcond          (:)   = 0.
+      th_cond_s        (:)   = 0.
+      th_cond_p        (:)   = 0.
+      drysoil          (:)   = .false.
+      satsoil          (:)   = .false.
+      h_flux_g         (:)   = 0.
+      h_flux_s         (:)   = 0.
+      w_flux_g         (:)   = 0.
+      qw_flux_g        (:)   = 0.
 
-      rfactor          (:)   = 0.
-      hfluxgsc         (:)   = 0.
-      w_flux           (:)   = 0.
-      qw_flux          (:)   = 0.
-      d_flux           (:)   = 0.
+      rshort_g               = 0.
+      rshort_v               = 0.
+      rshort_a               = 0.
+      rlong_v                = 0.
+      rlong_g                = 0.
+      rlong_s                = 0.
+
+      sla_ss           (:)   = 0.
+      lai_ss           (:)   = 0.
+      par_l_ss         (:)   = 0.
+      vm0_ss           (:)   = 0.
+      rd0_ss           (:)   = 0.
+      gpp_ss           (:)   = 0.
+      leaf_resp_ss     (:)   = 0.
+      transp_ss        (:)   = 0.
+
+      gsw                    = 0.
+      leaf_resp_o            = 0.
+      root_resp_o            = 0.
+      het_resp_o             = 0.
+      gpp_o                  = 0.
+      transp_o               = 0.
       !------------------------------------------------------------------------------------!
+
+      select case (trim(idel))
+      case ('PATCH')
+         continue
+      end select
 
       return
    end subroutine flush_leaf_coms
@@ -1392,6 +1728,122 @@ module leaf_coms
 
       return
    end function zoobukhov
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This function converts soil moisture to soil matric potential.                   !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function leaf3_matric_potential(nsoil,soil_water)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer     , intent(in) :: nsoil      ! Soil texture                         [  idx]
+      real(kind=4), intent(in) :: soil_water ! Soil moisture                        [m3/m3]
+      !----- Internal variables. ----------------------------------------------------------!
+      real(kind=4)             :: relmoist   ! Relative soil moisture               [  ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find relative soil moisture. ------------------------------------------------!
+      relmoist      = min(soil_water/slmsts(nsoil),1.0)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the matric potential. ---------------------------------------------------!
+      leaf3_matric_potential = slpots(nsoil) / relmoist ** slbs(nsoil)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function leaf3_matric_potential
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This function converts soil matric potential to soil moisture.                   !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function leaf3_matric_potential_inv(nsoil,smpot)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer     , intent(in) :: nsoil      ! Soil texture                         [  idx]
+      real(kind=4), intent(in) :: smpot      ! Soil moisture                        [    m]
+      !----- Internal variables. ----------------------------------------------------------!
+      real(kind=4)             :: relmatpot  ! Relative matric potential            [  ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find relative soil moisture. ------------------------------------------------!
+      relmatpot = max(smpot/slpots(nsoil),1.0)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the matric potential. ---------------------------------------------------!
+      leaf3_matric_potential_inv = slmsts(nsoil) / relmatpot ** (1. / slbs(nsoil))
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function leaf3_matric_potential_inv
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This function converts soil moisture to hydraulic conductivity.                  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function leaf3_hydr_conduct(k,nsoil,soil_water,soil_fracliq)
+      use rconstants, only : lnexp_min ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer     , intent(in) :: k            ! Layer index                        [  idx]
+      integer     , intent(in) :: nsoil        ! Soil texture                       [  idx]
+      real(kind=4), intent(in) :: soil_water   ! Soil moisture                      [m3/m3]
+      real(kind=4), intent(in) :: soil_fracliq ! Liquid fraction                    [  ---]
+      !----- Internal variables. ----------------------------------------------------------!
+      real(kind=4)             :: relmoist     ! Relative soil moisture             [  ---]
+      real(kind=4)             :: fzcorr       ! Freezing correction                [  ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find correction for frozen soils. -------------------------------------------!
+      fzcorr = exp( max( lnexp_min, - freezecoef * (1.0 - soil_fracliq) ) )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Find relative soil moisture. ------------------------------------------------!
+      relmoist = min(soil_water/slmsts(nsoil),1.0)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Find the hydraulic conductivity. ---------------------------------------------!
+      leaf3_hydr_conduct = fzcorr * slcons1(k,nsoil) * relmoist ** (2. * slbs(nsoil) + 3.)
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end function leaf3_hydr_conduct
    !=======================================================================================!
    !=======================================================================================!
 end module leaf_coms

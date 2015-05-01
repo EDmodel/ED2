@@ -2,7 +2,7 @@
 
 # Define main source.
 
-MAIN = $(CORE)/rammain.f90
+MAIN = $(CORE)/rammain.F90
 MAINOBJ = rammain.o
 
 

@@ -13,10 +13,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough           &
                       ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp       &
                       ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv        &
-                      ,can_vpdef,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc        &
-                      ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic       &
-                      ,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,albedt    &
-                      ,rlongup,rshort_gnd,rlong_gnd)
+                      ,can_vpdef,can_theta,can_rvap,can_co2,hflxac,wflxac,qwflxac,eflxac   &
+                      ,cflxac,hflxgc,wflxgc,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp   &
+                      ,intercepted,qintercepted,wshed,qwshed,throughfall,qthroughfall      &
+                      ,runoff,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp       &
+                      ,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t       &
+                      ,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -72,14 +74,33 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
    real, dimension(    m2,m3,npat), intent(inout) :: can_theta
    real, dimension(    m2,m3,npat), intent(inout) :: can_rvap
    real, dimension(    m2,m3,npat), intent(inout) :: can_co2
-   real, dimension(    m2,m3,npat), intent(inout) :: sensible_gc
-   real, dimension(    m2,m3,npat), intent(inout) :: sensible_vc
-   real, dimension(    m2,m3,npat), intent(inout) :: evap_gc
-   real, dimension(    m2,m3,npat), intent(inout) :: evap_vc
+   real, dimension(    m2,m3,npat), intent(inout) :: hflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: wflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: qwflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: eflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: cflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: hflxgc
+   real, dimension(    m2,m3,npat), intent(inout) :: wflxgc
+   real, dimension(    m2,m3,npat), intent(inout) :: qwflxgc
+   real, dimension(    m2,m3,npat), intent(inout) :: hflxvc
+   real, dimension(    m2,m3,npat), intent(inout) :: wflxvc
+   real, dimension(    m2,m3,npat), intent(inout) :: qwflxvc
    real, dimension(    m2,m3,npat), intent(inout) :: transp
+   real, dimension(    m2,m3,npat), intent(inout) :: qtransp
+   real, dimension(    m2,m3,npat), intent(inout) :: intercepted
+   real, dimension(    m2,m3,npat), intent(inout) :: qintercepted
+   real, dimension(    m2,m3,npat), intent(inout) :: wshed
+   real, dimension(    m2,m3,npat), intent(inout) :: qwshed
+   real, dimension(    m2,m3,npat), intent(inout) :: throughfall
+   real, dimension(    m2,m3,npat), intent(inout) :: qthroughfall
+   real, dimension(    m2,m3,npat), intent(inout) :: runoff
+   real, dimension(    m2,m3,npat), intent(inout) :: qrunoff
+   real, dimension(    m2,m3,npat), intent(inout) :: drainage
+   real, dimension(    m2,m3,npat), intent(inout) :: qdrainage
    real, dimension(    m2,m3,npat), intent(inout) :: gpp
    real, dimension(    m2,m3,npat), intent(inout) :: plresp
    real, dimension(    m2,m3,npat), intent(inout) :: resphet
+   real, dimension(    m2,m3,npat), intent(inout) :: growresp
    real, dimension(    m2,m3,npat), intent(inout) :: veg_ndvip
    real, dimension(    m2,m3,npat), intent(inout) :: veg_ndvic
    real, dimension(    m2,m3,npat), intent(inout) :: veg_ndvif
@@ -110,10 +131,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
                          ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
-                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
-                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
-                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
-                         ,rlong_gnd)
+                         ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc        &
+                         ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted         &
+                         ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff        &
+                         ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip &
+                         ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r      &
+                         ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -133,10 +156,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
                          ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
-                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
-                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
-                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
-                         ,rlong_gnd)
+                         ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc        &
+                         ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted         &
+                         ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff        &
+                         ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip &
+                         ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r      &
+                         ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -155,10 +180,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
                          ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
-                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
-                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
-                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
-                         ,rlong_gnd)
+                         ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc        &
+                         ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted         &
+                         ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff        &
+                         ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip &
+                         ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r      &
+                         ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -177,10 +204,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                          ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat      &
                          ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap           &
                          ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap       &
-                         ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp       &
-                         ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v     &
-                         ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd        &
-                         ,rlong_gnd)
+                         ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc        &
+                         ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted         &
+                         ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff        &
+                         ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip &
+                         ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r      &
+                         ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -198,10 +227,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
                       ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
-                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
-                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
-                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
-                      ,rlong_gnd)                                                         
+                      ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc           &
+                      ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted            &
+                      ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff           &
+                      ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip    &
+                      ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r         &
+                      ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)                       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -218,10 +249,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
                       ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
-                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
-                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
-                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
-                      ,rlong_gnd)                                                         
+                      ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc           &
+                      ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted            &
+                      ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff           &
+                      ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip    &
+                      ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r         &
+                      ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)                       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -238,10 +271,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
                       ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
-                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
-                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
-                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
-                      ,rlong_gnd)                                                         
+                      ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc           &
+                      ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted            &
+                      ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff           &
+                      ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip    &
+                      ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r         &
+                      ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)                       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -258,10 +293,12 @@ subroutine leaf3_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcw
                       ,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat         &
                       ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap              &
                       ,veg_energy,can_prss,can_theiv,can_vpdef,can_theta,can_rvap          &
-                      ,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp          &
-                      ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v        &
-                      ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd           &
-                      ,rlong_gnd)                                                         
+                      ,can_co2,hflxac,wflxac,qwflxac,eflxac,cflxac,hflxgc,wflxgc           &
+                      ,qwflxgc,hflxvc,wflxvc,qwflxvc,transp,qtransp,intercepted            &
+                      ,qintercepted,wshed,qwshed,throughfall,qthroughfall,runoff           &
+                      ,qrunoff,drainage,qdrainage,gpp,plresp,resphet,growresp,veg_ndvip    &
+                      ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r         &
+                      ,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)                       
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -286,10 +323,12 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
                       ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class         &
                       ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap        &
                       ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss      &
-                      ,can_theiv,can_vpdef,can_theta,can_rvap,can_co2,sensible_gc          &
-                      ,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip     &
-                      ,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c &
-                      ,albedt,rlongup,rshort_gnd,rlong_gnd)
+                      ,can_theiv,can_vpdef,can_theta,can_rvap,can_co2,hflxac,wflxac        &
+                      ,qwflxac,eflxac,cflxac,hflxgc,wflxgc,qwflxgc,hflxvc,wflxvc,qwflxvc   &
+                      ,transp,qtransp,intercepted,qintercepted,wshed,qwshed,throughfall    &
+                      ,qthroughfall,runoff,qrunoff,drainage,qdrainage,gpp,plresp,resphet   &
+                      ,growresp,veg_ndvip,veg_ndvic,veg_ndvif,sflux_u,sflux_v,sflux_w      &
+                      ,sflux_t,sflux_r,sflux_c,albedt,rlongup,rshort_gnd,rlong_gnd)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                        , intent(in)    :: m2
@@ -342,14 +381,33 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
    real, dimension(    m2,m3,npat), intent(inout) :: can_theta
    real, dimension(    m2,m3,npat), intent(inout) :: can_rvap
    real, dimension(    m2,m3,npat), intent(inout) :: can_co2
-   real, dimension(    m2,m3,npat), intent(inout) :: sensible_gc
-   real, dimension(    m2,m3,npat), intent(inout) :: sensible_vc
-   real, dimension(    m2,m3,npat), intent(inout) :: evap_gc
-   real, dimension(    m2,m3,npat), intent(inout) :: evap_vc
+   real, dimension(    m2,m3,npat), intent(inout) :: hflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: wflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: qwflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: eflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: cflxac
+   real, dimension(    m2,m3,npat), intent(inout) :: hflxgc
+   real, dimension(    m2,m3,npat), intent(inout) :: wflxgc
+   real, dimension(    m2,m3,npat), intent(inout) :: qwflxgc
+   real, dimension(    m2,m3,npat), intent(inout) :: hflxvc
+   real, dimension(    m2,m3,npat), intent(inout) :: wflxvc
+   real, dimension(    m2,m3,npat), intent(inout) :: qwflxvc
    real, dimension(    m2,m3,npat), intent(inout) :: transp
+   real, dimension(    m2,m3,npat), intent(inout) :: qtransp
+   real, dimension(    m2,m3,npat), intent(inout) :: intercepted
+   real, dimension(    m2,m3,npat), intent(inout) :: qintercepted
+   real, dimension(    m2,m3,npat), intent(inout) :: wshed
+   real, dimension(    m2,m3,npat), intent(inout) :: qwshed
+   real, dimension(    m2,m3,npat), intent(inout) :: throughfall
+   real, dimension(    m2,m3,npat), intent(inout) :: qthroughfall
+   real, dimension(    m2,m3,npat), intent(inout) :: runoff
+   real, dimension(    m2,m3,npat), intent(inout) :: qrunoff
+   real, dimension(    m2,m3,npat), intent(inout) :: drainage
+   real, dimension(    m2,m3,npat), intent(inout) :: qdrainage
    real, dimension(    m2,m3,npat), intent(inout) :: gpp
    real, dimension(    m2,m3,npat), intent(inout) :: plresp
    real, dimension(    m2,m3,npat), intent(inout) :: resphet
+   real, dimension(    m2,m3,npat), intent(inout) :: growresp
    real, dimension(    m2,m3,npat), intent(inout) :: veg_ndvip
    real, dimension(    m2,m3,npat), intent(inout) :: veg_ndvic
    real, dimension(    m2,m3,npat), intent(inout) :: veg_ndvif
@@ -415,14 +473,33 @@ subroutine leaf3_clone(m2,m3,mzg,mzs,npat,isrc,idest,jsrc,jdest,soil_water      
       can_theta      (idest,jdest,ipat) = can_theta        (isrc,jsrc,ipat)
       can_rvap       (idest,jdest,ipat) = can_rvap         (isrc,jsrc,ipat)
       can_co2        (idest,jdest,ipat) = can_co2          (isrc,jsrc,ipat)
-      sensible_gc    (idest,jdest,ipat) = sensible_gc      (isrc,jsrc,ipat)
-      sensible_vc    (idest,jdest,ipat) = sensible_vc      (isrc,jsrc,ipat)
-      evap_gc        (idest,jdest,ipat) = evap_gc          (isrc,jsrc,ipat)
-      evap_vc        (idest,jdest,ipat) = evap_vc          (isrc,jsrc,ipat)
+      hflxac         (idest,jdest,ipat) = hflxac           (isrc,jsrc,ipat)
+      wflxac         (idest,jdest,ipat) = wflxac           (isrc,jsrc,ipat)
+      qwflxac        (idest,jdest,ipat) = qwflxac          (isrc,jsrc,ipat)
+      eflxac         (idest,jdest,ipat) = eflxac           (isrc,jsrc,ipat)
+      cflxac         (idest,jdest,ipat) = cflxac           (isrc,jsrc,ipat)
+      hflxgc         (idest,jdest,ipat) = hflxgc           (isrc,jsrc,ipat)
+      wflxgc         (idest,jdest,ipat) = wflxgc           (isrc,jsrc,ipat)
+      qwflxgc        (idest,jdest,ipat) = qwflxgc          (isrc,jsrc,ipat)
+      hflxvc         (idest,jdest,ipat) = hflxvc           (isrc,jsrc,ipat)
+      wflxvc         (idest,jdest,ipat) = wflxvc           (isrc,jsrc,ipat)
+      qwflxvc        (idest,jdest,ipat) = qwflxvc          (isrc,jsrc,ipat)
       transp         (idest,jdest,ipat) = transp           (isrc,jsrc,ipat)
+      qtransp        (idest,jdest,ipat) = qtransp          (isrc,jsrc,ipat)
+      intercepted    (idest,jdest,ipat) = intercepted      (isrc,jsrc,ipat)
+      qintercepted   (idest,jdest,ipat) = qintercepted     (isrc,jsrc,ipat)
+      wshed          (idest,jdest,ipat) = wshed            (isrc,jsrc,ipat)
+      qwshed         (idest,jdest,ipat) = qwshed           (isrc,jsrc,ipat)
+      throughfall    (idest,jdest,ipat) = throughfall      (isrc,jsrc,ipat)
+      qthroughfall   (idest,jdest,ipat) = qthroughfall     (isrc,jsrc,ipat)
+      runoff         (idest,jdest,ipat) = runoff           (isrc,jsrc,ipat)
+      qrunoff        (idest,jdest,ipat) = qrunoff          (isrc,jsrc,ipat)
+      drainage       (idest,jdest,ipat) = drainage         (isrc,jsrc,ipat)
+      qdrainage      (idest,jdest,ipat) = qdrainage        (isrc,jsrc,ipat)
       gpp            (idest,jdest,ipat) = gpp              (isrc,jsrc,ipat)
       plresp         (idest,jdest,ipat) = plresp           (isrc,jsrc,ipat)
       resphet        (idest,jdest,ipat) = resphet          (isrc,jsrc,ipat)
+      growresp       (idest,jdest,ipat) = growresp         (isrc,jsrc,ipat)
       veg_ndvip      (idest,jdest,ipat) = veg_ndvip        (isrc,jsrc,ipat)
       veg_ndvic      (idest,jdest,ipat) = veg_ndvic        (isrc,jsrc,ipat)
       veg_ndvif      (idest,jdest,ipat) = veg_ndvif        (isrc,jsrc,ipat)

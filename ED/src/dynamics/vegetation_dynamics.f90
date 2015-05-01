@@ -90,13 +90,14 @@ subroutine vegetation_dynamics(new_month,new_year)
          !----- Update the fire disturbance rates. ----------------------------------------!
          call fire_frequency(cgrid)
 
-         !----- Update the disturbance rates. ---------------------------------------------!
-         call site_disturbance_rates(current_time%month, current_time%year, cgrid)
-
          !----- This is actually the yearly time-step, apply the disturbances. ------------!
          if (new_year) then
+            !----- Update the disturbance rates. ------------------------------------------!
+            call site_disturbance_rates(current_time%year, cgrid)
             call apply_disturbances(cgrid)
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
@@ -261,14 +262,19 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
          call fire_frequency(cgrid)
 
          !----- Update the disturbance rates. ---------------------------------------------!
-         call site_disturbance_rates(current_time%month, current_time%year, cgrid)
-
-         !----- We bypass the disturbance routine alltogether. ----------------------------!
+         if (new_year) then
+            call site_disturbance_rates(current_time%year, cgrid)
+            !----- We bypass the disturbance routine alltogether. -------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
+
       !------  update dmean and mmean values for NPP allocation terms ---------------------!
       call normalize_ed_todayNPP_vars(cgrid)
+      !------------------------------------------------------------------------------------!
+
       
       !------------------------------------------------------------------------------------!
       !     This should be done every day, but after the longer-scale steps.  We re-set    !

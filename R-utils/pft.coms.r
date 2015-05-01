@@ -447,7 +447,7 @@ if (iallom %in% c(0,1)){
 #------------------------------------------------------------------------------------------#
 pft01 = list( name               = "C4 grass"
             , key                = "C4G"
-            , colour             = "gold"
+            , colour             = "#E5E503"
             , tropical           = TRUE
             , pathway            = 4
             , d0                 = d0.grass
@@ -480,6 +480,7 @@ pft01 = list( name               = "C4 grass"
             , b2Bl.small         = NA
             , b1Bl.large         = NA
             , b2Bl.large         = NA
+            , bleaf.adult        = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -506,7 +507,7 @@ pft01 = list( name               = "C4 grass"
 
 pft02 = list( name               = "Early tropical"
             , key                = "ETR"
-            , colour             = "chartreuse"
+            , colour             = "#9FFF8C"
             , tropical           = TRUE
             , pathway            = 3
             , d0                 = d0.tree
@@ -539,6 +540,7 @@ pft02 = list( name               = "Early tropical"
             , b2Bl.small         = NA
             , b1Bl.large         = NA
             , b2Bl.large         = NA
+            , bleaf.adult        = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -565,7 +567,7 @@ pft02 = list( name               = "Early tropical"
 
 pft03 = list( name               = "Mid tropical"
             , key                = "MTR"
-            , colour             = "chartreuse4"
+            , colour             = "#44CC29"
             , tropical           = TRUE
             , pathway            = 3
             , d0                 = d0.tree
@@ -598,6 +600,7 @@ pft03 = list( name               = "Mid tropical"
             , b2Bl.small         = NA
             , b1Bl.large         = NA
             , b2Bl.large         = NA
+            , bleaf.adult        = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -624,7 +627,7 @@ pft03 = list( name               = "Mid tropical"
 
 pft04 = list( name               = "Late tropical"
             , key                = "LTR"
-            , colour             = "#004E00"
+            , colour             = "#137300"
             , tropical           = TRUE
             , pathway            = 3
             , d0                 = d0.tree
@@ -657,6 +660,7 @@ pft04 = list( name               = "Late tropical"
             , b2Bl.small         = NA
             , b1Bl.large         = NA
             , b2Bl.large         = NA
+            , bleaf.adult        = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -683,7 +687,7 @@ pft04 = list( name               = "Late tropical"
 
 pft05 = list( name               = "Temperate C3 Grass"
             , key                = "TTG"
-            , colour             = "mediumpurple1"
+            , colour             = "#B2B224"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -716,6 +720,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , b2Bl.small         = 1.00
             , b1Bl.large         = 0.08
             , b2Bl.large         = 1.00
+            , bleaf.adult        = NA
             , b1Bs.small         = 1.e-5
             , b2Bs.small         = 1.0
             , b1Bs.large         = 1.e-5
@@ -742,7 +747,7 @@ pft05 = list( name               = "Temperate C3 Grass"
 
 pft06 = list( name               = "North Pine"
             , key                = "NPN"
-            , colour             = "deepskyblue"
+            , colour             = "#0066CC"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -775,6 +780,7 @@ pft06 = list( name               = "North Pine"
             , b2Bl.small         = 1.899
             , b1Bl.large         = 0.024
             , b2Bl.large         = 1.899
+            , bleaf.adult        = NA
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -801,7 +807,7 @@ pft06 = list( name               = "North Pine"
 
 pft07 = list( name               = "South Pine"
             , key                = "SPN"
-            , colour             = "mediumturquoise"
+            , colour             = "#99CCFF"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -834,6 +840,7 @@ pft07 = list( name               = "South Pine"
             , b2Bl.small         = 1.899
             , b1Bl.large         = 0.024
             , b2Bl.large         = 1.899
+            , bleaf.adult        = NA
             , b1Bs.small         = 0.147
             , b2Bs.small         = 2.238
             , b1Bs.large         = 0.147
@@ -860,7 +867,7 @@ pft07 = list( name               = "South Pine"
 
 pft08 = list( name               = "Late conifer"
             , key                = "LCN"
-            , colour             = "royalblue4"
+            , colour             = "#00407F"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -893,6 +900,7 @@ pft08 = list( name               = "Late conifer"
             , b2Bl.small         = 1.6829
             , b1Bl.large         = 0.0454
             , b2Bl.large         = 1.6829
+            , bleaf.adult        = NA
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.1536
             , b1Bs.large         = 0.1617
@@ -919,7 +927,7 @@ pft08 = list( name               = "Late conifer"
 
 pft09 = list( name               = "Early hardwood"
             , key                = "EHW"
-            , colour             = "darkorange"
+            , colour             = "#FF999B"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -952,6 +960,7 @@ pft09 = list( name               = "Early hardwood"
             , b2Bl.small         = 1.7477
             , b1Bl.large         = 0.0129
             , b2Bl.large         = 1.7477
+            , bleaf.adult        = NA
             , b1Bs.small         = 0.02648
             , b2Bs.small         = 2.95954
             , b1Bs.large         = 0.02648
@@ -978,7 +987,7 @@ pft09 = list( name               = "Early hardwood"
 
 pft10 = list( name               = "Mid hardwood"
             , key                = "MHW"
-            , colour             = "orangered"
+            , colour             = "#E5171A"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -1011,6 +1020,7 @@ pft10 = list( name               = "Mid hardwood"
             , b2Bl.small         = 1.455
             , b1Bl.large         = 0.048
             , b2Bl.large         = 1.455
+            , bleaf.adult        = NA
             , b1Bs.small         = 0.1617
             , b2Bs.small         = 2.4572
             , b1Bs.large         = 0.1617
@@ -1037,7 +1047,7 @@ pft10 = list( name               = "Mid hardwood"
 
 pft11 = list( name               = "Late hardwood"
             , key                = "LHW"
-            , colour             = "firebrick"
+            , colour             = "#990003"
             , tropical           = FALSE
             , pathway            = 3
             , d0                 = d0.tree
@@ -1070,6 +1080,7 @@ pft11 = list( name               = "Late hardwood"
             , b2Bl.small         = 1.731
             , b1Bl.large         = 0.017
             , b2Bl.large         = 1.731
+            , bleaf.adult        = NA
             , b1Bs.small         = 0.235
             , b2Bs.small         = 2.2518
             , b1Bs.large         = 0.235
@@ -1094,14 +1105,14 @@ pft11 = list( name               = "Late hardwood"
             , veg.hcap.min       = 1.60601E-01
             )
 
-pft12 = pft05; pft12$name = "C3 crop"   ; pft12$key = "CC3"; pft12$colour="purple4"
-pft13 = pft05; pft13$name = "C3 pasture"; pft13$key = "PC3"; pft13$colour="darkorchid1"
-pft14 = pft01; pft14$name = "C4 crop"   ; pft14$key = "CC4"; pft14$colour="darkgoldenrod"
-pft15 = pft01; pft15$name = "C4 pasture"; pft15$key = "PC4"; pft15$colour="khaki"
+pft12 = pft05; pft12$name = "C3 crop"   ; pft12$key = "CC3"; pft12$colour="#A38FCC"
+pft13 = pft05; pft13$name = "C3 pasture"; pft13$key = "PC3"; pft13$colour="#7F40FF"
+pft14 = pft01; pft14$name = "C4 crop"   ; pft14$key = "CC4"; pft14$colour="#A1E5CF"
+pft15 = pft01; pft15$name = "C4 pasture"; pft15$key = "PC4"; pft15$colour="#6B998A"
 
 pft16 = list( name               = "C3 grass"
             , key                = "C3G"
-            , colour             = "lightgoldenrod3"
+            , colour             = "#F2F291"
             , tropical           = TRUE
             , pathway            = 3
             , d0                 = d0.grass
@@ -1134,6 +1145,7 @@ pft16 = list( name               = "C3 grass"
             , b2Bl.small         = NA
             , b1Bl.large         = NA
             , b2Bl.large         = NA
+            , bleaf.adult        = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1160,7 +1172,7 @@ pft16 = list( name               = "C3 grass"
 
 pft17 = list( name               = "Araucaria"
             , key                = "ARC"
-            , colour             = "steelblue3"
+            , colour             = "#BF60A7"
             , tropical           = TRUE
             , pathway            = 3
             , d0                 = d0.tree
@@ -1193,6 +1205,7 @@ pft17 = list( name               = "Araucaria"
             , b2Bl.small         = NA
             , b1Bl.large         = NA
             , b2Bl.large         = NA
+            , bleaf.adult        = NA
             , b1Bs.small         = NA
             , b2Bs.small         = NA
             , b1Bs.large         = NA
@@ -1216,7 +1229,7 @@ pft17 = list( name               = "Araucaria"
             , init.density       = 0.1
             , veg.hcap.min       = 9.93851E+00
             )
-pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour=all.colour
+pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour="#404040"
 #------------------------------------------------------------------------------------------#
 
 
@@ -1313,33 +1326,37 @@ for (ipft in sequence(npft)){
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(0,1)){
          #---- ED-2.1 allometry. ----------------------------------------------------------#
-         pft$b1Bl.small[ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
-         aux                  = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
-                                + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
-         pft$b2Bl.small[ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
-         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
-         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
+         pft$b1Bl.small [ipft] = exp(a1 + c1l * pft$b1Ht[ipft] + d1l * log(pft$rho[ipft]))
+         aux                   = ( (a2l - a1) + pft$b1Ht[ipft] * (c2l - c1l) 
+                                 + log(pft$rho[ipft]) * (d2l - d1l)) * (1.0/log(dcrit))
+         pft$b2Bl.small [ipft] = C2B * b2l + c2l * pft$b2Ht[ipft] + aux
+         pft$b1Bl.large [ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large [ipft] = pft$b2Bl.small[ipft]
+         pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
+                                 * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
       }else if(iallom %in% c(2)){
-         pft$b1Bl.small[ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
-         pft$b2Bl.small[ipft] = nleaf[2]
-         pft$b1Bl.large[ipft] = pft$b1Bl.small[ipft]
-         pft$b2Bl.large[ipft] = pft$b2Bl.small[ipft]
+         pft$b1Bl.small [ipft] = C2B * exp(nleaf[1]) * pft$rho[ipft] / nleaf[3]
+         pft$b2Bl.small [ipft] = nleaf[2]
+         pft$b1Bl.large [ipft] = pft$b1Bl.small[ipft]
+         pft$b2Bl.large [ipft] = pft$b2Bl.small[ipft]
+         pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
+                                 * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
       }else if(iallom %in% c(3)){
          #---------------------------------------------------------------------------------#
          #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
          # mid-successional to be 50gC/plant and interpolate biomass for saplings using a  #
          # log-linear function.                                                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl.large[ipft] = 0.00873 * 11.91 / pft$SLA[ipft] # * C2B
-         pft$b2Bl.large[ipft] = 2.1360
+         pft$b1Bl.large [ipft] = 0.00873 * pft$SLA[3] / pft$SLA[ipft] # * C2B
+         pft$b2Bl.large [ipft] = 2.1360
          
-         bleaf.min   = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
-         bleaf.adult = ( pft$b1Bl.large[ipft] / C2B
-                       * pft$dbh.adult[ipft] ^ pft$b2Bl.large[ipft] )
-         pft$b2Bl.small[ipft] = ( log(bleaf.adult/bleaf.min)
-                                / log(pft$dbh.adult[ipft]/pft$dbh.min[ipft]) )
-         pft$b1Bl.small[ipft] = ( bleaf.adult * C2B 
-                                / pft$dbh.adult[ipft] ^ pft$b2Bl.small[ipft] )
+         bleaf.sapling         = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
+         pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
+                                 * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
+         pft$b2Bl.small [ipft] = ( log(pft$bleaf.adult[ipft]/bleaf.sapling)
+                                 / log(pft$dbh.adult[ipft]/pft$dbh.min[ipft]) )
+         pft$b1Bl.small [ipft] = ( pft$bleaf.adult[ipft] * C2B 
+                                 / pft$dbh.adult[ipft] ^ pft$b2Bl.small[ipft] )
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1402,9 +1419,12 @@ for (ipft in sequence(npft)){
          pft$b2WAI[ipft] = pft$b2Bl.large[ipft]
       }#end if
       #------------------------------------------------------------------------------------#
-   }#end if
+   }else{
+      pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
+                              * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
+   }#end if (pft$tropical[ipft]
    #---------------------------------------------------------------------------------------#
-}#end do
+}#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
 
 
@@ -1450,13 +1470,13 @@ pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
 #------------------------------------------------------------------------------------------#
 #     Update colours.                                                                      #
 #------------------------------------------------------------------------------------------#
-pft$red    = c( 254,   1,  68,   0, 203,  13,   0,  37, 255
-              , 195, 143, 213, 170, 180, 120, 145, 119,  75 )
-pft$green  = c( 204, 229, 178,  83, 149, 245, 164, 101,  21
-              ,  19,  34, 109,  46,  36,   0, 125,  69,  75 )
-pft$blue   = c(  47,   0,  71,   3,   0, 250, 168, 102,  63
-              ,  50,  53, 198, 152, 255, 190,  82, 255,  75 )
-pft$colour = rgb(red=pft$red,green=pft$green,blue=pft$blue,maxColorValue=255)
+#pft$red    = c( 254,   1,  68,   0, 203,  13,   0,  37, 255
+#              , 195, 143, 213, 170, 180, 120, 145, 119,  75 )
+#pft$green  = c( 204, 229, 178,  83, 149, 245, 164, 101,  21
+#              ,  19,  34, 109,  46,  36,   0, 125,  69,  75 )
+#pft$blue   = c(  47,   0,  71,   3,   0, 250, 168, 102,  63
+#              ,  50,  53, 198, 152, 255, 190,  82, 255,  75 )
+#pft$colour = rgb(red=pft$red,green=pft$green,blue=pft$blue,maxColorValue=255)
 #------------------------------------------------------------------------------------------#
 
 

@@ -75,12 +75,12 @@ subroutine hybrid_timestep(cgrid)
   real                                   :: fm
   real                                   :: wtime0
   real(kind=8)                           :: hbeg
-!!  logical                  , save        :: first_time=.true.
   integer                                :: ibuff
-
-  !----- External functions. -------------------------------------------------------------!
+  !----- Local constants. -----------------------------------------------!
+  logical                  , parameter   :: test_energy_sanity = .false.
+  !----- External functions. --------------------------------------------!
   real, external                         :: walltime
-  !---------------------------------------------------------------------------------------!
+  !----------------------------------------------------------------------!
   
 !- Assigning some constants which will remain the same throughout      !
 !      the run.                                                    ----!
@@ -171,8 +171,7 @@ subroutine hybrid_timestep(cgrid)
            !------------------------------------------------------------------!
            call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,&
                 cpoly%ntext_soil(:,isi))
-
-           call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+           call update_patch_derived_props(csite,ipa)
            !------------------------------------------------------------------!
 
            !----- Save the previous thermodynamic state. ---------------------!
@@ -184,10 +183,24 @@ subroutine hybrid_timestep(cgrid)
            old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
                                          ,csite%can_shv(ipa),.true.)
            !------------------------------------------------------------------!
-           
+
+
            !----- Compute current storage terms. -----------------------------!
            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
-           
+           !------------------------------------------------------------------!
+
+
+
+           !------------------------------------------------------------------!
+           !      Test whether temperature and energy are reasonable.         !
+           !------------------------------------------------------------------!
+           if (test_energy_sanity) then
+              call sanity_check_veg_energy(csite,ipa)
+           end if
+           !------------------------------------------------------------------!
+
+
+
            !------------------------------------------------------------------!
            !     Set up the integration patch.                                !
            !------------------------------------------------------------------!
@@ -248,7 +261,7 @@ subroutine hybrid_timestep(cgrid)
             !----- Go into the ODE integrator using Euler. ----------------------------!
             
             call hybrid_integ(hbeg,csite,yprev,initp,dinitp,                         &
-                 ytemp,ipa,nsteps)
+                 ytemp,ipa,isi,nsteps)
    
             !--------------------------------------------------------------------------!
             !  Normalize canopy-atmosphere flux values.  These values are updated ever !
@@ -315,7 +328,7 @@ subroutine hybrid_timestep(cgrid)
  !  This subroutine will drive the integration of several ODEs that drive     !
  !  the fast-scale state variables.                                           !
  !----------------------------------------------------------------------------!
- subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,nsteps)
+ subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,isi,nsteps)
    
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype                ! structure
@@ -353,7 +366,7 @@ subroutine hybrid_timestep(cgrid)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            & ! intent(in)
                              , runoff_time_i          & ! intent(in)
-                             , simplerunoff
+                             , simplerunoff           ! ! intent(in)
    use consts_coms    , only : cliq8                  & ! intent(in)
                              , t3ple8                 & ! intent(in)
                              , tsupercool_liq8            & ! intent(in)
@@ -369,6 +382,7 @@ subroutine hybrid_timestep(cgrid)
    type(bdf2patchtype)       , target      :: yprev   ! Patch at n-1
 
    integer                   , intent(in)  :: ipa     ! Current patch ID
+   integer                   , intent(in)  :: isi     ! Current site ID
    real(kind=8)              , intent(in)  :: h1      ! First guess of delta-t
    integer                   , intent(out) :: nsteps  ! Number of steps taken.
    !----- Local variables ----------------------------------------------------!
@@ -595,7 +609,7 @@ subroutine hybrid_timestep(cgrid)
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
                call norm_rk4_fluxes(ytemp,h)
-               call print_rk4_state(initp,ytemp,csite,ipa,x,h)
+               call print_rk4_state(initp,ytemp,csite,ipa,isi,x,h)
             end if
             
             !----- 3e. Copy the temporary structure to the intermediate state. ------------!

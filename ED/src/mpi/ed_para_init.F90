@@ -27,7 +27,6 @@ subroutine ed_node_decomp(init,standalone,masterworks)
                           , ed_alloc_work     & ! subroutine
                           , ed_nullify_work   ! ! subroutine
    use soil_coms   , only : isoilflg          ! ! subroutine
-   use ed_misc_coms, only : runtype,ied_init_mode
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: init

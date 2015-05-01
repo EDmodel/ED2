@@ -101,7 +101,7 @@ module grid_dims
    !  MAXFILES - Maximum number of files that may be loaded
    !---------------------------------------------------------------------------------------!
    integer, parameter :: str_len  = 300
-   integer, parameter :: maxfiles = 36000
+   integer, parameter :: maxfiles = 99999
    !---------------------------------------------------------------------------------------!
 
 end module grid_dims

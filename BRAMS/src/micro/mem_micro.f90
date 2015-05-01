@@ -11,18 +11,18 @@ module mem_micro
    !=======================================================================================!
    type micro_vars
       !----- Variables to be dimensioned by (nzp,nxp,nyp) ---------------------------------!
-      real, pointer, dimension(:,:,:) :: rcp,rrp,rpp,rsp,rap,rgp,rhp                       &
+      real, dimension(:,:,:), pointer :: rcp,rrp,rpp,rsp,rap,rgp,rhp                       &
                                         ,ccp,crp,cpp,csp,cap,cgp,chp                       &
                                         ,cccnp,cifnp,q2,q6,q7
 
       !----- Variables to be dimensioned by (nxp,nyp) -------------------------------------!
-      real, pointer, dimension(  :,:) :: accpr,accpp,accps,accpa,accpg,accph               &
+      real, dimension(  :,:), pointer :: accpr,accpp,accps,accpa,accpg,accph               &
                                         ,pcprr,pcprp,pcprs,pcpra,pcprg,pcprh               &
                                         ,pcpg,qpcpg,dpcpg
    end type micro_vars
    
    !----- Structure -----------------------------------------------------------------------!
-   type (micro_vars), allocatable :: micro_g(:), microm_g(:)
+   type (micro_vars), dimension(:), allocatable :: micro_g, microm_g
                           
    
    contains
@@ -39,13 +39,13 @@ module mem_micro
    !    This subroutine performs the allocation of the micro_vars components for each      !
    ! grid, avoiding unecessary allocations based on the user input.                        !
    !---------------------------------------------------------------------------------------!
-   subroutine alloc_micro(micro,n1,n2,n3,ng,isfcl)
+   subroutine alloc_micro(micro,n1,n2,n3,ng)
       use therm_lib, only : cloud_on,bulk_on
       use micphys  , only : icloud,irain,ipris,isnow,iaggr,igraup,ihail
 
       implicit none          
       type (micro_vars) :: micro
-      integer, intent(in) :: n1,n2,n3,ng,isfcl
+      integer, intent(in) :: n1,n2,n3,ng
 
       !----- Cloud should be allocated whenever cloud is on -------------------------------!
       if (cloud_on) allocate (micro%rcp(n1,n2,n3))

@@ -31,7 +31,6 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
                                    , leaf_backscatter_tir    & ! intent(in)
                                    , wood_backscatter_tir    ! ! intent(in)
    use consts_coms          , only : stefan8                 ! ! intent(in)
-   use ed_misc_coms         , only : current_time            ! ! intent(in)
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -389,7 +388,6 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
                                    , nir_beam_norm           & ! intent(in)
                                    , nir_diff_norm           & ! intent(in)
                                    , cosz_min8               ! ! intent(in)
-   use ed_misc_coms         , only : current_time            ! ! intent(in)
 
    implicit none
 

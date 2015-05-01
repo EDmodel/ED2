@@ -110,7 +110,7 @@ end subroutine ctransvar
 subroutine define_lim(ng,nxg,nyg,rlat1,dlat,rlon1,dlon,lati,latf,loni,lonf,nxa,nxb,nya,nyb &
                      ,proj,nx,ny,rlat,rlon)
 
-   use rpost_dims
+!   use rpost_dims
    use misc_coms, only : glong, glatg
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!

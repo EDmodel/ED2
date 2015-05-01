@@ -60,6 +60,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real   , dimension(:)    , allocatable  :: avail_h2o_coh
    real                                    :: leaf_par
    real                                    :: leaf_resp
+   real                                    :: d_A_light_max
+   real                                    :: d_A_rubp_max
+   real                                    :: d_A_co2_max
    real                                    :: d_gsw_open
    real                                    :: d_gsw_closed
    real                                    :: d_lsfc_shv_open
@@ -323,6 +326,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , cpatch%leaf_gbw(tuco)       & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , csite%A_o_max(ipft,ipa)     & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , csite%A_c_max(ipft,ipa)     & ! Photosynthesis rate     (closed) [µmol/m²/s]
+             , d_A_light_max               & ! Photosynthesis rate     (light)  [µmol/m²/s]
+             , d_A_rubp_max                & ! Photosynthesis rate     (RuBP)   [µmol/m²/s]
+             , d_A_co2_max                 & ! Photosynthesis rate     (CO2)    [µmol/m²/s]
              , d_gsw_open                  & ! Stom. condct. of water  (open)   [  kg/m²/s]
              , d_gsw_closed                & ! Stom. condct. of water  (closed) [  kg/m²/s]
              , d_lsfc_shv_open             & ! Leaf sfc. sp. humidity  (open)   [    kg/kg]
@@ -403,6 +409,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
              , cpatch%leaf_gbw(ico)        & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , cpatch%A_open(ico)          & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , cpatch%A_closed(ico)        & ! Photosynthesis rate     (closed) [µmol/m²/s]
+             , cpatch%A_light(ico)         & ! Photosynthesis rate     (light)  [µmol/m²/s]
+             , cpatch%A_rubp(ico)          & ! Photosynthesis rate     (RuBP)   [µmol/m²/s]
+             , cpatch%A_co2(ico)           & ! Photosynthesis rate     (CO2)    [µmol/m²/s]
              , cpatch%gsw_open(ico)        & ! Stom. condct. of water  (open)   [  kg/m²/s]
              , cpatch%gsw_closed(ico)      & ! Stom. condct. of water  (closed) [  kg/m²/s]
              , cpatch%lsfc_shv_open(ico)   & ! Leaf sfc. sp. humidity  (open)   [    kg/kg] 
@@ -534,7 +543,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                                            + cpatch%lai(ico) * cpatch%A_open(ico)          &
                                            + cpatch%leaf_respiration(ico)
             cpatch%today_gpp_mlmax(ico)    = cpatch%today_gpp_mlmax(ico)                   &
-                                           + cpatch%lai(ico) * csite%A_o_max(ipft,ipa) &
+                                           + cpatch%lai(ico) * csite%A_o_max(ipft,ipa)     &
                                            + cpatch%leaf_respiration(ico)
             !------------------------------------------------------------------------------!
 
@@ -658,8 +667,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    real                                    :: util_parv
    real                                    :: alpha
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: hfmt='(60(a,1x))'
-   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),54(es13.6,1x))'
+   character(len=10), parameter :: hfmt='(63(a,1x))'
+   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),57(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical                   , save        :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -757,6 +766,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
                                , '          GPP', '    LEAF_RESP', '     LEAF_GBH'         &
                                , '     LEAF_GBW', '     WOOD_GBH', '     WOOD_GBW'         &
                                , '     LEAF_GSW', '       A_OPEN', '       A_CLOS'         &
+                               , '      A_LIGHT', '       A_RUBP', '        A_CO2'         &
                                , '     GSW_OPEN', '     GSW_CLOS', '     PSI_OPEN'         &
                                , '     PSI_CLOS', '   H2O_SUPPLY', '          FSW'         &
                                , '          FSN', '      FS_OPEN', '     ATM_WIND'         &
@@ -790,6 +800,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    , cpatch%gpp(ico)            , leaf_resp                  , cpatch%leaf_gbh(ico)        &
    , cpatch%leaf_gbw(ico)       , cpatch%wood_gbh(ico)       , cpatch%wood_gbw(ico)        &
    , cpatch%leaf_gsw(ico)       , cpatch%A_open(ico)         , cpatch%A_closed(ico)        &
+   , cpatch%A_light(ico)        , cpatch%A_rubp(ico)         , cpatch%A_co2   (ico)        &
    , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)     , cpatch%psi_open(ico)        &
    , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)   , cpatch%fsw(ico)             &
    , cpatch%fsn(ico)            , cpatch%fs_open(ico)        , cmet%vels                   &

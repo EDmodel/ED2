@@ -5,7 +5,7 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,nsteps)
+subroutine odeint(h1,csite,ipa,isi,nsteps)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
@@ -40,6 +40,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
    integer                   , intent(in)  :: ipa              ! Current patch ID
+   integer                   , intent(in)  :: isi              ! Current site ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
@@ -97,7 +98,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs(x,h,hdid,hnext,csite,ipa)
+      call rkqs(x,h,hdid,hnext,csite,ipa,isi)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
@@ -276,13 +277,6 @@ subroutine copy_met_2_rk4site(mzg,                                            &
    real                     , intent(in) :: lon
    real                     , intent(in) :: lat
    real                     , intent(in) :: cosz
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                               :: ipft
-   real(kind=8)                          :: can_theta8
-   real(kind=8)                          :: can_shv8
-   real(kind=8)                          :: can_depth8
-   real(kind=8)                          :: can_prss8
-   real(kind=8)                          :: can_exner8
    !---------------------------------------------------------------------------------------!
 
    
@@ -978,7 +972,6 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    real(kind=8)                     :: err              ! Scratch error variable
    real(kind=8)                     :: errh2oMAX        ! Scratch error variable
    real(kind=8)                     :: erreneMAX        ! Scratch error variable
-   real(kind=8)                     :: scal_err_prss    ! Scaling factor for CAS pressure
    integer                          :: k                ! Counter
    !---------------------------------------------------------------------------------------!
 
@@ -1823,35 +1816,61 @@ end subroutine initialize_rk4patches
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine initialize_misc_stepvars
 
-   use ed_misc_coms  , only : integration_scheme
-   use rk4_coms, only :   tbeg               &
-                        , tend               &
-                        , dtrk4              &
-                        , dtrk4i             &
-                        , detail_pref
-   use ed_misc_coms   , only : dtlsm
-   use ed_max_dims    , only : str_len       ! ! intent(in)
-   use soil_coms      , only : runoff_time_i & 
-                             , runoff_time   &
-                             , simplerunoff
-   use hydrology_coms , only : useRUNOFF              ! ! intent(in)
-   use ed_state_vars,   only : edgrid_g
-   use grid_coms,       only : ngrids
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine initialize the multiple time step-related variables.               !
+!                                                                                          !
+!  MLO.  RGK, I changed a couple of things in this sub-routine.  I didn't see any reason   !
+!        to define the runoff and time variables inside the select case (all schemes can   !
+!        access variables from rk4_coms).  Also, I moved the detailed output outside the   !
+!        case selection, but check whether it should print detailed output.  You are right !
+!        about it not working for multiple polygons, and ed_opspec.F90 already checks      !
+!        this.  It would overwrite in case of multiple sites per run, but I fixed this.    !
+!------------------------------------------------------------------------------------------!
+subroutine initialize_misc_stepvars()
+   use ed_misc_coms  , only  : integration_scheme  ! ! intent(in)
+   use rk4_coms      , only  : tbeg                & ! intent(inout)
+                             , tend                & ! intent(inout)
+                             , dtrk4               & ! intent(inout)
+                             , dtrk4i              & ! intent(inout)
+                             , print_detailed      & ! intent(in)
+                             , detail_pref         & ! intent(in)
+                             , print_thbnd         & ! intent(in)
+                             , thbnds_fout         ! ! intent(in)
+   use ed_misc_coms   , only : dtlsm               ! ! intent(in)
+   use ed_max_dims    , only : str_len             ! ! intent(in)
+   use soil_coms      , only : runoff_time         & ! intent(in)
+                             , runoff_time_i       & ! intent(out)
+                             , simplerunoff        ! ! intent(out)
+   use hydrology_coms , only : useRUNOFF           ! ! intent(in)
+   use ed_state_vars,   only : edgrid_g            ! ! structure
+   use grid_coms,       only : ngrids              ! ! intent(in)
 
    implicit none
-   integer :: igr,ipy,isi,ipa,ico
-   character(len=str_len)             :: detail_fout
-   logical                            :: isthere
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                :: igr
+   integer                :: ipy
+   integer                :: isi
+   integer                :: ipa
+   integer                :: ico
+   character(len=str_len) :: detail_fout
+   logical                :: isthere
+   !---------------------------------------------------------------------------------------!
 
-   select case(integration_scheme) 
-   case(1)
-      !-----------------------------------------------------------------------------------!
-      !     First time here.  Delete integration info files    
-      !     Since these are developer testing files, devs should know these only 
-      !     work with SINGLE SITE RUNS !!!                                                   !
-      !-----------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether printing detailed output.  Despite the loop, this type of output    !
+   ! works for single polygon runs.                                                        !
+   !---------------------------------------------------------------------------------------!
+   if (print_detailed) then
       do igr=1,ngrids
          do ipy=1,edgrid_g(igr)%npolygons
             do isi=1,edgrid_g(igr)%polygon(ipy)%nsites
@@ -1859,8 +1878,8 @@ subroutine initialize_misc_stepvars
                   !------------------------------------------------------------------------!
                   ! Patch level files.                                                     !
                   !------------------------------------------------------------------------!
-                  write (detail_fout,fmt='(2a,i4.4,a)') &
-                        trim(detail_pref),'prk4_patch_',ipa,'.txt'
+                  write (detail_fout,fmt='(2a,2(i4.4,a))')                                 &
+                        trim(detail_pref),'prk4_site_',isi,'_patch_',ipa,'.txt'
                   
                   inquire(file=trim(detail_fout),exist=isthere)
                   if (isthere) then
@@ -1873,8 +1892,9 @@ subroutine initialize_misc_stepvars
                   ! Cohort level files.                                                    !
                   !------------------------------------------------------------------------!
                   do ico = 1,edgrid_g(igr)%polygon(ipy)%site(isi)%patch(ipa)%ncohorts
-                     write (detail_fout,fmt='(2a,i4.4,a,i4.4,a)')     &
-                           trim(detail_pref),'crk4_patch_',ipa,'_',ico,'.txt'
+                     write (detail_fout,fmt='(2a,3(i4.4,a))')                              &
+                        trim(detail_pref),'crk4_site_',isi,'_patch_',ipa,'_cohort_',ico    &
+                                         ,'.txt'
                      inquire(file=trim(detail_fout),exist=isthere)
                      if (isthere) then
                         !---- Open the file to delete when closing. -----------------------!
@@ -1884,38 +1904,59 @@ subroutine initialize_misc_stepvars
                   end do
                   !------------------------------------------------------------------------!
                end do
+               !---------------------------------------------------------------------------!
             end do
+            !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
       end do
-
-      !---------------------------------------------------------------------------------------!
-      !     Check whether we will use runoff or not, and saving this check to save time.      !
-      !---------------------------------------------------------------------------------------!
-
-      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
-      if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
-      else 
-         runoff_time_i = 0.d0
-      end if
-
-   case(3)
-      tbeg   = 0.d0
-      tend   = dble(dtlsm)
-      dtrk4  = tend - tbeg
-      dtrk4i = 1.d0/dtrk4
-      
-      simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
-      
-      if (runoff_time /= 0.) then
-         runoff_time_i = 1.d0/dble(runoff_time)
-      else 
-         runoff_time_i = 0.d0
-      end if
-
-      
-   end select
-      
+      !------------------------------------------------------------------------------------!
+   end if
+   !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Write header for thermodynamic boundaries in case this output is active.          !
+   !---------------------------------------------------------------------------------------!
+   if (print_thbnd) then
+      open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
+      write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
+                                      ,'        HOUR','        MINU','        SECO'  &
+                                      ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
+                                      ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
+                                      ,'    MIN_PRSS','    MAX_PRSS','MIN_ENTHALPY'  &
+                                      ,'MAX_ENTHALPY'
+      close(unit=39,status='keep')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether we will use runoff or not, and saving this check to save time.      !
+   !---------------------------------------------------------------------------------------!
+   simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
+   if (runoff_time /= 0.) then
+      runoff_time_i = 1.d0/dble(runoff_time)
+   else 
+      runoff_time_i = 0.d0
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Set time-step related variables, which shall remain constant throughout the entire !
+   ! simulation.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   tbeg   = 0.d0
+   tend   = dble(dtlsm)
+   dtrk4  = tend - tbeg
+   dtrk4i = 1.d0/dtrk4
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine initialize_misc_stepvars
+!==========================================================================================!
+!==========================================================================================!

@@ -21,6 +21,7 @@ subroutine NAMEOUT
           closure_type,  & ! INTENT(IN)
           maxclouds,     & ! INTENT(IN)
           iupmethod,     & ! INTENT(IN)
+          ilourec,       & ! INTENT(IN)
           depth_min,     & ! INTENT(IN)
           cap_maxs,      & ! INTENT(IN)
           cld2prec,      & ! INTENT(IN)
@@ -28,7 +29,6 @@ subroutine NAMEOUT
           maxens_dyn,    & ! INTENT(IN)
           maxens_eff,    & ! INTENT(IN)
           maxens_cap,    & ! INTENT(IN)
-          iupmethod,     & ! INTENT(IN)
           radius,        & ! INTENT(IN)
           zkbmax,        & ! INTENT(IN)
           max_heat,      & ! INTENT(IN)
@@ -80,7 +80,7 @@ subroutine NAMEOUT
        ,NINEST(NG),NG=1,NGRIDS)
 
   write(*,fmt='(a,10(1x,i5))')   'NNQPARM      = ',nnqparm
-  write(*,fmt='(a,1x,i5)')       'NCLOUDS      = ',iupmethod
+  write(*,fmt='(a,1x,i5)')       'NCLOUDS      = ',nclouds
   write(*,fmt='(a,10(1x,i5))')   'NDEEPEST     = ',ndeepest
   write(*,fmt='(a,10(1x,i5))')   'NSHALLOWEST  = ',nshallowest
   write(*,fmt='(a,1x,f8.5)')     'WCLDBS       = ',wcldbs
@@ -91,6 +91,7 @@ subroutine NAMEOUT
   write(*,fmt='(a,1x,i5)')       'MAXENS_EFF   = ',maxens_eff
   write(*,fmt='(a,1x,i5)')       'MAXENS_CAP   = ',maxens_cap
   write(*,fmt='(a,1x,i5)')       'IUPMETHOD    = ',iupmethod
+  write(*,fmt='(a,1x,i5)')       'ILOUREC      = ',ilourec
   write(*,fmt='(a,10(1x,f8.2))') 'RADIUS       = ',radius
   write(*,fmt='(a,10(1x,f8.2))') 'DEPTH_MIN    = ',depth_min
   write(*,fmt='(a,1x,f8.2)')     'CAP_MAXS     = ',cap_maxs
@@ -195,7 +196,7 @@ subroutine NAMEOUT
   write(6,406)DZRAT,DZMAX,SSPCT
   write(6,407)CPHAS,DISTIM,RADFRQ
   write(6,409)WCLDBS
-  write(6,410)DTLEAF,RIBMAX,LEAF_MAXWHC
+  write(6,410)DTLEAF,NDTVEG,RIBMAX,LEAF_MAXWHC
 
   write(6,411)PCTLCON,ZROUGH,ALBEDO
   write(6,412)SEATMP,DTHCON,DRTCON
@@ -218,8 +219,8 @@ subroutine NAMEOUT
 407 format('    CPHAS=',E12.5,'         DISTIM=',E12.5  &
        ,'         RADFRQ=',E12.5)
 409 format('   WCLDBS=',E12.5)
-410 format('   DTLEAF=',E12.5,'         RIBMAX=',E12.5  &
-       ,'    LEAF_MAXWHC=',E12.5)
+410 format('   DTLEAF=',E12.5,'         NDTVEG=',I12    &
+          ,'   RIBMAX=',E12.5,'    LEAF_MAXWHC=',E12.5)
 
 
 411 format('  PCTLCON=',E12.5,'         ZROUGH=',E12.5  &

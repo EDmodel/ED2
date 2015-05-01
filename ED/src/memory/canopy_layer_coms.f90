@@ -58,13 +58,6 @@ module canopy_layer_coms
    
    type canstrtype
       
-      !------------------------------------------------------------------------------------!
-      !      Fraction of open canopy, used by both roughness and radiation.                !
-      !------------------------------------------------------------------------------------!
-!!      real(kind=4), dimension(:)   , allocatable :: opencan     ! NOT USED RGK
-!!      real(kind=8), dimension(:)   , allocatable :: opencan8    ! NOT USED RGK
-      !------------------------------------------------------------------------------------!
-      
       
       !----- Variables used by the roughness scheme. --------------------------------------!
       real(kind=4), dimension(:), allocatable :: lad          ! Leaf area density

@@ -22,16 +22,17 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
                        , min_patch_area     & ! intent(inout)
                        , sfclyr_init_params ! ! subroutine
   use rconstants, only : vonk               ! ! intent(inout)
+!  implicit none
   CHARACTER*(*) IO,CFILE
 
   !  This routine reads or writes the history and analysis file common blocks.
 
-  integer cio_i,cio_f,cio_f8,cio_c,cio_i_sca,cio_f_sca,cio_f8_sca,cio_c_sca
-  character cng*2
-  integer x,y,z,ng
+  integer , external :: cio_i,cio_f,cio_f8,cio_c,cio_i_sca,cio_f_sca,cio_f8_sca,cio_c_sca
+  character(len=2)   ::  cng
+  integer            :: x,y,z,ng
 
-  IF(IO.EQ.'READ') irw=1
-  IF(IO.EQ.'WRITE') irw=2
+  IF(trim(IO) == 'READ' )  irw=1
+  IF(trim(IO) == 'WRITE')  irw=2
   !      print*,'in commio',cfile,' ',io,' ',iun
 
 
@@ -40,10 +41,10 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   ie=cio_i(iun,irw,'nnxp',nnxp,ngrids)
   ie=cio_i(iun,irw,'nnyp',nnyp,ngrids)
   ie=cio_i(iun,irw,'nnzp',nnzp,ngrids)
-  myn1max  = maxval(nnxp(1:ngrids))
-  myn2max  = maxval(nnyp(1:ngrids))
-  myn3max  = maxval(nnzp(1:ngrids))
-  call alloc_somevars(myngrids,myn1max,myn2max,myn3max)
+  myn1  = maxval(nnxp(1:ngrids))
+  myn2  = maxval(nnyp(1:ngrids))
+  myn3  = maxval(nnzp(1:ngrids))
+  call alloc_somevars(myngrids,myn1,myn2,myn3)
   do ng=1,ngrids
      mynnxp(ng) = nnxp(ng)
      mynnyp(ng) = nnyp(ng)
@@ -62,6 +63,11 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   ie=cio_f_sca(iun,irw,'polelon',polelon,1)
   ie=cio_f_sca(iun,irw,'dzrat',dzrat,1)
   ie=cio_f_sca(iun,irw,'dzmax',dzmax,1)
+  mynzg     = nzg
+  mynzs     = nzs
+  mynclouds = nclouds
+  mypolelat = polelat
+  mypolelon = polelon
 
   ie=cio_i(iun,irw,'nnqparm',nnqparm,ngrids)
   ie=cio_i(iun,irw,'nndtrat',nndtrat,ngrids)
@@ -179,6 +185,9 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   bulk_on   = level >= 3
   myistar   = istar
   co2_on    = ico2   > 0
+  do z=1,myn3
+     myco2con(z) = co2con(z)
+  end do
 !  ie=cio_i_sca(iun,irw,'inucprg',inucprg,1)
   ie=cio_i_sca(iun,irw,'irain',irain,1)
   ie=cio_i_sca(iun,irw,'ipris',ipris,1)

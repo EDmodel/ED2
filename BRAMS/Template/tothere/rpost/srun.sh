@@ -1,5 +1,5 @@
 #!/bin/bash
-. ${HOME} i13
+. ${HOME}/.bashrc
 
 #------------------------------------- CUSTOMISE HERE -------------------------------------#
 here='myoutpath/rpost'                                     # Path to start the run

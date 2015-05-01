@@ -51,7 +51,9 @@ module grell_coms
   !----------------------------------------------------------------------------------------!
   !----- Method to choose updraft originating level (1. Max. Moist static energy; 2. PBL) -!
   integer                                  :: iupmethod
-  
+  !------ Allow recursive search for level of origin of updrafts? (0 -- no, 1 -- yes). ----!
+  integer                                  :: ilourec 
+
   !----- Minimum depth for the cloud to be considered [m] ---------------------------------!
   real              , dimension(maxclouds) :: depth_min
   

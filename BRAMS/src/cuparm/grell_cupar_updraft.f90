@@ -122,6 +122,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
                         , lcl_il     & ! subroutine
                         , thil2tqall ! ! subroutine
    use mem_cuparm, only : wcldbs     ! ! intent(in)
+   use grell_coms, only : ilourec    ! ! intent(in)
    implicit none
 
    !----- Input variables -----------------------------------------------------------------!
@@ -186,7 +187,10 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    ! in which updrafts originate.                                                          !
    !---------------------------------------------------------------------------------------!
    pushup = .false.
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !    Initialise draft-related variables. Some levels will be overwritten later on.      !
    !---------------------------------------------------------------------------------------!
@@ -201,7 +205,11 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    co2u_cld   = co2_cup
    rhou_cld   = rho_cup
    dbyu       = 0.  
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !    Set the lifting condensation level based on this klou.  The lifting condensation   !
    ! level may not be a grid level, most likely it will be in between two levels.  There-  !
@@ -220,7 +228,10 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       if (klcl == mkx .or. plcl >= p_cup(klcl)) exit klclloop
       klcl = klcl + 1
    end do klclloop
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !     Although the level of free convection is usually beneath the lifting condensation !
    ! level, that may not always be the case.  If the level of origin of updrafts is within !
@@ -228,7 +239,10 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    ! particularly true in shallow convection and oceanic clouds (kind of stratocumulus...) ! 
    !---------------------------------------------------------------------------------------!
    klfc  = klou
-   
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !   First step: finding the level in which the air lifted from the level that updrafts  !
    ! originate would become buoyant.                                                       !
@@ -280,16 +294,19 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       wbuoymin=sqrt(max(0., wbuoymin*wbuoymin - (dbyu(k+1)+dbyu(k))*dzd_cld(k)))
    end do
    !---------------------------------------------------------------------------------------!
-   !    Now I use either cap_max or wnorm_max to decide whether convection can happen with !
-   ! the klou/klfc combination we got at this point.                                       !
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Now either cap_max or wnorm_max will be used to decide whether convection can      !
+   ! happen with the klou/klfc combination we got at this point.                           !
    !---------------------------------------------------------------------------------------!
    if (cap_max > 0.) then
       !------------------------------------------------------------------------------------!
-      !    So the LFC is kind of far from the level in which updrafts originate. If there  !
-      ! is an inversion capping entirely within the layer, then I may not develop any      !
-      ! convection, so I try an alternative approach. If the "gap" between klou and klfc   !
-      ! is larger than the maximum depth of the inversion capping, I will try to push klou !
-      ! upwards. If klfc is just the next level, take it.                                  !
+      !    So the LFC is kind of far from the level in which updrafts originate.  If there !
+      ! is an inversion capping entirely within the layer, then it may not develop any     !
+      ! convection, so try an alternative approach.  If the "gap" between klou and klfc is !
+      ! larger than the maximum depth of the inversion capping, we may look for a better   !
+      ! klou upwards. If klfc is just the next level, take it.                             !
       !------------------------------------------------------------------------------------!
       pcdiff = p_cup(klou) - p_cup(klfc) !----- Pressure decreases with height... ---------!
       pushup = (pcdiff > cap_max) .and. (klfc-klou > 1)
@@ -300,18 +317,40 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       ! combination.                                                                       !
       !------------------------------------------------------------------------------------!
       pushup = wbuoymin > wwind(klou) + wnorm_max*sigw(klou)
+      !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !    If pushup is TRUE, then this level is not good.  If the user wants recursive       !
+   ! tests, then we call this subroutine again, otherwise, exit with an error message.     !
+   !---------------------------------------------------------------------------------------!
    if (pushup) then
-      klou = klou + 1
-      call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwind,sigw,z_cup         &
-                               ,exner_cup,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup &
-                               ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld         &
-                               ,mentru_rate,theivu_cld,thilu_cld,tu_cld,qtotu_cld          &
-                               ,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld  &
-                               ,dbyu,klou,ierr,klcl,klfc,wbuoymin)
-
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to try again at the level immediately above, or forbid          !
+      ! convection to happen.                                                              !
+      !------------------------------------------------------------------------------------!
+      select case (ilourec)
+      case (0)
+         !----- The user doesn't want recursive, issue an error and exit. -----------------!
+         ierr = 3
+         return
+         !---------------------------------------------------------------------------------!
+      case (1)
+         !----- Call it again. ------------------------------------------------------------!
+         klou = klou + 1
+         call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwind,sigw,z_cup      &
+                                  ,exner_cup,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup       &
+                                  ,qvap_cup,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup     &
+                                  ,dzd_cld,mentru_rate,theivu_cld,thilu_cld,tu_cld         &
+                                  ,qtotu_cld,qvapu_cld,qliqu_cld,qiceu_cld,qsatu_cld       &
+                                  ,co2u_cld,rhou_cld,dbyu,klou,ierr,klcl,klfc,wbuoymin)
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
    end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine grell_find_cloud_lfc

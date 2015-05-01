@@ -6,7 +6,7 @@
 # colour given by z...   This will generate as many plots as the number of lists in x, y,  #
 # and z, and add a legend (if legend is not NULL), and a colour palette.                   #
 #------------------------------------------------------------------------------------------#
-xyz.plot = function( x
+xyz.plot <<- function( x
                    , y
                    , z
                    , fixed.xlim     = FALSE

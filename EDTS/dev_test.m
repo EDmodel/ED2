@@ -23,7 +23,7 @@ use_ata = true;       % SOI Atacama
 use_s67 = true;       % SOI Santarem km 67
 use_har = true;       % SOI Harvard Forest
 use_pdg = true;       % SOI Pe de Gigante
-use_cax = true;       % SOI Caxuana
+use_cax = true;       % SOI Caxiuana
 use_ton = true;       % SOI Tonzi (temperate)
 use_tnf = true;       % SOI Tapajos National Forest
 use_pet = true;       % SOI Petrolina
@@ -40,7 +40,7 @@ site_name  = {'Manaus km 34', ...
               'Santarem km 67',...
               'Harvard Forest',...
               'Pe de Gigante',...
-              'Caxuana',...
+              'Caxiuana',...
               'Tonzi',...
               'Tapajos National Forest',...
               'Petrolina'};
@@ -307,7 +307,7 @@ if nsite>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 spass(is,1) = 1;
             end
         end
@@ -321,7 +321,7 @@ if nsite>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 spass(is,2) = 1;
             end
         end
@@ -336,7 +336,7 @@ if nsite>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 spass(is,3) = 1;
             end
         end
@@ -361,7 +361,7 @@ if ngrid>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 gpass(ig,1)=1;
             end
         end
@@ -375,7 +375,7 @@ if ngrid>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 gpass(ig,2)=1;
             end
         end
@@ -389,7 +389,7 @@ if ngrid>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 gpass(ig,3)=1;
             end
         end
@@ -412,7 +412,7 @@ if nhifr>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 hpass(ih,1) = 1;
             end
         end
@@ -426,7 +426,7 @@ if nhifr>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 hpass(ih,2) = 1;
             end
         end
@@ -440,7 +440,7 @@ if nhifr>0
         while 1
             tline = fgetl(fid);
             if ~ischar(tline), break, end
-            if(strfind(tline,'ED execution ends'))
+            if(strfind(tline,'ED-2.2 execution ends'))
                 hpass(ih,3) = 1;
             end
         end

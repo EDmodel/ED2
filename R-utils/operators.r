@@ -28,6 +28,7 @@
 #------------------------------------------------------------------------------------------#
 
 
-#----- wr is short for "within range". ----------------------------------------------------#
+#----- wr is short for "within range", ir is short for inside range (excluding edges). ----#
 '%wr%' <<- function(x,y) is.finite(x) & x %>=% min(y,na.rm=TRUE) & x %<=% max(y,na.rm=TRUE)
+'%ir%' <<- function(x,y) is.finite(x) & x %>%  min(y,na.rm=TRUE) & x %<%  max(y,na.rm=TRUE)
 #------------------------------------------------------------------------------------------#

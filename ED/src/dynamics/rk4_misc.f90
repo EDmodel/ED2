@@ -31,6 +31,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
                                     , reset_rk4_fluxes       ! ! sub-routine
    use ed_max_dims           , only : n_pft                  ! ! intent(in)
    use therm_lib8            , only : uextcm2tl8             & ! subroutine
+                                    , cmtl2uext8             & ! function
                                     , thetaeiv8              & ! function
                                     , idealdenssh8           & ! function
                                     , rehuil8                & ! function
@@ -50,7 +51,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
    type(rk4patchtype)    , target     :: targetp
    type(sitetype)        , target     :: sourcesite
    integer               , intent(in) :: ipa
-   real                               :: vels
+   real                  , intent(in) :: vels
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    real(kind=8)                       :: rsat
@@ -312,7 +313,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
          targetp%leaf_temp  (ico) = dble(cpatch%leaf_temp  (ico))
          targetp%leaf_water (ico) = dble(cpatch%leaf_water (ico))
          targetp%leaf_hcap  (ico) = dble(cpatch%leaf_hcap  (ico))
-         targetp%leaf_energy(ico) = targetp%leaf_hcap(ico) * targetp%leaf_temp(ico)
+         targetp%leaf_energy(ico) = cmtl2uext8( targetp%leaf_hcap (ico)                    &
+                                              , targetp%leaf_water(ico)                    &
+                                              , targetp%leaf_temp (ico)                    &
+                                              , targetp%leaf_fliq (ico) )
       end if
       !------------------------------------------------------------------------------------!
 
@@ -336,7 +340,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
          targetp%wood_temp  (ico) = dble(cpatch%wood_temp  (ico))
          targetp%wood_water (ico) = dble(cpatch%wood_water (ico))
          targetp%wood_hcap  (ico) = dble(cpatch%wood_hcap  (ico))
-         targetp%wood_energy(ico) = targetp%wood_hcap(ico) * targetp%wood_temp(ico)
+         targetp%wood_energy(ico) = cmtl2uext8( targetp%wood_hcap (ico)                    &
+                                              , targetp%wood_water(ico)                    &
+                                              , targetp%wood_temp (ico)                    &
+                                              , targetp%wood_fliq (ico) )
       end if
       !------------------------------------------------------------------------------------!
 
@@ -3495,15 +3502,16 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Leaf information (only the resolvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),10(a12,1x))')                                              &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
-                            ,'       BLEAF',' LEAF_ENERGY','   LEAF_TEMP','  LEAF_WATER'
+                            ,'       BLEAF',' LEAF_ENERGY','  LEAF_WATER','   LEAF_HCAP'   &
+                            ,'   LEAF_TEMP','   LEAF_FLIQ'
    do ico = 1,cpatch%ncohorts
       if (cpatch%leaf_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),10(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
-              ,cpatch%bleaf(ico),cpatch%leaf_energy(ico),cpatch%leaf_temp(ico)             &
-              ,cpatch%leaf_water(ico)
+              ,cpatch%bleaf(ico),cpatch%leaf_energy(ico),cpatch%leaf_water(ico)            &
+              ,cpatch%leaf_hcap(ico),cpatch%leaf_temp(ico),cpatch%leaf_fliq(ico)
       end if
    end do
    write (unit=*,fmt='(2(a7,1x),6(a12,1x))')                                               &
@@ -3711,16 +3719,13 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Longitude                  : ',rk4site%lon
    write (unit=*,fmt='(a,1x,es12.4)') ' Latitude                   : ',rk4site%lat
    write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature (Ref. hgt.): ',rk4site%atm_tmp
-!!   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature (Can. hgt.): ',rk4site%atm_tmp_zcan
    write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp.        : ',rk4site%atm_theta
    write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv              : ',rk4site%atm_theiv
-!!   write (unit=*,fmt='(a,1x,es12.4)') ' Air sp. enthalpy (can.hgt.): ',initp%atm_enthalpy
    write (unit=*,fmt='(a,1x,es12.4)') ' Air vapour pres. deficit   : ',rk4site%atm_vpdef
    write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio          : ',rk4site%atm_shv
    write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio          : ',rk4site%atm_co2
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure                   : ',rk4site%atm_prss
    write (unit=*,fmt='(a,1x,es12.4)') ' Exner function             : ',rk4site%atm_exner
-!!   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed                 : ',initp%vels
    write (unit=*,fmt='(a,1x,es12.4)') ' Prescribed u*              : ',rk4site%atm_ustar
    write (unit=*,fmt='(a,1x,es12.4)') ' Height                     : ',rk4site%geoht
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux         : ',rk4site%pcpg
@@ -3949,7 +3954,7 @@ end subroutine print_rk4patch
 ! purposes.  This will create one file for each patch.  This sub-routine will not print    !
 ! the temperature of each cohort, instead it will just compute the average.                !
 !------------------------------------------------------------------------------------------!
-subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
+subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
    use consts_coms  , only : t3ple8        ! ! intent(in)
    use ed_max_dims  , only : str_len       ! ! intent(in)
    use ed_misc_coms , only : current_time  ! ! intent(in)
@@ -3970,6 +3975,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    type(rk4patchtype)    , target     :: fluxp
    type(sitetype)        , target     :: csite
    integer               , intent(in) :: ipa
+   integer               , intent(in) :: isi
    real(kind=8)          , intent(in) :: elapsed
    real(kind=8)          , intent(in) :: hdid
    !----- Local variables -----------------------------------------------------------------!
@@ -4014,47 +4020,15 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),76(es13.6,1x))'
    character(len=10), parameter :: chfmt='(57(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
-   !----- Locally saved variables. --------------------------------------------------------!
-!   logical          , save      :: first_time=.true.
    !---------------------------------------------------------------------------------------!
 
 
-   ! DOES THIS MAKE ANY SENSE?  IPA WILL BE DIFFERENT FOR EACH POLYGON, MOVING THIS TO
-   ! GET RID OF THAT SAVE STATEMENT (RGK), (SEE INITIALIZE_MISC_STEPVARS)
+
    !---------------------------------------------------------------------------------------!
-   !     First time here.  Delete all files.                                               !
+   !    Old files are now deleted by sub-routine initialize_misc_stepvars.  This output is !
+   ! extremely large, so think twice before turning it for multiple polygons, and for      !
+   ! long-term simulations.                                                                !
    !---------------------------------------------------------------------------------------!
-!!   if (first_time) then
-!!      do jpa = 1, csite%npatches
-!!         !---------------------------------------------------------------------------------!
-!!         ! Patch level files.                                                              !
-!!         !---------------------------------------------------------------------------------!
-!!         write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'prk4_patch_',jpa,'.txt'
-!!         inquire(file=trim(detail_fout),exist=isthere)
-!!         if (isthere) then
-!!            !---- Open the file to delete when closing. -----------------------------------!
-!!            open (unit=83,file=trim(detail_fout),status='old',action='write')
-!!            close(unit=83,status='delete')
-!!         end if
-!!         !---------------------------------------------------------------------------------!
-!!         ! Cohort level files.                                                             !
-!!         !---------------------------------------------------------------------------------!
-!!         jpatch => csite%patch(jpa)
-!!         do jco = 1, jpatch%ncohorts
-!!            write (detail_fout,fmt='(a,2(a,i4.4),a)')                                      &
-!!                  trim(detail_pref),'crk4_patch_',jpa,'_cohort_',jco,'.txt'
-!!            inquire(file=trim(detail_fout),exist=isthere)
-!!            if (isthere) then
-!!               !---- Open the file to delete when closing. --------------------------------!
-!!               open (unit=84,file=trim(detail_fout),status='old',action='write')
-!!               close(unit=84,status='delete')
-!!            end if
-!!         end do
-!!         !---------------------------------------------------------------------------------!
-!!      end do
-!!      first_time = .false.
-!!   end if
-!!   !---------------------------------------------------------------------------------------!
 
 
 
@@ -4166,7 +4140,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
 
    !----- Create the file name. -----------------------------------------------------------!
-   write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'prk4_patch_',ipa,'.txt'
+   write (detail_fout,fmt='(2a,2(i4.4,a))')                                                &
+                                    trim(detail_pref),'prk4_site_',isi,'_patch_',ipa,'.txt'
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -4205,12 +4180,6 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , ' PAR.DIFF.TOP' , ' NIR.BEAM.TOP', ' NIR.DIFF.TOP'        &
                                , ' PAR.BEAM.BOT' , ' PAR.DIFF.BOT', ' NIR.BEAM.BOT'        &
                                , ' NIR.DIFF.BOT'
-                               
-                               
-                               
-                               
-                               
-                               
       close (unit=83,status='keep')
    end if
    !---------------------------------------------------------------------------------------!
@@ -4226,7 +4195,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , elapsec               , hdid                  , sum_lai               &
                    , sum_wai               , initp%nlev_sfcwater   , initp%flag_sfcwater   &
                    , initp%flag_wflxgc     , rk4site%atm_prss      , rk4site%atm_tmp       &
-                   , rk4site%atm_shv       , rk4site%atm_co2       & !,rk4site%vels          &
+                   , rk4site%atm_shv       , rk4site%atm_co2       , initp%vels            &
                    , rk4site%pcpg          , rk4site%geoht         , rk4site%atm_rhos      &
                    , rk4site%atm_rhv       , rk4site%atm_theta     , rk4site%atm_theiv     &
                    , rk4site%atm_vpdef     , rk4site%rshort        , rk4site%rlong         &
@@ -4279,8 +4248,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
       qintercepted = fluxp%cfx_qintercepted(ico)
 
       !----- Create the file name. --------------------------------------------------------!
-      write (detail_fout,fmt='(a,2(a,i4.4),a)')                                            &
-                                trim(detail_pref),'crk4_patch_',ipa,'_cohort_',ico,'.txt'
+      write (detail_fout,fmt='(2a,3(i4.4,a))')                                             &
+                     trim(detail_pref),'crk4_site_',isi,'_patch_',ipa,'_cohort_',ico,'.txt'
       !------------------------------------------------------------------------------------!
 
 
@@ -4351,5 +4320,159 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
    return
 end subroutine print_rk4_state
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine checks whether the leaf and wood properties are consistent.  Any    !
+! update on long-term dynamics must ensure that updates on internal energy and heat        !
+! capacity results in the same temperature.  This check is only needed in case of updates  !
+! in the long-term dynamics.                                                               !
+!------------------------------------------------------------------------------------------!
+subroutine sanity_check_veg_energy(csite,ipa)
+   use ed_state_vars          , only : sitetype             & ! structure
+                                     , patchtype            ! ! structure
+   use consts_coms            , only : tiny_num             ! ! intent(in)
+   use therm_lib              , only : uextcm2tl            ! ! function
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(sitetype)            , target      :: csite
+   integer                   , intent(in)  :: ipa
+   !----- Local variables. ----------------------------------------------------------------!
+   type(patchtype)           , pointer     :: cpatch
+   integer                                 :: ico
+   real                                    :: test_leaf_temp
+   real                                    :: test_leaf_fliq
+   real                                    :: test_wood_temp
+   real                                    :: test_wood_fliq
+   logical                                 :: fine_leaf_temp
+   logical                                 :: fine_leaf_fliq
+   logical                                 :: fine_wood_temp
+   logical                                 :: fine_wood_fliq
+   integer                                 :: n
+   integer                                 :: nproblem
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=13)         , parameter   :: efmt       = '(a,1x,es12.5)'
+   character(len=9)          , parameter   :: ifmt       = '(a,1x,i5)'
+   character(len=9)          , parameter   :: lfmt       = '(a,1x,l1)'
+   real                      , parameter   :: fine_toler = 0.01
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Current patch. ------------------------------------------------------------------!
+   cpatch => csite%patch(ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Check each cohort.  Print all cohorts that may have problem before crashing.     !
+   !---------------------------------------------------------------------------------------!
+   nproblem = 0
+   do ico=1,cpatch%ncohorts
+      !----- Check leaf thermodynamics. ---------------------------------------------------!
+      if (cpatch%leaf_resolvable(ico)) then
+         call uextcm2tl(cpatch%leaf_energy(ico),cpatch%leaf_water(ico)                     &
+                       ,cpatch%leaf_hcap(ico),test_leaf_temp,test_leaf_fliq)
+         fine_leaf_temp = abs(cpatch%leaf_temp(ico) - test_leaf_temp) <= fine_toler
+         fine_leaf_fliq = abs(cpatch%leaf_fliq(ico) - test_leaf_fliq) <= fine_toler .or.   &
+                          cpatch%leaf_water(ico) <= tiny_num
+      else
+         fine_leaf_temp = .true.
+         fine_leaf_fliq = .true.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Check wood thermodynamics. ---------------------------------------------------!
+      if (cpatch%wood_resolvable(ico)) then
+         call uextcm2tl(cpatch%wood_energy(ico),cpatch%wood_water(ico)                     &
+                       ,cpatch%wood_hcap(ico),test_wood_temp,test_wood_fliq)
+         fine_wood_temp = abs(cpatch%wood_temp(ico) - test_wood_temp) <= fine_toler
+         fine_wood_fliq = abs(cpatch%wood_fliq(ico) - test_wood_fliq) <= fine_toler .or.   &
+                          cpatch%wood_water(ico) <= tiny_num
+      else
+         fine_wood_temp = .true.
+         fine_wood_fliq = .true.
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print information if anything is wrong.                                        !
+      !------------------------------------------------------------------------------------!
+      if ( .not. ( fine_leaf_temp .and. fine_leaf_fliq .and.                               &
+                   fine_wood_temp .and. fine_wood_fliq ) ) then
+         nproblem = nproblem + 1
+
+
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(a)'  ) ' Energy/temperature inconsistency detected!!'
+         write (unit=*,fmt='(92a)') ('-',n=1,92)
+         write (unit=*,fmt=ifmt   ) ' + IPA              =',ipa
+         write (unit=*,fmt=ifmt   ) ' + ILU              =',csite%dist_type   (ipa)
+         write (unit=*,fmt=efmt   ) ' + AGE              =',csite%age         (ipa)
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=ifmt   ) ' + ICO              =',ico
+         write (unit=*,fmt=ifmt   ) ' + PFT              =',cpatch%pft        (ico)
+         write (unit=*,fmt=efmt   ) ' + DBH              =',cpatch%dbh        (ico)
+         write (unit=*,fmt=efmt   ) ' + HEIGHT           =',cpatch%hite       (ico)
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=lfmt   ) ' + LEAF_RESOLVABLE  =',cpatch%leaf_resolvable(ico)
+         write (unit=*,fmt=efmt   ) ' + LAI              =',cpatch%lai            (ico)
+         write (unit=*,fmt=efmt   ) ' + ELONGF           =',cpatch%elongf         (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_ENERGY      =',cpatch%leaf_energy    (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_WATER       =',cpatch%leaf_water     (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_HCAP        =',cpatch%leaf_hcap      (ico)
+         write (unit=*,fmt=lfmt   ) ' + FINE_LEAF_TEMP   =',fine_leaf_temp
+         write (unit=*,fmt=efmt   ) ' + LEAF_TEMP_MEMORY =',cpatch%leaf_temp      (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_TEMP_TEST   =',test_leaf_temp
+         write (unit=*,fmt=lfmt   ) ' + FINE_LEAF_FLIQ   =',fine_leaf_fliq
+         write (unit=*,fmt=efmt   ) ' + LEAF_FLIQ_MEMORY =',cpatch%leaf_fliq      (ico)
+         write (unit=*,fmt=efmt   ) ' + LEAF_FLIQ_TEST   =',test_leaf_fliq
+
+
+         write (unit=*,fmt='(a)'  ) ' '
+         write (unit=*,fmt=lfmt   ) ' + WOOD_RESOLVABLE  =',cpatch%wood_resolvable(ico)
+         write (unit=*,fmt=efmt   ) ' + WAI              =',cpatch%wai            (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_ENERGY      =',cpatch%wood_energy    (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_WATER       =',cpatch%wood_water     (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_HCAP        =',cpatch%wood_hcap      (ico)
+         write (unit=*,fmt=lfmt   ) ' + FINE_WOOD_TEMP   =',fine_wood_temp
+         write (unit=*,fmt=efmt   ) ' + WOOD_TEMP_MEMORY =',cpatch%wood_temp      (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_TEMP_TEST   =',test_wood_temp
+         write (unit=*,fmt=lfmt   ) ' + FINE_WOOD_FLIQ   =',fine_wood_fliq
+         write (unit=*,fmt=efmt   ) ' + WOOD_FLIQ_MEMORY =',cpatch%wood_fliq      (ico)
+         write (unit=*,fmt=efmt   ) ' + WOOD_FLIQ_TEST   =',test_wood_fliq
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(92a)') ('=',n=1,92)
+         write (unit=*,fmt='(a)') ' '
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   !----- Stop in case there is a problem. ------------------------------------------------!
+   if (nproblem > 0) then
+      call fatal_error('Long-term dynamics is not updating leaf/wood energy correctly!'    &
+                      ,'sanity_check_veg_energy','rk4_misc.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine sanity_check_veg_energy
 !==========================================================================================!
 !==========================================================================================!

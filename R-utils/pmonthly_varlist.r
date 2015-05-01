@@ -943,6 +943,58 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.light"
+                        , desc     = "Light-limited assimilation rate"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.rubp"
+                        , desc     = "RuBP-limited assimilation rate"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.co2"
+                        , desc     = "CO2-limited assimilation rate"
+                        , e.unit   = untab$umolom2los
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "assim.ratio"
+                        , desc     = "Light saturation"
+                        , e.unit   = untab$empty
+                        , i.unit   = untab$empty
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -958,43 +1010,79 @@ tslu[[n]] = list( vnam = "agb"
                 , desc = "Above ground biomass"
                 , unit = untab$kgcom2
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
 n         = n + 1
 tslu[[n]] = list( vnam = "biomass"
                 , desc = "Total biomass"
                 , unit = untab$kgcom2
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
 n         = n + 1
 tslu[[n]] = list( vnam = "lai"
                 , desc = "Leaf area index"
                 , unit = untab$m2lom2
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
 n         = n + 1
 tslu[[n]] = list( vnam = "gpp"
                 , desc = "Gross primary productivity"
                 , unit = untab$kgcom2oyr
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
 n         = n + 1
 tslu[[n]] = list( vnam = "npp"
                 , desc = "Net primary productivity"
                 , unit = untab$kgcom2oyr
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
 n         = n + 1
 tslu[[n]] = list( vnam = "area"
                 , desc = "Fraction of area"
                 , unit = untab$empty
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
 n         = n + 1
-tslu[[n]] = list( vnam = "basarea"
+tslu[[n]] = list( vnam = "ba"
                 , desc = "Basal area"
                 , unit = untab$cm2om2
                 , plog = FALSE
-                , plt  = FALSE)
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "f.agb"
+                , desc = "Mean above ground biomass"
+                , unit = untab$kgcom2
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "f.biomass"
+                , desc = "Mean total biomass"
+                , unit = untab$kgcom2
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "f.lai"
+                , desc = "Mean leaf area index"
+                , unit = untab$m2lom2
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "f.gpp"
+                , desc = "Mean gross primary productivity"
+                , unit = untab$kgcom2oyr
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "f.npp"
+                , desc = "Mean net primary productivity"
+                , unit = untab$kgcom2oyr
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "f.ba"
+                , desc = "Mean basal area"
+                , unit = untab$cm2om2
+                , plog = FALSE
+                , plt  = TRUE)
 #------------------------------------------------------------------------------------------#
 
 

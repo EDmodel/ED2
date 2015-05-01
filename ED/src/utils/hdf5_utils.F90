@@ -128,7 +128,6 @@ subroutine shdf5_open_f(locfn,access,idelete)
 
   use hdf5_coms
   implicit none
-  include 'mpif.h'
   
   character(len=*) :: locfn     ! file name
   character(len=*) :: access    ! File access ('R','W','RW')

@@ -163,11 +163,11 @@ emission_source_map.o : $(CATT)/emission_source_map.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
-	 
-error_mess.o : $(IO)/error_mess.f90
-	 cp -f $< $(<F:.f90=.f90)
-	 $(F90_COMMAND) $(<F:.f90=.f90)
-	 rm -f $(<F:.f90=.f90)
+
+error_mess.o : $(IO)/error_mess.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 extra.o : $(CATT)/extra.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -389,6 +389,26 @@ leaf3_ocean.o : $(SURFACE)/leaf3_ocean.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+leaf3_photo.o : $(SURFACE)/leaf3_photo.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+leaf3_physiol.o : $(SURFACE)/leaf3_physiol.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+leaf3_radiate.o : $(SURFACE)/leaf3_radiate.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+leaf3_respiration.o : $(SURFACE)/leaf3_respiration.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 leaf3_teb.o : $(SURFACE)/leaf3_teb.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -404,10 +424,10 @@ leaf3_utils.o : $(SURFACE)/leaf3_utils.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-local_proc.o : $(CORE)/local_proc.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+local_proc.o : $(CORE)/local_proc.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 machine_arq.o : $(CORE)/machine_arq.F90
 	cp -f $< $(<F:.F90=.F90)
@@ -739,65 +759,65 @@ mod_ozone.o : $(TEB_SPM)/mod_ozone.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-model.o : $(CORE)/model.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+model.o : $(CORE)/model.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 modsched.o : $(CORE)/modsched.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-mpass_advec.o : $(MPI)/mpass_advec.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_advec.o : $(MPI)/mpass_advec.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_cyclic.o : $(MPI)/mpass_cyclic.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_cyclic.o : $(MPI)/mpass_cyclic.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_dtl.o : $(MPI)/mpass_dtl.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_dtl.o : $(MPI)/mpass_dtl.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_feed.o : $(MPI)/mpass_feed.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_feed.o : $(MPI)/mpass_feed.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_full.o : $(MPI)/mpass_full.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_full.o : $(MPI)/mpass_full.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_init.o : $(MPI)/mpass_init.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_init.o : $(MPI)/mpass_init.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_lbc.o : $(MPI)/mpass_lbc.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_lbc.o : $(MPI)/mpass_lbc.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_nest.o : $(MPI)/mpass_nest.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_nest.o : $(MPI)/mpass_nest.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_oda.o : $(MPI)/mpass_oda.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_oda.o : $(MPI)/mpass_oda.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-mpass_st.o : $(MPI)/mpass_st.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+mpass_st.o : $(MPI)/mpass_st.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 ncarg_dummy.o: $(NCARGD)/ncarg_dummy.f90 
 	 cp -f $< $(<F:.f90=.f90)
@@ -929,10 +949,10 @@ para_init.o : $(MPI)/para_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-paral.o : $(MPI)/paral.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+paral.o : $(MPI)/paral.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 plumerise_vector.o : $(CATT)/plumerise_vector.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -999,10 +1019,10 @@ rams_grid.o : $(INIT)/rams_grid.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-rams_master.o : $(CORE)/rams_master.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+rams_master.o : $(CORE)/rams_master.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 rams_mem_alloc.o : $(MEMORY)/rams_mem_alloc.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1119,10 +1139,10 @@ rnest_par.o : $(MPI)/rnest_par.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-rnode.o : $(CORE)/rnode.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+rnode.o : $(CORE)/rnode.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 rpara.o : $(MPI)/rpara.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1299,15 +1319,15 @@ vtab_fill.o : $(MEMORY)/vtab_fill.f90
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 
-edcp_driver.o : $(ED_MIXED)/edcp_driver.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+edcp_driver.o : $(ED_MIXED)/edcp_driver.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
-edcp_init.o : $(ED_MIXED)/edcp_init.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+edcp_init.o : $(ED_MIXED)/edcp_init.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 edcp_lake_driver.o : $(ED_MIXED)/edcp_lake_driver.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1344,10 +1364,10 @@ edcp_model.o : $(ED_MIXED)/edcp_model.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-edcp_mpiutils.o : $(ED_MIXED)/edcp_mpiutils.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+edcp_mpiutils.o : $(ED_MIXED)/edcp_mpiutils.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90) 
 
 edcp_para_init.o : $(ED_MIXED)/edcp_para_init.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1380,6 +1400,11 @@ allometry.o : $(ED_UTILS)/allometry.f90
 	rm -f $(<F:.f90=.f90)
 
 average_utils.o : $(ED_IO)/average_utils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_LOWO_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+bdf2_solver.o : $(ED_DYNAMICS)/bdf2_solver.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1439,10 +1464,10 @@ ed_bigleaf_init.o : $(ED_INIT)/ed_bigleaf_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-ed_driver.o : $(ED_DRIVER)/ed_driver.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+ed_driver.o : $(ED_DRIVER)/ed_driver.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 ed_filelist.o : $(ED_UTILS)/ed_filelist.F90
 	cp -f $< $(<F:.F90=.F90)
@@ -1454,10 +1479,10 @@ ed_grid.o : $(ED_UTILS)/ed_grid.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-ed_init.o : $(ED_INIT)/ed_init.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+ed_init.o : $(ED_INIT)/ed_init.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 ed_init_atm.o : $(ED_INIT)/ed_init_atm.F90
 	cp -f $< $(<F:.F90=.F90)
@@ -1509,10 +1534,10 @@ ed_params.o : $(ED_INIT)/ed_params.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-ed_print.o : $(ED_IO)/ed_print.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+ed_print.o : $(ED_IO)/ed_print.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 ed_read_ed10_20_history.o : $(ED_IO)/ed_read_ed10_20_history.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1524,10 +1549,10 @@ ed_read_ed21_history.o : $(ED_IO)/ed_read_ed21_history.F90
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
-ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_LOWO_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 detailed_coms.o : $(ED_MEMORY)/detailed_coms.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1584,10 +1609,10 @@ farq_leuning.o : $(ED_DYNAMICS)/farq_leuning.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-fatal_error.o : $(ED_UTILS)/fatal_error.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+fatal_error.o : $(ED_UTILS)/fatal_error.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 fire.o : $(ED_DYNAMICS)/fire.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1625,6 +1650,11 @@ h5_output.o : $(ED_IO)/h5_output.F90
 	rm -f $(<F:.F90=.F90)
 
 heun_driver.o: $(ED_DYNAMICS)/heun_driver.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+hybrid_driver.o : $(ED_DYNAMICS)/hybrid_driver.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1815,16 +1845,6 @@ update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
 	rm -f $(<F:.f90=.f90)
 
 vegetation_dynamics.o : $(ED_DYNAMICS)/vegetation_dynamics.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
-hybrid_driver.o : $(ED_DYNAMICS)/hybrid_driver.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
-bdf2_solver.o : $(ED_DYNAMICS)/bdf2_solver.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

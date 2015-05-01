@@ -360,11 +360,15 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
                               ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev            &
                               ,stom_condct,ground_rsat,ground_rvap,ground_temp,ground_fliq &
                               ,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_vpdef  &
-                              ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc  &
-                              ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic       &
-                              ,veg_ndvif,snow_mass,snow_depth,rshort_gnd,rlong_gnd,cosz    &
-                              ,rlongup,albedt,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw  &
-                              ,rtgt)
+                              ,can_theta,can_rvap,can_co2,hflxac_out,wflxac_out            &
+                              ,qwflxac_out,eflxac_out,cflxac_out,hflxgc_out,wflxgc_out     &
+                              ,qwflxgc_out,hflxvc_out,wflxvc_out,qwflxvc_out,transp_out    &
+                              ,qtransp_out,intercepted_out,qintercepted_out,wshed_out      &
+                              ,qwshed_out,throughfall_out,qthroughfall_out,runoff_out      &
+                              ,qrunoff_out,drainage_out,qdrainage_out,gpp_out,plresp_out   &
+                              ,resphet_out,growresp,veg_ndvip,veg_ndvic,veg_ndvif          &
+                              ,snow_mass,snow_depth,rshort_gnd,rlong_gnd,cosz,rlongup      &
+                              ,albedt,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
 
    use mem_grid
    use mem_leaf
@@ -379,7 +383,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-  integer                         , intent(in)    :: n1
+   integer                        , intent(in)    :: n1
    integer                        , intent(in)    :: n2
    integer                        , intent(in)    :: n3
    integer                        , intent(in)    :: mzg
@@ -438,14 +442,33 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(    n2,n3,npat), intent(inout) :: can_theta
    real, dimension(    n2,n3,npat), intent(inout) :: can_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: can_co2
-   real, dimension(    n2,n3,npat), intent(inout) :: sensible_gc
-   real, dimension(    n2,n3,npat), intent(inout) :: sensible_vc
-   real, dimension(    n2,n3,npat), intent(inout) :: evap_gc
-   real, dimension(    n2,n3,npat), intent(inout) :: evap_vc
-   real, dimension(    n2,n3,npat), intent(inout) :: transp
-   real, dimension(    n2,n3,npat), intent(inout) :: gpp
-   real, dimension(    n2,n3,npat), intent(inout) :: plresp
-   real, dimension(    n2,n3,npat), intent(inout) :: resphet
+   real, dimension(    n2,n3,npat), intent(inout) :: hflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: eflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: cflxac_out
+   real, dimension(    n2,n3,npat), intent(inout) :: hflxgc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wflxgc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwflxgc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: hflxvc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wflxvc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwflxvc_out
+   real, dimension(    n2,n3,npat), intent(inout) :: transp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qtransp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: intercepted_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qintercepted_out
+   real, dimension(    n2,n3,npat), intent(inout) :: wshed_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qwshed_out
+   real, dimension(    n2,n3,npat), intent(inout) :: throughfall_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qthroughfall_out
+   real, dimension(    n2,n3,npat), intent(inout) :: runoff_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qrunoff_out
+   real, dimension(    n2,n3,npat), intent(inout) :: drainage_out
+   real, dimension(    n2,n3,npat), intent(inout) :: qdrainage_out
+   real, dimension(    n2,n3,npat), intent(inout) :: gpp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: plresp_out
+   real, dimension(    n2,n3,npat), intent(inout) :: resphet_out
+   real, dimension(    n2,n3,npat), intent(inout) :: growresp
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvic
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvif
@@ -526,14 +549,33 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !         !-----------------------------------------------------------------------------!
 
    !         !----- Fluxes.  Initially they should be all zero. ---------------------------!
-   !         sensible_gc (i,j,1) = 0.0
-   !         sensible_vc (i,j,1) = 0.0
-   !         evap_gc     (i,j,1) = 0.0
-   !         evap_vc     (i,j,1) = 0.0
+   !         hflxac      (i,j,1) = 0.0
+   !         wflxac      (i,j,1) = 0.0
+   !         qwflxac     (i,j,1) = 0.0
+   !         eflxac      (i,j,1) = 0.0
+   !         cflxac      (i,j,1) = 0.0
+   !         hflxgc      (i,j,1) = 0.0
+   !         wflxgc      (i,j,1) = 0.0
+   !         qwflxgc     (i,j,1) = 0.0
+   !         hflxvc      (i,j,1) = 0.0
+   !         wflxvc      (i,j,1) = 0.0
+   !         qwflxvc     (i,j,1) = 0.0
    !         transp      (i,j,1) = 0.0
+   !         qtransp     (i,j,1) = 0.0
+   !         intercepted (i,j,1) = 0.0
+   !         qintercepted(i,j,1) = 0.0
+   !         wshed       (i,j,1) = 0.0
+   !         qwshed      (i,j,1) = 0.0
+   !         throughfall (i,j,1) = 0.0
+   !         qthroughfall(i,j,1) = 0.0
+   !         runoff      (i,j,1) = 0.0
+   !         qrunoff     (i,j,1) = 0.0
+   !         drainage    (i,j,1) = 0.0
+   !         qdrainage   (i,j,1) = 0.0
    !         gpp         (i,j,1) = 0.0
    !         plresp      (i,j,1) = 0.0
    !         resphet     (i,j,1) = 0.0
+   !         growresp    (i,j,1) = 0.0
 
    !         !----- Above-ground biomass.  This should be always 0 for water patches. -----!
    !         veg_agb  (i,j,1) = 
@@ -577,6 +619,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !            gpp         (i,j,ipat) = 
    !            plresp      (i,j,ipat) = 
    !            resphet     (i,j,ipat) = 
+   !            growresp    (i,j,ipat) = 
 
    !            do k = 1,mzg
 
@@ -669,13 +712,35 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !            end if
 
 
-   !            call vegndvi(ifm, patch_area      (i,j,ipat) , leaf_class   (i,j,ipat)     &
-   !                            , veg_fracarea    (i,j,ipat) , veg_lai      (i,j,ipat)     &
-   !                            , veg_tai         (i,j,ipat) , veg_rough    (i,j,ipat)     &
-   !                            , veg_height      (i,j,ipat) , veg_displace (i,j,ipat)     &
-   !                            , veg_albedo      (i,j,ipat) , veg_ndvip    (i,j,ipat)     &
-   !                            , veg_ndvic       (i,j,ipat) , veg_ndvif    (i,j,ipat)     &
-   !                           , psibar_10d      (i,j,ipat) )
+   !           !---------------------------------------------------------------------------!
+   !           !     Compute some vegetation properties, such as LAI, heat capacity, and   !
+   !           ! update energy whilst preserving the temperature and liquid fraction.  We  !
+   !           ! assign a dummy heat capacity because the routine will transform the       !
+   !           ! energy back to temperature.                                               !
+   !           !----------------------------------------------------------- ---------------!
+   !           veg_temp             = can_temp
+   !           veg_hcap  (i,j,ipat) = hcapveg_ref * max(veg_height(i,j,ipat),hcapveg_hmin)
+   !           veg_energy(i,j,ipat) = veg_hcap(i,j,ipat)
+   !           veg_water (i,j,ipat) = 0.
+   !           call veg_misc_update( ifm                                                   &
+   !                               , patch_area      (i,j,ipat)                            &
+   !                               , leaf_class      (i,j,ipat)                            &
+   !                               , veg_fracarea    (i,j,ipat)                            &
+   !                               , veg_lai         (i,j,ipat)                            &
+   !                               , veg_tai         (i,j,ipat)                            &
+   !                               , veg_rough       (i,j,ipat)                            &
+   !                               , veg_height      (i,j,ipat)                            &
+   !                               , veg_displace    (i,j,ipat)                            &
+   !                               , veg_albedo      (i,j,ipat)                            &
+   !                               , veg_ndvip       (i,j,ipat)                            &
+   !                               , veg_ndvic       (i,j,ipat)                            &
+   !                               , veg_ndvif       (i,j,ipat)                            &
+   !                               , veg_agb         (i,j,ipat)                            &
+   !                               , veg_energy      (i,j,ipat)                            &
+   !                               , veg_water       (i,j,ipat)                            &
+   !                               , veg_hcap        (i,j,ipat)                            &
+   !                               , psibar_10d      (i,j,ipat)                            )
+   !           !------------------------------------------------------------------------------!
 
    !            call leaf_grndvap(soil_energy(mzg,i,j,ipat),soil_water     (mzg,i,j,ipat)  &
    !                             ,soil_text  (mzg,i,j,ipat),sfcwater_energy(mzs,i,j,ipat)  &

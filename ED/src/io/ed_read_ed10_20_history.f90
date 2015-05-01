@@ -50,6 +50,7 @@ subroutine read_ed10_ed20_history_file
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
                              , sort_patches        ! ! subroutine
+   use disturb_coms   , only : ianth_disturb       ! ! intent(in)
    implicit none
 
    !----- Local constants. ----------------------------------------------------------------!
@@ -258,7 +259,7 @@ subroutine read_ed10_ed20_history_file
                !     We must check whether we are not exceeding the maximum number of      !
                ! patches that we can read.                                                 !
                !---------------------------------------------------------------------------!
-               if (ip>huge_patch) then
+               if (ip > huge_patch) then
                   write (unit=*,fmt='(a,1x,a)')  ' In file:',trim(pss_name)
                   write (unit=*,fmt='(a)')       ' Number of patches is > HUGE_PATCH...'
                   write (unit=*,fmt='(a,1x,i7)') ' HUGE_PATCH:',huge_patch
@@ -297,7 +298,7 @@ subroutine read_ed10_ed20_history_file
                      water(nw,ip) = sngloff(dwater(nw) ,min_ok  )
                   end do
 
-               case(2,6)
+               case (2,6)
                   !----- Standard ED-2.0 file. --------------------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) time(ip),pname(ip),trk(ip),dage,darea    &
                                                  ,dwater(1),dfsc,dstsc,dstsl,dssc,dummy    &
@@ -319,7 +320,7 @@ subroutine read_ed10_ed20_history_file
                   fsn    (ip) = sngloff(dfsn     ,min_ok  )
                   water(1,ip) = sngloff(dwater(1),min_ok  )
                   
-               case(3)
+               case (3)
                   !----- ED-2.0 file, with site information. ------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip)   &
                                                  ,age(ip),darea,water(1,ip),fsc(ip)        &
@@ -354,16 +355,22 @@ subroutine read_ed10_ed20_history_file
                case default !Nearly bare ground
                   exit count_patches
                end select
-               
+               !---------------------------------------------------------------------------!
+
+
+
                !---------------------------------------------------------------------------!
                !      By adding ip only if the area is above minimum, we avoid including   !
                ! patches that are tiny since they will be overwritten by the next patch.   !
                !---------------------------------------------------------------------------!
                if (area(ip) > min_area) ip = ip + 1
+               !---------------------------------------------------------------------------!
 
             end do count_patches
-            
-            
+            !------------------------------------------------------------------------------!
+
+
+
             !------------------------------------------------------------------------------!
             !      Here we determine the number of patches.  Unless there are no patches,  !
             ! (this may happen if the file used was all water.  In that case, then we      !
@@ -373,7 +380,7 @@ subroutine read_ed10_ed20_history_file
 
             close(unit=12,status='keep')
 
-            if (npatches>0) then
+            if (npatches > 0) then
 
                !---------------------------------------------------------------------------!
                !      We have found a suitable file, we will leave the loop, after we find !
@@ -388,6 +395,7 @@ subroutine read_ed10_ed20_history_file
                file_pdist(nclosest) = 1.e20 
             end if
          end do find_nonwater
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -409,7 +417,8 @@ subroutine read_ed10_ed20_history_file
                
                !----- Allocate the patches in this site. ----------------------------------!
                call allocate_sitetype(csite,npatch2)
-               
+               !---------------------------------------------------------------------------!
+
                !---------------------------------------------------------------------------!
                !     Go through the patch list and fill the sites' patches with data.      !
                !---------------------------------------------------------------------------!
@@ -418,7 +427,54 @@ subroutine read_ed10_ed20_history_file
 
                   if (sitenum(ip) == cpoly%sitenum(isi)) then
                      ip2 = ip2 + 1
-                     csite%dist_type         (ip2) = trk (ip) + 1
+
+                     !----- Translate the land use type. ----------------------------------!
+                     select case (trk(ip))
+                     case (0)
+                        !----- Agriculture. -----------------------------------------------!
+                        csite%dist_type (ip2) = 1
+                        !------------------------------------------------------------------!
+                     case (1)
+                        !------------------------------------------------------------------!
+                        !     Secondary forest.  This was ambiguous in previous versions,  !
+                        ! so we decide which type to point this patch based on whether     !
+                        ! anthropogenic disturbance is turned on or not.  Using flags 5 or !
+                        ! 6 is unambiguous.                                                !
+                        !------------------------------------------------------------------!
+                        select case (ianth_disturb)
+                        case (0)
+                           !----- No anthropogenic, assume abandoned lands. ---------------!
+                           csite%dist_type (ip2) = 5
+                           !---------------------------------------------------------------!
+                        case (1)
+                           !----- Anthropogenic, assume logging. --------------------------!
+                           csite%dist_type (ip2) = 6
+                           !---------------------------------------------------------------!
+                        end select
+                        !------------------------------------------------------------------!
+                     case (2)
+                        !----- Primary forest. --------------------------------------------!
+                        csite%dist_type (ip2) = 3
+                        !------------------------------------------------------------------!
+                     case (3)
+                        !----- Forest plantation. -----------------------------------------!
+                        csite%dist_type (ip2) = 2
+                        !------------------------------------------------------------------!
+                     case (4)
+                        !----- Burnt patch. -----------------------------------------------!
+                        csite%dist_type (ip2) = 4
+                        !------------------------------------------------------------------!
+                     case (5)
+                        !----- Abandoned land (secondary growth). -------------------------!
+                        csite%dist_type (ip2) = 5
+                        !------------------------------------------------------------------!
+                     case (6)
+                        !----- Logged forest. ---------------------------------------------!
+                        csite%dist_type (ip2) = 6
+                        !------------------------------------------------------------------!
+                     end select
+                     !---------------------------------------------------------------------!
+
                      csite%age               (ip2) = age (ip)
                      csite%area              (ip2) = area(ip)
                      csite%fast_soil_C       (ip2) = fsc (ip)
@@ -430,7 +486,6 @@ subroutine read_ed10_ed20_history_file
                      csite%pname             (ip2) = trim(pname(ip))
                      csite%sum_dgd           (ip2) = 0.0
                      csite%sum_chd           (ip2) = 0.0
-                     csite%plantation        (ip2) = 0
                      csite%cohort_count      (ip2) = 0
                   end if
                end do
@@ -449,7 +504,54 @@ subroutine read_ed10_ed20_history_file
                call allocate_sitetype(csite,npatches)
 
                do ip=1,npatches
-                  csite%dist_type         (ip) = trk (ip) + 1
+
+                  !----- Translate the land use type. -------------------------------------!
+                  select case (trk(ip))
+                  case (0)
+                     !----- Agriculture. --------------------------------------------------!
+                     csite%dist_type (ip) = 1
+                     !---------------------------------------------------------------------!
+                  case (1)
+                     !---------------------------------------------------------------------!
+                     !     Secondary forest.  This was ambiguous in previous versions,     !
+                     ! so we decide which type to point this patch based on whether        !
+                     ! anthropogenic disturbance is turned on or not.  Using flags 5 or    !
+                     ! 6 is unambiguous.                                                   !
+                     !---------------------------------------------------------------------!
+                     select case (ianth_disturb)
+                     case (0)
+                        !----- No anthropogenic, assume abandoned lands. ------------------!
+                        csite%dist_type (ip) = 5
+                        !------------------------------------------------------------------!
+                     case (1)
+                        !----- Anthropogenic, assume logging. -----------------------------!
+                        csite%dist_type (ip) = 6
+                        !------------------------------------------------------------------!
+                     end select
+                     !---------------------------------------------------------------------!
+                  case (2)
+                     !----- Primary forest. -----------------------------------------------!
+                     csite%dist_type (ip) = 3
+                     !---------------------------------------------------------------------!
+                  case (3)
+                     !----- Forest plantation. --------------------------------------------!
+                     csite%dist_type (ip) = 2
+                     !---------------------------------------------------------------------!
+                  case (4)
+                     !----- Burnt patch. --------------------------------------------------!
+                     csite%dist_type (ip) = 4
+                     !---------------------------------------------------------------------!
+                  case (5)
+                     !----- Abandoned land (secondary growth). ----------------------------!
+                     csite%dist_type (ip) = 5
+                     !---------------------------------------------------------------------!
+                  case (6)
+                     !----- Logged forest. ------------------------------------------------!
+                     csite%dist_type (ip) = 6
+                     !---------------------------------------------------------------------!
+                  end select
+                  !------------------------------------------------------------------------!
+
                   csite%age               (ip) = age (ip)
                   csite%area              (ip) = area(ip)
                   csite%fast_soil_C       (ip) = fsc (ip)
@@ -459,18 +561,20 @@ subroutine read_ed10_ed20_history_file
                   csite%mineralized_soil_N(ip) = msn (ip)
                   csite%fast_soil_N       (ip) = fsn (ip)
                   csite%pname             (ip) = trim(pname(ip))
-                  csite%sum_dgd           (ip) = 0.0+tiny(1.)
-                  csite%sum_chd           (ip) = 0.0+tiny(1.)
-                  csite%plantation        (ip) = 0
+                  csite%sum_dgd           (ip) = 0.0
+                  csite%sum_chd           (ip) = 0.0
                   csite%cohort_count      (ip) = 0
                end do
+               !---------------------------------------------------------------------------!
 
                !---- Initialize the cohort counts per patch. ------------------------------!
                csite%cohort_count(:) = 0
                !---------------------------------------------------------------------------!
             end do
+            !------------------------------------------------------------------------------!
          end select
-         
+         !---------------------------------------------------------------------------------!
+
          close(unit=12,status='keep')
 
          !---------------------------------------------------------------------------------!

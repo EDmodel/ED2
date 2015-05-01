@@ -296,6 +296,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$plant.resp      [m] =   mymont$MMEAN.PLRESP.PY
       emean$growth.resp     [m] =   mymont$MMEAN.GROWTH.RESP.PY
       emean$storage.resp    [m] =   mymont$MMEAN.STORAGE.RESP.PY
+      emean$assim.light     [m] =   mymont$MMEAN.A.LIGHT.PY
+      emean$assim.rubp      [m] =   mymont$MMEAN.A.RUBP.PY
+      emean$assim.co2       [m] =   mymont$MMEAN.A.CO2.PY
+      emean$assim.ratio     [m] = ( mymont$MMEAN.A.LIGHT.PY
+                                  / max( 1e-6,min( mymont$MMEAN.A.RUBP.PY
+                                                 , mymont$MMEAN.A.CO2.PY  )))
       #----- (Leaf, root, stem, and soil respiration are corrected for growth+storage). ---#
       emean$reco            [m] =   mymont$MMEAN.PLRESP.PY    + mymont$MMEAN.RH.PY
       emean$ustar           [m] =   mymont$MMEAN.USTAR.PY
@@ -462,6 +468,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$npp         [m,] =   mymont$QMEAN.NPP.PY
       qmean$het.resp    [m,] =   mymont$QMEAN.RH.PY
       qmean$cwd.resp    [m,] =   mymont$QMEAN.CWD.RH.PY
+      qmean$assim.light [m,] =   mymont$QMEAN.A.LIGHT.PY
+      qmean$assim.rubp  [m,] =   mymont$QMEAN.A.RUBP.PY
+      qmean$assim.co2   [m,] =   mymont$QMEAN.A.CO2.PY
+      qmean$assim.ratio [m,] = ( mymont$QMEAN.A.LIGHT.PY
+                               / pmax(1e-6, pmin( mymont$QMEAN.A.RUBP.PY
+                                                , mymont$QMEAN.A.CO2.PY  )))
       qmean$nee         [m,] = ( mymont$QMEAN.CARBON.ST.PY
                                - mymont$QMEAN.CARBON.AC.PY )
       qmean$reco        [m,] =   mymont$QMEAN.PLRESP.PY + mymont$QMEAN.RH.PY
@@ -627,6 +639,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                              , FUN    = weighted.mean
                              , w      = areasi
                              )#end apply
+#                             browser()
       #------------------------------------------------------------------------------------#
 
 
@@ -752,6 +765,11 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          gppconow          = mymont$MMEAN.GPP.CO
          nppconow          = mymont$MMEAN.NPP.CO
          plrespconow       = mymont$MMEAN.PLRESP.CO
+         assim.lightconow  = mymont$MMEAN.A.LIGHT.CO
+         assim.rubpconow   = mymont$MMEAN.A.RUBP.CO
+         assim.co2conow    = mymont$MMEAN.A.CO2.CO
+         assim.ratioconow  = with(mymont, MMEAN.A.LIGHT.CO
+                                        / pmax(1e-6,pmin(MMEAN.A.RUBP.CO,MMEAN.A.CO2.CO)))
 
 
          #---------------------------------------------------------------------------------#
@@ -1454,6 +1472,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          growth.respconow    = NA
          storage.respconow   = NA
          plant.respconow     = NA
+         assim.lightconow    = NA
+         assim.rubpconow     = NA
+         assim.co2conow      = NA
+         assim.ratioconow    = NA
          nppconow            = NA
          cbaconow            = NA
          cbamaxconow         = NA
@@ -1560,12 +1582,19 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          }#end if
          
          if (any(sel)){
-            lu$lai    [m,l] = sum( laiconow[sel] * areaconow    [sel] )
-            lu$ba     [m,l] = sum( w.nplant[sel] * baconow      [sel] )
-            lu$agb    [m,l] = sum( w.nplant[sel] * agbconow     [sel] )
-            lu$biomass[m,l] = sum( w.nplant[sel] * biomassconow [sel] )
-            lu$gpp    [m,l] = sum( w.nplant[sel] * gppconow     [sel] )
-            lu$npp    [m,l] = sum( w.nplant[sel] * nppconow     [sel] )
+            arealu.i          = 1. / sum(areapa[selpa])
+            lu$lai      [m,l] = sum( w.lai   [sel]                      )
+            lu$ba       [m,l] = sum( w.nplant[sel] * baconow      [sel] )
+            lu$agb      [m,l] = sum( w.nplant[sel] * agbconow     [sel] )
+            lu$biomass  [m,l] = sum( w.nplant[sel] * biomassconow [sel] )
+            lu$gpp      [m,l] = sum( w.nplant[sel] * gppconow     [sel] )
+            lu$npp      [m,l] = sum( w.nplant[sel] * nppconow     [sel] )
+            lu$f.lai    [m,l] = sum( w.lai   [sel]                      ) * arealu.i
+            lu$f.ba     [m,l] = sum( w.nplant[sel] * baconow      [sel] ) * arealu.i
+            lu$f.agb    [m,l] = sum( w.nplant[sel] * agbconow     [sel] ) * arealu.i
+            lu$f.biomass[m,l] = sum( w.nplant[sel] * biomassconow [sel] ) * arealu.i
+            lu$f.gpp    [m,l] = sum( w.nplant[sel] * gppconow     [sel] ) * arealu.i
+            lu$f.npp    [m,l] = sum( w.nplant[sel] * nppconow     [sel] ) * arealu.i
          }#end if
          lu$area      [m,l] = lu$area [m,l] + sum(areapa[selpa])
       }#end for
@@ -1845,6 +1874,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                        , w     = w.lai           [sel]
                                                        , na.rm = TRUE
                                                        )#end weighted.mean
+               szpft$assim.light[m,d,p] = weighted.mean( x     = assim.lightconow[sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$assim.rubp [m,d,p] = weighted.mean( x     = assim.rubpconow [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
+               szpft$assim.co2  [m,d,p] = weighted.mean( x     = assim.co2conow  [sel]
+                                                       , w     = w.lai           [sel]
+                                                       , na.rm = TRUE
+                                                       )#end weighted.mean
                szpft$wood.gbw   [m,d,p] = weighted.mean( x     = wood.gbwconow   [sel]
                                                        , w     = w.wai           [sel]
                                                        , na.rm = TRUE
@@ -1961,6 +2002,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             #------------------------------------------------------------------------------#
 
 
+            #------------------------------------------------------------------------------#
+            #     Assimilation ratio: use the averaged values.                             #
+            #------------------------------------------------------------------------------#
+            szpft$assim.ratio [m,d,p] = ( szpft$assim.light[m,d,p]
+                                        / max( 1e-6, min( szpft$assim.rubp[m,d,p]
+                                                        , szpft$assim.co2 [m,d,p] ) ) )
+            #------------------------------------------------------------------------------#
 
 
             #------------------------------------------------------------------------------#
@@ -2517,6 +2565,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$froot.resp   [[clab]] = froot.respconow
          cohort$croot.resp   [[clab]] = croot.respconow
          cohort$plant.resp   [[clab]] = plant.respconow
+         cohort$assim.light  [[clab]] = assim.lightconow
+         cohort$assim.rubp   [[clab]] = assim.rubpconow
+         cohort$assim.co2    [[clab]] = assim.co2conow
+         cohort$assim.ratio  [[clab]] = assim.ratioconow
          cohort$npp          [[clab]] = nppconow
          cohort$cba          [[clab]] = cbaconow
          cohort$cbamax       [[clab]] = cbamaxconow

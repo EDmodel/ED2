@@ -212,8 +212,10 @@ skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
    for (n in sequence(nidx)){
       sel          = is.finite(x) & idx == unique.idx[n]
       stats.ok     = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
-      if (any(sel) && stats.ok){
+      if (any(sel) && stats.ok && R.major <= 2){
          cdf.skew[sel] = psn(x[sel],location=location[n],scale=scale[n],shape=shape[n])
+      }else if (any(sel) && stats.ok){
+         cdf.skew[sel] = psn(x[sel],xi=location[n],omega=scale[n],alpha=shape[n])
       }#end if
    }#end for
    #---------------------------------------------------------------------------------------#
@@ -273,8 +275,10 @@ normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm
    for (n in 1:nidx){
       sel      = is.finite(cdf.skew) & idx == unique.idx[n]
       stats.ok = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
-      if (any(sel) && stats.ok){
+      if (any(sel) && stats.ok && R.major <= 2){
          x[sel] = qsn(p=cdf.skew[sel],location=location[n],scale=scale[n],shape=shape[n])
+      }else if (any(sel) && stats.ok){
+         x[sel] = qsn(p=cdf.skew[sel],xi=location[n],omega=scale[n],alpha=shape[n])
       }#end if
    }#end for
    #---------------------------------------------------------------------------------------#
@@ -305,12 +309,21 @@ psn.mult <<- function(z,n,nsample=10000,location=0,scale=1,shape=0,lower.tail=TR
 
    if ( n == 1 && ! force.sample){
       #----- Use the standard probability distribution function (no sampling). ------------#
-      prob = psn(x=z,location=location,scale=scale,shape=shape,lower.tail=lower.tail
-                ,log.p=log.p)
+      if (R.major <= 2){
+         prob = psn(x=z,location=location,scale=scale,shape=shape,lower.tail=lower.tail
+                   ,log.p=log.p)
+      }else{
+         prob = psn(x=z,xi=location,omega=scale,alpha=shape,lower.tail=lower.tail
+                   ,log.p=log.p)
+      }#end if (R.major <= 2)
       #------------------------------------------------------------------------------------#
    }else{
       #----- Create an array with multiple data sets. -------------------------------------#
-      x    = rsn(n=n*nsample,location=location,scale=scale,shape=shape)
+      if (R.major <= 2){
+         x    = rsn(n=n*nsample,location=location,scale=scale,shape=shape)
+      }else{
+         x    = rsn(n=n*nsample,xi=location,omega=scale,alpha=shape)
+      }#end if
       i    = rep(sequence(nsample),each=n)
       ztry = tapply(X=x,INDEX=i,FUN=sum)
       #------------------------------------------------------------------------------------#
@@ -530,7 +543,11 @@ sn.lsq <<- function(r,skew=FALSE){
 
 
       #------ Find the log-likelihood of the distribution. --------------------------------#
-      ans = sum(x=dsn(x=r.fine,location=rlocation,scale=rscale,shape=rshape,log=TRUE))
+      if (R.major <= 2){
+         ans = sum(x=dsn(x=r.fine,location=rlocation,scale=rscale,shape=rshape,log=TRUE))
+      }else{
+         ans = sum(x=dsn(x=r.fine,xi=rlocation,omega=rscale,alpha=rshape,log=TRUE))
+      }#end if (R.major <= 2)
       #------------------------------------------------------------------------------------#
 
       #----- Free memory. -----------------------------------------------------------------#

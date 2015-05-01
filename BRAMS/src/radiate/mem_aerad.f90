@@ -38,6 +38,11 @@ module mem_aerad
   integer,parameter :: nsolute = 1
   !  Define # gases
   integer,parameter :: ngas = 1
+  !  Define beginning and end of each band
+  integer, parameter :: lpara = 1
+  integer, parameter :: lparz = 16
+  integer, parameter :: lnira = 17
+  integer, parameter :: lnirz = 32
   !  Define # solar wavelength bins
   !	parameter( NSOL = 26 )
   integer,parameter :: nsol = 32

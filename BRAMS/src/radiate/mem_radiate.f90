@@ -15,6 +15,10 @@ module mem_radiate
       !----- Variables to be dimensioned by (    nxp,nyp). --------------------------------!
       real, dimension(  :,:), pointer :: cosz           ! Cosine of zenith angle   [   ---]
       real, dimension(  :,:), pointer :: albedt         ! Total albedo             [   ---]
+      real, dimension(  :,:), pointer :: par_beam       ! Direct dnward PAR rad.   [  W/m²]
+      real, dimension(  :,:), pointer :: par_diffuse    ! Diffuse dnward PAR rad.  [  W/m²]
+      real, dimension(  :,:), pointer :: nir_beam       ! Direct dnward NIR rad.   [  W/m²]
+      real, dimension(  :,:), pointer :: nir_diffuse    ! Diffuse dnward NIR rad.  [  W/m²]
       real, dimension(  :,:), pointer :: rshort         ! Dnward SW sfc. radiation [  W/m²]
       real, dimension(  :,:), pointer :: rshort_top     ! Dnward SW TOA  radiation [  W/m²]
       real, dimension(  :,:), pointer :: rshortup_top   ! Upward SW TOA  radiation [  W/m²]
@@ -31,17 +35,34 @@ module mem_radiate
    !---------------------------------------------------------------------------------------!
    !     Other variables.                                                                  !
    !---------------------------------------------------------------------------------------!
-   integer            :: lonrad
-   integer            :: ilwrtyp
-   integer            :: iswrtyp
-   integer            :: icumfdbk
-   real               :: radfrq
-   integer            :: ncall_i 
-   real               :: prsnz
-   real               :: prsnzp  
-   integer            :: ncrad                 ! Number of clouds that affect radiation
-   real   , parameter :: rad_cosz_min   = 0.01745241
-   real   , parameter :: rad_rshort_min = 0.50
+   integer                 :: lonrad
+   integer                 :: ilwrtyp
+   integer                 :: iswrtyp
+   integer                 :: icumfdbk
+   real                    :: radfrq
+   integer                 :: ncall_i
+   real                    :: prsnz
+   real                    :: prsnzp
+   integer                 :: ncrad    ! Number of clouds that affect radiation
+   real(kind=4), parameter :: rad_cosz_min    = 0.01745241
+   real(kind=4), parameter :: rad_rshort_min  = 0.50
+   real(kind=4), parameter :: rad_rlong_min   = 0.50
+   real(kind=8), parameter :: rad_cosz_min8   = dble(rad_cosz_min)
+   real(kind=8), parameter :: rad_rshort_min8 = dble(rad_rshort_min)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The following parameters are used to split the shortwave radiation into visible  !
+   ! and near-infrared radiation.                                                          !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: ref_fvis_beam = 0.43
+   real, parameter :: ref_fnir_beam = 0.57
+   real, parameter :: ref_fvis_diff = 0.52
+   real, parameter :: ref_fnir_diff = 0.48
+   !---------------------------------------------------------------------------------------!
+
+
    !----- These are used for adding extra levels at the top with the Mclatchy soundings. --!
    integer, parameter :: maxadd_rad     = 10   ! max allowed # of added rad levels
    integer            :: nadd_rad              ! actual # of added radiation levels
@@ -82,6 +103,10 @@ module mem_radiate
       if( ilwrtyp == 0 .and. iswrtyp == 0) return
 
       allocate (radiate%fthrd          (n1,n2,n3))
+      allocate (radiate%par_beam          (n2,n3))
+      allocate (radiate%par_diffuse       (n2,n3))
+      allocate (radiate%nir_beam          (n2,n3))
+      allocate (radiate%nir_diffuse       (n2,n3))
       allocate (radiate%rshort            (n2,n3))
       allocate (radiate%rlong             (n2,n3))
       allocate (radiate%rlongup           (n2,n3))
@@ -114,6 +139,10 @@ module mem_radiate
       !------------------------------------------------------------------------------------!
 
       nullify (radiate%fthrd         )
+      nullify (radiate%par_beam      )
+      nullify (radiate%par_diffuse   )
+      nullify (radiate%nir_beam      )
+      nullify (radiate%nir_diffuse   )
       nullify (radiate%rshort        )
       nullify (radiate%rlong         )
       nullify (radiate%rlongup       )
@@ -146,17 +175,21 @@ module mem_radiate
       type (radiate_vars), intent(inout) :: radiate
       !------------------------------------------------------------------------------------!
 
-      if(associated(radiate%fthrd         )) radiate%fthrd          =0.0
-      if(associated(radiate%rshort        )) radiate%rshort         =0.0
-      if(associated(radiate%rlong         )) radiate%rlong          =0.0
-      if(associated(radiate%rlongup       )) radiate%rlongup        =0.0
-      if(associated(radiate%albedt        )) radiate%albedt         =0.0
-      if(associated(radiate%cosz          )) radiate%cosz           =0.0
-      if(associated(radiate%fthrd_lw      )) radiate%fthrd_lw       =0.0
-      if(associated(radiate%rshort_top    )) radiate%rshort_top     =0.0
-      if(associated(radiate%rshortup_top  )) radiate%rshortup_top   =0.0
-      if(associated(radiate%rlongup_top   )) radiate%rlongup_top    =0.0
-      if(associated(radiate%rshort_diffuse)) radiate%rshort_diffuse =0.0
+      if(associated(radiate%fthrd         )) radiate%fthrd          = 0.0
+      if(associated(radiate%par_beam      )) radiate%par_beam       = 0.0
+      if(associated(radiate%par_diffuse   )) radiate%par_diffuse    = 0.0
+      if(associated(radiate%nir_beam      )) radiate%nir_beam       = 0.0
+      if(associated(radiate%nir_diffuse   )) radiate%nir_diffuse    = 0.0
+      if(associated(radiate%rshort        )) radiate%rshort         = 0.0
+      if(associated(radiate%rlong         )) radiate%rlong          = 0.0
+      if(associated(radiate%rlongup       )) radiate%rlongup        = 0.0
+      if(associated(radiate%albedt        )) radiate%albedt         = 0.0
+      if(associated(radiate%cosz          )) radiate%cosz           = 0.0
+      if(associated(radiate%fthrd_lw      )) radiate%fthrd_lw       = 0.0
+      if(associated(radiate%rshort_top    )) radiate%rshort_top     = 0.0
+      if(associated(radiate%rshortup_top  )) radiate%rshortup_top   = 0.0
+      if(associated(radiate%rlongup_top   )) radiate%rlongup_top    = 0.0
+      if(associated(radiate%rshort_diffuse)) radiate%rshort_diffuse = 0.0
 
       return
    end subroutine zero_radiate
@@ -178,6 +211,10 @@ module mem_radiate
       !------------------------------------------------------------------------------------!
 
       if (associated(radiate%fthrd         )) deallocate (radiate%fthrd         )
+      if (associated(radiate%par_beam      )) deallocate (radiate%par_beam      )
+      if (associated(radiate%par_diffuse   )) deallocate (radiate%par_diffuse   )
+      if (associated(radiate%nir_beam      )) deallocate (radiate%nir_beam      )
+      if (associated(radiate%nir_diffuse   )) deallocate (radiate%nir_diffuse   )
       if (associated(radiate%rshort        )) deallocate (radiate%rshort        )
       if (associated(radiate%rlong         )) deallocate (radiate%rlong         )
       if (associated(radiate%rlongup       )) deallocate (radiate%rlongup       )
@@ -236,6 +273,22 @@ module mem_radiate
       !     2-D variables, dimensioned by nx*ny.                                           !
       !------------------------------------------------------------------------------------!
       npts=nmx*nmy
+      if (associated(radiate%par_beam))                                                    &
+         call vtables2(radiate%par_beam,radiatem%par_beam,ng,npts,imean                    &
+                      ,'PAR_BEAM :2:hist:anal:mpti:mpt3')
+
+      if (associated(radiate%par_diffuse))                                                 &
+         call vtables2(radiate%par_diffuse,radiatem%par_diffuse,ng,npts,imean              &
+                      ,'PAR_DIFFUSE :2:hist:anal:mpti:mpt3')
+
+      if (associated(radiate%nir_beam))                                                    &
+         call vtables2(radiate%nir_beam,radiatem%nir_beam,ng,npts,imean                    &
+                      ,'NIR_BEAM :2:hist:anal:mpti:mpt3')
+
+      if (associated(radiate%nir_diffuse))                                                 &
+         call vtables2(radiate%nir_diffuse,radiatem%nir_diffuse,ng,npts,imean              &
+                      ,'NIR_DIFFUSE :2:hist:anal:mpti:mpt3')
+
       if (associated(radiate%rshort))                                                      &
          call vtables2(radiate%rshort,radiatem%rshort,ng,npts,imean                        &
                       ,'RSHORT :2:hist:anal:mpti:mpt3')

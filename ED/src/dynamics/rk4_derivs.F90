@@ -274,21 +274,22 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    ! SATSOIL                -- flag that tells whether this layer is saturated    [   T|F] !
    !---------------------------------------------------------------------------------------!
    do k = klsl, mzg
-      nsoil               = rk4site%ntext_soil(k)
-      rk4aux(ibuff)%th_cond_s(k) = ( soil8(nsoil)%thcond0                                         &
-                            + soil8(nsoil)%thcond1 * initp%soil_water(k) )                 &
-                          / ( soil8(nsoil)%thcond2                                         &
-                            + soil8(nsoil)%thcond3 * initp%soil_water(k) )
+      nsoil                      = rk4site%ntext_soil(k)
+      rk4aux(ibuff)%th_cond_s(k) = ( soil8(nsoil)%thcond0                                  &
+                                   + soil8(nsoil)%thcond1 * initp%soil_water(k) )          &
+                                 / ( soil8(nsoil)%thcond2                                  &
+                                   + soil8(nsoil)%thcond3 * initp%soil_water(k) )
 
 
       !----- Find the correction for (partially) frozen soil layers. ----------------------!
-      rk4aux(ibuff)%hydcond (k) = hydr_conduct8(k,nsoil,initp%soil_water(k),initp%soil_fracliq(k))
+      rk4aux(ibuff)%hydcond (k) = hydr_conduct8(k,nsoil,initp%soil_water(k)                &
+                                               ,initp%soil_fracliq(k))
       !------------------------------------------------------------------------------------!
 
 
       rk4aux(ibuff)%psiplusz(k) = slzt8(k) + initp%soil_mstpot(k)
-      rk4aux(ibuff)%drysoil (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)                     &
-                         * initp%soil_fracliq(k)                        <= 0.d0
+      rk4aux(ibuff)%drysoil (k) = (initp%soil_water(k) - soil8(nsoil)%soilcp)              &
+                                * initp%soil_fracliq(k)                        <= 0.d0
       rk4aux(ibuff)%satsoil (k) = initp%soil_water(k) >= soil8(nsoil)%slmsts
    end do
    !---------------------------------------------------------------------------------------!
@@ -299,8 +300,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    do k = 1, ksn
       if (initp%sfcwater_depth(k) > 0.d0 .and. initp%sfcwater_mass(k) > 0.d0) then
          snden = initp%sfcwater_mass(k) / initp%sfcwater_depth(k)
-         rk4aux(ibuff)%th_cond_p(k) = ss(1) * exp(ss(2) * initp%sfcwater_tempk(k))                &
-                               * (ss(3) + snden * (ss(4) + snden * (ss(5) + snden*ss(6))))
+         rk4aux(ibuff)%th_cond_p(k) = ss(1) * exp(ss(2) * initp%sfcwater_tempk(k))         &
+                                * (ss(3) + snden * (ss(4) + snden * (ss(5) + snden*ss(6))))
       else
          rk4aux(ibuff)%th_cond_p(k) = 0.d0
       end if
@@ -328,13 +329,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
          nsoil                   = rk4site%ntext_soil(k)
 
          !----- Find the available water factor for this layer. ---------------------------!
-         rk4aux(ibuff)%avail_h2o_lyr(k) = max(0.d0, (initp%soil_water(k) - soil8(nsoil)%soilwp))  &
-                                 * initp%soil_fracliq(k) * wdns8 * dslz8(k)
+         rk4aux(ibuff)%avail_h2o_lyr(k) = max( 0.d0                                        &
+                                             , (initp%soil_water(k)-soil8(nsoil)%soilwp))  &
+                                        * initp%soil_fracliq(k) * wdns8 * dslz8(k)
          !---------------------------------------------------------------------------------!
 
          !----- Add the factor from this layer to the integral. ---------------------------!
-         rk4aux(ibuff)%avail_h2o_int(k) = rk4aux(ibuff)%avail_h2o_int(k+1) +               &
-                                          rk4aux(ibuff)%avail_h2o_lyr(k)
+         rk4aux(ibuff)%avail_h2o_int(k) = rk4aux(ibuff)%avail_h2o_int(k+1)                 &
+                                        + rk4aux(ibuff)%avail_h2o_lyr(k)
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -351,14 +353,15 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
          wilting_factor          = (rk4aux(ibuff)%psiplusz(k) - soil8(nsoil)%slpotwp)      &
                                  / (soil8(nsoil)%slpotfc - soil8(nsoil)%slpotwp)
          rk4aux(ibuff)%avail_h2o_lyr(k) = min( 1.d0, max( 0.d0, wilting_factor ) )         &
-                                 * initp%soil_fracliq(k)                                   &
-                                 * ( soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp )          &
-                                 * wdns8 * dslz8(k)
+                                        * initp%soil_fracliq(k)                            &
+                                        * ( soil8(nsoil)%sfldcap - soil8(nsoil)%soilwp )   &
+                                        * wdns8 * dslz8(k)
          !---------------------------------------------------------------------------------!
 
 
          !----- Add the factor from this layer to the integral. ---------------------------!
-         rk4aux(ibuff)%avail_h2o_int(k) = rk4aux(ibuff)%avail_h2o_int(k+1) + rk4aux(ibuff)%avail_h2o_lyr(k)
+         rk4aux(ibuff)%avail_h2o_int(k) = rk4aux(ibuff)%avail_h2o_int(k+1)                 &
+                                        + rk4aux(ibuff)%avail_h2o_lyr(k)
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -375,14 +378,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       !    Bedrock.  Make the potential exactly the same as the bottom layer, and the flux !
       ! will be zero.                                                                      !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = initp%soil_water   (klsl)
-      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = rk4aux(ibuff)%th_cond_s   (klsl)
-      rk4aux(ibuff)%hydcond     (kben) = rk4aux(ibuff)%hydcond     (klsl)
-      rk4aux(ibuff)%psiplusz    (kben) = rk4aux(ibuff)%psiplusz    (klsl)
-      rk4aux(ibuff)%drysoil     (kben) = .true.
-      rk4aux(ibuff)%satsoil     (kben) = .true.
+      initp%soil_water       (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot      (kben) = initp%soil_mstpot  (klsl)
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = rk4aux(ibuff)%th_cond_s   (klsl)
+      rk4aux(ibuff)%hydcond  (kben) = rk4aux(ibuff)%hydcond     (klsl)
+      rk4aux(ibuff)%psiplusz (kben) = rk4aux(ibuff)%psiplusz    (klsl)
+      rk4aux(ibuff)%drysoil  (kben) = .true.
+      rk4aux(ibuff)%satsoil  (kben) = .true.
       !------------------------------------------------------------------------------------!
 
    case (1)
@@ -390,14 +393,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       !     Free drainage.   Make the water potential at the layer beneath to be at the    !
       ! same soil moisture as the bottom layer.                                            !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = initp%soil_water   (klsl)
-      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = rk4aux(ibuff)%th_cond_s   (klsl)
-      rk4aux(ibuff)%hydcond     (kben) = rk4aux(ibuff)%hydcond     (klsl)
-      rk4aux(ibuff)%psiplusz    (kben) = slzt8(kben) + initp%soil_mstpot(kben)
-      rk4aux(ibuff)%drysoil     (kben) = .false.
-      rk4aux(ibuff)%satsoil     (kben) = .false.
+      initp%soil_water       (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot      (kben) = initp%soil_mstpot  (klsl)
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = rk4aux(ibuff)%th_cond_s   (klsl)
+      rk4aux(ibuff)%hydcond  (kben) = rk4aux(ibuff)%hydcond     (klsl)
+      rk4aux(ibuff)%psiplusz (kben) = slzt8(kben) + initp%soil_mstpot(kben)
+      rk4aux(ibuff)%drysoil  (kben) = .false.
+      rk4aux(ibuff)%satsoil  (kben) = .false.
       !------------------------------------------------------------------------------------!
 
    case (2)
@@ -408,32 +411,32 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       ! is zero this becomes the flat bedrock condition, and when sldrain is 90 degrees,   !
       ! then it becomes free drainage.                                                     !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = initp%soil_water   (klsl)
-      initp%soil_mstpot  (kben) = initp%soil_mstpot  (klsl)
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = rk4aux(ibuff)%th_cond_s   (klsl)
-      rk4aux(ibuff)%hydcond     (kben) = rk4aux(ibuff)%hydcond     (klsl)
-      rk4aux(ibuff)%psiplusz    (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8                &
-                                + initp%soil_mstpot(kben)
-      rk4aux(ibuff)%drysoil     (kben) = .false.
-      rk4aux(ibuff)%satsoil     (kben) = .false.
+      initp%soil_water       (kben) = initp%soil_water   (klsl)
+      initp%soil_mstpot      (kben) = initp%soil_mstpot  (klsl)
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = rk4aux(ibuff)%th_cond_s   (klsl)
+      rk4aux(ibuff)%hydcond  (kben) = rk4aux(ibuff)%hydcond     (klsl)
+      rk4aux(ibuff)%psiplusz (kben) = slzt8(klsl) - dslzt8(klsl) * sin_sldrain8            &
+                                    + initp%soil_mstpot(kben)
+      rk4aux(ibuff)%drysoil  (kben) = .false.
+      rk4aux(ibuff)%satsoil  (kben) = .false.
       !------------------------------------------------------------------------------------!
 
    case (3)
       !------------------------------------------------------------------------------------!
       !     Aquifer.   Make the soil moisture in the layer beneath to be always saturated. !
       !------------------------------------------------------------------------------------!
-      initp%soil_water   (kben) = soil8(nsoil)%slmsts
-      initp%soil_mstpot  (kben) = soil8(nsoil)%slpots
-      initp%soil_fracliq (kben) = initp%soil_fracliq (klsl)
-      rk4aux(ibuff)%th_cond_s   (kben) = ( soil8(nsoil)%thcond0                            &
-                                  + soil8(nsoil)%thcond1 * initp%soil_water(kben) )        &
-                                / ( soil8(nsoil)%thcond2                                   &
-                                  + soil8(nsoil)%thcond3 * initp%soil_water(kben) )
-      rk4aux(ibuff)%hydcond     (kben) = slcons18(kben,nsoil)
-      rk4aux(ibuff)%psiplusz    (kben) = slzt8(kben) + initp%soil_mstpot(kben)
-      rk4aux(ibuff)%drysoil     (kben) = .false.
-      rk4aux(ibuff)%satsoil     (kben) = .false.
+      initp%soil_water       (kben) = soil8(nsoil)%slmsts
+      initp%soil_mstpot      (kben) = soil8(nsoil)%slpots
+      initp%soil_fracliq     (kben) = initp%soil_fracliq (klsl)
+      rk4aux(ibuff)%th_cond_s(kben) = ( soil8(nsoil)%thcond0                               &
+                                      + soil8(nsoil)%thcond1 * initp%soil_water(kben) )    &
+                                    / ( soil8(nsoil)%thcond2                               &
+                                      + soil8(nsoil)%thcond3 * initp%soil_water(kben) )
+      rk4aux(ibuff)%hydcond  (kben) = slcons18(kben,nsoil)
+      rk4aux(ibuff)%psiplusz (kben) = slzt8(kben) + initp%soil_mstpot(kben)
+      rk4aux(ibuff)%drysoil  (kben) = .false.
+      rk4aux(ibuff)%satsoil  (kben) = .false.
 
    end select
    !---------------------------------------------------------------------------------------!
@@ -458,10 +461,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    ! between the mid-points of the consecutive layers.                                     !
    !---------------------------------------------------------------------------------------!
    do k = klsl+1, mzg
-      avg_th_cond                 =  rk4aux(ibuff)%th_cond_s(k-1)                                 &
-                                  *  ( rk4aux(ibuff)%th_cond_s(k) / rk4aux(ibuff)%th_cond_s(k-1) )       &
+      avg_th_cond                 =  rk4aux(ibuff)%th_cond_s(k-1)                          &
+                                  *  ( rk4aux(ibuff)%th_cond_s(k)                          &
+                                     / rk4aux(ibuff)%th_cond_s(k-1) )                      &
                                   ** ( dslz8(k-1) / ( dslz8(k-1) + dslz8(k) ) )
-      rk4aux(ibuff)%h_flux_g(k)          = - avg_th_cond                                          &
+      rk4aux(ibuff)%h_flux_g(k)   = - avg_th_cond                                          &
                                     * (initp%soil_tempk(k) - initp%soil_tempk(k-1))        &
                                     * dslzti8(k)
       !------ Diagnostic sensible heat flux. ----------------------------------------------!
@@ -481,23 +485,25 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       !     The first layer is the interface between soil and TSW.  We account for the     !
       ! fluxes twice.                                                                      !
       !------------------------------------------------------------------------------------!
-      avg_th_cond               =  rk4aux(ibuff)%th_cond_s(mzg)                                   &
-                                *  ( rk4aux(ibuff)%th_cond_p(1) / rk4aux(ibuff)%th_cond_s(mzg) )         &
-                                ** ( dslz8(mzg) / (initp%sfcwater_depth(1)+ dslz8(mzg)))  
-
-      rk4aux(ibuff)%h_flux_g   (mzg+1) = - avg_th_cond                                     &
-                                * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))        &
-                                / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )         
-      rk4aux(ibuff)%h_flux_s   (1)     = rk4aux(ibuff)%h_flux_g(mzg+1)                               
+      avg_th_cond                   =  rk4aux(ibuff)%th_cond_s(mzg)                        &
+                                    *  ( rk4aux(ibuff)%th_cond_p(1)                        &
+                                       / rk4aux(ibuff)%th_cond_s(mzg) )                    &
+                                    ** ( dslz8(mzg)                                        &
+                                       / (initp%sfcwater_depth(1)+ dslz8(mzg)))
+      rk4aux(ibuff)%h_flux_g(mzg+1) = - avg_th_cond                                        &
+                                    * (initp%sfcwater_tempk(1) - initp%soil_tempk(mzg))    &
+                                    / (5.d-1 * initp%sfcwater_depth(1) - slzt8(mzg) )
+      rk4aux(ibuff)%h_flux_s(1)     = rk4aux(ibuff)%h_flux_g(mzg+1)
       do k = 2,ksn
-         avg_th_cond            =  rk4aux(ibuff)%th_cond_p(k-1)                                   &
-                                *  ( rk4aux(ibuff)%th_cond_p(k) / rk4aux(ibuff)%th_cond_p(k-1))          &
-                                ** ( initp%sfcwater_depth(k-1)                             &
-                                   / ( initp%sfcwater_depth(k-1)                           &
-                                     + initp%sfcwater_depth(k) ) )                    
-         rk4aux(ibuff)%h_flux_s(k)     = - 2.d0 * avg_th_cond                                     &
-                                  * ( initp%sfcwater_tempk(k) - initp%sfcwater_tempk(k-1)) &
-                                  / ( initp%sfcwater_depth(k) + initp%sfcwater_depth(k-1))
+         avg_th_cond                =  rk4aux(ibuff)%th_cond_p(k-1)                        &
+                                    *  ( rk4aux(ibuff)%th_cond_p(k)                        &
+                                       / rk4aux(ibuff)%th_cond_p(k-1))                     &
+                                    ** ( initp%sfcwater_depth(k-1)                         &
+                                       / ( initp%sfcwater_depth(k-1)                       &
+                                         + initp%sfcwater_depth(k) ) )
+         rk4aux(ibuff)%h_flux_s(k)  = - 2.d0 * avg_th_cond                                 &
+                                    * ( initp%sfcwater_tempk(k)-initp%sfcwater_tempk(k-1)) &
+                                    / ( initp%sfcwater_depth(k)+initp%sfcwater_depth(k-1))
       end do
       !------------------------------------------------------------------------------------!
 
@@ -513,13 +519,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !---------------------------------------------------------------------------------------!
    !      Add the irradiance and canopy fluxes.                                            !
    !---------------------------------------------------------------------------------------!
-   dinitp%avg_sensible_gg (mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))            &
-                                  - dble(csite%rshort_g(ipa))
-   rk4aux(ibuff)%h_flux_g        (mzg+1) = rk4aux(ibuff)%h_flux_g(mzg+1) + dinitp%avg_sensible_gg (mzg)
+   dinitp%avg_sensible_gg(mzg)   = hflxgc + qwflxgc - dble(csite%rlong_g(ipa))             &
+                                 - dble(csite%rshort_g(ipa))
+   rk4aux(ibuff)%h_flux_g(mzg+1) = rk4aux(ibuff)%h_flux_g(mzg+1)                           &
+                                 + dinitp%avg_sensible_gg (mzg)
    !---------------------------------------------------------------------------------------!
-!   rk4aux(ibuff)%h_flux_s        (mzs+1) = rk4aux(ibuff)%h_flux_s(mzs+1) + hflxsc +        &
-!                                           qwflxsc - dble(csite%rlong_s(ipa)) -            &
-!                                           dble(csite%rshort_s(mzs,ipa))
 
 
 
@@ -529,8 +533,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    ! shedding, and percolation.                                                            !
    !---------------------------------------------------------------------------------------!
    do k = klsl,mzg
-      dinitp%soil_energy(k) = dslzi8(k) * &
-            (rk4aux(ibuff)%h_flux_g(k) - rk4aux(ibuff)%h_flux_g(k+1))
+      dinitp%soil_energy(k) = dslzi8(k) * ( rk4aux(ibuff)%h_flux_g(k)                      &
+                                          - rk4aux(ibuff)%h_flux_g(k+1) )
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -541,11 +545,13 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    ! affects the top layer.                                                                !
    !---------------------------------------------------------------------------------------!
    do k = 1,ksn
-         dinitp%sfcwater_energy(k) =                                                       &
-               rk4aux(ibuff)%h_flux_s(k) - rk4aux(ibuff)%h_flux_s(k+1)                     &
-               + dble(csite%rshort_s(k,ipa))
+     dinitp%sfcwater_energy(k) = rk4aux(ibuff)%h_flux_s(k) - rk4aux(ibuff)%h_flux_s(k+1)   &
+                               + dble(csite%rshort_s(k,ipa))
    end do
    !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Calculate the fluxes of water with their associated heat fluxes. Update top soil  !
@@ -566,7 +572,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
 
 
    !------ Diagnostic variable for water flux, bypass the virtual/sfcw layers. ------------!
-   dinitp%avg_smoist_gg(mzg) = rk4aux(ibuff)%w_flux_g(mzg+1)                                      &
+   dinitp%avg_smoist_gg(mzg) = rk4aux(ibuff)%w_flux_g(mzg+1)                               &
                              + dewgnd +  wshed_tot +  throughfall_tot -  wflxsc -  wflxgc
    !---------------------------------------------------------------------------------------!
 
@@ -599,8 +605,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
             infilt = - dslzi8(mzg) * 5.d-1                                                 &
                      * hydr_conduct8(mzg,nsoil,initp%soil_water(mzg)                       &
                                     ,initp%soil_fracliq(mzg))                              &
-                     * (rk4aux(ibuff)%psiplusz(mzg)-initp%virtual_water/2.d3)     & !diff. in pot.
-                     * 5.d-1 * (initp%soil_fracliq(mzg)+ initp%virtual_fracliq) ! mean liquid fraction
+                     * (rk4aux(ibuff)%psiplusz(mzg)-initp%virtual_water/2.d3)              & ! diff. in pot.
+                     * 5.d-1 * (initp%soil_fracliq(mzg)+ initp%virtual_fracliq)            ! ! mean liquid fraction
             qinfilt = infilt * wdns8 * tl2uint8(initp%virtual_tempk,1.d0)
             !----- Adjust other rates accordingly -----------------------------------------!
             rk4aux(ibuff)%w_flux_g (mzg+1) = rk4aux(ibuff)%w_flux_g(mzg+1)  + infilt
@@ -609,7 +615,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
             dinitp%virtual_energy   = dinitp%virtual_energy   - qinfilt
          end if
       end if  !! end virtual water pool
-      if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool -----------------! 
+      if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool -----------------!
          surface_water = initp%sfcwater_mass(1)*initp%sfcwater_fracliq(1)*wdnsi8 !(m/m2)
          nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
@@ -617,8 +623,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
             infilt = - dslzi8(mzg) * 5.d-1                                                 &
                      * hydr_conduct8(mzg,nsoil,initp%soil_water(mzg)                       &
                                     ,initp%soil_fracliq(mzg))                              &
-                     * (rk4aux(ibuff)%psiplusz(mzg) - surface_water/2.d0) & !difference in potentials
-                     * 5.d-1 * (initp%soil_fracliq(mzg) + initp%sfcwater_fracliq(1))
+                     * (rk4aux(ibuff)%psiplusz(mzg) - surface_water/2.d0)                  & ! difference in potentials
+                     * 5.d-1 * (initp%soil_fracliq(mzg) + initp%sfcwater_fracliq(1))       ! ! mean liquid fraction
             qinfilt = infilt * wdns8 * tl2uint8(initp%sfcwater_tempk(1),1.d0)
             !----- Adjust other rates accordingly -----------------------------------------!
             rk4aux(ibuff)%w_flux_g(mzg+1)    = rk4aux(ibuff)%w_flux_g(mzg+1)    + infilt
@@ -656,18 +662,19 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
 
 
          !----- Find the potential flux. --------------------------------------------------!
-         rk4aux(ibuff)%w_flux_g(k) = - avg_hydcond * (rk4aux(ibuff)%psiplusz(k) - rk4aux(ibuff)%psiplusz(k-1))  &
-                                            * dslzti8(k)
+         rk4aux(ibuff)%w_flux_g(k) = - avg_hydcond * ( rk4aux(ibuff)%psiplusz(k)           &
+                                                     - rk4aux(ibuff)%psiplusz(k-1) )       &
+                                   * dslzti8(k)
          !---------------------------------------------------------------------------------!
 
 
 
          !----- Limit water transfers to prevent over-saturation and over-depletion. ------!
-         if ( rk4aux(ibuff)%w_flux_g(k) >= 0. .and.                                               &
+         if ( rk4aux(ibuff)%w_flux_g(k) >= 0. .and.                                        &
              (rk4aux(ibuff)%drysoil(k-1) .or. rk4aux(ibuff)%satsoil(k)) )    then
             rk4aux(ibuff)%w_flux_g(k) = 0.d0
 
-         elseif( rk4aux(ibuff)%w_flux_g(k) < 0. .and.                                             &
+         elseif( rk4aux(ibuff)%w_flux_g(k) < 0. .and.                                      &
                 (rk4aux(ibuff)%satsoil(k-1) .or. rk4aux(ibuff)%drysoil(k)) ) then
             rk4aux(ibuff)%w_flux_g(k) = 0.d0
 
@@ -685,17 +692,17 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
       ! -dependent because the temperature must be the source temperature.                 !
       !------------------------------------------------------------------------------------!
       if (rk4aux(ibuff)%w_flux_g(k) > 0) then
-         rk4aux(ibuff)%qw_flux_g(k) = rk4aux(ibuff)%w_flux_g(k) * wdns8                                  &
-                             * tl2uint8(initp%soil_tempk(k-1),1.d0)
+         rk4aux(ibuff)%qw_flux_g(k) = rk4aux(ibuff)%w_flux_g(k) * wdns8                    &
+                                    * tl2uint8(initp%soil_tempk(k-1),1.d0)
       else
-         rk4aux(ibuff)%qw_flux_g(k) = rk4aux(ibuff)%w_flux_g(k) * wdns8                                  &
-                             * tl2uint8(initp%soil_tempk(k)  ,1.d0)
+         rk4aux(ibuff)%qw_flux_g(k) = rk4aux(ibuff)%w_flux_g(k) * wdns8                    &
+                                    * tl2uint8(initp%soil_tempk(k)  ,1.d0)
       end if
       !------------------------------------------------------------------------------------!
 
 
       !----- Save the moisture flux in kg/m2/s. -------------------------------------------!
-      if (k /= 1) dinitp%avg_smoist_gg(k-1) = rk4aux(ibuff)%w_flux_g(k) * wdns8   ! Diagnostic
+      if (k /= 1) dinitp%avg_smoist_gg(k-1) = rk4aux(ibuff)%w_flux_g(k) * wdns8 ! Diagnostic
       !------------------------------------------------------------------------------------!
    end do
 
@@ -724,9 +731,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
    !----- Finally, update soil moisture and soil energy. ----------------------------------!
    do k = klsl,mzg
       dinitp%soil_water(k)  = dinitp%soil_water(k)                                         &
-                            + dslzi8(k) * (  rk4aux(ibuff)%w_flux_g(k)  -  rk4aux(ibuff)%w_flux_g(k+1) )
+                            + dslzi8(k) * (  rk4aux(ibuff)%w_flux_g(k)                     &
+                                          -  rk4aux(ibuff)%w_flux_g(k+1) )
       dinitp%soil_energy(k) = dinitp%soil_energy(k)                                        &
-                            + dslzi8(k) * ( rk4aux(ibuff)%qw_flux_g(k)  - rk4aux(ibuff)%qw_flux_g(k+1) )
+                            + dslzi8(k) * ( rk4aux(ibuff)%qw_flux_g(k)                     &
+                                          - rk4aux(ibuff)%qw_flux_g(k+1) )
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -747,7 +756,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa,dt,is_hybrid)
                   !    Find the contribution of layer k2 for the transpiration from        !
                   ! cohorts that reach layer k1.                                           !
                   !------------------------------------------------------------------------!
-                  ext_weight = rk4aux(ibuff)%avail_h2o_lyr(k2) / rk4aux(ibuff)%avail_h2o_int(k1)
+                  ext_weight = rk4aux(ibuff)%avail_h2o_lyr(k2)                             &
+                             / rk4aux(ibuff)%avail_h2o_int(k1)
 
                   !------------------------------------------------------------------------!
                   !    Find the loss of water from layer k2 due to cohorts that reach at   !
@@ -835,10 +845,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
                                     , effarea_heat         & ! intent(in)
                                     , effarea_evap         & ! intent(in)
                                     , effarea_transp       & ! intent(in)
-!                                    , wcapcan              & ! intent(in)
-!                                    , wcapcani             & ! intent(in)
-!                                    , hcapcani             & ! intent(in)
-!                                    , ccapcani             & ! intent(in)
                                     , tiny_offset          & ! intent(in)
                                     , rk4leaf_drywhc       & ! intent(in)
                                     , rk4leaf_maxwhc       & ! intent(in)
@@ -1477,7 +1483,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 
 
          !----- We need to extract water from the soil equal to the transpiration. --------!
-         rk4aux(ibuff)%extracted_water(ico,kroot) = rk4aux(ibuff)%extracted_water(ico,kroot) + transp
+         rk4aux(ibuff)%extracted_water(ico,kroot) = transp                                 &
+                                                  + rk4aux(ibuff)%extracted_water(ico,kroot)
          !---------------------------------------------------------------------------------!
 
 
@@ -1511,8 +1518,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
 
          initp%wflxlc(ico)     = wflxlc
          initp%wflxtr(ico)     = transp
-         initp%hflx_lrsti(ico) = initp%rshort_l(ico)+initp%rlong_l(ico) &
-                               - qwshed+leaf_qintercepted
+         initp%hflx_lrsti(ico) = initp%rshort_l(ico) + initp%rlong_l(ico)                  &
+                               - qwshed + leaf_qintercepted
 
 
          !---------------------------------------------------------------------------------!
@@ -1722,7 +1729,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
 
 
-              !---------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
                !       This is called by the hybrid solver only.                           !
                !---------------------------------------------------------------------------!
                if (is_hybrid) then
@@ -1780,8 +1787,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
          !---------------------------------------------------------------------------------!
 
          initp%wflxwc(ico) = wflxwc
-         initp%hflx_wrsti(ico) = initp%rshort_w(ico)+initp%rlong_w(ico) &
-                                 -qwshed+wood_qintercepted
+         initp%hflx_wrsti(ico) = initp%rshort_w(ico) + initp%rlong_w(ico)                  &
+                               - qwshed + wood_qintercepted
 
 
 
@@ -1898,12 +1905,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    dinitp%can_enthalpy = ( hflxsc      + hflxgc      + hflxlc_tot                          &
                          + hflxwc_tot  + qwflxsc     + qwflxgc                             &
                          - qdewgndflx  + qwflxlc_tot + qwflxwc_tot                         &
-                         + qtransp_tot + eflxac                    )*rk4aux(ibuff)%hcapcani
+                         + qtransp_tot + eflxac                    )                       &
+                       * rk4aux(ibuff)%hcapcani
    dinitp%can_shv      = ( wflxsc      + wflxgc      - dewgndflx                           &
                          + wflxlc_tot  + wflxwc_tot  + transp_tot                          & 
-                         + wflxac                                  )*rk4aux(ibuff)%wcapcani
+                         + wflxac                                  )                       &
+                       * rk4aux(ibuff)%wcapcani
    dinitp%can_co2      = ( cflxgc      + cflxlc_tot  + cflxwc_tot                          &
-                         + cflxac                                  )*rk4aux(ibuff)%ccapcani
+                         + cflxac                                  )                       &
+                       * rk4aux(ibuff)%ccapcani
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1957,8 +1967,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
       dinitp%avg_sensible_gc  = hflxsc + hflxgc              ! Sens. heat,  Grnd->Canopy
       dinitp%avg_vapor_gc     = wflxsc + wflxgc - dewgndflx  ! Lat.  heat,  Canopy->Grnd
 
-      dinitp%avg_throughfall  = throughfall_tot             ! Throughfall,   Atmo->Grnd
-      dinitp%avg_qthroughfall = qthroughfall_tot            ! Throughfall,   Atmo->Grnd
+      dinitp%avg_throughfall  = throughfall_tot              ! Throughfall,   Atmo->Grnd
+      dinitp%avg_qthroughfall = qthroughfall_tot             ! Throughfall,   Atmo->Grnd
       !------------------------------------------------------------------------------------!
 
       !------ These are used to compute the averages of the star terms. -------------------!

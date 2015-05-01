@@ -9,39 +9,43 @@
 !------------------------------------------------------------------------------------------!
 subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon           &
                              ,soil_water,soil_energy,soil_text,psibar_10d,leaf_class)
-   use mem_grid          , only : runtype         & ! intent(in)
-                                , iyeara          & ! intent(in)
-                                , imontha         & ! intent(in)
-                                , idatea          & ! intent(in)
-                                , itimea          ! ! intent(in)
-   use mem_soil_moisture , only : soil_moist      & ! intent(in)
-                                , soil_moist_fail & ! intent(in)
-                                , usdata_in       & ! intent(in)
-                                , usmodel_in      & ! intent(in)
-                                , oslmsts         & ! intent(in)
-                                , osoilcp         ! ! intent(in)
-   use io_params         , only : timstr          ! ! intent(in)
-   use rconstants        , only : wdns            & ! intent(in)
-                                , t00             & ! intent(in)
-                                , t3ple           & ! intent(in)
-                                , day_sec         ! ! intent(in)
-   use leaf_coms         , only : soilcp          & ! intent(in)
-                                , slmsts          & ! intent(in)
-                                , slcpd           & ! intent(in)
-                                , slpots          & ! intent(in)
-                                , slbs            & ! intent(in)
-                                , phenology       & ! intent(in)
-                                , kroot           & ! intent(in)
-                                , psild           & ! intent(in)
-                                , psiwp           & ! intent(in)
-                                , dslz            ! ! intent(in)
-   use mem_leaf          , only : stgoff          & ! intent(in)
-                                , slmstr          & ! intent(in)
-                                , slz             ! ! intent(in)
-   use grid_dims         , only : str_len         ! ! intent(in)
-   use therm_lib         , only : cmtl2uext       & ! function
-                                , press2exner     & ! function
-                                , extheta2temp    ! ! function
+   use mem_grid          , only : runtype                    & ! intent(in)
+                                , iyeara                     & ! intent(in)
+                                , imontha                    & ! intent(in)
+                                , idatea                     & ! intent(in)
+                                , itimea                     ! ! intent(in)
+   use mem_soil_moisture , only : soil_moist                 & ! intent(in)
+                                , soil_moist_fail            & ! intent(in)
+                                , usdata_in                  & ! intent(in)
+                                , usmodel_in                 & ! intent(in)
+                                , oslmsts                    & ! intent(in)
+                                , osoilcp                    & ! intent(in)
+                                , oslpots                    & ! intent(in)
+                                , oslbs                      ! ! intent(in)
+   use io_params         , only : timstr                     ! ! intent(in)
+   use rconstants        , only : wdns                       & ! intent(in)
+                                , t00                        & ! intent(in)
+                                , t3ple                      & ! intent(in)
+                                , day_sec                    & ! intent(in)
+                                , lnexp_min                  & ! intent(in)
+                                , lnexp_max                  ! ! intent(in)
+   use leaf_coms         , only : soilcp                     & ! intent(in)
+                                , slmsts                     & ! intent(in)
+                                , slcpd                      & ! intent(in)
+                                , phenology                  & ! intent(in)
+                                , kroot                      & ! intent(in)
+                                , psild                      & ! intent(in)
+                                , psiwp                      & ! intent(in)
+                                , dslz                       & ! intent(in)
+                                , leaf3_matric_potential     & ! function
+                                , leaf3_matric_potential_inv ! ! function
+   use mem_leaf          , only : stgoff                     & ! intent(in)
+                                , slmstr                     & ! intent(in)
+                                , slz                        ! ! intent(in)
+   use grid_dims         , only : str_len                    ! ! intent(in)
+   use therm_lib         , only : cmtl2uext                  & ! function
+                                , press2exner                & ! function
+                                , extheta2temp               ! ! function
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                           , intent(in)    :: n1
@@ -87,6 +91,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    integer                                           :: i2
    integer                                           :: j2
    integer                                           :: kk
+   integer                                           :: kuse
    integer                                           :: ipref
    integer                                           :: ipref_start
    integer                                           :: icihourmin
@@ -127,12 +132,17 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real                                              :: lons
    real                                              :: dlatr
    real                                              :: dlonr
-   real                                              :: slmrel
-   real                                              :: swat_new
+   real                                              :: swat_loc
+   real                                              :: sfac_loc
+   real                                              :: spot_loc
    real                                              :: available_water
    real                                              :: psi_layer
    integer                                           :: size_usmodel
    integer                                           :: size_expected
+   logical                                           :: avg_matpot
+   logical                                           :: force_smoist
+   !----- Local constants. ----------------------------------------------------------------!
+   real                              , parameter     :: sm_factor = 0.85
    !----- External functions. -------------------------------------------------------------!
    integer                           , external      :: filesize4
    real                              , external      :: soil_idx2water
@@ -143,7 +153,28 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    iyear2  = iyeara
    imonth2 = imontha
    idate2  = idatea
-   
+
+   !---------------------------------------------------------------------------------------!
+   !    For testing only.  Once we decide the best method, we stick with the one that      !
+   ! works best.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   avg_matpot   = .false. ! itimea == 1200
+   force_smoist = .false. ! itimea == 1200 .and. sm_factor /= 1.0
+   !----- Warn the user about the soil initialisation technique. --------------------------!
+   if (avg_matpot) then
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a)') '   If data are available, soil moisture initialisation '
+      write (unit=*,fmt='(a)') ' will interpolate SOIL MATRIC POTENTIAL. '
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+   else
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a)') '   If data are available, soil moisture initialisation '
+      write (unit=*,fmt='(a)') ' will interpolate RELATIVE SOIL MOISTURE. '
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Determine which kind of soil moisture we are using. -----------------------------!
    ipref_start = index(usdata_in,'/',back=.true.) + 1
    !---------------------------------------------------------------------------------------!
@@ -330,9 +361,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
 
                   !------ Integrate the relative potential. -------------------------------!
                   if (k >= kroot(nveg) .and. nsoil /= 13) then
-                     psi_layer       = slpots(nsoil)                                       &
-                                     / (soil_water(k,i,j,ipat) / slmsts(nsoil))            &
-                                     ** slbs(nsoil)
+                     psi_layer       = leaf3_matric_potential(nsoil,soil_water(k,i,j,ipat))
                      available_water = available_water                                     &
                                      + max(0., (psi_layer    - psiwp(nsoil))               &
                                              / (psild(nsoil) - psiwp(nsoil)) )             &
@@ -494,8 +523,13 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                         if (api_us(ii,jj,k) > 1.e-5) then
                            do ipat=2,npat
                               ncount = ncount + 1
+
+
+                              nsoil    = nint(soil_text(k,i,j,ipat))
+
+
                               !------------------------------------------------------------!
-                              !    Deciding in which units the soil moisture data are.     !
+                              !    Decide in which units the soil moisture data are.       !
                               !------------------------------------------------------------!
                               select case (trim(pref))
                               case ('us','SM')
@@ -505,12 +539,9 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                  ! number, we first normalise the soil moisture then scale !
                                  ! with the current parameter.                             !
                                  !---------------------------------------------------------!
-                                 nsoil    = nint(soil_text(k,i,j,ipat))
-                                 slmrel   = (api_us(ii,jj,k) - osoilcp(nsoil))             &
-                                          / (oslmsts(nsoil)  - osoilcp(nsoil))
-                                 swat_new = soilcp(nsoil)                                  &
-                                          + slmrel * (slmsts(nsoil)  - soilcp(nsoil))
-                                 usdum(k) = usdum(k) + swat_new
+                                 swat_loc = max( osoilcp(nsoil)                            &
+                                               , min(oslmsts(nsoil),api_us(ii,jj,k)) )
+                                 !---------------------------------------------------------!
 
                               case ('SM_v2.','GL_SM.GPCP.','GL_SM.GPNR.')
                                  !---------------------------------------------------------!
@@ -519,62 +550,117 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                  ! must scale the range to fall within the [soilcp;slmsts] !
                                  ! interval.                                               !
                                  !---------------------------------------------------------!
-                                 nsoil    = nint(soil_text(k,i,j,ipat))
-                                 slmrel   = ( api_us(ii,jj,k) * oslmsts(nsoil)             &
-                                            - osoilcp(nsoil))                              &
-                                          / (oslmsts(nsoil)  - osoilcp(nsoil))
-                                 swat_new = soilcp(nsoil)                                  &
-                                          + slmrel * (slmsts(nsoil)  - soilcp(nsoil))
-                                 usdum(k) = usdum(k) + swat_new
+                                 swat_loc = api_us(ii,jj,k) * oslmsts(nsoil)
+                                 swat_loc = max( osoilcp(nsoil)                            &
+                                               , min(oslmsts(nsoil),swat_loc) )
+                                 !---------------------------------------------------------!
                               end select
+                              !------------------------------------------------------------!
+
+
+
+                              !------------------------------------------------------------!
+                              !     Find fraction and soil moisture potential, then re-    !
+                              ! calculate the soil moisture in m3/m3 using the current     !
+                              ! parameters.                                                !
+                              !------------------------------------------------------------!
+                              if (swat_loc > 0.) then
+                                 spot_loc = oslpots(nsoil)                                 &
+                                          * ( oslmsts(nsoil) / swat_loc ) ** oslbs(nsoil)
+                              else
+                                 spot_loc = 0.
+                              end if
+                              sfac_loc = ( swat_loc        - osoilcp(nsoil) )              &
+                                       / ( oslmsts(nsoil)  - osoilcp(nsoil) )
+                              !------------------------------------------------------------!
+
+
+
+                              !------------------------------------------------------------!
+                              !     Test whether to average potential or water content.    !
+                              !------------------------------------------------------------!
+                              if (avg_matpot) then
+                                 usdum(k) = usdum(k) + log(abs(spot_loc))
+                              else
+                                 usdum(k) = usdum(k) + sfac_loc
+                              end if
+                              !------------------------------------------------------------!
                            end do
+                           !---------------------------------------------------------------!
                         end if
+                        !------------------------------------------------------------------!
                      end do
+                     !---------------------------------------------------------------------!
                   end do
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Normalise moisture (or matric potential). ------------------------!
                   usdum(k) = usdum(k) / (real(ncount) + 1.E-10)
+                  if (avg_matpot) then
+                     usdum(k) = - exp(max(lnexp_min,min(lnexp_max,usdum(k))))
+                  end if
+                  !------------------------------------------------------------------------!
                end do
 
                kloop: do k = mzg,1,-1
                   kkloop: do kk = n4us,1,-1
                      if (slz(k) >= slz_us(kk)) then
-                        do ipat=2,npat
-                           nsoil = nint(soil_text(k,i,j,ipat))
-                           !----- Only reasonable soil moisture values are accepted. ------!
-                           if (usdum(kk+1) < soilcp(nsoil)) then
-                              soil_water(k,i,j,ipat) = soilcp(nsoil)
-                           elseif (usdum(kk+1) > slmsts(nsoil)) then
-                              soil_water(k,i,j,ipat) = slmsts(nsoil)
-                           else
-                              soil_water(k,i,j,ipat) = usdum(kk+1)
-                           end if
-                        end do
-                        cycle kloop
+                        kuse = kk + 1
+                     elseif (slz(k) < slz_us(1)) then
+                        kuse = 1
                      else
-                        do ipat=2,npat
-                           nsoil = nint(soil_text(k,i,j,ipat))
-                           if (usdum(1) < soilcp(nsoil)) then
-                              soil_water(k,i,j,ipat) = soilcp(nsoil)
-                           elseif (usdum(1) > slmsts(nsoil)) then
-                              soil_water(k,i,j,ipat) = slmsts(nsoil)
-                           else
-                              soil_water(k,i,j,ipat) = usdum(1)
-                           end if
-                        end do
-                        cycle kloop
+                        cycle kkloop
                      end if
-                  end do kkloop
-               end do kloop
-            end if
-         end do readiloop
-      end do readjloop
 
+                     do ipat=2,npat
+                        nsoil = nint(soil_text(k,i,j,ipat))
+
+                        !------------------------------------------------------------------!
+                        !     Check whether usdum has soil moisture or soil matric         !
+                        ! potential.                                                       !
+                        !------------------------------------------------------------------!
+                        if (avg_matpot) then
+                           swat_loc = leaf3_matric_potential_inv(nsoil,usdum(kuse))
+                        else
+                           swat_loc = soilcp(nsoil)                                        &
+                                    + usdum(kuse) * (slmsts(nsoil) - soilcp(nsoil))
+                        end if
+                        soil_water(k,i,j,ipat) = max( soilcp (nsoil)                       &
+                                                    , min(slmsts(nsoil),swat_loc) )
+                        !------------------------------------------------------------------!
+                     end do
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !      This layer is solved, move to the next layer.                  !
+                     !---------------------------------------------------------------------!
+                     exit kkloop
+                     !---------------------------------------------------------------------!
+                  end do kkloop
+                  !------------------------------------------------------------------------!
+               end do kloop
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+         end do readiloop
+         !---------------------------------------------------------------------------------!
+      end do readjloop
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Free some memory. ------------------------------------------------------------!
       deallocate(api_us,usdum,prlat,prlon)
-      
+      !------------------------------------------------------------------------------------!
+
+
       !----- Write the soil moisture into the output. -------------------------------------!
       open (unit=19,file=usmodel,status='replace',form='unformatted',access='direct'       &
            ,recl=4*n2*n3*mzg*npat)
       write(unit=19,rec=1) soil_water
       close(unit=19,status='keep')
+      !------------------------------------------------------------------------------------!
 
    else
 
@@ -604,11 +690,68 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                nsoil = nint(soil_text(k,i,j,ipat))
 
                !---------------------------------------------------------------------------!
-               !      Initialise homogeneous soil moisture and temperature.  Make sure     !
-               ! that moisture is bounded.                                                 !
+               !      Make sure that moisture is bounded.                                  !
                !---------------------------------------------------------------------------!
                soil_water(k,i,j,ipat) = max(soilcp(nsoil)                                  &
                                            ,min(soil_water(k,i,j,ipat), slmsts(nsoil)))
+               !---------------------------------------------------------------------------!
+
+
+               !###########################################################################!
+               !###########################################################################!
+               !                                                                           !
+               !                                                                           !
+               !****************** TEMPORARY TEST, TO BE REMOVED SOON! ********************!
+               !                                                                           !
+               !                                                                           !
+               !###########################################################################!
+               !###########################################################################!
+               if (force_smoist) then
+                  write(unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  write(unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') ' '
+                  write(unit=*,fmt='(a)') '    This simulation has an artificial change in '
+                  write(unit=*,fmt='(a)') ' soil moisture:                                 '
+                  write(unit=*,fmt='(a)') ' '
+                  if (sm_factor > 1.0) then
+                     write(unit=*,fmt='(a,1x,f6.2,a)') ' Artificial increase of '          &
+                                                      ,100.*(sm_factor - 1.0),'%'
+                  elseif (sm_factor < 1.0) then
+                     write(unit=*,fmt='(a,1x,f6.2,a)') ' Artificial reduction of '         &
+                                                      ,100.*(1.0 - sm_factor),'%'
+                  end if
+                  write(unit=*,fmt='(a)') ' '
+                  write(unit=*,fmt='(a)') ' If you were of unaware of this and don''t want '
+                  write(unit=*,fmt='(a)') ' such a kludge, go to                           '
+                  write(unit=*,fmt='(a)') ' BRAMS/src/soil_moisture/soil_moisture_init.f90 '
+                  write(unit=*,fmt='(a)') ' and remove the if block near line 623. '
+                  write(unit=*,fmt='(a)') ' '
+                  write(unit=*,fmt='(a)') ' '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING!  '
+                  write(unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  write(unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+                  soil_water(k,i,j,ipat) = soilcp(nsoil)                                   &
+                                         + sm_factor                                       &
+                                         * ( soil_water(k,i,j,ipat) - soilcp(nsoil) )
+               end if
+               !###########################################################################!
+               !###########################################################################!
+
+
+
+               !----- Assume thermal equilibrium between CAS and soil. --------------------!
                soil_temp              = can_temp + stgoff(k)
                !---------------------------------------------------------------------------!
 
@@ -633,9 +776,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
 
                !------ Integrate the relative potential. ----------------------------------!
                if (k >= kroot(nveg) .and. nsoil /= 13) then
-                  psi_layer       = slpots(nsoil)                                          &
-                                  / (soil_water(k,i,j,ipat) / slmsts(nsoil))               &
-                                  ** slbs(nsoil)
+                  psi_layer       = leaf3_matric_potential(nsoil,soil_water(k,i,j,ipat))
                   available_water = available_water                                        &
                                   + max(0., (psi_layer    - psiwp(nsoil))                  &
                                           / (psild(nsoil) - psiwp(nsoil)) )                &

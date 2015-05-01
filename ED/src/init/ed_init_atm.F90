@@ -4,51 +4,51 @@
 ! conditions plus some soil parameters.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
-   use ed_misc_coms          , only : runtype           & ! intent(in)
-                                    , ibigleaf          & ! intent(in)
-                                    , ied_init_mode     ! ! intent(in)
-   use ed_state_vars         , only : edtype            & ! structure
-                                    , polygontype       & ! structure
-                                    , sitetype          & ! structure
-                                    , patchtype         & ! structure
-                                    , edgrid_g          ! ! structure
-   use soil_coms             , only : soil_rough        & ! intent(in)
-                                    , isoilstateinit    & ! intent(in)
-                                    , soil              & ! intent(in)
-                                    , slmstr            & ! intent(in)
-                                    , stgoff            & ! intent(in)
-                                    , ed_soil_idx2water & ! function
-                                    , matric_potential  ! ! function
-   use consts_coms           , only : wdns              & ! intent(in)
-                                    , t3ple             ! ! intent(in)
-   use grid_coms             , only : nzs               & ! intent(in)
-                                    , nzg               & ! intent(in)
-                                    , ngrids            ! ! intent(in)
-   use fuse_fiss_utils       , only : fuse_patches      & ! subroutine
-                                    , rescale_patches   & ! subroutine
-                                    , fuse_cohorts      & ! subroutine
-                                    , terminate_cohorts & ! subroutine
-                                    , split_cohorts     ! ! subroutine
-   use ed_node_coms          , only : nnodetot          & ! intent(in)
-                                    , mynum             & ! intent(in)
-                                    , sendnum           & ! intent(in)
-                                    , recvnum           ! ! intent(in)
-   use pft_coms              , only : sla               ! ! intent(in)
-   use ed_therm_lib          , only : calc_veg_hcap     & ! subroutine
-                                    , ed_grndvap        ! ! subroutine
-   use canopy_layer_coms     , only : canstr            &
-                                    , alloc_canopy_layer_mbs
-   use therm_lib             , only : thetaeiv          & ! function
-                                    , vpdefil           & ! function
-                                    , idealdenssh       & ! function
-                                    , qslif             & ! function
-                                    , reducedpress      & ! function
-                                    , press2exner       & ! function
-                                    , extheta2temp      & ! function
-                                    , cmtl2uext         ! ! function
-   use met_driver_coms       , only : met_driv_state    ! ! structure
-   use canopy_struct_dynamics, only : canopy_turbulence ! ! subroutine
-   use budget_utils          , only : update_budget     ! ! subroutine
+   use ed_misc_coms          , only : runtype                & ! intent(in)
+                                    , ibigleaf               & ! intent(in)
+                                    , ied_init_mode          ! ! intent(in)
+   use ed_state_vars         , only : edtype                 & ! structure
+                                    , polygontype            & ! structure
+                                    , sitetype               & ! structure
+                                    , patchtype              & ! structure
+                                    , edgrid_g               ! ! structure
+   use soil_coms             , only : soil_rough             & ! intent(in)
+                                    , isoilstateinit         & ! intent(in)
+                                    , soil                   & ! intent(in)
+                                    , slmstr                 & ! intent(in)
+                                    , stgoff                 & ! intent(in)
+                                    , ed_soil_idx2water      & ! function
+                                    , matric_potential       ! ! function
+   use consts_coms           , only : wdns                   & ! intent(in)
+                                    , t3ple                  ! ! intent(in)
+   use grid_coms             , only : nzs                    & ! intent(in)
+                                    , nzg                    & ! intent(in)
+                                    , ngrids                 ! ! intent(in)
+   use fuse_fiss_utils       , only : fuse_patches           & ! subroutine
+                                    , rescale_patches        & ! subroutine
+                                    , fuse_cohorts           & ! subroutine
+                                    , terminate_cohorts      & ! subroutine
+                                    , split_cohorts          ! ! subroutine
+   use ed_node_coms          , only : nnodetot               & ! intent(in)
+                                    , mynum                  & ! intent(in)
+                                    , sendnum                & ! intent(in)
+                                    , recvnum                ! ! intent(in)
+   use pft_coms              , only : sla                    ! ! intent(in)
+   use ed_therm_lib          , only : calc_veg_hcap          & ! subroutine
+                                    , ed_grndvap             ! ! subroutine
+   use canopy_layer_coms     , only : canstr                 & ! intent(out)
+                                    , alloc_canopy_layer_mbs ! ! subroutine
+   use therm_lib             , only : thetaeiv               & ! function
+                                    , vpdefil                & ! function
+                                    , idealdenssh            & ! function
+                                    , qslif                  & ! function
+                                    , reducedpress           & ! function
+                                    , press2exner            & ! function
+                                    , extheta2temp           & ! function
+                                    , cmtl2uext              ! ! function
+   use met_driver_coms       , only : met_driv_state         ! ! structure
+   use canopy_struct_dynamics, only : canopy_turbulence      ! ! subroutine
+   use budget_utils          , only : update_budget          ! ! subroutine
    !$ use omp_lib
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -82,25 +82,32 @@ subroutine ed_init_atm()
    integer                        :: ibuff
    integer                        :: nbuff
    !----- Add the MPI common block. -------------------------------------------------------!
+#if defined(RAMS_MPI)
    include 'mpif.h'
+#endif
    !---------------------------------------------------------------------------------------!
 
    !----- This is just any integer used to control the MPI sending/receiving tools. -------!
    ping = 6
+   !---------------------------------------------------------------------------------------!
 
 
-   !----- This is as good a place as any to initialize canopy variables, particularly -----!
-   !----- those that require separate buffers. --------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      This is as good a place as any to initialize canopy variables, particularly      !
+   ! those that require separate buffers.                                                  !
+   !---------------------------------------------------------------------------------------!
 
-   !------------------------------------------------------------------------------------!
-   ! Initialize the canopy structure arrays
-   !------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    Initialize the canopy structure arrays.                                            !
+   !---------------------------------------------------------------------------------------!
    nbuff = 1
    !$ nbuff= OMP_get_max_threads()
    allocate(canstr(nbuff))
    do ibuff=1,nbuff
-      call alloc_canopy_layer_mbs(canstr(ibuff))   ! The arrays in this structure DO NOT
+      call alloc_canopy_layer_mbs(canstr(ibuff))
    end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -132,7 +139,7 @@ subroutine ed_init_atm()
                ! compute the initial canopy pressure...  It must be called again to have   !
                ! the storage right.                                                        !
                !---------------------------------------------------------------------------!
-               call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               call update_patch_derived_props(csite,ipa)
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -242,16 +249,20 @@ subroutine ed_init_atm()
          !      Initialize soil moisture, temperature, etc. from file specified in the     !
          ! namelist (the ED2 specific file.)                                               !
          !---------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
          if (mynum /= 1) then
             call MPI_Recv(ping,1,MPI_INTEGER,recvnum,92,MPI_COMM_WORLD,MPI_STATUS_IGNORE   &
                          ,ierr)
          end if
+#endif
 
-         call read_soil_moist_temp(cgrid,igr)
+         call read_soil_moist_temp(cgrid)
 
+#if defined(RAMS_MPI)
          if (mynum < nnodetot) then
             call MPI_Send(ping,1,MPI_INTEGER,sendnum,92,MPI_COMM_WORLD,ierr)
          end if
+#endif
 
       case (2)
 #if defined(COUPLED)
@@ -328,7 +339,7 @@ subroutine ed_init_atm()
                   end do snowloop2
                
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
-                  call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+                  call update_patch_derived_props(csite,ipa)
 
                   nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
@@ -343,7 +354,7 @@ subroutine ed_init_atm()
                                  ,csite%ggsoil(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
-                  call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+                  call update_patch_derived_props(csite,ipa)
 
                   nsoil = cpoly%ntext_soil(nzg,isi)
                   nls   = csite%nlev_sfcwater(ipa)
@@ -377,8 +388,6 @@ subroutine ed_init_atm()
       !----- Fuse similar patches to speed up the run. ------------------------------------!
       select case(ibigleaf)
       case (0)
-
-
          !---------------------------------------------------------------------------------!
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!

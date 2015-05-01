@@ -10,7 +10,7 @@ diskthere='/n/moorcroftfs2'            # Output directory
 queue='moorcroft_6100b'                # Queue to be used
 whena='01-01-2008 00:00'               # Initial time for simulation
 whenz='01-01-2009 00:00'               # Final time for simulation
-isfcl=5                                # 1 = LEAF-3 run, 5 = ED-2.2 run
+isfcl=5                                # 1 = LEAF-3 run, 4 = LEAF-4 run, 5 = ED-2.2 run
 
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#

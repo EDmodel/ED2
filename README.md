@@ -1,5 +1,5 @@
 More information about ED can be found in the paper written by
-[moorecroft et al.](http://flux.aos.wisc.edu/~adesai/documents/macrosys_papers-ankur/modeling/Moorcroft-EcolMono-EDmodel.pdf)
+[Moorcroft et al.](http://flux.aos.wisc.edu/~adesai/documents/macrosys_papers-ankur/modeling/Moorcroft-EcolMono-EDmodel.pdf)
 
 r956 aka 0c1bf644bd377bc0636c4f612b6f766f8e682599 from April 9th, is considered "somewhat stable", see report: https://github.com/EDmodel/ED2Documents/blob/master/EDTS/r956vr922rapid.pdf
 

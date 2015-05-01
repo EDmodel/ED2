@@ -10,7 +10,7 @@ module rk4_stepper
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine rkqs(x,htry,hdid,hnext,csite,ipa)
+   subroutine rkqs(x,htry,hdid,hnext,csite,ipa,isi)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_buff    & ! intent(inout)
@@ -35,6 +35,7 @@ module rk4_stepper
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in)    :: ipa
+      integer                  , intent(in)    :: isi
       type(sitetype)           , target        :: csite
       real(kind=8)             , intent(in)    :: htry
       real(kind=8)             , intent(inout) :: x
@@ -57,10 +58,12 @@ module rk4_stepper
          !---------------------------------------------------------------------------------!
          ! 1. Try a step of varying size.                                                  !
          !---------------------------------------------------------------------------------!
-         call rkck(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,integration_buff(ibuff)%ytemp         &
-                     ,integration_buff(ibuff)%yerr,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3      &
-                     ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5,integration_buff(ibuff)%ak6       &
-                     ,integration_buff(ibuff)%ak7,x,h,csite,ipa,reject_step,reject_result)
+         call rkck(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx                  &
+                  ,integration_buff(ibuff)%ytemp,integration_buff(ibuff)%yerr              &
+                  ,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3                 &
+                  ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5                 &
+                  ,integration_buff(ibuff)%ak6,integration_buff(ibuff)%ak7,x,h,csite,ipa   &
+                  ,reject_step,reject_result)
 
          !---------------------------------------------------------------------------------!
          ! 2. Check to see how accurate the step was.  Errors were calculated by integrat- !
@@ -73,8 +76,9 @@ module rk4_stepper
             !------------------------------------------------------------------------------!
             errmax = 1.d1
          else
-            call get_errmax(errmax, integration_buff(ibuff)%yerr,integration_buff(ibuff)%yscal           &
-                           ,csite%patch(ipa),integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
+            call get_errmax(errmax,integration_buff(ibuff)%yerr                            &
+                           ,integration_buff(ibuff)%yscal,csite%patch(ipa)                 &
+                           ,integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
             errmax = errmax * rk4epsi
          end if
 
@@ -135,17 +139,17 @@ module rk4_stepper
 
                if (reject_result) then
                   !----- Run the LSM sanity check but this time we force the print. -------!
-                  call rk4_sanity_check(integration_buff(ibuff)%ytemp,test_reject,csite,ipa       &
-                                       ,integration_buff(ibuff)%dydx,h,.true.)
+                  call rk4_sanity_check(integration_buff(ibuff)%ytemp,test_reject,csite    &
+                                       ,ipa,integration_buff(ibuff)%dydx,h,.true.)
                   call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                elseif (reject_step) then
-                  call rk4_sanity_check(integration_buff(ibuff)%ak7,test_reject,csite,ipa         &
+                  call rk4_sanity_check(integration_buff(ibuff)%ak7,test_reject,csite,ipa  &
                                        ,integration_buff(ibuff)%dydx,h,.true.)
                   call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
                else
-                  call print_errmax(errmax,integration_buff(ibuff)%yerr,integration_buff(ibuff)%yscal    &
-                                      ,csite%patch(ipa),integration_buff(ibuff)%y                 &
-                                      ,integration_buff(ibuff)%ytemp)
+                  call print_errmax(errmax,integration_buff(ibuff)%yerr                    &
+                                   ,integration_buff(ibuff)%yscal,csite%patch(ipa)         &
+                                   ,integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps
@@ -185,13 +189,14 @@ module rk4_stepper
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
                call norm_rk4_fluxes(integration_buff(ibuff)%ytemp,h)
-               call print_rk4_state(integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp,csite,ipa,x,h)
+               call print_rk4_state(integration_buff(ibuff)%y                              &
+                                   ,integration_buff(ibuff)%ytemp,csite,ipa,isi,x,h)
             end if
 
             !------------------------------------------------------------------------------!
             !    3e. Copy the temporary structure to the intermediate state.               !
             !------------------------------------------------------------------------------!
-            call copy_rk4_patch(integration_buff(ibuff)%ytemp,integration_buff(ibuff)%y                  &
+            call copy_rk4_patch(integration_buff(ibuff)%ytemp,integration_buff(ibuff)%y    &
                                ,csite%patch(ipa))
 
             !------------------------------------------------------------------------------!
@@ -456,18 +461,12 @@ module rk4_stepper
                                        , rk4eps                & ! intent(in)
                                        , rk4aux                & ! intent(in)
                                        , toocold               & ! intent(in)
-!                                       , rk4min_can_enthalpy   & ! intent(in)
-!                                       , rk4max_can_enthalpy   & ! intent(in)
-!                                       , rk4min_can_theta      & ! intent(in)
-!                                       , rk4max_can_theta      & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
                                        , rk4min_can_shv        & ! intent(in)
                                        , rk4min_can_rhv        & ! intent(in)
                                        , rk4max_can_rhv        & ! intent(in)
                                        , rk4min_can_temp       & ! intent(in)
                                        , rk4max_can_temp       & ! intent(in)
-!                                       , rk4min_can_prss       & ! intent(in)
-!                                       , rk4max_can_prss       & ! intent(in)
                                        , rk4min_can_co2        & ! intent(in)
                                        , rk4max_can_co2        & ! intent(in)
                                        , rk4max_veg_temp       & ! intent(in)
@@ -477,8 +476,6 @@ module rk4_stepper
                                        , rk4max_sfcw_temp      & ! intent(in)
                                        , rk4max_soil_temp      & ! intent(in)
                                        , rk4min_soil_temp      & ! intent(in)
-!                                       , rk4max_soil_water     & ! intent(in)
-!                                       , rk4min_soil_water     & ! intent(in)
                                        , rk4min_sfcw_mass      & ! intent(in)
                                        , rk4min_virt_water     & ! intent(in)
                                        , rk4tiny_sfcw_mass     & ! intent(in)
@@ -562,7 +559,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air potential temperature is off.                       !
       !------------------------------------------------------------------------------------!
-      if (  y%can_theta > rk4aux(ibuff)%rk4max_can_theta .or. &
+      if (  y%can_theta > rk4aux(ibuff)%rk4max_can_theta .or.                              &
             y%can_theta < rk4aux(ibuff)%rk4min_can_theta ) then
          reject_step = .true.
          if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
@@ -659,7 +656,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (    y%can_prss > rk4aux(ibuff)%rk4max_can_prss .or. &
+      if (    y%can_prss > rk4aux(ibuff)%rk4max_can_prss .or.                              &
               y%can_prss < rk4aux(ibuff)%rk4min_can_prss) then
          reject_step = .true.
          if(record_err) integ_err(5,2) = integ_err(5,2) + 1_8

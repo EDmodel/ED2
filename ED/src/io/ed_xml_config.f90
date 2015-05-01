@@ -76,7 +76,7 @@ recursive subroutine read_ed_xml_config(filename)
   use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms, only : rk4min_veg_temp
   implicit none
-  integer(4) :: i,npft,ntag,myPFT,len,ival = 0
+  integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival = 0
   logical(4) :: texist = .false.
   real(8) :: rval
   character*(*) :: filename
@@ -189,15 +189,32 @@ recursive subroutine read_ed_xml_config(filename)
 
 
 
+  !! read land use data
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','landuse',nlu)    !get number of land use tags
+  write(unit=*,fmt='(a,1x,i5)') ' Number of land use types to be read from file =',nlu
+  do i=1,nlu
+     call libxml2f90__ll_selecttag('DOWN','landuse',i) !select pft
+     call getConfigINT   ('num','landuse',i,myLU,texist)
+     if (myLU >= 1 .and. myLU <= n_dist_types) then
+        call getConfigREAL  ('min_oldgrowth','landuse',i,rval,texist)
+        if(texist) min_oldgrowth(myLU) = real(rval)
+     else
+        write (unit=*,fmt='(a,1x,i6,1x,a)')                                                &
+            ' Land use type ',myLU,' is invalid thus ignored!!!'
+     end if
+     call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+  end do
 
-  
+
   !! read PFT data
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','pft',npft)    !get number of pft tags
   print*,"NPFT = ",npft
   print*,"PFT's READ FROM FILE ::",npft
-  if(npft .ge. 1) then
+  if (npft >= 1) then
      do i=1,npft
         call libxml2f90__ll_selecttag('DOWN','pft',i) !select pft
 
@@ -211,6 +228,8 @@ recursive subroutine read_ed_xml_config(filename)
            endif
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
            if(texist) include_pft_ag(myPFT) = ival == 1
+           call getConfigINT('include_pft_fp','pft',i,ival,texist)
+           if(texist) include_pft_fp(myPFT) = ival == 1
            call getConfigSTRING('name','pft',i,cval,texist)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
            if(texist) SLA(myPFT) = real(rval)
@@ -338,6 +357,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) rho(myPFT) = real(rval)
            call getConfigREAL  ('D0','pft',i,rval,texist)
            if(texist) D0(myPFT) = real(rval)
+           call getConfigREAL  ('mort0','pft',i,rval,texist)
+           if(texist) mort0(myPFT) = real(rval)
            call getConfigREAL  ('mort1','pft',i,rval,texist)
            if(texist) mort1(myPFT) = real(rval)
            call getConfigREAL  ('mort2','pft',i,rval,texist)
@@ -726,6 +747,8 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) plantation_year = ival
         call getConfigREAL  ('plantation_rotation','disturbance',i,rval,texist)
         if(texist) plantation_rotation = real(rval)
+        call getConfigREAL  ('min_harvest_biomass','disturbance',i,rval,texist)
+        if(texist) min_harvest_biomass = real(rval)
         call getConfigREAL  ('mature_harvest_age','disturbance',i,rval,texist)
         if(texist) mature_harvest_age = real(rval)
         !! Possibly DEPRECATED 
@@ -1002,8 +1025,10 @@ subroutine write_ed_xml_config
   use canopy_radiation_coms
   use decomp_coms
   use ed_misc_coms, only: sfilout
+  implicit none
   integer :: ival
   character(512) :: xfilout 
+  integer :: i
 
   write(xfilout,"(a)") trim(sfilout)//".xml"
 

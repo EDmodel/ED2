@@ -215,15 +215,34 @@ subroutine coarse2fine_driver(icm,ifm)
                                  ,leaf_g(ifm)%can_theta      , leaf_g(icm)%can_theta       &
                                  ,leaf_g(ifm)%can_prss       , leaf_g(icm)%can_prss        &
                                  ,leaf_g(ifm)%veg_ndvic      , leaf_g(icm)%veg_ndvic       &
-                                 ,leaf_g(ifm)%sensible_gc    , leaf_g(icm)%sensible_gc     &
-                                 ,leaf_g(ifm)%sensible_vc    , leaf_g(icm)%sensible_vc     &
-                                 ,leaf_g(ifm)%evap_gc        , leaf_g(icm)%evap_gc         &
-                                 ,leaf_g(ifm)%evap_vc        , leaf_g(icm)%evap_vc         &
+                                 ,leaf_g(ifm)%hflxac         , leaf_g(icm)%hflxac          &
+                                 ,leaf_g(ifm)%wflxac         , leaf_g(icm)%wflxac          &
+                                 ,leaf_g(ifm)%qwflxac        , leaf_g(icm)%qwflxac         &
+                                 ,leaf_g(ifm)%eflxac         , leaf_g(icm)%eflxac          &
+                                 ,leaf_g(ifm)%cflxac         , leaf_g(icm)%cflxac          &
+                                 ,leaf_g(ifm)%hflxgc         , leaf_g(icm)%hflxgc          &
+                                 ,leaf_g(ifm)%wflxgc         , leaf_g(icm)%wflxgc          &
+                                 ,leaf_g(ifm)%qwflxgc        , leaf_g(icm)%qwflxgc         &
+                                 ,leaf_g(ifm)%hflxvc         , leaf_g(icm)%hflxvc          &
+                                 ,leaf_g(ifm)%wflxvc         , leaf_g(icm)%wflxvc          &
+                                 ,leaf_g(ifm)%qwflxvc        , leaf_g(icm)%qwflxvc         &
                                  ,leaf_g(ifm)%transp         , leaf_g(icm)%transp          &
+                                 ,leaf_g(ifm)%qtransp        , leaf_g(icm)%qtransp         &
+                                 ,leaf_g(ifm)%intercepted    , leaf_g(icm)%intercepted     &
+                                 ,leaf_g(ifm)%qintercepted   , leaf_g(icm)%qintercepted    &
+                                 ,leaf_g(ifm)%wshed          , leaf_g(icm)%wshed           &
+                                 ,leaf_g(ifm)%qwshed         , leaf_g(icm)%qwshed          &
+                                 ,leaf_g(ifm)%throughfall    , leaf_g(icm)%throughfall     &
+                                 ,leaf_g(ifm)%qthroughfall   , leaf_g(icm)%qthroughfall    &
+                                 ,leaf_g(ifm)%runoff         , leaf_g(icm)%runoff          &
+                                 ,leaf_g(ifm)%qrunoff        , leaf_g(icm)%qrunoff         &
+                                 ,leaf_g(ifm)%drainage       , leaf_g(icm)%drainage        &
+                                 ,leaf_g(ifm)%qdrainage      , leaf_g(icm)%qdrainage       &
                                  ,leaf_g(ifm)%psibar_10d     , leaf_g(icm)%psibar_10d      &
                                  ,leaf_g(ifm)%gpp            , leaf_g(icm)%gpp             &
                                  ,leaf_g(ifm)%plresp         , leaf_g(icm)%plresp          &
-                                 ,leaf_g(ifm)%resphet        , leaf_g(icm)%resphet         )
+                                 ,leaf_g(ifm)%resphet        , leaf_g(icm)%resphet         &
+                                 ,leaf_g(ifm)%growresp       , leaf_g(icm)%growresp        )
    return
 end subroutine coarse2fine_driver
 !==========================================================================================!
@@ -253,11 +272,20 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
                 ,f_can_co2        , c_can_co2        ,f_can_theiv      , c_can_theiv       &
                 ,f_can_vpdef      , c_can_vpdef      ,f_can_theta      , c_can_theta       &
                 ,f_can_prss       , c_can_prss       ,f_veg_ndvic      , c_veg_ndvic       &
-                ,f_sensible_gc    , c_sensible_gc    ,f_sensible_vc    , c_sensible_vc     &
-                ,f_evap_gc        , c_evap_gc        ,f_evap_vc        , c_evap_vc         &
-                ,f_transp         , c_transp         ,f_psibar_10d     , c_psibar_10d      &
+                ,f_hflxac         , c_hflxac         ,f_wflxac         , c_wflxac          &
+                ,f_qwflxac        , c_qwflxac        ,f_eflxac         , c_eflxac          &
+                ,f_cflxac         , c_cflxac         ,f_hflxgc         , c_hflxgc          &
+                ,f_wflxgc         , c_wflxgc         ,f_qwflxgc        , c_qwflxgc         &
+                ,f_hflxvc         , c_hflxvc         ,f_wflxvc         , c_wflxvc          &
+                ,f_qwflxvc        , c_qwflxvc        ,f_transp         , c_transp          &
+                ,f_qtransp        , c_qtransp        ,f_intercepted    , c_intercepted     &
+                ,f_qintercepted   , c_qintercepted   ,f_wshed          , c_wshed           &
+                ,f_qwshed         , c_qwshed         ,f_throughfall    , c_throughfall     &
+                ,f_qthroughfall   , c_qthroughfall   ,f_runoff         , c_runoff          &
+                ,f_qrunoff        , c_qrunoff        ,f_drainage       , c_drainage        &
+                ,f_qdrainage      , c_qdrainage      ,f_psibar_10d     , c_psibar_10d      &
                 ,f_gpp            , c_gpp            ,f_plresp         , c_plresp          &
-                ,f_resphet        , c_resphet        )
+                ,f_resphet        , c_resphet        ,f_growresp       , c_growresp        )
    use mem_grid, only : ipm & ! intent(in)
                       , jpm ! ! intent(in)
    implicit none
@@ -303,15 +331,34 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_theta
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_can_prss
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_ndvic
-   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_sensible_gc
-   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_sensible_vc
-   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_evap_gc
-   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_evap_vc
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_hflxac
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_wflxac
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qwflxac
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_eflxac
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_cflxac
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_hflxgc
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_wflxgc
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qwflxgc
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_hflxvc
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_wflxvc
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qwflxvc
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_transp
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qtransp
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_intercepted
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qintercepted
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_wshed
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qwshed
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_throughfall
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qthroughfall
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_runoff
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qrunoff
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_drainage
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_qdrainage
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_psibar_10d
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_gpp
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_plresp
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_resphet
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_growresp
    real, dimension(mzg,mxpf,mypf,mpat), intent(out) :: f_soil_water
    real, dimension(mzg,mxpf,mypf,mpat), intent(out) :: f_soil_energy
    real, dimension(mzs,mxpf,mypf,mpat), intent(out) :: f_sfcwater_mass
@@ -344,15 +391,34 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_theta
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_can_prss
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_ndvic
-   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_sensible_gc
-   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_sensible_vc
-   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_evap_gc
-   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_evap_vc
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_hflxac
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_wflxac
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qwflxac
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_eflxac
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_cflxac
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_hflxgc
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_wflxgc
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qwflxgc
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_hflxvc
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_wflxvc
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qwflxvc
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_transp
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qtransp
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_intercepted
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qintercepted
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_wshed
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qwshed
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_throughfall
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qthroughfall
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_runoff
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qrunoff
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_drainage
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_qdrainage
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_psibar_10d
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_gpp
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_plresp
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_resphet
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_growresp
    !----- Local variables. ----------------------------------------------------------------!
    integer                                          :: i
    integer                                          :: j
@@ -407,15 +473,34 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
             f_can_theta            (i,j,ipat) = c_can_theta       (ic,jc,ipat) 
             f_can_prss             (i,j,ipat) = c_can_prss        (ic,jc,ipat) 
             f_veg_ndvic            (i,j,ipat) = c_veg_ndvic       (ic,jc,ipat)
-            f_sensible_gc          (i,j,ipat) = c_sensible_gc     (ic,jc,ipat)
-            f_sensible_vc          (i,j,ipat) = c_sensible_vc     (ic,jc,ipat)
-            f_evap_gc              (i,j,ipat) = c_evap_gc         (ic,jc,ipat)
-            f_evap_vc              (i,j,ipat) = c_evap_vc         (ic,jc,ipat)
+            f_hflxac               (i,j,ipat) = c_hflxac          (ic,jc,ipat)
+            f_wflxac               (i,j,ipat) = c_wflxac          (ic,jc,ipat)
+            f_qwflxac              (i,j,ipat) = c_qwflxac         (ic,jc,ipat)
+            f_eflxac               (i,j,ipat) = c_eflxac          (ic,jc,ipat)
+            f_cflxac               (i,j,ipat) = c_cflxac          (ic,jc,ipat)
+            f_hflxgc               (i,j,ipat) = c_hflxgc          (ic,jc,ipat)
+            f_wflxgc               (i,j,ipat) = c_wflxgc          (ic,jc,ipat)
+            f_qwflxgc              (i,j,ipat) = c_qwflxgc         (ic,jc,ipat)
+            f_hflxvc               (i,j,ipat) = c_hflxvc          (ic,jc,ipat)
+            f_wflxvc               (i,j,ipat) = c_wflxvc          (ic,jc,ipat)
+            f_qwflxvc              (i,j,ipat) = c_qwflxvc         (ic,jc,ipat)
             f_transp               (i,j,ipat) = c_transp          (ic,jc,ipat)
+            f_qtransp              (i,j,ipat) = c_qtransp         (ic,jc,ipat)
+            f_intercepted          (i,j,ipat) = c_intercepted     (ic,jc,ipat)
+            f_qintercepted         (i,j,ipat) = c_qintercepted    (ic,jc,ipat)
+            f_wshed                (i,j,ipat) = c_wshed           (ic,jc,ipat)
+            f_qwshed               (i,j,ipat) = c_qwshed          (ic,jc,ipat)
+            f_throughfall          (i,j,ipat) = c_throughfall     (ic,jc,ipat)
+            f_qthroughfall         (i,j,ipat) = c_qthroughfall    (ic,jc,ipat)
+            f_runoff               (i,j,ipat) = c_runoff          (ic,jc,ipat)
+            f_qrunoff              (i,j,ipat) = c_qrunoff         (ic,jc,ipat)
+            f_drainage             (i,j,ipat) = c_drainage        (ic,jc,ipat)
+            f_qdrainage            (i,j,ipat) = c_qdrainage       (ic,jc,ipat)
             f_psibar_10d           (i,j,ipat) = c_psibar_10d      (ic,jc,ipat)
             f_gpp                  (i,j,ipat) = c_gpp             (ic,jc,ipat)
             f_plresp               (i,j,ipat) = c_plresp          (ic,jc,ipat)
             f_resphet              (i,j,ipat) = c_resphet         (ic,jc,ipat)
+            f_growresp             (i,j,ipat) = c_growresp        (ic,jc,ipat)
          end do lonloop
       end do latloop
    end do patchloop

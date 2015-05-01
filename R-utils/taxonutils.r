@@ -2283,7 +2283,7 @@ keep.gen.spe.only <<- function(x,out="both"){
          gen = capwords(ans[1],strict=TRUE)
          if (nans > 1 && (! gen %in% "Deleteme")){
             spe = tolower(ans[2])
-            if (spe %in% c("sp.","sp.1","ni","ind")) spe = NA_character_
+            if (spe %in% c("sp.","sp.1","ni","ind","deleteme")) spe = NA_character_
          }else{
             gen = NA_character_
          }#end if

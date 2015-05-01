@@ -55,14 +55,13 @@ image.map <<- function( x
                       , key.options      = NULL
                       , sub.options      = NULL
                       , main.title       = NULL
-                      , main.xlab        = NULL
-                      , main.ylab        = NULL
                       , key.title        = NULL
                       , plot.after       = NULL
                       , matrix.plot      = FALSE
                       , legend.options   = NULL
                       , edge.axes        = FALSE
                       , oma              = NULL
+                      , omd              = NULL
                       , f.key            = 1/6
                       , f.leg            = 1/6
                       , off.xlab         = NULL
@@ -71,6 +70,10 @@ image.map <<- function( x
                       , yaxs             = "i"
                       , smidgen          = 0
                       , interp.xyz       = FALSE
+                      , interp.method    = c("interp","raster","kriging")
+                      , same.mesh        = FALSE
+                      , nx.interp        = NA
+                      , ny.interp        = NA
                       , useRaster        = TRUE
                       , byrow            = TRUE
                       , ...
@@ -89,6 +92,12 @@ image.map <<- function( x
    #---------------------------------------------------------------------------------------#
 
 
+
+   #---------------------------------------------------------------------------------------#
+   #     Get the interpolation method.                                                     #
+   #---------------------------------------------------------------------------------------#
+   interp.method = match.arg(interp.method)
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Check whether x, y, and z are the same type of data.                             #
@@ -156,19 +165,24 @@ image.map <<- function( x
    mar.orig = par.orig$mar
    on.exit(par(par.orig))
    par(par.user)
+   #---------------------------------------------------------------------------------------#
 
 
 
 
 
    #----- Check for outer margins. --------------------------------------------------------#
-   if (is.null(oma) && npanels == 1){
+   if ( (! is.null(oma)) && (! is.null(omd))){
+      stop ("You cannot provide both oma and omd!")
+   }else if (is.null(oma) && is.null(omd) && npanels == 1){
       par(oma=c(0,0,0,0))
-   }else if (is.null(oma)){
+   }else if (is.null(oma) && is.null(omd)){
       omd = c(0.02,1.00,0.01,0.93)
       par(omd=omd)
-   }else{
+   }else if (is.null(omd)){
       par(oma=oma)
+   }else{
+      par(omd=omd)
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -379,8 +393,8 @@ image.map <<- function( x
       #----- Set the window. --------------------------------------------------------------#
       if (matrix.plot & edge.axes){
          if (left && right){
-            mar.left  = 4.1
-            mar.right = 2.1
+            mar.left  = 4.6
+            mar.right = 0.6
          }else if (left){
             mar.left  = 3.1
             mar.right = 0.1
@@ -435,11 +449,11 @@ image.map <<- function( x
       #----- Find the corners for the rectangles. -----------------------------------------#
       if (interp.xyz){
 
-         #----------------------------------------------------------------------------------#
-         #      We use image to plot, so it looks nice in PDF.                              #
-         #----------------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
+         #      We use image to plot, so it looks nice in PDF.                             #
+         #---------------------------------------------------------------------------------#
          useRaster.now = useRaster && (! xlog) && (! ylog) 
-         #----- Make x and y dimensionless. ------------------------------------------------#
+         #----- Make x and y dimensionless. -----------------------------------------------#
          if (xlog){
             xx    = log(as.numeric(x[[p]]))
          }else{
@@ -453,26 +467,112 @@ image.map <<- function( x
          zz    = z[[p]]
          nx    = length(xx)
          ny    = length(yy)
-         xlow  = min(xx)
-         xhigh = max(xx)
-         ylow  = min(yy)
-         yhigh = max(yy)
-         #----- Scale x and y. -------------------------------------------------------------#
-         xxx    = ( xx - xlow ) / ( xhigh - xlow )
-         yyy    = ( yy - ylow ) / ( yhigh - ylow )
-         sss    = is.finite(zz)
-         xo     = seq(from=0,to=1,length.out=10*length(unique(xx)))
-         yo     = seq(from=0,to=1,length.out=10*length(unique(yy)))
-
-         if (any(is.finite(zz[sss]))){
-            zint   = interp(x=xxx[sss],y=yyy[sss],z=zz[sss],xo=xo,yo=yo)
-            sint   = try(interp(x=xxx     ,y=yyy     ,z=sss    ,xo=xo,yo=yo))
+         if (same.mesh){
+            xlow  = if(xlog){log(min(xlim))}else{min(xlim)}
+            xhigh = if(xlog){log(max(xlim))}else{max(xlim)}
+            ylow  = if(ylog){log(min(ylim))}else{min(ylim)}
+            yhigh = if(ylog){log(max(ylim))}else{max(ylim)}
          }else{
-            zint   = list(x=xo,y=yo,z=matrix(nrow=length(xo),ncol=length(yo)))
-            sint   = list(x=xo,y=yo,z=matrix(nrow=length(xo),ncol=length(yo)))
+            xlow  = min(xx)
+            xhigh = max(xx)
+            ylow  = min(yy)
+            yhigh = max(yy)
          }#end if
-         sint$z = sint$z %>% twothirds
-         zint$z = ifelse(sint$z,zint$z,NA)
+         #----- Scale x and y. ------------------------------------------------------------#
+         xxx     = ( xx - xlow ) / ( xhigh - xlow )
+         yyy     = ( yy - ylow ) / ( yhigh - ylow )
+         sss     = is.finite(zz)
+         #----- Sort coordinates, to average duplicated entries. --------------------------#
+         ooo     = order(xxx,yyy)
+         xxx     = xxx[ooo]
+         yyy     = yyy[ooo]
+         zzz     = zz [ooo]
+         sss     = sss[ooo]
+         iii     = cumsum(! duplicated(cbind(xxx,yyy)))
+         #----- Average duplicated entries. -----------------------------------------------#
+         xxx     = tapply(X=xxx,INDEX=iii,FUN=mean,na.rm=TRUE)
+         yyy     = tapply(X=yyy,INDEX=iii,FUN=mean,na.rm=TRUE)
+         zzz     = tapply(X=zzz,INDEX=iii,FUN=mean,na.rm=TRUE)
+         sss     = tapply(X=sss,INDEX=iii,FUN=any ,na.rm=TRUE)
+         #----- Generate output mesh. -----------------------------------------------------#
+         if (! (nx.interp %>% 0)) nx.interp = 10*length(unique(xx))
+         if (! (ny.interp %>% 0)) ny.interp = 10*length(unique(yy))
+         xo        = seq(from=0,to=1,length.out=nx.interp)
+         yo        = seq(from=0,to=1,length.out=ny.interp)
+         xoyo      = expand.grid(xo,yo)
+         poly.xoyo = list(data.frame(x=xoyo[,1],y=xoyo[,2]))
+         #----- Shuffle data set. ---------------------------------------------------------#
+         idx       = sample(length(xxx))
+         xxx       = xxx[idx]
+         yyy       = yyy[idx]
+         zzz       = zzz[idx]
+         sss       = sss[idx]
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Interpolate data to the grid.                                              #
+         #---------------------------------------------------------------------------------#
+         if (interp.method %in% "interp" && any(sss)){
+            zint = interp.new( x         = xxx[sss]
+                             , y         = yyy[sss]
+                             , z         = zzz[sss]
+                             , xo        = xo
+                             , yo        = yo
+                             , linear    = FALSE
+                             , extrap    = TRUE
+                             )#end interp.new
+         }else if (interp.method %in% "raster" && any(sss)){
+            xxxyyy  = cbind(xxx[sss],yyy[sss])
+            rrr     = raster(ncols=nx.interp,nrows=ny.interp,xmn=0,xmx=1,ymn=0,ymx=1)
+            zint    = rasterize(x=xxxyyy,y=rrr,field=zzz[sss],fun=mean)
+            zo      = zint[[1]]@data@values
+            zo      = matrix(data=zo,nrow=nx.interp,ncol=ny.interp)
+            iy      = sequence(ny.interp)
+            zo      = zo[,rev(sequence(ny.interp))]
+            zint    = list(x=xo,y=yo,z=zo)
+         }else if (interp.method %in% "kriging" && any(sss)){
+            xxxyyy  = cbind(xxx[sss],yyy[sss])
+            rrr     = raster(ncols=2*nx.interp,nrows=2*ny.interp,xmn=0,xmx=1,ymn=0,ymx=1)
+            zint    = rasterize(x=xxxyyy,y=rrr,field=zzz[sss],fun=mean)
+            z2o     = slot(slot(zint$layer,"data"),"values")
+            z2o     = matrix(data=z2o,nrow=2*nx.interp,ncol=2*ny.interp)
+            z2o     = z2o[,rev(sequence(2*ny.interp))]
+            x2o     = seq(from=0,to=1,length.out=2*nx.interp)
+            y2o     = seq(from=0,to=1,length.out=2*ny.interp)
+            keep    = is.finite(z2o)
+            xyz2o   = cbind(expand.grid(x2o,y2o),c(z2o))
+            zint    = kriging   ( x         = xyz2o[keep,1]
+                                , y         = xyz2o[keep,2]
+                                , response  = xyz2o[keep,3]
+                                , model     = "spherical"
+                                , pixels    = max(nx.interp,ny.interp)
+                                )#end kriging
+
+            xxxyyy  = cbind(zint$map$x,zint$map$y)
+            rrr     = raster(ncols=nx.interp,nrows=ny.interp,xmn=0,xmx=1,ymn=0,ymx=1)
+            zint    = rasterize(x=xxxyyy,y=rrr,field=zint$map$pred,fun=mean)
+            zo      = slot(slot(zint$layer,"data"),"values")
+            zo      = matrix(data=zo,nrow=nx.interp,ncol=ny.interp)
+            iy      = sequence(ny.interp)
+            zo      = zo[,rev(sequence(ny.interp))]
+            zint    = list(x=xo,y=yo,z=zo)
+         }else{
+            zint = list(x=xo,y=yo,z=matrix(nrow=nx.interp,ncol=ny.interp))
+         }#end if
+
+         #----- Find the convex hull of the point cloud. ----------------------------------#
+         if (any(sss)){
+            xxxyyy = cbind(xxx[sss],yyy[sss])
+            xypoly = chull(xxxyyy)
+            xypoly = c(xypoly,xypoly[1])
+            xypoly = xxxyyy[xypoly,]
+            keep   = inout(xoyo,xypoly,bound=TRUE)
+            zint$z = matrix(data=ifelse(keep,zint$z,NA),nrow=nx.interp,ncol=ny.interp)
+         }#end if(any(sss))
+         #---------------------------------------------------------------------------------#
+         
          zint$x = xlow + zint$x * (xhigh - xlow)
          zint$y = ylow + zint$y * (yhigh - ylow)
 
@@ -480,6 +580,7 @@ image.map <<- function( x
          if (ylog) zint$y = exp(zint$y)
 
          image(zint,breaks=levels,col=col,add=TRUE,useRaster=useRaster.now)
+
       }else{
          #---------------------------------------------------------------------------------#
          #    Split zleft into the breaks defined by the colour palette.                   #

@@ -22,7 +22,8 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
                            , writing_dcyc            & ! intent(in)
                            , iprintpolys             & ! intent(in)
                            , frqsum                  ! ! intent(in)
-   use average_utils, only : normalize_ed_fmean_vars & ! sub-routine
+   use average_utils, only : aggregate_polygon_fmean & ! sub-routine
+                           , normalize_ed_fmean_vars & ! sub-routine
                            , integrate_ed_dmean_vars & ! sub-routine
                            , integrate_ed_qmean_vars & ! sub-routine
                            , normalize_ed_dmean_vars & ! sub-routine
@@ -31,8 +32,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
                            , normalize_ed_mmean_vars & ! sub-routine
                            , normalize_ed_qmean_vars & ! sub-routine
                            , zero_ed_mmean_vars      & ! sub-routine
-                           , zero_ed_qmean_vars      & ! sub-routine
-                           , aggregate_polygon_fmean
+                           , zero_ed_qmean_vars      ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical, intent(in)  :: the_end
@@ -170,6 +170,3 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
 end subroutine ed_output
 !==========================================================================================!
 !==========================================================================================!
-
-
-

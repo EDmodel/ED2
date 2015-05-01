@@ -1,6 +1,6 @@
 #==========================================================================================#
 #==========================================================================================#
-# Function colourmap                                                                       #
+# Function mcd12q1.map                                                                     #
 #                                                                                          #
 #    Given the x and y coordinates, this function will plot the vegetation values (modis)  #
 # with a colour scheme but no interpolation...                                             #
@@ -27,6 +27,7 @@ mcd12q1.map <<- function( x
                                              }#end if
                         , xlim             = range(unlist(x),finite=TRUE)
                         , ylim             = range(unlist(y),finite=TRUE)
+                        , plot.highlight   = TRUE
                         , col.highlight    = "white"
                         , dens.highlight   = 2
                         , pch.highlight    = "."
@@ -433,15 +434,17 @@ mcd12q1.map <<- function( x
 
 
       #----- Plot stippling points on highlighted areas. ----------------------------------#
-      stipples( xleft   = xleft  [h[[p]]]
-              , ybottom = ybottom[h[[p]]]
-              , xright  = xright [h[[p]]]
-              , ytop    = ytop   [h[[p]]]
-              , col     = col.highlight
-              , density = dens.highlight
-              , pch     = pch.highlight
-              , cex     = cex.highlight
-              )#end rect
+      if (plot.highlight){
+         stipples( xleft   = xleft  [h[[p]]]
+                 , ybottom = ybottom[h[[p]]]
+                 , xright  = xright [h[[p]]]
+                 , ytop    = ytop   [h[[p]]]
+                 , col     = col.highlight
+                 , density = dens.highlight
+                 , pch     = pch.highlight
+                 , cex     = cex.highlight
+                 )#end rect
+      }#end if (plot.highlight)
       #------------------------------------------------------------------------------------#
 
 

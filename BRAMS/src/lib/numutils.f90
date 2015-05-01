@@ -971,7 +971,7 @@ integer function find_rank(ranking,nmax,rankarray)
          return
       end if
    end do
-   if (find_rank < 0) call fatal_error('Index not found','find_rank','numutils.f90')
+   if (find_rank < 0) call abort_run('Index not found','find_rank','numutils.f90')
    return
 end function find_rank
 !==========================================================================================!

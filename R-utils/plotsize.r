@@ -80,6 +80,10 @@ plotsize = function( proje                  #  Map projection? [T|F]
       stdwidth  =  scale.fac * 10.25
       stdheight =  scale.fac *  7.25
       stdratio  = 10.25 /  7.25
+   }else if (paper == "double"){
+      stdwidth  =  scale.fac * 14.0
+      stdheight =  scale.fac *  7.0
+      stdratio  = 14.0 / 7.0
    }else{
       warning(paste("Unknown paper size (",paper,").  Using letter instead.",sep=""))
       stdwidth  =  scale.fac * 11.0

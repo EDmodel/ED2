@@ -3118,23 +3118,23 @@
                       , plog.dbh = FALSE
                       , plt      = TRUE
                       )#end list
-   n            = n + 1
-   scen.ts[[n]] = list( vname    = "f.bstem"
-                      , desc     = "Relative stem biomass"
-                      , lname    = "Stem"
-                      , short    = "B[S*t*e*m]"
-                      , unit     = untab$kgcokgc
-                      , f.aggr   = "mean"
-                      , add      = 0
-                      , mult     = 1
-                      , pftvar   = TRUE
-                      , dbhvar   = TRUE
-                      , mort     = FALSE
-                      , recr     = FALSE
-                      , plog     = FALSE
-                      , plog.dbh = FALSE
-                      , plt      = TRUE
-                      )#end list
+#   n            = n + 1
+#   scen.ts[[n]] = list( vname    = "f.bstem"
+#                      , desc     = "Relative stem biomass"
+#                      , lname    = "Stem"
+#                      , short    = "B[S*t*e*m]"
+#                      , unit     = untab$kgcokgc
+#                      , f.aggr   = "mean"
+#                      , add      = 0
+#                      , mult     = 1
+#                      , pftvar   = TRUE
+#                      , dbhvar   = TRUE
+#                      , mort     = FALSE
+#                      , recr     = FALSE
+#                      , plog     = FALSE
+#                      , plog.dbh = FALSE
+#                      , plt      = TRUE
+#                      )#end list
    n            = n + 1
    scen.ts[[n]] = list( vname    = "f.broot"
                       , desc     = "Relative root biomass"
@@ -3415,9 +3415,6 @@
                                      ,           "etue",            "rue",            "cue"
                                      ,           "ecue"
                                      )#end c
-                          , stringsAsFactors = FALSE
-                          )#end vname
-   scen.szpft = data.frame( vname = c(    "agb.ncbmort",     "agb.change")
                           , stringsAsFactors = FALSE
                           )#end vname
    #---------------------------------------------------------------------------------------#
@@ -3861,6 +3858,77 @@
 
 
 
+
+#==========================================================================================#
+#==========================================================================================#
+#     This list tells which variables to do the line plot comparing the scenarios, each    #
+# plot having the scenario[[1]] in the X scale, and scenario 2 in the group of box plots   #
+# Panels are panels.                                                                       #
+#                                                                                          #
+# IMPORTANT:  All variables here MUST come from one of the variables defined in scen.ts.   #
+#------------------------------------------------------------------------------------------#
+   #----- All that we need here is the variable name. -------------------------------------#
+   panel.summ = data.frame( vname = c(          "agb",          "lai",           "ba"
+                                     ,          "gpp",          "npp",          "mco"
+                                     ,          "cba",        "ldrop",     "bstorage"
+                                     ,       "bseeds",    "sm.stress",     "phap.sms"
+                                     ,         "mort",      "ncbmort",       "dimort"
+                                     ,         "recr",       "growth",     "agb.mort"
+                                     ,  "agb.ncbmort",   "agb.dimort",     "agb.recr"
+                                     ,   "agb.growth",         "rain","water.deficit"
+                                     ,       "runoff",     "atm.temp",    "leaf.temp"
+                                     ,   "phap.ltemp",       "rshort",        "rlong"
+                                     ,      "atm.vpd",     "leaf.vpd",    "phap.lvpd"
+                                     ,        "smpot",          "nep",         "reco"
+                                     ,  "fast.soil.c","struct.soil.c",  "slow.soil.c"
+                                     ,     "het.resp",   "plant.resp",       "hflxlc"
+                                     ,       "wflxlc",       "transp",       "hflxgc"
+                                     ,       "hflxca",       "wflxgc",       "wflxca"
+                                     ,          "wue",     "leaf.gbw",     "leaf.gsw"
+                                     ,    "phap.lgsw",     "leaf.par",    "phap.lpar"
+                                     ,  "leaf.rshort",       "nplant",          "cue"
+                                     ,         "ecue",    "wood.dens",    "can.depth"
+                                     ,     "can.area",       "dcbadt"
+                                     )#end vname
+                          , stringsAsFactors = FALSE
+                          )#end data.frame
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Fill in the box plot list with information brought from scen.ts.                  #
+   #---------------------------------------------------------------------------------------#
+   #----- Find the variable names to be added. --------------------------------------------#
+   which.names = names(scen.ts)
+   keep        = ! ( which.names %in% names(panel.summ))
+   which.names = which.names[keep]
+   #----- Match the lists based on vname. -------------------------------------------------#
+   comp.idx = match(panel.summ$vname,scen.ts$vname)
+   #----- Look for variables that weren't defined in scen.ts. -----------------------------#
+   comp.miss = is.na(comp.idx)
+   if (any(comp.miss)){
+      cat(" - The following variables in panel.summ are missing from scen.ts:","\n")
+      cat(paste("   * ",panel.summ$vname[comp.miss],sep=""),sep="\n")
+      stop(" - All variables defined in panel.summ must be defined in scen.ts!!!")
+   }#end if(any(x.sel))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Append the information to the data frame. ---------------------------------------#
+   for (wn in which.names) panel.summ[[wn]] = scen.ts[[wn]][comp.idx]
+   #---------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #     XYZ plots, to explore the parameter space.  Units, description, and log scale will   #
@@ -4043,6 +4111,122 @@
 
 
 
+#==========================================================================================#
+#==========================================================================================#
+#     XYZ plots, to explore the parameter space but interpolated to a map.  Units,         #
+# description, and log scale will be copied from scen.ts.                                  #
+#                                                                                          #
+#   IMPORTANT: All variables here MUST come from one of the variables defined in scen.ts!! #
+#------------------------------------------------------------------------------------------#
+   #----- All that we need here is the variable name, legend position or colour scheme. ---#
+   panel.map = list()
+   panel.map$xvar = list( list( vname = "last.1yr.mwd"    , leg        = "centre" )
+                        , list( vname = "nmon.wdef"       , leg        = "centre" )
+                        , list( vname = "last.1yr.sms"    , leg        = "centre" )
+                        , list( vname = "last.1yr.smpot"  , leg        = "centre" )
+                        , list( vname = "last.1yr.lvpd"   , leg        = "centre" )
+                        )#end list
+   panel.map$yvar = panel.map$xvar
+   panel.map$zvar = list( list( vname      = "last.1yr.ncbmort"
+                              , col.scheme = "iclife"
+                              , plog.map   = TRUE
+                              )#end list
+                        , list( vname      = "last.1yr.growth"
+                              , col.scheme = "clife"
+                              , plog.map   = TRUE
+                              )#end list
+                        , list( vname      = "last.1yr.change"
+                              , col.scheme = "clife"
+                              , plog.map   = FALSE
+                              )#end list
+                        , list( vname      = "last.1yr.cue"
+                              , col.scheme = "clife"
+                              , plog.map   = FALSE
+                              )#end list
+                        , list( vname      = "last.1yr.wue"
+                              , col.scheme = "ipanoply"
+                              , plog.map   = FALSE
+                              )#end list
+                        )#end list
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Replace the list by a data frame.                                                 #
+   #---------------------------------------------------------------------------------------#
+   panel.map$xvar = data.frame( apply(X=sapply(X=panel.map$xvar,FUN=c),MARGIN=1,FUN=unlist)
+                             , stringsAsFactors = FALSE
+                             )#end data.frame
+   panel.map$yvar = data.frame( apply(X=sapply(X=panel.map$yvar,FUN=c),MARGIN=1,FUN=unlist)
+                             , stringsAsFactors = FALSE
+                             )#end data.frame
+   panel.map$zvar = data.frame( apply(X=sapply(X=panel.map$zvar,FUN=c),MARGIN=1,FUN=unlist)
+                             , stringsAsFactors = FALSE
+                             )#end data.frame
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Fill in the XYZ list with information brought from scen.ts.                       #
+   #---------------------------------------------------------------------------------------#
+   #----- Get all the names that shall be added. ------------------------------------------#
+   which.names = names(scen.ts) 
+   keep        = ( ! which.names %in% union( union( names(panel.map$xvar)
+                                                  , names(panel.map$yvar)
+                                                  )#end union
+                                           , names(panel.map$zvar)
+                                           )#end union
+                 )#end keep
+   which.names = which.names[keep]
+   #----- Match the lists based on vname. -------------------------------------------------#
+   x.idx = match(panel.map$xvar$vname,scen.ts$vname)
+   y.idx = match(panel.map$yvar$vname,scen.ts$vname)
+   z.idx = match(panel.map$zvar$vname,scen.ts$vname)
+   #----- Look for variables that weren't defined in scen.ts. -----------------------------#
+   x.sel = is.na(x.idx)
+   y.sel = is.na(y.idx)
+   z.sel = is.na(z.idx)
+   if (any(x.sel) | any(y.sel) | any(z.sel)){
+      if (any(x.sel)){
+         cat(" - The following variables in panel.map$xvar are missing from scen.ts:","\n")
+         cat(paste("   * ",panel.map$xvar$vname[x.sel],sep=""),sep="\n")
+      }#end if(any(x.sel))
+      if (any(y.sel)){
+         cat(" - The following variables in panel.map$yvar are missing from scen.ts:","\n")
+         cat(paste("   * ",panel.map$yvar$vname[y.sel],sep=""),sep="\n")
+      }#end if(any(y.sel))
+      if (any(z.sel)){
+         cat(" - The following variables in panel.map$zvar are missing from scen.ts:","\n")
+         cat(paste("   * ",panel.map$zvar$vname[z.sel],sep=""),sep="\n")
+      }#end if(any(z.sel))
+      stop(" - All variables defined in panel.map must be defined in scen.ts!!!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Append the information to the data frame. ---------------------------------------#
+   for (wn in which.names){
+      panel.map$xvar[[wn]] = scen.ts[[wn]][x.idx]
+      panel.map$yvar[[wn]] = scen.ts[[wn]][y.idx]
+      panel.map$zvar[[wn]] = scen.ts[[wn]][z.idx]
+   }#end for
+   for (nl in c("plog.map")){
+      panel.map$zvar[[nl]] = as.logical(panel.map$zvar[[nl]])
+   }#end for
+   #---------------------------------------------------------------------------------------#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
 
 #==========================================================================================#
 #==========================================================================================#
@@ -4177,6 +4361,7 @@ scen.barplot  <<- scen.barplot
 scen.xyz      <<- scen.xyz 
 scen.comp     <<- scen.comp
 panel.box     <<- panel.box
+panel.summ    <<- panel.summ
 pca.explain   <<- pca.explain
 acorr.plot    <<- acorr.plot
 nscen.ts      <<- nrow(scen.ts)
@@ -4187,9 +4372,13 @@ nscen.yvar    <<- nrow(scen.xyz$yvar )
 nscen.zvar    <<- nrow(scen.xyz$zvar )
 nscen.comp    <<- nrow(scen.comp     )
 npanel.box    <<- nrow(panel.box     )
+npanel.summ   <<- nrow(panel.summ    )
 npanel.xvar   <<- nrow(panel.xyz$xvar)
 npanel.yvar   <<- nrow(panel.xyz$yvar)
 npanel.zvar   <<- nrow(panel.xyz$zvar)
+npanel.xmap   <<- nrow(panel.map$xvar)
+npanel.ymap   <<- nrow(panel.map$yvar)
+npanel.zmap   <<- nrow(panel.map$zvar)
 npca.explain  <<- nrow(pca.explain   )
 nacorr.plot   <<- nrow(acorr.plot    )
 #==========================================================================================#

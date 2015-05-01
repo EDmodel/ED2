@@ -99,30 +99,30 @@ module scratch_coms
       type(scratch_vars), intent(inout) :: scrvar
       !------------------------------------------------------------------------------------!
 
-      if(associated(scrvar%c)) nullify(scrvar%c)
-      if(associated(scrvar%d)) nullify(scrvar%d)
-      if(associated(scrvar%e)) nullify(scrvar%e)
-      if(associated(scrvar%f)) nullify(scrvar%f)
-      if(associated(scrvar%g)) nullify(scrvar%g)
-      if(associated(scrvar%h)) nullify(scrvar%h)
-      if(associated(scrvar%i)) nullify(scrvar%i)
-      if(associated(scrvar%j)) nullify(scrvar%j)
-      if(associated(scrvar%k)) nullify(scrvar%k)
-      if(associated(scrvar%l)) nullify(scrvar%l)
-      if(associated(scrvar%m)) nullify(scrvar%m)
-      if(associated(scrvar%n)) nullify(scrvar%n)
-      if(associated(scrvar%o)) nullify(scrvar%o)
-      if(associated(scrvar%p)) nullify(scrvar%p)
-      if(associated(scrvar%q)) nullify(scrvar%q)
-      if(associated(scrvar%r)) nullify(scrvar%r)
-      if(associated(scrvar%s)) nullify(scrvar%s)
-      if(associated(scrvar%t)) nullify(scrvar%t)
-      if(associated(scrvar%u)) nullify(scrvar%u)
-      if(associated(scrvar%v)) nullify(scrvar%v)
-      if(associated(scrvar%w)) nullify(scrvar%w)
-      if(associated(scrvar%x)) nullify(scrvar%x)
-      if(associated(scrvar%y)) nullify(scrvar%y)
-      if(associated(scrvar%z)) nullify(scrvar%z)
+      nullify(scrvar%c)
+      nullify(scrvar%d)
+      nullify(scrvar%e)
+      nullify(scrvar%f)
+      nullify(scrvar%g)
+      nullify(scrvar%h)
+      nullify(scrvar%i)
+      nullify(scrvar%j)
+      nullify(scrvar%k)
+      nullify(scrvar%l)
+      nullify(scrvar%m)
+      nullify(scrvar%n)
+      nullify(scrvar%o)
+      nullify(scrvar%p)
+      nullify(scrvar%q)
+      nullify(scrvar%r)
+      nullify(scrvar%s)
+      nullify(scrvar%t)
+      nullify(scrvar%u)
+      nullify(scrvar%v)
+      nullify(scrvar%w)
+      nullify(scrvar%x)
+      nullify(scrvar%y)
+      nullify(scrvar%z)
    end subroutine nullify_scratch
    !=======================================================================================!
    !=======================================================================================!
@@ -165,6 +165,47 @@ module scratch_coms
       if(associated(scrvar%y)) deallocate(scrvar%y)
       if(associated(scrvar%z)) deallocate(scrvar%z)
    end subroutine dealloc_scratch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine zero_scratch(scrvar)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(scratch_vars), intent(inout) :: scrvar
+      !------------------------------------------------------------------------------------!
+
+      if(associated(scrvar%c)) scrvar%c(:) = 0.0
+      if(associated(scrvar%d)) scrvar%d(:) = 0.0
+      if(associated(scrvar%e)) scrvar%e(:) = 0.0
+      if(associated(scrvar%f)) scrvar%f(:) = 0.0
+      if(associated(scrvar%g)) scrvar%g(:) = 0.0
+      if(associated(scrvar%h)) scrvar%h(:) = 0.0
+      if(associated(scrvar%i)) scrvar%i(:) = 0.0
+      if(associated(scrvar%j)) scrvar%j(:) = 0.0
+      if(associated(scrvar%k)) scrvar%k(:) = 0.0
+      if(associated(scrvar%l)) scrvar%l(:) = 0.0
+      if(associated(scrvar%m)) scrvar%m(:) = 0.0
+      if(associated(scrvar%n)) scrvar%n(:) = 0.0
+      if(associated(scrvar%o)) scrvar%o(:) = 0.0
+      if(associated(scrvar%p)) scrvar%p(:) = 0.0
+      if(associated(scrvar%q)) scrvar%q(:) = 0.0
+      if(associated(scrvar%r)) scrvar%r(:) = 0.0
+      if(associated(scrvar%s)) scrvar%s(:) = 0.0
+      if(associated(scrvar%t)) scrvar%t(:) = 0.0
+      if(associated(scrvar%u)) scrvar%u(:) = 0.0
+      if(associated(scrvar%v)) scrvar%v(:) = 0.0
+      if(associated(scrvar%w)) scrvar%w(:) = 0.0
+      if(associated(scrvar%x)) scrvar%x(:) = 0.0
+      if(associated(scrvar%y)) scrvar%y(:) = 0.0
+      if(associated(scrvar%z)) scrvar%z(:) = 0.0
+   end subroutine zero_scratch
    !=======================================================================================!
    !=======================================================================================!
 
