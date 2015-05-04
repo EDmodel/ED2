@@ -344,7 +344,7 @@ subroutine ncep_load_var_table(nv,current_grid,varname,npointer,idim_type,ngrid,
       end if
 
    !----- Real, scalar, vectors and higher-rank arrays are considered, check everything ---!
-   elseif (xtype == NF90_SHORT) then
+   elseif (xtype == NF90_FLOAT) then
       select case(ndims)
 
       !------------------------------------------------------------------------------------!
