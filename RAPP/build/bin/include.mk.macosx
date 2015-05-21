@@ -26,7 +26,7 @@ HDF5_LIBS=-lm -lz -L/sw/hdf5/lib -lhdf5 -lhdf5_fortran
 #------------------------------------------------------------------------------------------#
 USE_NCDF=1
 NCDF_INCS=-I/sw/include
-NCDF_LIBS=-L/sw/lib -lnetcdf
+NCDF_LIBS=-L/usr/local/lib -lnetcdff -lnetcdf
 
 #------ Defining the compiler and library paths in case they are not in LD_LIBRARY_PATH ---#
 CMACH=MAC_OS_X
