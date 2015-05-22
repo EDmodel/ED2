@@ -789,63 +789,13 @@ subroutine init_can_rad_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
+   !     Thermal scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
    ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
    ! leaf orientation factor in the backscattering.  This DOES NOT reduce to ED-2.1 case   !
    ! when the leaf orientation is random.                                                  !
    !---------------------------------------------------------------------------------------!
    do ipft = 1, n_pft
 
-      !------------------------------------------------------------------------------------!
-      !     Forward scattering.                                                            !
-      !------------------------------------------------------------------------------------!
-      !----- Visible (PAR). ---------------------------------------------------------------!
-      leaf_scatter_vis(ipft) = leaf_reflect_vis(ipft) + leaf_trans_vis(ipft)
-      wood_scatter_vis(ipft) = wood_reflect_vis(ipft) + wood_trans_vis(ipft)
-      !----- Near infrared (NIR). ---------------------------------------------------------!
-      leaf_scatter_nir(ipft) = leaf_reflect_nir(ipft) + leaf_trans_nir(ipft)
-      wood_scatter_nir(ipft) = wood_reflect_nir(ipft) + wood_trans_nir(ipft)
-      !----- Thermal infrared (TIR). ------------------------------------------------------!
-      leaf_scatter_tir(ipft) = 1.d0 - leaf_emiss_tir(ipft)
-      wood_scatter_tir(ipft) = 1.d0 - wood_emiss_tir(ipft)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Original back-scattering coefficients.  They don't depend on orientation      !
-      ! factor so I'll be using CLM instead.                                               !
-      !------------------------------------------------------------------------------------!
-      !----- Visible (PAR). ---------------------------------------------------------------!
-      ! leaf_backscatter_vis(ipft) = ( 2.d0 * leaf_reflect_vis(ipft)                       &
-      !                              - leaf_trans_vis(ipft))                               &
-      !                            / ( 3.d0 * leaf_scatter_vis(ipft))
-      ! wood_backscatter_vis(ipft) = ( 2.d0 * wood_reflect_vis(ipft)                       &
-      !                              - wood_trans_vis(ipft))                               &
-      !                            / ( 3.d0 * wood_scatter_vis(ipft))
-      !----- Near infrared. ---------------------------------------------------------------!
-      ! leaf_backscatter_nir(ipft) = ( 2.d0 * leaf_reflect_nir(ipft)                       &
-      !                              - leaf_trans_nir(ipft))                               &
-      !                            / ( 3.d0 * leaf_scatter_nir(ipft))
-      ! wood_backscatter_nir(ipft) = ( 2.d0 * wood_reflect_nir(ipft)                       &
-      !                              - wood_trans_nir(ipft))                               &
-      !                            / ( 3.d0 * wood_scatter_nir(ipft))
-      !----- Thermal infrared.  We assume transmittance to be zero. -----------------------!
-      ! leaf_backscatter_tir(ipft) = twothirds8
-      ! wood_backscatter_tir(ipft) = twothirds8
-      !------------------------------------------------------------------------------------!
-      !      Back-scattering coefficients following CLM.                                   !
-      !------------------------------------------------------------------------------------!
-      !----- Visible (PAR). ---------------------------------------------------------------!
-      leaf_backscatter_vis(ipft) = ( leaf_scatter_vis(ipft)                                &
-                                   + 2.5d-1                                                &
-                                   * ( leaf_reflect_vis(ipft) - leaf_trans_vis(ipft)   )   &
-                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
-                                 / ( 2.d0 * leaf_scatter_vis(ipft) )
-      wood_backscatter_vis(ipft) = ( wood_scatter_vis(ipft)                                &
-                                   + 2.5d-1                                                &
-                                   * ( wood_reflect_vis(ipft) - wood_trans_vis(ipft)   )   &
-                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
-                                 / ( 2.d0 * wood_scatter_vis(ipft) )
       !----- Near infrared (NIR). ---------------------------------------------------------!
       leaf_backscatter_nir(ipft) = ( leaf_scatter_nir(ipft)                                &
                                    + 2.5d-1                                                &
@@ -870,35 +820,6 @@ subroutine init_can_rad_params()
    end do
    !---------------------------------------------------------------------------------------!
 
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Light extinction coefficients.   These are found following CLM technical manual,  !
-   ! and the values fall back to ED-2.0 defaults when orient_factor is zero.               !
-   !---------------------------------------------------------------------------------------!
-   do ipft = 1, n_pft
-      phi1(ipft) = 5.d-1                                                                   &
-                 - orient_factor(ipft) * ( 6.33d-1 + 3.3d-1 * orient_factor(ipft) )
-      phi2(ipft) = 8.77d-1 * (1.d0 - 2.d0 * phi1(ipft))
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the average inverse diffuse optical depth per unit leaf and stem area.    !
-      ! We follow CLM technical manual, equation 3.4 only when the orientation factor is   !
-      ! non-zero.   Otherwise, we make it 1.d0, which is the limit of that equation when   !
-      ! phi2 approaches zero.                                                              !
-      !------------------------------------------------------------------------------------!
-      if (orient_factor(ipft) == 0.d0) then
-         mu_bar(ipft) = 1.d0
-      else
-         mu_bar(ipft) = ( 1.d0                                                             &
-                        - phi1(ipft) * log(1.d0 + phi2(ipft) / phi1(ipft)) / phi2(ipft) )  &
-                      / phi2(ipft)
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
 
 
 
