@@ -372,7 +372,6 @@ subroutine calcHydroSubsurface()
               slsl=cpoly%lsl(isi)
               nsoil=cpoly%ntext_soil(slsl,isi)
 
-
               !!*******************************************************************!!
               !! Calculate new site-level equilibrium watertable depth (MOIST_ZI)  !!
               !!*******************************************************************!!
