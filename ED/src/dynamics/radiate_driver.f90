@@ -342,32 +342,6 @@
     real(kind=8)    , parameter                   :: tiny_offset = 1.d-20
     !---------------------------------------------------------------------------------------!
 
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(         &
-    !$OMP ibuff,cpatch,cohort_count,tuco,tuco_leaf,    &
-    !$OMP ico,bl_lai_each,bl_wai_each,nsoil,colour,    &
-    !$OMP albedo_soil_par,albedo_soil_nir,             &
-    !$OMP albedo_damp_par,albedo_damp_nir,fcpct,       &
-    !$OMP rad_sfcw_par,rad_sfcw_nir,albedo_ground_par, &
-    !$OMP albedo_ground_nir,abs_sfcw_par,abs_sfcw_nir, &
-    !$OMP emissivity,T_surface,ksn,albedo_sfcw_par,    &
-    !$OMP albedo_sfcw_nir,k,sfcw_odepth,fractrans_par, &
-    !$OMP fractrans_nir,downward_lw_below,             &
-    !$OMP upward_lw_below,upward_lw_above,             &
-    !$OMP surface_netabs_longwave,                     &
-    !$OMP downward_par_below_beam,                     &
-    !$OMP downward_par_below_diffuse,                  &
-    !$OMP upward_par_above_diffuse,                    &
-    !$OMP downward_nir_below_beam,                     &
-    !$OMP downward_nir_below_diffuse,                  &
-    !$OMP upward_nir_above_diffuse,                    &
-    !$OMP ipft,wleaf_vis,wleaf_nir,wleaf_tir,          &
-    !$OMP wwood_vis,wwood_nir,wwood_tir,               &
-    !$OMP upward_rshort_above_diffuse,                 &
-    !$OMP downward_rshort_below_beam,                  &
-    !$OMP downward_rshort_below_diffuse,               &
-    !$OMP il,nir_v_beam,nir_v_diffuse,                 &
-    !$OMP abs_ground_par,abs_ground_nir )                
-
    !---------------------------------------------------------------------------------------!
    !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
    ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
@@ -436,6 +410,34 @@
        end if
     end do
    !---------------------------------------------------------------------------------------!
+
+
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(         &
+    !$OMP ibuff,cpatch,cohort_count,tuco,tuco_leaf,    &
+    !$OMP ico,bl_lai_each,bl_wai_each,nsoil,colour,    &
+    !$OMP albedo_soil_par,albedo_soil_nir,             &
+    !$OMP albedo_damp_par,albedo_damp_nir,fcpct,       &
+    !$OMP rad_sfcw_par,rad_sfcw_nir,albedo_ground_par, &
+    !$OMP albedo_ground_nir,abs_sfcw_par,abs_sfcw_nir, &
+    !$OMP emissivity,T_surface,ksn,albedo_sfcw_par,    &
+    !$OMP albedo_sfcw_nir,k,sfcw_odepth,fractrans_par, &
+    !$OMP fractrans_nir,downward_lw_below,             &
+    !$OMP upward_lw_below,upward_lw_above,             &
+    !$OMP surface_netabs_longwave,                     &
+    !$OMP downward_par_below_beam,                     &
+    !$OMP downward_par_below_diffuse,                  &
+    !$OMP upward_par_above_diffuse,                    &
+    !$OMP downward_nir_below_beam,                     &
+    !$OMP downward_nir_below_diffuse,                  &
+    !$OMP upward_nir_above_diffuse,                    &
+    !$OMP ipft,wleaf_vis,wleaf_nir,wleaf_tir,          &
+    !$OMP wwood_vis,wwood_nir,wwood_tir,               &
+    !$OMP upward_rshort_above_diffuse,                 &
+    !$OMP downward_rshort_below_beam,                  &
+    !$OMP downward_rshort_below_diffuse,               &
+    !$OMP il,nir_v_beam,nir_v_diffuse,                 &
+    !$OMP abs_ground_par,abs_ground_nir )                
+
     
     !----- Loop over the patches -----------------------------------------------------------!
     do ipa = 1,csite%npatches
