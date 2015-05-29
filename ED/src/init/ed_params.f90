@@ -526,17 +526,14 @@ subroutine init_can_rad_params()
                                     , orient_grass                & ! intent(in)
                                     , clump_tree                  & ! intent(in)
                                     , clump_grass                 & ! intent(in)
-                                    , leaf_reflect_nir            & ! intent(out)
-                                    , leaf_trans_nir              & ! intent(out)
+                                    , leaf_reflect_nir            & ! intent(in)
+                                    , leaf_trans_nir              & ! intent(in)
                                     , leaf_scatter_nir            & ! intent(out)
-                                    , leaf_reflect_vis            & ! intent(out)
-                                    , leaf_trans_vis              & ! intent(out)
+                                    , leaf_reflect_vis            & ! intent(in)
+                                    , leaf_trans_vis              & ! intent(in)
                                     , leaf_scatter_vis            & ! intent(out)
-                                    , leaf_reflect_vis            & ! intent(out)
-                                    , leaf_trans_vis              & ! intent(out)
-                                    , leaf_scatter_tir            & ! intent(out)
-                                    , leaf_backscatter_vis        & ! intent(out)
-                                    , leaf_backscatter_nir        & ! intent(out)
+                                    , leaf_backscatter_vis        & ! intent(in)
+                                    , leaf_backscatter_nir        & ! intent(in)
                                     , leaf_backscatter_tir        & ! intent(out)
                                     , leaf_emiss_tir              & ! intent(out)
                                     , clumping_factor             & ! intent(out)
@@ -544,17 +541,17 @@ subroutine init_can_rad_params()
                                     , phi1                        & ! intent(out)
                                     , phi2                        & ! intent(out)
                                     , mu_bar                      & ! intent(out)
-                                    , wood_reflect_nir            & ! intent(out)
-                                    , wood_trans_nir              & ! intent(out)
+                                    , wood_reflect_nir            & ! intent(in)
+                                    , wood_trans_nir              & ! intent(in)
                                     , wood_scatter_nir            & ! intent(out)
-                                    , wood_reflect_vis            & ! intent(out)
-                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(in)
+                                    , wood_trans_vis              & ! intent(in)
                                     , wood_scatter_vis            & ! intent(out)
-                                    , wood_reflect_vis            & ! intent(out)
-                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(in)
+                                    , wood_trans_vis              & ! intent(in)
                                     , wood_scatter_tir            & ! intent(out)
-                                    , wood_backscatter_vis        & ! intent(out)
-                                    , wood_backscatter_nir        & ! intent(out)
+                                    , wood_backscatter_vis        & ! intent(in)
+                                    , wood_backscatter_nir        & ! intent(in)
                                     , wood_backscatter_tir        & ! intent(out)
                                     , wood_emiss_tir              & ! intent(out)
                                     , fvis_beam_def               & ! intent(out)
@@ -795,18 +792,6 @@ subroutine init_can_rad_params()
    ! when the leaf orientation is random.                                                  !
    !---------------------------------------------------------------------------------------!
    do ipft = 1, n_pft
-
-      !----- Near infrared (NIR). ---------------------------------------------------------!
-      leaf_backscatter_nir(ipft) = ( leaf_scatter_nir(ipft)                                &
-                                   + 2.5d-1                                                &
-                                   * ( leaf_reflect_nir(ipft) - leaf_trans_nir(ipft)   )   &
-                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
-                                 / ( 2.d0 * leaf_scatter_nir(ipft) )
-      wood_backscatter_nir(ipft) = ( wood_scatter_nir(ipft)                                &
-                                   + 2.5d-1                                                &
-                                   * ( wood_reflect_nir(ipft) - wood_trans_nir(ipft)   )   &
-                                   * ( 1.d0 + orient_factor(ipft)) ** 2 )                  &
-                                 / ( 2.d0 * wood_scatter_nir(ipft) )
       !------------------------------------------------------------------------------------!
       !      Thermal infra-red (TIR): Here we use the same expression from CLM manual,     !
       ! further assuming that the transmittance is zero like Zhao and Qualls (2006) did,   !
