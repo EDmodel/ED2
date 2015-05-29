@@ -244,10 +244,6 @@ subroutine calcHydroSubsurface()
   real                        :: water_site           ! site-level mean water in saturated zone  (m/m2)
   real                        :: heat_site            ! site-level mean soil heat capacity in saturated zone (J/m2)
   real                        :: bf_site, bf_patch
-  integer                     :: slsl,nsoil
-  real(kind=8) :: area_sum = 0.0d+0
-  integer :: sc             ! soil classa
-  real :: Te,T0,K0
 
   !!******************************************************************************!!
   !! If not using TOPMODEL, just do water table calculation then return           !!
@@ -374,13 +370,7 @@ subroutine calcHydroSubsurface()
               csite => cpoly%site(isi)
               slsl=cpoly%lsl(isi)
               nsoil=cpoly%ntext_soil(slsl,isi)
-              sc = cpoly%ntext_soil(nzg-1,isi)
-              K0 = soil(sc)%slcons0
-              T0 = K0/cpoly%moist_f(isi)
-              Te = Te + T0*cpoly%area(isi)
-              area_sum = area_sum + dble(cpoly%area(isi))
-              Te = Te/real(area_sum)
-              cgrid%Te(ipy) = Te
+
 
               !!*******************************************************************!!
               !! Calculate new site-level equilibrium watertable depth (MOIST_ZI)  !!
