@@ -12,7 +12,7 @@
 #            branched from 3e31dd3, your initials are xyz, your local branch is b13aac2    #
 #            and this is your 1st attempt to run the test suite, you may use:              #
 #------------------------------------------------------------------------------------------#
-VERSION="3e31dd3_xyz_b13aac2_v1"
+VERSION="3e31dd3-xyz-b13aac2-v1"
 #------------------------------------------------------------------------------------------#
 
 
@@ -267,7 +267,7 @@ rapid)
    #----- POI tests will run for two years. -----------------------------------------------#
    declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005)
    declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007)
-   declare -a INITMDS=(5    0    6    0    4    0    5    0    6   )
+   declare -a INITMDS=(5    0    6    0    6    0    5    0    6   )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
@@ -654,8 +654,8 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${SITEID[i]}_main.out
-      joberr=${HERE}/${VERSION}/${SITEID[i]}_main.out
+      jobout=${HERE}/${VERSION}/main_${SITEID[i]}.out
+      joberr=${HERE}/${VERSION}/main_${SITEID[i]}.err
       jobname=${VERSION}_${SITEID[i]}_main
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${SITEQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_MAIN_EXE} -f ${FILEMAIN})\""
@@ -668,8 +668,8 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${SITEID[i]}_test.out
-      joberr=${HERE}/${VERSION}/${SITEID[i]}_test.out
+      jobout=${HERE}/${VERSION}/test_${SITEID[i]}.out
+      joberr=${HERE}/${VERSION}/test_${SITEID[i]}.err
       jobname=${VERSION}_${SITEID[i]}_test
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${SITEQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_TEST_EXE} -f ${FILETEST})\""
@@ -682,8 +682,8 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${SITEID[i]}_dbug.out
-      joberr=${HERE}/${VERSION}/${SITEID[i]}_dbug.out
+      jobout=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
+      joberr=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
       jobname=${VERSION}_${SITEID[i]}_dbug
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${SITEQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_DBUG_EXE} -f ${FILEDBUG})\""
@@ -798,8 +798,8 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${HIFRID[i]}_main.out
-      joberr=${HERE}/${VERSION}/${HIFRID[i]}_main.out
+      jobout=${HERE}/${VERSION}/main_${HIFRID[i]}.out
+      joberr=${HERE}/${VERSION}/main_${HIFRID[i]}.out
       jobname=${VERSION}_${HIFRID[i]}_main
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${HIFRQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_MAIN_EXE} -f ${FILEMAIN})\""
@@ -812,8 +812,8 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${HIFRID[i]}_test.out
-      joberr=${HERE}/${VERSION}/${HIFRID[i]}_test.out
+      jobout=${HERE}/${VERSION}/test_${HIFRID[i]}.out
+      joberr=${HERE}/${VERSION}/test_${HIFRID[i]}.out
       jobname=${VERSION}_${HIFRID[i]}_test
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${HIFRQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_TEST_EXE} -f ${FILETEST})\""
@@ -826,8 +826,8 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${HIFRID[i]}_dbug.out
-      joberr=${HERE}/${VERSION}/${HIFRID[i]}_dbug.out
+      jobout=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
+      joberr=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
       jobname=${VERSION}_${HIFRID[i]}_dbug
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} -p ${HIFRQ[i]} -n 1"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; ${LNK_DBUG_EXE} -f ${FILEDBUG})\""
@@ -937,10 +937,10 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${GRIDID[i]}_main.out
-      joberr=${HERE}/${VERSION}/${GRIDID[i]}_main.out
+      jobout=${HERE}/${VERSION}/main_${GRIDID[i]}.out
+      joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.out
       jobname=${VERSION}_${GRIDID[i]}_main
-      jobopts="-t ${GRID_TIME} --mem-per-cpu=${GRID_MEMORY} -p ${GRIDQ[i]} -n 1"
+      jobopts="-t ${GRID_TIME} --mem-per-cpu=${GRID_MEMORY} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; mpirun -np ${GRIDPROC[i]} ${LNK_MAIN_EXE} -f ${FILEMAIN})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -951,10 +951,10 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${GRIDID[i]}_test.out
-      joberr=${HERE}/${VERSION}/${GRIDID[i]}_test.out
+      jobout=${HERE}/${VERSION}/test_${GRIDID[i]}.out
+      joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.out
       jobname=${VERSION}_${GRIDID[i]}_test
-      jobopts="-t ${GRID_TIME} --mem-per-cpu=${GRID_MEMORY} -p ${GRIDQ[i]} -n 1"
+      jobopts="-t ${GRID_TIME} --mem-per-cpu=${GRID_MEMORY} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; mpirun -np ${GRIDPROC[i]} ${LNK_TEST_EXE} -f ${FILETEST})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -965,10 +965,10 @@ do
       #------------------------------------------------------------------------------------#
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
-      jobout=${HERE}/${VERSION}/${GRIDID[i]}_dbug.out
-      joberr=${HERE}/${VERSION}/${GRIDID[i]}_dbug.out
+      jobout=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
+      joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
       jobname=${VERSION}_${GRIDID[i]}_dbug
-      jobopts="-t ${GRID_TIME} --mem-per-cpu=${GRID_MEMORY} -p ${GRIDQ[i]} -n 1"
+      jobopts="-t ${GRID_TIME} --mem-per-cpu=${GRID_MEMORY} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
       jobwrap="\"(. ${HOME}/.bashrc; cd ${HERE}/${VERSION}; mpirun -np ${GRIDPROC[i]} ${LNK_DBUG_EXE} -f ${FILEDBUG})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"

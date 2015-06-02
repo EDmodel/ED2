@@ -260,7 +260,7 @@ hp=pie(double(area_srt),paxp,pstr);
 title('Disturbance Regime ');
 nco=length(comap);
 minc = 1;
-maxc = 3;
+maxc = 6;
 caxis([minc maxc]);
 for ipa=1:npatch
 id = round((nco-1)*(dist_srt(ipa)-minc)/(maxc-minc))+1;
@@ -272,8 +272,8 @@ for ip=1:npatch
  set(hp(ip1),'FaceColor',comat(ip,:));
  set(hp(ip2),'FontSize',fasz-1);
 end
-colorbar('YTick',[1 2 3],'YTickLabel',...
-	 {'Pasture','Secondary','Primary'},...
+colorbar('YTick',[1 2 3 4 5 6],'YTickLabel',...
+	 {'Pasture','Plantation','Treefall','Burnt','Abandoned','Logged'},...
 	 'FontSize',fasz-1);%,'Location','East');
 
 
