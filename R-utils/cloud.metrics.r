@@ -339,7 +339,7 @@ cloud.metrics <<- function( x
                                ,zmin,zmax){
 
 
-   #----- Make sure this function has been called by summnum.  Otherwise, stop. -----------#
+   #----- Make sure this function has been called by cloud.metrics or grid.metrics. -------#
    patt  = "^([A-Za-z0-9]+)(\\({1})(.*)(\\){1})$"
    repl  = "\\1"
    n     = 0
@@ -361,8 +361,8 @@ cloud.metrics <<- function( x
          #----- Not an error.  Check whether this has been called by a friend function. ---#
          wcm[[n]] = paste(wcm[[n]],collapse="")
          top      = substring(wcm[[n]],1,4) %==% "NULL"
-         mess     = mess && ! ( substring(wcm[[n]],1,13) %==% "cloud.metrics" ||
-                                substring(wcm[[n]],1,12) %==% "grid.metrics"  )
+         mess     = mess && ! ( grepl("cloud.metrics",wcm[[n]]) ||
+                                grepl("grid.metrics" ,wcm[[n]])  )
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -425,6 +425,7 @@ cloud.metrics <<- function( x
    ans$elev.sdev  = sd  (z)
    ans$elev.skew  = skew(z)
    ans$elev.kurt  = kurt(z)
+   ans$elev.max   = max (z)
    #---------------------------------------------------------------------------------------#
 
 

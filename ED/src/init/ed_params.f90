@@ -1945,7 +1945,9 @@ subroutine init_decomp_params()
       decay_rate_stsc =   4.5 / yr_day    ! former K1
       select case (n_decomp_lim)
       case (0)
-         decay_rate_ssc  =   0.2 / yr_day ! former K3
+         decay_rate_ssc  =   0.072 / yr_day ! former K3
+                                            ! Trying a mean half-life of 30 years, more
+                                            ! typical of slow soil carbon in the Amazon
       case (1)
          decay_rate_ssc  = 100.2 / yr_day ! former K3
       end select

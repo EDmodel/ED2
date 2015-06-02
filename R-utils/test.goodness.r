@@ -10,15 +10,35 @@
 #                      don't assume any parameters).                                       #
 #  ~ out.dfr        -- output as a data frame? (FALSE returns a list).                     #
 #------------------------------------------------------------------------------------------#
-test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
+test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FALSE){
 
 
    #---- Crash if the x.mod and x.obs don't have the same size and class. -----------------#
    dlength = (length(x.mod) - length(x.obs)) != 0
-   dclass  = any(sort(is(x.mod)) != sort(is(x.obs)))
+   dclass  = typeof(x.mod) != typeof(x.obs)
    if (dlength || dclass){
       stop (" x.mod and x.obs must have the same size and class","\n")
    }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---- Crash if the x.sigma and x.obs don't have the same size and class. ---------------#
+   if (! is.null(x.sigma)){
+      dlength = (length(x.mod) - length(x.sigma)) != 0
+      dclass  = typeof(x.mod) != typeof(x.sigma)
+      if (dlength || dclass){
+         stop (" x.mod and x.sigma must have the same size and class","\n")
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Find associated weights, and re-create the vectors x.mod and x.obs. ----------#
+      x.wgt      = ifelse(x.sigma %>% 0, 1. / x.sigma^2, 0)
+      sel        = x.wgt %>% 0
+      x.obs      = x.obs[sel] * sqrt(x.wgt[sel])
+      x.mod      = x.mod[sel] * sqrt(x.wgt[sel])
+      #------------------------------------------------------------------------------------#
+   }#end if (! is.null(x.sigma)
    #---------------------------------------------------------------------------------------#
 
 
@@ -52,7 +72,6 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
       #------------------------------------------------------------------------------------#
       x.mod.ok = x.mod[sel]
       x.obs.ok = x.obs[sel]
-      x.tot.ok = x.obs.ok - mean(x.obs.ok)
       x.res.ok = x.obs.ok - x.mod.ok
       #------------------------------------------------------------------------------------#
 
@@ -76,9 +95,11 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
       #     Find the mean bias, standard deviation of the residuals, and the support for   #
       # the errors being normally distributed around the mean.                             #
       #------------------------------------------------------------------------------------#
-      bias        = -res.moment["mean"]
-      sigma       = sqrt(res.moment["variance"])
-      lsq.lnlike  = sum(dnorm(x.res.ok,mean=0,sd=sigma,log=TRUE))
+      bias         = -res.moment["mean"]
+      sigma        = sqrt(res.moment["variance"])
+      names(bias)  = NULL
+      names(sigma) = NULL
+      lsq.lnlike   = sum(dnorm(x.res.ok,mean=0,sd=sigma,log=TRUE))
       #------------------------------------------------------------------------------------#
 
 
@@ -98,9 +119,11 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
       # parameters).  Otherwise we can't correct, so we just compare the sum of the        #
       # variances.                                                                         #
       #------------------------------------------------------------------------------------#
+      x.tot.ok  = x.obs.ok - mean(x.obs.ok)
       ss.tot    = sum(x.tot.ok^2)
       ss.err    = sum(x.res.ok^2)
       r.squared = 1. - df.tot * ss.err / ( df.err * ss.tot )
+      if (! is.finite(r.squared)) browser()
       #------------------------------------------------------------------------------------#
 
 
@@ -109,7 +132,8 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
       #     Find the estimator's fraction of variance unexplained (FVU).  Because we use   #
       # MSE instead of ss.err, this is not 1 - R2.                                         #
       #------------------------------------------------------------------------------------#
-      fvue = mse / obs.moment["variance"]
+      fvue        = mse / obs.moment["variance"]
+      names(fvue) = NULL
       #------------------------------------------------------------------------------------#
 
 
@@ -128,9 +152,10 @@ test.goodness <<- function(x.mod,x.obs,n.parameters=NULL,out.dfr=FALSE){
       #------------------------------------------------------------------------------------#
       #      Run the Kolmogorov-Smirnov test to compare the distributions.                 #
       #------------------------------------------------------------------------------------#
-      this.ks      = ks.test(x=x.obs.ok,y=x.mod.ok)
-      ks.statistic = this.ks$statistic
-      ks.p.value   = this.ks$p.value
+      this.ks             = ks.test(x=x.obs.ok,y=x.mod.ok)
+      ks.statistic        = this.ks$statistic
+      ks.p.value          = this.ks$p.value
+      names(ks.statistic) = NULL
       #------------------------------------------------------------------------------------#
    }else{
       #------------------------------------------------------------------------------------#

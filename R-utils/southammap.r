@@ -2,13 +2,15 @@
 #------------------------------------------------------------------------------------------#
 #  This function plots the map for South America, including Brazilian states.              #
 #------------------------------------------------------------------------------------------#
-southammap <<- function( mapdir      = NULL
-                       , countries   = NULL
-                       , states      = TRUE
-                       , skip.off    = TRUE
-                       , xlim        = NULL
-                       , ylim        = NULL
-                       , fun         = c("lines","points","polygon","panel.points")
+southammap <<- function( mapdir         = NULL
+                       , countries      = NULL
+                       , states         = TRUE
+                       , skip.countries = FALSE
+                       , skip.states    = FALSE
+                       , skip.off       = TRUE
+                       , xlim           = NULL
+                       , ylim           = NULL
+                       , fun            = c("lines","points","polygon","panel.points")
                        ,...){
 
 
@@ -117,10 +119,25 @@ southammap <<- function( mapdir      = NULL
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Set loops for countries and states. ---------------------------------------------#
+   if (skip.countries){
+      loop.countries = numeric(0)
+   }else{
+      loop.countries = sequence(n.countries)
+   }#end if (skip.countries)
+   if (skip.states){
+      loop.states    = numeric(0)
+   }else{
+      loop.states    = sequence(n.states)
+   }#end if (skip.states)
+   #---------------------------------------------------------------------------------------#
+
+
+
    #---------------------------------------------------------------------------------------#
    #    Loop over all countries.                                                           #
    #---------------------------------------------------------------------------------------#
-   for (ct in sequence(n.countries)){
+   for (ct in loop.countries){
       dat        = read.table(ct.file[ct],na.string=c("NA","999"))
       names(dat) = c("x","y")
       #------------------------------------------------------------------------------------#
@@ -147,7 +164,7 @@ southammap <<- function( mapdir      = NULL
    #---------------------------------------------------------------------------------------#
    #    Loop over all states.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (st in sequence(n.states)){
+   for (st in loop.states){
       dat        = read.table(st.file[st],na.string=c("NA","999"))
       names(dat) = c("x","y")
       #------------------------------------------------------------------------------------#
@@ -179,14 +196,16 @@ southammap <<- function( mapdir      = NULL
 #------------------------------------------------------------------------------------------#
 #  This function plots the map for South America, including Brazilian states.              #
 #------------------------------------------------------------------------------------------#
-southammap3d <<- function( height      = 0
+southammap3d <<- function( height         = 0
                          , pmat
-                         , mapdir      = NULL
-                         , countries   = NULL
-                         , states      = TRUE
-                         , skip.off    = TRUE
-                         , xlim        = NULL
-                         , ylim        = NULL
+                         , mapdir         = NULL
+                         , countries      = NULL
+                         , states         = TRUE
+                         , skip.countries = FALSE
+                         , skip.states    = FALSE
+                         , skip.off       = TRUE
+                         , xlim           = NULL
+                         , ylim           = NULL
                          ,...){
    #---- Get the limits. ------------------------------------------------------------------#
    if (is.null(xlim)) xlim = attr(pmat,"ranges")$x
@@ -270,10 +289,24 @@ southammap3d <<- function( height      = 0
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Set loops for countries and states. ---------------------------------------------#
+   if (skip.countries){
+      loop.countries = numeric(0)
+   }else{
+      loop.countries = sequence(n.countries)
+   }#end if (skip.countries)
+   if (skip.states){
+      loop.states    = numeric(0)
+   }else{
+      loop.states    = sequence(n.states)
+   }#end if (skip.states)
+   #---------------------------------------------------------------------------------------#
+
+
    #---------------------------------------------------------------------------------------#
    #    Loop over all countries.                                                           #
    #---------------------------------------------------------------------------------------#
-   for (ct in sequence(n.countries)){
+   for (ct in loop.countries){
       dat        = read.table(ct.file[ct],na.string=c("NA","999"))
       names(dat) = c("x","y")
       #------------------------------------------------------------------------------------#
@@ -299,7 +332,7 @@ southammap3d <<- function( height      = 0
    #---------------------------------------------------------------------------------------#
    #    Loop over all states.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (st in sequence(n.states)){
+   for (st in loop.states){
       dat        = read.table(st.file[st],na.string=c("NA","999"))
       names(dat) = c("x","y")
       #------------------------------------------------------------------------------------#
