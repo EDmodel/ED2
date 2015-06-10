@@ -243,6 +243,18 @@ module average_utils
                                                   + cpatch%fmean_fsn           (ico)       &
                                                   * cpatch%lai                 (ico)       &
                                                   * patch_wgt
+                  cgrid%fmean_a_open        (ipy) = cgrid%fmean_a_open         (ipy)       &
+                                                  + cpatch%fmean_a_open        (ico)       &
+                                                  * cpatch%lai                 (ico)       &
+                                                  * patch_wgt
+                  cgrid%fmean_a_closed      (ipy) = cgrid%fmean_a_closed       (ipy)       &
+                                                  + cpatch%fmean_a_closed      (ico)       &
+                                                  * cpatch%lai                 (ico)       &
+                                                  * patch_wgt
+                  cgrid%fmean_a_net         (ipy) = cgrid%fmean_a_net          (ipy)       &
+                                                  + cpatch%fmean_a_net         (ico)       &
+                                                  * cpatch%lai                 (ico)       &
+                                                  * patch_wgt
                   cgrid%fmean_a_light       (ipy) = cgrid%fmean_a_light        (ipy)       &
                                                   + cpatch%fmean_a_light       (ico)       &
                                                   * cpatch%lai                 (ico)       &
@@ -1228,6 +1240,9 @@ module average_utils
          cgrid%fmean_fs_open         (  ipy) = 0.0
          cgrid%fmean_fsw             (  ipy) = 0.0
          cgrid%fmean_fsn             (  ipy) = 0.0
+         cgrid%fmean_a_open          (  ipy) = 0.0
+         cgrid%fmean_a_closed        (  ipy) = 0.0
+         cgrid%fmean_a_net           (  ipy) = 0.0
          cgrid%fmean_a_light         (  ipy) = 0.0
          cgrid%fmean_a_rubp          (  ipy) = 0.0
          cgrid%fmean_a_co2           (  ipy) = 0.0
@@ -1467,6 +1482,9 @@ module average_utils
                   cpatch%fmean_fs_open           (ico) = 0.0
                   cpatch%fmean_fsw               (ico) = 0.0
                   cpatch%fmean_fsn               (ico) = 0.0
+                  cpatch%fmean_a_open            (ico) = 0.0
+                  cpatch%fmean_a_closed          (ico) = 0.0
+                  cpatch%fmean_a_net             (ico) = 0.0
                   cpatch%fmean_a_light           (ico) = 0.0
                   cpatch%fmean_a_rubp            (ico) = 0.0
                   cpatch%fmean_a_co2             (ico) = 0.0
@@ -1623,6 +1641,15 @@ module average_utils
                                           * frqsum_o_daysec
          cgrid%dmean_plresp         (ipy) = cgrid%dmean_plresp         (ipy)               &
                                           + cgrid%fmean_plresp         (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_a_open         (ipy) = cgrid%dmean_a_open         (ipy)               &
+                                          + cgrid%fmean_a_open         (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_a_closed       (ipy) = cgrid%dmean_a_closed       (ipy)               &
+                                          + cgrid%fmean_a_closed       (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_a_net          (ipy) = cgrid%dmean_a_net          (ipy)               &
+                                          + cgrid%fmean_a_net          (ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_a_light        (ipy) = cgrid%dmean_a_light        (ipy)               &
                                           + cgrid%fmean_a_light        (ipy)               &
@@ -2186,6 +2213,15 @@ module average_utils
                                                    * frqsum_o_daysec
                   cpatch%dmean_plresp        (ico) = cpatch%dmean_plresp        (ico)      &
                                                    + cpatch%fmean_plresp        (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_a_open        (ico) = cpatch%dmean_a_open        (ico)      &
+                                                   + cpatch%fmean_a_open        (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_a_closed      (ico) = cpatch%dmean_a_closed      (ico)      &
+                                                   + cpatch%fmean_a_closed      (ico)      &
+                                                   * frqsum_o_daysec
+                  cpatch%dmean_a_net         (ico) = cpatch%dmean_a_net         (ico)      &
+                                                   + cpatch%fmean_a_net         (ico)      &
                                                    * frqsum_o_daysec
                   cpatch%dmean_a_light       (ico) = cpatch%dmean_a_light       (ico)      &
                                                    + cpatch%fmean_a_light       (ico)      &
@@ -3123,6 +3159,9 @@ module average_utils
          cgrid%dmean_fs_open            (ipy) = 0.0
          cgrid%dmean_fsw                (ipy) = 0.0
          cgrid%dmean_fsn                (ipy) = 0.0
+         cgrid%dmean_a_open             (ipy) = 0.0
+         cgrid%dmean_a_closed           (ipy) = 0.0
+         cgrid%dmean_a_net              (ipy) = 0.0
          cgrid%dmean_a_light            (ipy) = 0.0
          cgrid%dmean_a_rubp             (ipy) = 0.0
          cgrid%dmean_a_co2              (ipy) = 0.0
@@ -3352,6 +3391,9 @@ module average_utils
                   cpatch%dmean_fs_open           (ico) = 0.0
                   cpatch%dmean_fsw               (ico) = 0.0
                   cpatch%dmean_fsn               (ico) = 0.0
+                  cpatch%dmean_a_open            (ico) = 0.0
+                  cpatch%dmean_a_closed          (ico) = 0.0
+                  cpatch%dmean_a_net             (ico) = 0.0
                   cpatch%dmean_a_light           (ico) = 0.0
                   cpatch%dmean_a_rubp            (ico) = 0.0
                   cpatch%dmean_a_co2             (ico) = 0.0
@@ -3607,6 +3649,15 @@ module average_utils
                                             * ndaysi
          cgrid%mmean_fsn              (ipy) = cgrid%mmean_fsn              (ipy)           &
                                             + cgrid%dmean_fsn              (ipy)           &
+                                            * ndaysi
+         cgrid%mmean_a_open           (ipy) = cgrid%mmean_a_open           (ipy)           &
+                                            + cgrid%dmean_a_open           (ipy)           &
+                                            * ndaysi
+         cgrid%mmean_a_closed         (ipy) = cgrid%mmean_a_closed         (ipy)           &
+                                            + cgrid%dmean_a_closed         (ipy)           &
+                                            * ndaysi
+         cgrid%mmean_a_net            (ipy) = cgrid%mmean_a_net            (ipy)           &
+                                            + cgrid%dmean_a_net            (ipy)           &
                                             * ndaysi
          cgrid%mmean_a_light          (ipy) = cgrid%mmean_a_light          (ipy)           &
                                             + cgrid%dmean_a_light          (ipy)           &
@@ -4470,6 +4521,15 @@ module average_utils
                   cpatch%mmean_fsn             (ico) = cpatch%mmean_fsn             (ico)  &
                                                      + cpatch%dmean_fsn             (ico)  &
                                                      * ndaysi
+                  cpatch%mmean_a_open          (ico) = cpatch%mmean_a_open          (ico)  &
+                                                     + cpatch%dmean_a_open          (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_a_closed        (ico) = cpatch%mmean_a_closed        (ico)  &
+                                                     + cpatch%dmean_a_closed        (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_a_net           (ico) = cpatch%mmean_a_net           (ico)  &
+                                                     + cpatch%dmean_a_net           (ico)  &
+                                                     * ndaysi
                   cpatch%mmean_a_light         (ico) = cpatch%mmean_a_light         (ico)  &
                                                      + cpatch%dmean_a_light         (ico)  &
                                                      * ndaysi
@@ -5033,6 +5093,9 @@ module average_utils
          cgrid%mmean_fs_open             (ipy) = 0.0 
          cgrid%mmean_fsw                 (ipy) = 0.0 
          cgrid%mmean_fsn                 (ipy) = 0.0 
+         cgrid%mmean_a_open              (ipy) = 0.0 
+         cgrid%mmean_a_closed            (ipy) = 0.0 
+         cgrid%mmean_a_net               (ipy) = 0.0 
          cgrid%mmean_a_light             (ipy) = 0.0
          cgrid%mmean_a_rubp              (ipy) = 0.0
          cgrid%mmean_a_co2               (ipy) = 0.0
@@ -5339,6 +5402,9 @@ module average_utils
                   cpatch%mmean_fs_open           (ico) = 0.0
                   cpatch%mmean_fsw               (ico) = 0.0
                   cpatch%mmean_fsn               (ico) = 0.0
+                  cpatch%mmean_a_open            (ico) = 0.0
+                  cpatch%mmean_a_closed          (ico) = 0.0
+                  cpatch%mmean_a_net             (ico) = 0.0
                   cpatch%mmean_a_light           (ico) = 0.0
                   cpatch%mmean_a_rubp            (ico) = 0.0
                   cpatch%mmean_a_co2             (ico) = 0.0
@@ -5557,6 +5623,15 @@ module average_utils
                                               * ndaysi
          cgrid%qmean_fsn              (t,ipy) = cgrid%qmean_fsn              (t,ipy)       &
                                               + cgrid%fmean_fsn                (ipy)       &
+                                              * ndaysi
+         cgrid%qmean_a_open           (t,ipy) = cgrid%qmean_a_open           (t,ipy)       &
+                                              + cgrid%fmean_a_open             (ipy)       &
+                                              * ndaysi
+         cgrid%qmean_a_closed         (t,ipy) = cgrid%qmean_a_closed         (t,ipy)       &
+                                              + cgrid%fmean_a_closed           (ipy)       &
+                                              * ndaysi
+         cgrid%qmean_a_net            (t,ipy) = cgrid%qmean_a_net            (t,ipy)       &
+                                              + cgrid%fmean_a_net              (ipy)       &
                                               * ndaysi
          cgrid%qmean_a_light          (t,ipy) = cgrid%qmean_a_light          (t,ipy)       &
                                               + cgrid%fmean_a_light            (ipy)       &
@@ -6246,8 +6321,14 @@ module average_utils
                   cpatch%qmean_fsn           (t,ico) = cpatch%qmean_fsn           (t,ico)  &
                                                      + cpatch%fmean_fsn             (ico)  &
                                                      * ndaysi
-                  cpatch%qmean_a_light       (t,ico) = cpatch%qmean_a_light       (t,ico)  &
-                                                     + cpatch%fmean_a_light         (ico)  &
+                  cpatch%qmean_a_open        (t,ico) = cpatch%qmean_a_open        (t,ico)  &
+                                                     + cpatch%fmean_a_open          (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_a_closed      (t,ico) = cpatch%qmean_a_closed      (t,ico)  &
+                                                     + cpatch%fmean_a_closed        (ico)  &
+                                                     * ndaysi
+                  cpatch%qmean_a_net         (t,ico) = cpatch%qmean_a_net         (t,ico)  &
+                                                     + cpatch%fmean_a_net           (ico)  &
                                                      * ndaysi
                   cpatch%qmean_a_rubp        (t,ico) = cpatch%qmean_a_rubp        (t,ico)  &
                                                      + cpatch%fmean_a_rubp          (ico)  &
@@ -6786,6 +6867,9 @@ module average_utils
          cgrid%qmean_fs_open            (:,ipy) = 0.0
          cgrid%qmean_fsw                (:,ipy) = 0.0
          cgrid%qmean_fsn                (:,ipy) = 0.0
+         cgrid%qmean_a_open             (:,ipy) = 0.0
+         cgrid%qmean_a_closed           (:,ipy) = 0.0
+         cgrid%qmean_a_net              (:,ipy) = 0.0
          cgrid%qmean_a_light            (:,ipy) = 0.0
          cgrid%qmean_a_rubp             (:,ipy) = 0.0
          cgrid%qmean_a_co2              (:,ipy) = 0.0
@@ -7042,6 +7126,9 @@ module average_utils
                   cpatch%qmean_fs_open             (:,ico) = 0.0
                   cpatch%qmean_fsw                 (:,ico) = 0.0
                   cpatch%qmean_fsn                 (:,ico) = 0.0
+                  cpatch%qmean_a_open              (:,ico) = 0.0
+                  cpatch%qmean_a_closed            (:,ico) = 0.0
+                  cpatch%qmean_a_net               (:,ico) = 0.0
                   cpatch%qmean_a_light             (:,ico) = 0.0
                   cpatch%qmean_a_rubp              (:,ico) = 0.0
                   cpatch%qmean_a_co2               (:,ico) = 0.0

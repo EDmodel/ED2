@@ -512,6 +512,9 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_fs_open          ! Net stress factor [        --]
       real,pointer,dimension(:)   :: fmean_fsw              ! Moisture stress   [        --]
       real,pointer,dimension(:)   :: fmean_fsn              ! Nitrogen stress   [        --]
+      real,pointer,dimension(:)   :: fmean_a_open           ! Assim. (no stress)[umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_closed         ! Minimum assim.    [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_net            ! Assim. (actual)   [umol/m2l/s]
       real,pointer,dimension(:)   :: fmean_a_light          ! Assim. (light)    [umol/m2l/s]
       real,pointer,dimension(:)   :: fmean_a_rubp           ! Assim. (RuBP)     [umol/m2l/s]
       real,pointer,dimension(:)   :: fmean_a_co2            ! Assim. (CO2)      [umol/m2l/s]
@@ -585,6 +588,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_fs_open
       real,pointer,dimension(:)     :: dmean_fsw
       real,pointer,dimension(:)     :: dmean_fsn
+      real,pointer,dimension(:)     :: dmean_a_open
+      real,pointer,dimension(:)     :: dmean_a_closed
+      real,pointer,dimension(:)     :: dmean_a_net
       real,pointer,dimension(:)     :: dmean_a_light
       real,pointer,dimension(:)     :: dmean_a_rubp
       real,pointer,dimension(:)     :: dmean_a_co2
@@ -642,6 +648,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_fs_open
       real,pointer,dimension(:)     :: mmean_fsw
       real,pointer,dimension(:)     :: mmean_fsn
+      real,pointer,dimension(:)     :: mmean_a_open
+      real,pointer,dimension(:)     :: mmean_a_closed
+      real,pointer,dimension(:)     :: mmean_a_net
       real,pointer,dimension(:)     :: mmean_a_light
       real,pointer,dimension(:)     :: mmean_a_rubp
       real,pointer,dimension(:)     :: mmean_a_co2
@@ -715,6 +724,9 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_fs_open
       real,pointer,dimension(:,:)   :: qmean_fsw
       real,pointer,dimension(:,:)   :: qmean_fsn
+      real,pointer,dimension(:,:)   :: qmean_a_open
+      real,pointer,dimension(:,:)   :: qmean_a_closed
+      real,pointer,dimension(:,:)   :: qmean_a_net
       real,pointer,dimension(:,:)   :: qmean_a_light
       real,pointer,dimension(:,:)   :: qmean_a_rubp
       real,pointer,dimension(:,:)   :: qmean_a_co2
@@ -2202,6 +2214,9 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_fs_open          ! Net stress factor   [        --]
       real,pointer,dimension(:) :: fmean_fsw              ! Moisture stress     [        --]
       real,pointer,dimension(:) :: fmean_fsn              ! Nitrogen stress     [        --]
+      real,pointer,dimension(:) :: fmean_a_open           ! Assim. (no stress)  [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_closed         ! Min. Assim.         [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_net            ! Assim. actual       [umol/m2l/s]
       real,pointer,dimension(:) :: fmean_a_light          ! Assim. (light)      [umol/m2l/s]
       real,pointer,dimension(:) :: fmean_a_rubp           ! Assim. (RuBP)       [umol/m2l/s]
       real,pointer,dimension(:) :: fmean_a_co2            ! Assim. (CO2)        [umol/m2l/s]
@@ -2365,6 +2380,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_fs_open
       real,pointer,dimension(:)     :: dmean_fsw
       real,pointer,dimension(:)     :: dmean_fsn
+      real,pointer,dimension(:)     :: dmean_a_open
+      real,pointer,dimension(:)     :: dmean_a_closed
+      real,pointer,dimension(:)     :: dmean_a_net
       real,pointer,dimension(:)     :: dmean_a_light
       real,pointer,dimension(:)     :: dmean_a_rubp
       real,pointer,dimension(:)     :: dmean_a_co2
@@ -2487,6 +2505,9 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_fs_open
       real,pointer,dimension(:)     :: mmean_fsw
       real,pointer,dimension(:)     :: mmean_fsn
+      real,pointer,dimension(:)     :: mmean_a_open
+      real,pointer,dimension(:)     :: mmean_a_closed
+      real,pointer,dimension(:)     :: mmean_a_net
       real,pointer,dimension(:)     :: mmean_a_light
       real,pointer,dimension(:)     :: mmean_a_rubp
       real,pointer,dimension(:)     :: mmean_a_co2
@@ -2646,6 +2667,9 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_fs_open
       real,pointer,dimension(:,:)   :: qmean_fsw
       real,pointer,dimension(:,:)   :: qmean_fsn
+      real,pointer,dimension(:,:)   :: qmean_a_open
+      real,pointer,dimension(:,:)   :: qmean_a_closed
+      real,pointer,dimension(:,:)   :: qmean_a_net
       real,pointer,dimension(:,:)   :: qmean_a_light
       real,pointer,dimension(:,:)   :: qmean_a_rubp
       real,pointer,dimension(:,:)   :: qmean_a_co2
@@ -3067,6 +3091,9 @@ module ed_state_vars
       allocate(cgrid%fmean_fs_open              (                    npolygons))
       allocate(cgrid%fmean_fsw                  (                    npolygons))
       allocate(cgrid%fmean_fsn                  (                    npolygons))
+      allocate(cgrid%fmean_a_open               (                    npolygons))
+      allocate(cgrid%fmean_a_closed             (                    npolygons))
+      allocate(cgrid%fmean_a_net                (                    npolygons))
       allocate(cgrid%fmean_a_light              (                    npolygons))
       allocate(cgrid%fmean_a_rubp               (                    npolygons))
       allocate(cgrid%fmean_a_co2                (                    npolygons))
@@ -3210,6 +3237,9 @@ module ed_state_vars
          allocate(cgrid%dmean_fs_open          (                     npolygons))
          allocate(cgrid%dmean_fsw              (                     npolygons))
          allocate(cgrid%dmean_fsn              (                     npolygons))
+         allocate(cgrid%dmean_a_open           (                     npolygons))
+         allocate(cgrid%dmean_a_closed         (                     npolygons))
+         allocate(cgrid%dmean_a_net            (                     npolygons))
          allocate(cgrid%dmean_a_light          (                     npolygons))
          allocate(cgrid%dmean_a_rubp           (                     npolygons))
          allocate(cgrid%dmean_a_co2            (                     npolygons))
@@ -3360,6 +3390,9 @@ module ed_state_vars
          allocate(cgrid%mmean_fs_open          (                     npolygons)) 
          allocate(cgrid%mmean_fsw              (                     npolygons)) 
          allocate(cgrid%mmean_fsn              (                     npolygons)) 
+         allocate(cgrid%mmean_a_open           (                     npolygons))
+         allocate(cgrid%mmean_a_closed         (                     npolygons))
+         allocate(cgrid%mmean_a_net            (                     npolygons))
          allocate(cgrid%mmean_a_light          (                     npolygons))
          allocate(cgrid%mmean_a_rubp           (                     npolygons))
          allocate(cgrid%mmean_a_co2            (                     npolygons))
@@ -3528,6 +3561,9 @@ module ed_state_vars
          allocate(cgrid%qmean_fs_open          (             ndcycle,npolygons))
          allocate(cgrid%qmean_fsw              (             ndcycle,npolygons))
          allocate(cgrid%qmean_fsn              (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_open           (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_closed         (             ndcycle,npolygons))
+         allocate(cgrid%qmean_a_net            (             ndcycle,npolygons))
          allocate(cgrid%qmean_a_light          (             ndcycle,npolygons))
          allocate(cgrid%qmean_a_rubp           (             ndcycle,npolygons))
          allocate(cgrid%qmean_a_co2            (             ndcycle,npolygons))
@@ -4529,6 +4565,9 @@ module ed_state_vars
       allocate(cpatch%fmean_fs_open                (                    ncohorts))
       allocate(cpatch%fmean_fsw                    (                    ncohorts))
       allocate(cpatch%fmean_fsn                    (                    ncohorts))
+      allocate(cpatch%fmean_a_open                 (                    ncohorts))
+      allocate(cpatch%fmean_a_closed               (                    ncohorts))
+      allocate(cpatch%fmean_a_net                  (                    ncohorts))
       allocate(cpatch%fmean_A_light                (                    ncohorts))
       allocate(cpatch%fmean_A_rubp                 (                    ncohorts))
       allocate(cpatch%fmean_A_co2                  (                    ncohorts))
@@ -4595,6 +4634,9 @@ module ed_state_vars
          allocate(cpatch%dmean_fs_open             (                    ncohorts))
          allocate(cpatch%dmean_fsw                 (                    ncohorts))
          allocate(cpatch%dmean_fsn                 (                    ncohorts))
+         allocate(cpatch%dmean_a_open              (                    ncohorts))
+         allocate(cpatch%dmean_a_closed            (                    ncohorts))
+         allocate(cpatch%dmean_a_net               (                    ncohorts))
          allocate(cpatch%dmean_A_light             (                    ncohorts))
          allocate(cpatch%dmean_A_rubp              (                    ncohorts))
          allocate(cpatch%dmean_A_co2               (                    ncohorts))
@@ -4663,6 +4705,9 @@ module ed_state_vars
          allocate(cpatch%mmean_fs_open             (                    ncohorts))
          allocate(cpatch%mmean_fsw                 (                    ncohorts))
          allocate(cpatch%mmean_fsn                 (                    ncohorts))
+         allocate(cpatch%mmean_a_open              (                    ncohorts))
+         allocate(cpatch%mmean_a_closed            (                    ncohorts))
+         allocate(cpatch%mmean_a_net               (                    ncohorts))
          allocate(cpatch%mmean_A_light             (                    ncohorts))
          allocate(cpatch%mmean_A_rubp              (                    ncohorts))
          allocate(cpatch%mmean_A_co2               (                    ncohorts))
@@ -4737,6 +4782,9 @@ module ed_state_vars
          allocate(cpatch%qmean_fs_open             (            ndcycle,ncohorts))
          allocate(cpatch%qmean_fsw                 (            ndcycle,ncohorts))
          allocate(cpatch%qmean_fsn                 (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_a_open              (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_a_closed            (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_a_net               (            ndcycle,ncohorts))
          allocate(cpatch%qmean_A_light             (            ndcycle,ncohorts))
          allocate(cpatch%qmean_A_rubp              (            ndcycle,ncohorts))
          allocate(cpatch%qmean_A_co2               (            ndcycle,ncohorts))
@@ -4921,6 +4969,9 @@ module ed_state_vars
       nullify(cgrid%fmean_fs_open           )
       nullify(cgrid%fmean_fsw               )
       nullify(cgrid%fmean_fsn               )
+      nullify(cgrid%fmean_a_open            )
+      nullify(cgrid%fmean_a_closed          )
+      nullify(cgrid%fmean_a_net             )
       nullify(cgrid%fmean_A_light           )
       nullify(cgrid%fmean_A_rubp            )
       nullify(cgrid%fmean_A_co2             )
@@ -5056,6 +5107,9 @@ module ed_state_vars
       nullify(cgrid%dmean_fs_open           )
       nullify(cgrid%dmean_fsw               )
       nullify(cgrid%dmean_fsn               )
+      nullify(cgrid%dmean_a_open            )
+      nullify(cgrid%dmean_a_closed          )
+      nullify(cgrid%dmean_a_net             )
       nullify(cgrid%dmean_A_light           )
       nullify(cgrid%dmean_A_rubp            )
       nullify(cgrid%dmean_A_co2             )
@@ -5195,6 +5249,9 @@ module ed_state_vars
       nullify(cgrid%mmean_fs_open           )
       nullify(cgrid%mmean_fsw               )
       nullify(cgrid%mmean_fsn               )
+      nullify(cgrid%mmean_a_open            )
+      nullify(cgrid%mmean_a_closed          )
+      nullify(cgrid%mmean_a_net             )
       nullify(cgrid%mmean_A_light           )
       nullify(cgrid%mmean_A_rubp            )
       nullify(cgrid%mmean_A_co2             )
@@ -5352,6 +5409,9 @@ module ed_state_vars
       nullify(cgrid%qmean_fs_open           )
       nullify(cgrid%qmean_fsw               )
       nullify(cgrid%qmean_fsn               )
+      nullify(cgrid%qmean_a_open            )
+      nullify(cgrid%qmean_a_closed          )
+      nullify(cgrid%qmean_a_net             )
       nullify(cgrid%qmean_A_light           )
       nullify(cgrid%qmean_A_rubp            )
       nullify(cgrid%qmean_A_co2             )
@@ -6252,6 +6312,9 @@ module ed_state_vars
       nullify(cpatch%fmean_fs_open         )
       nullify(cpatch%fmean_fsw             )
       nullify(cpatch%fmean_fsn             )
+      nullify(cpatch%fmean_a_open          )
+      nullify(cpatch%fmean_a_closed        )
+      nullify(cpatch%fmean_a_net           )
       nullify(cpatch%fmean_A_light         )
       nullify(cpatch%fmean_A_rubp          )
       nullify(cpatch%fmean_A_co2           )
@@ -6315,6 +6378,9 @@ module ed_state_vars
       nullify(cpatch%dmean_fs_open         )
       nullify(cpatch%dmean_fsw             )
       nullify(cpatch%dmean_fsn             )
+      nullify(cpatch%dmean_a_open          )
+      nullify(cpatch%dmean_a_closed        )
+      nullify(cpatch%dmean_a_net           )
       nullify(cpatch%dmean_A_light         )
       nullify(cpatch%dmean_A_rubp          )
       nullify(cpatch%dmean_A_co2           )
@@ -6380,6 +6446,9 @@ module ed_state_vars
       nullify(cpatch%mmean_fs_open         )
       nullify(cpatch%mmean_fsw             )
       nullify(cpatch%mmean_fsn             )
+      nullify(cpatch%mmean_a_open          )
+      nullify(cpatch%mmean_a_closed        )
+      nullify(cpatch%mmean_a_net           )
       nullify(cpatch%mmean_A_light         )
       nullify(cpatch%mmean_A_rubp          )
       nullify(cpatch%mmean_A_co2           )
@@ -6451,6 +6520,9 @@ module ed_state_vars
       nullify(cpatch%qmean_fs_open         )
       nullify(cpatch%qmean_fsw             )
       nullify(cpatch%qmean_fsn             )
+      nullify(cpatch%qmean_a_open          )
+      nullify(cpatch%qmean_a_closed        )
+      nullify(cpatch%qmean_a_net           )
       nullify(cpatch%qmean_A_light         )
       nullify(cpatch%qmean_A_rubp          )
       nullify(cpatch%qmean_A_co2           )
@@ -6644,6 +6716,9 @@ module ed_state_vars
       if(associated(cgrid%fmean_fs_open         )) deallocate(cgrid%fmean_fs_open         )
       if(associated(cgrid%fmean_fsw             )) deallocate(cgrid%fmean_fsw             )
       if(associated(cgrid%fmean_fsn             )) deallocate(cgrid%fmean_fsn             )
+      if(associated(cgrid%fmean_a_open          )) deallocate(cgrid%fmean_a_open          )
+      if(associated(cgrid%fmean_a_closed        )) deallocate(cgrid%fmean_a_closed        )
+      if(associated(cgrid%fmean_a_net           )) deallocate(cgrid%fmean_a_net           )
       if(associated(cgrid%fmean_A_light         )) deallocate(cgrid%fmean_A_light         )
       if(associated(cgrid%fmean_A_rubp          )) deallocate(cgrid%fmean_A_rubp          )
       if(associated(cgrid%fmean_A_co2           )) deallocate(cgrid%fmean_A_co2           )
@@ -6779,6 +6854,9 @@ module ed_state_vars
       if(associated(cgrid%dmean_fs_open         )) deallocate(cgrid%dmean_fs_open         )
       if(associated(cgrid%dmean_fsw             )) deallocate(cgrid%dmean_fsw             )
       if(associated(cgrid%dmean_fsn             )) deallocate(cgrid%dmean_fsn             )
+      if(associated(cgrid%dmean_a_open          )) deallocate(cgrid%dmean_a_open          )
+      if(associated(cgrid%dmean_a_closed        )) deallocate(cgrid%dmean_a_closed        )
+      if(associated(cgrid%dmean_a_net           )) deallocate(cgrid%dmean_a_net           )
       if(associated(cgrid%dmean_A_light         )) deallocate(cgrid%dmean_A_light         )
       if(associated(cgrid%dmean_A_rubp          )) deallocate(cgrid%dmean_A_rubp          )
       if(associated(cgrid%dmean_A_co2           )) deallocate(cgrid%dmean_A_co2           )
@@ -6918,6 +6996,9 @@ module ed_state_vars
       if(associated(cgrid%mmean_fs_open         )) deallocate(cgrid%mmean_fs_open         )
       if(associated(cgrid%mmean_fsw             )) deallocate(cgrid%mmean_fsw             )
       if(associated(cgrid%mmean_fsn             )) deallocate(cgrid%mmean_fsn             )
+      if(associated(cgrid%mmean_a_open          )) deallocate(cgrid%mmean_a_open          )
+      if(associated(cgrid%mmean_a_closed        )) deallocate(cgrid%mmean_a_closed        )
+      if(associated(cgrid%mmean_a_net           )) deallocate(cgrid%mmean_a_net           )
       if(associated(cgrid%mmean_A_light         )) deallocate(cgrid%mmean_A_light         )
       if(associated(cgrid%mmean_A_rubp          )) deallocate(cgrid%mmean_A_rubp          )
       if(associated(cgrid%mmean_A_co2           )) deallocate(cgrid%mmean_A_co2           )
@@ -7075,6 +7156,9 @@ module ed_state_vars
       if(associated(cgrid%qmean_fs_open         )) deallocate(cgrid%qmean_fs_open         )
       if(associated(cgrid%qmean_fsw             )) deallocate(cgrid%qmean_fsw             )
       if(associated(cgrid%qmean_fsn             )) deallocate(cgrid%qmean_fsn             )
+      if(associated(cgrid%qmean_a_open          )) deallocate(cgrid%qmean_a_open          )
+      if(associated(cgrid%qmean_a_closed        )) deallocate(cgrid%qmean_a_closed        )
+      if(associated(cgrid%qmean_a_net           )) deallocate(cgrid%qmean_a_net           )
       if(associated(cgrid%qmean_A_light         )) deallocate(cgrid%qmean_A_light         )
       if(associated(cgrid%qmean_A_rubp          )) deallocate(cgrid%qmean_A_rubp          )
       if(associated(cgrid%qmean_A_co2           )) deallocate(cgrid%qmean_A_co2           )
@@ -8007,6 +8091,9 @@ module ed_state_vars
       if(associated(cpatch%fmean_fs_open       )) deallocate(cpatch%fmean_fs_open       )
       if(associated(cpatch%fmean_fsw           )) deallocate(cpatch%fmean_fsw           )
       if(associated(cpatch%fmean_fsn           )) deallocate(cpatch%fmean_fsn           )
+      if(associated(cpatch%fmean_a_open        )) deallocate(cpatch%fmean_a_open        )
+      if(associated(cpatch%fmean_a_closed      )) deallocate(cpatch%fmean_a_closed      )
+      if(associated(cpatch%fmean_a_net         )) deallocate(cpatch%fmean_a_net         )
       if(associated(cpatch%fmean_A_light       )) deallocate(cpatch%fmean_A_light       )
       if(associated(cpatch%fmean_A_rubp        )) deallocate(cpatch%fmean_A_rubp        )
       if(associated(cpatch%fmean_A_co2         )) deallocate(cpatch%fmean_A_co2         )
@@ -8072,6 +8159,9 @@ module ed_state_vars
       if(associated(cpatch%dmean_fs_open       )) deallocate(cpatch%dmean_fs_open       )
       if(associated(cpatch%dmean_fsw           )) deallocate(cpatch%dmean_fsw           )
       if(associated(cpatch%dmean_fsn           )) deallocate(cpatch%dmean_fsn           )
+      if(associated(cpatch%dmean_a_open        )) deallocate(cpatch%dmean_a_open        )
+      if(associated(cpatch%dmean_a_closed      )) deallocate(cpatch%dmean_a_closed      )
+      if(associated(cpatch%dmean_a_net         )) deallocate(cpatch%dmean_a_net         )
       if(associated(cpatch%dmean_A_light       )) deallocate(cpatch%dmean_A_light       )
       if(associated(cpatch%dmean_A_rubp        )) deallocate(cpatch%dmean_A_rubp        )
       if(associated(cpatch%dmean_A_co2         )) deallocate(cpatch%dmean_A_co2         )
@@ -8141,6 +8231,9 @@ module ed_state_vars
       if(associated(cpatch%mmean_fs_open       )) deallocate(cpatch%mmean_fs_open       )
       if(associated(cpatch%mmean_fsw           )) deallocate(cpatch%mmean_fsw           )
       if(associated(cpatch%mmean_fsn           )) deallocate(cpatch%mmean_fsn           )
+      if(associated(cpatch%mmean_a_open        )) deallocate(cpatch%mmean_a_open        )
+      if(associated(cpatch%mmean_a_closed      )) deallocate(cpatch%mmean_a_closed      )
+      if(associated(cpatch%mmean_a_net         )) deallocate(cpatch%mmean_a_net         )
       if(associated(cpatch%mmean_A_light       )) deallocate(cpatch%mmean_A_light       )
       if(associated(cpatch%mmean_A_rubp        )) deallocate(cpatch%mmean_A_rubp        )
       if(associated(cpatch%mmean_A_co2         )) deallocate(cpatch%mmean_A_co2         )
@@ -8214,6 +8307,9 @@ module ed_state_vars
       if(associated(cpatch%qmean_fs_open       )) deallocate(cpatch%qmean_fs_open       )
       if(associated(cpatch%qmean_fsw           )) deallocate(cpatch%qmean_fsw           )
       if(associated(cpatch%qmean_fsn           )) deallocate(cpatch%qmean_fsn           )
+      if(associated(cpatch%qmean_a_open        )) deallocate(cpatch%qmean_a_open        )
+      if(associated(cpatch%qmean_a_closed      )) deallocate(cpatch%qmean_a_closed      )
+      if(associated(cpatch%qmean_a_net         )) deallocate(cpatch%qmean_a_net         )
       if(associated(cpatch%qmean_A_light       )) deallocate(cpatch%qmean_A_light       )
       if(associated(cpatch%qmean_A_rubp        )) deallocate(cpatch%qmean_A_rubp        )
       if(associated(cpatch%qmean_A_co2         )) deallocate(cpatch%qmean_A_co2         )
@@ -9805,6 +9901,9 @@ module ed_state_vars
          opatch%fmean_fs_open         (oco) = ipatch%fmean_fs_open         (ico)
          opatch%fmean_fsw             (oco) = ipatch%fmean_fsw             (ico)
          opatch%fmean_fsn             (oco) = ipatch%fmean_fsn             (ico)
+         opatch%fmean_a_open          (oco) = ipatch%fmean_a_open          (ico)
+         opatch%fmean_a_closed        (oco) = ipatch%fmean_a_closed        (ico)
+         opatch%fmean_a_net           (oco) = ipatch%fmean_a_net           (ico)
          opatch%fmean_A_light         (oco) = ipatch%fmean_A_light         (ico)
          opatch%fmean_A_rubp          (oco) = ipatch%fmean_A_rubp          (ico)
          opatch%fmean_A_co2           (oco) = ipatch%fmean_A_co2           (ico)
@@ -9901,6 +10000,9 @@ module ed_state_vars
             opatch%dmean_fs_open         (oco) = ipatch%dmean_fs_open         (ico)
             opatch%dmean_fsw             (oco) = ipatch%dmean_fsw             (ico)
             opatch%dmean_fsn             (oco) = ipatch%dmean_fsn             (ico)
+            opatch%dmean_a_open          (oco) = ipatch%dmean_a_open          (ico)
+            opatch%dmean_a_closed        (oco) = ipatch%dmean_a_closed        (ico)
+            opatch%dmean_a_net           (oco) = ipatch%dmean_a_net           (ico)
             opatch%dmean_A_light         (oco) = ipatch%dmean_A_light         (ico)
             opatch%dmean_A_rubp          (oco) = ipatch%dmean_A_rubp          (ico)
             opatch%dmean_A_co2           (oco) = ipatch%dmean_A_co2           (ico)
@@ -9982,6 +10084,9 @@ module ed_state_vars
             opatch%mmean_fs_open         (oco) = ipatch%mmean_fs_open         (ico)
             opatch%mmean_fsw             (oco) = ipatch%mmean_fsw             (ico)
             opatch%mmean_fsn             (oco) = ipatch%mmean_fsn             (ico)
+            opatch%mmean_a_open          (oco) = ipatch%mmean_a_open          (ico)
+            opatch%mmean_a_closed        (oco) = ipatch%mmean_a_closed        (ico)
+            opatch%mmean_a_net           (oco) = ipatch%mmean_a_net           (ico)
             opatch%mmean_A_light         (oco) = ipatch%mmean_A_light         (ico)
             opatch%mmean_A_rubp          (oco) = ipatch%mmean_A_rubp          (ico)
             opatch%mmean_A_co2           (oco) = ipatch%mmean_A_co2           (ico)
@@ -10074,6 +10179,9 @@ module ed_state_vars
                opatch%qmean_fs_open         (n,oco) = ipatch%qmean_fs_open         (n,ico)
                opatch%qmean_fsw             (n,oco) = ipatch%qmean_fsw             (n,ico)
                opatch%qmean_fsn             (n,oco) = ipatch%qmean_fsn             (n,ico)
+               opatch%qmean_a_open          (n,oco) = ipatch%qmean_a_open          (n,ico)
+               opatch%qmean_a_closed        (n,oco) = ipatch%qmean_a_closed        (n,ico)
+               opatch%qmean_a_net           (n,oco) = ipatch%qmean_a_net           (n,ico)
                opatch%qmean_A_light         (n,oco) = ipatch%qmean_A_light         (n,ico)
                opatch%qmean_A_rubp          (n,oco) = ipatch%qmean_A_rubp          (n,ico)
                opatch%qmean_A_co2           (n,oco) = ipatch%qmean_A_co2           (n,ico)
@@ -10429,6 +10537,9 @@ module ed_state_vars
       opatch%fmean_fs_open         (1:z) = pack(ipatch%fmean_fs_open             ,lmask)
       opatch%fmean_fsw             (1:z) = pack(ipatch%fmean_fsw                 ,lmask)
       opatch%fmean_fsn             (1:z) = pack(ipatch%fmean_fsn                 ,lmask)
+      opatch%fmean_a_open          (1:z) = pack(ipatch%fmean_a_open              ,lmask)
+      opatch%fmean_a_closed        (1:z) = pack(ipatch%fmean_a_closed            ,lmask)
+      opatch%fmean_a_net           (1:z) = pack(ipatch%fmean_a_net               ,lmask)
       opatch%fmean_A_light         (1:z) = pack(ipatch%fmean_A_light             ,lmask)
       opatch%fmean_A_rubp          (1:z) = pack(ipatch%fmean_A_rubp              ,lmask)
       opatch%fmean_A_co2           (1:z) = pack(ipatch%fmean_A_co2               ,lmask)
@@ -10532,6 +10643,9 @@ module ed_state_vars
       opatch%dmean_fs_open         (1:z) = pack(ipatch%dmean_fs_open             ,lmask)
       opatch%dmean_fsw             (1:z) = pack(ipatch%dmean_fsw                 ,lmask)
       opatch%dmean_fsn             (1:z) = pack(ipatch%dmean_fsn                 ,lmask)
+      opatch%dmean_a_open          (1:z) = pack(ipatch%dmean_a_open              ,lmask)
+      opatch%dmean_a_closed        (1:z) = pack(ipatch%dmean_a_closed            ,lmask)
+      opatch%dmean_a_net           (1:z) = pack(ipatch%dmean_a_net               ,lmask)
       opatch%dmean_A_light         (1:z) = pack(ipatch%dmean_A_light             ,lmask)
       opatch%dmean_A_rubp          (1:z) = pack(ipatch%dmean_A_rubp              ,lmask)
       opatch%dmean_A_co2           (1:z) = pack(ipatch%dmean_A_co2               ,lmask)
@@ -10636,6 +10750,9 @@ module ed_state_vars
       opatch%mmean_fs_open         (1:z) = pack(ipatch%mmean_fs_open             ,lmask)
       opatch%mmean_fsw             (1:z) = pack(ipatch%mmean_fsw                 ,lmask)
       opatch%mmean_fsn             (1:z) = pack(ipatch%mmean_fsn                 ,lmask)
+      opatch%mmean_a_open          (1:z) = pack(ipatch%mmean_a_open              ,lmask)
+      opatch%mmean_a_closed        (1:z) = pack(ipatch%mmean_a_closed            ,lmask)
+      opatch%mmean_a_net           (1:z) = pack(ipatch%mmean_a_net               ,lmask)
       opatch%mmean_A_light         (1:z) = pack(ipatch%mmean_A_light             ,lmask)
       opatch%mmean_A_rubp          (1:z) = pack(ipatch%mmean_A_rubp              ,lmask)
       opatch%mmean_A_co2           (1:z) = pack(ipatch%mmean_A_co2               ,lmask)
@@ -10754,6 +10871,9 @@ module ed_state_vars
          opatch%qmean_fs_open       (n,1:z) = pack(ipatch%qmean_fs_open       (n,:),lmask)
          opatch%qmean_fsw           (n,1:z) = pack(ipatch%qmean_fsw           (n,:),lmask)
          opatch%qmean_fsn           (n,1:z) = pack(ipatch%qmean_fsn           (n,:),lmask)
+         opatch%qmean_a_open        (n,1:z) = pack(ipatch%qmean_a_open        (n,:),lmask)
+         opatch%qmean_a_closed      (n,1:z) = pack(ipatch%qmean_a_closed      (n,:),lmask)
+         opatch%qmean_a_net         (n,1:z) = pack(ipatch%qmean_a_net         (n,:),lmask)
          opatch%qmean_A_light       (n,1:z) = pack(ipatch%qmean_A_light       (n,:),lmask)
          opatch%qmean_A_rubp        (n,1:z) = pack(ipatch%qmean_A_rubp        (n,:),lmask)
          opatch%qmean_A_co2         (n,1:z) = pack(ipatch%qmean_A_co2         (n,:),lmask)
@@ -12275,6 +12395,33 @@ module ed_state_vars
                            ,'Sub-daily mean - Nitrogen stress'                             &
                            ,'[         --]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_A_open          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_open                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_OPEN_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Assimilation rate (no soil moist. stress)'   &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_A_closed        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_closed                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_CLOSED_PY        :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Minimum assimilation rate'                   &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_A_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_net                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_NET_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Actual assimilation rate'                    &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_A_light         )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_A_light                                       &
@@ -13475,6 +13622,33 @@ module ed_state_vars
                            ,'Daily mean - Nitrogen stress'                                 &
                            ,'[         --]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_A_open          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_open                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_OPEN_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Assimilation rate (no soil moist. stress)'       &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_A_closed        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_closed                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_CLOSED_PY        :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Minimum assimilation rate'                       &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_A_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_A_net                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_A_NET_PY          :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Actual assimilation rate'                        &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_A_light         )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_A_light                                       &
@@ -14548,6 +14722,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Nitrogen stress'                               &
                            ,'[         --]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_open          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_open                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_OPEN_PY          :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Assimilation rate (no soil moist. stress)'     &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_closed        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_closed                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_CLOSED_PY        :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Minimum assimilation rate'                     &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_A_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_A_net                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_A_NET_PY          :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Actual assimilation rate'                      &
+                           ,'[umol/m2/s]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_A_light         )) then
          nvar = nvar+1
@@ -16007,6 +16208,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Nitrogen stress'                                  &
                            ,'[         --]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_A_open          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_A_open                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_A_OPEN_PY          :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Assimilation rate (no soil moist. stress)'        &
+                           ,'[umol/m2/s]','(ndcycle,ipoly)'      )
+      end if
+      if (associated(cgrid%qmean_A_closed        )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_A_closed                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_A_CLOSED_PY        :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Minimum assimilation rate'                        &
+                           ,'[umol/m2/s]','(ndcycle,ipoly)'      )
+      end if
+      if (associated(cgrid%qmean_A_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_A_net                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_A_NET_PY          :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Actual assimilation rate'                         &
+                           ,'[umol/m2/s]','(ndcycle,ipoly)'      )
       end if
       if (associated(cgrid%qmean_A_light         )) then
          nvar = nvar+1
@@ -25003,6 +25231,33 @@ module ed_state_vars
                            ,'Sub-daily mean - Nitrogen stress'                             &
                            ,'[         --]','(icohort)'            )
       end if
+      if (associated(cpatch%fmean_a_open         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_open                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_OPEN_CO             :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Assimilation rate (no soil moist. stress)'   &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_closed       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_closed                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_CLOSED_CO           :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Minimum assimilation rate'                   &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_net                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_NET_CO               :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Actual assimilation rate'                    &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
       if (associated(cpatch%fmean_a_light         )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_a_light                                      &
@@ -25611,6 +25866,33 @@ module ed_state_vars
                            ,'Daily mean - Nitrogen stress'                                 &
                            ,'[         --]','(icohort)'            )
       end if
+      if (associated(cpatch%dmean_a_open         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_a_open                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_A_OPEN_CO             :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Assimilation rate (no soil moist. stress)'       &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_a_closed       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_a_closed                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_A_CLOSED_CO           :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Minimum assimilation rate'                       &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_a_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_a_net                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_A_NET_CO               :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Actual assimilation rate'                        &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
       if (associated(cpatch%dmean_a_light         )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_a_light                                      &
@@ -26160,6 +26442,33 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Nitrogen stress'                               &
                            ,'[         --]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_a_open         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_a_open                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_A_OPEN_CO             :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Assimilation rate (no soil moist. stress)'     &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_a_closed       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_a_closed                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_A_CLOSED_CO           :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Minimum assimilation rate'                     &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_a_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_a_net                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_A_NET_CO               :41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Actual assimilation rate'                      &
+                           ,'[ umol/m2l/s]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_a_light         )) then
          nvar = nvar+1
@@ -26914,7 +27223,34 @@ module ed_state_vars
                            ,'Mean diel - Nitrogen stress'                                  &
                            ,'[         --]','(ndcycle,icohort)'    )
       end if
-      if (associated(cpatch%fmean_a_light         )) then
+      if (associated(cpatch%qmean_a_open         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_a_open                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_A_OPEN_CO             :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Assimilation rate (no soil moist. stress)'     &
+                           ,'[ umol/m2l/s]','(ndcycle,icohort)'            )
+      end if
+      if (associated(cpatch%qmean_a_closed       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_a_closed                                     &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_A_CLOSED_CO           :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Minimum assimilation rate'                     &
+                           ,'[ umol/m2l/s]','(ndcycle,icohort)'            )
+      end if
+      if (associated(cpatch%qmean_a_net           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_a_net                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_A_NET_CO              :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Actual assimilation rate'                      &
+                           ,'[ umol/m2l/s]','(ndcycle,icohort)'            )
+      end if
+      if (associated(cpatch%qmean_a_light         )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_a_light                                      &
                            ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
