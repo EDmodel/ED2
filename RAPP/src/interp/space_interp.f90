@@ -534,7 +534,11 @@ subroutine oa_2ndpass(mtp,vname,lonlola,latlola,vlola,longauss,latgauss,vgauss)
             !      expected value, and it is simply the difference between the expected    !
             !      and the estimated values.                                               ! 
             !------------------------------------------------------------------------------!
-            interp_buffer%residu(xl,yl,tt) = vlola(xl,yl,tt) - vest
+            if (vlola(xl,yl,tt) == missflg_real) then
+               interp_buffer%residu(xl,yl,tt) = missflg_real
+            else
+               interp_buffer%residu(xl,yl,tt) = vlola(xl,yl,tt) - vest
+            end if
          end do rtloop
 
       end do rxloop
@@ -632,6 +636,7 @@ end subroutine oa_2ndpass
 ! we do not want to include.                                                               !
 !------------------------------------------------------------------------------------------!
 real function wei_ave(mxp,myp,xa,xz,ya,yz,var,weight,mask)
+    use mod_ioopts , only : missflg_real  ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                    , intent(in) :: mxp
@@ -659,7 +664,7 @@ real function wei_ave(mxp,myp,xa,xz,ya,yz,var,weight,mask)
    yloop: do y=ya,yz
       xloop: do x=xa,xz
          !----- Skip this point if it has a tiny influence on the total weight. -----------!
-         if (.not. mask(x,y)) cycle xloop
+         if ((.not. mask(x,y)) .or. var(x,y) == missflg_real) cycle xloop
 
          wsum  = wsum  + weight(x,y)
          fwsum = fwsum + weight(x,y) * var(x,y)

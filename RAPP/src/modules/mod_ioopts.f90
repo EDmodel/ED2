@@ -52,9 +52,9 @@ module mod_ioopts
    !----- Parameters ----------------------------------------------------------------------!
    integer               , parameter           :: nvars = 11 ! # of variables
    integer               , parameter           :: missflg_int   = 999999
-   real                  , parameter           :: missflg_real  = 1.E+34 
+   real                  , parameter           :: missflg_real  = -9.9692100E+36 !1.E+34
    character(len=maxstr) , parameter           :: missflg_char  = '___'
-   real(kind=8)          , parameter           :: missflg_dble  = 1.D+34 
+   real(kind=8)          , parameter           :: missflg_dble  = -9.96920996838687e+36 -9.96921E36 !1.D+34 
    integer               , parameter           :: rapp_absent   = -999
    integer               , parameter           :: rapp_badtype  = -888
    integer               , parameter           :: rapp_partly   = -777

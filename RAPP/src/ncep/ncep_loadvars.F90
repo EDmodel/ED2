@@ -105,6 +105,10 @@ logical function ncep_loadvars()
          call loadshort(info_table(nv)%filename,vars_ncep(nv),ssxp(ifm),ssyp(ifm)          &
                        ,sstp(ifm),x_1st(ifm),y_1st(ifm),t_1st(ifm),tlast(ifm)              &
                        ,ncep_g(ifm)%prate,ierr)
+        !this is the code that I added from marcos to cut missing values
+         where (ncep_g(ifm)%prate == missflg_real)
+            ncep_g(ifm)%prate = 0.
+         end where
 
       end select
    end do varloop
@@ -215,7 +219,7 @@ subroutine loadshort(filename,varname,mxp,myp,mtp,xa,ya,ta,tz,var,ierr)
    !----- Loop over times and load the variable into the array. ---------------------------!
    do tabs=ta,tz
       tloc = tabs - ta + 1
-      ierr = ncio_2dshort(varname,.true.,tabs,mxp,myp,var(:,:,tloc)                        &
+      ierr = ncio_2dvar(varname,.true.,tabs,mxp,myp,var(:,:,tloc)                        &
                          ,offin1=xoff,offin2=yoff)
    end do
 
