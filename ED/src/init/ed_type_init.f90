@@ -285,6 +285,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%fmean_vapor_wc          (ico) = 0.0
    cpatch%fmean_intercepted_aw    (ico) = 0.0
    cpatch%fmean_wshed_wg          (ico) = 0.0
+
+   cpatch%fmean_lai               (ico) = 0.0
+   cpatch%bdead                   (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1482,6 +1485,10 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%fmean_vapor_wc             (ipy) = 0.0
       cgrid%fmean_intercepted_aw       (ipy) = 0.0
       cgrid%fmean_wshed_wg             (ipy) = 0.0
+
+      cgrid%fmean_lai                  (ipy) = 0.0
+      cgrid%fmean_bdead                (ipy) = 0.0
+
       cgrid%fmean_rh                   (ipy) = 0.0
       cgrid%fmean_cwd_rh               (ipy) = 0.0
       cgrid%fmean_nep                  (ipy) = 0.0
