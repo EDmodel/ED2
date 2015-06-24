@@ -347,6 +347,7 @@ module allometry
    real function dbh2ca(dbh,hite,sla,ipft)
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use pft_coms    , only : dbh_crit    & ! intent(in)
+                             , dbh_adult   & ! intent(in)
                              , hgt_max     & ! intent(in)
                              , is_tropical & ! intent(in)
                              , is_grass    & ! intent(in)
@@ -361,7 +362,7 @@ module allometry
       integer, intent(in) :: ipft
       !----- Internal variables -----------------------------------------------------------!
       real                :: loclai ! The maximum local LAI for a given DBH
-      real                :: dmbh   ! The maximum 
+      real                :: mdbh   ! The maximum 
       !------------------------------------------------------------------------------------!
       if (dbh < tiny(1.0)) then
          loclai = 0.0
@@ -370,23 +371,57 @@ module allometry
 
          !----- make this function generic to size, not just dbh. -------------------------!
          loclai = sla * size2bl(dbh,hite,ipft) 
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether to impose a maximum height.                                   !
+         !---------------------------------------------------------------------------------!
          select case (iallom)
          case (0)
             !----- No upper bound in the allometry. ---------------------------------------!
-            dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
+            mdbh = dbh
+            !------------------------------------------------------------------------------!
 
          case default
-            !----- Impose a maximum crown area. -------------------------------------------!
-            if (is_grass(ipft) .and. igrass==1) then
-                 dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
+            !----- Check whether this is grass or tree, impose maximum DBH. ---------------!
+            if (is_grass(ipft) .and. igrass == 1) then
+               mdbh = min(dbh,h2dbh(hgt_max(ipft),ipft) )
             else
-                 dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
+               mdbh = min(dbh,dbh_crit(ipft))
             end if
+            !------------------------------------------------------------------------------!
          end select
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the nominal crown area. ----------------------------------------------!
+         select case (iallom)
+         case (0,1,2)
+            dbh2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
+         case (3)
+            !------------------------------------------------------------------------------!
+            !      Force crown area to be the local LAI for small trees, to avoid the      !
+            ! "bouncing" effect (crown area of small trees decreasing with size.  This     !
+            ! happens because allometry is poorly constrained at small DBH sizes.          !
+            !------------------------------------------------------------------------------!
+            if (mdbh >= dbh_adult(ipft)) then
+                dbh2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
+            else
+                dbh2ca = loclai
+            end if
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Local LAI / Crown area should never be less than one. ------------------------!
       dbh2ca = min (loclai, dbh2ca)
+      !------------------------------------------------------------------------------------!
 
       return
    end function dbh2ca

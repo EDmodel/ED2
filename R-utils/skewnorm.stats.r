@@ -1,4 +1,5 @@
 n.min.skew.norm <<- 15
+sn.version      <<- as.numeric(substring(packageVersion(pkg="sn"),1,1))
 
 
 #==========================================================================================#
@@ -24,51 +25,93 @@ sn.stats <<- function(x,na.rm=FALSE,maxit=9999){
    #---------------------------------------------------------------------------------------#
 
 
-   #---------------------------------------------------------------------------------------#
-   #     The default is to try the maximum likelihood estimator.  It is fast, but it       #
-   # doesn't always converge.  In case it fails, we fall back to EM algorithm, which is    #
-   # more robust but a lot slower.  If none of them work, then falls back to Gaussian, as  #
-   # this usually happens when there are very few points, or all points being the same.    #
-   #---------------------------------------------------------------------------------------#
-   myfit.mle = try(sn.mle(y=xsel,plot.it=FALSE,control=list(maxit=maxit)),silent=TRUE)
-   if ("try-error" %in% is(myfit.mle)){
-      warning(" - MLE failed, falling back to EM")
-      converged = FALSE
-   }else{
-      dp         = cp.to.dp(myfit.mle$cp)
-      ans        = c(dp,0)
-      rm(dp)
-      converged  = myfit.mle$optim$convergence == 0
-   }#end if
-   #---------------------------------------------------------------------------------------#
-
-
 
    #---------------------------------------------------------------------------------------#
-   #     Run EM if it failed.                                                              #
+   #    Package sn is very different depending on version.                                 #
    #---------------------------------------------------------------------------------------#
-   if (! converged){
-      myfit.em = try(sn.em(y=xsel),silent=TRUE)
-      if ("try-error" %in% is(myfit.em)){
-         #---------------------------------------------------------------------------------#
-         #      Not enough point, assume Gaussian and warn the user...                     #
-         #---------------------------------------------------------------------------------#
-         warning("EM failed too, using mean instead.")
-         ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
-         #---------------------------------------------------------------------------------#
+   if (sn.version == 0){
+
+
+      #------------------------------------------------------------------------------------#
+      #     The default is to try the maximum likelihood estimator.  It is fast, but it    #
+      # doesn't always converge.  In case it fails, we fall back to EM algorithm, which is #
+      # more robust but a lot slower.  If none of them work, then falls back to Gaussian,  #
+      # as this usually happens when there are very few points, or all points being the    #
+      # same.                                                                              #
+      #------------------------------------------------------------------------------------#
+      myfit.mle = try(sn.mle(y=xsel,plot.it=FALSE,control=list(maxit=maxit)),silent=TRUE)
+      if ("try-error" %in% is(myfit.mle)){
+         warning(" - MLE failed, falling back to EM")
+         converged = FALSE
       }else{
-         ans = c(myfit.em$dp,0)
+         dp         = cp.to.dp(myfit.mle$cp)
+         ans        = c(dp,0)
+         rm(dp)
+         converged  = myfit.mle$optim$convergence == 0
       }#end if
-      rm(myfit.em)
-   }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Run EM if it failed.                                                           #
+      #------------------------------------------------------------------------------------#
+      if (! converged){
+         myfit.em = try(sn.em(y=xsel),silent=TRUE)
+         if ("try-error" %in% is(myfit.em)){
+            #------------------------------------------------------------------------------#
+            #      Not enough point, assume Gaussian and warn the user...                  #
+            #------------------------------------------------------------------------------#
+            warning("EM failed too, using mean instead.")
+            ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
+            #------------------------------------------------------------------------------#
+         }else{
+            ans = c(myfit.em$dp,0)
+         }#end if
+         rm(myfit.em)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Delete everything else.                                                        #
+      #------------------------------------------------------------------------------------#
+      rm(xsel,myfit.mle,converged)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #------------------------------------------------------------------------------------#
+      #     Version 1 uses the skew elliptical error distribution to estimate parameters.  #
+      #------------------------------------------------------------------------------------#
+      myfit.mle = try( selm( formula = xsel~1
+                           , family  = "SN"
+                           , data    = data.frame(xsel=xsel)
+                           )#end selm
+                     , silent = TRUE
+                     )#end try
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      if ("try-error" %in% is(myfit.mle)){
+         warning(" - MLE failed, using mean instead.")
+         ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
+      }else{
+         dp         = myfit.mle@param$dp
+         ans        = c(dp,0)
+         rm(dp)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Delete everything else.                                                        #
+      #------------------------------------------------------------------------------------#
+      rm(xsel,myfit.mle)
+      #------------------------------------------------------------------------------------#
+   }#end if (sn.version == 0)
    #---------------------------------------------------------------------------------------#
 
 
-   #---------------------------------------------------------------------------------------#
-   #     Delete everything else.                                                           #
-   #---------------------------------------------------------------------------------------#
-   rm(xsel,myfit.mle,converged)
-   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#

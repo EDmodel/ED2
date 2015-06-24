@@ -935,7 +935,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , unit  = ""                      
                                      , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.001)
+                                     , mult  =    0.0001)
    numvar[["gamma.c4"       ]] = list( descr = "gamma[C4]"                  
                                      , unit  = ""                      
                                      , fmt   = "%.3f"          
@@ -943,19 +943,34 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , mult  =    0.001)
    numvar[["vm0.c3"         ]] = list( descr = "Vm0fac[C3]"                 
                                      , unit  = ""                      
-                                     , fmt   = "%.2f"          
+                                     , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.01 )
+                                     , mult  =    0.001 )
    numvar[["vm0.c4"         ]] = list( descr = "Vm0fac[C4]"                 
                                      , unit  = ""                      
-                                     , fmt   = "%.2f"          
+                                     , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.01 )
+                                     , mult  =    0.001 )
    numvar[["vm0"            ]] = list( descr = "Vm0fac"                   
                                      , unit  = ""                      
-                                     , fmt   = "%.2f"          
+                                     , fmt   = "%.3f"          
                                      , off   =    0.0
-                                     , mult  =    0.01 )
+                                     , mult  =    0.001 )
+   numvar[["leaf.resp"      ]] = list( descr = "Leaf Resp. Factor"                   
+                                     , unit  = ""                      
+                                     , fmt   = "%.4f"          
+                                     , off   =    0.0
+                                     , mult  =    0.0001 )
+   numvar[["grow.resp"      ]] = list( descr = "Grow. Resp. Factor"                   
+                                     , unit  = ""                      
+                                     , fmt   = "%.3f"          
+                                     , off   =    0.0
+                                     , mult  =    0.001 )
+   numvar[["root.resp"      ]] = list( descr = "Root Resp. Factor"                   
+                                     , unit  = ""                      
+                                     , fmt   = "%.3f"          
+                                     , off   =    0.0
+                                     , mult  =    0.001 )
    numvar[["lw.grass"       ]] = list( descr = "Leaf width [grass]"         
                                      , unit  = "cm"                    
                                      , fmt   = "%.1f"          
@@ -1243,10 +1258,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(      9,            18,          27,        36)
          nz     = c(     11,            20,          28,        38)
       }else if (lenici == 40){
-         nparms = 5
-         param  = c("iphen.scheme","iddmort.scheme","treefall","include.fire","isas")
-         na     = c(            10,              18,        26,            35,    38)
-         nz     = c(            12,              19,        29,            36,    40)
+         nparms = 4
+         param  = c("grow.resp","vm0","leaf.resp","root.resp")
+         na     = c(         10,   18,         28,         37)
+         nz     = c(         13,   21,         30,         40)
       }else if (lenici == 41){
          nparms = 5
          param  = c("idrain.scen","idtemp.scen","realisation","iphen.scheme","isoil.text")

@@ -13,7 +13,7 @@ bzip2="/bin/gzip -9"                           # Program to compress files (with
 checkhourly="y"                                # Check hourly files.
 checkstatus="y"                                # Check status before compressing
 #------ Calculator. -----------------------------------------------------------------------#
-ccc="${HOME}/util/calc.sh"  # Calculator
+ccc="${HOME}/Util/calc.sh"  # Calculator
 #------ # of history files to keep (in odyssey's world, always keep more than one). -------#
 retain=3
 #------------------------------------------------------------------------------------------#
@@ -117,7 +117,7 @@ do
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${lonlat} | tail -1)
+   oi=$(head -${line} ${joborder} | tail -1)
    polyname=$(echo ${oi}     | awk '{print $1 }')
    polyiata=$(echo ${oi}     | awk '{print $2 }')
    polylon=$(echo ${oi}      | awk '{print $3 }')

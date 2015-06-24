@@ -208,7 +208,8 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    path.data  = paste(here,place,"rdata_month",sep="/")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
+   ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
+   ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
       cat("   - Loading previous session...","\n")
@@ -311,6 +312,11 @@ for (place in myplaces){
    }#end if (! complete)
    #---------------------------------------------------------------------------------------#
 
+
+   #----- Update status file with latest data converted into R. ---------------------------#
+   latest = paste(datum$year[ntimes],datum$month[ntimes],sep=" ")
+   dummy  = write(x=latest,file=ed22.status,append=FALSE)
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#

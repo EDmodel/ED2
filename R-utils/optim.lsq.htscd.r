@@ -2,42 +2,76 @@
 #==========================================================================================#
 #     This function finds the best heteroscedastic model.  This method simultaneously fits #
 # both the main formula (lsq.formula) and the error following the formula given by         #
-# sig.formula.  
-#
-# INPUT 
-#
-# - lsq.formula:  the model to be fitted.
-#                 e.g.  y ~ exp(a0*xvar0+a1*xvar1)
-# - sig.formula:  the normalised model for the standard deviation of the residuals, i.e.
-#                 sigma/sigma0, where sigma0 is the standard deviation of all residuals.  
-#                 e.g. ~ exp(s2*xvar2)
-#
-#                 Variables in sig.formula must also be passed through data.  In addition,
-#                 you may use the following variables: 
-#                    yhat - fitted values
-#                    yres - residuals
-#                 If you have any variable with these names in data, then the model will
-#                 use the variables stored in data, not the fitted or residuals.
-#
-# - data:         Data frame with predictors for both lsq.formula and sig.formula
-# - lsq.first:    First guess for all parameters of lsq.formula to be fitted
-# - sig.first:    First guess for all parameters of sig.formula to be fitted
-# - err.method:   Which method to use to estimate error.  Acceptable values are:
-#                 - "hessian": use the eigenvalues from the Hessian matrix
-#                 - "bootstrap": use bootstrap
-#                 Partial matching is fine.
-# - maxit.optim   Maximum number of iteration within each optim call.
-# - tol.gain:     Tolerance gain for multiple calls of optim (full model).
-# - tol.optim:    Aimed tolerance for optimisation (full model).
-# - maxit:        Maximum number of optim calls (full model).
-# - n.boot:       Number of bootstrap realisations.
-# - ci.level:     Confidence interval for error estimate (bootstrap only)
-# - verbose:      Show information whilst it is optimising.
-#
-#  OUTPUT: an object of type lsq.htscd (a list really) with the following elements.
+# sig.formula.                                                                             #
+#                                                                                          #
+# INPUT                                                                                    #
+#                                                                                          #
+# - lsq.formula:   the model to be fitted.                                                 #
+#                  e.g.  y ~ exp(a0*xvar0+a1*xvar1)                                        #
+# - sig.formula:   the normalised model for the standard deviation of the residuals, i.e.  #
+#                  sigma/sigma0, where sigma0 is the standard deviation of all residuals.  #
+#                  e.g. ~ exp(s2*xvar2)                                                    #
+#                                                                                          #
+#                  Variables in sig.formula must also be passed through data.              #
+#                  In addition,  you may use the following variables:                      #
+#                     yhat - fitted values                                                 #
+#                     yres - residuals                                                     #
+#                  If you have any variable with these names in data, then the model will  #
+#                  use the variables stored in data, not the fitted or residuals.          #
+#                  If you want to run a homoscedastic fit, set sig.formula = NULL (which   #
+#                  is the default)
+#                                                                                          #
+# - data:          Data frame with predictors for both lsq.formula and sig.formula         #
+# - lsq.first:     First guess for all parameters of lsq.formula to be fitted              #
+# - sig.first:     First guess for all parameters of sig.formula to be fitted              #
+#                  Required unless sig.formula = NULL                                      #
+# - err.method:    Which method to use to estimate error.  Acceptable values are:          #
+#                  - "hessian": use the eigenvalues from the Hessian matrix                #
+#                  - "bootstrap": use bootstrap                                            #
+#                  Partial matching is fine.                                               #
+# - maxit.optim    Maximum number of iteration within each optim call.                     #
+# - tol.gain:      Tolerance gain for multiple calls of optim (full model).                #
+# - tol.optim:     Aimed tolerance for optimisation (full model).                          #
+# - maxit:         Maximum number of optim calls (full model).                             #
+# - n.boot:        Number of bootstrap realisations.                                       #
+# - ci.level:      Confidence interval for error estimate (bootstrap only)                 #
+# - verbose:       Show information whilst it is optimising.                               #
+#                                                                                          #
+#  OUTPUT: an object of type lsq.htscd (a list really) with the following elements.        #
+#                                                                                          #
+# - call:          Call that generated the current object                                  #
+# - err.method:    Method for error evaluation                                             #
+# - lsq.formula:   Model to fit through least squares                                      #
+# - sig.formula:   Formula to represent the error                                          #
+# - df:            Degrees of freedom                                                      #
+# - coefficients:  Coefficients and summary table with error estimate                      #
+# - x.best:        Optimised values (same as first column of coefficients)                 #
+# - hessian:       Hessian matrix                                                          #
+# - coeff.boot:    Coefficients for each realisation (bootstrap only)                      #
+# - support.boot:  Support function for each realisation (bootstrap only)                  #
+# - support:       Support for optimised coefficients.                                     #
+# - data:          Data frame with model predictors used for fitting                       #
+# - actual.values: Vector with actual values used for model fitting                        #
+# - fitted.values: Vector with fitted values                                               #
+# - residuals:     Vector with residuals                                                   #
+# - sigma:         Local scale for residuals                                               #
+# - goodness:      Summary statistics for goodness of fit                                  #
+# - AIC:           Akaike information criterion                                            #
+# - BIC:           Bayesian information criterion                                          #
+# - conf.int:      Confidence interval used for cross validation (bootstrap only)          #
+# - cross.val:     Data frame with cross validation data.  Estimates were obtained for     #
+#                  points that were not included in each bootstrap realisation             #
+#                  (bootstrap only)                                                        #
+#   * n:           Number of independent cross validation estimates.                       #
+#   * expected:    Expected value.                                                         #
+#   * qlow:        Lower quantile.                                                         #
+#   * qhigh:       Upper quantile.                                                         #
+#   * bias:        Mean bias.                                                              #
+#   * sigma:       Standard error of the residuals.                                        #
+#   * rmse:        root mean square error.                                                 #
 #------------------------------------------------------------------------------------------#
 optim.lsq.htscd <<- function( lsq.formula
-                            , sig.formula
+                            , sig.formula = NULL
                             , data
                             , lsq.first
                             , sig.first
@@ -64,20 +98,33 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
    #   Make sure mandatory variables aren't missing.                                       #
    #---------------------------------------------------------------------------------------#
-   if (  missing(lsq.formula) || missing(sig.formula) || missing(data)
-      || missing(lsq.first  ) || missing(sig.first  )  ){
+   if (  missing(lsq.formula) || missing(data)       || missing(lsq.first  )
+      || ( missing(sig.first) && (! is.null(sig.formula)) ) ){
       cat("---------------------------------------------------------------","\n",sep="")
       cat("   Some variables are missing from function call:"              ,"\n",sep="")
       cat(" - lsq.formula is missing:   ",missing(lsq.formula)             ,"\n",sep="")
-      cat(" - sig.formula is missing:   ",missing(sig.formula)             ,"\n",sep="")
       cat(" - data is missing:          ",missing(data       )             ,"\n",sep="")
       cat(" - lsq.first is missing:     ",missing(lsq.first  )             ,"\n",sep="")
-      cat(" - sig.first is missing:     ",missing(sig.first  )             ,"\n",sep="")
+      if (! is.null(sig.formula)){
+         cat(" - sig.formula is NULL:      ",is.null(sig.formula)          ,"\n",sep="")
+         cat(" - sig.first is missing:     ",missing(sig.first  )          ,"\n",sep="")
+      }#end if (! is.null(sig.formula))
       cat("---------------------------------------------------------------","\n",sep="")
       stop(" Missing variables")
    }#end if
    #---------------------------------------------------------------------------------------#
 
+
+   #---------------------------------------------------------------------------------------#
+   #      Set variables for homoscedastic fit in case sig.formula is NULL.                 #
+   #---------------------------------------------------------------------------------------#
+   if (is.null(sig.formula)){
+      sig.first  = NULL
+      skip.sigma = TRUE
+   }else{
+      skip.sigma = FALSE
+   }#end if
+   #---------------------------------------------------------------------------------------#
 
 
    #----- Make sure lsq.formula and sig.formula are both formulae. ------------------------#
@@ -85,9 +132,11 @@ optim.lsq.htscd <<- function( lsq.formula
    if ("try-error" %in% is(lsq.formula)){
       lsq.formula = as.formula(eval(lsq.formula))
    }#end if
-   sig.formula = try(as.formula(sig.formula),silent=TRUE)
-   if ("try-error" %in% is(sig.formula)){
-      sig.formula = as.formula(eval(sig.formula))
+   if (! skip.sigma){
+      sig.formula = try(as.formula(sig.formula),silent=TRUE)
+      if ("try-error" %in% is(sig.formula)){
+         sig.formula = as.formula(eval(sig.formula))
+      }#end if
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -100,9 +149,15 @@ optim.lsq.htscd <<- function( lsq.formula
    yname         = lsq.vars[1]
    names.lsq.1st = names(lsq.first)
    n.lsq.1st     = length(lsq.first)
-   sig.vars      = all.vars(sig.formula)
-   names.sig.1st = names(sig.first)
-   n.sig.1st     = length(sig.first)
+   if (skip.sigma){
+      sig.vars      = NULL
+      names.sig.1st = NULL
+      n.sig.1st     = 0
+   }else{
+      sig.vars      = all.vars(sig.formula)
+      names.sig.1st = names(sig.first)
+      n.sig.1st     = length(sig.first)
+   }#end if (skip.sigma)
    #---------------------------------------------------------------------------------------#
    
 
@@ -110,27 +165,36 @@ optim.lsq.htscd <<- function( lsq.formula
    #      Sanity check: lsq.first and sig.first must be named lists or named vectors, and  #
    # all names must appear in their respective formulae.                                   #
    #---------------------------------------------------------------------------------------#
-   if (is.null(names.lsq.1st) || is.null(names.sig.1st)){
-      cat("---------------------------------------------------------------","\n",sep="")
-      cat(" Names missing from lsq.first: ",is.null(names.lsq.1st)         ,"\n",sep="")
-      cat(" Names missing from sig.first: ",is.null(names.sig.1st)         ,"\n",sep="")
-      cat("---------------------------------------------------------------","\n",sep="")
-      stop("Both lsq.first and sig.first must be named lists or named vectors!")
+   if (is.null(names.lsq.1st) || ( (! skip.sigma) && is.null(names.sig.1st))){
+      cat("------------------------------------------------------------","\n",sep="")
+      cat(" Names missing from lsq.first: ",is.null(names.lsq.1st)      ,"\n",sep="")
+      if (skip.sigma){
+         cat("------------------------------------------------------------","\n",sep="")
+         stop("Both lsq.first must be a named list or a named vector!")
+      }else{
+         cat(" Names missing from sig.first: ",is.null(names.sig.1st)      ,"\n",sep="")
+         cat("------------------------------------------------------------","\n",sep="")
+         stop("Both lsq.first and sig.first must be named lists or named vectors!")
+      }#end if (skip.sigma)
    }else{
       #------------------------------------------------------------------------------------#
       #      Check that all names for first guess exist in the formula.                    #
       #------------------------------------------------------------------------------------#
       fine.lsq.1st  = names.lsq.1st %in% lsq.vars[-1]
-      fine.sig.1st  = names.sig.1st %in% sig.vars
+      if (skip.sigma){
+         fine.sig.1st  = NULL
+      }else{
+         fine.sig.1st  = names.sig.1st %in% sig.vars
+      }#end if (skip.sigma)
       if (! all(c(fine.lsq.1st,fine.sig.1st))){
          #---- Print a message telling that first guesses are not properly set. -----------#
-         cat("---------------------------------------------------------------","\n",sep="")
-         cat("    Some names in the first guess are missing from formulae"    ,"\n",sep="")
-         if (! all(fine.lsq.1st)){
-            cat("    - lsq.first: ",names.lsq.1st[! fine.lsq.1st]             ,"\n",sep="")
-            cat("    - sig.first: ",names.sig.1st[! fine.sig.1st]             ,"\n",sep="")
-         }#end if
-         cat("---------------------------------------------------------------","\n",sep="")
+         cat("------------------------------------------------------------","\n",sep="")
+         cat("    Some names in the 1st guess are missing from formulae"   ,"\n",sep="")
+         cat("    - lsq.first: ",names.lsq.1st[! fine.lsq.1st]             ,"\n",sep="")
+         if(! skip.sigma){
+            cat("    - sig.first: ",names.sig.1st[! fine.sig.1st]          ,"\n",sep="")
+         }#end if(! skip.sigma)
+         cat("------------------------------------------------------------","\n",sep="")
          stop("All names in 1st guesses must appear in the respective formulae!")
       }#end if (! all(c(fine.lsq.1st,fine.sig.1st)))
       #------------------------------------------------------------------------------------#
@@ -152,8 +216,13 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
    #    Coerce first guesses to a vector, and append "lsq." and "sig." to their names.     #
    #---------------------------------------------------------------------------------------#
-   x.1st        = c(unlist(lsq.first),unlist(sig.first))
-   names(x.1st) = c(paste("lsq",names.lsq.1st,sep="."),paste("sig",names.sig.1st,sep="."))
+   if (skip.sigma){
+      x.1st        = unlist(lsq.first)
+      names(x.1st) = paste0("lsq.",names.lsq.1st)
+   }else{
+      x.1st        = c(unlist(lsq.first),unlist(sig.first))
+      names(x.1st) = c(paste0("lsq.",names.lsq.1st),paste0("sig.",names.sig.1st))
+   }#end if (skip.sigma)
    n.par        = length(x.1st)
    names.par    = c(names.lsq.1st,names.sig.1st)
    #---------------------------------------------------------------------------------------#
@@ -326,7 +395,7 @@ optim.lsq.htscd <<- function( lsq.formula
          # solution, as the likelihood is a product of probabilities, which should be less #
          # than 1, hence the negative requirement.                                         #
          #---------------------------------------------------------------------------------#
-         success     = opt.hess$convergence %==% 0 && opt.hess$value %<% 0
+         success = opt.hess$convergence %==% 0 && opt.hess$value %<% 0
          #---------------------------------------------------------------------------------#
       }#end if ("try-error" %in% is(opt.hess))
       #------------------------------------------------------------------------------------#
@@ -356,11 +425,11 @@ optim.lsq.htscd <<- function( lsq.formula
          iterate = ( gain > (100. * tol.gain) ) && it < maxit
          if (verbose){
             cat("             > Iteration ",it
-               ,";   Converged: ",! iterate
-               ,";   Success: "  ,success
-               ,";   Support: "  ,sprintf("%.3f",now.support)
-               ,";   Gain: "     ,sprintf("%.3f",gain)   
-               ,";   Steps: "    ,sprintf("%6i",nsteps.now)
+               ,";   Converged: ", ! iterate
+               ,";   Success: "  , success
+               ,";   Support: "  , sprintf("%.3f",now.support)
+               ,";   Gain: "     , sprintf("%.3f",gain       )   
+               ,";   Steps: "    , sprintf("%6i" ,nsteps.now )
                ,"\n")
          }#end if
          #---------------------------------------------------------------------------------#
@@ -549,13 +618,11 @@ optim.lsq.htscd <<- function( lsq.formula
       #------------------------------------------------------------------------------------#
       #     Copy the results to ans.                                                       #
       #------------------------------------------------------------------------------------#
-      ans$err.method       = "Bootstrap"
-      ans$coeff.boot       = coeff.boot
-      ans$support.boot     = support.boot
-      ans$coefficients[,1] = ans$x.best
       ans$coefficients[,2] = apply(X=coeff.boot,MARGIN=2,FUN=sd  )
       ans$coefficients[,3] = ans$coefficients[,1] / ans$coefficients[,2]
       ans$coefficients[,4] = 2.0 * pt(-abs(ans$coefficients[,3]),df=ans$df)
+      ans$coeff.boot       = coeff.boot
+      ans$support.boot     = support.boot
       #------------------------------------------------------------------------------------#
    }#end if (err.short %in% "h")
    #---------------------------------------------------------------------------------------#
@@ -577,13 +644,13 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
    ypred             = evaluate.lsq.htscd( x           = ans$x.best
                                          , lsq.formula = lsq.formula
-                                         , sig.formula = ans$sig.formula
+                                         , sig.formula = sig.formula
                                          , data        = out.data
                                          , ...
                                          )#end evaluate.lsq.htscd
    ans$support       = support.lsq.htscd( x           = ans$x.best
                                         , lsq.formula = lsq.formula
-                                        , sig.formula = ans$sig.formula
+                                        , sig.formula = sig.formula
                                         , data        = out.data
                                         , ...
                                         )#end support.lsq.htscd
@@ -683,10 +750,11 @@ is.lsq.htscd <<- function(x){
 #    predict.lsq.htscd -- This function predicts the model using the object.               #
 #------------------------------------------------------------------------------------------#
 predict.lsq.htscd <<- function( object
-                              , newdata = NULL
-                              , confint = FALSE
-                              , level   = 0.95
-                              , se.fit  = FALSE
+                              , newdata   = NULL
+                              , confint   = FALSE
+                              , level     = 0.95
+                              , se.fit    = FALSE
+                              , pred.boot = FALSE
                               , ...
                               ){
    #---------------------------------------------------------------------------------------#
@@ -740,7 +808,7 @@ predict.lsq.htscd <<- function( object
    #---------------------------------------------------------------------------------------#
    #    Calculate confidence intervals?                                                    #
    #---------------------------------------------------------------------------------------#
-   if ( (confint || se.fit) && (object$err.method %in% "Hessian")){
+   if ( (confint || se.fit || pred.boot) && (object$err.method %in% "Hessian")){
       #------------------------------------------------------------------------------------#
       #    Haven't figured out how to estimate CI bands using Hessian, warn the user.      #
       #------------------------------------------------------------------------------------#
@@ -759,12 +827,15 @@ predict.lsq.htscd <<- function( object
       #------------------------------------------------------------------------------------#
       #    Haven't figured out how to estimate SE using Hessian, warn the user.            #
       #------------------------------------------------------------------------------------#
-      if (sefit) yste = NA      
+      if (se.fit){
+         yste        = NA
+         names(yste) = rownames(data)
+      }#end if (sefit)
       #------------------------------------------------------------------------------------#
 
       warning("Confidence interval and SE are currently not available for Hessian solver.")
 
-   }else if (confint || se.fit){
+   }else if (confint || se.fit || pred.boot){
       coeff.boot = object$coeff.boot
       nboot      = nrow(coeff.boot)
       yhat.boot  = matrix(nrow=nrow(data),ncol=nboot,dimnames=list(rownames(data),NULL))
@@ -788,8 +859,8 @@ predict.lsq.htscd <<- function( object
       if (confint){
          ci.lwr = 0.5 - 0.5 * level
          ci.upr = 0.5 + 0.5 * level
-         ylwr   = apply(X=yhat.boot,MARGIN=1,FUN=quantile,probs=ci.lwr)
-         yupr   = apply(X=yhat.boot,MARGIN=1,FUN=quantile,probs=ci.upr)
+         ylwr   = apply(X=yhat.boot,MARGIN=1,FUN=quantile,probs=ci.lwr,na.rm=TRUE)
+         yupr   = apply(X=yhat.boot,MARGIN=1,FUN=quantile,probs=ci.upr,na.rm=TRUE)
          yfit   = matrix( data = cbind(yhat,ylwr,yupr)
                         , ncol = 3
                         , nrow = length(yhat)
@@ -804,7 +875,8 @@ predict.lsq.htscd <<- function( object
       #     Standard error obtained by standard deviation of the realisation estimates.    #
       #------------------------------------------------------------------------------------#
       if (se.fit){
-         yste   = apply(X=yhat.boot,MARGIN=1,FUN=sd)
+         yste        = apply(X=yhat.boot,MARGIN=1,FUN=sd,na.rm=TRUE)
+         names(yste) = rownames(data)
       }#end if
       #------------------------------------------------------------------------------------#
    }#end if
@@ -826,15 +898,24 @@ predict.lsq.htscd <<- function( object
    #---------------------------------------------------------------------------------------#
    #     Define answer depending on the requests.                                          #
    #---------------------------------------------------------------------------------------#
-   if (confint && se.fit){
+   if (confint && se.fit && pred.boot){
+      ans = list(fit=yfit,se.fit=yste,boot=yhat.boot,df=y.df,residual.scale=yrsc)
+   }else if (confint && se.fit){
       ans = list(fit=yfit,se.fit=yste,df=y.df,residual.scale=yrsc)
+   }else if (confint && pred.boot){
+      ans = list(fit=yfit,boot=yhat.boot)
+   }else if (se.fit && pred.boot){
+      ans = list(fit=yhat,boot=yhat.boot,se.fit=yste,df=y.df,residual.scale=yrsc)
    }else if (confint){
       ans = yfit
    }else if (se.fit){
       ans = list(fit=yhat,se.fit=yste,df=y.df,residual.scale=yrsc)
+   }else if (pred.boot){
+      ans = list(fit=yhat,boot=yhat.boot)
    }else{
       ans = yhat
    }#end if (confint && se.fit)
+   #---------------------------------------------------------------------------------------#
 
 
    return(ans)
@@ -1168,9 +1249,13 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
 
    #----- Split the coefficients. ---------------------------------------------------------#
    x.lsq        = x[grepl(pattern="^lsq\\.",x=names(x))]
-   x.sig        = x[grepl(pattern="^sig\\.",x=names(x))]
    names(x.lsq) = gsub(pattern="^lsq\\.",replacement="",x=names(x.lsq))
-   names(x.sig) = gsub(pattern="^sig\\.",replacement="",x=names(x.sig))
+   if (is.null(sig.formula)){
+      x.sig        = NULL
+   }else{
+      x.sig        = x[grepl(pattern="^sig\\.",x=names(x))]
+      names(x.sig) = gsub(pattern="^sig\\.",replacement="",x=names(x.sig))
+   }#end if (! is.null(sig.formula))
    n.par        = length(x.lsq)
    #---------------------------------------------------------------------------------------#
 
@@ -1225,7 +1310,9 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
    #     Find the expressions we shall evaluate to determine yhat and sigma.               #
    #---------------------------------------------------------------------------------------#
    lsq.expr = attr(x=terms(lsq.formula),which="term.labels")
-   sig.expr = paste0("sigma0 * (",attr(x=terms(sig.formula),which="term.labels"),")")
+   if (! is.null(sig.formula)){
+      sig.expr = paste0("sigma0 * (",attr(x=terms(sig.formula),which="term.labels"),")")
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -1264,7 +1351,12 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
    #---------------------------------------------------------------------------------------#
    sigma0  = sqrt( sum(yres^2,na.rm=TRUE) / (n.use - n.par) )
    dummy   = assign(x="sigma0",value=sigma0,envir=modeval)
-   sigma   = eval(expr=parse(text=sig.expr),envir=modeval)
+   if (is.null(sig.formula)){
+      sigma   = rep(sigma0,times=length(yres))
+      dummy   = assign(x="sigma",value=sigma  ,envir=modeval)
+   }else{
+      sigma   = eval(expr=parse(text=sig.expr),envir=modeval)
+   }#end if
    #---------------------------------------------------------------------------------------#
 
    #----- Append data to a data frame. ----------------------------------------------------#

@@ -117,7 +117,7 @@ do
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${lonlat} | tail -1)
+   oi=$(head -${line} ${joborder} | tail -1)
    polyname=$(echo ${oi}     | awk '{print $1 }')
    polyiata=$(echo ${oi}     | awk '{print $2 }')
    polylon=$(echo ${oi}      | awk '{print $3 }')

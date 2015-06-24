@@ -1943,14 +1943,10 @@ subroutine init_decomp_params()
    case (2)
       decay_rate_fsc  =  11.0 / yr_day    ! former K2
       decay_rate_stsc =   4.5 / yr_day    ! former K1
-      select case (n_decomp_lim)
-      case (0)
-         decay_rate_ssc  =   0.072 / yr_day ! former K3
-                                            ! Trying a mean half-life of 30 years, more
-                                            ! typical of slow soil carbon in the Amazon
-      case (1)
-         decay_rate_ssc  = 100.2 / yr_day ! former K3
-      end select
+      decay_rate_ssc  = 0.096 / yr_day    ! former K3
+                                          ! Trying a mean half-life of 15 years, the
+                                          ! lower limit of life time of slow (not 
+                                          ! passive) soil carbon in the Amazon
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -2225,10 +2221,10 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    !     The following variables control the density-dependent mortality rates.            !
    !---------------------------------------------------------------------------------------!
-   mort0(1)  = -0.35 ! 0.0
-   mort0(2)  = -0.35 ! 0.0
-   mort0(3)  = -0.35 ! 0.0
-   mort0(4)  = -0.35 ! 0.0
+   mort0(1)  =  0.0 ! -0.35
+   mort0(2)  =  0.0 ! -0.35
+   mort0(3)  =  0.0 ! -0.35
+   mort0(4)  =  0.0 ! -0.35
    mort0(5)  =  0.0
    mort0(6)  =  0.0
    mort0(7)  =  0.0
@@ -2238,10 +2234,10 @@ subroutine init_pft_mort_params()
    mort0(11) =  0.0
    mort0(12) =  0.0
    mort0(13) =  0.0
-   mort0(14) = -0.35 ! 0.0
-   mort0(15) = -0.35 ! 0.0
-   mort0(16) = -0.35 ! 0.0
-   mort0(17) = -0.35 ! 0.0
+   mort0(14) =  0.0 ! -0.35
+   mort0(15) =  0.0 ! -0.35
+   mort0(16) =  0.0 ! -0.35
+   mort0(17) =  0.0 ! -0.35
 
    mort1(1)  = 2.0 ! 10.0
    mort1(2)  = 2.0 ! 10.0
@@ -2791,7 +2787,7 @@ subroutine init_pft_alloc_params()
             ! hgt_ref(ipft) = 0.0
          end if
       end do
-   case default
+   case (2)
       !------------------------------------------------------------------------------------!
       !     Use the allometry proposed by:                                                 !
       !                                                                                    !
@@ -2808,6 +2804,37 @@ subroutine init_pft_alloc_params()
             hgt_ref(ipft) = 61.7
          end if
       end do
+      !------------------------------------------------------------------------------------!
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !     Allometric equation based on the Sustainable Landscapes data.                  !
+      !                                                                                    !
+      !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   !
+      !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     !
+      !       prep.                                                                        !
+      !                                                                                    !
+      !    Equation was derived from forest inventory measurements carried out at multiple !
+      ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least        !
+      ! squares approach (though results converged to a homoscedastic fit).  This equation !
+      ! is very similar to Feldpausch et al (2012) equation for South America.             !
+      !                                                                                    !
+      ! Total number of trees: 14860                                                       !
+      ! hgt_ref = 45.78   (95% CI: [  42.24;  49.73])                                      !
+      ! b1Ht    = 0.04525 (95% CI: [0.04318;0.04681])                                      !
+      ! b2Ht    = 0.8082  (95% CI: [ 0.7783; 0.8464])                                      !
+      ! R2      = 0.660                                                                    !
+      ! RMSE    = 5.5                                                                      !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            !----- b1Ht is their "a1" and b2Ht is their "a2". -----------------------------!
+            b1Ht   (ipft) = 0.04525
+            b2Ht   (ipft) = 0.8082
+            !----- hgt_ref is their "H-Infinity". -----------------------------------------!
+            hgt_ref(ipft) = 45.78
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -2849,11 +2876,84 @@ subroutine init_pft_alloc_params()
    hgt_max(15) = 1.50
    hgt_max(16) = 1.50
    hgt_max(17) = 35.0
+   !----- Allow trees to grow up 99% of the allometry size. -------------------------------!
+   select case (iallom)
+   case (3)
+      hgt_max( 2) = 0.99 * hgt_ref( 2)
+      hgt_max( 3) = 0.99 * hgt_ref( 3)
+      hgt_max( 4) = 0.99 * hgt_ref( 4)
+      hgt_max(17) = 0.99 * hgt_ref(17)
+   end select
    !---------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------! 
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-crown allometry.  Here we use Dietze and Clark (2008) parameters for the      !
+   ! temperate PFTs and Poorter et al. (2006) for the tropical PFTs.  The Poorter et al.   !
+   ! coefficients are converted to be functions of DBH rather than height.                 !
+   !---------------------------------------------------------------------------------------!
+   !----- Intercept. ----------------------------------------------------------------------!
+   b1Ca(1:4)   = exp(-1.853) * exp(b1Ht(1:4)) ** 1.888
+   b1Ca(5:13)  = 2.490154
+   b1Ca(14:17) = exp(-1.853) * exp(b1Ht(14:17)) ** 1.888
+   !----- Slope.  -------------------------------------------------------------------------!
+   b2Ca(1:4)   = b2Ht(1:4) * 1.888
+   b2Ca(5:13)  = 0.8068806
+   b2Ca(14:17) = b2Ht(14:17) * 1.888
+   !------ Allometric coefficents. --------------------------------------------------------!
+   select case (iallom)
+   case (0,1)
+      !----- Original ED-2.1 --------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            b1Ca(ipft) = exp(-1.853) * exp(b1Ht(ipft)) ** 1.888
+            b2Ca(ipft) = b2Ht(ipft) * 1.888
+         end if
+      end do
+   case (2)
+      !----- Fitted values obtained using Poorter h->DBH to obtain function of DBH. -------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            b1Ca(ipft) = exp(ncrown_area(1))
+            b2Ca(ipft) = ncrown_area(2)
+         end if
+      end do
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !     Allometric equation based on the Sustainable Landscapes data.                  !
+      !                                                                                    !
+      !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   !
+      !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     !
+      !       prep.                                                                        !
+      !                                                                                    !
+      !    Equation was derived from forest inventory measurements carried out at          !
+      ! multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic     !
+      ! least squares approach.                                                            !
+      !                                                                                    !
+      ! Total number of trees: 14411                                                       !
+      ! b1Radius = 0.39507 (95% CI: [0.37689;0.41380])                                     !
+      ! b2Radius = 0.61558 (95% CI: [0.60023;0.63010])                                     !
+      ! R2       = 0.577                                                                   !
+      ! RMSE     = 1.02                                                                    !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            !----- b1Ca is their "a1" and b2Ca is their "a2". -----------------------------!
+            b1Ca   (ipft) = pi1 * 0.39507**2
+            b2Ca   (ipft) = 2. * 0.61558
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
    !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
    !   DBH_ADULT   -- minimum DBH for the tree to be considered adult (used only when      !
@@ -2862,7 +2962,11 @@ subroutine init_pft_alloc_params()
    do ipft=1,n_pft
       min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
       dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
-      dbh_adult  (ipft) = 10.0
+      if (is_tropical(ipft)) then
+         dbh_adult  (ipft) = 10.0
+      else
+         dbh_adult  (ipft) = 0.0
+      end if
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -3002,7 +3106,20 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
             b1Bl_large (ipft) = 0.00873 * SLA(3) / SLA(ipft)
             b2Bl_large (ipft) = 2.1360
-            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     DBH_Adult is by definition the minimum size that local LAI can become    !
+            ! greater than 1.                                                              !
+            !------------------------------------------------------------------------------!
+            dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)        &
+                              ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
+            bleaf_adult(ipft) = b1Bl_large(ipft)                                           &
+                              / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
+
+            !----- Small-sized bleaf is a log-linear interpolation. -----------------------!
             bleaf_sapling     = 0.02 * C2B * SLA(3) / SLA(ipft)
             b2Bl_small (ipft) = log( bleaf_adult(ipft) / bleaf_sapling )                   &
                               / log( dbh_adult  (ipft) / min_dbh(ipft) )
@@ -3010,6 +3127,7 @@ subroutine init_pft_alloc_params()
                               / dbh_adult(ipft) ** b2Bl_small(ipft)
             !------------------------------------------------------------------------------!
          end select
+         !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf biomass at minimum adult size.                           !
@@ -3067,6 +3185,7 @@ subroutine init_pft_alloc_params()
             aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)             &
                                + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
             b2Bs_large(ipft) = C2B * b2d + aux
+            !------------------------------------------------------------------------------!
 
          case (1)
             !---- Based on modified Chave et al. (2001) allometry. ------------------------!
@@ -3074,15 +3193,31 @@ subroutine init_pft_alloc_params()
             b2Bs_small(ipft) = odead_small(2)
             b1Bs_large(ipft) = C2B * exp(odead_large(1)) * rho(ipft) / odead_large(3)
             b2Bs_large(ipft) = odead_large(2)
+            !------------------------------------------------------------------------------!
 
-         case default
+         case (2)
             !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
             b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
             b2Bs_small(ipft) = ndead_small(2)
             b1Bs_large(ipft) = C2B * exp(ndead_large(1)) * rho(ipft) / ndead_large(3)
             b2Bs_large(ipft) = ndead_large(2)
+            !------------------------------------------------------------------------------!
 
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     Parameters based on a model re-fit from Chave et al. (2014).             !
+            !  Biomass was estimated from rho*D^2*h using the height allometry from SL     !
+            !  bdead was found by subtracting leaves and above-ground sapwood, and scaled  !
+            !  to include below ground biomass.  The result was fit using a DBH-dependent  !
+            !  only model.                                                                 !
+            !------------------------------------------------------------------------------!
+            b1Bs_small(ipft) = C2B * 0.3201235 * rho(ipft)
+            b2Bs_small(ipft) = 2.2940237
+            b1Bs_large(ipft) = C2B * 2.040761  * rho(ipft)
+            b2Bs_large(ipft) = 1.970171
+            !------------------------------------------------------------------------------!
          end select
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -3150,43 +3285,6 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !     DBH-crown allometry.  Here we use Dietze and Clark (2008) parameters for the      !
-   ! temperate PFTs and Poorter et al. (2006) for the tropical PFTs.  The Poorter et al.   !
-   ! coefficients are converted to be functions of DBH rather than height.                 !
-   !---------------------------------------------------------------------------------------!
-   !----- Intercept. ----------------------------------------------------------------------!
-   b1Ca(1:4)   = exp(-1.853) * exp(b1Ht(1:4)) ** 1.888
-   b1Ca(5:13)  = 2.490154
-   b1Ca(14:17) = exp(-1.853) * exp(b1Ht(14:17)) ** 1.888
-   !----- Slope.  -------------------------------------------------------------------------!
-   b2Ca(1:4)   = b2Ht(1:4) * 1.888
-   b2Ca(5:13)  = 0.8068806
-   b2Ca(14:17) = b2Ht(14:17) * 1.888
-   !------ Allometric coefficents. --------------------------------------------------------!
-   select case (iallom)
-   case (0,1)
-      !----- Original ED-2.1 --------------------------------------------------------------!
-      do ipft=1,n_pft
-         if (is_tropical(ipft)) then
-            b1Ca(ipft) = exp(-1.853) * exp(b1Ht(ipft)) ** 1.888
-            b2Ca(ipft) = b2Ht(ipft) * 1.888
-         end if
-      end do
-   case default
-      !----- Fitted values obtained using Poorter h->DBH to obtain function of DBH. -------!
-      do ipft=1,n_pft
-         if (is_tropical(ipft)) then
-            b1Ca(ipft) = exp(ncrown_area(1))
-            b2Ca(ipft) = ncrown_area(2)
-         end if
-      end do
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
    !---------------------------------------------------------------------------------------!
    !    Use the equation by:                                                               !
    !    Ahrends, B., C. Penne, O. Panferov, 2010: Impact of target diameter harvesting on  !
@@ -3244,14 +3342,18 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
+   !     Volume coefficients.  MLO. Is there any reference for this equation?              !
+   !---------------------------------------------------------------------------------------!
+   b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
+   b2Vol(1:17)  = 2.0
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
    !     DBH-Root depth allometry.  Check which allometry to use.  Notice that b?Rd have   !
    ! different meanings depending on the allometry. b?Vol is always defined because we     !
    ! may want to estimate the standing volume for other reasons (e.g. the characteristic   !
    ! diameter of branches).                                                                !
    !---------------------------------------------------------------------------------------!
-   b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
-   b2Vol(1:17)  = 2.0
-
    select case (iallom)
    case (0)
       b1Rd(1)     = - 0.700
@@ -3410,9 +3512,12 @@ end subroutine init_pft_nitro_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_leaf_params()
    use phenology_coms , only : iphen_scheme         ! ! intent(in)
-   use ed_misc_coms   , only : igrass               ! ! intent(in)
+   use ed_misc_coms   , only : igrass               & ! intent(in)
+                             , iallom               ! ! intent(in)
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
+                             , is_tropical          & ! intent(in)
+                             , is_grass             & ! intent(in)
                              , b1Cl                 & ! intent(out)
                              , b2Cl                 & ! intent(out)
                              , c_grn_leaf_dry       & ! intent(out)
@@ -3420,12 +3525,14 @@ subroutine init_pft_leaf_params()
                              , wat_dry_ratio_grn    & ! intent(out)
                              , wat_dry_ratio_ngrn   & ! intent(out)
                              , delta_c              ! ! intent(out)
+   use ed_max_dims    , only : n_pft                ! ! intent(in)
    use consts_coms    , only : t00                  ! ! intent(out)
-
    implicit none
 
+   !----- Local variables. ----------------------------------------------------------------!
+   integer            :: ipft
    !----- Reference temperature for heat capacity. ----------------------------------------!
-   real, parameter :: tref = t00 + 15.
+   real   , parameter :: tref = t00 + 15.
    !---------------------------------------------------------------------------------------!
 
 
@@ -3558,21 +3665,50 @@ subroutine init_pft_leaf_params()
    !                                                                                       !
    ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
    !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
+   !                                                                                       !
+   !    For iallom = 3, we use the allometric equation based on the Sustainable Landscapes !
+   ! data set.                                                                             !
+   !                                                                                       !
+   !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass      !
+   !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in        !
+   !       prep.                                                                           !
+   !                                                                                       !
+   !    Equation was derived from forest inventory measurements carried out at multiple    !
+   ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
+   ! squares approach.                                                                     !
+   !                                                                                       !
+   ! Total number of trees: 14731                                                          !
+   ! b1Cl    = 0.25972 (95% CI: [0.24661;0.27272])                                         !
+   ! b2Cl    = 1.0755  (95% CI: [ 1.0603; 1.0922])                                         !
+   ! R2      = 0.677                                                                       !
+   ! RMSE    = 2.29                                                                        !
    !---------------------------------------------------------------------------------------!
-   !----- Intercept. ----------------------------------------------------------------------!
-   b1Cl(1)     = 0.99
-   b1Cl(2:4)   = 0.3106775
-   b1Cl(5)     = 0.99
-   b1Cl(6:11)  = 0.3106775
-   b1Cl(12:16) = 0.99
-   b1Cl(17)    = 0.3106775
-   !----- Slope. ----------------------------------------------------------------------!
-   b2Cl(1)     = 1.0
-   b2Cl(2:4)   = 1.098
-   b2Cl(5)     = 1.0
-   b2Cl(6:11)  = 1.098
-   b2Cl(12:16) = 1.0
-   b2Cl(17)    = 1.098
+   do ipft=1,n_pft
+      !----- Check life form. -------------------------------------------------------------!
+      if (is_grass(ipft)) then
+         b1Cl(ipft) = 0.99
+         b2Cl(ipft) = 1.00
+      elseif (is_tropical(ipft)) then
+         select case (iallom)
+         case (0,1,2)
+            b1Cl(ipft) = 0.3106775
+            b2Cl(ipft) = 1.098
+         case (3)
+            b1Cl(ipft) = 0.25972
+            b2Cl(ipft) = 1.0755
+         end select
+      else
+         !---------------------------------------------------------------------------------!
+         !     Temperate PFTs: right now we are using the same allometry as the old        !
+         ! tropical (Poorter et al. 2006).  We probably need to switch these coefficients  !
+         ! by appropriate reference.                                                       !
+         !---------------------------------------------------------------------------------!
+         b1Cl(ipft) = 0.3106775
+         b2Cl(ipft) = 1.098
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
    return

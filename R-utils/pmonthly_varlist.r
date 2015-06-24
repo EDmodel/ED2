@@ -632,6 +632,32 @@ tspftdbh[[n]]     = list( vnam     = "wue"
                         , scsout   = FALSE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "cue"
+                        , desc     = "Carbon use efficiency"
+                        , e.unit   = untab$kgcokgc
+                        , i.unit   = untab$kgcokgc
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "ecue"
+                        , desc     = "Effective carbon use efficiency"
+                        , e.unit   = untab$kgcokgc
+                        , i.unit   = untab$kgcokgc
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "i.gpp"
                         , desc     = "Mean gross primary production"
                         , e.unit   = untab$kgcoployr

@@ -538,7 +538,7 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
    #----- Living tree: Chave et al. (2014). -----------------------------------------------#
    agb[tree ] = 0.0673 * (wdens[tree]*dbh[tree]^2*height[tree])^0.976 / C2B
    #----- Palm: Goodman et al. (2013). ----------------------------------------------------#
-   agb[palm ] = exp(-3.448+0.588/2) * dbh[palm]^2.7483 / C2B
+   agb[palm ] = exp(-3.448+0.588^2/2) * dbh[palm]^2.7483 / C2B
    #----- Liana: Schnitzer et al. (2006). -------------------------------------------------#
    agb[liana] = exp(-0.968) * dbh[liana]^2.657 / C2B
    #----- Dead trees: Palace et al. (2007). -----------------------------------------------#
