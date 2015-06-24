@@ -433,7 +433,7 @@ module mod_ncdf_globio
       character(len=15), external         :: grads_dtstamp
       character(len=17), external         :: rapp_dtstamp
       !----- Local variables --------------------------------------------------------------!
-      integer     , dimension(ntimes)          :: tmpvar
+      real(kind=4)     , dimension(ntimes)          :: tmpvar
       real(kind=8), dimension(ntimes)          :: tdble
       integer                                  :: ierr
       integer                                  :: t
@@ -1282,7 +1282,7 @@ module mod_ncdf_globio
       !----- Optional output, only one of them should appear there ------------------------!
       real, dimension(dim1,dim2), intent(out) :: realout
       !----- Local variables --------------------------------------------------------------!
-      integer(kind=2), dimension(dim1,dim2)   :: tmpvar
+      real(kind=4), dimension(dim1,dim2)   :: tmpvar
       integer                                 :: ierr,off1,off2,str1,str2
       integer, dimension(3)                   :: start,count,stride
       integer(kind=2)                         :: missshort
@@ -1330,8 +1330,8 @@ module mod_ncdf_globio
             call ncdf_load_err(ierr)
             call  fatal_error('Failed retrieving dimension '//trim(varname)//'!!!'         &
                              ,'ncio_2dshort','mod_ncdf_globio.F90')
-         elseif (xtype /= NF90_SHORT) then
-            call fatal_error('Variable '//trim(varname)//' is not short integer!'          &
+         elseif (xtype /= NF90_FLOAT) then
+            call fatal_error('Variable '//trim(varname)//' is not float!'          &
                             ,'ncio_2dshort','mod_ncdf_globio.F90')
          elseif (ndims /= 3) then !--- 3 dimensions because one is time... ----------------!
             call fatal_error('ncio_2dshort downloads only 2D variables and '//             &
@@ -1351,7 +1351,9 @@ module mod_ncdf_globio
             ierr = nf90_get_att(ncid,varid,'missing_value',missshort)
             ierr = nf90_get_att(ncid,varid,'add_offset'   ,refval   )
             ierr = nf90_get_att(ncid,varid,'scale_factor' ,scalefac )
-            
+            scalefac = 1
+            refval = 0
+
             !----- Converting the values to the real form ---------------------------------!
             where (tmpvar /= missshort)
                realout = refval + scalefac*real(tmpvar)
@@ -1396,7 +1398,7 @@ module mod_ncdf_globio
       !----- Optional output, only one of them should appear there ------------------------!
       real, dimension(dim1,dim2,dim3), intent(out) :: realout
       !----- Local variables --------------------------------------------------------------!
-      integer(kind=2), dimension(dim1,dim2,dim3)   :: tmpvar
+      real(kind=4), dimension(dim1,dim2,dim3)   :: tmpvar
       integer                                      :: ierr,off1,off2,off3,str1,str2,str3
       integer, dimension(4)                        :: start,count,stride
       integer(kind=2)                              :: missshort
@@ -1446,8 +1448,8 @@ module mod_ncdf_globio
             call ncdf_load_err(ierr)
             call  fatal_error('Failed retrieving dimension '//trim(varname)//'!!!'         &
                              ,'ncio_3dshort','mod_ncdf_globio.F90')
-         elseif (xtype /= NF90_SHORT) then
-            call fatal_error('Variable '//trim(varname)//' is not short integer!'          &
+         elseif (xtype /= NF90_FLOAT) then
+            call fatal_error('Variable '//trim(varname)//' is not float!'          &
                             ,'ncio_3dshort','mod_ncdf_globio.F90')
          elseif (ndims /= 4) then !--- 4 dimensions because one is time... ----------------!
             call fatal_error('ncio_3dshort downloads only 3D variables and '//             &
@@ -1467,7 +1469,8 @@ module mod_ncdf_globio
             ierr = nf90_get_att(ncid,varid,'missing_value',missshort)
             ierr = nf90_get_att(ncid,varid,'add_offset'   ,refval   )
             ierr = nf90_get_att(ncid,varid,'scale_factor' ,scalefac )
-            
+            scalefac = 1
+            refval = 0
             !----- Converting the values to the real form ---------------------------------!
             where (tmpvar /= missshort)
                realout = refval + scalefac*real(tmpvar)
