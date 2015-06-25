@@ -8980,7 +8980,6 @@ module ed_state_vars
       integer                                      :: n
       !------------------------------------------------------------------------------------!
 
-
       !------------------------------------------------------------------------------------!
       !     Map the indices between the input and the output vectors.                      !
       !------------------------------------------------------------------------------------!
@@ -9009,15 +9008,14 @@ module ed_state_vars
       end do
       !------------------------------------------------------------------------------------!
 
-
       !------------------------------------------------------------------------------------!
       !      We break the subroutines into smaller pieces so Fortran doesn't complain...   !
       !------------------------------------------------------------------------------------!
       call copy_sitetype_mask_inst (isite,osite,z,lmask,isize,osize)
       call copy_sitetype_mask_fmean(isite,osite,z,lmask,isize,osize)
       if (writing_long) call copy_sitetype_mask_dmean(isite,osite,z,lmask,isize,osize)
-      if (writing_eorq) call copy_sitetype_mask_mmean(isite,osite,z,lmask,isize,osize)
-      if (writing_eorq) call copy_sitetype_mask_qmean(isite,osite,z,lmask,isize,osize)
+      if (writing_eorq) call copy_sitetype_mask_mmean(isite,osite,z,lmask,isize,osize)      
+      if (writing_dcyc) call copy_sitetype_mask_qmean(isite,osite,z,lmask,isize,osize)
       !------------------------------------------------------------------------------------!
 
       return
@@ -9610,7 +9608,6 @@ module ed_state_vars
       integer                                      :: m
       integer                                      :: n
       !------------------------------------------------------------------------------------!
-
 
 
       do n=1,ndcycle
