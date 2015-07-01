@@ -189,10 +189,6 @@ module average_utils
                                                   + cpatch%fmean_storage_resp  (ico)       &
                                                   * cpatch%nplant              (ico)       &
                                                   * patch_wgt
-                  cgrid%fmean_vleaf_resp    (ipy) = cgrid%fmean_vleaf_resp     (ipy)       &
-                                                  + cpatch%fmean_vleaf_resp    (ico)       &
-                                                  * cpatch%nplant              (ico)       &
-                                                  * patch_wgt
                   cgrid%fmean_plresp        (ipy) = cgrid%fmean_plresp         (ipy)       &
                                                   + cpatch%fmean_plresp        (ico)       &
                                                   * cpatch%nplant              (ico)       &
@@ -1109,8 +1105,7 @@ module average_utils
                   cpatch%fmean_plresp(ico) = cpatch%fmean_leaf_resp   (ico)                &
                                            + cpatch%fmean_root_resp   (ico)                &
                                            + cpatch%fmean_storage_resp(ico)                &
-                                           + cpatch%fmean_growth_resp (ico)                &
-                                           + cpatch%fmean_vleaf_resp  (ico)
+                                           + cpatch%fmean_growth_resp (ico)
                   cpatch%fmean_npp   (ico) = cpatch%fmean_gpp         (ico)                &
                                            - cpatch%fmean_plresp      (ico)
                   !------------------------------------------------------------------------!
@@ -1209,7 +1204,6 @@ module average_utils
          cgrid%fmean_root_resp       (  ipy) = 0.0
          cgrid%fmean_growth_resp     (  ipy) = 0.0
          cgrid%fmean_storage_resp    (  ipy) = 0.0
-         cgrid%fmean_vleaf_resp      (  ipy) = 0.0
          cgrid%fmean_plresp          (  ipy) = 0.0
          cgrid%fmean_leaf_energy     (  ipy) = 0.0
          cgrid%fmean_leaf_water      (  ipy) = 0.0
@@ -1448,7 +1442,6 @@ module average_utils
                   cpatch%fmean_root_resp         (ico) = 0.0
                   cpatch%fmean_growth_resp       (ico) = 0.0
                   cpatch%fmean_storage_resp      (ico) = 0.0
-                  cpatch%fmean_vleaf_resp        (ico) = 0.0
                   cpatch%fmean_plresp            (ico) = 0.0
                   cpatch%fmean_leaf_energy       (ico) = 0.0
                   cpatch%fmean_leaf_water        (ico) = 0.0
@@ -1617,9 +1610,6 @@ module average_utils
                                           * frqsum_o_daysec
          cgrid%dmean_storage_resp   (ipy) = cgrid%dmean_storage_resp   (ipy)               &
                                           + cgrid%fmean_storage_resp   (ipy)               &
-                                          * frqsum_o_daysec
-         cgrid%dmean_vleaf_resp     (ipy) = cgrid%dmean_vleaf_resp     (ipy)               &
-                                          + cgrid%fmean_vleaf_resp     (ipy)               &
                                           * frqsum_o_daysec
          cgrid%dmean_plresp         (ipy) = cgrid%dmean_plresp         (ipy)               &
                                           + cgrid%fmean_plresp         (ipy)               &
@@ -2180,9 +2170,6 @@ module average_utils
                                                    * frqsum_o_daysec
                   cpatch%dmean_storage_resp  (ico) = cpatch%dmean_storage_resp  (ico)      &
                                                    + cpatch%fmean_storage_resp  (ico)      &
-                                                   * frqsum_o_daysec
-                  cpatch%dmean_vleaf_resp    (ico) = cpatch%dmean_vleaf_resp    (ico)      &
-                                                   + cpatch%fmean_vleaf_resp    (ico)      &
                                                    * frqsum_o_daysec
                   cpatch%dmean_plresp        (ico) = cpatch%dmean_plresp        (ico)      &
                                                    + cpatch%fmean_plresp        (ico)      &
@@ -3104,7 +3091,6 @@ module average_utils
          cgrid%dmean_root_resp          (ipy) = 0.0
          cgrid%dmean_growth_resp        (ipy) = 0.0
          cgrid%dmean_storage_resp       (ipy) = 0.0
-         cgrid%dmean_vleaf_resp         (ipy) = 0.0
          cgrid%dmean_plresp             (ipy) = 0.0
          cgrid%dmean_leaf_energy        (ipy) = 0.0
          cgrid%dmean_leaf_water         (ipy) = 0.0
@@ -3333,7 +3319,6 @@ module average_utils
                   cpatch%dmean_root_resp         (ico) = 0.0
                   cpatch%dmean_growth_resp       (ico) = 0.0
                   cpatch%dmean_storage_resp      (ico) = 0.0
-                  cpatch%dmean_vleaf_resp        (ico) = 0.0
                   cpatch%dmean_plresp            (ico) = 0.0
                   cpatch%dmean_leaf_energy       (ico) = 0.0
                   cpatch%dmean_leaf_water        (ico) = 0.0
@@ -3562,9 +3547,6 @@ module average_utils
                                             * ndaysi
          cgrid%mmean_storage_resp     (ipy) = cgrid%mmean_storage_resp     (ipy)           &
                                             + cgrid%dmean_storage_resp     (ipy)           &
-                                            * ndaysi
-         cgrid%mmean_vleaf_resp       (ipy) = cgrid%mmean_vleaf_resp       (ipy)           &
-                                            + cgrid%dmean_vleaf_resp       (ipy)           &
                                             * ndaysi
          cgrid%mmean_plresp           (ipy) = cgrid%mmean_plresp           (ipy)           &
                                             + cgrid%dmean_plresp           (ipy)           &
@@ -4413,9 +4395,6 @@ module average_utils
                   cpatch%mmean_storage_resp    (ico) = cpatch%mmean_storage_resp    (ico)  &
                                                      + cpatch%dmean_storage_resp    (ico)  &
                                                      * ndaysi
-                  cpatch%mmean_vleaf_resp      (ico) = cpatch%mmean_vleaf_resp      (ico)  &
-                                                     + cpatch%dmean_vleaf_resp      (ico)  &
-                                                     * ndaysi
                   cpatch%mmean_plresp          (ico) = cpatch%mmean_plresp          (ico)  &
                                                      + cpatch%dmean_plresp          (ico)  &
                                                      * ndaysi
@@ -5014,7 +4993,6 @@ module average_utils
          cgrid%mmean_root_resp           (ipy) = 0.0 
          cgrid%mmean_growth_resp         (ipy) = 0.0 
          cgrid%mmean_storage_resp        (ipy) = 0.0 
-         cgrid%mmean_vleaf_resp          (ipy) = 0.0 
          cgrid%mmean_plresp              (ipy) = 0.0 
          cgrid%mmean_leaf_energy         (ipy) = 0.0 
          cgrid%mmean_leaf_water          (ipy) = 0.0 
@@ -5320,7 +5298,6 @@ module average_utils
                   cpatch%mmean_root_resp         (ico) = 0.0
                   cpatch%mmean_growth_resp       (ico) = 0.0
                   cpatch%mmean_storage_resp      (ico) = 0.0
-                  cpatch%mmean_vleaf_resp        (ico) = 0.0
                   cpatch%mmean_plresp            (ico) = 0.0
                   cpatch%mmean_leaf_energy       (ico) = 0.0
                   cpatch%mmean_leaf_water        (ico) = 0.0
@@ -5512,9 +5489,6 @@ module average_utils
                                               * ndaysi
          cgrid%qmean_storage_resp     (t,ipy) = cgrid%qmean_storage_resp     (t,ipy)       &
                                               + cgrid%fmean_storage_resp       (ipy)       &
-                                              * ndaysi
-         cgrid%qmean_vleaf_resp       (t,ipy) = cgrid%qmean_vleaf_resp       (t,ipy)       &
-                                              + cgrid%fmean_vleaf_resp         (ipy)       &
                                               * ndaysi
          cgrid%qmean_plresp           (t,ipy) = cgrid%qmean_plresp           (t,ipy)       &
                                               + cgrid%fmean_plresp             (ipy)       &
@@ -6201,9 +6175,6 @@ module average_utils
                   cpatch%qmean_storage_resp  (t,ico) = cpatch%qmean_storage_resp  (t,ico)  &
                                                      + cpatch%fmean_storage_resp    (ico)  &
                                                      * ndaysi
-                  cpatch%qmean_vleaf_resp    (t,ico) = cpatch%qmean_vleaf_resp    (t,ico)  &
-                                                     + cpatch%fmean_vleaf_resp      (ico)  &
-                                                     * ndaysi
                   cpatch%qmean_plresp        (t,ico) = cpatch%qmean_plresp        (t,ico)  &
                                                      + cpatch%fmean_plresp          (ico)  &
                                                      * ndaysi
@@ -6767,7 +6738,6 @@ module average_utils
          cgrid%qmean_root_resp          (:,ipy) = 0.0
          cgrid%qmean_growth_resp        (:,ipy) = 0.0
          cgrid%qmean_storage_resp       (:,ipy) = 0.0
-         cgrid%qmean_vleaf_resp         (:,ipy) = 0.0
          cgrid%qmean_plresp             (:,ipy) = 0.0
          cgrid%qmean_leaf_energy        (:,ipy) = 0.0
          cgrid%qmean_leaf_water         (:,ipy) = 0.0
@@ -7023,7 +6993,6 @@ module average_utils
                   cpatch%qmean_root_resp           (:,ico) = 0.0
                   cpatch%qmean_growth_resp         (:,ico) = 0.0
                   cpatch%qmean_storage_resp        (:,ico) = 0.0
-                  cpatch%qmean_vleaf_resp          (:,ico) = 0.0
                   cpatch%qmean_plresp              (:,ico) = 0.0
                   cpatch%qmean_leaf_energy         (:,ico) = 0.0
                   cpatch%qmean_leaf_water          (:,ico) = 0.0

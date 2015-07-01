@@ -157,7 +157,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%root_respiration      (ico) = 0.0
    cpatch%growth_respiration    (ico) = 0.0
    cpatch%storage_respiration   (ico) = 0.0
-   cpatch%vleaf_respiration     (ico) = 0.0
    cpatch%monthly_dndt          (ico) = 0.0
    cpatch%monthly_dlnndt        (ico) = 0.0
    cpatch%mort_rate           (:,ico) = 0.0
@@ -235,7 +234,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%fmean_root_resp         (ico) = 0.0
    cpatch%fmean_growth_resp       (ico) = 0.0
    cpatch%fmean_storage_resp      (ico) = 0.0
-   cpatch%fmean_vleaf_resp        (ico) = 0.0
    cpatch%fmean_plresp            (ico) = 0.0
    cpatch%fmean_leaf_energy       (ico) = 0.0
    cpatch%fmean_leaf_water        (ico) = 0.0
@@ -307,7 +305,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_root_resp         (ico) = 0.0
       cpatch%dmean_growth_resp       (ico) = 0.0
       cpatch%dmean_storage_resp      (ico) = 0.0
-      cpatch%dmean_vleaf_resp        (ico) = 0.0
       cpatch%dmean_plresp            (ico) = 0.0
       cpatch%dmean_leaf_energy       (ico) = 0.0
       cpatch%dmean_leaf_water        (ico) = 0.0
@@ -372,7 +369,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%mmean_root_resp           (ico) = 0.0
       cpatch%mmean_growth_resp         (ico) = 0.0
       cpatch%mmean_storage_resp        (ico) = 0.0
-      cpatch%mmean_vleaf_resp          (ico) = 0.0
       cpatch%mmean_plresp              (ico) = 0.0
       cpatch%mmean_leaf_energy         (ico) = 0.0
       cpatch%mmean_leaf_water          (ico) = 0.0
@@ -462,7 +458,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%qmean_root_resp         (:,ico) = 0.0
       cpatch%qmean_growth_resp       (:,ico) = 0.0
       cpatch%qmean_storage_resp      (:,ico) = 0.0
-      cpatch%qmean_vleaf_resp        (:,ico) = 0.0
       cpatch%qmean_plresp            (:,ico) = 0.0
       cpatch%qmean_leaf_energy       (:,ico) = 0.0
       cpatch%qmean_leaf_water        (:,ico) = 0.0
@@ -1441,7 +1436,6 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%fmean_root_resp            (ipy) = 0.0
       cgrid%fmean_growth_resp          (ipy) = 0.0
       cgrid%fmean_storage_resp         (ipy) = 0.0
-      cgrid%fmean_vleaf_resp           (ipy) = 0.0
       cgrid%fmean_plresp               (ipy) = 0.0
       cgrid%fmean_leaf_energy          (ipy) = 0.0
       cgrid%fmean_leaf_water           (ipy) = 0.0
@@ -1585,7 +1579,6 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%dmean_root_resp            (ipy) = 0.0
          cgrid%dmean_growth_resp          (ipy) = 0.0
          cgrid%dmean_storage_resp         (ipy) = 0.0
-         cgrid%dmean_vleaf_resp           (ipy) = 0.0
          cgrid%dmean_plresp               (ipy) = 0.0
          cgrid%dmean_leaf_energy          (ipy) = 0.0
          cgrid%dmean_leaf_water           (ipy) = 0.0
@@ -1716,7 +1709,6 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%mmean_root_resp            (ipy) = 0.0
          cgrid%mmean_growth_resp          (ipy) = 0.0
          cgrid%mmean_storage_resp         (ipy) = 0.0
-         cgrid%mmean_vleaf_resp           (ipy) = 0.0
          cgrid%mmean_plresp               (ipy) = 0.0
          cgrid%mmean_leaf_energy          (ipy) = 0.0
          cgrid%mmean_leaf_water           (ipy) = 0.0
@@ -1901,7 +1893,6 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%qmean_root_resp          (:,ipy) = 0.0
          cgrid%qmean_growth_resp        (:,ipy) = 0.0
          cgrid%qmean_storage_resp       (:,ipy) = 0.0
-         cgrid%qmean_vleaf_resp         (:,ipy) = 0.0
          cgrid%qmean_plresp             (:,ipy) = 0.0
          cgrid%qmean_leaf_energy        (:,ipy) = 0.0
          cgrid%qmean_leaf_water         (:,ipy) = 0.0

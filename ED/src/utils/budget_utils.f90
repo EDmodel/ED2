@@ -108,7 +108,6 @@ module budget_utils
       real                                                    :: co2curr_rootresp
       real                                                    :: co2curr_growthresp
       real                                                    :: co2curr_storageresp
-      real                                                    :: co2curr_vleafresp
       real                                                    :: co2curr_hetresp
       real                                                    :: co2curr_nep
       real                                                    :: co2curr_denseffect
@@ -130,7 +129,6 @@ module budget_utils
       real                                                    :: root_resp
       real                                                    :: growth_resp
       real                                                    :: storage_resp
-      real                                                    :: vleaf_resp
       real                                                    :: co2_factor
       real                                                    :: ene_factor
       real                                                    :: h2o_factor
@@ -253,17 +251,15 @@ module budget_utils
       !     Compute the carbon flux components.                                            !
       !------------------------------------------------------------------------------------!
       call sum_plant_cfluxes(csite,ipa,gpp,leaf_resp,root_resp,growth_resp                 &
-                            ,storage_resp,vleaf_resp)
+                            ,storage_resp)
       co2curr_gpp         = gpp           * dtlsm
       co2curr_leafresp    = leaf_resp     * dtlsm
       co2curr_rootresp    = root_resp     * dtlsm
       co2curr_growthresp  = growth_resp   * dtlsm
       co2curr_storageresp = storage_resp  * dtlsm
-      co2curr_vleafresp   = vleaf_resp    * dtlsm
       co2curr_hetresp     = csite%rh(ipa) * dtlsm
       co2curr_nep         = co2curr_gpp - co2curr_leafresp - co2curr_rootresp              &
-                          - co2curr_growthresp - co2curr_storageresp - co2curr_vleafresp   &
-                          - co2curr_hetresp
+                          - co2curr_growthresp - co2curr_storageresp - co2curr_hetresp
       cbudget_nep         = cbudget_nep + site_area * csite%area(ipa) * co2curr_nep        &
                                         * umol_2_kgC
 
@@ -315,7 +311,7 @@ module budget_utils
       csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
       csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                       &
                                        + ( leaf_resp + root_resp + growth_resp             &
-                                         + storage_resp + vleaf_resp ) * dtlsm
+                                         + storage_resp) * dtlsm
       csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                           &
                                        + csite%rh(ipa) * dtlsm
       csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa)                   &
@@ -401,7 +397,6 @@ module budget_utils
             write (unit=*,fmt=fmtf ) ' ROOT_RESP      : ',co2curr_rootresp
             write (unit=*,fmt=fmtf ) ' GROWTH_RESP    : ',co2curr_growthresp
             write (unit=*,fmt=fmtf ) ' STORAGE_RESP   : ',co2curr_storageresp
-            write (unit=*,fmt=fmtf ) ' VLEAF_RESP     : ',co2curr_vleafresp
             write (unit=*,fmt=fmtf ) ' HET_RESP       : ',co2curr_hetresp
             write (unit=*,fmt=fmtf ) ' NEP            : ',co2curr_nep
             write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT : ',co2curr_denseffect
@@ -719,7 +714,7 @@ module budget_utils
    !    This subroutine computes the carbon flux terms.                                    !
    !---------------------------------------------------------------------------------------!
    subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,growth_resp            &
-                               ,storage_resp,vleaf_resp)
+                               ,storage_resp)
       use ed_state_vars        , only : sitetype    & ! structure
                                       , patchtype   ! ! structure
       use consts_coms          , only : day_sec     & ! intent(in)
@@ -735,14 +730,11 @@ module budget_utils
       real                  , intent(out) :: root_resp
       real                  , intent(out) :: growth_resp
       real                  , intent(out) :: storage_resp
-      real                  , intent(out) :: vleaf_resp
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer            :: cpatch
       integer                             :: k
       integer                             :: ico
       integer                             :: idbh
-      real                                :: lrresp !  Leaf and root respiration
-      real                                :: sresp  !  Storage, growth, vleaf respiration.
       !------------------------------------------------------------------------------------!
 
       !----- Initializing some variables. -------------------------------------------------!
@@ -751,7 +743,6 @@ module budget_utils
       root_resp    = 0.0
       growth_resp  = 0.0
       storage_resp = 0.0
-      vleaf_resp   = 0.0
       cpatch => csite%patch(ipa)
 
       !------------------------------------------------------------------------------------!
@@ -776,9 +767,6 @@ module budget_utils
                       / (day_sec * umol_2_kgC)
          storage_resp = storage_resp                                                       &
                       + cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
-                      / (day_sec * umol_2_kgC)
-         vleaf_resp   = vleaf_resp                                                         &
-                      + cpatch%vleaf_respiration(ico)   * cpatch%nplant(ico)               &
                       / (day_sec * umol_2_kgC)
       end do
 
