@@ -106,7 +106,10 @@ module budget_utils
       real                                                    :: co2curr_gpp
       real                                                    :: co2curr_leafresp
       real                                                    :: co2curr_rootresp
-      real                                                    :: co2curr_growthresp
+      real                                                    :: co2curr_leafgrowthresp
+      real                                                    :: co2curr_rootgrowthresp
+      real                                                    :: co2curr_sapagrowthresp
+      real                                                    :: co2curr_sapbgrowthresp
       real                                                    :: co2curr_storageresp
       real                                                    :: co2curr_vleafresp
       real                                                    :: co2curr_hetresp
@@ -128,7 +131,10 @@ module budget_utils
       real                                                    :: gpp
       real                                                    :: leaf_resp
       real                                                    :: root_resp
-      real                                                    :: growth_resp
+      real                                                    :: leaf_growth_resp
+      real                                                    :: root_growth_resp
+      real                                                    :: sapa_growth_resp
+      real                                                    :: sapb_growth_resp
       real                                                    :: storage_resp
       real                                                    :: vleaf_resp
       real                                                    :: co2_factor
@@ -252,17 +258,24 @@ module budget_utils
       !------------------------------------------------------------------------------------!
       !     Compute the carbon flux components.                                            !
       !------------------------------------------------------------------------------------!
-      call sum_plant_cfluxes(csite,ipa,gpp,leaf_resp,root_resp,growth_resp                 &
+      call sum_plant_cfluxes(csite,ipa,gpp,leaf_resp,root_resp,leaf_growth_resp            &
+                            ,root_growth_resp,sapa_growth_resp,sapb_growth_resp            &
                             ,storage_resp,vleaf_resp)
-      co2curr_gpp         = gpp           * dtlsm
-      co2curr_leafresp    = leaf_resp     * dtlsm
-      co2curr_rootresp    = root_resp     * dtlsm
-      co2curr_growthresp  = growth_resp   * dtlsm
-      co2curr_storageresp = storage_resp  * dtlsm
-      co2curr_vleafresp   = vleaf_resp    * dtlsm
-      co2curr_hetresp     = csite%rh(ipa) * dtlsm
+      co2curr_gpp             = gpp              * dtlsm
+      co2curr_leafresp        = leaf_resp        * dtlsm
+      co2curr_rootresp        = root_resp        * dtlsm
+      co2curr_storageresp     = storage_resp     * dtlsm
+      co2curr_vleafresp       = vleaf_resp       * dtlsm
+      co2curr_hetresp         = csite%rh(ipa)    * dtlsm
+      co2curr_leafgrowthresp  = leaf_growth_resp * dtlsm
+      co2curr_rootgrowthresp  = root_growth_resp * dtlsm
+      co2curr_sapagrowthresp  = sapa_growth_resp * dtlsm
+      co2curr_sapbgrowthresp  = sapb_growth_resp * dtlsm
+      
       co2curr_nep         = co2curr_gpp - co2curr_leafresp - co2curr_rootresp              &
-                          - co2curr_growthresp - co2curr_storageresp - co2curr_vleafresp   &
+                          - co2curr_leafgrowthresp - co2curr_rootgrowthresp                &
+                          - co2curr_sapagrowthresp - co2curr_sapbgrowthresp                &
+                          - co2curr_storageresp - co2curr_vleafresp                        &
                           - co2curr_hetresp
       cbudget_nep         = cbudget_nep + site_area * csite%area(ipa) * co2curr_nep        &
                                         * umol_2_kgC
@@ -314,8 +327,10 @@ module budget_utils
       !----- 1. Carbon dioxide. -----------------------------------------------------------!
       csite%co2budget_gpp(ipa)         = csite%co2budget_gpp(ipa)       + gpp       *dtlsm
       csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)                       &
-                                       + ( leaf_resp + root_resp + growth_resp             &
-                                         + storage_resp + vleaf_resp ) * dtlsm
+                                       + ( leaf_resp + root_resp + leaf_growth_resp        &
+                                         + root_growth_resp + sapa_growth_resp             &
+                                         + sapb_growth_resp + storage_resp + vleaf_resp )  &
+                                         * dtlsm
       csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)                           &
                                        + csite%rh(ipa) * dtlsm
       csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa)                   &
@@ -386,26 +401,29 @@ module budget_utils
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a,i4.4,2(1x,i2.2),1x,f6.0)') ' TIME           : ',         &
                current_time%year,current_time%month,current_time%date ,current_time%time
-            write (unit=*,fmt=fmtf ) ' LAI            : ',patch_lai
-            write (unit=*,fmt=fmtf ) ' VEG_HEIGHT     : ',csite%veg_height(ipa)
-            write (unit=*,fmt=fmtf ) ' CAN_RHOS       : ',csite%can_rhos(ipa)
-            write (unit=*,fmt=fmtf ) ' OLD_CAN_RHOS   : ',old_can_rhos
-            write (unit=*,fmt=fmtf ) ' CAN_DEPTH      : ',csite%can_depth(ipa)
-            write (unit=*,fmt=fmtf ) ' RESIDUAL       : ',co2curr_residual
+            write (unit=*,fmt=fmtf ) ' LAI              : ',patch_lai
+            write (unit=*,fmt=fmtf ) ' VEG_HEIGHT       : ',csite%veg_height(ipa)
+            write (unit=*,fmt=fmtf ) ' CAN_RHOS         : ',csite%can_rhos(ipa)
+            write (unit=*,fmt=fmtf ) ' OLD_CAN_RHOS     : ',old_can_rhos
+            write (unit=*,fmt=fmtf ) ' CAN_DEPTH        : ',csite%can_depth(ipa)
+            write (unit=*,fmt=fmtf ) ' RESIDUAL         : ',co2curr_residual
             write (unit=*,fmt=fmtf ) ' INITIAL_STORAGE: '                                  &
                                     ,csite%co2budget_initialstorage(ipa)
-            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE  : ',co2budget_finalstorage
-            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE  : ',co2budget_deltastorage
-            write (unit=*,fmt=fmtf ) ' GPP            : ',co2curr_gpp
-            write (unit=*,fmt=fmtf ) ' LEAF_RESP      : ',co2curr_leafresp
-            write (unit=*,fmt=fmtf ) ' ROOT_RESP      : ',co2curr_rootresp
-            write (unit=*,fmt=fmtf ) ' GROWTH_RESP    : ',co2curr_growthresp
-            write (unit=*,fmt=fmtf ) ' STORAGE_RESP   : ',co2curr_storageresp
-            write (unit=*,fmt=fmtf ) ' VLEAF_RESP     : ',co2curr_vleafresp
-            write (unit=*,fmt=fmtf ) ' HET_RESP       : ',co2curr_hetresp
-            write (unit=*,fmt=fmtf ) ' NEP            : ',co2curr_nep
-            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT : ',co2curr_denseffect
-            write (unit=*,fmt=fmtf ) ' LOSS2ATM       : ',co2curr_loss2atm
+            write (unit=*,fmt=fmtf ) ' FINAL_STORAGE    : ',co2budget_finalstorage
+            write (unit=*,fmt=fmtf ) ' DELTA_STORAGE    : ',co2budget_deltastorage
+            write (unit=*,fmt=fmtf ) ' GPP              : ',co2curr_gpp
+            write (unit=*,fmt=fmtf ) ' LEAF_RESP        : ',co2curr_leafresp
+            write (unit=*,fmt=fmtf ) ' ROOT_RESP        : ',co2curr_rootresp
+            write (unit=*,fmt=fmtf ) ' LEAF_GROWTH_RESP : ',co2curr_leafgrowthresp
+            write (unit=*,fmt=fmtf ) ' ROOT_GROWTH_RESP : ',co2curr_rootgrowthresp
+            write (unit=*,fmt=fmtf ) ' SAPA_GROWTH_RESP : ',co2curr_sapagrowthresp
+            write (unit=*,fmt=fmtf ) ' SAPB_GROWTH_RESP : ',co2curr_sapbgrowthresp
+            write (unit=*,fmt=fmtf ) ' STORAGE_RESP     : ',co2curr_storageresp
+            write (unit=*,fmt=fmtf ) ' VLEAF_RESP       : ',co2curr_vleafresp
+            write (unit=*,fmt=fmtf ) ' HET_RESP         : ',co2curr_hetresp
+            write (unit=*,fmt=fmtf ) ' NEP              : ',co2curr_nep
+            write (unit=*,fmt=fmtf ) ' DENSITY_EFFECT   : ',co2curr_denseffect
+            write (unit=*,fmt=fmtf ) ' LOSS2ATM         : ',co2curr_loss2atm
             write (unit=*,fmt='(a)') '|--------------------------------------------------|'
             write (unit=*,fmt='(a)') ' '
          end if
@@ -718,7 +736,8 @@ module budget_utils
    !=======================================================================================!
    !    This subroutine computes the carbon flux terms.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,growth_resp            &
+   subroutine sum_plant_cfluxes(csite,ipa, gpp, leaf_resp,root_resp,leaf_growth_resp       &
+                               ,root_growth_resp,sapa_growth_resp,sapb_growth_resp         &
                                ,storage_resp,vleaf_resp)
       use ed_state_vars        , only : sitetype    & ! structure
                                       , patchtype   ! ! structure
@@ -733,7 +752,10 @@ module budget_utils
       real                  , intent(out) :: gpp
       real                  , intent(out) :: leaf_resp
       real                  , intent(out) :: root_resp
-      real                  , intent(out) :: growth_resp
+      real                  , intent(out) :: leaf_growth_resp
+      real                  , intent(out) :: root_growth_resp
+      real                  , intent(out) :: sapa_growth_resp
+      real                  , intent(out) :: sapb_growth_resp
       real                  , intent(out) :: storage_resp
       real                  , intent(out) :: vleaf_resp
       !----- Local variables --------------------------------------------------------------!
@@ -749,9 +771,12 @@ module budget_utils
       gpp          = 0.0
       leaf_resp    = 0.0
       root_resp    = 0.0
-      growth_resp  = 0.0
       storage_resp = 0.0
       vleaf_resp   = 0.0
+      leaf_growth_resp  = 0.0
+      root_growth_resp  = 0.0
+      sapa_growth_resp  = 0.0
+      sapb_growth_resp  = 0.0
       cpatch => csite%patch(ipa)
 
       !------------------------------------------------------------------------------------!
@@ -771,9 +796,18 @@ module budget_utils
          !      Structural terms are "intensive", we must convert them from kgC/plant/day  !
          ! to umol/m2/s.                                                                   !
          !---------------------------------------------------------------------------------!
-         growth_resp  = growth_resp                                                        &
-                      + cpatch%growth_respiration(ico)  * cpatch%nplant(ico)               &
-                      / (day_sec * umol_2_kgC)
+         leaf_growth_resp  = leaf_growth_resp                                              &
+                           + cpatch%leaf_growth_resp(ico)  * cpatch%nplant(ico)            &
+                           / (day_sec * umol_2_kgC)
+         root_growth_resp  = root_growth_resp                                              &
+                           + cpatch%root_growth_resp(ico)  * cpatch%nplant(ico)            &
+                           / (day_sec * umol_2_kgC)
+         sapa_growth_resp  = sapa_growth_resp                                              &
+                           + cpatch%sapa_growth_resp(ico)  * cpatch%nplant(ico)            &
+                           / (day_sec * umol_2_kgC)
+         sapb_growth_resp  = sapb_growth_resp                                              &
+                           + cpatch%sapb_growth_resp(ico)  * cpatch%nplant(ico)            &
+                           / (day_sec * umol_2_kgC)
          storage_resp = storage_resp                                                       &
                       + cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
                       / (day_sec * umol_2_kgC)
