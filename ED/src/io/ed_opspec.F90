@@ -1154,6 +1154,7 @@ subroutine ed_opspec_misc
                                     , integration_scheme           & ! intent(in)
                                     , iallom                       & ! intent(in)
                                     , igrass                       & ! intent(in)
+                                    , growth_resp_scheme           & ! intent(in)
                                     , min_site_area                ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
@@ -1569,6 +1570,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
          'Invalid IVEGT_DYNAMICS, it must be between 0 and 1. Yours is set to'              &
         ,ivegt_dynamics,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (growth_resp_scheme < 0 .or. growth_resp_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'Invalid GROWTH_RESP_SCHEME, it must be 0 or 1. Yours is set to'                  &
+        ,growth_resp_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

@@ -75,6 +75,8 @@ Module ed_misc_coms
    
    character(len=str_len) :: thsums_database
 
+   integer :: growth_resp_scheme
+
    !---------------------------------------------------------------------------------------!
    !    Maximum distance to the current polygon that we still consider the file grid point !
    ! to be representative of the polygon for thermal sums.                                 !

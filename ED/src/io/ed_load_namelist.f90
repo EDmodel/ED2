@@ -211,7 +211,8 @@ subroutine copy_nl(copy_type)
                                    , writing_eorq              & ! intent(out)
                                    , history_fast              & ! intent(out) 
                                    , history_dail              & ! intent(out) 
-                                   , history_eorq              ! ! intent(out)
+                                   , history_eorq              & ! intent(out)
+                                   , growth_resp_scheme        ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -444,6 +445,8 @@ subroutine copy_nl(copy_type)
       ubmin                     = nl%ubmin
       ugbmin                    = nl%ugbmin
       ustmin                    = nl%ustmin
+      
+      growth_resp_scheme        = nl%growth_resp_scheme
 
       !----- Print control parameters. ----------------------------------------------------!
       iprintpolys               = nl%iprintpolys
