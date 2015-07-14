@@ -396,6 +396,35 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) leaf_emiss_tir(myPFT) = rval
               call getConfigREAL  ('wood_emiss_tir','pft',i,rval,texist)
            if(texist) wood_emiss_tir(myPFT) = rval
+
+        ! Radiation Scattering Parameters
+        
+        call getConfigREAL  ('leaf_trans_vis','pft',i,rval,texist)
+        if(texist) leaf_trans_vis(myPFT) = dble(rval)
+        call getConfigREAL  ('leaf_trans_nir','pft',i,rval,texist)
+        if(texist) leaf_trans_nir(myPFT) = dble(rval)
+        
+        call getConfigREAL  ('wood_trans_vis','pft',i,rval,texist)
+        if(texist) wood_trans_vis(myPFT) = dble(rval)
+        call getConfigREAL  ('wood_trans_nir','pft',i,rval,texist)
+        if(texist) wood_trans_nir(myPFT) = dble(rval)
+        
+        call getConfigREAL  ('clumping_factor','pft',i,rval,texist)
+        if(texist) clumping_factor(myPFT) = dble(rval)
+        
+        call getConfigREAL  ('orient_factor','pft',i,rval,texist)
+        if(texist) orient_factor(myPFT) = dble(rval)
+    
+        
+        call getConfigREAL  ('leaf_reflect_vis','pft',i,rval,texist)
+        if(texist) leaf_reflect_vis(myPFT) = dble(rval)
+        call getConfigREAL  ('leaf_reflect_nir','pft',i,rval,texist)
+        if(texist) leaf_reflect_nir(myPFT) = dble(rval)
+
+        call getConfigREAL  ('wood_reflect_vis','pft',i,rval,texist)
+        if(texist) wood_reflect_vis(myPFT) = dble(rval)
+        call getConfigREAL  ('wood_reflect_nir','pft',i,rval,texist)
+        if(texist) wood_reflect_nir(myPFT) = dble(rval)
         
 
 !!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
@@ -577,7 +606,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) leaf_backscatter_vis = real(rval)
         call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
         if(texist) leaf_backscatter_nir = real(rval)
-        
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
