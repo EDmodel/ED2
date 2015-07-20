@@ -310,8 +310,6 @@ module ed_state_vars
       real ,pointer,dimension(:) :: sapb_growth_resp
       ! Plant storage respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: storage_respiration
-      ! Plant virtual leaf respiration (kgC/plant/day)
-      real ,pointer,dimension(:) :: vleaf_respiration
 
       ! Plant density tendency [plants/m2/month]
       real ,pointer,dimension(:) :: monthly_dndt
@@ -502,7 +500,6 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_sapa_growth_resp ! Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapb_growth_resp ! Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_storage_resp     ! Storage resp.     [ kgC/pl/yr]
-      real,pointer,dimension(:)   :: fmean_vleaf_resp       ! Virt. leaf resp.  [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_plresp           ! Plant resp.       [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_leaf_energy      ! Leaf int. energy  [     J/m2g]
       real,pointer,dimension(:)   :: fmean_leaf_water       ! Leaf sfc. water   [    kg/m2g]
@@ -578,7 +575,6 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_sapa_growth_resp
       real,pointer,dimension(:)     :: dmean_sapb_growth_resp
       real,pointer,dimension(:)     :: dmean_storage_resp
-      real,pointer,dimension(:)     :: dmean_vleaf_resp
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
@@ -638,7 +634,6 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_sapa_growth_resp
       real,pointer,dimension(:)     :: mmean_sapb_growth_resp
       real,pointer,dimension(:)     :: mmean_storage_resp
-      real,pointer,dimension(:)     :: mmean_vleaf_resp
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
@@ -714,7 +709,6 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_sapa_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_growth_resp
       real,pointer,dimension(:,:)   :: qmean_storage_resp
-      real,pointer,dimension(:,:)   :: qmean_vleaf_resp
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
@@ -2204,7 +2198,6 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_sapa_growth_resp ! Growth resp.        [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapb_growth_resp ! Growth resp.        [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_storage_resp     ! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_vleaf_resp       ! Virt. leaf resp.    [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_plresp           ! Plant respiration.  [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_leaf_energy      ! Leaf int. energy    [      J/m2]
       real,pointer,dimension(:) :: fmean_leaf_water       ! Leaf sfc. water     [     kg/m2]
@@ -2370,7 +2363,6 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_sapa_growth_resp
       real,pointer,dimension(:)     :: dmean_sapb_growth_resp
       real,pointer,dimension(:)     :: dmean_storage_resp
-      real,pointer,dimension(:)     :: dmean_vleaf_resp
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
@@ -2495,7 +2487,6 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_sapa_growth_resp
       real,pointer,dimension(:)     :: mmean_sapb_growth_resp
       real,pointer,dimension(:)     :: mmean_storage_resp
-      real,pointer,dimension(:)     :: mmean_vleaf_resp
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
@@ -2657,7 +2648,6 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_sapa_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_growth_resp
       real,pointer,dimension(:,:)   :: qmean_storage_resp
-      real,pointer,dimension(:,:)   :: qmean_vleaf_resp
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
@@ -3081,7 +3071,6 @@ module ed_state_vars
       allocate(cgrid%fmean_sapa_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_sapb_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_storage_resp         (                    npolygons))
-      allocate(cgrid%fmean_vleaf_resp           (                    npolygons))
       allocate(cgrid%fmean_plresp               (                    npolygons))
       allocate(cgrid%fmean_leaf_energy          (                    npolygons))
       allocate(cgrid%fmean_leaf_water           (                    npolygons))
@@ -3227,7 +3216,6 @@ module ed_state_vars
          allocate(cgrid%dmean_sapa_growth_resp (                     npolygons))
          allocate(cgrid%dmean_sapb_growth_resp (                     npolygons))
          allocate(cgrid%dmean_storage_resp     (                     npolygons))
-         allocate(cgrid%dmean_vleaf_resp       (                     npolygons))
          allocate(cgrid%dmean_plresp           (                     npolygons))
          allocate(cgrid%dmean_leaf_energy      (                     npolygons))
          allocate(cgrid%dmean_leaf_water       (                     npolygons))
@@ -3380,7 +3368,6 @@ module ed_state_vars
          allocate(cgrid%mmean_sapa_growth_resp (                     npolygons)) 
          allocate(cgrid%mmean_sapb_growth_resp (                     npolygons)) 
          allocate(cgrid%mmean_storage_resp     (                     npolygons)) 
-         allocate(cgrid%mmean_vleaf_resp       (                     npolygons)) 
          allocate(cgrid%mmean_plresp           (                     npolygons)) 
          allocate(cgrid%mmean_leaf_energy      (                     npolygons)) 
          allocate(cgrid%mmean_leaf_water       (                     npolygons)) 
@@ -3551,7 +3538,6 @@ module ed_state_vars
          allocate(cgrid%qmean_sapa_growth_resp (             ndcycle,npolygons))
          allocate(cgrid%qmean_sapb_growth_resp (             ndcycle,npolygons))
          allocate(cgrid%qmean_storage_resp     (             ndcycle,npolygons))
-         allocate(cgrid%qmean_vleaf_resp       (             ndcycle,npolygons))
          allocate(cgrid%qmean_plresp           (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_energy      (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_water       (             ndcycle,npolygons))
@@ -4491,7 +4477,6 @@ module ed_state_vars
       allocate(cpatch%sapa_growth_resp             (                    ncohorts))
       allocate(cpatch%sapb_growth_resp             (                    ncohorts))
       allocate(cpatch%storage_respiration          (                    ncohorts))
-      allocate(cpatch%vleaf_respiration            (                    ncohorts))
       allocate(cpatch%monthly_dndt                 (                    ncohorts))
       allocate(cpatch%monthly_dlnndt               (                    ncohorts))
       allocate(cpatch%mort_rate                    (             n_mort,ncohorts))
@@ -4558,7 +4543,6 @@ module ed_state_vars
       allocate(cpatch%fmean_sapa_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_sapb_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_storage_resp           (                    ncohorts))
-      allocate(cpatch%fmean_vleaf_resp             (                    ncohorts))
       allocate(cpatch%fmean_plresp                 (                    ncohorts))
       allocate(cpatch%fmean_leaf_energy            (                    ncohorts))
       allocate(cpatch%fmean_leaf_water             (                    ncohorts))
@@ -4627,7 +4611,6 @@ module ed_state_vars
          allocate(cpatch%dmean_sapa_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_sapb_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_storage_resp        (                    ncohorts))
-         allocate(cpatch%dmean_vleaf_resp          (                    ncohorts))
          allocate(cpatch%dmean_plresp              (                    ncohorts))
          allocate(cpatch%dmean_leaf_energy         (                    ncohorts))
          allocate(cpatch%dmean_leaf_water          (                    ncohorts))
@@ -4698,7 +4681,6 @@ module ed_state_vars
          allocate(cpatch%mmean_sapa_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_sapb_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_storage_resp        (                    ncohorts))
-         allocate(cpatch%mmean_vleaf_resp          (                    ncohorts))
          allocate(cpatch%mmean_plresp              (                    ncohorts))
          allocate(cpatch%mmean_leaf_energy         (                    ncohorts))
          allocate(cpatch%mmean_leaf_water          (                    ncohorts))
@@ -4775,7 +4757,6 @@ module ed_state_vars
          allocate(cpatch%qmean_sapa_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapb_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_storage_resp        (            ndcycle,ncohorts))
-         allocate(cpatch%qmean_vleaf_resp          (            ndcycle,ncohorts))
          allocate(cpatch%qmean_plresp              (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_energy         (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_water          (            ndcycle,ncohorts))
@@ -4962,7 +4943,6 @@ module ed_state_vars
       nullify(cgrid%fmean_sapa_growth_resp  )
       nullify(cgrid%fmean_sapb_growth_resp  )
       nullify(cgrid%fmean_storage_resp      )
-      nullify(cgrid%fmean_vleaf_resp        )
       nullify(cgrid%fmean_plresp            )
       nullify(cgrid%fmean_leaf_energy       )
       nullify(cgrid%fmean_leaf_water        )
@@ -5100,7 +5080,6 @@ module ed_state_vars
       nullify(cgrid%dmean_sapa_growth_resp  )
       nullify(cgrid%dmean_sapb_growth_resp  )
       nullify(cgrid%dmean_storage_resp      )
-      nullify(cgrid%dmean_vleaf_resp        )
       nullify(cgrid%dmean_plresp            )
       nullify(cgrid%dmean_leaf_energy       )
       nullify(cgrid%dmean_leaf_water        )
@@ -5242,7 +5221,6 @@ module ed_state_vars
       nullify(cgrid%mmean_sapa_growth_resp  )
       nullify(cgrid%mmean_sapb_growth_resp  )
       nullify(cgrid%mmean_storage_resp      )
-      nullify(cgrid%mmean_vleaf_resp        )
       nullify(cgrid%mmean_plresp            )
       nullify(cgrid%mmean_leaf_energy       )
       nullify(cgrid%mmean_leaf_water        )
@@ -5402,7 +5380,6 @@ module ed_state_vars
       nullify(cgrid%qmean_sapa_growth_resp  )
       nullify(cgrid%qmean_sapb_growth_resp  )
       nullify(cgrid%qmean_storage_resp      )
-      nullify(cgrid%qmean_vleaf_resp        )
       nullify(cgrid%qmean_plresp            )
       nullify(cgrid%qmean_leaf_energy       )
       nullify(cgrid%qmean_leaf_water        )
@@ -6242,7 +6219,6 @@ module ed_state_vars
       nullify(cpatch%sapa_growth_resp      )
       nullify(cpatch%sapb_growth_resp      )
       nullify(cpatch%storage_respiration   )
-      nullify(cpatch%vleaf_respiration     )
       nullify(cpatch%monthly_dndt          )
       nullify(cpatch%monthly_dlnndt        )
       nullify(cpatch%mort_rate             )
@@ -6308,7 +6284,6 @@ module ed_state_vars
       nullify(cpatch%fmean_sapa_growth_resp)
       nullify(cpatch%fmean_sapb_growth_resp)
       nullify(cpatch%fmean_storage_resp    )
-      nullify(cpatch%fmean_vleaf_resp      )
       nullify(cpatch%fmean_plresp          )
       nullify(cpatch%fmean_leaf_energy     )
       nullify(cpatch%fmean_leaf_water      )
@@ -6374,7 +6349,6 @@ module ed_state_vars
       nullify(cpatch%dmean_sapa_growth_resp)
       nullify(cpatch%dmean_sapb_growth_resp)
       nullify(cpatch%dmean_storage_resp    )
-      nullify(cpatch%dmean_vleaf_resp      )
       nullify(cpatch%dmean_plresp          )
       nullify(cpatch%dmean_leaf_energy     )
       nullify(cpatch%dmean_leaf_water      )
@@ -6442,7 +6416,6 @@ module ed_state_vars
       nullify(cpatch%mmean_sapa_growth_resp)
       nullify(cpatch%mmean_sapb_growth_resp)
       nullify(cpatch%mmean_storage_resp    )
-      nullify(cpatch%mmean_vleaf_resp      )
       nullify(cpatch%mmean_plresp          )
       nullify(cpatch%mmean_leaf_energy     )
       nullify(cpatch%mmean_leaf_water      )
@@ -6516,7 +6489,6 @@ module ed_state_vars
       nullify(cpatch%qmean_sapa_growth_resp)
       nullify(cpatch%qmean_sapb_growth_resp)
       nullify(cpatch%qmean_storage_resp    )
-      nullify(cpatch%qmean_vleaf_resp      )
       nullify(cpatch%qmean_plresp          )
       nullify(cpatch%qmean_leaf_energy     )
       nullify(cpatch%qmean_leaf_water      )
@@ -6712,7 +6684,6 @@ module ed_state_vars
       if(associated(cgrid%fmean_sapa_growth_resp)) deallocate(cgrid%fmean_sapa_growth_resp)
       if(associated(cgrid%fmean_sapb_growth_resp)) deallocate(cgrid%fmean_sapb_growth_resp)
       if(associated(cgrid%fmean_storage_resp    )) deallocate(cgrid%fmean_storage_resp    )
-      if(associated(cgrid%fmean_vleaf_resp      )) deallocate(cgrid%fmean_vleaf_resp      )
       if(associated(cgrid%fmean_plresp          )) deallocate(cgrid%fmean_plresp          )
       if(associated(cgrid%fmean_leaf_energy     )) deallocate(cgrid%fmean_leaf_energy     )
       if(associated(cgrid%fmean_leaf_water      )) deallocate(cgrid%fmean_leaf_water      )
@@ -6850,7 +6821,6 @@ module ed_state_vars
       if(associated(cgrid%dmean_sapa_growth_resp)) deallocate(cgrid%dmean_sapa_growth_resp)
       if(associated(cgrid%dmean_sapb_growth_resp)) deallocate(cgrid%dmean_sapb_growth_resp)
       if(associated(cgrid%dmean_storage_resp    )) deallocate(cgrid%dmean_storage_resp    )
-      if(associated(cgrid%dmean_vleaf_resp      )) deallocate(cgrid%dmean_vleaf_resp      )
       if(associated(cgrid%dmean_plresp          )) deallocate(cgrid%dmean_plresp          )
       if(associated(cgrid%dmean_leaf_energy     )) deallocate(cgrid%dmean_leaf_energy     )
       if(associated(cgrid%dmean_leaf_water      )) deallocate(cgrid%dmean_leaf_water      )
@@ -6992,7 +6962,6 @@ module ed_state_vars
       if(associated(cgrid%mmean_sapa_growth_resp)) deallocate(cgrid%mmean_sapa_growth_resp)
       if(associated(cgrid%mmean_sapb_growth_resp)) deallocate(cgrid%mmean_sapb_growth_resp)
       if(associated(cgrid%mmean_storage_resp    )) deallocate(cgrid%mmean_storage_resp    )
-      if(associated(cgrid%mmean_vleaf_resp      )) deallocate(cgrid%mmean_vleaf_resp      )
       if(associated(cgrid%mmean_plresp          )) deallocate(cgrid%mmean_plresp          )
       if(associated(cgrid%mmean_leaf_energy     )) deallocate(cgrid%mmean_leaf_energy     )
       if(associated(cgrid%mmean_leaf_water      )) deallocate(cgrid%mmean_leaf_water      )
@@ -7152,7 +7121,6 @@ module ed_state_vars
       if(associated(cgrid%qmean_sapa_growth_resp)) deallocate(cgrid%qmean_sapa_growth_resp)
       if(associated(cgrid%qmean_sapb_growth_resp)) deallocate(cgrid%qmean_sapb_growth_resp)
       if(associated(cgrid%qmean_storage_resp    )) deallocate(cgrid%qmean_storage_resp    )
-      if(associated(cgrid%qmean_vleaf_resp      )) deallocate(cgrid%qmean_vleaf_resp      )
       if(associated(cgrid%qmean_plresp          )) deallocate(cgrid%qmean_plresp          )
       if(associated(cgrid%qmean_leaf_energy     )) deallocate(cgrid%qmean_leaf_energy     )
       if(associated(cgrid%qmean_leaf_water      )) deallocate(cgrid%qmean_leaf_water      )
@@ -8024,7 +7992,6 @@ module ed_state_vars
       if(associated(cpatch%sapa_growth_resp    )) deallocate(cpatch%sapa_growth_resp    )
       if(associated(cpatch%sapb_growth_resp    )) deallocate(cpatch%sapb_growth_resp    )
       if(associated(cpatch%storage_respiration )) deallocate(cpatch%storage_respiration )
-      if(associated(cpatch%vleaf_respiration   )) deallocate(cpatch%vleaf_respiration   )
       if(associated(cpatch%monthly_dndt        )) deallocate(cpatch%monthly_dndt        )
       if(associated(cpatch%monthly_dlnndt      )) deallocate(cpatch%monthly_dlnndt      )
       if(associated(cpatch%mort_rate           )) deallocate(cpatch%mort_rate           )
@@ -8090,7 +8057,6 @@ module ed_state_vars
       if(associated(cpatch%fmean_sapa_growth_resp)) deallocate(cpatch%fmean_sapa_growth_resp)
       if(associated(cpatch%fmean_sapb_growth_resp)) deallocate(cpatch%fmean_sapb_growth_resp)
       if(associated(cpatch%fmean_storage_resp  )) deallocate(cpatch%fmean_storage_resp  )
-      if(associated(cpatch%fmean_vleaf_resp    )) deallocate(cpatch%fmean_vleaf_resp    )
       if(associated(cpatch%fmean_plresp        )) deallocate(cpatch%fmean_plresp        )
       if(associated(cpatch%fmean_leaf_energy   )) deallocate(cpatch%fmean_leaf_energy   )
       if(associated(cpatch%fmean_leaf_water    )) deallocate(cpatch%fmean_leaf_water    )
@@ -8158,7 +8124,6 @@ module ed_state_vars
       if(associated(cpatch%dmean_sapa_growth_resp)) deallocate(cpatch%dmean_sapa_growth_resp)
       if(associated(cpatch%dmean_sapb_growth_resp)) deallocate(cpatch%dmean_sapb_growth_resp)
       if(associated(cpatch%dmean_storage_resp  )) deallocate(cpatch%dmean_storage_resp  )
-      if(associated(cpatch%dmean_vleaf_resp    )) deallocate(cpatch%dmean_vleaf_resp    )
       if(associated(cpatch%dmean_plresp        )) deallocate(cpatch%dmean_plresp        )
       if(associated(cpatch%dmean_leaf_energy   )) deallocate(cpatch%dmean_leaf_energy   )
       if(associated(cpatch%dmean_leaf_water    )) deallocate(cpatch%dmean_leaf_water    )
@@ -8230,7 +8195,6 @@ module ed_state_vars
       if(associated(cpatch%mmean_sapa_growth_resp)) deallocate(cpatch%mmean_sapa_growth_resp)
       if(associated(cpatch%mmean_sapb_growth_resp)) deallocate(cpatch%mmean_sapb_growth_resp)
       if(associated(cpatch%mmean_storage_resp  )) deallocate(cpatch%mmean_storage_resp  )
-      if(associated(cpatch%mmean_vleaf_resp    )) deallocate(cpatch%mmean_vleaf_resp    )
       if(associated(cpatch%mmean_plresp        )) deallocate(cpatch%mmean_plresp        )
       if(associated(cpatch%mmean_leaf_energy   )) deallocate(cpatch%mmean_leaf_energy   )
       if(associated(cpatch%mmean_leaf_water    )) deallocate(cpatch%mmean_leaf_water    )
@@ -8306,7 +8270,6 @@ module ed_state_vars
       if(associated(cpatch%qmean_sapa_growth_resp)) deallocate(cpatch%qmean_sapa_growth_resp)
       if(associated(cpatch%qmean_sapb_growth_resp)) deallocate(cpatch%qmean_sapb_growth_resp)
       if(associated(cpatch%qmean_storage_resp  )) deallocate(cpatch%qmean_storage_resp  )
-      if(associated(cpatch%qmean_vleaf_resp    )) deallocate(cpatch%qmean_vleaf_resp    )
       if(associated(cpatch%qmean_plresp        )) deallocate(cpatch%qmean_plresp        )
       if(associated(cpatch%qmean_leaf_energy   )) deallocate(cpatch%qmean_leaf_energy   )
       if(associated(cpatch%qmean_leaf_water    )) deallocate(cpatch%qmean_leaf_water    )
@@ -9836,7 +9799,6 @@ module ed_state_vars
          opatch%sapa_growth_resp      (oco) = ipatch%sapa_growth_resp      (ico)
          opatch%sapb_growth_resp      (oco) = ipatch%sapb_growth_resp      (ico)
          opatch%storage_respiration   (oco) = ipatch%storage_respiration   (ico)
-         opatch%vleaf_respiration     (oco) = ipatch%vleaf_respiration     (ico)
          opatch%monthly_dndt          (oco) = ipatch%monthly_dndt          (ico)
          opatch%monthly_dlnndt        (oco) = ipatch%monthly_dlnndt        (ico)
          opatch%krdepth               (oco) = ipatch%krdepth               (ico)
@@ -9900,7 +9862,6 @@ module ed_state_vars
          opatch%fmean_sapa_growth_resp(oco) = ipatch%fmean_sapa_growth_resp(ico)
          opatch%fmean_sapb_growth_resp(oco) = ipatch%fmean_sapb_growth_resp(ico)
          opatch%fmean_storage_resp    (oco) = ipatch%fmean_storage_resp    (ico)
-         opatch%fmean_vleaf_resp      (oco) = ipatch%fmean_vleaf_resp      (ico)
          opatch%fmean_plresp          (oco) = ipatch%fmean_plresp          (ico)
          opatch%fmean_leaf_energy     (oco) = ipatch%fmean_leaf_energy     (ico)
          opatch%fmean_leaf_water      (oco) = ipatch%fmean_leaf_water      (ico)
@@ -9999,7 +9960,6 @@ module ed_state_vars
             opatch%dmean_sapa_growth_resp(oco) = ipatch%dmean_sapa_growth_resp(ico)
             opatch%dmean_sapb_growth_resp(oco) = ipatch%dmean_sapb_growth_resp(ico)
             opatch%dmean_storage_resp    (oco) = ipatch%dmean_storage_resp    (ico)
-            opatch%dmean_vleaf_resp      (oco) = ipatch%dmean_vleaf_resp      (ico)
             opatch%dmean_plresp          (oco) = ipatch%dmean_plresp          (ico)
             opatch%dmean_leaf_energy     (oco) = ipatch%dmean_leaf_energy     (ico)
             opatch%dmean_leaf_water      (oco) = ipatch%dmean_leaf_water      (ico)
@@ -10083,7 +10043,6 @@ module ed_state_vars
             opatch%mmean_sapa_growth_resp(oco) = ipatch%mmean_sapa_growth_resp(ico)
             opatch%mmean_sapb_growth_resp(oco) = ipatch%mmean_sapb_growth_resp(ico)
             opatch%mmean_storage_resp    (oco) = ipatch%mmean_storage_resp    (ico)
-            opatch%mmean_vleaf_resp      (oco) = ipatch%mmean_vleaf_resp      (ico)
             opatch%mmean_plresp          (oco) = ipatch%mmean_plresp          (ico)
             opatch%mmean_leaf_energy     (oco) = ipatch%mmean_leaf_energy     (ico)
             opatch%mmean_leaf_water      (oco) = ipatch%mmean_leaf_water      (ico)
@@ -10178,7 +10137,6 @@ module ed_state_vars
                opatch%qmean_sapa_growth_resp(n,oco) = ipatch%qmean_sapa_growth_resp(n,ico)
                opatch%qmean_sapb_growth_resp(n,oco) = ipatch%qmean_sapb_growth_resp(n,ico)
                opatch%qmean_storage_resp    (n,oco) = ipatch%qmean_storage_resp    (n,ico)
-               opatch%qmean_vleaf_resp      (n,oco) = ipatch%qmean_vleaf_resp      (n,ico)
                opatch%qmean_plresp          (n,oco) = ipatch%qmean_plresp          (n,ico)
                opatch%qmean_leaf_energy     (n,oco) = ipatch%qmean_leaf_energy     (n,ico)
                opatch%qmean_leaf_water      (n,oco) = ipatch%qmean_leaf_water      (n,ico)
@@ -10418,7 +10376,6 @@ module ed_state_vars
       opatch%sapa_growth_resp      (1:z) = pack(ipatch%sapa_growth_resp          ,lmask)
       opatch%sapb_growth_resp      (1:z) = pack(ipatch%sapb_growth_resp          ,lmask)
       opatch%storage_respiration   (1:z) = pack(ipatch%storage_respiration       ,lmask)
-      opatch%vleaf_respiration     (1:z) = pack(ipatch%vleaf_respiration         ,lmask)
       opatch%monthly_dndt          (1:z) = pack(ipatch%monthly_dndt              ,lmask)
       opatch%monthly_dlnndt        (1:z) = pack(ipatch%monthly_dlnndt            ,lmask)
       opatch%krdepth               (1:z) = pack(ipatch%krdepth                   ,lmask)
@@ -10539,7 +10496,6 @@ module ed_state_vars
       opatch%fmean_sapa_growth_resp(1:z) = pack(ipatch%fmean_sapa_growth_resp    ,lmask)
       opatch%fmean_sapb_growth_resp(1:z) = pack(ipatch%fmean_sapb_growth_resp    ,lmask)
       opatch%fmean_storage_resp    (1:z) = pack(ipatch%fmean_storage_resp        ,lmask)
-      opatch%fmean_vleaf_resp      (1:z) = pack(ipatch%fmean_vleaf_resp          ,lmask)
       opatch%fmean_plresp          (1:z) = pack(ipatch%fmean_plresp              ,lmask)
       opatch%fmean_leaf_energy     (1:z) = pack(ipatch%fmean_leaf_energy         ,lmask)
       opatch%fmean_leaf_water      (1:z) = pack(ipatch%fmean_leaf_water          ,lmask)
@@ -10645,7 +10601,6 @@ module ed_state_vars
       opatch%dmean_sapa_growth_resp(1:z) = pack(ipatch%dmean_sapa_growth_resp    ,lmask)
       opatch%dmean_sapb_growth_resp(1:z) = pack(ipatch%dmean_sapb_growth_resp    ,lmask)
       opatch%dmean_storage_resp    (1:z) = pack(ipatch%dmean_storage_resp        ,lmask)
-      opatch%dmean_vleaf_resp      (1:z) = pack(ipatch%dmean_vleaf_resp          ,lmask)
       opatch%dmean_plresp          (1:z) = pack(ipatch%dmean_plresp              ,lmask)
       opatch%dmean_leaf_energy     (1:z) = pack(ipatch%dmean_leaf_energy         ,lmask)
       opatch%dmean_leaf_water      (1:z) = pack(ipatch%dmean_leaf_water          ,lmask)
@@ -10752,7 +10707,6 @@ module ed_state_vars
       opatch%mmean_sapa_growth_resp(1:z) = pack(ipatch%mmean_sapa_growth_resp    ,lmask)
       opatch%mmean_sapb_growth_resp(1:z) = pack(ipatch%mmean_sapb_growth_resp    ,lmask)
       opatch%mmean_storage_resp    (1:z) = pack(ipatch%mmean_storage_resp        ,lmask)
-      opatch%mmean_vleaf_resp      (1:z) = pack(ipatch%mmean_vleaf_resp          ,lmask)
       opatch%mmean_plresp          (1:z) = pack(ipatch%mmean_plresp              ,lmask)
       opatch%mmean_leaf_energy     (1:z) = pack(ipatch%mmean_leaf_energy         ,lmask)
       opatch%mmean_leaf_water      (1:z) = pack(ipatch%mmean_leaf_water          ,lmask)
@@ -10873,7 +10827,6 @@ module ed_state_vars
          opatch%qmean_sapa_growth_resp(n,1:z) = pack(ipatch%qmean_sapa_growth_resp(n,:),lmask)
          opatch%qmean_sapb_growth_resp(n,1:z) = pack(ipatch%qmean_sapb_growth_resp(n,:),lmask)
          opatch%qmean_storage_resp  (n,1:z) = pack(ipatch%qmean_storage_resp  (n,:),lmask)
-         opatch%qmean_vleaf_resp    (n,1:z) = pack(ipatch%qmean_vleaf_resp    (n,:),lmask)
          opatch%qmean_plresp        (n,1:z) = pack(ipatch%qmean_plresp        (n,:),lmask)
          opatch%qmean_leaf_energy   (n,1:z) = pack(ipatch%qmean_leaf_energy   (n,:),lmask)
          opatch%qmean_leaf_water    (n,1:z) = pack(ipatch%qmean_leaf_water    (n,:),lmask)
@@ -12269,15 +12222,6 @@ module ed_state_vars
                            ,'Sub-daily mean - Storage respiration'                         &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%fmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%fmean_vleaf_resp                                    &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FMEAN_VLEAF_RESP_PY        :11:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Virtual leaf respiration'                    &
-                           ,'[  kgC/m2/yr]','(ipoly)'            )
-      end if
       if (associated(cgrid%fmean_plresp          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_plresp                                        &
@@ -13496,15 +13440,6 @@ module ed_state_vars
                            ,'Daily mean - Storage respiration'                             &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
-      if (associated(cgrid%dmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%dmean_vleaf_resp                                    &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'DMEAN_VLEAF_RESP_PY        :11:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Virtual leaf respiration'                        &
-                           ,'[  kgC/m2/yr]','(ipoly)'            )
-      end if
       if (associated(cgrid%dmean_plresp          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_plresp                                        &
@@ -14595,15 +14530,6 @@ module ed_state_vars
                            ,'MMEAN_STORAGE_RESP_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Storage respiration'                           &
-                           ,'[  kgC/m2/yr]','(ipoly)'            )
-      end if
-      if (associated(cgrid%mmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%mmean_vleaf_resp                                    &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'MMEAN_VLEAF_RESP_PY        :11:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Virtual leaf respiration'                      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_plresp          )) then
@@ -16081,15 +16007,6 @@ module ed_state_vars
                            ,'QMEAN_STORAGE_RESP_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Storage respiration'                              &
-                           ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
-      end if
-      if (associated(cgrid%qmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cgrid%qmean_vleaf_resp                                    &
-                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'QMEAN_VLEAF_RESP_PY       :-11:'//trim(eorq_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Virtual leaf respiration'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_plresp          )) then
@@ -24625,13 +24542,6 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpatch%vleaf_respiration)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpatch%vleaf_respiration,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'VLEAF_RESPIRATION :41:hist:anal') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if  
-
       if (associated(cpatch%monthly_dndt)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%monthly_dndt,nvar,igr,init,cpatch%coglob_id, &
@@ -25124,15 +25034,6 @@ module ed_state_vars
                            ,'FMEAN_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Storage respiration'                         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
-      end if
-      if (associated(cpatch%fmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%fmean_vleaf_resp                                   &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'FMEAN_VLEAF_RESP_CO        :41:'//trim(fast_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Sub-daily mean - Virtual leaf respiration'                    &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_plresp          )) then
@@ -25761,15 +25662,6 @@ module ed_state_vars
                            ,'Daily mean - Storage respiration'                             &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
-      if (associated(cpatch%dmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%dmean_vleaf_resp                                   &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'DMEAN_VLEAF_RESP_CO        :41:'//trim(dail_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Daily mean - Virtual leaf respiration'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
-      end if
       if (associated(cpatch%dmean_plresp          )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_plresp                                       &
@@ -26336,15 +26228,6 @@ module ed_state_vars
                            ,'MMEAN_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Storage respiration'                           &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
-      end if
-      if (associated(cpatch%mmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%mmean_vleaf_resp                                   &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'MMEAN_VLEAF_RESP_CO        :41:'//trim(eorq_keys))
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Monthly mean - Virtual leaf respiration'                      &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_plresp          )) then
@@ -27116,15 +26999,6 @@ module ed_state_vars
                            ,'QMEAN_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Storage respiration'                              &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
-      end if
-      if (associated(cpatch%qmean_vleaf_resp      )) then
-         nvar = nvar+1
-         call vtable_edio_r(npts,cpatch%qmean_vleaf_resp                                   &
-                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
-                           ,'QMEAN_VLEAF_RESP_CO       :-41:'//trim(eorq_keys)     )
-         call metadata_edio(nvar,igr                                                       &
-                           ,'Mean diel - Virtual leaf respiration'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_plresp          )) then

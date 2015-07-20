@@ -523,8 +523,6 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
 
       targetp%storage_resp(ico) = dble(cpatch%storage_respiration(ico))                    &
                                 * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
-      targetp%vleaf_resp  (ico) = dble(cpatch%vleaf_respiration  (ico))                    &
-                                * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
    end do
 
    !----- Heterotrophic respiration terms. ------------------------------------------------!
@@ -3478,7 +3476,6 @@ subroutine print_csiteipa(csite, ipa)
    real                         :: sapa_growth_resp
    real                         :: sapb_growth_resp
    real                         :: storage_resp
-   real                         :: vleaf_resp
    real                         :: pss_lai
    real                         :: pss_wai
    !---------------------------------------------------------------------------------------!
@@ -3534,8 +3531,8 @@ subroutine print_csiteipa(csite, ipa)
               ,cpatch%gpp(ico),cpatch%leaf_respiration(ico)
       end if
    end do
-   write (unit=*,fmt='(2(a7,1x),4(a12,1x),4(a17,1x))')                                     &
-         '    PFT','KRDEPTH','         LAI','   ROOT_RESP','   STOR_RESP','  VLEAF_RESP'   &
+   write (unit=*,fmt='(2(a7,1x),4(a12,1x),4(a16,1x))')                                     &
+         '    PFT','KRDEPTH','         LAI','   ROOT_RESP','   STOR_RESP'                  &
         ,' LEAF_GROWTH_RESP',' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'
    do ico = 1,cpatch%ncohorts
       if (cpatch%leaf_resolvable(ico)) then
@@ -3549,12 +3546,10 @@ subroutine print_csiteipa(csite, ipa)
                            / (day_sec * umol_2_kgC)
          storage_resp = cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
                       / (day_sec * umol_2_kgC)
-         vleaf_resp   = cpatch%vleaf_respiration(ico)  * cpatch%nplant(ico)                &
-                      / (day_sec * umol_2_kgC)
 
-         write(unit=*,fmt='(2(i7,1x),4(es12.4,1x),4(es17.4,1x))')                          &
+         write(unit=*,fmt='(2(i7,1x),3(es12.4,1x),4(es17.4,1x))')                          &
                cpatch%pft(ico), cpatch%krdepth(ico)                                        &
-              ,cpatch%lai(ico),cpatch%root_respiration(ico),storage_resp,vleaf_resp        &
+              ,cpatch%lai(ico),cpatch%root_respiration(ico),storage_resp                   &
               ,leaf_growth_resp,root_growth_resp,sapa_growth_resp,sapb_growth_resp
       end if
    end do
@@ -3769,15 +3764,15 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),6(a12,1x),4(a17,1x))')                                     &
          '    PFT','KRDEPTH','         LAI','         GPP','   LEAF_RESP','   ROOT_RESP'   &
-                            ,'   STOR_RESP','  VLEAF_RESP',' LEAF_GROWTH_RESP'             &
-                            ,' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'
+                            ,'   STOR_RESP',' LEAF_GROWTH_RESP',' ROOT_GROWTH_RESP'        &
+                            ,' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'
    do ico = 1,cpatch%ncohorts
       if (cpatch%leaf_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),6(es12.4,1x),4(es17.4,1x))')                          &
+         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x),4(es17.4,1x))')                          &
                cpatch%pft(ico), cpatch%krdepth(ico)                                        &
               ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico),y%storage_resp(ico) &
-              ,y%vleaf_resp(ico),y%leaf_growth_resp(ico),y%root_growth_resp(ico)           &
-              ,y%sapa_growth_resp(ico),y%sapb_growth_resp(ico)
+              ,y%leaf_growth_resp(ico),y%root_growth_resp(ico),y%sapa_growth_resp(ico)     &
+              ,y%sapb_growth_resp(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -4080,8 +4075,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
                                            + initp%root_growth_resp(ico)                   &
                                            + initp%sapa_growth_resp(ico)                   &
                                            + initp%sapb_growth_resp(ico)                   &
-                                           + initp%storage_resp(ico)                       &
-                                           + initp%vleaf_resp(ico)
+                                           + initp%storage_resp(ico)
       end if
       if (initp%wood_resolvable(ico)) then
          !----- Integrate vegetation properties using m2gnd rather than plant. ------------!
@@ -4335,7 +4329,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
       ,initp%gsw_closed(ico)      ,initp%gpp(ico)             ,initp%leaf_resp(ico)        &
       ,initp%root_resp(ico)       ,initp%leaf_growth_resp(ico),initp%root_growth_resp(ico) &
       ,initp%sapa_growth_resp(ico),initp%sapb_growth_resp(ico),initp%storage_resp(ico)     &
-      ,initp%vleaf_resp(ico)      ,initp%rshort_l(ico)        ,initp%rlong_l(ico)          &
+                                  ,initp%rshort_l(ico)        ,initp%rlong_l(ico)          &
       ,initp%rshort_w(ico)        ,initp%rlong_w(ico)         ,fluxp%cfx_hflxlc(ico)       &
       ,fluxp%cfx_hflxwc(ico)      ,fluxp%cfx_qwflxlc(ico)     ,fluxp%cfx_qwflxwc(ico)      &
       ,fluxp%cfx_qwshed(ico)      ,fluxp%cfx_qtransp(ico)     ,qintercepted

@@ -885,7 +885,6 @@ subroutine hybrid_timestep(cgrid)
       targetp%sapa_growth_resp(k) = sourcep%sapa_growth_resp(k)
       targetp%sapb_growth_resp(k) = sourcep%sapb_growth_resp(k)
       targetp%storage_resp    (k) = sourcep%storage_resp    (k)
-      targetp%vleaf_resp      (k) = sourcep%vleaf_resp      (k)
    end do
 
    if (checkbudget) then
