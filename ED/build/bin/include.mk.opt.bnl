@@ -8,7 +8,7 @@ MAKE=/usr/bin/make
 BASE=$(ED_ROOT)/build/
 
 # HDF 5  Libraries
-HDF5_HOME=/data/software/hdf5/1.8.13
+HDF5_HOME=/data/software/hdf5/1.8.14
 USE_HDF5=1
 HDF5_INCS=-I${HDF5_HOME}/include
 HDF5_LIBS=-L${HDF5_HOME}/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
