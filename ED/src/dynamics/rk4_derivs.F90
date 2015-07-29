@@ -1292,7 +1292,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
       !                 to lack of a better place to put).                                 !
       ! Leaf   -> CAS : Leaf respiration, Virtual leaf respiration - GPP.                  !
       !------------------------------------------------------------------------------------!
-      cflxlc_tot    = cflxlc_tot + initp%vleaf_resp(ico)
+      cflxlc_tot    = cflxlc_tot
       cflxwc_tot    = cflxwc_tot + initp%growth_resp(ico) + initp%storage_resp(ico)
       !------------------------------------------------------------------------------------!
 

@@ -580,9 +580,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       cpatch%fmean_storage_resp(ico) = cpatch%fmean_storage_resp (ico)                     &
                                      + cpatch%storage_respiration(ico) * dtlsm_o_frqsum    &
                                      * yr_day
-      cpatch%fmean_vleaf_resp  (ico) = cpatch%fmean_vleaf_resp   (ico)                     &
-                                     + cpatch%vleaf_respiration  (ico) * dtlsm_o_frqsum    &
-                                     * yr_day
       !------------------------------------------------------------------------------------!
 
       if (print_photo_debug) then

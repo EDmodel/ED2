@@ -1403,8 +1403,6 @@ module fuse_fiss_utils
                                        + cpatch%growth_respiration (donc) * dnplant
       cpatch%storage_respiration(recc) = cpatch%storage_respiration(recc) * rnplant        &
                                        + cpatch%storage_respiration(donc) * dnplant
-      cpatch%vleaf_respiration  (recc) = cpatch%vleaf_respiration  (recc) * rnplant        &
-                                       + cpatch%vleaf_respiration  (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1547,10 +1545,6 @@ module fuse_fiss_utils
          cpatch%fmean_storage_resp    (recc) = cpatch%fmean_storage_resp    (recc)         &
                                              * rnplant                                     &
                                              + cpatch%fmean_storage_resp    (donc)         &
-                                             * dnplant
-         cpatch%fmean_vleaf_resp      (recc) = cpatch%fmean_vleaf_resp      (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%fmean_vleaf_resp      (donc)         &
                                              * dnplant
          cpatch%fmean_plresp          (recc) = cpatch%fmean_plresp          (recc)         &
                                              * rnplant                                     &
@@ -1786,10 +1780,6 @@ module fuse_fiss_utils
          cpatch%dmean_storage_resp    (recc) = cpatch%dmean_storage_resp    (recc)         &
                                              * rnplant                                     &
                                              + cpatch%dmean_storage_resp    (donc)         &
-                                             * dnplant
-         cpatch%dmean_vleaf_resp      (recc) = cpatch%dmean_vleaf_resp      (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%dmean_vleaf_resp      (donc)         &
                                              * dnplant
          cpatch%dmean_plresp          (recc) = cpatch%dmean_plresp          (recc)         &
                                              * rnplant                                     &
@@ -2089,10 +2079,6 @@ module fuse_fiss_utils
          cpatch%mmean_storage_resp    (recc) = cpatch%mmean_storage_resp    (recc)         &
                                              * rnplant                                     &
                                              + cpatch%mmean_storage_resp    (donc)         &
-                                             * dnplant
-         cpatch%mmean_vleaf_resp      (recc) = cpatch%mmean_vleaf_resp      (recc)         &
-                                             * rnplant                                     &
-                                             + cpatch%mmean_vleaf_resp      (donc)         &
                                              * dnplant
          cpatch%mmean_plresp          (recc) = cpatch%mmean_plresp          (recc)         &
                                              * rnplant                                     &
@@ -2433,10 +2419,6 @@ module fuse_fiss_utils
          cpatch%qmean_storage_resp    (:,recc) = cpatch%qmean_storage_resp    (:,recc)     &
                                                * rnplant                                   &
                                                + cpatch%qmean_storage_resp    (:,donc)     &
-                                               * dnplant
-         cpatch%qmean_vleaf_resp      (:,recc) = cpatch%qmean_vleaf_resp      (:,recc)     &
-                                               * rnplant                                   &
-                                               + cpatch%qmean_vleaf_resp      (:,donc)     &
                                                * dnplant
          cpatch%qmean_plresp          (:,recc) = cpatch%qmean_plresp          (:,recc)     &
                                                * rnplant                                   &
