@@ -512,8 +512,15 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
       !------------------------------------------------------------------------------------!
       !     The following variables are in kgC/plant/day, convert them to µmol/m²/s.       !
       !------------------------------------------------------------------------------------!
-      targetp%growth_resp (ico) = dble(cpatch%growth_respiration (ico))                    &
-                                * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+      targetp%leaf_growth_resp (ico) = dble(cpatch%leaf_growth_resp (ico))                 &
+                                     * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+      targetp%root_growth_resp (ico) = dble(cpatch%root_growth_resp (ico))                 &
+                                     * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+      targetp%sapa_growth_resp (ico) = dble(cpatch%sapa_growth_resp (ico))                 &
+                                     * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+      targetp%sapb_growth_resp (ico) = dble(cpatch%sapb_growth_resp (ico))                 &
+                                     * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
+
       targetp%storage_resp(ico) = dble(cpatch%storage_respiration(ico))                    &
                                 * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
    end do
@@ -3464,7 +3471,10 @@ subroutine print_csiteipa(csite, ipa)
    type(patchtype) , pointer    :: cpatch
    integer                      :: ico
    integer                      :: k
-   real                         :: growth_resp
+   real                         :: leaf_growth_resp
+   real                         :: root_growth_resp
+   real                         :: sapa_growth_resp
+   real                         :: sapb_growth_resp
    real                         :: storage_resp
    real                         :: pss_lai
    real                         :: pss_wai
@@ -3521,17 +3531,26 @@ subroutine print_csiteipa(csite, ipa)
               ,cpatch%gpp(ico),cpatch%leaf_respiration(ico)
       end if
    end do
-   write (unit=*,fmt='(2(a7,1x),5(a12,1x))')                                               &
-         '    PFT','KRDEPTH','         LAI','   ROOT_RESP',' GROWTH_RESP','   STOR_RESP'
+   write (unit=*,fmt='(2(a7,1x),4(a12,1x),4(a16,1x))')                                     &
+         '    PFT','KRDEPTH','         LAI','   ROOT_RESP','   STOR_RESP'                  &
+        ,' LEAF_GROWTH_RESP',' ROOT_GROWTH_RESP',' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'
    do ico = 1,cpatch%ncohorts
       if (cpatch%leaf_resolvable(ico)) then
-         growth_resp  = cpatch%growth_respiration(ico)  * cpatch%nplant(ico)               &
-                      / (day_sec * umol_2_kgC)
+         leaf_growth_resp  = cpatch%leaf_growth_resp(ico) * cpatch%nplant(ico)             &
+                           / (day_sec * umol_2_kgC)
+         root_growth_resp  = cpatch%root_growth_resp(ico) * cpatch%nplant(ico)             &
+                           / (day_sec * umol_2_kgC)
+         sapa_growth_resp  = cpatch%sapa_growth_resp(ico) * cpatch%nplant(ico)             &
+                           / (day_sec * umol_2_kgC)
+         sapb_growth_resp  = cpatch%sapb_growth_resp(ico) * cpatch%nplant(ico)             &
+                           / (day_sec * umol_2_kgC)
          storage_resp = cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
                       / (day_sec * umol_2_kgC)
 
-         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
-              ,cpatch%lai(ico),cpatch%root_respiration(ico),growth_resp,storage_resp
+         write(unit=*,fmt='(2(i7,1x),3(es12.4,1x),4(es17.4,1x))')                          &
+               cpatch%pft(ico), cpatch%krdepth(ico)                                        &
+              ,cpatch%lai(ico),cpatch%root_respiration(ico),storage_resp                   &
+              ,leaf_growth_resp,root_growth_resp,sapa_growth_resp,sapb_growth_resp
       end if
    end do
    write (unit=*,fmt='(a)'  ) ' '
@@ -3743,14 +3762,17 @@ subroutine print_rk4patch(y,csite,ipa)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),6(a12,1x),4(a17,1x))')                                     &
          '    PFT','KRDEPTH','         LAI','         GPP','   LEAF_RESP','   ROOT_RESP'   &
-                            ,' GROWTH_RESP','   STOR_RESP'
+                            ,'   STOR_RESP',' LEAF_GROWTH_RESP',' ROOT_GROWTH_RESP'        &
+                            ,' SAPA_GROWTH_RESP',' SAPB_GROWTH_RESP'
    do ico = 1,cpatch%ncohorts
       if (cpatch%leaf_resolvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
-              ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico),y%growth_resp(ico)  &
-              ,y%storage_resp(ico)
+         write(unit=*,fmt='(2(i7,1x),5(es12.4,1x),4(es17.4,1x))')                          &
+               cpatch%pft(ico), cpatch%krdepth(ico)                                        &
+              ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico),y%storage_resp(ico) &
+              ,y%leaf_growth_resp(ico),y%root_growth_resp(ico),y%sapa_growth_resp(ico)     &
+              ,y%sapb_growth_resp(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
@@ -4011,8 +4033,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
    !----- Local constants. ----------------------------------------------------------------!
    character(len=10), parameter :: phfmt='(86(a,1x))'
    character(len=48), parameter :: pbfmt='(3(i13,1x),4(es13.6,1x),3(i13,1x),76(es13.6,1x))'
-   character(len=10), parameter :: chfmt='(57(a,1x))'
-   character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),49(es13.6,1x))'
+   character(len=10), parameter :: chfmt='(60(a,1x))'
+   character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),52(es13.6,1x))'
    !---------------------------------------------------------------------------------------!
 
 
@@ -4049,7 +4071,10 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
          sum_gpp         = sum_gpp         + initp%gpp(ico)
          sum_plresp      = sum_plresp      + initp%leaf_resp(ico)                          &
                                            + initp%root_resp(ico)                          &
-                                           + initp%growth_resp(ico)                        &
+                                           + initp%leaf_growth_resp(ico)                   &
+                                           + initp%root_growth_resp(ico)                   &
+                                           + initp%sapa_growth_resp(ico)                   &
+                                           + initp%sapb_growth_resp(ico)                   &
                                            + initp%storage_resp(ico)
       end if
       if (initp%wood_resolvable(ico)) then
@@ -4254,25 +4279,26 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
       if (.not. isthere) then
          open  (unit=84,file=trim(detail_fout),status='replace',action='write')
          write (unit=84,fmt=chfmt)                                                         &
-                                 '         YEAR', '        MONTH', '          DAY'         &
-                               , '         TIME', '         HDID', '          PFT'         &
-                               , ' LEAF_RESOLVE', ' WOOD_RESOLVE', '       NPLANT'         &
-                               , '       HEIGHT', '          LAI', '          WAI'         &
-                               , '   CROWN_AREA', '  LEAF_ENERGY', '   LEAF_WATER'         &
-                               , '    LEAF_HCAP', '    LEAF_TEMP', '    LEAF_FLIQ'         &
-                               , '  WOOD_ENERGY', '   WOOD_WATER', '    WOOD_HCAP'         &
-                               , '    WOOD_TEMP', '    WOOD_FLIQ', '     VEG_WIND'         &
-                               , '      FS_OPEN', '   LEAF_REYNO', ' LEAF_GRASHOF'         &
-                               , '  LEAF_NUFREE', '  LEAF_NUFORC', '   WOOD_REYNO'         &
-                               , ' WOOD_GRASHOF', '  WOOD_NUFREE', '  WOOD_NUFORC'         &
-                               , '     LINT_SHV', '     LEAF_GBH', '     LEAF_GBW'         &
-                               , '     WOOD_GBH', '     WOOD_GBW', '     GSW_OPEN'         &
-                               , '     GSW_CLOS', '          GPP', '    LEAF_RESP'         &
-                               , '    ROOT_RESP', '  GROWTH_RESP', ' STORAGE_RESP'         &
-                               , '   VLEAF_RESP', '     RSHORT_L', '      RLONG_L'         &
-                               , '     RSHORT_W', '      RLONG_W', '       HFLXLC'         &
-                               , '       HFLXWC', '      QWFLXLC', '      QWFLXWC'         &
-                               , '       QWSHED', '      QTRANSP', ' QINTERCEPTED'
+                            '             YEAR', '            MONTH', '              DAY'  &
+                           ,'             TIME', '             HDID', '              PFT'  &
+                           ,'     LEAF_RESOLVE', '     WOOD_RESOLVE', '           NPLANT'  &
+                           ,'           HEIGHT', '              LAI', '              WAI'  &
+                           ,'       CROWN_AREA', '      LEAF_ENERGY', '       LEAF_WATER'  &
+                           ,'        LEAF_HCAP', '        LEAF_TEMP', '        LEAF_FLIQ'  &
+                           ,'      WOOD_ENERGY', '       WOOD_WATER', '        WOOD_HCAP'  &
+                           ,'        WOOD_TEMP', '        WOOD_FLIQ', '         VEG_WIND'  &
+                           ,'          FS_OPEN', '       LEAF_REYNO', '     LEAF_GRASHOF'  &
+                           ,'      LEAF_NUFREE', '      LEAF_NUFORC', '       WOOD_REYNO'  &
+                           ,'     WOOD_GRASHOF', '      WOOD_NUFREE', '      WOOD_NUFORC'  &
+                           ,'         LINT_SHV', '         LEAF_GBH', '         LEAF_GBW'  &
+                           ,'         WOOD_GBH', '         WOOD_GBW', '         GSW_OPEN'  &
+                           ,'         GSW_CLOS', '              GPP', '        LEAF_RESP'  &
+                           ,'        ROOT_RESP', ' LEAF_GROWTH_RESP', ' ROOT_GROWTH_RESP'  &
+                           ,' SAPA_GROWTH_RESP', ' SAPB_GROWTH_RESP', '     STORAGE_RESP'  &
+                           ,'       VLEAF_RESP', '         RSHORT_L', '          RLONG_L'  &
+                           ,'         RSHORT_W', '          RLONG_W', '           HFLXLC'  &
+                           ,'           HFLXWC', '          QWFLXLC', '          QWFLXWC'  &
+                           ,'           QWSHED', '          QTRANSP', '     QINTERCEPTED'
                                
 
          close (unit=84,status='keep')
@@ -4287,25 +4313,26 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
       !------------------------------------------------------------------------------------!
       open (unit=84,file=trim(detail_fout),status='old',action='write',position='append')
       write(unit=84,fmt=cbfmt)                                                             &
-              current_time%year       , current_time%month      , current_time%date        &
-            , elapsec                 , hdid                    , cpatch%pft(ico)          &
-            , leaf_resolve            , wood_resolve            , initp%nplant(ico)        &
-            , cpatch%hite(ico)        , initp%lai(ico)          , initp%wai(ico)           &
-            , initp%crown_area(ico)   , initp%leaf_energy(ico)  , initp%leaf_water(ico)    &
-            , initp%leaf_hcap(ico)    , initp%leaf_temp(ico)    , initp%leaf_fliq(ico)     &
-            , initp%wood_energy(ico)  , initp%wood_water(ico)   , initp%wood_hcap(ico)     &
-            , initp%wood_temp(ico)    , initp%wood_fliq(ico)    , initp%veg_wind(ico)      &
-            , initp%fs_open(ico)      , initp%leaf_reynolds(ico), initp%leaf_grashof(ico)  &
-            , initp%leaf_nussfree(ico), initp%leaf_nussforc(ico), initp%wood_reynolds(ico) &
-            , initp%wood_grashof(ico) , initp%wood_nussfree(ico), initp%wood_nussforc(ico) &
-            , initp%lint_shv(ico)     , initp%leaf_gbh(ico)     , initp%leaf_gbw(ico)      &
-            , initp%wood_gbh(ico)     , initp%wood_gbw(ico)     , initp%gsw_open(ico)      &
-            , initp%gsw_closed(ico)   , initp%gpp(ico)          , initp%leaf_resp(ico)     &
-            , initp%root_resp(ico)    , initp%growth_resp(ico)  , initp%storage_resp(ico)  &
-                                      , initp%rshort_l(ico)     , initp%rlong_l(ico)       &
-            , initp%rshort_w(ico)     , initp%rlong_w(ico)      , fluxp%cfx_hflxlc(ico)    &
-            , fluxp%cfx_hflxwc(ico)   , fluxp%cfx_qwflxlc(ico)  , fluxp%cfx_qwflxwc(ico)   &
-            , fluxp%cfx_qwshed(ico)   , fluxp%cfx_qtransp(ico)  , qintercepted
+       current_time%year          ,current_time%month         ,current_time%date           &
+      ,elapsec                    ,hdid                       ,cpatch%pft(ico)             &
+      ,leaf_resolve               ,wood_resolve               ,initp%nplant(ico)           &
+      ,cpatch%hite(ico)           ,initp%lai(ico)             ,initp%wai(ico)              &
+      ,initp%crown_area(ico)      ,initp%leaf_energy(ico)     ,initp%leaf_water(ico)       &
+      ,initp%leaf_hcap(ico)       ,initp%leaf_temp(ico)       ,initp%leaf_fliq(ico)        &
+      ,initp%wood_energy(ico)     ,initp%wood_water(ico)      ,initp%wood_hcap(ico)        &
+      ,initp%wood_temp(ico)       ,initp%wood_fliq(ico)       ,initp%veg_wind(ico)         &
+      ,initp%fs_open(ico)         ,initp%leaf_reynolds(ico)   ,initp%leaf_grashof(ico)     &
+      ,initp%leaf_nussfree(ico)   ,initp%leaf_nussforc(ico)   ,initp%wood_reynolds(ico)    &
+      ,initp%wood_grashof(ico)    ,initp%wood_nussfree(ico)   ,initp%wood_nussforc(ico)    &
+      ,initp%lint_shv(ico)        ,initp%leaf_gbh(ico)        ,initp%leaf_gbw(ico)         &
+      ,initp%wood_gbh(ico)        ,initp%wood_gbw(ico)        ,initp%gsw_open(ico)         &
+      ,initp%gsw_closed(ico)      ,initp%gpp(ico)             ,initp%leaf_resp(ico)        &
+      ,initp%root_resp(ico)       ,initp%leaf_growth_resp(ico),initp%root_growth_resp(ico) &
+      ,initp%sapa_growth_resp(ico),initp%sapb_growth_resp(ico),initp%storage_resp(ico)     &
+                                  ,initp%rshort_l(ico)        ,initp%rlong_l(ico)          &
+      ,initp%rshort_w(ico)        ,initp%rlong_w(ico)         ,fluxp%cfx_hflxlc(ico)       &
+      ,fluxp%cfx_hflxwc(ico)      ,fluxp%cfx_qwflxlc(ico)     ,fluxp%cfx_qwflxwc(ico)      &
+      ,fluxp%cfx_qwshed(ico)      ,fluxp%cfx_qtransp(ico)     ,qintercepted
       close(unit=84,status='keep')
       !------------------------------------------------------------------------------------!
    end do
