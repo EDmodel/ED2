@@ -118,7 +118,7 @@ options(locatorBell=FALSE)
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
+obsrfile = file.path(srcdir,"LBA_MIP.v8.RData")
 load(file=obsrfile)
 
 #----- Define plot window size ------------------------------------------------------------#
@@ -142,8 +142,8 @@ for (place in myplaces){
    thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                       ,monthbeg=monthbeg)
    inpref  = thispoi$pathin
-   outmain = paste(outroot,place,sep="/")
-   outpref = paste(outmain,"yearly",sep="/")
+   outmain = file.path(outroot,place)
+   outpref = file.path(outmain,"yearly")
    lieu    = thispoi$lieu
    iata    = thispoi$iata
    suffix  = thispoi$iata
@@ -206,9 +206,9 @@ for (place in myplaces){
    # or use the stored RData.  Notice that the path is the same for plot_ycomp.r and       #
    # plot_monthly, so you don't need to read in the data twice.                            #
    #---------------------------------------------------------------------------------------#
-   path.data  = paste(here,place,"rdata_month",sep="/")
+   path.data  = file.path(here,place,"rdata_month")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
+   ed22.rdata = file.path(path.data,paste0(place,".RData"))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
       cat("   - Loading previous session...","\n")
@@ -489,7 +489,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Time series by PFT.                                                              #
    #---------------------------------------------------------------------------------------#
-   for (v in 1:ntspftdbh){
+   for (v in sequence(ntspftdbh)){
       thistspft   = tspftdbh[[v]]
       vnam        = thistspft$vnam
       description = thistspft$desc
@@ -503,7 +503,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"tspft",sep="/")
+         outdir = file.path(outpref,"tspft")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      +",description,"time series for all PFTs...","\n")
 
@@ -523,17 +523,19 @@ for (place in myplaces){
 
 
          #----- Loop over output formats. -------------------------------------------------#
-         for (o in 1:nout){
-            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+         for (o in sequence(nout)){
+            fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
                   ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -588,6 +590,7 @@ for (place in myplaces){
                   , ncol   = min(pretty.box(n.selpft)$ncol,3)
                   , title  = expression(bold("Plant Functional Type"))
                   , xpd    = TRUE
+                  , bty    = "n"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -604,7 +607,7 @@ for (place in myplaces){
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
-               for (n in 1:ndrought){
+               for (n in sequence(ndrought)){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
                       ,col    = grid.colour,border=NA)
@@ -615,7 +618,7 @@ for (place in myplaces){
                abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
-            for (n in 1:(npft+1)){
+            for (n in sequence(npft+1)){
                if (selpft[n]){
                   lines(datum$toyear,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
                }#end if
@@ -624,7 +627,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -646,7 +649,7 @@ for (place in myplaces){
    #----- Find the PFTs to plot. ----------------------------------------------------------#
    pftuse  = which(apply(X=is.na(szpft$nplant),MARGIN=3,FUN=sum,na.rm=TRUE) == 0.)
    pftuse  = pftuse[pftuse != (npft+1)]
-   for (v in 1:ntspftdbh){
+   for (v in sequence(ntspftdbh)){
       thistspftdbh   = tspftdbh[[v]]
       vnam        = thistspftdbh$vnam
       description = thistspftdbh$desc
@@ -673,9 +676,9 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"tsdbh",sep="/")
+         outdir = file.path(outpref,"tsdbh")
          if (! file.exists(outdir)) dir.create(outdir)
-         outvar = paste(outdir,vnam,sep="/")
+         outvar = file.path(outdir,vnam)
          if (! file.exists(outvar)) dir.create(outvar)
          #---------------------------------------------------------------------------------#
 
@@ -705,23 +708,27 @@ for (place in myplaces){
          #       Loop over plant functional types.                                         #
          #---------------------------------------------------------------------------------#
          for (p in pftuse){
-            pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
+            pftlab = paste0("pft-",sprintf("%2.2i",p))
             cat("        - ",pft$name[p],"\n")
 
 
             #----- Loop over output formats. ----------------------------------------------#
-            for (o in 1:nout){
+            for (o in sequence(nout)){
                #----- Open file. ----------------------------------------------------------#
-               fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
-               if(outform[o] == "x11"){
+               fichier = file.path( outvar
+                                  , paste0(vnam,"-",pftlab,"-",suffix,".",outform[o])
+                                  )#end file.path
+               if (outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
                      ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+               }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -759,6 +766,7 @@ for (place in myplaces){
                      , title  = expression(bold("DBH class"))
                      , lwd    = lwidth
                      , xpd    = TRUE
+                     , bty    = "n"
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -775,7 +783,7 @@ for (place in myplaces){
                box()
                title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
                if (drought.mark){
-                  for (n in 1:ndrought){
+                  for (n in sequence(ndrought)){
                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                          ,xright = drought[[n]][2],ytop    = ydrought[2]
                          ,col    = grid.colour,border=NA)
@@ -793,7 +801,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -817,7 +825,7 @@ for (place in myplaces){
    #   Plot the comparison between observations and model.                                 #
    #---------------------------------------------------------------------------------------#
    cat("    + Year-by-year comparisons of monthly means...","\n")
-   for (cc in 1:ncompmodel){
+   for (cc in sequence(ncompmodel)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
@@ -866,8 +874,8 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"ycomp",sep="/")
-         outvar   = paste(outdir,vname,sep="/")
+         outdir   = file.path(outpref,"ycomp")
+         outvar   = file.path(outdir,vname)
          if (! file.exists(outdir)) dir.create(outdir)
          if (! file.exists(outvar)) dir.create(outvar)
          cat("      - ",description,"comparison...","\n")
@@ -890,7 +898,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Loop over all years, and make one plot per year.                            #
          #---------------------------------------------------------------------------------#
-         for (y in 1:nyears){
+         for (y in sequence(nyears)){
             #----- Retrieve the year and the variable for this year. ----------------------#
             year.now = datum$toyear[y]
             cyear    = sprintf("%4.4i",year.now)
@@ -900,23 +908,25 @@ for (place in myplaces){
 
 
             #----- Load variable ----------------------------------------------------------#
-            letitre = paste(description," - ",lieu,"\n","Monthly mean - ",cyear,sep="")
+            letitre = paste0(description," - ",lieu,"\n","Monthly mean - ",cyear)
             ley     = desc.unit(desc=description,unit=unit)
             #------------------------------------------------------------------------------#
 
 
             #----- Loop over formats. -----------------------------------------------------#
-            for (o in 1:nout){
-               fichier = paste(outvar,"/",vname,"-",cyear,".",outform[o],sep="")
-               if(outform[o] == "x11"){
+            for (o in sequence(nout)){
+               fichier = file.path(outvar,paste0(vname,"-",cyear,".",outform[o]))
+               if (outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
                      ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+               }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -937,7 +947,7 @@ for (place in myplaces){
                if (plotsd){
                   legend( x       = "bottom"
                         , inset   = 0.0
-                        , legend  = c(cyear,paste("Mean: ",yeara,"-",yearz,sep=""))
+                        , legend  = c(cyear,paste0("Mean: ",yeara,"-",yearz))
                         , fill    = errcolours
                         , angle   = angle
                         , density = dens
@@ -947,15 +957,19 @@ for (place in myplaces){
                         , title   = expression(bold("Shaded areas = 1 SD"))
                         , cex     = cex.ptsz
                         , pch     = 16
+                        , xpd     = TRUE
+                        , bty     = "n"
                         )#end legend
                }else{
                   legend( x      = "bottom"
                         , inset  = 0.0
-                        , legend = c(cyear,paste("Mean: ",yeara,"-",yearz,sep=""))
+                        , legend = c(cyear,paste0("Mean: ",yeara,"-",yearz))
                         , col    = lcolours
                         , lwd    = llwd
                         , cex    = cex.ptsz
                         , pch    = 16
+                        , xpd    = TRUE
+                        , bty    = "n"
                         )#end legend
                }#end if
                #---------------------------------------------------------------------------#
@@ -988,7 +1002,7 @@ for (place in myplaces){
 
 
                #----- Close plotting window. ----------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -1011,7 +1025,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Time series by LU.                                                               #
    #---------------------------------------------------------------------------------------#
-   for (v in 1:ntslu){
+   for (v in sequence(ntslu)){
       thistslu    = tslu[[v]]
       vnam        = thistslu$vnam
       description = thistslu$desc
@@ -1025,7 +1039,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"tslu",sep="/")
+         outdir = file.path(outpref,"tslu")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      +",description,"time series for all LUs...","\n")
 
@@ -1040,17 +1054,19 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
 
          #----- Loop over output formats. -------------------------------------------------#
-         for (o in 1:nout){
-            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+         for (o in sequence(nout)){
+            fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
+            if (outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
                   ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -1106,6 +1122,7 @@ for (place in myplaces){
                   , ncol   = min(3,pretty.box(n.sellu)$ncol)
                   , title  = expression(bold("Land use type"))
                   , xpd    = TRUE
+                  , bty    = "n"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1122,7 +1139,7 @@ for (place in myplaces){
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
-               for (n in 1:ndrought){
+               for (n in sequence(ndrought)){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
                       ,col    = grid.colour,border=NA)
@@ -1133,7 +1150,7 @@ for (place in myplaces){
                abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
-            for (n in 1:(nlu+1)){
+            for (n in sequence(nlu+1)){
                if (sellu[n]){
                   lines(datum$toyear,thisvar[,n],type="l",col=lucols[n],lwd=lwidth)
                }#end if
@@ -1142,7 +1159,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -1166,17 +1183,19 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    if (tserdist && any(seldist)){
       cat("      + Disturbance rate time series for all disturbances...","\n")
-      for (o in 1:nout){
-         fichier = paste(outpref,"/disturb-",suffix,".",outform[o],sep="")
-         if (outform[o] == "x11"){
+      for (o in sequence(nout)){
+         fichier = file.path(outpref,paste0("disturb-",suffix,".",outform[o]))
+         if (outform[o] %in% "x11"){
             X11(width=size$width,height=size$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
+         }else if (outform[o] %in% "quartz"){
+            quartz(width=size$width,height=size$height,pointsize=ptsz)
+         }else if(outform[o] %in% "png"){
             png(filename=fichier,width=size$width*depth,height=size$height*depth
                ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
+         }else if(outform[o] %in% "eps"){
             postscript(file=fichier,width=size$width,height=size$height
                       ,pointsize=ptsz,paper=size$paper)
-         }else if(outform[o] == "pdf"){
+         }else if(outform[o] %in% "pdf"){
             pdf(file=fichier,onefile=FALSE
                ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
          }#end if
@@ -1190,8 +1209,8 @@ for (place in myplaces){
          n        = 0
          mylucols = NULL
          mylulegs = NULL
-         for (jlu in 1:nlu){
-            for (ilu in 1:nlu){
+         for (jlu in sequence(nlu)){
+            for (ilu in sequence(nlu)){
                n = n + 1
                if (seldist[ilu,jlu]){
                   ylimit   = c(ylimit,lu$dist[,ilu,jlu])
@@ -1235,6 +1254,7 @@ for (place in myplaces){
                , ncol   = min(3,pretty.box(n)$ncol)
                , title  = expression(bold("Transition"))
                , xpd    = TRUE
+               , bty    = "n"
                )#end legend
          #---------------------------------------------------------------------------------#
 
@@ -1255,7 +1275,7 @@ for (place in myplaces){
               , cex.main = 0.7
               )#end title
          if (drought.mark){
-            for (n in 1:ndrought){
+            for (n in sequence(ndrought)){
                rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                    ,xright = drought[[n]][2],ytop    = ydrought[2]
                    ,col    = grid.colour,border=NA)
@@ -1267,8 +1287,8 @@ for (place in myplaces){
          }#end if
          #----- Plot lines. ---------------------------------------------------------------#
          n = 0
-         for (jlu in 1:nlu){
-            for (ilu in 1:nlu){
+         for (jlu in sequence(nlu)){
+            for (ilu in sequence(nlu)){
                n = n + 1
                if (seldist[ilu,jlu]){
                   lines(datum$toyear,lu$dist[,ilu,jlu],type="l"
@@ -1280,7 +1300,7 @@ for (place in myplaces){
 
 
          #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
+         if (outform[o] %in% c("x11","quartz")){
             locator(n=1)
             dev.off()
          }else{
@@ -1300,7 +1320,7 @@ for (place in myplaces){
    #   Plot the time series diagrams showing annual means.                                 #
    #---------------------------------------------------------------------------------------#
    cat("      * Plot time series of groups of variables...","\n")
-   for (hh in 1:ntheme){
+   for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
@@ -1322,7 +1342,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"theme_ymean",sep="/")
+         outdir = file.path(outpref,"theme_ymean")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      +",group,"time series...","\n")
 
@@ -1340,7 +1360,7 @@ for (place in myplaces){
          xlimit   = pretty.xylim(u=datum$toyear,fracexp=0.0,is.log=FALSE)
          if (any(! is.finite(ylimit.fix))){
             ylimit    = NULL
-            for (l in 1:nlayers){
+            for (l in sequence(nlayers)){
                thisvar = ymean[[vnames[l]]]
                ylimit  = range(c(ylimit,thisvar),na.rm=TRUE)
             }#end for
@@ -1366,18 +1386,20 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
 
          #----- Loop over formats. --------------------------------------------------------#
-         for (o in 1:nout){
+         for (o in sequence(nout)){
             #------ Open file. ------------------------------------------------------------#
-            fichier = paste(outdir,"/",prefix,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            fichier = file.path(outdir,paste0(prefix,"-",suffix,".",outform[o]))
+            if (outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if (outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
                   ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+            }else if (outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if (outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -1386,8 +1408,8 @@ for (place in myplaces){
 
 
             #----- Plot settings. ---------------------------------------------------------#
-            letitre = paste(" Time series: ",group,"\n",lieu,sep="")
-            ley     = desc.unit(desc=description,unit=unit)
+            letitre = paste0(" Time series: ",group,"\n",lieu)
+            ley     = desc.unit(desc=group,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -1413,6 +1435,7 @@ for (place in myplaces){
                   , lwd    = llwd
                   , ncol   = min(3,pretty.box(nlayers)$ncol)
                   , xpd    = TRUE
+                  , bty    = "n"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1429,7 +1452,7 @@ for (place in myplaces){
             box()
             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
             if (drought.mark){
-               for (n in 1:ndrought){
+               for (n in sequence(ndrought)){
                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
                       ,xright = drought[[n]][2],ytop    = ydrought[2]
                       ,col    = grid.colour,border=NA)
@@ -1440,7 +1463,7 @@ for (place in myplaces){
                abline(v=axTicks(side=1),h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
-            for (l in 1:nlayers){
+            for (l in sequence(nlayers)){
                thisvar = ymean[[vnames[l]]]
                points(x=datum$toyear,y=thisvar,col=lcolours[l],lwd=llwd[l],type=ltype
                      ,pch=16,cex=0.8)
@@ -1449,7 +1472,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -1471,7 +1494,7 @@ for (place in myplaces){
    #   Plot the climatology of the mean diurnal cycle.                                     #
    #---------------------------------------------------------------------------------------#
    cat("      * Plot mean diel for groups of variables...","\n")
-   for (hh in 1:ntheme){
+   for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
@@ -1498,9 +1521,9 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #    Check whether the time series directory exists.  If not, create it.          #
          #---------------------------------------------------------------------------------#
-         outdir   = paste(outpref,"theme_qmean",sep="/")
+         outdir   = file.path(outpref,"theme_qmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         outtheme = paste(outdir,prefix,sep="/")
+         outtheme = file.path(outdir,prefix)
          if (! file.exists(outtheme)) dir.create(outtheme)
          cat("      +",group," diurnal cycle...","\n")
 
@@ -1510,7 +1533,7 @@ for (place in myplaces){
          xlimit    = range(thisday)
          if (any(! is.finite(ylimit.fix))){
             ylimit    = NULL
-            for (l in 1:nlayers) ylimit  = c(ylimit,umean[[vnames[l]]])
+            for (l in sequence(nlayers)) ylimit  = c(ylimit,umean[[vnames[l]]])
             ylimit = pretty.xylim(u=ylimit,fracexp=0.0,is.log=plog)
          }else{
             ylimit = ylimit.fix
@@ -1522,7 +1545,7 @@ for (place in myplaces){
          #      Loop over all months.                                                      #
          #---------------------------------------------------------------------------------#
          yplot = as.numeric(dimnames(umean[[vnames[1]]])[[1]])
-         for (yy in 1:length(yplot)){
+         for (yy in seq_along(yplot)){
             cyear    = sprintf("%4.4i",yplot[yy])
 
             #------------------------------------------------------------------------------#
@@ -1530,19 +1553,22 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
 
             #----- Loop over formats. -----------------------------------------------------#
-            for (o in 1:nout){
+            for (o in sequence(nout)){
                #------ Open file. ---------------------------------------------------------#
-               fichier = paste(outtheme,"/",prefix,"-",cyear,"-",suffix,".",outform[o]
-                              ,sep="")
-               if(outform[o] == "x11"){
+               fichier = file.path( outtheme
+                                  , paste0(prefix,"-",cyear,"-",suffix,".",outform[o])
+                                  )#end file.path
+               if (outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
                      ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+               }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -1551,9 +1577,8 @@ for (place in myplaces){
 
 
                #----- Plot settings. ------------------------------------------------------#
-               letitre = paste(group," - ",lieu,"\n"
-                              ,"Mean diurnal cycle - ",cyear,sep="")
-               ley     = desc.unit(desc=description,unit=unit)
+               letitre = paste0(group," - ",lieu,"\n","Mean diurnal cycle - ",cyear)
+               ley     = desc.unit(desc=group,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -1579,6 +1604,7 @@ for (place in myplaces){
                      , lwd    = llwd
                      , ncol   = min(3,pretty.box(nlayers)$ncol)
                      , xpd    = TRUE
+                     , bty    = "n"
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -1594,19 +1620,12 @@ for (place in myplaces){
                axis(side=2,las=1)
                box()
                title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7,log=xylog)
-               if (drought.mark){
-                  for (n in 1:ndrought){
-                     rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
-                         ,xright = drought[[n]][2],ytop    = ydrought[2]
-                         ,col    = grid.colour,border=NA)
-                  }#end for
-               }#end if
                #----- Plot grid. ----------------------------------------------------------#
                if (plotgrid){ 
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                #----- Plot lines. ---------------------------------------------------------#
-               for (l in 1:nlayers){
+               for (l in sequence(nlayers)){
                   thisvar = umean[[vnames[l]]]
                   thisvar = cbind(thisvar[,ndcycle],thisvar)
                   points(x=thisday,y=thisvar[yy,],col=lcolours[l]
@@ -1616,7 +1635,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -1640,7 +1659,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the climatology of the soil properties.                                        #
    #---------------------------------------------------------------------------------------#
-   for (v in 1:nsoilplot){
+   for (v in sequence(nsoilplot)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       thisclim    = soilplot[[v]]
@@ -1656,7 +1675,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
          #---------------------------------------------------------------------------------#
-         outdir  =  paste(outpref,"soil_ymean",sep="/")
+         outdir  =  file.path(outpref,"soil_ymean")
          if (! file.exists(outdir)) dir.create(outdir)
          cat("      + Climatology profile of ",description,"...","\n")
 
@@ -1705,22 +1724,24 @@ for (place in myplaces){
          }#end if
 
          #----- Loop over formats. --------------------------------------------------------#
-         for (o in 1:nout){
-            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+         for (o in sequence(nout)){
+            fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
+            if (outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if (outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
                   ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+            }else if (outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if (outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
 
-            letitre = paste(description,"\n",lieu,sep="")
+            letitre = paste0(description,"\n",lieu)
             ley     = desc.unit(desc="Soil depth",unit=untab$m)
             lacle   = desc.unit(desc=NULL,unit=unit)
             par(par.user)
@@ -1737,7 +1758,7 @@ for (place in myplaces){
                                 }#end plot.axes
                      )
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -1763,7 +1784,7 @@ for (place in myplaces){
    npftuse     = length(pftuse)
    pftname.use = pft$name  [pftuse]
    pftcol.use  = pft$colour[pftuse]
-   for (v in 1:ntspftdbh){
+   for (v in sequence(ntspftdbh)){
       #----- Load settings for this variable.----------------------------------------------#
       thisbar     = tspftdbh[[v]]
       vnam        = thisbar$vnam
@@ -1816,9 +1837,9 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
          #---------------------------------------------------------------------------------#
-         barplotdir = paste(outpref,"barplot_dbh",sep="/")
+         barplotdir = file.path(outpref,"barplot_dbh")
          if (! file.exists(barplotdir)) dir.create(barplotdir)
-         outdir = paste(barplotdir,vnam,sep="/")
+         outdir = file.path(barplotdir,vnam)
          if (! file.exists(outdir)) dir.create(outdir)
          #---------------------------------------------------------------------------------#
 
@@ -1827,7 +1848,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          #      Loop over all possible months.                                             #
          #---------------------------------------------------------------------------------#
-         for (y in 1:nyears){
+         for (y in sequence(nyears)){
 
             #----- Find which year we are plotting. ---------------------------------------#
             cyear     = sprintf("%4.4i",datum$toyear[y])
@@ -1836,44 +1857,41 @@ for (place in myplaces){
 
 
             #----- Loop over output formats. ----------------------------------------------#
-            for (o in 1:nout){
+            for (o in sequence(nout)){
                #------ Open the plot. -----------------------------------------------------#
-               fichier = paste(outdir,"/",vnam,"-",cyear,"-",suffix,".",outform[o],sep="")
-               if (outform[o] == "x11"){
+               fichier = file.path( outdir
+                                  , paste0(vnam,"-",cyear,"-",suffix,".",outform[o])
+                                  )#end file.path
+               if (outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
                      ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+               }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
                #---------------------------------------------------------------------------#
 
 
-               #------ Set up the title and axis labels. ----------------------------------#
-               letitre = paste(lieu,"\n",description," - Year : ",cyear,sep="")
-               lexlab  = "DBH Classes"
-               leylab  = desc.unit(desc=description,unit=unit)
+               #----- Split plotting area into two. ---------------------------------------#
+               par(par.user)
+               layout(mat=rbind(2,1),heights=c(5,1))
                #---------------------------------------------------------------------------#
 
 
-               #----- Plot all monthly means together. ------------------------------------#
-               par(par.user)
-               barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[1:ndbh],width=1.0
-                      ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
-                      ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main,las=1)
-               if (plotgrid & (! stacked)){
-                  xgrid=0.5+(1:ndbh)*(1+npftuse)
-                  abline(v=xgrid,col=grid.colour,lty="solid")
-               }#end if
-               box()
+
+               #----- Plot the legend. ----------------------------------------------------#
+               par(mar=c(0.1,4.1,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x      = "topleft"
-                     , inset  = inset
+                     , inset  = 0.0
                      , legend = pftname.use
                      , fill   = pftcol.use
                      , ncol   = min(3,pretty.box(n.selpft)$ncol)
@@ -1884,11 +1902,33 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
 
 
+               #------ Set up the title and axis labels. ----------------------------------#
+               letitre = paste0(lieu,"\n",description," - Year : ",cyear)
+               lexlab  = "DBH Classes"
+               leylab  = desc.unit(desc=description,unit=unit)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Plot all monthly means together. ------------------------------------#
+               par(mar=c(4.1,4.1,4.1,2.1))
+               plot.new()
+               barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[sequence(ndbh)],width=1.0
+                      ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
+                      ,beside=(! stacked),col=pftcol.use,log=xylog
+                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main,las=1)
+               if (plotgrid & (! stacked)){
+                  xgrid=0.5+sequence(ndbh)*(1+npftuse)
+                  abline(v=xgrid,col=grid.colour,lty="solid")
+               }#end if
+               box()
+               #---------------------------------------------------------------------------#
+
+
 
                #---------------------------------------------------------------------------#
                #     Close the device.                                                     #
                #---------------------------------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{

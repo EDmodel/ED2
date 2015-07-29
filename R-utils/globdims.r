@@ -78,6 +78,32 @@ igbp.val <<- seq_along(igbp.col)-1
 
 
 
+#------------------------------------------------------------------------------------------#
+#     Colours, labels, and conversion to simplified TerraClass categories.                 #
+#------------------------------------------------------------------------------------------#
+tc2012.col  <<- c( H2O = RGB(  12,  84, 170) #  0 - Water
+                 , FOR = RGB(   0,  79,   0) #  1 - Forest
+                 , SCD = RGB(   0, 177,   0) #  2 - Secondary growth
+                 , RFR = RGB(  58, 204,   0) #  3 - Reforestation
+                 , MXL = RGB( 155, 155, 255) #  4 - Mixed landscape
+                 , NFR = RGB( 255, 175,   0) #  5 - Non-forest
+                 , PST = RGB( 243, 240,  96) #  6 - Pasture
+                 , CRL = RGB( 176, 147,  81) #  7 - Cropland
+                 , D12 = RGB( 205,  85,   0) #  8 - Deforestation 2012
+                 , MIN = RGB( 148,  33, 147) #  9 - Mining
+                 , URB = RGB( 113,  40, 197) # 10 - Urban
+                 , UND = RGB( 222, 222, 222) # 11 - Undefined
+                 )#end tc2012.col
+tc2012.leg  <<- names(tc2012.col)
+tc2012.desc <<- c("Water","Forest","Secondary Growth","Reforestation"
+                 ,"Mixed Landscape","Non-forest","Pasture","Cropland"
+                 ,"Deforestation 2012","Mining","Urban","Unclassified")
+tc2012.val  <<- seq_along(tc2012.col)-1
+tc2012.t2c  <<- c(7,11,10,8,1,0,9,4,5,5,6,6,6,3,2,2)
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------ Define the colours and labels for ASPRS (LAS/LiDAR) classes. ----------------------#
 asprs.col <<- c( CNC = RGB( 222, 222, 222)

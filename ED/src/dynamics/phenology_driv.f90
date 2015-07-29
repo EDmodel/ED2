@@ -448,7 +448,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   cpatch%elongf(ico) = 1.0 ! It should become green_leaf_factor...
                end if
                
-            elseif (.not. drop_cold .and. cpatch%phenology_status(ico) == -2 .and. leaf_out_cold) then
+            elseif (.not. drop_cold .and. cpatch%phenology_status(ico) == -2               &
+                    .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
                !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
@@ -872,7 +873,8 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
 
 
-            elseif (.not. drop_cold .and. cpatch%phenology_status(ico) == -2 .and. leaf_out_cold) then
+            elseif (.not. drop_cold .and. cpatch%phenology_status(ico) == -2               &
+                    .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
                !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!

@@ -1610,6 +1610,12 @@ module fuse_fiss_utils
                                              + cpatch%fmean_fsw             (donc) * dlai
          cpatch%fmean_fsn             (recc) = cpatch%fmean_fsn             (recc) * rlai  &
                                              + cpatch%fmean_fsn             (donc) * dlai
+         cpatch%fmean_A_open          (recc) = cpatch%fmean_A_open          (recc) * rlai  &
+                                             + cpatch%fmean_A_open          (donc) * dlai
+         cpatch%fmean_A_closed        (recc) = cpatch%fmean_A_closed        (recc) * rlai  &
+                                             + cpatch%fmean_A_closed        (donc) * dlai
+         cpatch%fmean_A_net           (recc) = cpatch%fmean_A_net           (recc) * rlai  &
+                                             + cpatch%fmean_A_net           (donc) * dlai
          cpatch%fmean_A_light         (recc) = cpatch%fmean_A_light         (recc) * rlai  &
                                              + cpatch%fmean_A_light         (donc) * dlai
          cpatch%fmean_A_rubp          (recc) = cpatch%fmean_A_rubp          (recc) * rlai  &
@@ -1857,6 +1863,12 @@ module fuse_fiss_utils
                                              + cpatch%dmean_fsw             (donc) * dlai
          cpatch%dmean_fsn             (recc) = cpatch%dmean_fsn             (recc) * rlai  &
                                              + cpatch%dmean_fsn             (donc) * dlai
+         cpatch%dmean_A_open          (recc) = cpatch%dmean_A_open          (recc) * rlai  &
+                                             + cpatch%dmean_A_open          (donc) * dlai
+         cpatch%dmean_A_closed        (recc) = cpatch%dmean_A_closed        (recc) * rlai  &
+                                             + cpatch%dmean_A_closed        (donc) * dlai
+         cpatch%dmean_A_net           (recc) = cpatch%dmean_A_net           (recc) * rlai  &
+                                             + cpatch%dmean_A_net           (donc) * dlai
          cpatch%dmean_A_light         (recc) = cpatch%dmean_A_light         (recc) * rlai  &
                                              + cpatch%dmean_A_light         (donc) * dlai
          cpatch%dmean_A_rubp          (recc) = cpatch%dmean_A_rubp          (recc) * rlai  &
@@ -2196,6 +2208,12 @@ module fuse_fiss_utils
                                              + cpatch%mmean_fsw             (donc) * dlai
          cpatch%mmean_fsn             (recc) = cpatch%mmean_fsn             (recc) * rlai  &
                                              + cpatch%mmean_fsn             (donc) * dlai
+         cpatch%mmean_A_open          (recc) = cpatch%mmean_A_open          (recc) * rlai  &
+                                             + cpatch%mmean_A_open          (donc) * dlai
+         cpatch%mmean_A_closed        (recc) = cpatch%mmean_A_closed        (recc) * rlai  &
+                                             + cpatch%mmean_A_closed        (donc) * dlai
+         cpatch%mmean_A_net           (recc) = cpatch%mmean_A_net           (recc) * rlai  &
+                                             + cpatch%mmean_A_net           (donc) * dlai
          cpatch%mmean_A_light         (recc) = cpatch%mmean_A_light         (recc) * rlai  &
                                              + cpatch%mmean_A_light         (donc) * dlai
          cpatch%mmean_A_rubp          (recc) = cpatch%mmean_A_rubp          (recc) * rlai  &
@@ -2520,6 +2538,12 @@ module fuse_fiss_utils
                                              + cpatch%qmean_fsw           (:,donc) * dlai
          cpatch%qmean_fsn           (:,recc) = cpatch%qmean_fsn           (:,recc) * rlai  &
                                              + cpatch%qmean_fsn           (:,donc) * dlai
+         cpatch%qmean_A_open        (:,recc) = cpatch%qmean_A_open        (:,recc) * rlai  &
+                                             + cpatch%qmean_A_open        (:,donc) * dlai
+         cpatch%qmean_A_closed      (:,recc) = cpatch%qmean_A_closed      (:,recc) * rlai  &
+                                             + cpatch%qmean_A_closed      (:,donc) * dlai
+         cpatch%qmean_A_net         (:,recc) = cpatch%qmean_A_net         (:,recc) * rlai  &
+                                             + cpatch%qmean_A_net         (:,donc) * dlai
          cpatch%qmean_A_light       (:,recc) = cpatch%qmean_A_light       (:,recc) * rlai  &
                                              + cpatch%qmean_A_light       (:,donc) * dlai
          cpatch%qmean_A_rubp        (:,recc) = cpatch%qmean_A_rubp        (:,recc) * rlai  &

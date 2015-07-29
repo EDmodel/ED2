@@ -13,6 +13,7 @@ plotsize = function( proje                  #  Map projection? [T|F]
                                             #  TRUE/FALSE  -- True means yes for longitude
                                             #  "lon","lat" -- will extend the specific
                                             #   dimension
+                   , extfactor  = 1/6       #  Factor to extend width or height
                    , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
                    , landscape  = TRUE      #  Landscape? (if not swap width and height)
                    , scale.fac  = 0.8       #  Scaling factor to adjust sizes
@@ -58,32 +59,36 @@ plotsize = function( proje                  #  Map projection? [T|F]
    #---------------------------------------------------------------------------------------#
    #       Find the standard width and height depending on the paper.                      #
    #---------------------------------------------------------------------------------------#
-   if (paper == "special") { 
+   if (paper %in% "special") { 
       stdratio = max(c(stdwidth,stdheight))/min(c(stdwidth,stdheight))
-   }else if (paper == "letter"){
+   }else if (paper %in% "letter"){
       stdwidth  =  scale.fac * 11.0
       stdheight =  scale.fac *  8.5
       stdratio  = 11.0 /  8.5
-   }else if (paper == "a4"){
+   }else if (paper %in% "a4"){
       stdwidth  =  scale.fac * 29.7 / 2.54
       stdheight =  scale.fac * 21.0 / 2.54
       stdratio  = 29.7 / 21.0
-   }else if (paper == "legal"){
+   }else if (paper %in% "legal"){
       stdwidth  =  scale.fac * 14.0
       stdheight =  scale.fac *  8.5
       stdratio  = 14.0 /  8.5
-   }else if (paper == "long"){
+   }else if (paper %in% "long"){
       stdwidth  =  scale.fac * 16.0
       stdheight =  scale.fac *  9.5
       stdratio  = 16.0 /  9.5
-   }else if (paper == "executive"){
+   }else if (paper %in% "executive"){
       stdwidth  =  scale.fac * 10.25
       stdheight =  scale.fac *  7.25
       stdratio  = 10.25 /  7.25
-   }else if (paper == "double"){
+   }else if (paper %in% "double"){
       stdwidth  =  scale.fac * 14.0
       stdheight =  scale.fac *  7.0
       stdratio  = 14.0 / 7.0
+   }else if (paper %in% "square"){
+      stdwidth  =  scale.fac * 10.0
+      stdheight =  scale.fac * 10.0
+      stdratio  = 1.0
    }else{
       warning(paste("Unknown paper size (",paper,").  Using letter instead.",sep=""))
       stdwidth  =  scale.fac * 11.0
@@ -100,14 +105,14 @@ plotsize = function( proje                  #  Map projection? [T|F]
    if (proje){
       #----- Extend the width in case this will be used for filled.contour. ---------------#
       if (is.logical(extendfc)){
-         width.fac  = 1.0 + 1/6 * as.numeric(extendfc)
+         width.fac  = 1.0 + extfactor * as.numeric(extendfc)
          height.fac = 1.0
       }else if (tolower(substring(extendfc,1,2)) == "lo"){
-         width.fac  = 1.0 + 1/6
+         width.fac  = 1.0 + extfactor
          height.fac = 1.0
       }else if (tolower(substring(extendfc,1,2)) == "la"){
          width.fac  = 1.0
-         height.fac = 1.0 + 1/6
+         height.fac = 1.0 + extfactor
       }else{
          width.fac  = 1.0
          height.fac = 1.0

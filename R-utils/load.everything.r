@@ -209,6 +209,7 @@ loaded.package[["caTools"     ]] = require(caTools     )
 loaded.package[["chron"       ]] = require(chron       )
 loaded.package[["compiler"    ]] = require(compiler    )
 loaded.package[["fields"      ]] = require(fields      )
+loaded.package[["gbm"         ]] = require(gbm         )
 loaded.package[["geoR"        ]] = require(geoR        )
 loaded.package[["glmulti"     ]] = require(glmulti     )
 loaded.package[["grDevices"   ]] = require(grDevices   )
@@ -222,6 +223,7 @@ loaded.package[["mapdata "    ]] = require(mapdata     )
 loaded.package[["MASS"        ]] = require(MASS        )
 loaded.package[["MCMCpack"    ]] = require(MCMCpack    )
 loaded.package[["ncdf"        ]] = require(ncdf        )
+loaded.package[["nlme"        ]] = require(nlme        )
 loaded.package[["numDeriv"    ]] = require(numDeriv    )
 loaded.package[["PBSmapping"  ]] = require(PBSmapping  )
 loaded.package[["plotrix"     ]] = require(plotrix     )
@@ -281,6 +283,26 @@ try(unlockBinding("trim",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 envir = as.environment("package:raster")
 try(unlockBinding("RGB",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock tobin from package survival and replace by our        #
+# function.                                                                                #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:survival")
+try(unlockBinding("tobin",envir),silent=TRUE)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#  SHADY BUSINESS...  We must unlock pspline from package survival and replace by our      #
+# function.                                                                                #
+#------------------------------------------------------------------------------------------#
+envir = as.environment("package:survival")
+try(unlockBinding("pspline",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 
 
