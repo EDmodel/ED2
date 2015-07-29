@@ -1467,6 +1467,15 @@ module rk4_driver
                                        + cpatch%fsw              (ico) * dtlsm_o_frqsum
          cpatch%fmean_fsn        (ico) = cpatch%fmean_fsn        (ico)                     &
                                        + cpatch%fsn              (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_open     (ico) = cpatch%fmean_A_open     (ico)                     &
+                                       + cpatch%A_open           (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_closed   (ico) = cpatch%fmean_A_closed   (ico)                     &
+                                       + cpatch%A_closed         (ico) * dtlsm_o_frqsum
+         cpatch%fmean_A_net      (ico) = cpatch%fmean_A_net      (ico)                     &
+                                       + ( ( 1. - cpatch%fs_open (ico) )                   &
+                                         * cpatch%A_closed       (ico)                     &
+                                         + cpatch%fs_open        (ico)                     &
+                                         * cpatch%A_open         (ico) ) * dtlsm_o_frqsum
          cpatch%fmean_A_light    (ico) = cpatch%fmean_A_light    (ico)                     &
                                        + cpatch%A_light          (ico) * dtlsm_o_frqsum
          cpatch%fmean_A_rubp     (ico) = cpatch%fmean_A_rubp     (ico)                     &

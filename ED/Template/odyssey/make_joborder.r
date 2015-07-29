@@ -211,7 +211,7 @@ default = list( run           = "unnamed"
               , iallom        = 3
               , ibigleaf      = 0
               , irepro        = 2
-              , treefall      = 0.0125
+              , treefall      = -0.0125
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               ) #end list

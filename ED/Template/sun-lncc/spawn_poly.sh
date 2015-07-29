@@ -420,10 +420,6 @@ do
    date=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}')
    time=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}')
    runt=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}')
-   if [ ${runt} != "INITIAL" ]
-   then
-      runt="HISTORY"
-   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -1083,7 +1079,12 @@ do
    then
       sed -i s@CRASHED@HISTORY@g ${here}/${polyname}/statusrun.txt
       runt="HISTORY"
-      # toler=$(calc.sh ${toler}/10)
+      toler=$(calc.sh ${toler}/10)
+   elif [ "x${forcesubmit}" == "xy" -o "x${forcesubmit}" == "xY" ] &&
+        [ ${runt} != "INITIAL" -a ${runt} != "THE_END" ]
+   then
+      sed -i s@${runt}@HISTORY@g ${here}/${polyname}/statusrun.txt
+      runt="HISTORY"
    fi
    #---------------------------------------------------------------------------------------#
 
@@ -1315,7 +1316,7 @@ do
    sed -i s@myminrecruitdbh@${minrecruitdbh}@g  ${ED2IN}
    sed -i s@mytreefall@${treefall}@g            ${ED2IN}
    sed -i s@mymaxpatch@${iage}@g                ${ED2IN}
-   sed -i s@myanthdisturb@${ianthdisturb}@g    ${ED2IN}
+   sed -i s@myanthdisturb@${ianthdisturb}@g     ${ED2IN}
    sed -i s@myludatabase@${ludatabase}@g        ${ED2IN}
    #---------------------------------------------------------------------------------------#
 
@@ -1349,44 +1350,57 @@ do
    #---------------------------------------------------------------------------------------#
    #     We will not even consider the files that have gone extinct.                       #
    #---------------------------------------------------------------------------------------#
-   if [ ${runt} == "INITIAL" ] || [ ${runt} == "HISTORY" ] ||
-      [ ${forcesubmit} == "y" -o ${forcesubmit} == "Y" ]
+   if [ ${runt} == "INITIAL" ] || [ ${runt} == "HISTORY" ]
    then
-
-
       #------------------------------------------------------------------------------------#
-      #      Reset callserial.sh.                                                          #
+      #     Check whether the job is still running
       #------------------------------------------------------------------------------------#
-      callserial="${here}/${polyname}/callserial.sh"
-      rm -f ${callserial}
-      cp -f ${here}/Template/callserial.sh ${callserial}
+      jobname="${desc}-${polyname}"
+      running=$(qstat -j ${jobname} 2> /dev/null | wc -l)
       #------------------------------------------------------------------------------------#
 
 
+      if [ ${running} -eq 0 ]
+      then
 
-      #----- Change the callserial.sh file. -----------------------------------------------#
-      /bin/rm -f 
-      callserial="${here}/${polyname}/callserial.sh"
-      sed -i s@pathhere@${here}@g          ${callserial}
-      sed -i s@thisdesc@${desc}@g          ${callserial}
-      sed -i s@thisroot@${here}@g          ${callserial}
-      sed -i s@thispoly@${polyname}@g      ${callserial}
-      sed -i s@thisqueue@${queue}@g        ${callserial}
-      sed -i s@myexec@${execname}@g        ${callserial}
-      sed -i s@myinitrc@${initrc}@g        ${callserial}
-      sed -i s@myname@${moi}@g             ${callserial}
-      sed -i s@mypackdata@${packdatasrc}@g ${callserial}
-      sed -i s@myscenario@${iscenario}@g   ${callserial}
-      sed -i s@myscenmain@${scentype}@g    ${callserial}
-      sed -i s@zzzzzzzz@${wtime}@g         ${callserial}
-      #------------------------------------------------------------------------------------#
+         #---------------------------------------------------------------------------------#
+         #      Reset callserial.sh.                                                       #
+         #---------------------------------------------------------------------------------#
+         callserial="${here}/${polyname}/callserial.sh"
+         rm -f ${callserial}
+         cp -f ${here}/Template/callserial.sh ${callserial}
+         #---------------------------------------------------------------------------------#
 
 
 
-      #----- Check whether I should submit from this path or not. -------------------------#
-      blah="  Polygon job submitted."
-      qsub ${callserial} 1> /dev/null 2> /dev/null
-      #------------------------------------------------------------------------------------#
+         #----- Change the callserial.sh file. --------------------------------------------#
+         /bin/rm -f 
+         callserial="${here}/${polyname}/callserial.sh"
+         sed -i s@pathhere@${here}@g          ${callserial}
+         sed -i s@thisdesc@${desc}@g          ${callserial}
+         sed -i s@thisroot@${here}@g          ${callserial}
+         sed -i s@thispoly@${polyname}@g      ${callserial}
+         sed -i s@thisqueue@${queue}@g        ${callserial}
+         sed -i s@myexec@${execname}@g        ${callserial}
+         sed -i s@myinitrc@${initrc}@g        ${callserial}
+         sed -i s@myname@${moi}@g             ${callserial}
+         sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+         sed -i s@myscenario@${iscenario}@g   ${callserial}
+         sed -i s@myscenmain@${scentype}@g    ${callserial}
+         sed -i s@zzzzzzzz@${wtime}@g         ${callserial}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Submit job. ---------------------------------------------------------------#
+         blah="  Polygon job submitted."
+         qsub ${callserial} 1> /dev/null 2> /dev/null
+         #---------------------------------------------------------------------------------#
+      else
+         #----- Check whether I should submit from this path or not. ----------------------#
+         blah="  Polygon is running.  Do not submit this time."
+         #---------------------------------------------------------------------------------#
+      fi
    elif [ ${runt} == "THE_END" ]
    then
       blah="  Polygon has already finished."

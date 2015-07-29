@@ -403,7 +403,7 @@ kurt <<- function (x, na.rm = FALSE){
 
 
 
-      #----- Find the skewness. -----------------------------------------------------------#
+      #----- Find the kurtosis. -----------------------------------------------------------#
       nx = length(xx)
       xx.mean = mean(xx)
       xx.sdev = sd(xx)
@@ -414,6 +414,58 @@ kurt <<- function (x, na.rm = FALSE){
 
    return(ans)
 }#end function kurt
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function computes the inter-quartile range.                                     #
+#------------------------------------------------------------------------------------------#
+iqr <<- function (x, na.rm = FALSE){
+
+   #---- We follow the same convention as the standard deviation. -------------------------#
+   if (is.matrix(x)) {
+      msg = "iqr(<matrix>) is deprecated.\n Use apply(*, 2, kurt) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = apply(X = x, MARGIN = 2, FUN = iqr, na.rm = na.rm)
+   }else if (is.list(x)){
+      msg = "iqr(<list>) is deprecated.\n Use lapply(*, kurt) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = lapply(X = x, FUN = iqr, na.rm = na.rm)
+   }else if (is.data.frame(x)){
+      msg = "iqr(<data.frame>) is deprecated.\n Use sapply(*, kurt) instead."
+      warning(paste(msg, collapse = ""), call. = FALSE, domain = NA)
+      ans = sapply(X = x, iqr, na.rm = na.rm)
+   }else{
+      #----- Coerce x to a vector. --------------------------------------------------------#
+      if (is.vector(x)){
+         xx = x
+      }else{
+         xx = as.vector(x)
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Decide whether to delete NA or not. ------------------------------------------#
+      if (na.rm) xx = xx[! is.na(xx)]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Find the inter-quartile range. -----------------------------------------------#
+      ans        = diff(quantile(xx,probs=c(0.25,0.75)))
+      names(ans) = NULL
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end function iqr
 #==========================================================================================#
 #==========================================================================================#
 

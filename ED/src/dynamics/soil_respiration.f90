@@ -508,6 +508,7 @@ subroutine resp_rh(csite,ipa,Lc)
    csite%rh(ipa)     = r_fsc * fast_C_loss + r_stsc * structural_C_loss                    &
                      + r_ssc * slow_C_loss
    csite%cwd_rh(ipa) = cwd_frac * (r_stsc * structural_C_loss + r_ssc * slow_C_loss)
+   ! csite%cwd_rh(ipa) = r_stsc * structural_C_loss
    !---------------------------------------------------------------------------------------!
 
    return

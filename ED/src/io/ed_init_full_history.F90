@@ -949,6 +949,12 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_FSW_PY              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_fsn            (ipy:ipy)                              &
                         ,'DMEAN_FSN_PY              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_open         (ipy:ipy)                              &
+                        ,'DMEAN_A_OPEN_PY           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_closed       (ipy:ipy)                              &
+                        ,'DMEAN_A_CLOSED_PY         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_net          (ipy:ipy)                              &
+                        ,'DMEAN_A_NET_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_a_light        (ipy:ipy)                              &
                         ,'DMEAN_A_LIGHT_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_a_rubp         (ipy:ipy)                              &
@@ -1340,6 +1346,12 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                         ,'MMEAN_FSW_PY              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_fsn            (ipy:ipy)                              &
                         ,'MMEAN_FSN_PY              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_open         (ipy:ipy)                              &
+                        ,'MMEAN_A_OPEN_PY           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_closed       (ipy:ipy)                              &
+                        ,'MMEAN_A_CLOSED_PY         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_net          (ipy:ipy)                              &
+                        ,'MMEAN_A_NET_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_a_light        (ipy:ipy)                              &
                         ,'MMEAN_A_LIGHT_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_a_rubp         (ipy:ipy)                              &
@@ -2001,6 +2013,12 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                         ,'QMEAN_FSW_PY             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_fsn            (:,ipy)                                &
                         ,'QMEAN_FSN_PY             ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_open         (:,ipy)                                &
+                        ,'QMEAN_A_OPEN_PY          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_closed       (:,ipy)                                &
+                        ,'QMEAN_A_CLOSED_PY        ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_net          (:,ipy)                                &
+                        ,'QMEAN_A_NET_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_a_light        (:,ipy)                                &
                         ,'QMEAN_A_LIGHT_PY         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_a_rubp         (:,ipy)                                &
@@ -5166,6 +5184,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'DMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_fsn                                                  &
                         ,'DMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_open                                               &
+                        ,'DMEAN_A_OPEN_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_closed                                             &
+                        ,'DMEAN_A_CLOSED_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_net                                                &
+                        ,'DMEAN_A_NET_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_a_light                                              &
                         ,'DMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_a_rubp                                               &
@@ -5292,6 +5316,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'MMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_fsn                                                  &
                         ,'MMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_open                                               &
+                        ,'MMEAN_A_OPEN_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_closed                                             &
+                        ,'MMEAN_A_CLOSED_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_net                                                &
+                        ,'MMEAN_A_NET_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_a_light                                              &
                         ,'MMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_a_rubp                                               &
@@ -5564,6 +5594,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'QMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_fsn                                                  &
                         ,'QMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_open                                               &
+                        ,'QMEAN_A_OPEN_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_closed                                             &
+                        ,'QMEAN_A_CLOSED_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_net                                                &
+                        ,'QMEAN_A_NET_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_a_light                                              &
                         ,'QMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_a_rubp                                               &

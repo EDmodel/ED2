@@ -446,3 +446,111 @@ agb2dbh.baker <<- function(agb,wdens,allom="baker.chave"){
 }#end if
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Biomass allometry that is used by Sustainable Landscapes.  Results are always in     #
+# kgC/plant.                                                                               #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Chave, J., and co-authors, 2014: Improved allometric models to estimate tha aboveground  #
+#     biomass of tropical trees.  Glob. Change Biol., 20, 3177-3190                        #
+#     doi:10.1111/gcb.12629                                                                #
+#                                                                                          #
+# Goodman, R., and co-authors, 2013: Amazon palm biomass and allometry.  Forest Ecol.      #
+#     Manag., 310, 994-1004. doi:10.1016/j.foreco.2013.09.045                              #
+#                                                                                          #
+# Palace, M., and co-authors, 2007: Necromass in undisturbed ad logged forests in the      #
+#     Brazilian Amazon.  Forest Ecol. Manag., 238, 309-318.                                #
+#     doi:10.1016/j.foreco.2006.10.026                                                     #
+#                                                                                          #
+# Schnitzer, S. A., and co-authors, 2006: Censusing and measuring lianas: a quantitative   #
+#     comparison of the common methods.  Biotropica, 38, 581-591                           #
+#     doi:10.1111/j.1744-7429.2006.00187.x                                                 #
+#                                                                                          #
+#------------------------------------------------------------------------------------------#
+agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
+   #---------------------------------------------------------------------------------------#
+   #     "type" and "dead" may not be present, in which case we use dummy values.          #
+   #---------------------------------------------------------------------------------------#
+   if (is.null(type)) type = rep(  "O",times=length(dbh))
+   if (is.null(dead)) dead = rep(FALSE,times=length(dbh))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Make sure all terms have the same length.                                         #
+   #---------------------------------------------------------------------------------------#
+   lens = unique(c(length(dbh),length(height),length(wdens),length(type),length(dead)))
+   if ( length(lens) != 1 ){
+      cat("-----------------------------------------------------------","\n",sep="")
+      cat("   Variables don't have the same length."                   ,"\n",sep="")
+      cat("   DBH    = ",length(dbh)                                   ,"\n",sep="")
+      cat("   HEIGHT = ",length(height)                                ,"\n",sep="")
+      cat("   WDENS  = ",length(wdens)                                 ,"\n",sep="")
+      cat("   TYPE   = ",length(type)                                  ,"\n",sep="")
+      cat("   DEAD   = ",length(dead)                                  ,"\n",sep="")
+      cat("-----------------------------------------------------------","\n",sep="")
+      stop(" Incorrect input data.")
+   }else{
+      fine.dbh    = is.numeric  (dbh)    || all(is.na(dbh   ))
+      fine.height = is.numeric  (height) || all(is.na(height))
+      fine.wdens  = is.numeric  (wdens)  || all(is.na(wdens ))
+      fine.type   = is.character(type)   || all(is.na(type  ))
+      fine.dead   = is.logical  (dead)   || all(is.na(dead  ))
+      if (! all(c(fine.dbh,fine.height,fine.wdens,fine.type,fine.dead))){
+         cat("-----------------------------------------------------------","\n",sep="")
+         cat("   Not all variables have the correct type."                ,"\n",sep="")
+         cat("   DBH    (numeric)   = ",fine.dbh                          ,"\n",sep="")
+         cat("   HEIGHT (numeric)   = ",fine.height                       ,"\n",sep="")
+         cat("   WDENS  (numeric)   = ",fine.wdens                        ,"\n",sep="")
+         cat("   TYPE   (character) = ",fine.type                         ,"\n",sep="")
+         cat("   DEAD   (logical)   = ",fine.dead                         ,"\n",sep="")
+         cat("-----------------------------------------------------------","\n",sep="")
+         stop(" Incorrect data types.")
+      }#end if (! all(c(fine.dbh,fine.height,fine.wdens,fine.type,fine.dead)))
+   }#end if ( length(lens) != 1)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Initialise the output. ----------------------------------------------------------#
+   agb = NA * dbh
+   #---------------------------------------------------------------------------------------#
+   
+   #---------------------------------------------------------------------------------------#
+   #     Find the possible statuses, then choose the best equation.                        #
+   #---------------------------------------------------------------------------------------#
+   tree  = type %in% "O" & (! dead)
+   palm  = type %in% "P"
+   liana = type %in% "L"
+   dead  = type %in% "O" & dead
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     AGB by type.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   #----- Living tree: Chave et al. (2014). -----------------------------------------------#
+   agb[tree ] = 0.0673 * (wdens[tree]*dbh[tree]^2*height[tree])^0.976 / C2B
+   #----- Palm: Goodman et al. (2013). ----------------------------------------------------#
+   agb[palm ] = exp(-3.448+0.588/2) * dbh[palm]^2.7483 / C2B
+   #----- Liana: Schnitzer et al. (2006). -------------------------------------------------#
+   agb[liana] = exp(-0.968) * dbh[liana]^2.657 / C2B
+   #----- Dead trees: Palace et al. (2007). -----------------------------------------------#
+   v1 = 0.091
+   v0 = 0.01 / (1.3^-v1)
+   a0 = 0.25 * pi * v0^2 / (1. - 2*v1)
+   a1 = 1 - 2*v1
+   agb[dead] = 1000. * wdens[dead] * a0 * dbh[dead]^2 * height[dead]^a1 / C2B
+   #---------------------------------------------------------------------------------------#
+
+
+   return(agb)
+}#end function agb.SL
+#==========================================================================================#
+#==========================================================================================#
