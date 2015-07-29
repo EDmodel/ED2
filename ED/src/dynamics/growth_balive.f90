@@ -178,15 +178,17 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   !      Compute respiration rates for coming day [kgC/plant/day].         !
                   !------------------------------------------------------------------------!
-                  growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)       &
-                                                          / cpatch%balive(ico))
                   select case(growth_resp_scheme)
                   case(0)
+                     cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
+                                                             * growth_resp_factor(ipft)
                      cpatch%leaf_growth_resp(ico) = 0.0
                      cpatch%root_growth_resp(ico) = 0.0
-                     cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%balive(ico)
                      cpatch%sapb_growth_resp(ico) = 0.0
                   case(1)
+                     growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)    &
+                                                             / cpatch%balive(ico))
+                     
                      cpatch%leaf_growth_resp(ico) = growth_resp_int * cpatch%bleaf(ico)
                      cpatch%root_growth_resp(ico) = growth_resp_int * cpatch%broot(ico)
                      cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%bsapwooda(ico)
@@ -482,15 +484,17 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   !      Compute respiration rates for coming day [kgC/plant/day].         !
                   !------------------------------------------------------------------------!
-                  growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)       &
-                                                          / cpatch%balive(ico))
                   select case(growth_resp_scheme)
                   case(0)
+                     cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
+                                                             * growth_resp_factor(ipft)
                      cpatch%leaf_growth_resp(ico) = 0.0
                      cpatch%root_growth_resp(ico) = 0.0
-                     cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%balive(ico)
                      cpatch%sapb_growth_resp(ico) = 0.0
                   case(1)
+                     growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)    &
+                                                             / cpatch%balive(ico))
+                     
                      cpatch%leaf_growth_resp(ico) = growth_resp_int * cpatch%bleaf(ico)
                      cpatch%root_growth_resp(ico) = growth_resp_int * cpatch%broot(ico)
                      cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%bsapwooda(ico)
