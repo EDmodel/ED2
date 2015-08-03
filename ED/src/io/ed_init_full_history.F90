@@ -909,12 +909,16 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_LEAF_RESP_PY        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_root_resp      (ipy:ipy)                              &
                         ,'DMEAN_ROOT_RESP_PY        ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%dmean_growth_resp    (ipy:ipy)                              &
-                        ,'DMEAN_GROWTH_RESP_PY      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_leaf_growth_resp(ipy:ipy)                             &
+                        ,'DMEAN_LEAF_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_root_growth_resp(ipy:ipy)                             &
+                        ,'DMEAN_ROOT_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_sapa_growth_resp(ipy:ipy)                             &
+                        ,'DMEAN_SAPA_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_sapb_growth_resp(ipy:ipy)                             &
+                        ,'DMEAN_SAPB_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_storage_resp   (ipy:ipy)                              &
                         ,'DMEAN_STORAGE_RESP_PY     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%dmean_vleaf_resp     (ipy:ipy)                              &
-                        ,'DMEAN_VLEAF_RESP_PY       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_plresp         (ipy:ipy)                              &
                         ,'DMEAN_PLRESP_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_leaf_energy    (ipy:ipy)                              &
@@ -951,6 +955,12 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_FSW_PY              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_fsn            (ipy:ipy)                              &
                         ,'DMEAN_FSN_PY              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_open         (ipy:ipy)                              &
+                        ,'DMEAN_A_OPEN_PY           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_closed       (ipy:ipy)                              &
+                        ,'DMEAN_A_CLOSED_PY         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_a_net          (ipy:ipy)                              &
+                        ,'DMEAN_A_NET_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_a_light        (ipy:ipy)                              &
                         ,'DMEAN_A_LIGHT_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_a_rubp         (ipy:ipy)                              &
@@ -1302,12 +1312,16 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                         ,'MMEAN_LEAF_RESP_PY        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_root_resp      (ipy:ipy)                              &
                         ,'MMEAN_ROOT_RESP_PY        ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%mmean_growth_resp    (ipy:ipy)                              &
-                        ,'MMEAN_GROWTH_RESP_PY      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_leaf_growth_resp(ipy:ipy)                             &
+                        ,'MMEAN_LEAF_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_root_growth_resp(ipy:ipy)                             &
+                        ,'MMEAN_ROOT_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_sapa_growth_resp(ipy:ipy)                             &
+                        ,'MMEAN_SAPA_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_sapb_growth_resp(ipy:ipy)                             &
+                        ,'MMEAN_SAPB_GROWTH_RESP_PY ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_storage_resp   (ipy:ipy)                              &
                         ,'MMEAN_STORAGE_RESP_PY     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%mmean_vleaf_resp     (ipy:ipy)                              &
-                        ,'MMEAN_VLEAF_RESP_PY       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_plresp         (ipy:ipy)                              &
                         ,'MMEAN_PLRESP_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_leaf_energy    (ipy:ipy)                              &
@@ -1344,6 +1358,12 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                         ,'MMEAN_FSW_PY              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_fsn            (ipy:ipy)                              &
                         ,'MMEAN_FSN_PY              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_open         (ipy:ipy)                              &
+                        ,'MMEAN_A_OPEN_PY           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_closed       (ipy:ipy)                              &
+                        ,'MMEAN_A_CLOSED_PY         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_a_net          (ipy:ipy)                              &
+                        ,'MMEAN_A_NET_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_a_light        (ipy:ipy)                              &
                         ,'MMEAN_A_LIGHT_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_a_rubp         (ipy:ipy)                              &
@@ -1965,12 +1985,16 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                         ,'QMEAN_LEAF_RESP_PY       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_root_resp      (:,ipy)                                &
                         ,'QMEAN_ROOT_RESP_PY       ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%qmean_growth_resp    (:,ipy)                                &
-                        ,'QMEAN_GROWTH_RESP_PY     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_leaf_growth_resp(:,ipy)                               &
+                        ,'QMEAN_LEAF_GROWTH_RESP_PY',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_root_growth_resp(:,ipy)                               &
+                        ,'QMEAN_ROOT_GROWTH_RESP_PY',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_sapa_growth_resp(:,ipy)                               &
+                        ,'QMEAN_SAPA_GROWTH_RESP_PY',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_sapb_growth_resp(:,ipy)                               &
+                        ,'QMEAN_SAPB_GROWTH_RESP_PY',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_storage_resp   (:,ipy)                                &
                         ,'QMEAN_STORAGE_RESP_PY    ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cgrid%qmean_vleaf_resp     (:,ipy)                                &
-                        ,'QMEAN_VLEAF_RESP_PY      ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_plresp         (:,ipy)                                &
                         ,'QMEAN_PLRESP_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_leaf_energy    (:,ipy)                                &
@@ -2007,6 +2031,12 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                         ,'QMEAN_FSW_PY             ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_fsn            (:,ipy)                                &
                         ,'QMEAN_FSN_PY             ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_open         (:,ipy)                                &
+                        ,'QMEAN_A_OPEN_PY          ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_closed       (:,ipy)                                &
+                        ,'QMEAN_A_CLOSED_PY        ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_a_net          (:,ipy)                                &
+                        ,'QMEAN_A_NET_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_a_light        (:,ipy)                                &
                         ,'QMEAN_A_LIGHT_PY         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_a_rubp         (:,ipy)                                &
@@ -5004,12 +5034,16 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'TODAY_NPPWOOD             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%today_nppdaily                                                &
                      ,'TODAY_NPPDAILY            ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpatch%growth_respiration                                            &
-                     ,'GROWTH_RESPIRATION        ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%leaf_growth_resp                                              &
+                     ,'LEAF_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%root_growth_resp                                              &
+                     ,'ROOT_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%sapa_growth_resp                                              &
+                     ,'SAPA_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%sapb_growth_resp                                              &
+                     ,'SAPB_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%storage_respiration                                           &
                      ,'STORAGE_RESPIRATION       ',dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpatch%vleaf_respiration                                             &
-                     ,'VLEAF_RESPIRATION         ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%monthly_dndt                                                  &
                      ,'MONTHLY_DNDT              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%monthly_dlnndt                                                &
@@ -5134,12 +5168,16 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'DMEAN_LEAF_RESP_CO        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_root_resp                                            &
                         ,'DMEAN_ROOT_RESP_CO        ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cpatch%dmean_growth_resp                                          &
-                        ,'DMEAN_GROWTH_RESP_CO      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_leaf_growth_resp                                     &
+                        ,'DMEAN_LEAF_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_root_growth_resp                                     &
+                        ,'DMEAN_ROOT_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_sapa_growth_resp                                     &
+                        ,'DMEAN_SAPA_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_sapb_growth_resp                                     &
+                        ,'DMEAN_SAPB_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_storage_resp                                         &
                         ,'DMEAN_STORAGE_RESP_CO     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cpatch%dmean_vleaf_resp                                           &
-                        ,'DMEAN_VLEAF_RESP_CO       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_plresp                                               &
                         ,'DMEAN_PLRESP_CO           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_leaf_energy                                          &
@@ -5176,6 +5214,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'DMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_fsn                                                  &
                         ,'DMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_open                                               &
+                        ,'DMEAN_A_OPEN_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_closed                                             &
+                        ,'DMEAN_A_CLOSED_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%dmean_a_net                                                &
+                        ,'DMEAN_A_NET_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_a_light                                              &
                         ,'DMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%dmean_a_rubp                                               &
@@ -5262,12 +5306,16 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'MMEAN_LEAF_RESP_CO        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_root_resp                                            &
                         ,'MMEAN_ROOT_RESP_CO        ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cpatch%mmean_growth_resp                                          &
-                        ,'MMEAN_GROWTH_RESP_CO      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_leaf_growth_resp                                     &
+                        ,'MMEAN_LEAF_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_root_growth_resp                                     &
+                        ,'MMEAN_ROOT_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_sapa_growth_resp                                     &
+                        ,'MMEAN_SAPA_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_sapb_growth_resp                                     &
+                        ,'MMEAN_SAPB_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_storage_resp                                         &
                         ,'MMEAN_STORAGE_RESP_CO     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cpatch%mmean_vleaf_resp                                           &
-                        ,'MMEAN_VLEAF_RESP_CO       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_plresp                                               &
                         ,'MMEAN_PLRESP_CO           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_leaf_energy                                          &
@@ -5304,6 +5352,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'MMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_fsn                                                  &
                         ,'MMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_open                                               &
+                        ,'MMEAN_A_OPEN_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_closed                                             &
+                        ,'MMEAN_A_CLOSED_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%mmean_a_net                                                &
+                        ,'MMEAN_A_NET_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_a_light                                              &
                         ,'MMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%mmean_a_rubp                                               &
@@ -5536,12 +5590,16 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'QMEAN_LEAF_RESP_CO        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_root_resp                                            &
                         ,'QMEAN_ROOT_RESP_CO        ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cpatch%qmean_growth_resp                                          &
-                        ,'QMEAN_GROWTH_RESP_CO      ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_leaf_growth_resp                                     &
+                        ,'QMEAN_LEAF_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_root_growth_resp                                     &
+                        ,'QMEAN_ROOT_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_sapa_growth_resp                                     &
+                        ,'QMEAN_SAPA_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_sapb_growth_resp                                     &
+                        ,'QMEAN_SAPB_GROWTH_RESP_CO ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_storage_resp                                         &
                         ,'QMEAN_STORAGE_RESP_CO     ',dsetrank,iparallel,.false.,foundvar)
-      call hdf_getslab_r(cpatch%qmean_vleaf_resp                                           &
-                        ,'QMEAN_VLEAF_RESP_CO       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_plresp                                               &
                         ,'QMEAN_PLRESP_CO           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_leaf_energy                                          &
@@ -5578,6 +5636,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                         ,'QMEAN_FSW_CO              ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_fsn                                                  &
                         ,'QMEAN_FSN_CO              ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_open                                               &
+                        ,'QMEAN_A_OPEN_CO           ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_closed                                             &
+                        ,'QMEAN_A_CLOSED_CO         ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cpatch%qmean_a_net                                                &
+                        ,'QMEAN_A_NET_CO            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_a_light                                              &
                         ,'QMEAN_A_LIGHT_CO          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cpatch%qmean_a_rubp                                               &

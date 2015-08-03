@@ -220,19 +220,242 @@ recursive subroutine read_ed_xml_config(filename)
 
         call getConfigINT   ('num','pft',i,myPFT,texist)
         if(myPFT .le. n_pft .and. myPFT .ge. 1) then
+
+
+!! GENERAL PFT DEFINITION
+           call getConfigSTRING('name','pft',i,cval,texist)
+           call getConfigINT('is_tropical','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_tropical(myPFT) = .false.
+              else
+                 is_tropical(myPFT) = .true.
+              end if
+           end if
+           call getConfigINT('is_grass','pft',i,ival,texist)
+           if(texist) then
+              if(ival .eq. 0) then
+                 is_grass(myPFT) = .false.
+              else
+                 is_grass(myPFT) = .true.
+              end if
+           end if
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
               include_pft(myPFT) = ival == 1
-!           else
-!              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
+           else
+              include_pft(myPFT) = .true.  !! if a PFT is defined, assume it's meant to be included
            endif
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
            if(texist) include_pft_ag(myPFT) = ival == 1
            call getConfigINT('include_pft_fp','pft',i,ival,texist)
            if(texist) include_pft_fp(myPFT) = ival == 1
-           call getConfigSTRING('name','pft',i,cval,texist)
+
+
+!! CANOPY RADIATION
+	   call getConfigREAL  ('clumping_factor','pft',i,rval,texist)
+           if(texist) clumping_factor(myPFT) = real(rval)
+	   call getConfigREAL  ('orient_factor','pft',i,rval,texist)
+           if(texist) orient_factor(myPFT) = real(rval)
+
+           call getConfigREAL  ('leaf_emiss_tir','pft',i,rval,texist)
+           if(texist) leaf_emiss_tir(myPFT) = rval
+           call getConfigREAL  ('wood_emiss_tir','pft',i,rval,texist)
+           if(texist) wood_emiss_tir(myPFT) = rval
+
+	   call getConfigREAL  ('leaf_reflect_vis','pft',i,rval,texist)
+           if(texist) leaf_reflect_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('leaf_reflect_nir','pft',i,rval,texist)
+           if(texist) leaf_reflect_nir(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_reflect_vis','pft',i,rval,texist)
+           if(texist) wood_reflect_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_reflect_nir','pft',i,rval,texist)
+           if(texist) wood_reflect_nir(myPFT) = real(rval)
+
+	   call getConfigREAL  ('leaf_trans_vis','pft',i,rval,texist)
+           if(texist) leaf_trans_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('leaf_trans_nir','pft',i,rval,texist)
+           if(texist) leaf_trans_nir(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_trans_vis','pft',i,rval,texist)
+           if(texist) wood_trans_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_trans_nir','pft',i,rval,texist)
+           if(texist) wood_trans_nir(myPFT) = real(rval)
+
+	   call getConfigREAL  ('leaf_backscatter_vis','pft',i,rval,texist)
+           if(texist) leaf_backscatter_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('leaf_backscatter_nir','pft',i,rval,texist)
+           if(texist) leaf_backscatter_nir(myPFT) = real(rval)
+	   call getConfigREAL  ('leaf_backscatter_tir','pft',i,rval,texist)
+           if(texist) leaf_backscatter_tir(myPFT) = real(rval)
+ 
+	   call getConfigREAL  ('wood_backscatter_vis','pft',i,rval,texist)
+           if(texist) wood_backscatter_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_backscatter_nir','pft',i,rval,texist)
+           if(texist) wood_backscatter_nir(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_backscatter_tir','pft',i,rval,texist)
+           if(texist) wood_backscatter_vis(myPFT) = real(rval)
+
+	   call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
+           if(texist) leaf_scatter_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('leaf_scatter_nir','pft',i,rval,texist)
+           if(texist) leaf_scatter_nir(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_scatter_vis','pft',i,rval,texist)
+           if(texist) wood_scatter_vis(myPFT) = real(rval)
+	   call getConfigREAL  ('wood_scatter_nir','pft',i,rval,texist)
+           if(texist) wood_scatter_nir(myPFT) = real(rval)
+
+	   call getConfigREAL  ('phi1','pft',i,rval,texist)
+           if(texist) phi1(myPFT) = real(rval)
+	   call getConfigREAL  ('phi2','pft',i,rval,texist)
+           if(texist) phi2(myPFT) = real(rval)
+	   call getConfigREAL  ('mu_bar','pft',i,rval,texist)
+           if(texist) mu_bar(myPFT) = real(rval)
+
+! photosynthesis variables
+           call getConfigINT  ('photosyn_pathway','pft',i,ival,texist)
+           if(texist) photosyn_pathway(myPFT) = ival
+           call getConfigREAL  ('quantum_efficiency','pft',i,rval,texist)
+           if(texist) quantum_efficiency(myPFT) = real(rval)
+
+           call getConfigREAL  ('Vm0','pft',i,rval,texist)
+           if(texist) Vm0(myPFT) = real(rval)
+           call getConfigREAL  ('Vm_low_temp','pft',i,rval,texist)
+           if(texist) Vm_low_temp(myPFT) = real(rval)
+           call getConfigREAL  ('Vm_high_temp','pft',i,rval,texist)
+           if(texist) Vm_high_temp(myPFT) = real(rval)
+	   call getConfigREAL  ('Vm_decay_e','pft',i,rval,texist)
+           if(texist) Vm_decay_e(myPFT) = real(rval)
+	   call getConfigREAL  ('Vm_decay_a','pft',i,rval,texist)
+           if(texist) Vm_decay_a(myPFT) = real(rval)
+	   call getConfigREAL  ('Vm_decay_b','pft',i,rval,texist)
+           if(texist) Vm_decay_b(myPFT) = real(rval)
+           call getConfigREAL  ('vm_hor','pft',i,rval,texist)
+           if(texist) vm_hor(myPFT) = real(rval)
+           call getConfigREAL  ('vm_q10','pft',i,rval,texist)
+           if(texist) vm_q10(myPFT) = real(rval)
+
+!! Leaf Respiration
+           call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
+           if(texist) dark_respiration_factor(myPFT) = real(rval)
+           call getConfigREAL  ('Rd_low_temp','pft',i,rval,texist)
+           if(texist) Rd_low_temp(myPFT) = real(rval)
+	   call getConfigREAL  ('Rd_high_temp','pft',i,rval,texist)
+           if(texist) Rd_high_temp(myPFT) = real(rval)
+	   call getConfigREAL  ('Rd_decay_e','pft',i,rval,texist)
+           if(texist) Rd_decay_e(myPFT) = real(rval)
+           call getConfigREAL  ('Rd_hor','pft',i,rval,texist)
+           if(texist) Rd_hor(myPFT) = real(rval)
+           call getConfigREAL  ('Rd_q10','pft',i,rval,texist)
+           if(texist) Rd_q10(myPFT) = real(rval)
+           call getConfigREAL  ('Rd0','pft',i,rval,texist)
+           if(texist) Rd0(myPFT) = real(rval)
+
+!! Stomatal parameters
+           call getConfigREAL  ('D0','pft',i,rval,texist)
+           if(texist) D0(myPFT) = real(rval)
+           call getConfigREAL  ('stomatal_slope','pft',i,rval,texist)
+           if(texist) stomatal_slope(myPFT) = real(rval)
+           call getConfigREAL  ('cuticular_cond','pft',i,rval,texist)
+           if(texist) cuticular_cond(myPFT) = real(rval)
+           call getConfigREAL  ('water_conductance','pft',i,rval,texist)
+           if(texist) water_conductance(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_width','pft',i,rval,texist)
+           if(texist) leaf_width(myPFT) = real(rval)
+
+! respiration & turnover variables
+           call getConfigREAL  ('growth_resp_factor','pft',i,rval,texist)
+           if(texist) growth_resp_factor(myPFT) = real(rval)
+           call getConfigREAL  ('leaf_turnover_rate','pft',i,rval,texist)
+           if(texist) leaf_turnover_rate(myPFT) = real(rval)
+           call getConfigREAL  ('root_turnover_rate','pft',i,rval,texist)
+           if(texist) root_turnover_rate(myPFT) = real(rval)
+           call getConfigREAL  ('storage_turnover_rate','pft',i,rval,texist)
+           if(texist) storage_turnover_rate(myPFT) = real(rval)
+           call getConfigREAL  ('f_labile','pft',i,rval,texist)
+           if(texist) f_labile(myPFT) = real(rval)
+           call getConfigREAL  ('root_respiration_factor','pft',i,rval,texist)
+           if(texist) root_respiration_factor(myPFT) = real(rval)
+           call getConfigREAL  ('rrf_low_temp','pft',i,rval,texist)
+           if(texist) rrf_low_temp(myPFT) = real(rval)
+           call getConfigREAL  ('rrf_high_temp','pft',i,rval,texist)
+           if(texist) rrf_high_temp(myPFT) = real(rval)
+           call getConfigREAL  ('rrf_decay_e','pft',i,rval,texist)
+           if(texist) rrf_decay_e(myPFT) = real(rval)
+           call getConfigREAL  ('rrf_hor','pft',i,rval,texist)
+           if(texist) rrf_hor(myPFT) = real(rval)
+           call getConfigREAL  ('rrf_q10','pft',i,rval,texist)
+           if(texist) rrf_q10(myPFT) = real(rval)
+
+! mortality
+           call getConfigREAL  ('frost_mort','pft',i,rval,texist)
+           if(texist) frost_mort = real(rval)
+           call getConfigREAL  ('mort0','pft',i,rval,texist)
+           if(texist) mort0(myPFT) = real(rval)
+           call getConfigREAL  ('mort1','pft',i,rval,texist)
+           if(texist) mort1(myPFT) = real(rval)
+           call getConfigREAL  ('mort2','pft',i,rval,texist)
+           if(texist) mort2(myPFT) = real(rval)
+           call getConfigREAL  ('mort3','pft',i,rval,texist)
+           if(texist) mort3(myPFT) = real(rval)
+           call getConfigREAL  ('cbr_severe_stress','pft',i,rval,texist)
+           if(texist) cbr_severe_stress(myPFT) = real(rval)
+           call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
+           if(texist) seedling_mortality(myPFT) = real(rval)
+
+           call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
+           if(texist) treefall_s_gtht(myPFT) = real(rval)
+           call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
+           if(texist) treefall_s_gtht(myPFT) = real(rval)
+           call getConfigREAL  ('treefall_lt','pft',i,rval,texist)
+           if(texist) treefall_s_ltht(myPFT) = real(rval)
+           call getConfigREAL  ('treefall_s_ltht','pft',i,rval,texist)
+           if(texist) treefall_s_ltht(myPFT) = real(rval)
+
+           call getConfigREAL  ('fire_s_gtht','pft',i,rval,texist)
+           if(texist) fire_s_gtht(myPFT) = real(rval)
+           call getConfigREAL  ('fire_s_ltht','pft',i,rval,texist)
+           if(texist) fire_s_ltht(myPFT) = real(rval)
+
+           call getConfigREAL  ('plant_min_temp','pft',i,rval,texist)
+           if(texist) plant_min_temp(myPFT) = real(rval)	   
+
+! allocation variables
+           call getConfigREAL  ('rho','pft',i,rval,texist)
+           if(texist) rho(myPFT) = real(rval)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
            if(texist) SLA(myPFT) = real(rval)
+           call getConfigREAL  ('horiz_branch','pft',i,rval,texist)
+           if(texist) horiz_branch(myPFT) = real(rval)
+           call getConfigREAL  ('q','pft',i,rval,texist)
+           if(texist) q(myPFT) = real(rval)
+           call getConfigREAL  ('sapwood_ratio','pft',i,rval,texist)
+           if(texist) sapwood_ratio(myPFT) = real(rval)
+           call getConfigREAL  ('qsw','pft',i,rval,texist)
+           if(texist) qsw(myPFT) = real(rval)
+           call getConfigREAL  ('init_density','pft',i,rval,texist)
+           if(texist) init_density(myPFT) = real(rval)
+
+     ! Height
+           call getConfigREAL  ('b1Ht','pft',i,rval,texist)
+           if(texist) b1Ht(myPFT) = real(rval)
+           call getConfigREAL  ('b2Ht','pft',i,rval,texist)
+           if(texist) b2Ht(myPFT) = real(rval)
+	   call getConfigREAL  ('hgt_ref','pft',i,rval,texist)
+           if(texist) hgt_ref(myPFT) = real(rval)
+           call getConfigREAL  ('hgt_min','pft',i,rval,texist)
+           if(texist) hgt_min(myPFT) = real(rval)
+           call getConfigREAL  ('hgt_max','pft',i,rval,texist)
+           if(texist) hgt_max(myPFT) = real(rval)
+	   call getConfigREAL  ('min_dbh','pft',i,rval,texist)
+           if(texist) min_dbh(myPFT) = real(rval)
+           call getConfigREAL  ('dbh_crit','pft',i,rval,texist)
+           if(texist) dbh_crit(myPFT) = real(rval)
+           call getConfigREAL  ('dbh_adult','pft',i,rval,texist)
+           if(texist) dbh_adult(myPFT) = real(rval)
+           call getConfigREAL  ('dbh_bigleaf','pft',i,rval,texist)
+           if(texist) dbh_bigleaf(myPFT) = real(rval)
+
+     ! Leaf
            call getConfigREAL  ('b1Bl','pft',i,rval,texist)
            if (texist) then
               b1Bl_small(myPFT) = real(rval)
@@ -259,6 +482,13 @@ recursive subroutine read_ed_xml_config(filename)
            if (texist) then
               b2Bl_large(myPFT) = real(rval)
            end if
+           call getConfigREAL  ('bleaf_adult','pft',i,rval,texist)
+           if (texist) then
+              bleaf_adult(myPFT) = real(rval)
+           end if
+
+
+     ! Stem
            call getConfigREAL  ('b1Bs','pft',i,rval,texist)
            if (texist) then
               b1Bs_small(myPFT) = real(rval)
@@ -285,153 +515,94 @@ recursive subroutine read_ed_xml_config(filename)
            if (texist) then
               b2Bs_large(myPFT) = real(rval)
            end if
-           call getConfigREAL  ('b1Ht','pft',i,rval,texist)
-           if(texist) b1Ht(myPFT) = real(rval)
-           call getConfigREAL  ('b2Ht','pft',i,rval,texist)
-           if(texist) b2Ht(myPFT) = real(rval)
-           call getConfigREAL  ('Vm0','pft',i,rval,texist)
-           if(texist) Vm0(myPFT) = real(rval)
-           call getConfigINT   ('phenology','pft',i,ival,texist)
-           if(texist) phenology(myPFT) = ival
-           call getConfigREAL  ('q','pft',i,rval,texist)
-           if(texist) q(myPFT) = real(rval)
-           call getConfigREAL  ('clumping','pft',i,rval,texist)
-           if(texist) clumping_factor(myPFT) = rval
-!!$           call getConfigREAL  ('beta0','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,0) = real(rval)
-!!$           call getConfigREAL  ('beta1','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,1) = real(rval)
-!!$           call getConfigREAL  ('beta2','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,2) = real(rval)
-!!$           call getConfigREAL  ('beta3','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,3) = real(rval)
-!!$           call getConfigREAL  ('beta4','pft',i,rval,texist)
-!!$           if(texist) beta(myPFT,4) = real(rval)
-           call getConfigREAL  ('leaf_width','pft',i,rval,texist)
-           if(texist) leaf_width(myPFT) = real(rval)
-           call getConfigREAL  ('hgt_min','pft',i,rval,texist)
-           if(texist) hgt_min(myPFT) = real(rval)
-           call getConfigREAL  ('plant_min_temp','pft',i,rval,texist)
-           if(texist) plant_min_temp(myPFT) = real(rval)
-           call getConfigREAL  ('mort3','pft',i,rval,texist)
-           if(texist) mort3(myPFT) = real(rval)
-           call getConfigREAL  ('nonlocal_dispersal','pft',i,rval,texist)
-           if(texist) nonlocal_dispersal(myPFT) = real(rval)
-           call getConfigREAL  ('seed_rain','pft',i,rval,texist)
-           if(texist) seed_rain(myPFT) = real(rval)
-!!$           call getConfigREAL  ('init_dens','pft',i,rval,texist)
-!!$           if(texist) init_dens(myPFT) = real(rval)
-           call getConfigREAL  ('stomatal_slope','pft',i,rval,texist)
-           if(texist) stomatal_slope(myPFT) = real(rval)
-           call getConfigREAL  ('growth_resp_factor','pft',i,rval,texist)
-           if(texist) growth_resp_factor(myPFT) = real(rval)
-           call getConfigREAL  ('r_fract','pft',i,rval,texist)
-           if(texist) r_fract(myPFT) = real(rval)
-!!$           call getConfigREAL  ('c_fract','pft',i,rval,texist)
-!!$           if(texist) c_fract(myPFT) = real(rval)
-           call getConfigREAL  ('repro_min_h','pft',i,rval,texist)
-           if(texist) repro_min_h(myPFT) = real(rval)
-           call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
-           if(texist) treefall_s_gtht(myPFT) = real(rval)
-           call getConfigREAL  ('treefall_lt','pft',i,rval,texist)
-           if(texist) treefall_s_ltht(myPFT) = real(rval)
-           call getConfigREAL  ('dark_respiration_factor','pft',i,rval,texist)
-           if(texist) dark_respiration_factor(myPFT) = real(rval)
-           call getConfigREAL  ('qsw','pft',i,rval,texist)
-           if(texist) qsw(myPFT) = real(rval)
-           call getConfigREAL  ('sapwood_ratio','pft',i,rval,texist)
-           if(texist) sapwood_ratio(myPFT) = real(rval)
+	   call getConfigREAL  ('min_bdead','pft',i,rval,texist)
+           if(texist) min_bdead(myPFT) = real(rval)
+	   call getConfigREAL  ('bdead_crit','pft',i,rval,texist)
+           if(texist) bdead_crit(myPFT) = real(rval)
+
+     ! Canopy
+	   call getConfigREAL  ('b1Ca','pft',i,rval,texist)
+           if(texist) b1Ca(myPFT) = real(rval)
+	   call getConfigREAL  ('b2Ca','pft',i,rval,texist)
+           if(texist) b2Ca(myPFT) = real(rval)
+
+     ! branches
+	   call getConfigREAL  ('b1WAI','pft',i,rval,texist)
+           if(texist) b1WAI(myPFT) = real(rval)
+	   call getConfigREAL  ('b2WAI','pft',i,rval,texist)
+           if(texist) b2WAI(myPFT) = real(rval)
+	   call getConfigREAL  ('brf_wd','pft',i,rval,texist)
+           if(texist) brf_wd(myPFT) = real(rval)
+
+    ! coarse roots
+           call getConfigREAL  ('agf_bs','pft',i,rval,texist)
+           if(texist) agf_bs(:) = real(rval)
+	   call getConfigREAL  ('b1Vol','pft',i,rval,texist)
+           if(texist) b1Vol(myPFT) = real(rval)
+	   call getConfigREAL  ('b2Vol','pft',i,rval,texist)
+           if(texist) b2Vol(myPFT) = real(rval)
+	   call getConfigREAL  ('b1Rd','pft',i,rval,texist)
+           if(texist) b1Rd(myPFT) = real(rval)
+	   call getConfigREAL  ('b2Rd','pft',i,rval,texist)
+           if(texist) b2Rd(myPFT) = real(rval)
+
+	   call getConfigREAL  ('init_laimax','pft',i,rval,texist)
+           if(texist) init_laimax(myPFT) = real(rval)
+
+! nitro
            call getConfigREAL  ('c2n_leaf','pft',i,rval,texist)
            if(texist) c2n_leaf(myPFT) = real(rval)
-           call getConfigREAL  ('c2n_stem','pft',i,rval,texist)
-           if(texist) c2n_stem(myPFT) = real(rval)
+!           call getConfigREAL  ('c2n_stem','pft',i,rval,texist)                  !! not pft-level in current mainline
+!           if(texist) c2n_stem(myPFT) = real(rval)
            call getConfigREAL  ('c2n_recruit','pft',i,rval,texist)
            if(texist) c2n_recruit(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
 !!$           if(texist) c2n_storage(myPFT) = real(rval)
-           call getConfigREAL  ('dbh_adult','pft',i,rval,texist)
-           if(texist) dbh_adult(myPFT) = real(rval)
-           call getConfigREAL  ('dbh_crit','pft',i,rval,texist)
-           if(texist) dbh_crit(myPFT) = real(rval)
-           call getConfigREAL  ('rho','pft',i,rval,texist)
-           if(texist) rho(myPFT) = real(rval)
-           call getConfigREAL  ('D0','pft',i,rval,texist)
-           if(texist) D0(myPFT) = real(rval)
-           call getConfigREAL  ('mort0','pft',i,rval,texist)
-           if(texist) mort0(myPFT) = real(rval)
-           call getConfigREAL  ('mort1','pft',i,rval,texist)
-           if(texist) mort1(myPFT) = real(rval)
-           call getConfigREAL  ('mort2','pft',i,rval,texist)
-           if(texist) mort2(myPFT) = real(rval)
 
-           call getConfigREAL  ('Vm_low_temp','pft',i,rval,texist)
-           if(texist) Vm_low_temp(myPFT) = real(rval)
-           call getConfigREAL  ('cuticular_cond','pft',i,rval,texist)
-           if(texist) cuticular_cond(myPFT) = real(rval)
-           call getConfigREAL  ('quantum_efficiency','pft',i,rval,texist)
-           if(texist) quantum_efficiency(myPFT) = real(rval)
-           call getConfigINT  ('photosyn_pathway','pft',i,ival,texist)
-           if(texist) photosyn_pathway(myPFT) = ival
-           call getConfigREAL  ('leaf_turnover_rate','pft',i,rval,texist)
-           if(texist) leaf_turnover_rate(myPFT) = real(rval)
-           call getConfigREAL  ('root_turnover_rate','pft',i,rval,texist)
-           if(texist) root_turnover_rate(myPFT) = real(rval)
-           call getConfigREAL  ('storage_turnover_rate','pft',i,rval,texist)
-           if(texist) storage_turnover_rate(myPFT) = real(rval)
-           call getConfigREAL  ('root_respiration_factor','pft',i,rval,texist)
-           if(texist) root_respiration_factor(myPFT) = real(rval)
-           call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
-           if(texist) seedling_mortality(myPFT) = real(rval)
-           call getConfigREAL  ('water_conductance','pft',i,rval,texist)
-           if(texist) water_conductance(myPFT) = real(rval)
+! leaf dependent
+           call getConfigINT   ('phenology','pft',i,ival,texist)
+           if(texist) phenology(myPFT) = ival
+           call getConfigREAL  ('c_grn_leaf_dry','pft',i,rval,texist)
+           if(texist) c_grn_leaf_dry(myPFT) = real(rval)
+           call getConfigREAL  ('wat_dry_ratio_grn','pft',i,rval,texist)
+           if(texist) wat_dry_ratio_grn(myPFT) = real(rval)
+           call getConfigREAL  ('wat_dry_ratio_ngrn','pft',i,rval,texist)
+           if(texist) wat_dry_ratio_ngrn(myPFT) = real(rval)
+           call getConfigREAL  ('c_ngrn_biom_dry','pft',i,rval,texist)
+           if(texist) c_ngrn_biom_dry(myPFT) = real(rval)
+           call getConfigREAL  ('delta_c','pft',i,rval,texist)
+           if(texist) delta_c(myPFT) = real(rval)
+           call getConfigREAL  ('b1Cl','pft',i,rval,texist)
+           if(texist) b1Cl(myPFT) = real(rval)
+           call getConfigREAL  ('b2Cl','pft',i,rval,texist)
+           if(texist) b2Cl(myPFT) = real(rval)
 
-!!! PFT VARIABLES THAT ARE ACTUALLY IN CANOPY_RADIATION
-           call getConfigREAL  ('leaf_scatter_vis','pft',i,rval,texist)
-           if(texist) leaf_scatter_vis(myPFT) = real(rval)
-           call getConfigREAL  ('diffuse_backscatter_vis','pft',i,rval,texist)
-           if(texist) leaf_backscatter_vis(myPFT) = real(rval)
-           call getConfigREAL  ('emis_v','pft',i,rval,texist)
-           if(texist) leaf_emiss_tir(myPFT) = rval
-           call getConfigREAL  ('leaf_emiss_tir','pft',i,rval,texist)
-           if(texist) leaf_emiss_tir(myPFT) = rval
-              call getConfigREAL  ('wood_emiss_tir','pft',i,rval,texist)
-           if(texist) wood_emiss_tir(myPFT) = rval
+! reproduction
+           call getConfigREAL  ('r_fract','pft',i,rval,texist)
+           if(texist) r_fract(myPFT) = real(rval)
+!!$           call getConfigREAL  ('c_fract','pft',i,rval,texist)
+!!$           if(texist) c_fract(myPFT) = real(rval)
+           call getConfigREAL  ('st_fract','pft',i,rval,texist)
+           if(texist) st_fract(myPFT) = real(rval)
+           call getConfigREAL  ('nonlocal_dispersal','pft',i,rval,texist)
+           if(texist) nonlocal_dispersal(myPFT) = real(rval)
+           call getConfigREAL  ('repro_min_h','pft',i,rval,texist)
+           if(texist) repro_min_h(myPFT) = real(rval)
 
-        ! Radiation Scattering Parameters
-        
-        call getConfigREAL  ('leaf_trans_vis','pft',i,rval,texist)
-        if(texist) leaf_trans_vis(myPFT) = dble(rval)
-        call getConfigREAL  ('leaf_trans_nir','pft',i,rval,texist)
-        if(texist) leaf_trans_nir(myPFT) = dble(rval)
-        
-        call getConfigREAL  ('wood_trans_vis','pft',i,rval,texist)
-        if(texist) wood_trans_vis(myPFT) = dble(rval)
-        call getConfigREAL  ('wood_trans_nir','pft',i,rval,texist)
-        if(texist) wood_trans_nir(myPFT) = dble(rval)
-        
-        call getConfigREAL  ('clumping_factor','pft',i,rval,texist)
-        if(texist) clumping_factor(myPFT) = dble(rval)
-        
-        call getConfigREAL  ('orient_factor','pft',i,rval,texist)
-        if(texist) orient_factor(myPFT) = dble(rval)
-    
-        
-        call getConfigREAL  ('leaf_reflect_vis','pft',i,rval,texist)
-        if(texist) leaf_reflect_vis(myPFT) = dble(rval)
-        call getConfigREAL  ('leaf_reflect_nir','pft',i,rval,texist)
-        if(texist) leaf_reflect_nir(myPFT) = dble(rval)
+!!! OTHER / derived
+           call getConfigREAL  ('one_plant_c','pft',i,rval,texist)
+           if(texist) one_plant_c(myPFT) = real(rval)
+           call getConfigREAL  ('min_recruit_size','pft',i,rval,texist)
+           if(texist) min_recruit_size(myPFT) = real(rval)
+           call getConfigREAL  ('min_cohort_size','pft',i,rval,texist)
+           if(texist) min_cohort_size(myPFT) = real(rval)
+           call getConfigREAL  ('seed_rain','pft',i,rval,texist)
+           if(texist) seed_rain(myPFT) = real(rval)
+           call getConfigREAL  ('negligible_nplant','pft',i,rval,texist)
+           if(texist) negligible_nplant(myPFT) = real(rval)
+           call getConfigREAL  ('veg_hcap_min','pft',i,rval,texist)
+           if(texist) veg_hcap_min(myPFT) = real(rval)
 
-        call getConfigREAL  ('wood_reflect_vis','pft',i,rval,texist)
-        if(texist) wood_reflect_vis(myPFT) = dble(rval)
-        call getConfigREAL  ('wood_reflect_nir','pft',i,rval,texist)
-        if(texist) wood_reflect_nir(myPFT) = dble(rval)
-        
-
-!!! PFT VARIABLES THAT ARE ACTUALLY IN DECOMP
-           call getConfigREAL  ('f_labile','pft',i,rval,texist)
-           if(texist) f_labile(myPFT) = real(rval)
-
-           print*,i,myPFT,trim(cval),SLA(myPFT)
         else
            print*,"INVALID PFT READ FROM CONFIG FILE ::", myPFT
         endif
@@ -458,10 +629,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) l2n_stem = real(rval)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
         if(texist) C2B = real(rval)
-        call getConfigREAL  ('agf_bs','pftconst',i,rval,texist)
-        if(texist) agf_bs(:) = real(rval)
-        call getConfigREAL  ('frost_mort','pftconst',i,rval,texist)
-        if(texist) frost_mort = real(rval)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -1069,67 +1236,216 @@ subroutine write_ed_xml_config
      if(include_pft(i)) then !! loop over included PFT's
 
         call libxml2f90_ll_opentag("pft")
-     
+
+!! GENERAL PFT     
         call putConfigINT("num",i)
-        if (include_pft_ag(i)) then
+        if (is_tropical(i)) then
            ival = 1
         else
            ival = 0
         end if
-        call putConfigINT("include_pft_ag",ival)
+        call putConfigINT("is_tropical",ival)
+        if (is_grass(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("is_grass",ival)
         if (include_pft(i)) then
            ival = 1
         else
            ival = 0
         end if
         call putConfigINT("include_pft",ival)
-        
-        call putConfigREAL("SLA",SLA(i))
-        call putConfigREAL("b1Bl",b1Bl_small(i))
-        call putConfigREAL("b2Bl",b2Bl_small(i))
-        call putConfigREAL("b1Bs",b1Bs_small(i))
-        call putConfigREAL("b2Bs",b2Bs_small(i))
-        call putConfigREAL("b1Ht",b1Ht(i))
-        call putConfigREAL("b2Ht",b2Ht(i))
+        if (include_pft_ag(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("include_pft_ag",ival)
+        if (include_pft_fp(i)) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT("include_pft_fp",ival)
+     
+!! CANOPY RADIATION
+        call putConfigREAL8("clumping_factor",clumping_factor(i))
+        call putConfigREAL("orient_factor",orient_factor(i))
+        call putConfigREAL8("leaf_emiss_tir",leaf_emiss_tir(i))
+        call putConfigREAL8("wood_emiss_tir",wood_emiss_tir(i))
+
+        call putConfigREAL8("leaf_reflect_vis",leaf_reflect_vis(i))
+        call putConfigREAL8("leaf_reflect_nir",leaf_reflect_vis(i))
+        call putConfigREAL8("wood_reflect_vis",leaf_reflect_vis(i))
+        call putConfigREAL8("wood_reflect_nir",leaf_reflect_vis(i))
+
+        call putConfigREAL8("leaf_trans_vis",leaf_reflect_vis(i))
+        call putConfigREAL8("leaf_trans_nir",leaf_reflect_vis(i))
+        call putConfigREAL8("wood_trans_vis",leaf_reflect_vis(i))
+        call putConfigREAL8("wood_trans_nir",leaf_reflect_vis(i))
+
+        call putConfigREAL8("leaf_backscatter_vis",leaf_backscatter_vis(i))
+        call putConfigREAL8("leaf_backscatter_nir",leaf_backscatter_nir(i))
+        call putConfigREAL8("leaf_backscatter_tir",leaf_backscatter_tir(i))
+
+        call putConfigREAL8("wood_backscatter_vis",leaf_backscatter_vis(i))
+        call putConfigREAL8("wood_backscatter_nir",leaf_backscatter_nir(i))
+        call putConfigREAL8("wood_backscatter_tir",leaf_backscatter_tir(i))
+
+        call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
+        call putConfigREAL8("leaf_scatter_nir",leaf_scatter_vis(i))
+        call putConfigREAL8("wood_scatter_vis",leaf_scatter_vis(i))
+        call putConfigREAL8("wood_scatter_nir",leaf_scatter_vis(i))
+
+        call putConfigREAL8("phi1",phi1(i))
+        call putConfigREAL8("phi2",phi2(i))
+        call putConfigREAL8("mu_bar",mu_bar(i))
+
+!! PHOTOSYNTHESIS
+        call putConfigINT("photosyn_pathway",photosyn_pathway(i))
+        call putConfigREAL("quantum_efficiency",quantum_efficiency(i))
         call putConfigREAL("Vm0",Vm0(i))
-        call putConfigINT("phenology",phenology(i))
-        call putConfigREAL("q",q(i))
-        call putConfigREAL8("clumping",clumping_factor(i))
-        call putConfigREAL("leaf_width",leaf_width(i))
-        call putConfigREAL("hgt_min",hgt_min(i))
-        call putConfigREAL("plant_min_temp",plant_min_temp(i))
-        call putConfigREAL("mort3",mort3(i))
-        call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
-        call putConfigREAL("seed_rain",seed_rain(i))
-        call putConfigREAL("stomatal_slope",stomatal_slope(i))
-        call putConfigREAL("growth_resp_factor",growth_resp_factor(i))
-        call putConfigREAL("r_fract",r_fract(i))
-        call putConfigREAL("repro_min_h",repro_min_h(i))
-        call putConfigREAL("treefall_gt",treefall_s_gtht(i))
-        call putConfigREAL("treefall_lt",treefall_s_ltht(i))
+        call putConfigREAL("Vm_low_temp", Vm_low_temp(i))
+        call putConfigREAL("Vm_high_temp",Vm_high_temp(i))
+        call putConfigREAL("Vm_decay_e",  Vm_decay_e(i))
+        call putConfigREAL("Vm_decay_a",  Vm_decay_a(i))
+        call putConfigREAL("Vm_decay_b",  Vm_decay_b(i))
+        call putConfigREAL("vm_hor",      Vm_hor(i))
+        call putConfigREAL("vm_q10",      Vm_q10(i))
+
+!! LEAF RESPIRATION
         call putConfigREAL("dark_respiration_factor",dark_respiration_factor(i))
-        call putConfigREAL("qsw",qsw(i))
-        call putConfigREAL("c2n_leaf",c2n_leaf(i))
-        call putConfigREAL("c2n_recruit",c2n_recruit(i))
-        call putConfigREAL("dbh_crit",dbh_crit(i))
-        call putConfigREAL("rho",rho(i))
-        call putConfigREAL("D0",D0(i))
+        call putConfigREAL("Rd_low_temp",  Rd_low_temp(i))
+        call putConfigREAL("Rd_high_temp", Rd_high_temp(i))
+        call putConfigREAL("Rd_decay_e",   Rd_decay_e(i))
+        call putConfigREAL("Rd_hor",       Rd_hor(i))
+        call putConfigREAL("Rd_q10",       Rd_q10(i))
+        call putConfigREAL("Rd0",          Rd0(i))
+
+!! STOMATAL PARAMETERS
+        call putConfigREAL("D0",               D0(i))
+        call putConfigREAL("stomatal_slope",   stomatal_slope(i))
+        call putConfigREAL("cuticular_cond",   cuticular_cond(i))
+        call putConfigREAL("water_conductance",water_conductance(i))
+        call putConfigREAL("leaf_width",       leaf_width(i))
+
+
+!! RESPIRAION AND TURNOVER
+        call putConfigREAL("growth_resp_factor",   growth_resp_factor(i))
+        call putConfigREAL("leaf_turnover_rate",   leaf_turnover_rate(i))
+        call putConfigREAL("root_turnover_rate",   root_turnover_rate(i))
+        call putConfigREAL("storage_turnover_rate",storage_turnover_rate(i))
+        call putConfigREAL("f_labile",             f_labile(i))
+        call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
+        call putConfigREAL("rrf_low_temp",         rrf_low_temp(i))
+        call putConfigREAL("rrf_high_temp",        rrf_high_temp(i))
+        call putConfigREAL("rrf_decay_e",          rrf_decay_e(i))
+        call putConfigREAL("rrf_hor",              rrf_hor(i))
+        call putConfigREAL("rrf_q10",              rrf_q10(i))
+
+!! MORTALITY
+        call putConfigREAL("frost_mort",frost_mort(i))
+        call putConfigREAL("mort0",mort0(i))
         call putConfigREAL("mort1",mort1(i))
         call putConfigREAL("mort2",mort2(i))
-        call putConfigREAL("Vm_low_temp",Vm_low_temp(i))
-        call putConfigREAL("cuticular_cond",cuticular_cond(i))
-        call putConfigREAL("quantum_efficiency",quantum_efficiency(i))
-        call putConfigINT("photosyn_pathway",photosyn_pathway(i))
-        call putConfigREAL("leaf_turnover_rate",leaf_turnover_rate(i))
-        call putConfigREAL("root_turnover_rate",root_turnover_rate(i))
-        call putConfigREAL("storage_turnover_rate",storage_turnover_rate(i))
-        call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
+        call putConfigREAL("mort3",mort3(i))
+        call putConfigREAL("cbr_severe_stress",cbr_severe_stress(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
-        call putConfigREAL("water_conductance",water_conductance(i))
-        call putConfigREAL8("leaf_scatter_vis",leaf_scatter_vis(i))
-        call putConfigREAL8("diffuse_backscatter_vis",leaf_backscatter_vis(i))
-        call putConfigREAL8("emis_v",leaf_emiss_tir(i))
-        call putConfigREAL("f_labile",f_labile(i))
+
+        call putConfigREAL("treefall_s_gt",treefall_s_gtht(i))
+        call putConfigREAL("treefall_s_lt",treefall_s_ltht(i))
+
+        call putConfigREAL("fire_s_gt",fire_s_gtht(i))
+        call putConfigREAL("fire_s_lt",fire_s_ltht(i))
+
+        call putConfigREAL("plant_min_temp",plant_min_temp(i))
+
+!! ALLOCATION
+        call putConfigREAL("rho",rho(i))
+        call putConfigREAL("SLA",SLA(i))
+        call putConfigREAL("horiz_branch",horiz_branch(i))
+        call putConfigREAL("q",q(i))
+        call putConfigREAL("sapwood_ratio",sapwood_ratio(i))
+        call putConfigREAL("qsw",qsw(i))
+        call putConfigREAL("init_density",init_density(i))
+
+     !! HEIGHT
+        call putConfigREAL("b1Ht",       b1Ht(i))
+        call putConfigREAL("b2Ht",       b2Ht(i))
+        call putConfigREAL("hgt_ref",    hgt_ref(i))
+        call putConfigREAL("hgt_min",    hgt_min(i))
+        call putConfigREAL("hgt_max",    hgt_max(i))
+        call putConfigREAL("min_dbh",    min_dbh(i))
+        call putConfigREAL("dbh_crit",   dbh_crit(i))
+        call putConfigREAL("dbh_adult",  dbh_adult(i))
+        call putConfigREAL("dbh_bigleaf",dbh_bigleaf(i))
+
+     !! LEAF
+        call putConfigREAL("b1Bl_small", b1Bl_small(i))
+        call putConfigREAL("b1Bl_large", b1Bl_large(i))
+        call putConfigREAL("b2Bl_small", b2Bl_small(i))
+        call putConfigREAL("b2Bl_large", b2Bl_large(i))
+        call putConfigREAL("bleaf_adult",bleaf_adult(i))
+
+     !! STEM
+        call putConfigREAL("b1Bs_small",b1Bs_small(i))
+        call putConfigREAL("b1Bs_large",b1Bs_large(i))
+        call putConfigREAL("b2Bs_small",b2Bs_small(i))
+        call putConfigREAL("b2Bs_large",b2Bs_large(i))
+        call putConfigREAL("min_bdead", min_bdead(i))
+        call putConfigREAL("bdead_crit",bdead_crit(i))
+
+     !! CANOPY
+        call putConfigREAL("b1Ca",      b1Ca(i))
+        call putConfigREAL("b2Ca",      b2Ca(i))
+
+     !! BRANCHES
+        call putConfigREAL("b1WAI",     b1WAI(i))
+        call putConfigREAL("b2WAI",     b2WAI(i))
+        call putConfigREAL("brf_wd",    brf_wd(i))
+
+     !! COARSE ROOTS
+        call putConfigREAL("agf_bs",     agf_bs(i))
+        call putConfigREAL("b1Vol",      b1Vol(i))
+        call putConfigREAL("b2Vol",      b2Vol(i))
+        call putConfigREAL("b1Rd",       b1Rd(i))
+        call putConfigREAL("b2Rd",       b2Rd(i))
+        call putConfigREAL("init_laimax",init_laimax(i))
+
+     !! NITRO
+        call putConfigREAL("c2n_leaf",   c2n_leaf(i))
+        call putConfigREAL("c2n_recruit",c2n_recruit(i))
+
+     !! LEAF DEPENDENT
+        call putConfigINT("phenology",         phenology(i))
+        call putConfigINT("c_grn_leaf_dry",    c_grn_leaf_dry(i))
+        call putConfigINT("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
+        call putConfigINT("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
+        call putConfigINT("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
+        call putConfigINT("delta_c",           delta_c(i))
+        call putConfigINT("b1Cl",              b1Cl(i))
+        call putConfigINT("b2Cl",              b2Cl(i))
+
+     !! REPRODUCTION
+        call putConfigREAL("r_fract", r_fract(i))
+        call putConfigREAL("st_fract",st_fract(i))
+        call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
+        call putConfigREAL("repro_min_h",repro_min_h(i))
+
+     !! OTHER
+        call putConfigREAL("one_plant_c",      one_plant_c(i))
+        call putConfigREAL("min_recruit_size", min_recruit_size(i))
+        call putConfigREAL("min_cohort_size",  min_cohort_size(i))
+        call putConfigREAL("seed_rain",        seed_rain(i))
+        call putConfigREAL("negligible_nplant",negligible_nplant(i))
+        call putConfigREAL("veg_hcap_min",     veg_hcap_min(i))
+
+     !! TRANSPIRATION
+        call putConfigREAL("effarea_transp",effarea_transp(i))
+
+
         call libxml2f90_ll_closetag("pft")
      endif
   end do

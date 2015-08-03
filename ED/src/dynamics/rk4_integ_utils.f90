@@ -1354,9 +1354,11 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%gpp             (k) = sourcep%gpp             (k)
       targetp%leaf_resp       (k) = sourcep%leaf_resp       (k)
       targetp%root_resp       (k) = sourcep%root_resp       (k)
-      targetp%growth_resp     (k) = sourcep%growth_resp     (k)
+      targetp%leaf_growth_resp(k) = sourcep%leaf_growth_resp(k)
+      targetp%root_growth_resp(k) = sourcep%root_growth_resp(k)
+      targetp%sapa_growth_resp(k) = sourcep%sapa_growth_resp(k)
+      targetp%sapb_growth_resp(k) = sourcep%sapb_growth_resp(k)
       targetp%storage_resp    (k) = sourcep%storage_resp    (k)
-      targetp%vleaf_resp      (k) = sourcep%vleaf_resp      (k)
    end do
 
    if (checkbudget) then

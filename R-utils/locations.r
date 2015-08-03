@@ -1162,6 +1162,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("met.forcing","isas","iage")
          na     = c(            6,    10,    18)
          nz     = c(            8,    12,    19)
+      }else if (lenici == 20){
+         nparms = 2
+         param  = c("include.fire","isoil.text")
+         na     = c(            11,          19)
+         nz     = c(            12,          20)
       }else if (lenici == 21){
          nparms = 3
          param  = c("isas","iage","idiversity")
@@ -1951,6 +1956,48 @@ u           = u + 1
 poitmp[[u]] = list( short           = "cauaxi"
                   , longname        = "Fazenda Cauaxi, PA"
                   , iata            = "cau"
+                  , lon             = -48.483
+                  , lat             =  -3.748
+                  , alt             = 140
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.00
+                  , clay            = -1.00
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1964
+                  , yearz           = 2009
+                  , iphen           = +2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "cauaxi_und"
+                  , longname        = "Faz. Cauaxi (Undist.), PA"
+                  , iata            = "ca3"
+                  , lon             = -48.483
+                  , lat             =  -3.748
+                  , alt             = 140
+                  , wmo             = NA
+                  , isoilflg        = 1
+                  , ntext           = 1
+                  , sand            = -1.00
+                  , clay            = -1.00
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Sheffield"
+                  , yeara           = 1964
+                  , yearz           = 2009
+                  , iphen           = +2
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "cauaxi_ril"
+                  , longname        = "Faz. Cauaxi (Logged), PA"
+                  , iata            = "ca6"
                   , lon             = -48.483
                   , lat             =  -3.748
                   , alt             = 140

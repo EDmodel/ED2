@@ -1329,8 +1329,11 @@ $ED_NL
    ! TREEFALL_DISTURBANCE_RATE -- Sign-dependent treefall disturbance rate:                !
    !                              > 0. usual disturbance rate, in 1/years;                 !
    !                              = 0. No treefall disturbance;                            !
-   !                              < 0. Treefall will be added as a mortality rate (it      !
-   !                                   will kill plants, but it won't create a new patch). !
+   !                              < 0. (Tropical PFTs only, others will use the absolute   !
+   !                                   value instead).  Test for a new slope for density   !
+   !                                   independent mortality based on Kraft et al. (2010)  !
+   !                                   and Paracou data.  Absolute value will be used as   !
+   !                                   the base line rate for late successional trees.     !
    ! TIME2CANOPY               -- Minimum patch age for treefall disturbance to happen.    !
    !                              If TREEFALL_DISTURBANCE_RATE = 0., this value will be    !
    !                              ignored.  If this value is different than zero, then     !
@@ -1545,6 +1548,22 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IDETAILED  = 63
    NL%PATCH_KEEP = 0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! GROWTH_RESP_SCHEME -- This flag indicates how growth respiration fluxes are treated.  !
+   !                                                                                       !
+   !        0 - ED Default. Growth respiration is treated as tax on GPP, at pft-specific   !
+   !            rate given by growth_resp_factor. All growth respiration is treated as     !
+   !            aboveground wood -> canopy-airspace flux.                                  !
+   !        1 - Growth respiration is calculated as in 0, but split into fluxes entering   !
+   !            the CAS from leaf, sapwooda, sapwoodb, and root sources, proportionally to !
+   !            biomass. This does not affect carbon budget at all, it provides greater    !
+   !            within-ecosystem flux resolution.                                          !
+   !---------------------------------------------------------------------------------------!
+   NL%GROWTH_RESP_SCHEME = 0
    !---------------------------------------------------------------------------------------!
 
 

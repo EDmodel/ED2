@@ -574,14 +574,20 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       ! them by the number of years per day so the output is in kgC/plant/yr.  High time   !
       ! we switched everything to SI...                                                    !
       !------------------------------------------------------------------------------------!
-      cpatch%fmean_growth_resp (ico) = cpatch%fmean_growth_resp  (ico)                     &
-                                     + cpatch%growth_respiration (ico) * dtlsm_o_frqsum    &
-                                     * yr_day
+      cpatch%fmean_leaf_growth_resp (ico) = cpatch%fmean_leaf_growth_resp  (ico)           &
+                                          + cpatch%leaf_growth_resp        (ico)           &
+                                          *  dtlsm_o_frqsum * yr_day
+      cpatch%fmean_root_growth_resp (ico) = cpatch%fmean_root_growth_resp  (ico)           &
+                                          + cpatch%root_growth_resp        (ico)           &
+                                          *  dtlsm_o_frqsum * yr_day
+      cpatch%fmean_sapa_growth_resp (ico) = cpatch%fmean_sapa_growth_resp  (ico)           &
+                                          + cpatch%sapa_growth_resp        (ico)           &
+                                          *  dtlsm_o_frqsum * yr_day
+      cpatch%fmean_sapb_growth_resp (ico) = cpatch%fmean_sapb_growth_resp  (ico)           &
+                                          + cpatch%sapb_growth_resp        (ico)           &
+                                          *  dtlsm_o_frqsum * yr_day
       cpatch%fmean_storage_resp(ico) = cpatch%fmean_storage_resp (ico)                     &
                                      + cpatch%storage_respiration(ico) * dtlsm_o_frqsum    &
-                                     * yr_day
-      cpatch%fmean_vleaf_resp  (ico) = cpatch%fmean_vleaf_resp   (ico)                     &
-                                     + cpatch%vleaf_respiration  (ico) * dtlsm_o_frqsum    &
                                      * yr_day
       !------------------------------------------------------------------------------------!
 

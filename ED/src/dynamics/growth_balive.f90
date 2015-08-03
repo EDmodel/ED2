@@ -39,6 +39,7 @@ module growth_balive
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
       use ed_misc_coms    , only : igrass                 & ! intent(in)
+                                 , growth_resp_scheme     & ! intent(in)
                                  , ibigleaf               ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
 
@@ -74,6 +75,7 @@ module growth_balive
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
       real                          :: temp_dep
+      real                          :: growth_resp_int         ! Growth resp / balive
       !------------------------------------------------------------------------------------!
 
 
@@ -176,20 +178,24 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   !      Compute respiration rates for coming day [kgC/plant/day].         !
                   !------------------------------------------------------------------------!
-                  cpatch%growth_respiration(ico) = max(0.0, daily_C_gain                   &
-                                                          * growth_resp_factor(ipft))
+                  select case(growth_resp_scheme)
+                  case(0)
+                     cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
+                                                             * growth_resp_factor(ipft)
+                     cpatch%leaf_growth_resp(ico) = 0.0
+                     cpatch%root_growth_resp(ico) = 0.0
+                     cpatch%sapb_growth_resp(ico) = 0.0
+                  case(1)
+                     growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)    &
+                                                             / cpatch%balive(ico))
+                     
+                     cpatch%leaf_growth_resp(ico) = growth_resp_int * cpatch%bleaf(ico)
+                     cpatch%root_growth_resp(ico) = growth_resp_int * cpatch%broot(ico)
+                     cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%bsapwooda(ico)
+                     cpatch%sapb_growth_resp(ico) = growth_resp_int * cpatch%bsapwoodb(ico)
+                  end select
                   !------------------------------------------------------------------------!
 
-
-
-                  !------------------------------------------------------------------------!
-                  !     Find the "virtual" leaf respiration.                               !
-                  !------------------------------------------------------------------------!
-                  cpatch%vleaf_respiration(ico) = (1.0-cpoly%green_leaf_factor(ipft,isi))  &
-                                                * salloci * cpatch%balive(ico)             &
-                                                * storage_turnover_rate(ipft)              &
-                                                * tfact * temp_dep
-                  !------------------------------------------------------------------------!
 
 
                   !------------------------------------------------------------------------!
@@ -353,7 +359,8 @@ module growth_balive
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           ! ! subroutine
-      use ed_misc_coms    , only : ibigleaf               ! ! intent(in)
+      use ed_misc_coms    , only : ibigleaf               & ! intent(in)
+                                 , growth_resp_scheme     ! ! intent(in)
       use mortality       , only : mortality_rates        ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -387,6 +394,7 @@ module growth_balive
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
       real                          :: temp_dep
+      real                          :: growth_resp_int         ! Growth resp / balive
       !------------------------------------------------------------------------------------!
 
 
@@ -476,20 +484,24 @@ module growth_balive
                   !------------------------------------------------------------------------!
                   !      Compute respiration rates for coming day [kgC/plant/day].         !
                   !------------------------------------------------------------------------!
-                  cpatch%growth_respiration(ico) = max(0.0, daily_C_gain                   &
-                                                          * growth_resp_factor(ipft))
+                  select case(growth_resp_scheme)
+                  case(0)
+                     cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
+                                                             * growth_resp_factor(ipft)
+                     cpatch%leaf_growth_resp(ico) = 0.0
+                     cpatch%root_growth_resp(ico) = 0.0
+                     cpatch%sapb_growth_resp(ico) = 0.0
+                  case(1)
+                     growth_resp_int = max(0.0, daily_C_gain * growth_resp_factor(ipft)    &
+                                                             / cpatch%balive(ico))
+                     
+                     cpatch%leaf_growth_resp(ico) = growth_resp_int * cpatch%bleaf(ico)
+                     cpatch%root_growth_resp(ico) = growth_resp_int * cpatch%broot(ico)
+                     cpatch%sapa_growth_resp(ico) = growth_resp_int * cpatch%bsapwooda(ico)
+                     cpatch%sapb_growth_resp(ico) = growth_resp_int * cpatch%bsapwoodb(ico)
+                  end select
                   !------------------------------------------------------------------------!
 
-
-
-                  !------------------------------------------------------------------------!
-                  !     Find the "virtual" leaf respiration.                               !
-                  !------------------------------------------------------------------------!
-                  cpatch%vleaf_respiration(ico) = (1.0-cpoly%green_leaf_factor(ipft,isi))  &
-                                                * salloci * cpatch%balive(ico)             &
-                                                * storage_turnover_rate(ipft)              &
-                                                * tfact * temp_dep
-                  !------------------------------------------------------------------------!
 
 
                   !------------------------------------------------------------------------!
@@ -804,8 +816,10 @@ module growth_balive
       !------------------------------------------------------------------------------------!
       !       Calculate actual daily carbon balance: kgC/plant/day.                        !
       !------------------------------------------------------------------------------------!
-      carbon_balance = daily_C_gain - cpatch%growth_respiration(ico)                       &
-                                    - cpatch%vleaf_respiration(ico)
+      carbon_balance = daily_C_gain - cpatch%leaf_growth_resp (ico)                        &
+                                    - cpatch%root_growth_resp (ico)                        &
+                                    - cpatch%sapa_growth_resp (ico)                        &
+                                    - cpatch%sapb_growth_resp (ico)
       !------------------------------------------------------------------------------------!
 
       if (cpatch%nplant(ico) > tiny(1.0)) then
@@ -819,8 +833,7 @@ module growth_balive
                                                          - cpatch%today_root_resp(ico))    &
                                                        / cpatch%nplant(ico)
          growth_respiration_pot = max(0.0, daily_C_gain_pot * growth_resp_factor(ipft))
-         carbon_balance_pot     = daily_C_gain_pot - growth_respiration_pot                &
-                                - cpatch%vleaf_respiration(ico)
+         carbon_balance_pot     = daily_C_gain_pot - growth_respiration_pot
          !---------------------------------------------------------------------------------!
 
 
@@ -837,8 +850,7 @@ module growth_balive
                                      / cpatch%nplant(ico)
          growth_respiration_lightmax = max(0.0, daily_C_gain_lightmax                      &
                                               * growth_resp_factor(ipft) )
-         carbon_balance_lightmax     = daily_C_gain_lightmax - growth_respiration_lightmax &
-                                     - cpatch%vleaf_respiration(ico)
+         carbon_balance_lightmax     = daily_C_gain_lightmax - growth_respiration_lightmax
          !------ Full soil moisture. ------------------------------------------------------!
          daily_C_gain_moistmax       = umol_2_kgC * day_sec                                &
                                      * ( cpatch%today_gpp_moistmax(ico)                    &
@@ -847,8 +859,7 @@ module growth_balive
                                      / cpatch%nplant(ico)
          growth_respiration_moistmax = max(0.0, daily_C_gain_moistmax                      &
                                               * growth_resp_factor(ipft) )
-         carbon_balance_moistmax     = daily_C_gain_moistmax - growth_respiration_moistmax &
-                                     - cpatch%vleaf_respiration(ico)
+         carbon_balance_moistmax     = daily_C_gain_moistmax - growth_respiration_moistmax
          !------ Full soil moisture and light. --------------------------------------------!
          daily_C_gain_mlmax          = umol_2_kgC * day_sec                                &
                                      * ( cpatch%today_gpp_mlmax(ico)                       &
@@ -857,8 +868,7 @@ module growth_balive
                                      / cpatch%nplant(ico)
          growth_respiration_mlmax    = max(0.0, daily_C_gain_mlmax                         &
                                               * growth_resp_factor(ipft) )
-         carbon_balance_mlmax        = daily_C_gain_mlmax - growth_respiration_mlmax       &
-                                     - cpatch%vleaf_respiration(ico)
+         carbon_balance_mlmax        = daily_C_gain_mlmax - growth_respiration_mlmax
          !---------------------------------------------------------------------------------!
       else
          carbon_balance_pot      = 0.0
@@ -877,9 +887,10 @@ module growth_balive
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,21(1x,a18))')                                    &
+            write (unit=30+ipft,fmt='(a10,23(1x,a18))')                                    &
                '      TIME','             PATCH','            COHORT','            NPLANT' &
-                           ,'          CB_TODAY','       GROWTH_RESP','        VLEAF_RESP' &
+                           ,'          CB_TODAY','  LEAF_GROWTH_RESP','  ROOT_GROWTH_RESP' &
+                           ,'  SAPA_GROWTH_RESP','  SAPB_GROWTH_RESP'                      &
                            ,'         TODAY_GPP','TODAY_GPP_LIGHTMAX','TODAY_GPP_MOISTMAX' &
                            ,'   TODAY_GPP_MLMAX','   TODAY_LEAF_RESP','   TODAY_ROOT_RESP' &
                            ,' CB_LIGHTMAX_TODAY',' CB_MOISTMAX_TODAY','    CB_MLMAX_TODAY' &
@@ -887,10 +898,11 @@ module growth_balive
                            ,'          CB_MLMAX','  LEAF_MAINTENANCE','  ROOT_MAINTENANCE'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),19(1x,es18.5))')               &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i18),22(1x,es18.5))')               &
               current_time%month,'/',current_time%date,'/',current_time%year               &
-             ,ipa,ico,cpatch%nplant(ico),carbon_balance,cpatch%growth_respiration(ico)     &
-             ,cpatch%vleaf_respiration(ico),cpatch%today_gpp(ico)                          &
+             ,ipa,ico,cpatch%nplant(ico),carbon_balance,cpatch%leaf_growth_resp(ico)       &
+             ,cpatch%root_growth_resp(ico),cpatch%sapa_growth_resp(ico)                    &
+             ,cpatch%sapb_growth_resp(ico),cpatch%today_gpp(ico)                           &
              ,cpatch%today_gpp_lightmax(ico),cpatch%today_gpp_moistmax(ico)                &
              ,cpatch%today_gpp_mlmax(ico),cpatch%today_leaf_resp(ico)                      &
              ,cpatch%today_root_resp(ico),carbon_balance_lightmax,carbon_balance_moistmax  &
