@@ -603,11 +603,6 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigREAL  ('veg_hcap_min','pft',i,rval,texist)
            if(texist) veg_hcap_min(myPFT) = real(rval)
 
-           call getConfigREAL  ('effarea_transp','pft',i,rval,texist)
-           if(texist) effarea_transp(myPFT) = real(rval)
-
-
-           print*,i,myPFT,trim(cval),SLA(myPFT)
         else
            print*,"INVALID PFT READ FROM CONFIG FILE ::", myPFT
         endif
@@ -778,7 +773,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) leaf_backscatter_vis = real(rval)
         call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
         if(texist) leaf_backscatter_nir = real(rval)
-        
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo

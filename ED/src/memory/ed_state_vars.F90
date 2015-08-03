@@ -524,6 +524,8 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_a_light          ! Assim. (light)    [umol/m2l/s]
       real,pointer,dimension(:)   :: fmean_a_rubp           ! Assim. (RuBP)     [umol/m2l/s]
       real,pointer,dimension(:)   :: fmean_a_co2            ! Assim. (CO2)      [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_open           ! Assim. (Open stomata)      [umol/m2l/s]
+      real,pointer,dimension(:)   :: fmean_a_closed         ! Assim. (Closed stomata)      [umol/m2l/s]
       real,pointer,dimension(:)   :: fmean_psi_open         ! Transp. no stress [  kg/m2l/s]
       real,pointer,dimension(:)   :: fmean_psi_closed       ! Transp. max st.   [  kg/m2l/s]
       real,pointer,dimension(:)   :: fmean_water_supply     ! Water supply      [        --]
@@ -550,6 +552,8 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_vapor_wc         ! Wood evaporation  [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_intercepted_aw   ! Wood interception [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_wshed_wg         ! Wood shedding     [  kg/m2g/s]
+      real,pointer,dimension(:)   :: fmean_lai		    ! LAI  		[     m2/m2]
+      real,pointer,dimension(:)	  :: fmean_bdead	    ! Bdead		[     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          ! Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         ! Fine root NPP     [ kgC/pl/yr]
@@ -2234,6 +2238,8 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_a_light          ! Assim. (light)      [umol/m2l/s]
       real,pointer,dimension(:) :: fmean_a_rubp           ! Assim. (RuBP)       [umol/m2l/s]
       real,pointer,dimension(:) :: fmean_a_co2            ! Assim. (CO2)        [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_open           ! Assim. (Open stomata)        [umol/m2l/s]
+      real,pointer,dimension(:) :: fmean_a_closed         ! Assim. (Closed stomata)        [umol/m2l/s]
       real,pointer,dimension(:) :: fmean_psi_open         ! Transp. no stress   [   kg/m2/s]
       real,pointer,dimension(:) :: fmean_psi_closed       ! Transp. max stress  [   kg/m2/s]
       real,pointer,dimension(:) :: fmean_water_supply     ! Water supply        [        --]
@@ -2336,6 +2342,9 @@ module ed_state_vars
       !----- Moore Foundation variables. --------------------------------------------------!
       real,pointer,dimension(:) :: fmean_soil_wetness     ! Soil wetness index  [        --]
       real,pointer,dimension(:) :: fmean_skin_temp        ! Skin temperature    [         K]
+      !--------Variables required by PEcAn.  ----------------------------------------------!
+      real,pointer,dimension(:) :: fmean_lai		  ! LAI  		[     m2/m2]
+      real,pointer,dimension(:)	:: fmean_bdead	    	  ! Bdead		[     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:) :: dmean_nppleaf          ! Leaf NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppfroot         ! Fine root NPP       [ kgC/m2/yr]
@@ -3119,6 +3128,8 @@ module ed_state_vars
       allocate(cgrid%fmean_a_light              (                    npolygons))
       allocate(cgrid%fmean_a_rubp               (                    npolygons))
       allocate(cgrid%fmean_a_co2                (                    npolygons))
+      allocate(cgrid%fmean_a_open               (                    npolygons))
+      allocate(cgrid%fmean_a_closed             (                    npolygons))
       allocate(cgrid%fmean_psi_open             (                    npolygons))
       allocate(cgrid%fmean_psi_closed           (                    npolygons))
       allocate(cgrid%fmean_water_supply         (                    npolygons))
@@ -3214,6 +3225,8 @@ module ed_state_vars
       allocate(cgrid%fmean_dpcpg                (                    npolygons))
       allocate(cgrid%fmean_soil_wetness         (                    npolygons))
       allocate(cgrid%fmean_skin_temp            (                    npolygons))
+      allocate(cgrid%fmean_lai			(                    npolygons))
+      allocate(cgrid%fmean_bdead 		(                    npolygons))
 
 
 
@@ -4603,6 +4616,8 @@ module ed_state_vars
       allocate(cpatch%fmean_A_light                (                    ncohorts))
       allocate(cpatch%fmean_A_rubp                 (                    ncohorts))
       allocate(cpatch%fmean_A_co2                  (                    ncohorts))
+      allocate(cpatch%fmean_A_open                 (                    ncohorts))
+      allocate(cpatch%fmean_A_closed               (                    ncohorts))
       allocate(cpatch%fmean_psi_open               (                    ncohorts))
       allocate(cpatch%fmean_psi_closed             (                    ncohorts))
       allocate(cpatch%fmean_water_supply           (                    ncohorts))
@@ -4631,6 +4646,8 @@ module ed_state_vars
       allocate(cpatch%fmean_vapor_wc               (                    ncohorts))
       allocate(cpatch%fmean_intercepted_aw         (                    ncohorts))
       allocate(cpatch%fmean_wshed_wg               (                    ncohorts))
+      allocate(cpatch%fmean_lai                    (                    ncohorts))
+      allocate(cpatch%fmean_bdead                  (                    ncohorts))
 
 
       if (writing_long) then
@@ -5015,6 +5032,8 @@ module ed_state_vars
       nullify(cgrid%fmean_A_light           )
       nullify(cgrid%fmean_A_rubp            )
       nullify(cgrid%fmean_A_co2             )
+      nullify(cgrid%fmean_A_open            )
+      nullify(cgrid%fmean_A_closed          )
       nullify(cgrid%fmean_psi_open          )
       nullify(cgrid%fmean_psi_closed        )
       nullify(cgrid%fmean_water_supply      )
@@ -5110,6 +5129,8 @@ module ed_state_vars
       nullify(cgrid%fmean_dpcpg             )
       nullify(cgrid%fmean_soil_wetness      )
       nullify(cgrid%fmean_skin_temp         )
+      nullify(cgrid%fmean_lai		    )
+      nullify(cgrid%fmean_bdead		    )
       nullify(cgrid%dmean_nppleaf           )
       nullify(cgrid%dmean_nppfroot          )
       nullify(cgrid%dmean_nppsapwood        )
@@ -6368,6 +6389,8 @@ module ed_state_vars
       nullify(cpatch%fmean_A_light         )
       nullify(cpatch%fmean_A_rubp          )
       nullify(cpatch%fmean_A_co2           )
+      nullify(cpatch%fmean_A_open          )
+      nullify(cpatch%fmean_A_closed        )
       nullify(cpatch%fmean_psi_open        )
       nullify(cpatch%fmean_psi_closed      )
       nullify(cpatch%fmean_water_supply    )
@@ -6396,6 +6419,8 @@ module ed_state_vars
       nullify(cpatch%fmean_vapor_wc        )
       nullify(cpatch%fmean_intercepted_aw  )
       nullify(cpatch%fmean_wshed_wg        )
+      nullify(cpatch%fmean_lai             )
+      nullify(cpatch%fmean_bdead           )
       nullify(cpatch%dmean_nppleaf         )
       nullify(cpatch%dmean_nppfroot        )
       nullify(cpatch%dmean_nppsapwood      )
@@ -6780,6 +6805,8 @@ module ed_state_vars
       if(associated(cgrid%fmean_A_light         )) deallocate(cgrid%fmean_A_light         )
       if(associated(cgrid%fmean_A_rubp          )) deallocate(cgrid%fmean_A_rubp          )
       if(associated(cgrid%fmean_A_co2           )) deallocate(cgrid%fmean_A_co2           )
+      if(associated(cgrid%fmean_A_open          )) deallocate(cgrid%fmean_A_open          )
+      if(associated(cgrid%fmean_A_closed        )) deallocate(cgrid%fmean_A_closed        )
       if(associated(cgrid%fmean_psi_open        )) deallocate(cgrid%fmean_psi_open        )
       if(associated(cgrid%fmean_psi_closed      )) deallocate(cgrid%fmean_psi_closed      )
       if(associated(cgrid%fmean_water_supply    )) deallocate(cgrid%fmean_water_supply    )
@@ -6875,6 +6902,8 @@ module ed_state_vars
       if(associated(cgrid%fmean_dpcpg           )) deallocate(cgrid%fmean_dpcpg           )
       if(associated(cgrid%fmean_soil_wetness    )) deallocate(cgrid%fmean_soil_wetness    )
       if(associated(cgrid%fmean_skin_temp       )) deallocate(cgrid%fmean_skin_temp       )
+      if(associated(cgrid%fmean_lai             )) deallocate(cgrid%fmean_lai             )
+      if(associated(cgrid%fmean_bdead           )) deallocate(cgrid%fmean_bdead           )
       if(associated(cgrid%dmean_nppleaf         )) deallocate(cgrid%dmean_nppleaf         )
       if(associated(cgrid%dmean_nppfroot        )) deallocate(cgrid%dmean_nppfroot        )
       if(associated(cgrid%dmean_nppsapwood      )) deallocate(cgrid%dmean_nppsapwood      )
@@ -8165,6 +8194,8 @@ module ed_state_vars
       if(associated(cpatch%fmean_A_light       )) deallocate(cpatch%fmean_A_light       )
       if(associated(cpatch%fmean_A_rubp        )) deallocate(cpatch%fmean_A_rubp        )
       if(associated(cpatch%fmean_A_co2         )) deallocate(cpatch%fmean_A_co2         )
+      if(associated(cpatch%fmean_A_open        )) deallocate(cpatch%fmean_A_open        )
+      if(associated(cpatch%fmean_A_closed      )) deallocate(cpatch%fmean_A_closed      )
       if(associated(cpatch%fmean_psi_open      )) deallocate(cpatch%fmean_psi_open      )
       if(associated(cpatch%fmean_psi_closed    )) deallocate(cpatch%fmean_psi_closed    )
       if(associated(cpatch%fmean_water_supply  )) deallocate(cpatch%fmean_water_supply  )
@@ -8195,6 +8226,8 @@ module ed_state_vars
       if(associated(cpatch%fmean_vapor_wc      )) deallocate(cpatch%fmean_vapor_wc      )
       if(associated(cpatch%fmean_intercepted_aw)) deallocate(cpatch%fmean_intercepted_aw)
       if(associated(cpatch%fmean_wshed_wg      )) deallocate(cpatch%fmean_wshed_wg      )
+      if(associated(cpatch%fmean_lai           )) deallocate(cpatch%fmean_lai           )
+      if(associated(cpatch%fmean_bdead         )) deallocate(cpatch%fmean_bdead         )
       if(associated(cpatch%dmean_nppleaf       )) deallocate(cpatch%dmean_nppleaf       )
       if(associated(cpatch%dmean_nppfroot      )) deallocate(cpatch%dmean_nppfroot      )
       if(associated(cpatch%dmean_nppsapwood    )) deallocate(cpatch%dmean_nppsapwood    )
@@ -9054,6 +9087,7 @@ module ed_state_vars
       integer                                      :: n
       !------------------------------------------------------------------------------------!
 
+
       !------------------------------------------------------------------------------------!
       !     Map the indices between the input and the output vectors.                      !
       !------------------------------------------------------------------------------------!
@@ -9082,13 +9116,14 @@ module ed_state_vars
       end do
       !------------------------------------------------------------------------------------!
 
+
       !------------------------------------------------------------------------------------!
       !      We break the subroutines into smaller pieces so Fortran doesn't complain...   !
       !------------------------------------------------------------------------------------!
       call copy_sitetype_mask_inst (isite,osite,z,lmask,isize,osize)
       call copy_sitetype_mask_fmean(isite,osite,z,lmask,isize,osize)
       if (writing_long) call copy_sitetype_mask_dmean(isite,osite,z,lmask,isize,osize)
-      if (writing_eorq) call copy_sitetype_mask_mmean(isite,osite,z,lmask,isize,osize)      
+      if (writing_eorq) call copy_sitetype_mask_mmean(isite,osite,z,lmask,isize,osize)
       if (writing_dcyc) call copy_sitetype_mask_qmean(isite,osite,z,lmask,isize,osize)
       !------------------------------------------------------------------------------------!
 
@@ -9684,6 +9719,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
+
       do n=1,ndcycle
          !----- Scalars. ------------------------------------------------------------------!
          osite%qmean_rh            (n,1:z)  = pack(isite%qmean_rh             (n,:),lmask)
@@ -9982,6 +10018,8 @@ module ed_state_vars
          opatch%fmean_A_light         (oco) = ipatch%fmean_A_light         (ico)
          opatch%fmean_A_rubp          (oco) = ipatch%fmean_A_rubp          (ico)
          opatch%fmean_A_co2           (oco) = ipatch%fmean_A_co2           (ico)
+         opatch%fmean_A_open          (oco) = ipatch%fmean_A_open          (ico)
+         opatch%fmean_A_closed        (oco) = ipatch%fmean_A_closed        (ico)
          opatch%fmean_psi_open        (oco) = ipatch%fmean_psi_open        (ico)
          opatch%fmean_psi_closed      (oco) = ipatch%fmean_psi_closed      (ico)
          opatch%fmean_water_supply    (oco) = ipatch%fmean_water_supply    (ico)
@@ -10009,6 +10047,8 @@ module ed_state_vars
          opatch%fmean_vapor_wc        (oco) = ipatch%fmean_vapor_wc        (ico)
          opatch%fmean_intercepted_aw  (oco) = ipatch%fmean_intercepted_aw  (ico)
          opatch%fmean_wshed_wg        (oco) = ipatch%fmean_wshed_wg        (ico)
+         opatch%fmean_lai             (oco) = ipatch%fmean_lai             (ico)
+         opatch%fmean_bdead           (oco) = ipatch%fmean_bdead           (ico)
          !---------------------------------------------------------------------------------!
 
 
@@ -10628,6 +10668,8 @@ module ed_state_vars
       opatch%fmean_A_light         (1:z) = pack(ipatch%fmean_A_light             ,lmask)
       opatch%fmean_A_rubp          (1:z) = pack(ipatch%fmean_A_rubp              ,lmask)
       opatch%fmean_A_co2           (1:z) = pack(ipatch%fmean_A_co2               ,lmask)
+      opatch%fmean_A_open          (1:z) = pack(ipatch%fmean_A_open              ,lmask)
+      opatch%fmean_A_closed        (1:z) = pack(ipatch%fmean_A_closed            ,lmask)
       opatch%fmean_psi_open        (1:z) = pack(ipatch%fmean_psi_open            ,lmask)
       opatch%fmean_psi_closed      (1:z) = pack(ipatch%fmean_psi_closed          ,lmask)
       opatch%fmean_water_supply    (1:z) = pack(ipatch%fmean_water_supply        ,lmask)
@@ -10655,6 +10697,8 @@ module ed_state_vars
       opatch%fmean_vapor_wc        (1:z) = pack(ipatch%fmean_vapor_wc            ,lmask)
       opatch%fmean_intercepted_aw  (1:z) = pack(ipatch%fmean_intercepted_aw      ,lmask)
       opatch%fmean_wshed_wg        (1:z) = pack(ipatch%fmean_wshed_wg            ,lmask)
+      opatch%fmean_lai             (1:z) = pack(ipatch%fmean_lai                 ,lmask)
+      opatch%fmean_bdead           (1:z) = pack(ipatch%fmean_bdead               ,lmask)
       !------------------------------------------------------------------------------------!
 
 
@@ -11845,7 +11889,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%zbar                                                &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'ZBAR :11:hist:anal') 
+                           ,'ZBAR :11:hist:anal:opti') 
          call metadata_edio(nvar,igr,'Polygon average water table depth','[m]','(ipoly)')
       end if
       
@@ -11893,7 +11937,7 @@ module ed_state_vars
       if (associated(cgrid%total_agb)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%total_agb,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'TOTAL_AGB :11:hist:anal:year') 
+              var_len,var_len_global,max_ptrs,'TOTAL_AGB :11:hist:anal:year:opti') 
          call metadata_edio(nvar,igr,'Polygon Total Above Ground Biomass','[kgC/m2]','ipoly')
       end if
       
@@ -12143,7 +12187,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%fast_soil_c                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'FAST_SOIL_C_PY     :11:hist:anal:dail')
+                           ,'FAST_SOIL_C_PY     :11:hist:anal:dail:opti')
          call metadata_edio(nvar,igr,'Soil Carbon (Fast pool)'                             &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -12151,7 +12195,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%slow_soil_c                                         &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'SLOW_SOIL_C_PY     :11:hist:anal:dail')
+                           ,'SLOW_SOIL_C_PY     :11:hist:anal:dail:opti')
          call metadata_edio(nvar,igr,'Soil Carbon (Slow pool)'                             &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -12159,7 +12203,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%struct_soil_c                                       &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'STRUCT_SOIL_C_PY   :11:hist:anal:dail')
+                           ,'STRUCT_SOIL_C_PY   :11:hist:anal:dail:opti')
          call metadata_edio(nvar,igr,'Soil Carbon (Structural pool)'                       &
                            ,'[kgC/m2]','(ipoly)')
       end if
@@ -12244,9 +12288,9 @@ module ed_state_vars
       !      Decide whether to write the sub-daily means to the history file.              !
       !------------------------------------------------------------------------------------!
       if (history_fast) then
-         fast_keys = 'hist:anal'
+         fast_keys = 'hist:anal:opti'
       else
-         fast_keys = 'anal'
+         fast_keys = 'anal:opti'
       end if
       !------------------------------------------------------------------------------------!
 
@@ -12258,8 +12302,6 @@ module ed_state_vars
       ! by npts.                                                                           !
       !------------------------------------------------------------------------------------!
       npts = cgrid%npolygons
-
-
 
       if (associated(cgrid%fmean_gpp             )) then
          nvar = nvar+1
@@ -12556,6 +12598,24 @@ module ed_state_vars
                            ,'FMEAN_A_CO2_PY          :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - CO2-limited assimilation rate'               &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_A_open           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_open                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_OPEN_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Open stomata assimilation rate'               &
+                           ,'[umol/m2/s]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_A_closed         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_A_closed                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_A_CLOSED_PY          :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Closed stomata assimilation rate'               &
                            ,'[umol/m2/s]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_psi_open        )) then
@@ -13341,7 +13401,24 @@ module ed_state_vars
                            ,'Sub-daily mean - Skin temperature'                            &
                            ,'[          K]','(ipoly)'            )
       end if
-      !------------------------------------------------------------------------------------!
+      if (associated(cgrid%fmean_lai)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_lai                                           &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_LAI_PY  :11:'//trim(fast_keys)  )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - LAI'					   &
+                           ,'[           m2/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_skin_temp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_bdead                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_BDEAD_PY  :11:'//trim(fast_keys)  )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Dead biomass'                                &
+                           ,'[          kg/plant]','(ipoly)'            )
+      end if
 
       return
    end subroutine filltab_edtype_p11fmean
@@ -17452,9 +17529,9 @@ module ed_state_vars
       !      Decide whether to write fast, daily, and monthly mean variables to history.   !
       !------------------------------------------------------------------------------------!
       if (history_fast) then
-         fast_keys = 'hist:anal'
+         fast_keys = 'hist:anal:opti'
       else
-         fast_keys = 'anal'
+         fast_keys = 'anal:opti'
       end if
       if (history_dail) then
          dail_keys = 'hist:dail'
@@ -17921,8 +17998,6 @@ module ed_state_vars
       end if
       !------------------------------------------------------------------------------------!
 
-
-
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     This is the 3-D block, with PFT and size class.  All variables must have the   !
@@ -17949,7 +18024,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%lai                                                 &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'LAI_PY         :146:hist:anal:dail')
+                           ,'LAI_PY         :146:hist:anal:dail:opti')
          call metadata_edio(nvar,igr,'Leaf area index'                                     &
                            ,'[m2leaf/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -25460,6 +25535,24 @@ module ed_state_vars
                            ,'FMEAN_A_LIGHT_CO             :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Light-limited assimilation rate'             &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_open         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_open                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_OPEN_CO             :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Open stomata assimilation rate'             &
+                           ,'[ umol/m2l/s]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_a_closed         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_a_closed                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_A_CLOSED_CO             :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Closed stomata assimilation rate'             &
                            ,'[ umol/m2l/s]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_a_rubp          )) then

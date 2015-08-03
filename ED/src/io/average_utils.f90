@@ -275,6 +275,14 @@ module average_utils
                                                   + cpatch%fmean_a_co2         (ico)       &
                                                   * cpatch%lai                 (ico)       &
                                                   * patch_wgt
+                  cgrid%fmean_a_open        (ipy) = cgrid%fmean_a_open         (ipy)       &
+                                                  + cpatch%fmean_a_open        (ico)       &
+                                                  * cpatch%lai                 (ico)       &
+                                                  * patch_wgt
+                  cgrid%fmean_a_closed      (ipy) = cgrid%fmean_a_closed       (ipy)       &
+                                                  + cpatch%fmean_a_closed      (ico)       &
+                                                  * cpatch%lai                 (ico)       &
+                                                  * patch_wgt
                   cgrid%fmean_psi_open      (ipy) = cgrid%fmean_psi_open       (ipy)       &
                                                   + cpatch%fmean_psi_open      (ico)       &
                                                   * cpatch%lai                 (ico)       &
@@ -333,6 +341,13 @@ module average_utils
                                                   * patch_wgt
                   cgrid%fmean_wshed_wg      (ipy) = cgrid%fmean_wshed_wg       (ipy)       &
                                                   + cpatch%fmean_wshed_wg      (ico)       &
+                                                  * patch_wgt
+
+                  cgrid%fmean_bdead         (ipy) = cgrid%fmean_bdead          (ipy)       &
+                                                  + cpatch%fmean_bdead         (ico)       &
+                                                  * patch_wgt
+                  cgrid%fmean_lai           (ipy) = cgrid%fmean_lai            (ipy)       &
+                                                  + cpatch%fmean_lai           (ico)       &
                                                   * patch_wgt
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -1050,7 +1065,13 @@ module average_utils
                !---------------------------------------------------------------------------!
                cohortloop: do ico=1,cpatch%ncohorts
 
+                  !------------------------------------------------------------------------!
+                  ! Dead biomass and lai defined for the tower file required by pecan. If  !
+                  ! not working with pecan, just ignore this.                              !
+                  !------------------------------------------------------------------------!
 
+                  cpatch%fmean_bdead (ico)  =  cpatch%bdead  (ico) * cpatch%nplant  (ico)
+                  cpatch%fmean_lai   (ico)  =  cpatch%lai    (ico) * cpatch%nplant  (ico)
 
                   !------------------------------------------------------------------------!
                   !    Energy and water fluxes were integrated over the past frqsum        !
@@ -1278,6 +1299,8 @@ module average_utils
          cgrid%fmean_vapor_wc        (  ipy) = 0.0
          cgrid%fmean_intercepted_aw  (  ipy) = 0.0
          cgrid%fmean_wshed_wg        (  ipy) = 0.0
+         cgrid%fmean_lai             (  ipy) = 0.0         
+         cgrid%fmean_bdead           (  ipy) = 0.0         
          cgrid%fmean_rh              (  ipy) = 0.0
          cgrid%fmean_cwd_rh          (  ipy) = 0.0
          cgrid%fmean_nep             (  ipy) = 0.0
@@ -1531,6 +1554,8 @@ module average_utils
                   cpatch%fmean_vapor_wc          (ico) = 0.0
                   cpatch%fmean_intercepted_aw    (ico) = 0.0
                   cpatch%fmean_wshed_wg          (ico) = 0.0
+                  cpatch%fmean_lai               (ico) = 0.0
+                  cpatch%fmean_bdead             (ico) = 0.0
                end do cohortloop
                !---------------------------------------------------------------------------!
             end do patchloop
