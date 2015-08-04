@@ -271,7 +271,6 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) wood_reflect_vis(myPFT) = real(rval)
 	   call getConfigREAL  ('wood_reflect_nir','pft',i,rval,texist)
            if(texist) wood_reflect_nir(myPFT) = real(rval)
-
 	   call getConfigREAL  ('leaf_trans_vis','pft',i,rval,texist)
            if(texist) leaf_trans_vis(myPFT) = real(rval)
 	   call getConfigREAL  ('leaf_trans_nir','pft',i,rval,texist)
@@ -1441,10 +1440,6 @@ subroutine write_ed_xml_config
         call putConfigREAL("seed_rain",        seed_rain(i))
         call putConfigREAL("negligible_nplant",negligible_nplant(i))
         call putConfigREAL("veg_hcap_min",     veg_hcap_min(i))
-
-     !! TRANSPIRATION
-        call putConfigREAL("effarea_transp",effarea_transp(i))
-
 
         call libxml2f90_ll_closetag("pft")
      endif

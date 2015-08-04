@@ -181,7 +181,7 @@ module growth_balive
                   select case(growth_resp_scheme)
                   case(0)
                      cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
-                                                             * growth_resp_factor(ipft)
+                                                             * growth_resp_factor(ipft))
                      cpatch%leaf_growth_resp(ico) = 0.0
                      cpatch%root_growth_resp(ico) = 0.0
                      cpatch%sapb_growth_resp(ico) = 0.0
@@ -487,7 +487,7 @@ module growth_balive
                   select case(growth_resp_scheme)
                   case(0)
                      cpatch%sapa_growth_resp(ico) = max(0.0, daily_C_gain                  &
-                                                             * growth_resp_factor(ipft)
+                                                             * growth_resp_factor(ipft))
                      cpatch%leaf_growth_resp(ico) = 0.0
                      cpatch%root_growth_resp(ico) = 0.0
                      cpatch%sapb_growth_resp(ico) = 0.0
