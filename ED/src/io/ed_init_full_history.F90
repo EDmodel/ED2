@@ -5035,13 +5035,13 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    call hdf_getslab_r(cpatch%today_nppdaily                                                &
                      ,'TODAY_NPPDAILY            ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%leaf_growth_resp                                              &
-                     ,'LEAF_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'LEAF_GROWTH_RESP   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%root_growth_resp                                              &
-                     ,'ROOT_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'ROOT_GROWTH_RESP   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%sapa_growth_resp                                              &
-                     ,'SAPA_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'SAPA_GROWTH_RESP   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%sapb_growth_resp                                              &
-                     ,'SAPB_GROWTH_RESPIRATION   ',dsetrank,iparallel,.true. ,foundvar)
+                     ,'SAPB_GROWTH_RESP   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%storage_respiration                                           &
                      ,'STORAGE_RESPIRATION       ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%monthly_dndt                                                  &
