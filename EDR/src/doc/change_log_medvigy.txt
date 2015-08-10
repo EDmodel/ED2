@@ -1,0 +1,57 @@
+DATE: 1/21/07
+SUMMARY: Re-vamped initialization.  This included: (1) Put new meteorological driver code into the model.  (2) Modularized and streamlined initialization.  (3) Added an initialization option for near-bare ground.
+
+ed_master:  Changed code to include four components between ofl_mem_alloc and the parallelization initialization.
+  Component 1: subroutine ed_startup().  This carries out all initialization that does not depend on the 
+    current values of atmospheric drivers.
+  Component 2: subroutine init_met_drivers(), subroutine read_met_drivers_init():  Read in meteorological driver
+    information.
+  Component 3: subroutine ed_init_atm(): Initialize all ED fields that do depend on current values of
+    NCEP data, including both atmospheric fields and soil water/temperature.
+  Component 4: subroutine write_grid_info():  Write grid definition to an output file.
+
+
+Note that these changes have only been tested under the following conditions:
+  (1) grid_type = 0
+  (2) ied_init_mode = 0,2.
+  (3) serial run
+  (4) ngrids = 1.  Keep things simple since entire memory structure will soon be over-hauled
+      and things are going to change.
+
+================================================================================
+FURTHER DETAILS ON COMPONENTS 1-4
+================================================================================
+
+ED_STARTUP:  (contained in init/ed_init.F90)
+  (1a) Because data_g has been deprecated, all subroutines initializing data_g have been commented out.
+  (1b) Instead, ecosystem parameters from individual modules are filled in load_ed_ecosystem_params.
+  (2) Soil grid is allocated in alloc_soilgrid.
+  (3a) sfcdata_l2 is commented since data_g has been commented.
+  (3b) There is a call to sfcdata that fills elements of soil_coms.
+  (4) Soil depths are read in via soil_depth_read.
+  (5) Initialization has been streamlined.  The new version is in load_ecosystem_state.  This subroutine
+      should replace initialize_sites_reg.
+  (6) ed_soilphys_init no longer called here.  If you want, call it from Component 3, ed_init_atm.
+  (7) Disturbance initialization moved to be a sub-component of load_ecosystem_state.
+  (8) Atmospheric initialization moved to Component 3.
+
+   Comments on subroutine load_ecosystem_state.
+     (a) By default, each polygon gets initialized with 1 site.
+     (b) Startups from bare ground and ed1 history files are implemented.  For an ed1 history re-start, 
+         if the model cannot find the re-start files, it will fill the site with the nearest neighbor.
+     (c) Note call to phenology_init.  In particular, only iphen_scheme=0 has been implemented within 
+         phenology_init.  Feel free to initialize other phenology schemes within phenology_init.
+     (d) Landuse information is initialized here.
+
+MET_DRIVERS:  Hopefully, you will never have to modify this code!  Let me know if it gives problems.
+
+ED_INIT_ATM:  
+  (1) Initializes atmospheric fields.  
+  (2) If necessary, initializes canopy air and vegetation physical properties
+  (3) Allocates and initializes sfcwater and soil arrays
+  (4) Fills soil textural class from polygon-level data. 
+  (5) Updates derived properties (height, lai, roughness basal area, agb) of patches and sites.
+  (6) Initializes soil temperature and moisture.
+
+WRITE_GRID_INFO:  This writes out the lats/lons of grid vertices, which are needed for plotting in R.  This also 
+  writes out grid cell areas which are useful when computing regional averages during post-processing.
