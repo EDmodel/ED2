@@ -1,0 +1,11 @@
+Goals:
+1) Replace snow variables with sfcwater variables.  Note change in units in the energy variable.
+2) Replace soil_heat with soil_energy
+3) Replace diag_ground_water
+4) Replace grndvap.
+5) Note NA check
+6) F90 and emacs
+7) Libraries and machines
+8) tempk and sfcwater_tempk, fracliq.
+9) ntext_soil
+10) canopy_co2, canoptemp, can_shv, veg_temp, veg_water

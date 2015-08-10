@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE config SYSTEM "ed.dtd">
+<config>
+ <extern>default.xml</extern>
+ <hydro>
+  <useTOPMODEL>1</useTOPMODEL>
+  <useRUNOFF>0</useRUNOFF>
+  <outputPeriod>96</outputPeriod>
+  <MoistdWT>100000000.0</MoistdWT>
+  <MoistRateTuning>0.4</MoistRateTuning>
+  <FracLiqRunoff>0.00001</FracLiqRunoff>
+  <dewmax>1.0e-8</dewmax>
+ </hydro>
+ <radiation>
+  <rlong_min>100</rlong_min>
+  <veg_temp_min>240</veg_temp_min>
+ </radiation>
+ <ed_misc>
+  <outputMonth>9</outputMonth>
+  <burnin>0</burnin>
+ </ed_misc>
+ <misc>  
+  <output_filepath>/n/Moorcroft_Lab1/Users/mcd/output/merge/merge011</output_filepath>
+  <history_out_filepath>/n/Moorcroft_Lab1/Users/mcd/output/merge/mergeH011</history_out_filepath>
+ </misc>
+</config>

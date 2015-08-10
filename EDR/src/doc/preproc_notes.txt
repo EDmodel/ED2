@@ -1,0 +1,38 @@
+Author: David Medvigy
+Date: 1/21/07
+
+SUMMARY:
+This file contains my notes on the files in the pre-processor directory.  
+There are currently two subdirectories, ascii2hdf and cdc2hdf.  The code in
+ascii2hdf will take the old-style ED2 met driver files (written in ASCII) and
+convert them into HDF5.  The code in in cdc2hdf will take the netcdf files
+downloaded from the CDC website and convert them into HDF5.
+
+THIS CODE WAS COMPILED AND TESTED ON MOORCROFTH.  USE ELSEWHERE AT YOUR OWN RISK!!!!!!!!!!!!!!!!!!!!!!!!
+
+---------------------------------
+
+ascii2hdf/
+
+Recall that the met driver files for IMETFLG = 2 (an SOI run) did not have
+a header, but that the met driver files for IMETFLG = 1 (regional offline 
+run) did have a header.  Currently, the ascii2hdf/ code only works with the
+IMETFLG=2 type files.  I am working on generalizing it.
+
+To generate the HDF5 files, set six variables at the top of convert_ascii.f90:
+1) first_year:  the first year you want to process
+2) last_year: the last year you want to process
+3) findir: location of the current met driver files (in ASCII)
+4) foutdir: location to write the new met driver files (HDF5)
+5) frqin: frequency (in seconds) at which non-solar-radiation fields were
+          written to the ASCII file.
+6) frqin_rad: freqency (in seconds) at which the solar radiation fields 
+              were written to the ASCII file.
+
+Once you have set these quantities, just make and run:
+
+moorcrofth > make
+moorcrofth > ./convert_ascii
+
+Let me know if you have any problems.
+

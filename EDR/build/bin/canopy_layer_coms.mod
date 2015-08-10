@@ -1,0 +1,390 @@
+GFORTRAN module version '10' created from canopy_layer_coms.f90
+MD5:e8b1076a4ed7fae5fa869c3c45e9f687 -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () () ()
+() () ())
+
+()
+
+(('canstrtype' 'canopy_layer_coms' 2))
+
+()
+
+()
+
+()
+
+(2 'Canstrtype' 'canopy_layer_coms' '' 1 ((DERIVED UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOC_COMP) (UNKNOWN 0 0 0 0 UNKNOWN ())
+0 0 () () 0 ((3 'lad' (REAL 4 0 0 0 REAL ()) (1 0 DEFERRED () ()) (
+UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE
+DIMENSION) UNKNOWN-ACCESS ()) (4 'cdrag' (REAL 4 0 0 0 REAL ()) (1 0
+DEFERRED () ()) (UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+0 0 ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ()) (5 'pshelter' (REAL 4 0 0
+0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ()) (6
+'cumldrag' (REAL 4 0 0 0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION)
+UNKNOWN-ACCESS ()) (7 'windlyr' (REAL 4 0 0 0 REAL ()) (1 0 DEFERRED ()
+()) (UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ()) (8 'windext_full' (REAL 4 0 0
+0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ()) (9
+'windext_half' (REAL 4 0 0 0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION)
+UNKNOWN-ACCESS ()) (10 'lad8' (REAL 8 0 0 0 REAL ()) (1 0 DEFERRED () ())
+(UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE
+DIMENSION) UNKNOWN-ACCESS ()) (11 'cdrag8' (REAL 8 0 0 0 REAL ()) (1 0
+DEFERRED () ()) (UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+0 0 ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ()) (12 'pshelter8' (REAL 8 0
+0 0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ())
+(13 'cumldrag8' (REAL 8 0 0 0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION)
+UNKNOWN-ACCESS ()) (14 'windlyr8' (REAL 8 0 0 0 REAL ()) (1 0 DEFERRED ()
+()) (UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ()) (15 'windext_full8' (REAL 8 0
+0 0 REAL ()) (1 0 DEFERRED () ()) (UNKNOWN-FL UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE DIMENSION) UNKNOWN-ACCESS ())
+(16 'windext_half8' (REAL 8 0 0 0 REAL ()) (1 0 DEFERRED () ()) (
+UNKNOWN-FL UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 ALLOCATABLE
+DIMENSION) UNKNOWN-ACCESS ())) PUBLIC (() () () ()) () 0 0 81977027)
+17 'a_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+18 'a_dw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+19 'a_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+20 'a_uw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+21 'alloc_canopy_layer' 'canopy_layer_coms' '' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE) (UNKNOWN 0 0 0 0
+UNKNOWN ()) 0 0 () () 0 () () () 0 0)
+22 'alloc_canopy_layer_mbs' 'canopy_layer_coms' '' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE ALWAYS_EXPLICIT)
+(UNKNOWN 0 0 0 0 UNKNOWN ()) 23 0 (24) () 0 () () () 0 0)
+25 'b_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+26 'b_dw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+27 'b_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+28 'b_uw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+29 'beam_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+30 'beam_bot_crown' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+31 'beam_mid' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+32 'c_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+33 'c_dw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+34 'c_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+35 'c_uw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+36 'canopy_layer_coms' 'canopy_layer_coms' '' 1 ((MODULE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0) (UNKNOWN 0 0 0 0 UNKNOWN ()) 0 0 () ()
+0 () () () 0 0)
+37 'canstr' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 DIMENSION POINTER) (DERIVED 2 0 0
+0 DERIVED ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+38 'canstrtype' 'canopy_layer_coms' '' 1 ((PROCEDURE UNKNOWN-INTENT
+UNKNOWN-PROC DECL UNKNOWN 0 0 FUNCTION GENERIC) (REAL 4 0 0 0 REAL ()) 0
+0 () () 0 () () () 0 0)
+39 'crown_mod' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 0 0 INTEGER ()) 0 0
+() () 0 () () () 0 0)
+40 'd_dw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+41 'd_uw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+42 'downward_lw_incid' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+43 'downward_lw_surf' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+44 'downward_nir_beam' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+45 'downward_nir_diffuse' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+46 'downward_vis_beam' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+47 'downward_vis_diffuse' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+48 'dzcan' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+49 'dzcan8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+50 'dzcanpop' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+51 'e_uw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+52 'ehgt' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 4 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+53 'ehgt8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 8 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+54 'ehgti' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 4 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+55 'ehgti8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 8 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+56 'exmlai' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+57 'expamk_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+58 'expamk_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+59 'expapk_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+60 'expapk_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+61 'expkl_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+62 'expkl_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+63 'explai' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+64 'f_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+65 'f_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+66 'f_uw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+67 'forcing_lw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+68 'g_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+69 'g_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+70 'h_bot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+71 'h_top' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+72 'indx' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (INTEGER 4
+0 0 0 INTEGER ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+73 'layer_backscatter' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+74 'layer_clumping' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+75 'layer_emis' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+76 'layer_scatter' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+77 'layer_temp' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+78 'lw_v_incid_layer' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+79 'lw_v_surf_layer' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+80 'masmatcp' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (2 0 DEFERRED () () () ()) 0 () () () 0 0)
+81 'mastermat' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (2 0 DEFERRED () () () ()) 0 () () () 0 0)
+82 'mastervec_beam' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+83 'mastervec_diffuse' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+84 'mastervec_incid' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+85 'mastervec_surf' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+86 'masveccp_beam' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+87 'masveccp_diffuse' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+88 'matal' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (2 0 DEFERRED () () () ()) 0 () () () 0 0)
+89 'ncanlyr' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 0 0 INTEGER ()) 0 0
+() () 0 () () () 0 0)
+90 'ncanlyrp1' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 0 0 INTEGER ()) 0 0
+() () 0 () () () 0 0)
+91 'ncanlyrt2' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 0 0 INTEGER ()) 0 0
+() () 0 () () () 0 0)
+92 'par_beam_layer' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+93 'par_diffuse_layer' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 4 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+94 'populated' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (LOGICAL 4
+0 0 0 LOGICAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+95 'source_lw' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+96 'sw_abs_beam_layer' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 4 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+97 'sw_abs_diffuse_layer' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 4 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+98 'tai_lyr_max' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 4 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+99 'upward_lw_incid' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+100 'upward_lw_surf' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+101 'upward_nir_beam' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+102 'upward_nir_diffuse' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+103 'upward_vis_beam' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+104 'upward_vis_diffuse' 'canopy_layer_coms' '' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE
+DIMENSION) (REAL 8 0 0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () ()
+0 0)
+105 'zero_canopy_layer' 'canopy_layer_coms' '' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE ALWAYS_EXPLICIT)
+(UNKNOWN 0 0 0 0 UNKNOWN ()) 106 0 (107 108) () 0 () () () 0 0)
+109 'zzbot' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+110 'zzbot8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+111 'zzmid' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+112 'zzmid8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+113 'zztop' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 4 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+114 'zztop0' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 4 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+115 'zztop08' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 8 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+116 'zztop0i' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 4 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+117 'zztop0i8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 8 0 0 0 REAL ()) 0 0 () ()
+0 () () () 0 0)
+118 'zztop8' 'canopy_layer_coms' '' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION) (REAL 8 0
+0 0 REAL ()) 0 0 () (1 0 DEFERRED () ()) 0 () () () 0 0)
+24 'ccanstr' '' '' 23 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 TARGET DUMMY) (DERIVED 2 0 0 0 DERIVED ()) 0 0 () () 0 () ()
+() 0 0)
+107 'thiscall' '' '' 106 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (CHARACTER 1 0 0 0 CHARACTER (())) 0 0 () () 0 () () () 0 0)
+108 'ccanstr' '' '' 106 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 TARGET DUMMY) (DERIVED 2 0 0 0 DERIVED ()) 0 0 () () 0 () ()
+() 0 0)
+)
+
+('Canstrtype' 0 2 'a_bot' 0 17 'a_dw' 0 18 'a_top' 0 19 'a_uw' 0 20
+'alloc_canopy_layer' 0 21 'alloc_canopy_layer_mbs' 0 22 'b_bot' 0 25
+'b_dw' 0 26 'b_top' 0 27 'b_uw' 0 28 'beam_bot' 0 29 'beam_bot_crown' 0
+30 'beam_mid' 0 31 'c_bot' 0 32 'c_dw' 0 33 'c_top' 0 34 'c_uw' 0 35
+'canopy_layer_coms' 0 36 'canstr' 0 37 'canstrtype' 0 38 'crown_mod' 0
+39 'd_dw' 0 40 'd_uw' 0 41 'downward_lw_incid' 0 42 'downward_lw_surf' 0
+43 'downward_nir_beam' 0 44 'downward_nir_diffuse' 0 45
+'downward_vis_beam' 0 46 'downward_vis_diffuse' 0 47 'dzcan' 0 48 'dzcan8'
+0 49 'dzcanpop' 0 50 'e_uw' 0 51 'ehgt' 0 52 'ehgt8' 0 53 'ehgti' 0 54
+'ehgti8' 0 55 'exmlai' 0 56 'expamk_bot' 0 57 'expamk_top' 0 58
+'expapk_bot' 0 59 'expapk_top' 0 60 'expkl_bot' 0 61 'expkl_top' 0 62
+'explai' 0 63 'f_bot' 0 64 'f_top' 0 65 'f_uw' 0 66 'forcing_lw' 0 67
+'g_bot' 0 68 'g_top' 0 69 'h_bot' 0 70 'h_top' 0 71 'indx' 0 72
+'layer_backscatter' 0 73 'layer_clumping' 0 74 'layer_emis' 0 75
+'layer_scatter' 0 76 'layer_temp' 0 77 'lw_v_incid_layer' 0 78
+'lw_v_surf_layer' 0 79 'masmatcp' 0 80 'mastermat' 0 81 'mastervec_beam'
+0 82 'mastervec_diffuse' 0 83 'mastervec_incid' 0 84 'mastervec_surf' 0
+85 'masveccp_beam' 0 86 'masveccp_diffuse' 0 87 'matal' 0 88 'ncanlyr' 0
+89 'ncanlyrp1' 0 90 'ncanlyrt2' 0 91 'par_beam_layer' 0 92
+'par_diffuse_layer' 0 93 'populated' 0 94 'source_lw' 0 95
+'sw_abs_beam_layer' 0 96 'sw_abs_diffuse_layer' 0 97 'tai_lyr_max' 0 98
+'upward_lw_incid' 0 99 'upward_lw_surf' 0 100 'upward_nir_beam' 0 101
+'upward_nir_diffuse' 0 102 'upward_vis_beam' 0 103 'upward_vis_diffuse'
+0 104 'zero_canopy_layer' 0 105 'zzbot' 0 109 'zzbot8' 0 110 'zzmid' 0
+111 'zzmid8' 0 112 'zztop' 0 113 'zztop0' 0 114 'zztop08' 0 115 'zztop0i'
+0 116 'zztop0i8' 0 117 'zztop8' 0 118)
