@@ -1,0 +1,151 @@
+#Makefile include include.mk.opt
+############################## Change Log ##################################
+# 1.0.0.2
+#
+# 000908 MJB include.mk-mrc ##
+#            Added MAKE environment varaible.
+#            Added free format option to F_OPTS for some platforms. ##
+# 000907 MJB include.mk-mrc ##
+#            Changed the defualts to no NCAR Graphics and no parallel.
+#            Also commented out the machine specifics to force the user to
+#            select the appropriate machine for them. ##
+# 000823 MJB include.mk-mrc ##
+#            New - defines all make environment varaibles and is included
+#            in all make files. ##
+#
+############################################################################
+
+# Define make (gnu make works best).
+
+MAKE=/usr/bin/make
+
+# libraries.
+
+BASE=$(ED_ROOT)/build/
+
+# Activate appropriate parts below, comment out others.
+
+#---------------------------------------------------------------
+# If you are using a real distribution of NCAR Graphics...
+#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
+#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
+#---------------------------------------------------------------
+
+# HDF libraries  -----------------------------------------------
+# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
+# If you run "configure" script, you don't need to edit line bellow
+#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+# --------------------------------------------------------------
+
+# HDF 5  Libraries
+# ED2 HAS OPTIONAL HDF 5 I/O
+# If you wish to use this functionality specify USE_HDF5=1
+# and specify the location of the include directory
+# library files. Make sure you include the zlib.a location too.
+
+USE_HDF5=1
+#HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
+#HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+#          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
+
+#HDF5_INCS=-p /sw/hdf5-1.8.0-pabs/include
+#HDF5C_INCS=-I/sw/hdf5-1.8.0-pabs/include
+#HDF5_LIBS=-lz /sw/hdf5-1.8.0-pabs/lib/libhdf5_fortran.a \
+#	/sw/hdf5-1.8.0-pabs/lib/libhdf5.a \
+#	/sw/hdf5-1.8.0-pabs/lib/libhdf5_hl.a
+
+#HDF5_INCS=-I/sw/hdf5-1.6.6-gfortran/lib
+#HDF5C_INCS=-I/sw/hdf5-1.6.6-gfortran/include
+#HDF5_LIBS=-lz /sw/hdf5-1.6.6-gfortran/lib/libhdf5_fortran.a \
+#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5.a \
+#	/sw/hdf5-1.6.6-gfortran/lib/libhdf5_hl.a
+USE_HDF5=1
+HDF5_INCS=-I/sw/hdf5/include
+HDF5_LIBS= -lm -lz -L/sw/hdf5/lib -lhdf5 -lhdf5_fortran
+
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
+
+# netCDF libraries ---------------------------------------------
+# If you have netCDF set USENC=1 and type the lib folder
+# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
+# If you don't have it, leave USENC=0 and type a dummy
+# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
+USENC=0
+NC_LIBS=-L/dev/null
+# --------------------------------------------------------------
+
+# interface ----------------------------------------------------
+# This should be 1 unless you are running with -gen-interfaces.
+# Interfaces usually make the compilation to crash when the 
+# -gen-interfaces option are on, so this flag bypass all 
+# interfaces in the code.
+USE_INTERF=1
+
+
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=0
+
+
+#-----------------  MAC_OS_X (Leopard) ---- gfortan/gcc ---------------
+CMACH=MAC_OS_X
+F_COMP=mpif90
+C_COMP=mpicc
+LOADER=mpif90
+
+##################################### COMPILER OPTIONS #####################################
+#------------------------------------------------------------------------------------------#
+# A. Pickiest - Use this whenever you change arguments on functions and subroutines.       #
+#               This will perform the same tests as B but it will also check whether all   #
+#               arguments match between subroutine declaration and subroutine calls.       #
+#               WARNING: In order to really check all interfaces you must compile with     #
+#                        this option twice:                                                #
+#               1. Compile (./compile.sh)                                                  #
+#               2. Prepare second compilation(./2ndcomp.sh)                                #
+#               3. Compile one more time (./compile.sh)                                    #
+#               If the compilation fails either at step 1 or 3, then your code has inter-  #
+#                  face problems. If it successfully compiles, then you can switch to B.   #
+#------------------------------------------------------------------------------------------#
+#USE_INTERF=0
+#F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal \
+#       -ffree-line-length-none
+#C_OPTS=-O0 -DUNDERSCORE -DLITTLE
+#LOADER_OPTS=-O0 -ffree-line-length-none
+
+
+#------------------------------------------------------------------------------------------#
+# E. Fast - This is all about performance, use only when you are sure that the model has   #
+#           no code problem, and you want results asap. This will not check for any        #
+#           problems, which means that this is an option suitable for end users, not de-   #
+#           velopers.                                                                      #
+#------------------------------------------------------------------------------------------#
+USE_INTERF=1
+F_OPTS= -O3 -ffree-line-length-none
+C_OPTS= -O3 -DLITTLE
+LOADER_OPTS= -O3 -ffixed-line-length-none
+#------------------------------------------------------------------------------------------#
+
+#---------------If using scritps 'mpicc' e 'mpif90'---------------'
+MPI_PATH=
+PAR_INCS=
+PAR_LIBS=
+PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+# For IBM,HP,SGI,ALPHA,LINUX use these:
+ARCHIVE=ar rs
+# For NEC SX-6
+#ARCHIVE=sxar rs
+# For SUN,CONVEX
+#ARCHIVE=ar r'
+
