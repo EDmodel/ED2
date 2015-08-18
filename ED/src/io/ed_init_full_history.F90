@@ -3429,11 +3429,11 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
             pidx = 4
          end select
          !----- "Secondary forest index", logged or plantation. ---------------------------!
-         select case (nat_dist_type(isi))
+         select case (cpoly%plantation(isi))
          case (0)
-            pidx = 3
+            sidx = 6
          case (1)
-            pidx = 4
+            sidx = 2
          end select
          !---------------------------------------------------------------------------------!
 
