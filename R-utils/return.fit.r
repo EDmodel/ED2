@@ -125,8 +125,8 @@ change.return.optim <<- function( datum
    #     Check that there are at least four valid data points, otherwise, crash!           #
    #---------------------------------------------------------------------------------------#
    if (n.use <= n.par+1){
-      cat (" - Number of valid points: ",n.use,"\n")
-      cat (" - Minimum number of valid points: ",n.par+1,"\n")
+      cat0(" - Number of valid points: ",n.use)
+      cat0(" - Minimum number of valid points: ",n.par+1)
       stop(" Too few valid data points!")
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -187,11 +187,11 @@ change.return.optim <<- function( datum
 
    #----- Show first guess. ---------------------------------------------------------------#
    if (verbose){
-      cat("             > First guess "
-         ,";   y0: ",sprintf("%.3f",x.1st[1])
-         ,";   a:  ",sprintf("%.3f",x.1st[2])
-         ,";   b:  ",sprintf("%.3f",x.1st[3])
-         ,"\n")
+      cat0("             > First guess "
+          ,";   y0: ",sprintf("%.3f",x.1st[1])
+          ,";   a:  ",sprintf("%.3f",x.1st[2])
+          ,";   b:  ",sprintf("%.3f",x.1st[3])
+          )#end cat0
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -236,13 +236,13 @@ change.return.optim <<- function( datum
       #----- Check whether we should iterate. ---------------------------------------------#
       iterate = success && ( gain > (100. * tol.gain) ) && it < maxit
       if (verbose){
-         cat("             > Iteration ",it
-            ,";   Converged: ",! iterate
-            ,";   Success: "  ,success
-            ,";   Support: "  ,sprintf("%.3f",now.support)
-            ,";   Gain: "     ,sprintf("%.3f",gain)   
-            ,";   Steps: "    ,sprintf("%6i",nsteps.now)
-            ,"\n")
+         cat0("             > Iteration ",it
+             ,";   Converged: ",! iterate
+             ,";   Success: "  ,success
+             ,";   Support: "  ,sprintf("%.3f",now.support)
+             ,";   Gain: "     ,sprintf("%.3f",gain)   
+             ,";   Steps: "    ,sprintf("%6i",nsteps.now)
+             )#end cat0
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -260,7 +260,7 @@ change.return.optim <<- function( datum
             nsteps      = 0
             iterate     = TRUE
             if (verbose){
-               cat("               @ Skew normal failed, falling back to normal ","\n")
+               cat0("               @ Skew normal failed, falling back to normal ")
             }else{
                warning(" Skew normal optimiser failed, falling back to normal...")
             }#end if
@@ -352,18 +352,18 @@ change.return.optim <<- function( datum
    #     Print the result on standard output.                                              #
    #---------------------------------------------------------------------------------------#
    if (verbose){
-      cat("             > Results "
-         ,";   y0: "    ,sprintf("%.3f",y0          )
-         ,";   a: "     ,sprintf("%.3f",a           )
-         ,";   b: "     ,sprintf("%.3f",b           )
-         ,";   x.crit: ",sprintf("%.3f",x.crit      )
-         ,"\n")
-      cat("             > Fit "
-         ,";   R2: "  ,sprintf("%.3f",ans$r.square)
-         ,";   Bias: ",sprintf("%.3f",res.mean    )
-         ,";   RMSE: ",sprintf("%.3f",res.rmse    )
-         ,";   Skew: ",sprintf("%.3f",res.skew    )
-         ,"\n")
+      cat0("             > Results "
+          ,";   y0: "    ,sprintf("%.3f",y0          )
+          ,";   a: "     ,sprintf("%.3f",a           )
+          ,";   b: "     ,sprintf("%.3f",b           )
+          ,";   x.crit: ",sprintf("%.3f",x.crit      )
+          )#end cat0
+      cat0("             > Fit "
+          ,";   R2: "  ,sprintf("%.3f",ans$r.square)
+          ,";   Bias: ",sprintf("%.3f",res.mean    )
+          ,";   RMSE: ",sprintf("%.3f",res.rmse    )
+          ,";   Skew: ",sprintf("%.3f",res.skew    )
+          )#end cat0
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -390,7 +390,7 @@ change.return.optim <<- function( datum
 #       This function optimises the change as a function of the drought return period.     #
 #==========================================================================================#
 #==========================================================================================#
-change.return.nls   <<- function( datum
+change.return.nlrob <<- function( datum
                                 , y.crit      = 0
                                 , first       = NULL
                                 , tol.optim   = sqrt(.Machine$double.eps)
@@ -398,7 +398,6 @@ change.return.nls   <<- function( datum
                                 , maxit       = 100
                                 , n.boot      = 1000
                                 , verbose     = FALSE
-                                , robust      = FALSE
                                 ){
 
    #---------------------------------------------------------------------------------------#
@@ -407,17 +406,6 @@ change.return.nls   <<- function( datum
    use      = which(is.finite(datum$change)  & is.finite(datum$pret))
    n.use    = length(use)
    n.par    = 3
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Choose which function to run.                                                     #
-   #---------------------------------------------------------------------------------------#
-   if (robust){
-     nlfun = nlrob
-   }else{
-     nlfun = nls
-   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -438,8 +426,8 @@ change.return.nls   <<- function( datum
    #     Check that there are at least four valid data points, otherwise, crash!           #
    #---------------------------------------------------------------------------------------#
    if (n.use <= n.par+1){
-      cat (" - Number of valid points: ",n.use,"\n")
-      cat (" - Minimum number of valid points: ",n.par+1,"\n")
+      cat0(" - Number of valid points: ",n.use)
+      cat0(" - Minimum number of valid points: ",n.par+1)
       stop(" Too few valid data points!")
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -451,7 +439,9 @@ change.return.nls   <<- function( datum
    #---------------------------------------------------------------------------------------#
    if (is.null(first)){
       #----- First guess.  Anything on the right quadrant should do. ----------------------#
-      x.1st    = c( max(datum$change),-1,1)
+      x.1st = c( max(datum$change),-1,1)
+      x.1st = change.return.optim(datum,y.crit=y.crit)
+      x.1st = x.1st$coefficients
       #------------------------------------------------------------------------------------#
    }else{
       #----- The user has the last word (well, almost, see below). ------------------------#
@@ -464,11 +454,11 @@ change.return.nls   <<- function( datum
 
    #----- Show first guess. ---------------------------------------------------------------#
    if (verbose){
-      cat("             > First guess "
-         ,";   y0: ",sprintf("%.3f",x.1st[1])
-         ,";   a:  ",sprintf("%.3f",x.1st[2])
-         ,";   b:  ",sprintf("%.3f",x.1st[3])
-         ,"\n")
+      cat0("             > First guess "
+          ,";   y0: ",sprintf("%.3f",x.1st[1])
+          ,";   a:  ",sprintf("%.3f",x.1st[2])
+          ,";   b:  ",sprintf("%.3f",x.1st[3])
+          )#end cat0
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -494,69 +484,18 @@ change.return.nls   <<- function( datum
    #---------------------------------------------------------------------------------------#
 
 
-
-   #---------------------------------------------------------------------------------------#
-   #     Bootstrap.                                                                        #
-   #---------------------------------------------------------------------------------------#
-   coeff.boot = matrix(nrow=n.boot,ncol=n.par,dimnames=list(NULL,c("y0","a","b")))
-   y0.boot = rep(NA,times=n.boot)
-   a.boot  = rep(NA,times=n.boot)
-   b.boot  = rep(NA,times=n.boot)
-   n       = 0
-   n.fail  = 0
-   while (n < n.boot){
-      n              = n + 1
-      use.boot       = lit.sample(use,size=n.use,replace=TRUE)
-      datum.boot     = datum[use.boot,]
-
-      #----- try to optimise this case. ---------------------------------------------------#
-      opt.boot       = try(nlfun( formula   = change ~ y0 - exp(a.prime) / pret^exp(b.prime)
-                                , data      = datum.boot
-                                , start     = list( y0      = y0.1st
-                                                  , a.prime = a.prime.1st
-                                                  , b.prime = b.prime.1st
-                                                  )#end list
-                                , na.action = na.exclude
-                                , control   = list( maxiter   = maxit
-                                                  , tol       = tol.optim
-                                                  , minFactor = 1/32768
-                                                  )#end list
-                                )#end nlfun
-                           , silent = TRUE
-                           )#end try
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- nls sometimes fails, in case it did, redo this iteration. --------------------#
-      if ("try-error" %in% is(opt.boot)){
-         n      = n - 1
-         n.fail = n.fail + 1
-      }else{
-         summ.boot      = summary(opt.boot)
-         coeff.boot[n,] = summ.boot$coeff[,1]
-      }#end if
-      #------------------------------------------------------------------------------------#
-   }#end for
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Correct the coefficients. -------------------------------------------------------#
-   coeff.boot[,2] = - exp(coeff.boot[,2])
-   coeff.boot[,3] =   exp(coeff.boot[,3])
-   #---------------------------------------------------------------------------------------#
-
-
    #---------------------------------------------------------------------------------------#
    #     Optimise the parameters.                                                          #
    #---------------------------------------------------------------------------------------#
-   opt          = try( nlfun( formula   = change ~ y0 - exp(a.prime) / pret^exp(b.prime)
+   opt          = try( nlrob( formula   = change ~ I(y0 - exp(a.prime) / pret^exp(b.prime))
                             , data      = datum.use
                             , start     = list( y0      = y0.1st
                                               , a.prime = a.prime.1st
                                               , b.prime = b.prime.1st
                                               )#end list
+                            , maxit     = maxit
                             , na.action = na.exclude
+                            , tol       = tol.optim
                             , control   = list( maxiter   = maxit
                                               , tol       = tol.optim
                                               , minFactor = 1/32768
@@ -564,16 +503,26 @@ change.return.nls   <<- function( datum
                             )#end nlfun
                      )#end try
    if ("try-error" %in% is(opt)){
-      coeff        = apply(X=coeff.boot,MARGIN=2,FUN=mean,na.rm=TRUE)
+      ans = change.return.htscd( datum
+                               , y.crit      = y.crit
+                               , first       = first
+                               , tol.optim   = tol.optim
+                               , is.debug    = is.debug
+                               , maxit       = maxit
+                               , verbose     = verbose
+                               )#end change.return.optim
+      return(ans)
    }else{
       summ.opt     = summary(opt)
-      coeff        = summ.opt$coeff[,1]
-      coeff[2]     = -exp(coeff[2])
-      coeff[3]     =  exp(coeff[3])
+      f.mu         = summ.opt$coeff[,1]
+      f.sigma      = summ.opt$coeff[,2]
+      f.expmu      = exp(f.mu+0.5*f.sigma^2)
+      f.expsigma   = sqrt((exp(f.sigma^2)-1)*exp(2*f.mu+f.sigma^2))
+      coeff        = c(f.mu[1],-f.expmu[2],f.expmu[3])
+      se.coeff     = c(f.sigma[1],f.expsigma[2],f.expsigma[3])
       names(coeff) = c("y0","a","b")
    }#end if
    #---------------------------------------------------------------------------------------#
-
 
 
 
@@ -581,10 +530,11 @@ change.return.nls   <<- function( datum
    #     Copy the results to ans.                                                          #
    #---------------------------------------------------------------------------------------#
    ans                 = list()
+   ans$object          = opt
    ans$df              = n.use - n.par
    ans$coefficients    = coeff
-   ans$std.err         = apply(X=coeff.boot,MARGIN=2,FUN=sd,na.rm=TRUE)
-   ans$t.value         = ans$coefficients / sqrt(ans$std.err)
+   ans$std.err         = se.coeff
+   ans$t.value         = f.mu / sqrt(f.sigma)
    ans$p.value         = 2.0 * pt(-abs(ans$t.value),df=ans$df)
    ans$first.guess     = x.1st
    #----- Save the fitted values and the residuals. ---------------------------------------#
@@ -643,23 +593,265 @@ change.return.nls   <<- function( datum
    #     Print the result on standard output.                                              #
    #---------------------------------------------------------------------------------------#
    if (verbose){
-      cat("             > Results "
-         ,";   y0: "    ,sprintf("%.3f",y0          )
-         ,";   a: "     ,sprintf("%.3f",a           )
-         ,";   b: "     ,sprintf("%.3f",b           )
-         ,";   x.crit: ",sprintf("%.3f",x.crit      )
-         ,"\n")
-      cat("             > Fit "
-         ,";   R2: "  ,sprintf("%.3f",ans$r.square)
-         ,";   Bias: ",sprintf("%.3f",res.mean    )
-         ,";   RMSE: ",sprintf("%.3f",res.rmse    )
-         ,";   Skew: ",sprintf("%.3f",res.skew    )
-         ,"\n")
+      cat0("             > Results "
+          ,";   y0: "    ,sprintf("%.3f",y0          )
+          ,";   a: "     ,sprintf("%.3f",a           )
+          ,";   b: "     ,sprintf("%.3f",b           )
+          ,";   x.crit: ",sprintf("%.3f",x.crit      )
+          )#end cat0
+      cat0("             > Fit "
+          ,";   R2: "  ,sprintf("%.3f",ans$r.square)
+          ,";   Bias: ",sprintf("%.3f",res.mean    )
+          ,";   RMSE: ",sprintf("%.3f",res.rmse    )
+          ,";   Skew: ",sprintf("%.3f",res.skew    )
+          )#end cat0
    }#end if
    #---------------------------------------------------------------------------------------#
 
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end function change.return.nls
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#       This function optimises the change as a function of the drought return period.     #
+#==========================================================================================#
+#==========================================================================================#
+change.return.htscd <<- function( datum
+                                , y.crit      = 0
+                                , first       = NULL
+                                , tol.optim   = sqrt(.Machine$double.eps)
+                                , is.debug    = FALSE
+                                , maxit       = 100
+                                , n.boot      = 1000
+                                , verbose     = FALSE
+                                , err.method  = "hess"
+                                ){
+
+   #---------------------------------------------------------------------------------------#
+   #     Data selection and total number of parameters.                                    #
+   #---------------------------------------------------------------------------------------#
+   use      = which(is.finite(datum$change)  & is.finite(datum$pret))
+   n.use    = length(use)
+   n.par    = 3
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check how verbose to be.                                                          #
+   #---------------------------------------------------------------------------------------#
+   if (is.logical(verbose)){
+      optim.verbose = FALSE
+   }else{
+      optim.verbose = verbose >= 2
+      verbose       = verbose >= 1
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check that there are at least four valid data points, otherwise, crash!           #
+   #---------------------------------------------------------------------------------------#
+   if (n.use <= n.par+1){
+      cat0(" - Number of valid points: ",n.use)
+      cat0(" - Minimum number of valid points: ",n.par+1)
+      stop(" Too few valid data points!")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #    If first is null, guess it!                                                        #
+   #---------------------------------------------------------------------------------------#
+   if (is.null(first)){
+      #----- First guess.  Anything on the right quadrant should do. ----------------------#
+      x.1st    = c( max(datum$change),-1,1,0)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- The user has the last word (well, almost, see below). ------------------------#
+      x.1st    = c(first,0)
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Show first guess. ---------------------------------------------------------------#
+   if (verbose){
+      cat0("             > First guess "
+          ,";   y0: ",sprintf("%.3f",x.1st[1])
+          ,";   a:  ",sprintf("%.3f",x.1st[2])
+          ,";   b:  ",sprintf("%.3f",x.1st[3])
+          ,";   s:  ",sprintf("%.3f",x.1st[4])
+          )#end cat0
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      We now cheat because we don't want to take risks and send the parameters         #
+   # straight to the wrong zone.  a must be negative, whilst b must be positive, so we     #
+   # transform the parameters internally.                                                  #
+   #---------------------------------------------------------------------------------------#
+   y0.1st      = x.1st[1]
+   a.prime.1st = log(-x.1st[2])
+   b.prime.1st = log( x.1st[3])
+   s0.1st      = x.1st[4]
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Save the data to a shorter matrix.                                               #
+   #---------------------------------------------------------------------------------------#
+   datum.use         = datum[use,]
+   datum.pred        = datum
+   datum.pred$change = datum.pred$change + NA
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Optimise the parameters.                                                          #
+   #---------------------------------------------------------------------------------------#
+   lsq.formula = "change ~ I(y0 - exp(a.prime) / pret^exp(b.prime))"
+   sig.formula = "~ I(pret^s0)"
+   opt         = try( optim.lsq.htscd( lsq.formula = lsq.formula
+                                     , sig.formula = sig.formula
+                                     , data        = datum.use
+                                     , lsq.first   = list( y0      = y0.1st
+                                                         , a.prime = a.prime.1st
+                                                         , b.prime = b.prime.1st
+                                                         )#end list
+                                     , sig.first   = list( s0      = s0.1st
+                                                         )#end list
+                                     , err.method  = err.method
+                                     , is.debug    = TRUE
+                                     , n.boot      = n.boot
+                                     , verbose     = optim.verbose
+                                     )#end optim.lsq.htscd
+                    )#end try
+   if ("try-error" %in% is(opt)){
+      ans = change.return.optim( datum
+                               , y.crit      = y.crit
+                               , first       = first
+                               , tol.optim   = tol.optim
+                               , is.debug    = is.debug
+                               , maxit       = maxit
+                               , verbose     = verbose
+                               )#end change.return.optim
+      return(ans)
+   }else{
+      summ.opt     = summary(opt)
+      f.mu         = summ.opt$coefficients[,1]
+      f.sigma      = summ.opt$coefficients[,2]
+      f.expmu      = exp(f.mu)
+      f.expsigma   = sqrt((exp(f.sigma^2)-1)*exp(2*f.mu+f.sigma^2))
+      coeff        = c(f.mu[1],-f.expmu[2],f.expmu[3],f.mu[4])
+      se.coeff     = c(f.sigma[1],f.expsigma[2],f.expsigma[3],f.sigma[4])
+      names(coeff) = c("y0","a","b","s0")
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Copy the results to ans.                                                          #
+   #---------------------------------------------------------------------------------------#
+   ans                 = list()
+   ans$object          = opt
+   ans$df              = n.use - n.par
+   ans$coefficients    = coeff
+   ans$std.err         = se.coeff
+   ans$t.value         = f.mu / sqrt(f.sigma)
+   ans$p.value         = 2.0 * pt(-abs(ans$t.value),df=ans$df)
+   ans$first.guess     = x.1st
+   #----- Save the fitted values and the residuals. ---------------------------------------#
+   if (err.method %in% "boot"){
+      ans$fitted.values = predict(object=opt,newdata=datum,pred.boot=TRUE )$fit
+   }else{
+      ans$fitted.values = predict(object=opt,newdata=datum,pred.boot=FALSE)
+   }#end if (err.method %in% "boot")
+   ans$residuals       = ans$fitted.values - datum$change
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Estimate the global standard error and R2.                                        #
+   #---------------------------------------------------------------------------------------#
+   ss.err           = sum(ans$residuals[use]^2)
+   df.err           = ans$df
+   mean.y           = mean(datum$change[use])
+   ss.tot           = sum((datum$change[use]-mean.y)^2)
+   df.tot           = n.use - 1
+   ans$r.square     = 1.0 - ss.err * df.tot / ( ss.tot * df.err )
+   ans$sigma        = sqrt(ss.err / ans$df)
+   res.mean         = mean(ans$residuals)
+   res.sdev         = sd  (ans$residuals)
+   res.rmse         = sqrt(res.mean^2+res.sdev^2)
+   res.skew         = skew(ans$residuals)
+   res.stats        = sn.stats(ans$residuals)
+   ans$res.summary  = list( mean     = res.mean
+                          , sdev     = res.sdev
+                          , skew     = res.skew
+                          , rmse     = res.rmse
+                          , location = res.stats[1]
+                          , scale    = res.stats[2]
+                          , shape    = res.stats[3]
+                          )#end list
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Estimate the critical value given the estimates.                                  #
+   #---------------------------------------------------------------------------------------#
+   x.crit        = predict.pret(x=ans$coefficients,y=y.crit)
+   y0            = ans$coefficients[1]
+   a             = ans$coefficients[2]
+   b             = ans$coefficients[3]
+   s0            = ans$coefficients[4]
+   z             = 1. / datum$pret[use]^b
+   z.crit        = 1. / x.crit^b
+   z.mean        = mean(z)
+   z.sdev        = sd  (z)
+   se.y          = ans$sigma * sqrt(1/n.use + (z.crit - z.mean)^2/(ans$df * z.sdev^2))
+   se.x          = se.y * x.crit^(b+1) / abs(a*b)
+   ans$x.crit    = x.crit
+   ans$x.crit.se = se.x
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Print the result on standard output.                                              #
+   #---------------------------------------------------------------------------------------#
+   if (verbose){
+      cat0("             > Results "
+          ,";   y0: "    ,sprintf("%.3f",y0          )
+          ,";   a: "     ,sprintf("%.3f",a           )
+          ,";   b: "     ,sprintf("%.3f",b           )
+          ,";   s0: "    ,sprintf("%.3f",s0          )
+          ,";   x.crit: ",sprintf("%.3f",x.crit      )
+          )#end cat0
+      cat0("             > Fit "
+          ,";   R2: "  ,sprintf("%.3f",ans$r.square)
+          ,";   Bias: ",sprintf("%.3f",res.mean    )
+          ,";   RMSE: ",sprintf("%.3f",res.rmse    )
+          ,";   Skew: ",sprintf("%.3f",res.skew    )
+          )#end cat0
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function change.return.htscd
 #==========================================================================================#
 #==========================================================================================#

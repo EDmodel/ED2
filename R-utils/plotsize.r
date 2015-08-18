@@ -142,6 +142,7 @@ plotsize = function( proje                  #  Map projection? [T|F]
          height = stdheight * height.fac
          width  = height * ratio * width.fac
       }#end if(actualratio >= stdratio)
+      ratio = width / height
       #------------------------------------------------------------------------------------#
 
    }else{

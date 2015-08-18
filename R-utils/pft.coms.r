@@ -405,7 +405,7 @@ C2B    <<- 2.0
 if ("iallom" %in% ls()){
    iallom <<- iallom
 }else{
-   iallom <<- 2
+   iallom <<- 3
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -431,10 +431,42 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
-}else if (iallom %in% c(2,3)){
+}else if (iallom %in% c(2)){
+   #---------------------------------------------------------------------------------------#
+   #     Use the allometry proposed by:                                                    #
+   #                                                                                       #
+   # Poorter, L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree       #
+   #    species: traits, trade-offs, and functional groups.  Ecology, 87, 1289-1301.       #
+   #                                                                                       #
+   #---------------------------------------------------------------------------------------#
    hgt.ref.trop = 61.7
    b1Ht.trop    = 0.0352
-   b2Ht.trop    = 0.694 
+   b2Ht.trop    = 0.694
+   #---------------------------------------------------------------------------------------#
+}else if (iallom %in% c(3)){
+   #---------------------------------------------------------------------------------------#
+   #     Allometric equation based on the Sustainable Landscapes data.                     #
+   #                                                                                       #
+   #    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass      #
+   #       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in        #
+   #       prep.                                                                           #
+   #                                                                                       #
+   #    Equation was derived from multiple forest inventories carried out at multiple      #
+   # locations in the Brazilian Amazon, and fitted using a heteroscedastic least           #
+   # squares approach (though results converged to a homoscedastic fit).  This equation    #
+   # is very similar to Feldpausch et al (2012) equation for South America.                #
+   #                                                                                       #
+   # Total number of trees: 14860                                                          #
+   # hgt_ref = 45.78   (95% CI: [  42.24;  49.73])                                         #
+   # b1Ht    = 0.04525 (95% CI: [0.04318;0.04681])                                         #
+   # b2Ht    = 0.8082  (95% CI: [ 0.7783; 0.8464])                                         #
+   # R2      = 0.660                                                                       #
+   # RMSE    = 5.5                                                                         #
+   #---------------------------------------------------------------------------------------#
+   hgt.ref.trop = 45.78
+   b1Ht.trop    = 0.04525
+   b2Ht.trop    = 0.8082
+   #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -449,6 +481,7 @@ pft01 = list( name               = "C4 grass"
             , key                = "C4G"
             , colour             = "#E5E503"
             , tropical           = TRUE
+            , grass              = TRUE
             , pathway            = 4
             , d0                 = d0.grass
             , vm.hor             = vm.hor
@@ -509,6 +542,7 @@ pft02 = list( name               = "Early tropical"
             , key                = "ETR"
             , colour             = "#9FFF8C"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -569,6 +603,7 @@ pft03 = list( name               = "Mid tropical"
             , key                = "MTR"
             , colour             = "#44CC29"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -629,6 +664,7 @@ pft04 = list( name               = "Late tropical"
             , key                = "LTR"
             , colour             = "#137300"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -689,6 +725,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , key                = "TTG"
             , colour             = "#B2B224"
             , tropical           = FALSE
+            , grass              = TRUE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -749,6 +786,7 @@ pft06 = list( name               = "North Pine"
             , key                = "NPN"
             , colour             = "#0066CC"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -809,6 +847,7 @@ pft07 = list( name               = "South Pine"
             , key                = "SPN"
             , colour             = "#99CCFF"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -869,6 +908,7 @@ pft08 = list( name               = "Late conifer"
             , key                = "LCN"
             , colour             = "#00407F"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -929,6 +969,7 @@ pft09 = list( name               = "Early hardwood"
             , key                = "EHW"
             , colour             = "#FF999B"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -989,6 +1030,7 @@ pft10 = list( name               = "Mid hardwood"
             , key                = "MHW"
             , colour             = "#E5171A"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1049,6 +1091,7 @@ pft11 = list( name               = "Late hardwood"
             , key                = "LHW"
             , colour             = "#990003"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1114,6 +1157,7 @@ pft16 = list( name               = "C3 grass"
             , key                = "C3G"
             , colour             = "#F2F291"
             , tropical           = TRUE
+            , grass              = TRUE
             , pathway            = 3
             , d0                 = d0.grass
             , vm.hor             = vm.hor
@@ -1174,6 +1218,7 @@ pft17 = list( name               = "Araucaria"
             , key                = "ARC"
             , colour             = "#BF60A7"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1236,8 +1281,8 @@ pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour="#404040
 
 #----- Build the structure of photosynthesis parameters by PFT. ---------------------------#
 pft = list()
-for (p in 1:(npft+1)){
-  ppp  = substring(100+p,2,3)
+for (p in sequence(npft+1)){
+  ppp  = sprintf("%2.2i",p)
   phph = paste("pft",ppp,sep="")
   if (p == 1){
      pft = get(phph)
@@ -1248,6 +1293,21 @@ for (p in 1:(npft+1)){
      } #end for
   }# end if
 } #end for
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Change maximum height of tropical trees to 99% of the maximum height.               #
+#------------------------------------------------------------------------------------------#
+if (iallom %in% c(3)){
+   for (ipft in sequence(npft)){
+      if (pft$tropical[ipft] && (! pft$grass[ipft])){
+         pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
+      }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
+   }#end for (ipft in sequence(npft))
+}#end if
+#------------------------------------------------------------------------------------------#
+
 
 
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
@@ -1275,6 +1335,7 @@ for (ipft in sequence(npft)){
    }#end if
    pft$dbh.adult[ipft]   = 10.0
 }#end for
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
@@ -1322,6 +1383,29 @@ d2l   =   0.438
 for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
+      #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
+      # parameters for crown area.                                                         #
+      #------------------------------------------------------------------------------------#
+      if (iallom %in% c(0,1)){
+         pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
+         pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
+      }else if (iallom %in% c(2)){
+         pft$b1Ca[ipft] = exp(ncrown.area[1])
+         pft$b2Ca[ipft] = ncrown.area[2]
+      }else if (iallom %in% c(3)){
+         #---------------------------------------------------------------------------------#
+         #     Allometry using the Sustainable Landscapes data.                            #
+         #---------------------------------------------------------------------------------#
+         pft$b1Ca[ipft] = pi * 0.3951^2
+         pft$b2Ca[ipft] = 2. * 0.6156
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
       #      Fill in the leaf biomass parameters.                                          #
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(0,1)){
@@ -1344,15 +1428,17 @@ for (ipft in sequence(npft)){
       }else if(iallom %in% c(3)){
          #---------------------------------------------------------------------------------#
          #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
-         # mid-successional to be 50gC/plant and interpolate biomass for saplings using a  #
+         # mid-successional to be 20gC/plant and interpolate biomass for saplings using a  #
          # log-linear function.                                                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl.large [ipft] = 0.00873 * pft$SLA[3] / pft$SLA[ipft] # * C2B
+         pft$b1Bl.large [ipft] = 0.00873 * pft$SLA[3] / pft$SLA[ipft]
          pft$b2Bl.large [ipft] = 2.1360
-         
-         bleaf.sapling         = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
+         pft$dbh.adult  [ipft] = ( (pft$b1Bl.large[ipft]*pft$SLA[ipft]/pft$b1Ca[ipft]/C2B)
+                                 ^ (1. / (pft$b2Ca[ipft] - pft$b2Bl.large[ipft]) )
+                                 )#end pft$dbh.adult[ipft]
          pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
                                  * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
+         bleaf.sapling         = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
          pft$b2Bl.small [ipft] = ( log(pft$bleaf.adult[ipft]/bleaf.sapling)
                                  / log(pft$dbh.adult[ipft]/pft$dbh.min[ipft]) )
          pft$b1Bl.small [ipft] = ( pft$bleaf.adult[ipft] * C2B 
@@ -1383,30 +1469,45 @@ for (ipft in sequence(npft)){
          pft$b2Bs.small[ipft] = odead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(odead.large[1]) * pft$rho[ipft] / odead.large[3]
          pft$b2Bs.large[ipft] = odead.large[2]
-      }else if (iallom %in% c(2,3)){
+      }else if (iallom %in% c(2)){
          #---- Based an alternative modification of Chave et al. (2001) allometry. --------#
          pft$b1Bs.small[ipft] = C2B * exp(ndead.small[1]) * pft$rho[ipft] / ndead.small[3]
          pft$b2Bs.small[ipft] = ndead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
+      }else if (iallom %in% c(3)){
+         #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
+         pft$b1Bs.small[ipft] = C2B * 0.3201235 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.2940237
+         pft$b1Bs.large[ipft] = C2B * 2.040761  * pft$rho[ipft]
+         pft$b2Bs.large[ipft] = 1.970171
       }#end if
       #------------------------------------------------------------------------------------#
 
 
 
       #------------------------------------------------------------------------------------#
-      #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
-      # parameters for crown area.                                                         #
+      #     Replace b1Cl/b2Cl coefficients by those calculated by:                         #
+      #                                                                                    #
+      #    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   #
+      #       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     #
+      #       prep.                                                                        #
+      #                                                                                    #
+      #    Equation was derived from forest inventory measurements carried out at multiple #
+      # locations in the Brazilian Amazon, and fitted using a heteroscedastic least        #
+      # squares approach.                                                                  #
+      #                                                                                    #
+      # Total number of trees: 14731                                                       #
+      # b1Cl    = 0.25972 (95% CI: [0.24661;0.27272])                                      #
+      # b2Cl    = 1.0755  (95% CI: [ 1.0603; 1.0922])                                      #
+      # R2      = 0.677                                                                    #
+      # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(0,1)){
-         pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
-         pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom %in% c(2,3)){
-         pft$b1Ca[ipft] = exp(ncrown.area[1])
-         pft$b2Ca[ipft] = ncrown.area[2]
+      if (iallom %in% c(3) && (! pft$grass[ipft])){
+         pft$b1Cl[ipft] = 0.25972
+         pft$b2Cl[ipft] = 1.0755
       }#end if
       #------------------------------------------------------------------------------------#
-
 
 
       #------------------------------------------------------------------------------------#

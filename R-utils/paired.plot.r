@@ -171,7 +171,7 @@ paired.plot <<- function ( x
 
 
    #----- Number of columns. --------------------------------------------------------------#
-   ncolx <- ncol(x)
+   ncolx = ncol(x)
    if (ncolx < 2) stop("only one column in the argument to 'paired.plot'")
    #---------------------------------------------------------------------------------------#
 
@@ -458,7 +458,7 @@ paired.plot <<- function ( x
           , side  = 1
           , line  = line.xlab
           , outer = TRUE
-          , at    = 0.5
+          , at    = ifelse(row1attop,(ncolx-1)/(2*ncolx),(ncolx+1)/(2*ncolx))
           , cex   = cex.labels
           , font  = font.labels
           )#end mtext
@@ -485,7 +485,7 @@ paired.plot <<- function ( x
           , side  = 3
           , line  = line.xlab
           , outer = TRUE
-          , at    = 0.5
+          , at    = ifelse(row1attop,(ncolx+1)/(2*ncolx),(ncolx-1)/(2*ncolx))
           , cex   = cex.labels
           , font  = font.labels
           )#end mtext

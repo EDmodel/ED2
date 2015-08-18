@@ -34,7 +34,6 @@ plot.ptcloud <<- function( pt.cloud
                          , theta            = 315.
                          , phi              = 30.
                          , expand           = 0.5
-                         , box              = TRUE
                          , ticktype         = "detailed"
                          , shade            = 0.125
                          , ltheta           = -210.
@@ -48,6 +47,8 @@ plot.ptcloud <<- function( pt.cloud
                          , from.dens        = NULL
                          , to.dens          = NULL
                          , skip.dens        = NULL
+                         , plot.zmah        = TRUE
+                         , plot.peaks       = TRUE
                          , col.dens         = c("grey10","grey60")
                          , lwd.dens         = c(2,2)
                          , lty.dens         = c("solid","solid")
@@ -55,6 +56,7 @@ plot.ptcloud <<- function( pt.cloud
                          , pch.peaks        = c(4,3)
                          , lwd.peaks        = c(2,2)
                          , col.peaks        = c("midnightblue","deepskyblue")
+                         , draw.box         = FALSE
                          , ...
                          ){
 
@@ -457,7 +459,7 @@ plot.ptcloud <<- function( pt.cloud
                 , phi       = phi
                 , col       = floor.col
                 , expand    = expand
-                , box       = box
+                , box       = draw.box
                 , ticktype  = ticktype
                 , border    = NA
                 , shade     = shade
@@ -626,7 +628,7 @@ plot.ptcloud <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
       #    Apply the MacArthur and Horn (1969) correction to the profile.                  #
       #------------------------------------------------------------------------------------#
-      if (is.null(mhdens)){
+      if (plot.zmah && is.null(mhdens)){
          mhdens = macarthur.horn( pt.cloud = pt.cloud
                                 , zl       = from.dens
                                 , zh       = to.dens
@@ -648,9 +650,12 @@ plot.ptcloud <<- function( pt.cloud
             xidens = mhdens$y
             yidens = mhdens$x
          }#end if
-      }else{
+      }else if (plot.zmah){
          xidens = mhdens$y
          yidens = mhdens$x
+      }else{
+         xidens = rep(NA,2)
+         yidens = rep(NA,2)
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -675,8 +680,19 @@ plot.ptcloud <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
       #     Find the peaks of the distribution.                                            #
       #------------------------------------------------------------------------------------#
-      pk.dens  = peaks(xdens )
-      pk.idens = peaks(xidens)
+      if (plot.peaks){
+         pk.dens  = peaks(xdens )
+         #---- Check whether we can find peaks for MacArthur-Horn correction. -------------#
+         if (plot.zmah){
+            pk.idens = peaks(xidens)
+         }else{
+            pk.idens = rep(FALSE,times=length(xidens))
+         }#end if (plot.zmah)
+         #---------------------------------------------------------------------------------#
+      }else{
+         pk.dens  = rep(FALSE,times=length(xdens ))
+         pk.idens = rep(FALSE,times=length(xidens))
+      }#end if (plot.peaks)
       #------------------------------------------------------------------------------------#
 
 
@@ -685,23 +701,6 @@ plot.ptcloud <<- function( pt.cloud
       plot.new()
       plot.window(xlim=xdlim,ylim=ydlim,log=if(zlog){"y"}else{""})
       if (grid.dens) abline(h=ydat,v=xdat,col=grid.colour,lty="dotted",lwd=0.75)
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Unscaled density function. ---------------------------------------------------#
-      lines ( x    = xdens
-            , y    = ydens
-            , type = "l"
-            , col  = col.dens[1]
-            , lwd  = lwd.dens[1]
-            )#end lines
-      points( x    = xdens[pk.dens]
-            , y    = ydens[pk.dens]
-            , type = "p"
-            , col  = col.peaks[1]
-            , lwd  = lwd.peaks[1]
-            , pch  = pch.peaks
-            )#end points
       #------------------------------------------------------------------------------------#
 
 
@@ -726,35 +725,39 @@ plot.ptcloud <<- function( pt.cloud
 
 
       #----- Scaled density function. -----------------------------------------------------#
-      lines ( x    = xidens
-            , y    = yidens
-            , type = "l"
-            , col  = col.dens[2]
-            , lwd  = lwd.dens[2]
-            , lty  = lty.dens[2]
-            )#end lines
-      points( x    = xidens[pk.idens]
-            , y    = yidens[pk.idens]
-            , type = "p"
-            , col  = col.peaks[2]
-            , lwd  = lwd.peaks[2]
-            , pch  = pch.peaks
-            )#end points
+      if (plot.zmah){
+         lines ( x    = xidens
+               , y    = yidens
+               , type = "l"
+               , col  = col.dens[2]
+               , lwd  = lwd.dens[2]
+               , lty  = lty.dens[2]
+               )#end lines
+         points( x    = xidens[pk.idens]
+               , y    = yidens[pk.idens]
+               , type = "p"
+               , col  = col.peaks[2]
+               , lwd  = lwd.peaks[2]
+               , pch  = pch.peaks
+               )#end points
+      }#end if (plot.zmah)
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Plot legend. -----------------------------------------------------------------#
-      legend( x       = "topright"
-            , inset   = 0.01
-            , legend  = c("Raw","MacArthur-Horn")
-            , col     = col.dens
-            , lty     = lty.dens
-            , lwd     = lwd.dens
-            , bg      = background
-            , box.col = foreground
-            , cex     = 0.6
-            )#end legend
+      if (plot.zmah){
+         legend( x       = "topright"
+               , inset   = 0.01
+               , legend  = c("Raw","MacArthur-Horn")
+               , col     = col.dens
+               , lty     = lty.dens
+               , lwd     = lwd.dens
+               , bg      = background
+               , box.col = foreground
+               , cex     = 0.6
+               )#end legend
+      }#end if (plot.zmah)
       #------------------------------------------------------------------------------------#
 
 

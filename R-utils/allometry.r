@@ -129,16 +129,32 @@ dbh2ca <<- function(dbh,ipft){
    }#end if
 
    #----- Find local LAI, the minimum size for a crown area. ------------------------------#
-   bleaf  = dbh2bl(dbh,ipft)
-   loclai = pft$SLA[zpft] * bleaf
-   
-   dbhuse        = dbh
-   large         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
-   dbhuse[large] = pft$dbh.crit[zpft[large]]
-   crown         = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
+   loclai = pft$SLA[zpft] * dbh2bl(dbh,ipft)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the effective DBH. ---------------------------------------------------------#
+   dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Decide how to calculate based on allometry.                                       #
+   #---------------------------------------------------------------------------------------#
+   if (iallom %in% c(0,1,2)){
+      crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
+   }else if (iallom %in% c(3)){
+      crown = ifelse( dbhuse >= pft$dbh.adult[ipft]
+                    , pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
+                    , loclai
+                    )#end ifelse
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Local LAI / Crown area should never be less than one. ---------------------------#
    crown = pmin(crown,loclai)
+   #---------------------------------------------------------------------------------------#
 
    return(crown)
 }#end function dbh2ca
@@ -315,7 +331,7 @@ dbh2bl.alt <<- function (dbh,genus){
       bleaf[large] = 0.0391 / C2B * x[large] ^ 0.5151
 
 
-   }else if(genushere == "hyeronima"){
+   }else if(genushere %in% c("hieronima","hyeronima","hieronyma")){
       h = dbh2h(4,dbh)
       x = dbh^2 * h
       
@@ -552,5 +568,28 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
 
    return(agb)
 }#end function agb.SL
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Volume allometry: this is literally the biomass equation above divided by wood       #
+# density.                                                                                 #
+#                                                                                          #
+# Palace, M., and co-authors, 2007: Necromass in undisturbed ad logged forests in the      #
+#     Brazilian Amazon.  Forest Ecol. Manag., 238, 309-318.                                #
+#     doi:10.1016/j.foreco.2006.10.026                                                     #
+#                                                                                          #
+#------------------------------------------------------------------------------------------#
+vol.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
+
+   vol = 0.002 * agb.SL(dbh,height,wdens,type=type,dead=dead) / wdens
+   return(vol)
+}#end function vol.SL
 #==========================================================================================#
 #==========================================================================================#

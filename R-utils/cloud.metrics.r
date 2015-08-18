@@ -468,15 +468,27 @@ cloud.metrics <<- function( x
 
 
    #---------------------------------------------------------------------------------------#
-   #      Find the tree cover.                                                             #
+   #      Check whether we can compute tree cover.                                         #
    #---------------------------------------------------------------------------------------#
-   if (! is.null(ptc)){
-      #----- Discard data that are not classified as vegetation. --------------------------#
-      zveg    = ifelse( ptc %in% c(3,4,5),z,NA)
+   if (is.null(ptc)){
+      #----- Skip canopy height calculation. ----------------------------------------------#
+      find.can = FALSE
       #------------------------------------------------------------------------------------#
+   }else{
+      #----- Discard data that are not classified as vegetation. --------------------------#
+      zveg     = ifelse( ptc %in% c(3,4,5),z,NA)
+      find.can = any(is.finite(zveg))
+      #------------------------------------------------------------------------------------#
+   }#end if (is.null(ptc))
+   #---------------------------------------------------------------------------------------#
 
 
 
+
+   #---------------------------------------------------------------------------------------#
+   #      Find tree cover if possible.                                                     #
+   #---------------------------------------------------------------------------------------#
+   if (find.can){
       #----- Use heights to break the return signal in classes. ---------------------------#
       zcut         = cut(x=zveg,breaks=zbreaks,right=FALSE)
       zprop        = lapply( X   = tapply(X=z,INDEX=zcut,FUN=length,simplify=FALSE)

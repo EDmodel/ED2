@@ -2127,10 +2127,10 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    !     The following variables control the density-dependent mortality rates.            !
    !---------------------------------------------------------------------------------------!
-   mort0(1)  =  0.0 ! -0.35
-   mort0(2)  =  0.0 ! -0.35
-   mort0(3)  =  0.0 ! -0.35
-   mort0(4)  =  0.0 ! -0.35
+   mort0(1)  = -0.2 ! -0.35
+   mort0(2)  = -0.2 ! -0.35
+   mort0(3)  = -0.2 ! -0.35
+   mort0(4)  = -0.2 ! -0.35
    mort0(5)  =  0.0
    mort0(6)  =  0.0
    mort0(7)  =  0.0
@@ -2140,15 +2140,15 @@ subroutine init_pft_mort_params()
    mort0(11) =  0.0
    mort0(12) =  0.0
    mort0(13) =  0.0
-   mort0(14) =  0.0 ! -0.35
-   mort0(15) =  0.0 ! -0.35
-   mort0(16) =  0.0 ! -0.35
-   mort0(17) =  0.0 ! -0.35
+   mort0(14) = -0.2 ! -0.35
+   mort0(15) = -0.2 ! -0.35
+   mort0(16) = -0.2 ! -0.35
+   mort0(17) = -0.2 ! -0.35
 
-   mort1(1)  = 2.0 ! 10.0
-   mort1(2)  = 2.0 ! 10.0
-   mort1(3)  = 2.0 ! 10.0
-   mort1(4)  = 2.0 ! 10.0
+   mort1(1)  = 5.0 ! 10.0
+   mort1(2)  = 5.0 ! 10.0
+   mort1(3)  = 5.0 ! 10.0
+   mort1(4)  = 5.0 ! 10.0
    mort1(5)  = 1.0
    mort1(6)  = 1.0
    mort1(7)  = 1.0
@@ -2158,15 +2158,15 @@ subroutine init_pft_mort_params()
    mort1(11) = 1.0
    mort1(12) = 1.0
    mort1(13) = 1.0
-   mort1(14) = 2.0 ! 10.0
-   mort1(15) = 2.0 ! 10.0
-   mort1(16) = 2.0 ! 10.0
-   mort1(17) = 2.0 ! 10.0
+   mort1(14) = 5.0 ! 10.0
+   mort1(15) = 5.0 ! 10.0
+   mort1(16) = 5.0 ! 10.0
+   mort1(17) = 5.0 ! 10.0
 
-   mort2(1:17) = 15.0 ! 20.0
-   mort2(2)    = 15.0 ! 20.0
-   mort2(3)    = 15.0 ! 20.0
-   mort2(4)    = 15.0 ! 20.0
+   mort2(1:17) = 20.0 ! 20.0
+   mort2(2)    = 20.0 ! 20.0
+   mort2(3)    = 20.0 ! 20.0
+   mort2(4)    = 20.0 ! 20.0
    mort2(5)    = 20.0
    mort2(6)    = 20.0
    mort2(7)    = 20.0
@@ -2176,10 +2176,10 @@ subroutine init_pft_mort_params()
    mort2(11)   = 20.0
    mort2(12)   = 20.0
    mort2(13)   = 20.0
-   mort2(14)   = 15.0 ! 20.0
-   mort2(15)   = 15.0 ! 20.0
-   mort2(16)   = 15.0 ! 20.0
-   mort2(17)   = 15.0 ! 20.0
+   mort2(14)   = 20.0 ! 20.0
+   mort2(15)   = 20.0 ! 20.0
+   mort2(16)   = 20.0 ! 20.0
+   mort2(17)   = 20.0 ! 20.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -2194,8 +2194,8 @@ subroutine init_pft_mort_params()
       m3_scale                  = treefall_disturbance_rate / tdr_default
    else
       treefall_disturbance_rate = abs(treefall_disturbance_rate)
-      tdr_default               = 0.01137329
-      m3_slope                  = 0.02939297
+      tdr_default               = 0.014 ! 0.01137329
+      m3_slope                  = 0.05  ! 0.02939297
       m3_scale                  = treefall_disturbance_rate / tdr_default
    end if
    mort3(1)  = m3_scale * ( m3_slope * (1. - rho( 1) / rho( 4)) )

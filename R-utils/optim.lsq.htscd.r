@@ -240,7 +240,7 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
    #     Check that there are at least four valid data points, otherwise, crash!           #
    #---------------------------------------------------------------------------------------#
-   if (n.use <= (n.par+1)){
+   if (n.use <= n.par){
       cat (" - Number of valid points: ",n.use,"\n")
       cat (" - Minimum number of valid points: ",n.par+1,"\n")
       stop(" Too few valid data points!")
@@ -302,7 +302,7 @@ optim.lsq.htscd <<- function( lsq.formula
       # solution, as the likelihood is a product of probabilities, which should be less    #
       # than 1, hence the negative requirement.                                            #
       #------------------------------------------------------------------------------------#
-      success     = opt.1st$convergence %==% 0 && opt.1st$value %<% 0
+      success     = opt.1st$convergence %==% 0
       #------------------------------------------------------------------------------------#
    }#end if ("try-error" %in% is(opt.1st))
    #----- Update both the first guess and the scale in case it converged. -----------------#
@@ -395,7 +395,7 @@ optim.lsq.htscd <<- function( lsq.formula
          # solution, as the likelihood is a product of probabilities, which should be less #
          # than 1, hence the negative requirement.                                         #
          #---------------------------------------------------------------------------------#
-         success = opt.hess$convergence %==% 0 && opt.hess$value %<% 0
+         success = opt.hess$convergence %==% 0
          #---------------------------------------------------------------------------------#
       }#end if ("try-error" %in% is(opt.hess))
       #------------------------------------------------------------------------------------#
@@ -566,7 +566,7 @@ optim.lsq.htscd <<- function( lsq.formula
             # bogus solution, as the likelihood is a product of probabilities, which       #
             # should be less than 1, hence the negative requirement.                       #
             #------------------------------------------------------------------------------#
-            success     = opt.boot$convergence %==% 0 && opt.boot$value %<% 0
+            success     = opt.boot$convergence %==% 0
             nsteps.now  = opt.boot$counts["function"]
             #------------------------------------------------------------------------------#
          }#end if
@@ -971,7 +971,7 @@ fitted.lsq.htscd <<- function(object,...){
 
 #==========================================================================================#
 #==========================================================================================#
-#    residuals.lsq.htscd -- This function predicts the model using the object.               #
+#    residuals.lsq.htscd -- This function predicts the model using the object.             #
 #------------------------------------------------------------------------------------------#
 residuals.lsq.htscd <<- function(object,...){
    #---------------------------------------------------------------------------------------#

@@ -9,7 +9,7 @@ joborder="${here}/joborder.txt"         # ! File with the job instructions
 outroot=""
 submit="y"       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod="t"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+useperiod="a"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # "a" -- All period
                  # "t" -- One eddy flux tower met cycle
                  # "u" -- User defined period, defined by the variables below.
@@ -84,8 +84,8 @@ initrc="${HOME}/.bashrc"
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-#rscripts="plot_yearly.r"
-rscripts="plot_monthly.r"
+rscripts="plot_yearly.r"
+#rscripts="plot_monthly.r"
 #rscripts="plot_census.r" 
 #rscripts="plot_ycomp.r"
 #rscripts="plot_eval_ed.r"
@@ -959,8 +959,49 @@ do
       #------------------------------------------------------------------------------------#
       if [ "x${submitnow}" == "xy" ] || [ "x${submitnow}" == "xY" ]
       then
+         #---------------------------------------------------------------------------------#
+         #     Make sure the job won't submit the hard maximum limit.                      #
+         #---------------------------------------------------------------------------------#
+         njobs=$(qstat | wc -l)
+         if [ ${njobs} -ge 130 ]
+         then
+            echo "        + Queue is full... wait until there is room to submit job..."
+            nwait=0
+            while [ ${njobs} -ge 130 ]
+            do
+               let nwait=${nwait}+10
+               echo "        - Waiting before trying again... (${nwait} seconds)..."
+               sleep 10
+               njobs=$(qstat | wc -l)
+            done
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Submit, then check whether it went through.  If not, keep trying until it   #
+         # works (or give up after 10 attempts).                                           #
+         #---------------------------------------------------------------------------------#
          qsub ${epostnow} 1> /dev/null 2> /dev/null
          sleep 3
+         nfail=$(qclean | wc -l)
+         attempt=1
+         while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
+         do
+             let attempt=${attempt}+1
+             echo "        + Failed submission... Trying again (new attempt #${attempt})"
+             qsub ${epostnow} 1> /dev/null 2> /dev/null
+             sleep 3
+             nfail=$(qclean | wc -l)
+             if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
+             then
+                echo "          - Giving up, looks like a more serious problem..."
+             elif [ ${nfail} -eq 0 ]
+             then
+                echo "          - Success!!!"
+             fi
+         done
+         #---------------------------------------------------------------------------------#
       fi
       #------------------------------------------------------------------------------------#
    done

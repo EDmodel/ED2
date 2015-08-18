@@ -1393,32 +1393,61 @@ do
 
 
          #----- Submit job. ---------------------------------------------------------------#
-         blah="  Polygon job submitted."
          qsub ${callserial} 1> /dev/null 2> /dev/null
          #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Submit, then check whether it went through.  If not, keep trying until it   #
+         # works (or give up after 10 attempts).                                           #
+         #---------------------------------------------------------------------------------#
+         sleep 3
+         nfail=$(qclean | wc -l)
+         if [ ${nfail} -eq 0 ]
+         then
+            echo "  Polygon job submitted."
+         else
+            echo "  Failed submission... Trying again:"
+            attempt=0
+            while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
+            do
+                let attempt=${attempt}+1
+                echo -n "  + Attempt number: ${attempt}..."
+                qsub ${callserial} 1> /dev/null 2> /dev/null
+                sleep 3
+                nfail=$(qclean | wc -l)
+                if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
+                then
+                   echo "  Failed.  Giving up, looks like a more serious problem..."
+                elif [ ${nfail} -eq 0 ]
+                then
+                   echo "          - Success!!!"
+                else
+                   echo "  Failed."
+                fi
+            done
+         fi
+         #---------------------------------------------------------------------------------#
+
+
       else
          #----- Check whether I should submit from this path or not. ----------------------#
-         blah="  Polygon is running.  Do not submit this time."
+         echo "  Polygon is running.  Do not submit this time."
          #---------------------------------------------------------------------------------#
       fi
    elif [ ${runt} == "THE_END" ]
    then
-      blah="  Polygon has already finished."
+      echo "  Polygon has already finished."
    elif [ ${runt} == "STSTATE" ]
    then
-      blah="  Polygon has already reached steady state."
+      echo "  Polygon has already reached steady state."
    elif [ ${runt} == "EXTINCT" ]
    then
-      blah="  Polygon has gone extinct."
+      echo "  Polygon has gone extinct."
    else
-      blah="  Polygon is seriously messed up."
+      echo "  Polygon is seriously messed up."
    fi
    #---------------------------------------------------------------------------------------#
 
-   echo ${blah}
-
-   #----- Take a quick nap to avoid submitting too many jobs at once. ---------------------#
-   sleep 5
-   #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#

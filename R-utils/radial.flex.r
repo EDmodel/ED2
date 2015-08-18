@@ -7,44 +7,46 @@
 # boxed labels.                                                                            #
 #------------------------------------------------------------------------------------------#
 radial.flex <<- function ( lengths
-                         , radial.pos       = NULL
-                         , labels           = NA
-                         , label.pos        = NULL
-                         , radlab           = FALSE
-                         , lab.col          = par("fg")
-                         , lab.bg           = par("bg")
-                         , lab.cex          = par("cex.axis")
-                         , start            = 0
-                         , clockwise        = FALSE
-                         , rp.type          = "r"
-                         , pt.type          = "p"
-                         , label.prop       = 1.15
-                         , main             = ""
-                         , xlab             = ""
-                         , ylab             = ""
-                         , line.col         = par("fg")
-                         , lty              = par("lty")
-                         , lwd              = par("lwd")
-                         , mar              = c(2, 2, 3, 2)
-                         , show.grid        = TRUE
-                         , show.grid.labels = 4
-                         , show.radial.grid = TRUE
-                         , show.radial.edge = FALSE
-                         , grid.col         = "grey"
-                         , grid.bg          = "transparent"
-                         , grid.left        = FALSE
-                         , grid.unit        = NULL
-                         , point.symbols    = NULL
-                         , point.col        = NULL
-                         , show.centroid    = FALSE
-                         , radial.lim       = NULL
-                         , radial.labels    = NULL
-                         , radial.col       = lab.col
-                         , radial.bg        = lab.bg
-                         , radial.cex       = par("cex.lab")
-                         , boxed.radial     = TRUE
-                         , poly.col         = NULL
-                         , add              = FALSE
+                         , radial.pos         = NULL
+                         , labels             = NA
+                         , label.pos          = NULL
+                         , radlab             = FALSE
+                         , lab.col            = par("fg")
+                         , lab.bg             = par("bg")
+                         , lab.cex            = par("cex.axis")
+                         , start              = 0
+                         , clockwise          = FALSE
+                         , rp.type            = "r"
+                         , pt.type            = "p"
+                         , label.prop         = 1.15
+                         , main               = ""
+                         , xlab               = ""
+                         , ylab               = ""
+                         , line.col           = par("fg")
+                         , lty                = par("lty")
+                         , lwd                = par("lwd")
+                         , mar                = c(2, 2, 3, 2)
+                         , show.grid          = TRUE
+                         , show.grid.labels   = 4
+                         , show.radial.grid   = TRUE
+                         , show.radial.labels = TRUE
+                         , show.radial.edge   = FALSE
+                         , grid.col           = "grey"
+                         , grid.bg            = "transparent"
+                         , grid.left          = FALSE
+                         , grid.unit          = NULL
+                         , point.symbols      = NULL
+                         , point.col          = NULL
+                         , show.centroid      = FALSE
+                         , radial.at          = NULL
+                         , radial.lim         = NULL
+                         , radial.labels      = NULL
+                         , radial.col         = lab.col
+                         , radial.bg          = lab.bg
+                         , radial.cex         = par("cex.lab")
+                         , boxed.radial       = TRUE
+                         , poly.col           = NULL
+                         , add                = FALSE
                          , ...
                          ){
 
@@ -303,41 +305,51 @@ radial.flex <<- function ( lengths
       #------------------------------------------------------------------------------------#
       if (clockwise) label.pos = - label.pos
       if (start    ) label.pos =   label.pos + start
-      xpos = cos(label.pos) * maxlength
-      ypos = sin(label.pos) * maxlength
-      if (show.radial.grid) segments(0, 0, xpos, ypos, col = grid.col)
+      if (show.radial.grid){
+         if (is.null(radial.at)){
+            xradial = cos(label.pos) * maxlength
+            yradial = sin(label.pos) * maxlength
+         }else{
+            xradial = cos(radial.at) * maxlength
+            yradial = sin(radial.at) * maxlength
+         }#end if (is.null(radial.at))
+         segments(0, 0, xradial, yradial, col = grid.col)
+      }#else
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
       #     Plot the angle labels.                                                         #
       #------------------------------------------------------------------------------------#
-      xpos = cos(label.pos) * maxlength * label.prop
-      ypos = sin(label.pos) * maxlength * label.prop
-      if (radlab) {
-         for (label in sequence(length(labels))){
-            lab.srt = ( (180 * label.pos[label]/pi)
-                      +  180 * (label.pos[label] > pi/2 && label.pos[label] < 3 * pi/2) )
-            text( x      = xpos[label]
-                , y      = ypos[label]
-                , labels = if (is.exp){as.expression(labels[label])}else{labels[label]}
-                , cex    = lab.cex
-                , srt    = lab.srt
-                , col    = lab.col
-                , bg     = lab.bg
-                )#end text
-          }#end for (label in sequence(length(labels)))
-      }else{
-         boxed.labels( x      = xpos
-                     , y      = ypos
-                     , labels = if (is.exp){as.expression(labels)}else{labels}
-                     , ypad   = 0.7
-                     , border = FALSE
-                     , col    = lab.col
-                     , bg     = lab.bg
-                     , cex    = lab.cex
-                     )#end boxed.labels
-      }#end if (radlab)
+      if (show.radial.labels){
+         xpos = cos(label.pos) * maxlength * label.prop
+         ypos = sin(label.pos) * maxlength * label.prop
+         if (radlab) {
+            for (label in sequence(length(labels))){
+               lab.srt = ( (180 * label.pos[label]/pi)
+                         +  180 * (label.pos[label] > pi/2 && label.pos[label] < 3 * pi/2) 
+                         )#end lab.srt
+               text( x      = xpos[label]
+                   , y      = ypos[label]
+                   , labels = if (is.exp){as.expression(labels[label])}else{labels[label]}
+                   , cex    = lab.cex
+                   , srt    = lab.srt
+                   , col    = lab.col
+                   , bg     = lab.bg
+                   )#end text
+             }#end for (label in sequence(length(labels)))
+         }else{
+            boxed.labels( x      = xpos
+                        , y      = ypos
+                        , labels = if (is.exp){as.expression(labels)}else{labels}
+                        , ypad   = 0.7
+                        , border = FALSE
+                        , col    = lab.col
+                        , bg     = lab.bg
+                        , cex    = lab.cex
+                        )#end boxed.labels
+         }#end if (radlab)
+      }#end if (show.radial.labels)
       #------------------------------------------------------------------------------------#
 
 

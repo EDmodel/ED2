@@ -897,6 +897,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(1,4,25,100,2500)
                                        , names  = c("1","4","25","100","2500")
                                        )#end list
+   flagvar[["tf.slope"]]         = list( descr  = "Mortality slope"
+                                       , numeric = FALSE
+                                       , values = c("-","+")
+                                       , names  = c("0.05","0.15")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1058,9 +1063,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , mult  =    0.1)
    numvar[["treefall"       ]] = list( descr = "TF Disturbance"
                                      , unit  = "%/yr"
-                                     , fmt   = "%.2f"
+                                     , fmt   = "%.3f"
                                      , off   =    0.0
-                                     , mult  =   0.01)
+                                     , mult  =   0.001)
    numvar[["leaf.absorb.nir"]] = list( descr = "Leaf NIR absorptance"
                                      , unit  = ""
                                      , fmt   = "%.3f"
@@ -1169,9 +1174,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(            8,          17)
       }else if (lenici == 18){
          nparms = 2
-         param  = c("icanturb","isas")
-         na     = c(        13,    16)
-         nz     = c(        14,    18)
+         param  = c("tf.slope","treefall")
+         na     = c(        14,        15)
+         nz     = c(        14,        18)
       }else if (lenici == 19){
          nparms = 3
          param  = c("met.forcing","isas","iage")
@@ -1228,10 +1233,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(      9,            19,           28)
          nz     = c(     12,            21,           29)
       }else if (lenici == 30){
-         nparms = 4
-         param  = c("isas","iage","idiversity","leaf.absorb.vis")
-         na     = c(     6,    13,          19,               28)
-         nz     = c(     8,    14,          20,               30)
+         nparms = 3
+         param  = c("include.fire","isoil.text","treefall")
+         na     = c(            11,          19,        27)
+         nz     = c(            12,          20,        30)
       }else if (lenici == 31){
          nparms = 3
          param  = c("iallom","idimort","include.fire")
