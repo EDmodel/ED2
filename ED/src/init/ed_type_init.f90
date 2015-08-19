@@ -294,7 +294,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%fmean_wshed_wg          (ico) = 0.0
 
    cpatch%fmean_lai               (ico) = 0.0
-   cpatch%bdead                   (ico) = 0.0
+   cpatch%fmean_bdead             (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
