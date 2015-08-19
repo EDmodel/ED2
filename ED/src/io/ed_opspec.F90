@@ -1155,6 +1155,7 @@ subroutine ed_opspec_misc
                                     , iallom                       & ! intent(in)
                                     , igrass                       & ! intent(in)
                                     , growth_resp_scheme           & ! intent(in)
+                                    , storage_resp_scheme          & ! intent(in)
                                     , min_site_area                ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
@@ -1578,6 +1579,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
          'Invalid GROWTH_RESP_SCHEME, it must be 0 or 1. Yours is set to'                  &
         ,growth_resp_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (storage_resp_scheme < 0 .or. storage_resp_scheme > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+         'Invalid STORAGE_RESP_SCHEME, it must be 0 or 1. Yours is set to'                 &
+        ,storage_resp_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

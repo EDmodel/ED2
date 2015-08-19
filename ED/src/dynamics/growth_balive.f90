@@ -40,6 +40,7 @@ module growth_balive
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
       use ed_misc_coms    , only : igrass                 & ! intent(in)
                                  , growth_resp_scheme     & ! intent(in)
+                                 , storage_resp_scheme    & ! intent(in)
                                  , ibigleaf               ! ! intent(in)
       use budget_utils    , only : update_budget          ! ! sub-routine
 
@@ -75,7 +76,8 @@ module growth_balive
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
       real                          :: temp_dep
-      real                          :: growth_resp_int         ! Growth resp / balive
+      real                          :: growth_resp_int          ! Growth resp / balive
+      real                          :: storage_resp_int         ! Growth resp / balive
       !------------------------------------------------------------------------------------!
 
 
@@ -150,19 +152,41 @@ module growth_balive
                   !          / ( 1.0  + exp( 0.4 * (278.15 - csite%avg_daily_temp(ipa))))
                   temp_dep = 1.0
                   !------------------------------------------------------------------------!
+                  select case(storage_resp_scheme)
+                  case(0)
+                     cpatch%leaf_storage_resp(ico) = 0.0
+                     cpatch%root_storage_resp(ico) = 0.0
+                     cpatch%sapa_storage_resp(ico) = cpatch%bstorage(ico)                  &
+                                                   * storage_turnover_rate(ipft)           &
+                                                   * tfact * temp_dep
+                     cpatch%sapb_storage_resp(ico) = 0.0
 
-                  cpatch%storage_respiration(ico) = cpatch%bstorage(ico)                   &
-                                                  * storage_turnover_rate(ipft)            &
-                                                  * tfact * temp_dep
+                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
+                                            - cpatch%sapa_storage_resp(ico)
+                  case(1)
+                     storage_resp_int = cpatch%bstorage(ico) * storage_turnover_rate(ipft) &
+                                      * tfact * temp_dep
 
-                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
-                                         - cpatch%storage_respiration(ico)
+                     cpatch%leaf_storage_resp(ico) = storage_resp_int *cpatch%bleaf(ico)
+                     cpatch%root_storage_resp(ico) = storage_resp_int *cpatch%broot(ico)
+                     cpatch%sapa_storage_resp(ico) = storage_resp_int *cpatch%bsapwooda(ico)
+                     cpatch%sapb_storage_resp(ico) = storage_resp_int *cpatch%bsapwoodb(ico)
+
+                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
+                                            - cpatch%leaf_storage_resp(ico)                &
+                                            - cpatch%root_storage_resp(ico)                &
+                                            - cpatch%sapa_storage_resp(ico)                &
+                                            - cpatch%sapb_storage_resp(ico)
+                  end select
 
                   !------------------------------------------------------------------------!
                   !     When storage carbon is lost, allow the associated nitrogen to go   !
                   ! to litter in order to maintain prescribed C2N ratio.                   !
                   !------------------------------------------------------------------------!
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%storage_respiration(ico)  &
+                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + (cpatch%leaf_storage_resp(ico)   &
+                                                        +  cpatch%root_storage_resp(ico)   &
+                                                        +  cpatch%sapa_storage_resp(ico)   &
+                                                        +  cpatch%sapb_storage_resp(ico))  &
                                                         / c2n_storage * cpatch%nplant(ico)
 
                   !------------------------------------------------------------------------!
@@ -360,7 +384,8 @@ module growth_balive
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           ! ! subroutine
       use ed_misc_coms    , only : ibigleaf               & ! intent(in)
-                                 , growth_resp_scheme     ! ! intent(in)
+                                 , growth_resp_scheme     & ! intent(in)
+                                 , storage_resp_scheme    ! ! intent(in)
       use mortality       , only : mortality_rates        ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -395,6 +420,7 @@ module growth_balive
       real                          :: N_uptake_pot
       real                          :: temp_dep
       real                          :: growth_resp_int         ! Growth resp / balive
+      real                          :: storage_resp_int        ! Growth resp / balive
       !------------------------------------------------------------------------------------!
 
 
@@ -463,13 +489,32 @@ module growth_balive
                   !          / ( 1.0  + exp( 0.4 * (278.15 - csite%avg_daily_temp(ipa))))
                   temp_dep = 1.0
                   !------------------------------------------------------------------------!
+                  select case(storage_resp_scheme)
+                  case(0)
+                     cpatch%sapa_storage_resp(ico) = cpatch%bstorage(ico)                  &
+                                                   * storage_turnover_rate(ipft)           &
+                                                   * tfact * temp_dep
+                     cpatch%leaf_storage_resp(ico) = 0.0
+                     cpatch%root_storage_resp(ico) = 0.0
+                     cpatch%sapb_storage_resp(ico) = 0.0
 
-                  cpatch%storage_respiration(ico) = cpatch%bstorage(ico)                   &
-                                                  * storage_turnover_rate(ipft)            &
-                                                  * tfact * temp_dep
+                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
+                                            - cpatch%sapa_storage_resp(ico)
+                  case(1)
+                     storage_resp_int = cpatch%bstorage(ico) * storage_turnover_rate(ipft) &
+                                      * tfact * temp_dep
 
-                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                              &
-                                         - cpatch%storage_respiration(ico)
+                     cpatch%leaf_storage_resp(ico) = storage_resp_int *cpatch%bleaf(ico)
+                     cpatch%root_storage_resp(ico) = storage_resp_int *cpatch%broot(ico)
+                     cpatch%sapa_storage_resp(ico) = storage_resp_int *cpatch%bsapwooda(ico)
+                     cpatch%sapb_storage_resp(ico) = storage_resp_int *cpatch%bsapwoodb(ico)
+
+                     cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
+                                            - cpatch%leaf_storage_resp(ico)                &
+                                            - cpatch%root_storage_resp(ico)                &
+                                            - cpatch%sapa_storage_resp(ico)                &
+                                            - cpatch%sapb_storage_resp(ico)
+                  end select
 
                   !------------------------------------------------------------------------!
                   !      Calculate actual, potential and maximum carbon balances.          !
