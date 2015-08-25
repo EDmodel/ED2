@@ -1085,9 +1085,9 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_wood, then we scale by WAI.                                 !
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
-      newni   = 1.0 / newn
-      rnplant = cpatch%nplant(recc) * newni
-      dnplant = 1.0 - rnplant
+      newni   = 1.0 / (cpatch%nplant(recc) + cpatch%nplant(donc))
+      rnplant = cpatch%nplant(recc) / (cpatch%nplant(recc) + cpatch%nplant(donc))
+      dnplant = 1.d0 - dble(rnplant)
       !------------------------------------------------------------------------------------!
 
 
