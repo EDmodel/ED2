@@ -1970,7 +1970,7 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
-            cpatch%dmean_leaf_temp (recc) = cpatch%nplant          (recc) * rnplant        &
+            cpatch%dmean_leaf_temp (recc) = cpatch%dmean_leaf_temp (recc) * rnplant        &
                                           + cpatch%dmean_leaf_temp (donc) * dnplant
             cpatch%dmean_leaf_fliq (recc) = 0.0
             cpatch%dmean_leaf_vpdef(recc) = cpatch%dmean_leaf_vpdef(recc) * rnplant        &
