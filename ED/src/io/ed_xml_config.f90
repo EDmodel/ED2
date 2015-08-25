@@ -892,12 +892,20 @@ recursive subroutine read_ed_xml_config(filename)
         
         call getConfigREAL  ('min_recruit_size','fusefiss',i,rval,texist)
         if(texist) min_recruit_size = real(rval)
+
+
+        call getConfigREAL  ('fusetol','fusefiss',i,rval,texist)
+        if(texist) fusetol = real(rval)
         call getConfigREAL  ('fusetol_h','fusefiss',i,rval,texist)
         if(texist) fusetol_h = real(rval)
         call getConfigREAL  ('lai_fuse_tol','fusefiss',i,rval,texist)
         if(texist) lai_fuse_tol = real(rval)
         call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
         if(texist) lai_tol = real(rval)
+        call getConfigREAL  ('ff_nhgt','fusefiss',i,rval,texist)
+        if(texist) ff_nght = real(rval)
+        call getConfigREAL  ('coh_tolerance_max','fusefiss',i,rval,texist)
+        if(texist) coh_tolerance_max = real(rval)
         call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
