@@ -1244,9 +1244,9 @@ subroutine write_ed_xml_config
 !  integer :: ival
   integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival
   character(512) :: xfilout 
-  integer :: i
+!  integer :: i
   real(8) :: rval
-  character*(*) :: filename
+!  character*(*) :: filename
   character(len=str_len)  :: cval
   integer             :: ng
 
