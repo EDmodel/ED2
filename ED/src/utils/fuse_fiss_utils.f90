@@ -1085,9 +1085,9 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_wood, then we scale by WAI.                                 !
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
-      newni   = 1.0 / newn
-      rnplant = cpatch%nplant(recc) * newni
-      dnplant = 1.0 - rnplant
+      newni   = 1.0 / (cpatch%nplant(recc) + cpatch%nplant(donc))
+      rnplant = cpatch%nplant(recc) / (cpatch%nplant(recc) + cpatch%nplant(donc))
+      dnplant = 1.d0 - dble(rnplant)
       !------------------------------------------------------------------------------------!
 
 
@@ -2000,7 +2000,7 @@ module fuse_fiss_utils
             !------------------------------------------------------------------------------!
          else
             !----- None of the cohorts has leaf biomass use nplant to scale them. ---------!
-            cpatch%dmean_leaf_temp (recc) = cpatch%nplant          (recc) * rnplant        &
+            cpatch%dmean_leaf_temp (recc) = cpatch%dmean_leaf_temp (recc) * rnplant        &
                                           + cpatch%dmean_leaf_temp (donc) * dnplant
             cpatch%dmean_leaf_fliq (recc) = 0.0
             cpatch%dmean_leaf_vpdef(recc) = cpatch%dmean_leaf_vpdef(recc) * rnplant        &

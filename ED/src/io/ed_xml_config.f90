@@ -136,7 +136,7 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigSTRING  ('output_filepath','misc',i,cval,texist)
          if(texist) ffilout = trim(cval)
          call getConfigSTRING  ('input_filepath','misc',i,cval,texist)
-         if (texist) thsums_database = trim(cval)
+         if (texist) sfilin = trim(cval)
 
          call getConfigSTRING  ('history_out_filepath','misc',i,cval,texist)
          if(texist) sfilout = trim(cval)
@@ -892,13 +892,21 @@ recursive subroutine read_ed_xml_config(filename)
         
         call getConfigREAL  ('min_recruit_size','fusefiss',i,rval,texist)
         if(texist) min_recruit_size = real(rval)
+
+
+        call getConfigREAL  ('fusetol','fusefiss',i,rval,texist)
+        if(texist) fusetol = real(rval)
         call getConfigREAL  ('fusetol_h','fusefiss',i,rval,texist)
         if(texist) fusetol_h = real(rval)
         call getConfigREAL  ('lai_fuse_tol','fusefiss',i,rval,texist)
         if(texist) lai_fuse_tol = real(rval)
         call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
         if(texist) lai_tol = real(rval)
-        call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
+        call getConfigREAL  ('ff_nhgt','fusefiss',i,rval,texist)
+        if(texist) ff_nhgt = real(rval)
+        call getConfigREAL  ('coh_tolerance_max','fusefiss',i,rval,texist)
+        if(texist) coh_tolerance_max = real(rval)
+!        call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -1214,21 +1222,67 @@ end subroutine getConfigREAL
 
 subroutine write_ed_xml_config
 !!produce a record of parameters used in a run
-  use ed_max_dims, only: n_pft
+!  use ed_max_dims, only: n_pft
   use pft_coms
+  use hydrology_coms
+  use met_driver_coms
   use canopy_radiation_coms
+  use disturb_coms
+  use phenology_coms
+  use physiology_coms
   use decomp_coms
-  use ed_misc_coms, only: sfilout
+  use fusion_fission_coms
+!  use ed_misc_coms, only: sfilout
+  use grid_coms, only : ngrids
+  use ed_max_dims  !, only : str_len
+  use soil_coms    !, only: infiltration_method, dewmax, water_stab_thresh
+!  use ed_data
+  use ed_misc_coms !, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
+  use rk4_coms     !, only : rk4min_veg_temp
+
   implicit none
-  integer :: ival
+!  integer :: ival
+  integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival
   character(512) :: xfilout 
-  integer :: i
+!  integer :: i
+  real(8) :: rval
+!  character*(*) :: filename
+  character(len=str_len)  :: cval
+  integer             :: ng
 
   write(xfilout,"(a)") trim(sfilout)//".xml"
 
   !! construct list
   call libxml2f90_ll_add_list("OUTCONFIG")
   call libxml2f90_ll_opentag("config")
+  !-----------------------------------------------------
+
+  !************   MISC  *****************
+  call libxml2f90_ll_opentag("misc")
+     call putConfigINT("restart_mode",ied_init_mode)
+     call putConfigSTRING("output_filepath",ffilout)
+     call putConfigSTRING("input_filepath",sfilin)
+     call putConfigSTRING("history_out_filepath",sfilout)
+     call putConfigINT("ivegt_dynamics",ivegt_dynamics)
+     call putConfigINT("ibigleaf",ibigleaf)
+     call putConfigINT("integration_scheme",integration_scheme)
+  call libxml2f90_ll_closetag("misc")
+
+  !************   ED_MISC  *****************
+  call libxml2f90_ll_opentag("ed_misc")
+     call putConfigINT("restart_target_year",restart_target_year)
+     call putConfigINT("outputMonth",outputMonth)
+     call putConfigINT("burnin",burnin)
+     call putConfigINT("vary_elev",vary_elev)
+     call putConfigINT("vary_rad",vary_rad)
+     call putConfigINT("vary_hyd",vary_hyd)
+  call libxml2f90_ll_closetag("ed_misc")
+
+  !************   LAND USE  *****************
+!  call libxml2f90_ll_opentag("landuse")
+!    do i=1,num_lu_trans
+!    end do
+!  call libxml2f90_ll_closetag("landuse")
 
   !************   PFT  *****************
   do i=1,n_pft
@@ -1445,6 +1499,171 @@ subroutine write_ed_xml_config
      endif
   end do
  
+  !************   PFT CONSTANTS  *****************
+  call libxml2f90_ll_opentag("pftconst")
+     call putConfigREAL("c2n_slow",c2n_slow)
+     call putConfigREAL("c2n_structural",c2n_structural)
+     call putConfigREAL("l2n_stem",l2n_stem)
+     call putConfigREAL("C2B",C2B)
+  call libxml2f90_ll_closetag("pftconst")
+
+  !************   HYDROLOGY  *****************
+  call libxml2f90_ll_opentag("hydro")
+     call putConfigINT("useTOPMODEL",useTOPMODEL)
+     call putConfigINT("useRUNOFF",useRUNOFF)
+     call putConfigINT("outputPeriod",HydroOutputPeriod)
+     call putConfigREAL("MoistRateTuning",MoistRateTuning)
+     call putConfigREAL("MoistSatThresh",MoistSatThresh)
+     call putConfigREAL("MoistdWT",Moist_dWT)
+     call putConfigREAL("FracLiqRunoff",FracLiqRunoff)
+     call putConfigREAL("runoff_vmax",runoff_vmax)
+     call putConfigREAL("GrassLAImax",GrassLAImax)
+  call libxml2f90_ll_closetag("hydro")
+
+  !************   CLIMATE SCENARIO  *****************
+  call libxml2f90_ll_opentag("scenario")
+     call putConfigREAL("atm_tmp_intercept",atm_tmp_intercept)
+     call putConfigREAL("atm_tmp_slope",atm_tmp_slope)
+     call putConfigREAL("prec_intercept",prec_intercept)
+     call putConfigREAL("prec_slope",prec_slope)
+     call putConfigINT("humid_scenario",humid_scenario)
+  call libxml2f90_ll_closetag("scenario")
+
+  !************   LAPSE PARMS  *****************
+  call libxml2f90_ll_opentag("lapse")
+     call putConfigREAL("geoht",lapse%geoht)
+     call putConfigREAL("vels",lapse%vels)
+     call putConfigREAL("atm_ustar",lapse%atm_ustar)
+     call putConfigREAL("atm_tmp",lapse%atm_tmp)
+     call putConfigREAL("rv",lapse%atm_shv)
+     call putConfigREAL("prss",lapse%prss)
+     call putConfigREAL("pcpg",lapse%pcpg)
+     call putConfigREAL("atm_co2",lapse%atm_co2)
+     call putConfigREAL("rlong",lapse%rlong)
+     call putConfigREAL("par_diffuse",lapse%par_diffuse)
+     call putConfigREAL("par_beam",lapse%par_beam)
+     call putConfigREAL("nir_diffuse",lapse%nir_diffuse)
+     call putConfigREAL("nir_beam",lapse%nir_beam)
+     call putConfigREAL("pptnorm",lapse%pptnorm)
+  call libxml2f90_ll_closetag("lapse")
+
+  !************   CANOPY RADIATION  *****************
+  call libxml2f90_ll_opentag("radiation")
+     call putConfigREAL("rlong_min",prec_slope)
+     call putConfigREAL("veg_temp_min",rk4min_veg_temp)
+     call putConfigREAL("leaf_scatter_nir",leaf_scatter_nir)
+     call putConfigREAL("leaf_reflect_nir",leaf_reflect_nir)
+     call putConfigREAL("leaf_trans_nir",leaf_trans_nir)
+     call putConfigREAL("diffuse_backscatter_vis",leaf_backscatter_vis)
+     call putConfigREAL("diffuse_backscatter_nir",leaf_backscatter_nir)
+  call libxml2f90_ll_closetag("radiation")
+
+  !************   SOILS  *****************
+  call libxml2f90_ll_opentag("soil")
+     call putConfigREAL("water_stab_thresh",water_stab_thresh)
+     call putConfigINT("infiltration_method",infiltration_method)
+     call putConfigREAL("dewmax",dewmax)
+     call putConfigSTRING("soilstate_db",soilstate_db)
+     call putConfigSTRING("soildepth_db",soildepth_db)
+     call putConfigINT("isoilstateinit",isoilstateinit)
+     call putConfigINT("isoildepthflg",isoildepthflg)
+     call putConfigREAL("runoff_time",runoff_time)
+     call libxml2f90_ll_opentag("grid")
+        do ng=1,ngrids
+           call putConfigSTRING("vegetation_database",veg_database(ng))
+           call putConfigSTRING("soil_database",soil_database(ng))
+        end do
+     call libxml2f90_ll_closetag("grid")
+
+  call libxml2f90_ll_closetag("soil")
+
+  !************   DECOMPOSITION  *****************
+  call libxml2f90_ll_opentag("decomposition")
+     call putConfigREAL("cwd_frac",runoff_time)
+     call putConfigREAL("resp_opt_water",runoff_time)
+     call putConfigREAL("resp_water_below_opt",runoff_time)
+     call putConfigREAL("resp_water_above_opt",runoff_time)
+     call putConfigREAL("resp_temperature_increase",runoff_time)
+     call putConfigREAL("N_immobil_supply_scale",runoff_time)
+     call putConfigREAL("r_fsc",runoff_time)
+     call putConfigREAL("r_stsc",runoff_time)
+     call putConfigREAL("r_ssc",runoff_time)
+     call putConfigREAL("K1",runoff_time)
+     call putConfigREAL("K2",runoff_time)
+     call putConfigREAL("K3",runoff_time)
+     call putConfigREAL("decay_rate_stsc",runoff_time)
+     call putConfigREAL("decay_rate_fsc",runoff_time)
+     call putConfigREAL("decay_rate_ssc",runoff_time)
+     call putConfigREAL("N_decomp_lim",runoff_time)
+  call libxml2f90_ll_closetag("decomposition")
+
+  !************   FUSION/FISSION  *****************
+  call libxml2f90_ll_opentag("fusefiss")
+     call putConfigREAL("min_recruit_size",min_recruit_size)
+     call putConfigREAL("fusetol",fusetol)
+     call putConfigREAL("fusetol_h",fusetol_h)
+     call putConfigREAL("lai_fuse_tol",lai_fuse_tol)
+     call putConfigREAL("lai_tol",lai_tol)
+     call putConfigREAL("ff_nhgt",ff_nhgt)
+     call putConfigREAL("coh_tolerance_max",coh_tolerance_max)
+  call libxml2f90_ll_closetag("fusefiss")
+
+  !************   DISTURBANCE  *****************
+  call libxml2f90_ll_opentag("disturbance")
+     ! --- General
+     call putConfigREAL("min_new_patch_area",min_patch_area)
+     call putConfigREAL("min_patch_area",min_patch_area)
+     call putConfigINT("ianth_disturb",ianth_disturb)
+     ! --- Treefall
+     call putConfigREAL("treefall_disturbance_rate",treefall_disturbance_rate)
+     call putConfigREAL("Time2Canopy",Time2Canopy)
+     call putConfigREAL("treefall_hite_threshold",treefall_hite_threshold)
+     ! --- Forestry
+     call putConfigINT("forestry_on",forestry_on)
+     call putConfigINT("agriculture_on",agriculture_on)
+     call putConfigINT("plantation_year",plantation_year)
+     call putConfigREAL("plantation_rotation",plantation_rotation)
+     call putConfigREAL("min_harvest_biomass",min_harvest_biomass)
+     call putConfigREAL("mature_harvest_age",mature_harvest_age)
+     ! --- Fire
+     call putConfigINT("include_fire",include_fire)
+     call putConfigREAL("fire_dryness_threshold",fire_dryness_threshold)
+     call putConfigREAL("fire_parameter",fire_parameter)
+  call libxml2f90_ll_closetag("disturbance")
+
+  !************   PHENOLOGY  *****************
+  call libxml2f90_ll_opentag("phenology")
+     call putConfigREAL("retained_carbon_fraction",retained_carbon_fraction)
+     call putConfigREAL("theta_crit",thetacrit)
+     call putConfigREAL("dl_tr",dl_tr)
+     call putConfigREAL("st_tr1",st_tr1)
+     call putConfigREAL("st_tr2",st_tr2)
+     call putConfigREAL("phen_a",phen_a)
+     call putConfigREAL("phen_b",phen_b)
+     call putConfigREAL("phen_c",phen_c)
+     call putConfigINT("iphen_scheme",iphen_scheme)
+     call putConfigINT("iphenys1",iphenys1)
+     call putConfigINT("iphenysf",iphenysf)
+     call putConfigINT("iphenyf1",iphenyf1)
+     call putConfigINT("iphenyff",iphenyff)
+  call libxml2f90_ll_closetag("phenology")
+
+  !************   PHYSIOLOGY  *****************
+  call libxml2f90_ll_opentag("physiology")
+     call putConfigINT("n_plant_lim",n_plant_lim)
+  call libxml2f90_ll_closetag("physiology")
+
+  !************   INITIAL CONDITIONS  *****************
+  call libxml2f90_ll_opentag("initcond")
+     call putConfigREAL("fsc",init_fsc)
+     call putConfigREAL("stsc",init_stsc)
+     call putConfigREAL("ssc",init_ssc)
+     call putConfigREAL("stsl",init_stsl)
+     call putConfigREAL("fsn",init_fsn)
+     call putConfigREAL("msn",init_msn)
+  call libxml2f90_ll_closetag("initcond")
+
+  !-----------------------------------------------------
   call libxml2f90_ll_closetag("config")
   !! write list
   print*,"Wrote Config Record:", trim(xfilout)
