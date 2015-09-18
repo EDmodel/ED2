@@ -128,34 +128,6 @@ module growth_balive
 
                   call update_cb(cpatch,ico,cb_decrement)
 
-                  !call plant_maintenance(cpatch,ico,cpatch%broot(ico),cpatch%bleaf(ico)    &
-                  !                      ,tfact,daily_C_gain,csite%avg_daily_temp(ipa))
-
-
-                  !----- Subtract maintenance costs from pools. ---------------------------!
-                  !cpatch%balive           (ico) = cpatch%balive                   (ico)    &
-                  !                              - cpatch%leaf_maintenance         (ico)    &
-                  !                              - cpatch%root_maintenance         (ico)
-                  !cpatch%bleaf            (ico) = cpatch%bleaf                    (ico)    &
-                  !                              - cpatch%leaf_maintenance         (ico)
-                  !cpatch%broot            (ico) = cpatch%broot                    (ico)    &
-                  !                              - cpatch%root_maintenance         (ico)
-                  !cpatch%cb            (13,ico) = cpatch%cb                    (13,ico)    &
-                  !                              - cpatch%leaf_maintenance         (ico)    &
-                  !                              - cpatch%root_maintenance         (ico)
-                  !cpatch%cb_lightmax   (13,ico) = cpatch%cb_lightmax           (13,ico)    &
-                  !                              - cpatch%leaf_maintenance         (ico)    &
-                  !                              - cpatch%root_maintenance         (ico)
-                  !cpatch%cb_moistmax   (13,ico) = cpatch%cb_moistmax           (13,ico)    &
-                  !                              - cpatch%leaf_maintenance         (ico)    &
-                  !                              - cpatch%root_maintenance         (ico)
-                  !cpatch%cb_mlmax      (13,ico) = cpatch%cb_mlmax              (13,ico)    &
-                  !                              - cpatch%leaf_maintenance         (ico)    &
-                  !                              - cpatch%root_maintenance         (ico)
-                  !------------------------------------------------------------------------!
-
-
-
                   !------------------------------------------------------------------------!
                   !    Storage respiration/turnover_rate.                                  !
                   !    Calculate in same way as leaf and root turnover in kgC/plant/year.  !
@@ -277,11 +249,6 @@ module growth_balive
                              cpatch%phenology_status(ico) == 1)) then
                         cpatch%phenology_status(ico) = 1
                      end if
-                     !---------------------------------------------------------------------!
-                     
-                     ! call alloc_plant_c_balance(csite,ipa,ico,salloc,salloci              &
-                     !                           ,carbon_balance,nitrogen_uptake            &
-                     !                           ,cpoly%green_leaf_factor(ipft,isi))
                   end if
                   !------------------------------------------------------------------------!
 
@@ -813,38 +780,6 @@ module growth_balive
       end select
       !------------------------------------------------------------------------------------!
       
-      !-----------------------------------------------------------------------------------!
-      ! temp_dep = 1.0 / ( 1.0  + exp( 0.4 * (278.15 - csite%avg_daily_temp(ipa))))
-      !-----------------------------------------------------------------------------------!
-      temp_dep = 1.0
-      !------------------------------------------------------------------------!
-   !   select case(storage_resp_scheme)
-   !   case(0)
-   !      cpatch%leaf_storage_resp(ico) = 0.0
-   !      cpatch%root_storage_resp(ico) = 0.0
-   !      cpatch%sapa_storage_resp(ico) = cpatch%bstorage(ico)                  &
-   !                                    * storage_turnover_rate(ipft)           &
-   !                                    * tfact * temp_dep
-   !      cpatch%sapb_storage_resp(ico) = 0.0
-
-   !      !cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-   !      !                       - cpatch%sapa_storage_resp(ico)
-   !   case(1)
-   !      storage_resp_int = cpatch%bstorage(ico) / cpatch%balive(ico)           &
-   !                       * storage_turnover_rate(ipft) * tfact * temp_dep
-
-   !      cpatch%leaf_storage_resp(ico) = storage_resp_int *cpatch%bleaf(ico)
-   !      cpatch%root_storage_resp(ico) = storage_resp_int *cpatch%broot(ico)
-   !      cpatch%sapa_storage_resp(ico) = storage_resp_int *cpatch%bsapwooda(ico)
-   !      cpatch%sapb_storage_resp(ico) = storage_resp_int *cpatch%bsapwoodb(ico)
-
-         !cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-         !                       - cpatch%leaf_storage_resp(ico)                &
-         !                       - cpatch%root_storage_resp(ico)                &
-         !                       - cpatch%sapa_storage_resp(ico)                &
-         !                       - cpatch%sapb_storage_resp(ico)
-   !   end select
-
       return
    end subroutine get_maintenance
    !=======================================================================================!
@@ -880,17 +815,6 @@ module growth_balive
                                     
       cpatch%bleaf(ico)    = cpatch%bleaf(ico)    - cpatch%leaf_maintenance(ico)
       cpatch%broot(ico)    = cpatch%broot(ico)    - cpatch%root_maintenance(ico)
-      
-      !if (storage_resp_scheme == 0) then
-      !   cpatch%bstorage(ico) = cpatch%bstorage(ico) - cpatch%sapa_storage_resp(ico)
-      !   
-      !elseif (storage_resp_scheme == 1) then
-      !   cpatch%bstorage(ico) = cpatch%bstorage(ico)                           &
-      !                          - cpatch%leaf_storage_resp(ico)                &
-      !                          - cpatch%root_storage_resp(ico)                &
-      !                          - cpatch%sapa_storage_resp(ico)                &
-      !                          - cpatch%sapb_storage_resp(ico)
-      !end if
       
       cb_decrement = cpatch%leaf_maintenance(ico) + cpatch%root_maintenance(ico)
       !------------------------------------------------------------------------------------!
@@ -1133,26 +1057,29 @@ module growth_balive
       logical                        :: on_allometry
       logical                        :: time_to_flush
       integer                        :: phen_stat_in 
-      logical          , parameter   :: printout = .false.
-      character(len=11), parameter   :: fracfile = 'cballoc.txt'
+      !logical          , parameter   :: printout = .false.
+      !character(len=11), parameter   :: fracfile = 'cballoc.txt'
       !----- Locally saved variables. -----------------------------------------------------!
-      logical          , save        :: first_time = .true.
+      !logical          , save        :: first_time = .true.
       !------------------------------------------------------------------------------------!
 
-
+      !------------------------------------------------------------------------------------!
+      ! This could have been garbage collected out of the code or updated following the    !
+      ! modularization of growth_balive.f90, but is being left in place as a template in   !
+      ! case it should be maintained.                                                      !
       !----- First time, and the user wants to print the output.  Make a header. ----------!
-      if (first_time) then
-         if (printout) then
-            open (unit=66,file=fracfile,status='replace',action='write')
-            write (unit=66,fmt='(20(a,1x))')                                               &
-              ,'        YEAR','       MONTH','         DAY','         PFT','   PHENOLOGY'  &
-              ,'PHEN_STAT_IN','PHN_STAT_OUT','  FLUSH_TIME',' AVAILABLE_C','      ELONGF'  &
-              ,'  GREEN_LEAF','    ON_ALLOM',' DELTA_BLEAF',' DELTA_BROOT','   DELTA_BSA'  &
-              ,'   DELTA_BSB','    TR_BLEAF','    TR_BROOT','      TR_BSA','      TR_BSB'
-            close (unit=66,status='keep')
-         end if
-         first_time = .false.
-      end if
+      !if (first_time) then
+      !   if (printout) then
+      !      open (unit=66,file=fracfile,status='replace',action='write')
+      !      write (unit=66,fmt='(20(a,1x))')                                               &
+      !        ,'        YEAR','       MONTH','         DAY','         PFT','   PHENOLOGY'  &
+      !        ,'PHEN_STAT_IN','PHN_STAT_OUT','  FLUSH_TIME',' AVAILABLE_C','      ELONGF'  &
+      !        ,'  GREEN_LEAF','    ON_ALLOM',' DELTA_BLEAF',' DELTA_BROOT','   DELTA_BSA'  &
+      !        ,'   DELTA_BSB','    TR_BLEAF','    TR_BROOT','      TR_BSA','      TR_BSB'
+      !      close (unit=66,status='keep')
+      !   end if
+      !   first_time = .false.
+      !end if
       !------------------------------------------------------------------------------------!
 
       tr_bleaf     = 0.0
@@ -1434,19 +1361,6 @@ module growth_balive
       !------------------------------------------------------------------------------!
       cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + tr_bstorage)
       !------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------!
-      !     Check whether we are on allometry or not.                                !
-      !------------------------------------------------------------------------------!
-      !on_allometry = (balive_aim - cpatch%balive(ico))/balive_aim < 0.000001
-      !if (cpatch%elongf(ico) == 1.0 .and. on_allometry) then
-         !---------------------------------------------------------------------------!
-         !     We're back to allometry, change phenology_status.                     !
-         !---------------------------------------------------------------------------!
-      !   cpatch%phenology_status(ico) = 0
-      !end if
-      !------------------------------------------------------------------------------!
-
       return
    end subroutine apply_c_xfers
    !=======================================================================================!
