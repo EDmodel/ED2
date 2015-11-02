@@ -4295,7 +4295,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,isi,elapsed,hdid)
                            ,'         GSW_CLOS', '              GPP', '        LEAF_RESP'  &
                            ,'        ROOT_RESP', ' LEAF_GROWTH_RESP', ' ROOT_GROWTH_RESP'  &
                            ,' SAPA_GROWTH_RESP', ' SAPB_GROWTH_RESP', '     STORAGE_RESP'  &
-                           ,'       VLEAF_RESP', '         RSHORT_L', '          RLONG_L'  &
+                                               , '         RSHORT_L', '          RLONG_L'  &
                            ,'         RSHORT_W', '          RLONG_W', '           HFLXLC'  &
                            ,'           HFLXWC', '          QWFLXLC', '          QWFLXWC'  &
                            ,'           QWSHED', '          QTRANSP', '     QINTERCEPTED'
