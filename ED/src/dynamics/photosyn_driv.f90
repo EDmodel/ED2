@@ -586,9 +586,18 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
       cpatch%fmean_sapb_growth_resp (ico) = cpatch%fmean_sapb_growth_resp  (ico)           &
                                           + cpatch%sapb_growth_resp        (ico)           &
                                           *  dtlsm_o_frqsum * yr_day
-      cpatch%fmean_storage_resp(ico) = cpatch%fmean_storage_resp (ico)                     &
-                                     + cpatch%storage_respiration(ico) * dtlsm_o_frqsum    &
-                                     * yr_day
+      cpatch%fmean_leaf_storage_resp(ico) = cpatch%fmean_leaf_storage_resp (ico)           &
+                                          + cpatch%leaf_storage_resp(ico) * dtlsm_o_frqsum &
+                                          * yr_day
+      cpatch%fmean_root_storage_resp(ico) = cpatch%fmean_root_storage_resp (ico)           &
+                                          + cpatch%root_storage_resp(ico) * dtlsm_o_frqsum &
+                                          * yr_day
+      cpatch%fmean_sapa_storage_resp(ico) = cpatch%fmean_sapa_storage_resp (ico)           &
+                                          + cpatch%sapa_storage_resp(ico) * dtlsm_o_frqsum &
+                                          * yr_day
+      cpatch%fmean_sapb_storage_resp(ico) = cpatch%fmean_sapb_storage_resp (ico)           &
+                                          + cpatch%sapb_storage_resp(ico) * dtlsm_o_frqsum &
+                                          * yr_day
       !------------------------------------------------------------------------------------!
 
       if (print_photo_debug) then
