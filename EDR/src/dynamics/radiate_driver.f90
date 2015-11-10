@@ -317,54 +317,48 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: ground_par_check
    real                                          :: ground_nir_check
    integer                                       :: ibuff
+
+   integer                                       :: wlr, lvis, lnir
+   real    ,allocatable ,dimension(:)            :: ltv,lrv, alp
+   real    ,allocatable, dimension(:)            :: ltn,lrn, aln
    !----- External function. --------------------------------------------------------------!
    real            , external                    :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=8)    , parameter                   :: tiny_offset = 1.d-20
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
-   ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
-   ! leaf orientation factor in the backscattering.  This DOES NOT reduce to ED-2.1 case   !
-   ! when the leaf orientation is random.                                                  !
-   !---------------------------------------------------------------------------------------!
+   open(20,file='lengths.dat')
+   read(20,*) lvis, lnir
+   close(20)
 
-   !---------------------------------------------------------------------------------------!
-   !     Forward scattering.                                                               !
-   !---------------------------------------------------------------------------------------!
-   !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_scatter_vis(:) = leaf_reflect_vis(:) + leaf_trans_vis(:)
-   wood_scatter_vis(:) = wood_reflect_vis(:) + wood_trans_vis(:)
-   !----- Near infrared (NIR). ------------------------------------------------------------!
-   leaf_scatter_nir(:) = leaf_reflect_nir(:) + leaf_trans_nir(:)
-   wood_scatter_nir(:) = wood_reflect_nir(:) + wood_trans_nir(:)
-   !---------------------------------------------------------------------------------------!
-   
-   !---------------------------------------------------------------------------------------!
-   !      Back-scattering coefficients following CLM.                                      !
-   !---------------------------------------------------------------------------------------!
-   !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_backscatter_vis = ( leaf_scatter_vis                                               &
-                          + 2.5d-1 * ( leaf_reflect_vis - leaf_trans_vis   )               &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * leaf_scatter_vis )
-   wood_backscatter_vis = ( wood_scatter_vis                                               &
-                          + 2.5d-1                                                         &
-                          * ( wood_reflect_vis - wood_trans_vis   )                        &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * wood_scatter_vis )
-   !----- Near infrared (NIR). ------------------------------------------------------------!
-   leaf_backscatter_nir = ( leaf_scatter_nir                                               &
-                          + 2.5d-1                                                         &
-                          * ( leaf_reflect_nir - leaf_trans_nir   )                        &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * leaf_scatter_nir )
-   wood_backscatter_nir = ( wood_scatter_nir                                               &
-                          + 2.5d-1                                                         &
-                          * ( wood_reflect_nir - wood_trans_nir   )                        &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * wood_scatter_nir )
+   allocate(ltv(lvis))
+   allocate(lrv(lvis))
+   allocate(alp(lvis))
+
+   allocate(ltn(lnir))
+   allocate(lrn(lnir))
+   allocate(aln(lnir))
+
+   ltv = 0.
+   ltn = 0.
+   lrv = 0.
+   lrn = 0.
+
+   open(21,file='trans_par.dat')
+   read(21,*), ltv
+   close(21)
+
+   open(22,file='reflect_par.dat')
+   read(22,*), lrv
+   close(22)
+
+   open(23,file='trans_nir.dat')
+   read(23,*), ltn
+   close(23)
+
+   open(24,file='reflect_nir.dat')
+   read(24,*), lrn
+   close(24)
 
    !---------------------------------------------------------------------------------------!
    !     Light extinction coefficients.   These are found following CLM technical manual,  !
@@ -922,160 +916,413 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          !     Compute short wave only if it is daytime or at least twilight.              !
          !---------------------------------------------------------------------------------!
          if (twilight) then
-            !------------------------------------------------------------------------------!
-            !     Solve the short-wave.  Decide which canopy radiation method we are going !
-            ! to use.  Unlike the long-wave, here we scale radiation the same way in both  !
-            ! cases, because PAR and NIR are truly independent bands.                      !
-            !------------------------------------------------------------------------------!
-            select case (icanrad)
-            case (0)
-               !---------------------------------------------------------------------------!
-               !    Two-stream model.                                                      !
-               !---------------------------------------------------------------------------!
-               call old_sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi           &
-                                     ,cohort_count                                         &
-                                     ,radscr(ibuff)%pft_array(1:cohort_count)              &
-                                     ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
-                                     ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
-                                    ,radscr(ibuff)%CA_array(1:cohort_count)                  &
-                                     ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
-                                     ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
-                                     ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
-                                     ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
-                                     ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
-                                     ,downward_par_below_beam                              &
-                                     ,downward_par_below_diffuse                           &
-                                     ,upward_par_above_diffuse                             &
-                                     ,downward_nir_below_beam                              &
-                                     ,downward_nir_below_diffuse                           &
-                                     ,upward_nir_above_diffuse                             &
-                                     ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
-                                     ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
-                                     ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
-                                     ,radscr(ibuff)%light_level_array(1:cohort_count)      &
-                                     ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
-                                     ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
 
-               !---------------------------------------------------------------------------!
+            upward_rshort_above_diffuse = 0.
+            downward_rshort_below_beam = 0.
+            downward_rshort_below_diffuse = 0.
 
-            case (1)
-               !---------------------------------------------------------------------------!
-               !      Multiple-scatter model.                                              !
-               !---------------------------------------------------------------------------!
+            do wlr = 1, size(lrv)
 
-               call sw_multiple_scatter(albedo_ground_par,albedo_ground_nir,cosaoi         &
-                                     ,cohort_count                                         &
-                                     ,radscr(ibuff)%pft_array(1:cohort_count)              &
-                                     ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
-                                     ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
-                                     ,radscr(ibuff)%CA_array(1:cohort_count)                  &
-                                     ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
-                                     ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
-                                     ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
-                                     ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
-                                     ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
-                                     ,downward_par_below_beam                              &
-                                     ,downward_par_below_diffuse                           &
-                                     ,upward_par_above_diffuse                             &
-                                     ,downward_nir_below_beam                              &
-                                     ,downward_nir_below_diffuse                           &
-                                     ,upward_nir_above_diffuse                             &
-                                     ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
-                                     ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
-                                     ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
-                                     ,radscr(ibuff)%light_level_array(1:cohort_count)      &
-                                     ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
-                                     ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+               leaf_reflect_vis = lrv(wlr)
+               leaf_trans_vis = ltv(wlr)
 
-               !---------------------------------------------------------------------------!
-            case (2)
-               !---------------------------------------------------------------------------!
-               !    Updated two-stream model.                                              !
-               !---------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------------------!
+               !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
+               ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
+               ! leaf orientation factor in the backscattering.  This DOES NOT reduce to ED-2.1 case   !
+               ! when the leaf orientation is random.                                                  !
+               !---------------------------------------------------------------------------------------!
+               
+               !---------------------------------------------------------------------------------------!
+               !     Forward scattering.                                                               !
+               !---------------------------------------------------------------------------------------!
+               !----- Visible (PAR). ------------------------------------------------------------------!
+               leaf_scatter_vis = leaf_reflect_vis + leaf_trans_vis
+               wood_scatter_vis = wood_reflect_vis + wood_trans_vis
+               !----- Near infrared (NIR). ------------------------------------------------------------!
+               leaf_scatter_nir = leaf_reflect_nir + leaf_trans_nir
+               wood_scatter_nir = wood_reflect_nir + wood_trans_nir
+               !---------------------------------------------------------------------------------------!
+               
+               !---------------------------------------------------------------------------------------!
+               !      Back-scattering coefficients following CLM.                                      !
+               !---------------------------------------------------------------------------------------!
+               !----- Visible (PAR). ------------------------------------------------------------------!
+               leaf_backscatter_vis = ( leaf_scatter_vis                                               &
+                    + 2.5d-1 * ( leaf_reflect_vis - leaf_trans_vis   )               &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * leaf_scatter_vis )
+               wood_backscatter_vis = ( wood_scatter_vis                                               &
+                    + 2.5d-1                                                         &
+                    * ( wood_reflect_vis - wood_trans_vis   )                        &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * wood_scatter_vis )
+               !----- Near infrared (NIR). ------------------------------------------------------------!
+               leaf_backscatter_nir = ( leaf_scatter_nir                                               &
+                    + 2.5d-1                                                         &
+                    * ( leaf_reflect_nir - leaf_trans_nir   )                        &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * leaf_scatter_nir )
+               wood_backscatter_nir = ( wood_scatter_nir                                               &
+                    + 2.5d-1                                                         &
+                    * ( wood_reflect_nir - wood_trans_nir   )                        &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * wood_scatter_nir )
+               
+               
+               !------------------------------------------------------------------------------!
+               !     Solve the short-wave.  Decide which canopy radiation method we are going !
+               ! to use.  Unlike the long-wave, here we scale radiation the same way in both  !
+               ! cases, because PAR and NIR are truly independent bands.                      !
+               !------------------------------------------------------------------------------!
+               select case (icanrad)
+               case (0)
+                  !---------------------------------------------------------------------------!
+                  !    Two-stream model.                                                      !
+                  !---------------------------------------------------------------------------!
+                  call old_sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi           &
+                       ,cohort_count                                         &
+                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
+                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
+                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
+                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
+                       ,downward_par_below_beam                              &
+                       ,downward_par_below_diffuse                           &
+                       ,upward_par_above_diffuse                             &
+                       ,downward_nir_below_beam                              &
+                       ,downward_nir_below_diffuse                           &
+                       ,upward_nir_above_diffuse                             &
+                       ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                       ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                       ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
+                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
+                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
+                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+                  
+                  !---------------------------------------------------------------------------!
+                  
+               case (1)
+                  !---------------------------------------------------------------------------!
+                  !      Multiple-scatter model.                                              !
+                  !---------------------------------------------------------------------------!
+                  
+                  call sw_multiple_scatter(albedo_ground_par,albedo_ground_nir,cosaoi         &
+                       ,cohort_count                                         &
+                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
+                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
+                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
+                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
+                       ,downward_par_below_beam                              &
+                       ,downward_par_below_diffuse                           &
+                       ,upward_par_above_diffuse                             &
+                       ,downward_nir_below_beam                              &
+                       ,downward_nir_below_diffuse                           &
+                       ,upward_nir_above_diffuse                             &
+                       ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                       ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                       ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
+                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
+                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
+                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
 
-              call sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi                &
-                                     ,cohort_count                                         &
-                                     ,radscr(ibuff)%pft_array(1:cohort_count)              &
-                                     ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
-                                     ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
-                                     ,radscr(ibuff)%CA_array(1:cohort_count)                  &
-                                     ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
-                                     ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
-                                     ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
-                                     ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
-                                     ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
-                                     ,downward_par_below_beam                              &
-                                     ,downward_par_below_diffuse                           &
-                                     ,upward_par_above_diffuse                             &
-                                     ,downward_nir_below_beam                              &
-                                     ,downward_nir_below_diffuse                           &
-                                     ,upward_nir_above_diffuse                             &
-                                     ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
-                                     ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
-                                     ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
-                                     ,radscr(ibuff)%light_level_array(1:cohort_count)      &
-                                     ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
-                                     ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+                  !---------------------------------------------------------------------------!
+               case (2)
+                  !---------------------------------------------------------------------------!
+                  !    Updated two-stream model.                                              !
+                  !---------------------------------------------------------------------------!
 
-              ! THE LAST 5 ARRAYS SHOULD BE 1:cohort_count ?
+                  call sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi                &
+                       ,cohort_count                                         &
+                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
+                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
+                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
+                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
+                       ,downward_par_below_beam                              &
+                       ,downward_par_below_diffuse                           &
+                       ,upward_par_above_diffuse                             &
+                       ,downward_nir_below_beam                              &
+                       ,downward_nir_below_diffuse                           &
+                       ,upward_nir_above_diffuse                             &
+                       ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                       ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                       ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
+                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
+                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
+                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+                  
+                  ! THE LAST 5 ARRAYS SHOULD BE 1:cohort_count ?
 
-               !---------------------------------------------------------------------------!
-            end select
-            !------------------------------------------------------------------------------!
-
-            !------------------------------------------------------------------------------!
-            !    Since there is no horizontal competition, assuming that the maximum       !
-            ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
-            ! enough.                                                                      !
-            !------------------------------------------------------------------------------!
-            if (tuco_leaf /= 0) then
-               ipft      = radscr(ibuff)%pft_array(tuco_leaf)
-               wleaf_vis = sngloff( clumping_factor(ipft)                                  &
-                                  * (1.d0 - leaf_scatter_vis(ipft))                        &
-                                  * radscr(ibuff)%LAI_array(tuco_leaf)                     &
-                                  / ( clumping_factor(ipft)                                &
-                                    * (1.d0 - leaf_scatter_vis(ipft))                      &
-                                    * radscr(ibuff)%LAI_array(tuco_leaf)                   &
-                                    + (1.d0 - wood_scatter_vis(ipft))                      &
+                  !---------------------------------------------------------------------------!
+               end select
+               !------------------------------------------------------------------------------!
+               
+               !------------------------------------------------------------------------------!
+               !    Since there is no horizontal competition, assuming that the maximum       !
+               ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
+               ! enough.                                                                      !
+               !------------------------------------------------------------------------------!
+               if (tuco_leaf /= 0) then
+                  ipft      = radscr(ibuff)%pft_array(tuco_leaf)
+                  wleaf_vis = sngloff( clumping_factor(ipft)                                  &
+                       * (1.d0 - leaf_scatter_vis(ipft))                        &
+                       * radscr(ibuff)%LAI_array(tuco_leaf)                     &
+                       / ( clumping_factor(ipft)                                &
+                       * (1.d0 - leaf_scatter_vis(ipft))                      &
+                       * radscr(ibuff)%LAI_array(tuco_leaf)                   &
+                       + (1.d0 - wood_scatter_vis(ipft))                      &
                                     * radscr(ibuff)%WAI_array(tuco_leaf) )                 &
-                                  , tiny_offset)
-               csite%par_l_beam_max(ipa)    = radscr(ibuff)%par_v_beam_array(tuco_leaf)    &
-                                            * wleaf_vis   &
-                                            / radscr(ibuff)%LAI_array(tuco_leaf)
-               csite%par_l_diffuse_max(ipa) = radscr(ibuff)%par_v_diffuse_array(tuco_leaf) &
-                                            * wleaf_vis   &
-                                            / radscr(ibuff)%LAI_array(tuco_leaf)
-            end if
-            !------------------------------------------------------------------------------!
+                                    , tiny_offset)
+                  csite%par_l_beam_max(ipa)    = radscr(ibuff)%par_v_beam_array(tuco_leaf)    &
+                       * wleaf_vis   &
+                       / radscr(ibuff)%LAI_array(tuco_leaf)
+                  csite%par_l_diffuse_max(ipa) = radscr(ibuff)%par_v_diffuse_array(tuco_leaf) &
+                       * wleaf_vis   &
+                       / radscr(ibuff)%LAI_array(tuco_leaf)
+               end if
+               !------------------------------------------------------------------------------!
+               
 
+               !----- Above-canopy upwelling radiation. --------------------------------------!
+               upward_rshort_above_diffuse = upward_par_above_diffuse                         &
+                    + upward_nir_above_diffuse
+               !------------------------------------------------------------------------------!
+               
+               !----- Below-canopy downwelling radiation. ------------------------------------!
+               downward_rshort_below_beam    = downward_par_below_beam                        &
+                    + downward_nir_below_beam
+               downward_rshort_below_diffuse = downward_par_below_diffuse                     &
+                    + downward_nir_below_diffuse
+               !------------------------------------------------------------------------------!
+            
+               !----- Soil+sfcwater+veg albedo (PAR, NIR, and Total Shortwave). --------------!
+               ! (par_beam_norm,par_diff_norm,nir_beam_norm and nir_diff_norm are site level  !
+               csite%albedo_par (ipa) = upward_par_above_diffuse                              &
+                    / sngloff( par_beam_norm + par_diff_norm, tiny_offset )
+               csite%albedo_nir (ipa) = upward_nir_above_diffuse                              &
+                    / sngloff( nir_beam_norm + nir_diff_norm, tiny_offset )
+               csite%albedo     (ipa) = upward_rshort_above_diffuse
+               !------------------------------------------------------------------------------!
 
+               alp(wlr) = csite%albedo_par(ipa)
+            end do
 
-            !----- Above-canopy upwelling radiation. --------------------------------------!
-            upward_rshort_above_diffuse = upward_par_above_diffuse                         &
-                                        + upward_nir_above_diffuse
-            !------------------------------------------------------------------------------!
+            do wlr = 1, size(lrn)
 
+               leaf_reflect_nir = lrn(wlr)
+               leaf_trans_nir = ltn(wlr)
 
+               !---------------------------------------------------------------------------------------!
+               !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
+               ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
+               ! leaf orientation factor in the backscattering.  This DOES NOT reduce to ED-2.1 case   !
+               ! when the leaf orientation is random.                                                  !
+               !---------------------------------------------------------------------------------------!
+               
+               !---------------------------------------------------------------------------------------!
+               !     Forward scattering.                                                               !
+               !---------------------------------------------------------------------------------------!
+               !----- Visible (PAR). ------------------------------------------------------------------!
+               leaf_scatter_vis = leaf_reflect_vis + leaf_trans_vis
+               wood_scatter_vis = wood_reflect_vis + wood_trans_vis
+               !----- Near infrared (NIR). ------------------------------------------------------------!
+               leaf_scatter_nir = leaf_reflect_nir + leaf_trans_nir
+               wood_scatter_nir = wood_reflect_nir + wood_trans_nir
+               !---------------------------------------------------------------------------------------!
+               
+               !---------------------------------------------------------------------------------------!
+               !      Back-scattering coefficients following CLM.                                      !
+               !---------------------------------------------------------------------------------------!
+               !----- Visible (PAR). ------------------------------------------------------------------!
+               leaf_backscatter_vis = ( leaf_scatter_vis                                               &
+                    + 2.5d-1 * ( leaf_reflect_vis - leaf_trans_vis   )               &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * leaf_scatter_vis )
+               wood_backscatter_vis = ( wood_scatter_vis                                               &
+                    + 2.5d-1                                                         &
+                    * ( wood_reflect_vis - wood_trans_vis   )                        &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * wood_scatter_vis )
+               !----- Near infrared (NIR). ------------------------------------------------------------!
+               leaf_backscatter_nir = ( leaf_scatter_nir                                               &
+                    + 2.5d-1                                                         &
+                    * ( leaf_reflect_nir - leaf_trans_nir   )                        &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * leaf_scatter_nir )
+               wood_backscatter_nir = ( wood_scatter_nir                                               &
+                    + 2.5d-1                                                         &
+                    * ( wood_reflect_nir - wood_trans_nir   )                        &
+                    * ( 1.d0 + orient_factor) ** 2 )                                 &
+                    / ( 2.d0 * wood_scatter_nir )
+               
+               
+               !------------------------------------------------------------------------------!
+               !     Solve the short-wave.  Decide which canopy radiation method we are going !
+               ! to use.  Unlike the long-wave, here we scale radiation the same way in both  !
+               ! cases, because PAR and NIR are truly independent bands.                      !
+               !------------------------------------------------------------------------------!
+               select case (icanrad)
+               case (0)
+                  !---------------------------------------------------------------------------!
+                  !    Two-stream model.                                                      !
+                  !---------------------------------------------------------------------------!
+                  call old_sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi           &
+                       ,cohort_count                                         &
+                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
+                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
+                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
+                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
+                       ,downward_par_below_beam                              &
+                       ,downward_par_below_diffuse                           &
+                       ,upward_par_above_diffuse                             &
+                       ,downward_nir_below_beam                              &
+                       ,downward_nir_below_diffuse                           &
+                       ,upward_nir_above_diffuse                             &
+                       ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                       ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                       ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
+                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
+                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
+                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+                  
+                  !---------------------------------------------------------------------------!
+                  
+               case (1)
+                  !---------------------------------------------------------------------------!
+                  !      Multiple-scatter model.                                              !
+                  !---------------------------------------------------------------------------!
+                  
+                  call sw_multiple_scatter(albedo_ground_par,albedo_ground_nir,cosaoi         &
+                       ,cohort_count                                         &
+                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
+                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
+                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
+                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
+                       ,downward_par_below_beam                              &
+                       ,downward_par_below_diffuse                           &
+                       ,upward_par_above_diffuse                             &
+                       ,downward_nir_below_beam                              &
+                       ,downward_nir_below_diffuse                           &
+                       ,upward_nir_above_diffuse                             &
+                       ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                       ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                       ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
+                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
+                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
+                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
 
-            !----- Below-canopy downwelling radiation. ------------------------------------!
-            downward_rshort_below_beam    = downward_par_below_beam                        &
-                                          + downward_nir_below_beam
-            downward_rshort_below_diffuse = downward_par_below_diffuse                     &
-                                          + downward_nir_below_diffuse
-            !------------------------------------------------------------------------------!
+                  !---------------------------------------------------------------------------!
+               case (2)
+                  !---------------------------------------------------------------------------!
+                  !    Updated two-stream model.                                              !
+                  !---------------------------------------------------------------------------!
 
+                  call sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi                &
+                       ,cohort_count                                         &
+                       ,radscr(ibuff)%pft_array(1:cohort_count)              &
+                       ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%WAI_array(1:cohort_count)                 &
+                       ,radscr(ibuff)%CA_array(1:cohort_count)                  &
+                       ,radscr(ibuff)%radprof_array(1:n_radprof,1:cohort_count) &
+                       ,radscr(ibuff)%par_v_beam_array(1:cohort_count)          &
+                       ,radscr(ibuff)%par_v_diffuse_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_beam_array(1:cohort_count)       &
+                       ,radscr(ibuff)%rshort_v_diffuse_array(1:cohort_count)    &
+                       ,downward_par_below_beam                              &
+                       ,downward_par_below_diffuse                           &
+                       ,upward_par_above_diffuse                             &
+                       ,downward_nir_below_beam                              &
+                       ,downward_nir_below_diffuse                           &
+                       ,upward_nir_above_diffuse                             &
+                       ,radscr(ibuff)%par_level_beam(1:cohort_count)         &
+                       ,radscr(ibuff)%par_level_diffd(1:cohort_count)        &
+                       ,radscr(ibuff)%par_level_diffu(1:cohort_count)        &
+                       ,radscr(ibuff)%light_level_array(1:cohort_count)      &
+                       ,radscr(ibuff)%light_beam_level_array(1:cohort_count) &
+                       ,radscr(ibuff)%light_diff_level_array(1:cohort_count))
+                  
+                  ! THE LAST 5 ARRAYS SHOULD BE 1:cohort_count ?
 
-            !----- Soil+sfcwater+veg albedo (PAR, NIR, and Total Shortwave). --------------!
-            ! (par_beam_norm,par_diff_norm,nir_beam_norm and nir_diff_norm are site level  !
-            csite%albedo_par (ipa) = upward_par_above_diffuse                              &
-                                   / sngloff( par_beam_norm + par_diff_norm, tiny_offset )
-            csite%albedo_nir (ipa) = upward_nir_above_diffuse                              &
-                                   / sngloff( nir_beam_norm + nir_diff_norm, tiny_offset )
-            csite%albedo     (ipa) = upward_rshort_above_diffuse
-            !------------------------------------------------------------------------------!
+                  !---------------------------------------------------------------------------!
+               end select
+               !------------------------------------------------------------------------------!
+               
+               !------------------------------------------------------------------------------!
+               !    Since there is no horizontal competition, assuming that the maximum       !
+               ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
+               ! enough.                                                                      !
+               !------------------------------------------------------------------------------!
+               if (tuco_leaf /= 0) then
+                  ipft      = radscr(ibuff)%pft_array(tuco_leaf)
+                  wleaf_vis = sngloff( clumping_factor(ipft)                                  &
+                       * (1.d0 - leaf_scatter_vis(ipft))                        &
+                       * radscr(ibuff)%LAI_array(tuco_leaf)                     &
+                       / ( clumping_factor(ipft)                                &
+                       * (1.d0 - leaf_scatter_vis(ipft))                      &
+                       * radscr(ibuff)%LAI_array(tuco_leaf)                   &
+                       + (1.d0 - wood_scatter_vis(ipft))                      &
+                                    * radscr(ibuff)%WAI_array(tuco_leaf) )                 &
+                                    , tiny_offset)
+                  csite%par_l_beam_max(ipa)    = radscr(ibuff)%par_v_beam_array(tuco_leaf)    &
+                       * wleaf_vis   &
+                       / radscr(ibuff)%LAI_array(tuco_leaf)
+                  csite%par_l_diffuse_max(ipa) = radscr(ibuff)%par_v_diffuse_array(tuco_leaf) &
+                       * wleaf_vis   &
+                       / radscr(ibuff)%LAI_array(tuco_leaf)
+               end if
+               !------------------------------------------------------------------------------!
+               
+
+               !----- Above-canopy upwelling radiation. --------------------------------------!
+               upward_rshort_above_diffuse = upward_par_above_diffuse                         &
+                    + upward_nir_above_diffuse
+               !------------------------------------------------------------------------------!
+               
+               !----- Below-canopy downwelling radiation. ------------------------------------!
+               downward_rshort_below_beam    = downward_par_below_beam                        &
+                    + downward_nir_below_beam
+               downward_rshort_below_diffuse = downward_par_below_diffuse                     &
+                    + downward_nir_below_diffuse
+               !------------------------------------------------------------------------------!
+            
+               !----- Soil+sfcwater+veg albedo (PAR, NIR, and Total Shortwave). --------------!
+               ! (par_beam_norm,par_diff_norm,nir_beam_norm and nir_diff_norm are site level  !
+               csite%albedo_par (ipa) = upward_par_above_diffuse                              &
+                    / sngloff( par_beam_norm + par_diff_norm, tiny_offset )
+               csite%albedo_nir (ipa) = upward_nir_above_diffuse                              &
+                    / sngloff( nir_beam_norm + nir_diff_norm, tiny_offset )
+               csite%albedo     (ipa) = upward_rshort_above_diffuse
+               !------------------------------------------------------------------------------!
+
+               aln(wlr) = csite%albedo_nir(ipa)
+            end do
          else
-
-
+            
+            
             !----- The code expects values for these, even when it is not daytime. --------!
             downward_par_below_beam         = par_beam_norm
             downward_par_below_diffuse      = par_diff_norm
@@ -1096,6 +1343,13 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          end if
          !---------------------------------------------------------------------------------!
 
+         open(31,file='albedo_par.dat')
+         write(31,*) alp
+         close(31)
+
+         open(32,file='albedo_nir.dat')
+         write(32,*) aln
+         close(32)
 
          !---------------------------------------------------------------------------------!
          !     Absorption rates of PAR, rshort, and rlong of the vegetation.  Here we      !
