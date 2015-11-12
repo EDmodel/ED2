@@ -320,29 +320,29 @@ end subroutine init_met_drivers
 !------------------------------------------------------------------------------------------!
 subroutine read_met_drivers_init
 
-   use ed_max_dims       , only : str_len        ! ! intent(in)
-   use ed_state_vars     , only : edgrid_g       & ! structure
-                                , edtype         & ! structure
-                                , polygontype    ! ! structure
-   use hdf5_utils        , only : shdf5_open_f   & ! subroutine
-                                , shdf5_close_f  ! ! subroutine
-   use met_driver_coms   , only : nformats       & ! intent(in)
-                                , ishuffle       & ! intent(in)
-                                , met_names      & ! intent(in)
-                                , met_nv         & ! intent(in)
-                                , met_interp     & ! intent(in)
-                                , met_frq        & ! intent(in)
-                                , metcyc1        & ! intent(in)
-                                , metcycf        & ! intent(in)
-                                , metyears       ! ! intent(inout)
-   use mem_polygons      , only : grid_type      ! ! intent(in)
-   use ed_misc_coms      , only : current_time   & ! intent(in)
-                                , iyeara         & ! intent(in)
-                                , iyearz         & ! intent(in)
-                                , imonthz        ! ! intent(in)
-   use grid_coms         , only : ngrids         ! ! intent(in)
-   use consts_coms       , only : day_sec        ! ! intent(in)
-   use ed_node_coms      , only : mynum          ! ! intent(in)
+   use ed_max_dims       , only : str_len          ! ! intent(in)
+   use ed_state_vars     , only : edgrid_g         & ! structure
+                                , edtype           & ! structure
+                                , polygontype      ! ! structure
+   use hdf5_utils        , only : shdf5_open_f     & ! subroutine
+                                , shdf5_close_f    ! ! subroutine
+   use met_driver_coms   , only : nformats         & ! intent(in)
+                                , ishuffle         & ! intent(in)
+                                , met_names        & ! intent(in)
+                                , met_nv           & ! intent(in)
+                                , met_interp       & ! intent(in)
+                                , met_frq          & ! intent(in)
+                                , metcyc1          & ! intent(in)
+                                , metcycf          & ! intent(in)
+                                , metyears         ! ! intent(inout)
+   use mem_polygons      , only : grid_type        ! ! intent(in)
+   use ed_misc_coms      , only : current_time     & ! intent(in)
+                                , iyeara           & ! intent(in)
+                                , iyearz           & ! intent(in)
+                                , imonthz          ! ! intent(in)
+   use grid_coms         , only : ngrids           ! ! intent(in)
+   use consts_coms       , only : day_sec          ! ! intent(in)
+   use ed_node_coms      , only : mynum            ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)          , pointer :: cgrid
@@ -361,7 +361,7 @@ subroutine read_met_drivers_init
    integer                         :: i1stfull
    integer                         :: iyear
    integer, dimension(8)           :: seedtime
-   real                            :: runif
+   real                            :: rndnow
    logical                         :: exans
    !----- Local constants -----------------------------------------------------------------!
    character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'     &
@@ -398,9 +398,8 @@ subroutine read_met_drivers_init
 
       !------ Allocating the sequence of years. -------------------------------------------!
       allocate(metyears(nyears))      
-      
-      !----- Initialising the seed for random number generation. --------------------------!
-      call random_seed()
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     Now we must decide how we are going to select the meteorological driver years, !
@@ -448,6 +447,9 @@ subroutine read_met_drivers_init
       ! sequence will be always the same for a given met driver and first year.            !
       !------------------------------------------------------------------------------------!
       case (1)
+         !----- Reset the seed for random number generation. ------------------------------!
+         call random_seed()
+         !---------------------------------------------------------------------------------!
 
          if (mynum == 1) then
             write (unit=*,fmt='(a)'       )  '------------------------------'
@@ -460,8 +462,8 @@ subroutine read_met_drivers_init
          do year_use=iyeara,iyearz
             iyear=year_use-iyeara+1
             if (year_use < metcyc1 .or. year_use > metcycf) then
-               call random_number(runif)
-               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*runif),ncyc)
+               call random_number(rndnow)
+               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*rndnow),ncyc)
             else
                metyears(iyear) = year_use
             end if
@@ -473,11 +475,21 @@ subroutine read_met_drivers_init
             write (unit=*,fmt='(a)'       )  '------------------------------'
             write (unit=*,fmt='(a)'       )  ' '
          end if
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !    Call the random seed initialisation that will make things really random.     !
+         ! This is to avoid other routines that may use random numbers to get the same     !
+         ! results every time the model runs.                                              !
+         !---------------------------------------------------------------------------------!
+         call init_random_seed()
+         !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !    For years outside the met driver range, we pick up a random year. We skip some  !
-      ! random numbers using the system clock, so each time we run the model we will have  !
-      ! a different sequence of years (similar to the random method used in STILT).        !
+      !    For years outside the met driver range, we pick up a random year.  Unlike       !
+      ! option 1, this will use different random numbers every time the model is called    !
+      ! because we no longer reset random_seed.                                            !
       !------------------------------------------------------------------------------------!
       case (2)
 
@@ -493,10 +505,8 @@ subroutine read_met_drivers_init
             iyear=year_use-iyeara+1
             if (year_use < metcyc1 .or. year_use > metcycf) then
                call date_and_time(values=seedtime)
-               do iv=0,seedtime(8)
-                  call random_number(runif)
-               end do
-               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*runif),ncyc)
+               call random_number(rndnow)
+               metyears(iyear) = metcyc1 + mod(floor(real(ncyc)*rndnow),ncyc)
             else
                metyears(iyear) = year_use
             end if

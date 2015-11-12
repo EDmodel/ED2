@@ -196,6 +196,7 @@ default = list( run           = "unnamed"
               , imetrad       = 2
               , ibranch       = 1
               , icanrad       = 2
+              , ihrzrad       = 0
               , crown.mod     = 0
               , ltrans.vis    = 0.050
               , lreflect.vis  = 0.100

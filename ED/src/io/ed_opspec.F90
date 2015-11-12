@@ -1235,6 +1235,7 @@ subroutine ed_opspec_misc
                                     , plantation_stock             ! ! intent(in)
    use canopy_layer_coms     , only : crown_mod                    ! ! intent(in)
    use canopy_radiation_coms , only : icanrad                      & ! intent(in)
+                                    , ihrzrad                      & ! intent(in)
                                     , ltrans_vis                   & ! intent(in)
                                     , ltrans_nir                   & ! intent(in)
                                     , lreflect_vis                 & ! intent(in)
@@ -2128,7 +2129,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if  (icanrad <1 .or. icanrad > 2) then
+   if  (icanrad < 1 .or. icanrad > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid ICANRAD, it must be between 1 and 2.  Yours is set to'        &
                     ,icanrad,'...'
@@ -2136,6 +2137,14 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    elseif (icanrad /= 0 .and. crown_mod == 1) then
       write(reason,fmt='(a)') 'CROWN_MOD must be turned off when ICANRAD is 1 or 2...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if  (ihrzrad < 0 .or. ihrzrad > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IHRZRAD, it must be either 0 and 1.  Yours is set to'         &
+                    ,ihrzrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

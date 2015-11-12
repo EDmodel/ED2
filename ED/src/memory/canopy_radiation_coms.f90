@@ -13,14 +13,25 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   ! ICANRAD -- Specifies how canopy radiation is solved.  This variable sets both short-  !
-   !            wave and longwave.                                                         !
+   ! ICANRAD -- Specifies how vertical canopy radiation is solved.  This variable sets     !
+   !            both shortwave and longwave.                                               !
    !            0.  Two-stream model (Medvigy 2006), with the possibility to apply         !
    !                finite crown area to direct shortwave radiation.                       !
    !            1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the        !
    !                possibility to apply finite crown area to all radiation fluxes.        !
    !---------------------------------------------------------------------------------------!
    integer :: icanrad
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IHRZRAD -- Specifies how horizontal canopy radiation is solved.                       !
+   !            0.  Default ED-2.0: no horizontal patch shading.                           !
+   !            1.  Crown closure modifies the total incident light the the top cohort     !
+   !                receives based on the probability of being next to a taller or shorter !
+   !                patch.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   integer :: ihrzrad
    !---------------------------------------------------------------------------------------!
 
 
@@ -207,6 +218,35 @@ module canopy_radiation_coms
    real(kind=4)    :: rshort_twilight_min
    real(kind=4)    :: cosz_min
    real(kind=8)    :: cosz_min8
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the method that allow light redistribution based  !
+   ! on patch neighbourhood.  These are initialised in ed_xml_config.f90 or ed_params.f90. !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)    :: cci_radius   ! Maximum radius to calculate CCI               [     m]
+   real(kind=4)    :: cci_pixres   ! Pixel resolution for TCH and CCI              [     m]
+   real(kind=4)    :: cci_gapsize  ! Gap size                                      [     m]
+   real(kind=4)    :: cci_gapmin   ! # of gaps associated with the smallest area   [   ---]
+   integer         :: cci_nretn    ! "Return density" to generate the TCH map      [  1/m2]
+   integer         :: cci_nxy      ! # of grip points of the "pseudo-raster"       [   ---]
+   integer         :: cci_ngap     ! # of grip points of the "pseudo-raster"       [   ---]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are derived from the properties above, they will be allocated     !
+   ! during the initialisation step.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: map_ztch
+   real(kind=4), dimension(:,:), allocatable :: map_cci
+   real(kind=4), dimension(:)  , allocatable :: gap_x0
+   real(kind=4), dimension(:)  , allocatable :: gap_y0
+   integer     , dimension(:)  , allocatable :: gap_ipa
    !---------------------------------------------------------------------------------------!
 
 

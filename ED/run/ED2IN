@@ -852,6 +852,13 @@ $ED_NL
    !                     possibility to apply finite crown area to all radiation fluxes.   !
    !                 2.  Updated two-stream model (Liou 2002), with the possibility to     !
    !                     apply finite crown area to all radiation fluxes.                  !
+   ! IHRZRAD      -- Specifies how horizontal canopy radiation is solved.                  !
+   !                 0.  Default ED-2.0: no horizontal patch shading.  All patches receive !
+   !                     the same amount of light at the top.                              !
+   !                 1.  UNDER DEVELOPMENT, USE IT AT YOUR OWN RISK! Crown closure         !
+   !                     modifies the total incident light the the top cohort receives     !
+   !                     based on the probability of being next to a taller or shorter     !
+   !                     patch.                                                            !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
@@ -874,6 +881,7 @@ $ED_NL
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
    NL%ICANRAD        =  2
+   NL%IHRZRAD        =  0
    NL%LTRANS_VIS     =  0.050
    NL%LTRANS_NIR     =  0.230
    NL%LREFLECT_VIS   =  0.100

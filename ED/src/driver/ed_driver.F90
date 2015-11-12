@@ -55,6 +55,26 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Initialise random seed -- the MPI barrier may be unnecessary, added because the   !
+   ! jobs may the the system random number generator.                                      !
+   !---------------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
+   if (mynum /= 1) then
+      call MPI_RECV(ping,1,MPI_INTEGER,recvnum,79,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+   else
+      write (unit=*,fmt='(a)') ' [+] Init_random_seed...'
+   end if
+#else
+      write (unit=*,fmt='(a)') ' [+] Init_random_seed...'
+#endif
+   call init_random_seed()
+
+#if defined(RAMS_MPI)
+   if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,79,MPI_COMM_WORLD,ierr)
+   if (nnodetot /= 1    ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
+#endif
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

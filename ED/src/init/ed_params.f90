@@ -563,10 +563,15 @@ subroutine init_can_rad_params()
                                     , snow_emiss_tir              & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
-                                    , cosz_min8                   ! ! intent(out)
-   use consts_coms           , only : pio180                      & ! intent(out)
-                                    , twothirds8                  ! ! intent(out)
-   use ed_max_dims           , only : n_pft                       ! ! intent(out)
+                                    , cosz_min8                   & ! intent(out)
+                                    , cci_radius                  & ! intent(out)
+                                    , cci_pixres                  & ! intent(out)
+                                    , cci_gapsize                 & ! intent(out)
+                                    , cci_gapmin                  & ! intent(out)
+                                    , cci_nretn                   ! ! intent(out)
+   use consts_coms           , only : pio180                      & ! intent(in)
+                                    , twothirds8                  ! ! intent(in)
+   use ed_max_dims           , only : n_pft                       ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer :: ipft
@@ -839,6 +844,20 @@ subroutine init_can_rad_params()
    rshort_twilight_min = 0.5
    cosz_min            = cos(89.*pio180) !cos(89.5*pio180)
    cosz_min8           = dble(cosz_min)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the method that allow light redistribution based  !
+   ! on patch neighbourhood                                                                !
+   !---------------------------------------------------------------------------------------!
+   cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
+   cci_pixres   = 1.0  ! Pixel resolution for TCH and CCI                          [     m]
+   cci_gapsize  = 10.0 ! Gap size                                                  [     m]
+   cci_gapmin   = 5.0  ! # of gaps associated with the smallest area               [   ---]
+   cci_nretn    = 30   ! "Return density" to generate the TCH map                  [  1/m2]
    !---------------------------------------------------------------------------------------!
 
 

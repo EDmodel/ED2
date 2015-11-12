@@ -245,6 +245,7 @@ subroutine copy_nl(copy_type)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
+                                   , ihrzrad                   & ! intent(out)
                                    , ltrans_vis                & ! intent(out)
                                    , ltrans_nir                & ! intent(out)
                                    , lreflect_vis              & ! intent(out)
@@ -377,6 +378,7 @@ subroutine copy_nl(copy_type)
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
       icanrad                   = nl%icanrad
+      ihrzrad                   = nl%ihrzrad
       ltrans_vis                = nl%ltrans_vis
       ltrans_nir                = nl%ltrans_nir
       lreflect_vis              = nl%lreflect_vis

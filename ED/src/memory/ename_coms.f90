@@ -149,6 +149,7 @@ module ename_coms
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
       integer                                           :: icanrad
+      integer                                           :: ihrzrad
       real                                              :: ltrans_vis
       real                                              :: ltrans_nir
       real                                              :: lreflect_vis
@@ -418,6 +419,7 @@ module ename_coms
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
       enl%icanrad                   = undef_integer
+      enl%ihrzrad                   = undef_integer
       enl%ltrans_vis                = undef_real
       enl%ltrans_nir                = undef_real
       enl%lreflect_vis              = undef_real

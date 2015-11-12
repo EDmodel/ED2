@@ -160,6 +160,7 @@ subroutine read_ednl(iunit,filename)
                                    , ibranch_thermo                        ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                             ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                               & ! intent(out)
+                                   , ihrzrad                               & ! intent(out)
                                    , ltrans_vis                            & ! intent(out)
                                    , ltrans_nir                            & ! intent(out)
                                    , lreflect_vis                          & ! intent(out)
@@ -253,13 +254,13 @@ subroutine read_ednl(iunit,filename)
                        ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,iphysiol,iallom    &
                        ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
-                       ,crown_mod,icanrad,ltrans_vis,ltrans_nir,lreflect_vis,lreflect_nir  &
-                       ,orient_tree,orient_grass,clump_tree,clump_grass,decomp_scheme      &
-                       ,h2o_plant_lim,iddmort_scheme,ddmort_const,vmfact_c3,vmfact_c4      &
-                       ,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3,bphoto_nlc3          &
-                       ,bphoto_c4,kw_grass,kw_tree,gamma_c3,gamma_c4,d0_grass,d0_tree      &
-                       ,alpha_c3,alpha_c4,klowco2in,rrffact,growthresp,lwidth_grass        &
-                       ,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit                &
+                       ,crown_mod,icanrad,ihrzrad,ltrans_vis,ltrans_nir,lreflect_vis       &
+                       ,lreflect_nir,orient_tree,orient_grass,clump_tree,clump_grass       &
+                       ,decomp_scheme,h2o_plant_lim,iddmort_scheme,ddmort_const,vmfact_c3  &
+                       ,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3            &
+                       ,bphoto_nlc3,bphoto_c4,kw_grass,kw_tree,gamma_c3,gamma_c4,d0_grass  &
+                       ,d0_tree,alpha_c3,alpha_c4,klowco2in,rrffact,growthresp             &
+                       ,lwidth_grass,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit   &
                        ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
                        ,fire_parameter,sm_fire,ianth_disturb,icanturb,include_these_pft    &
                        ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
@@ -342,6 +343,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' lapse_scheme              =',lapse_scheme
       write (unit=*,fmt=*) ' crown_mod                 =',crown_mod
       write (unit=*,fmt=*) ' icanrad                   =',icanrad
+      write (unit=*,fmt=*) ' ihrzrad                   =',ihrzrad
       write (unit=*,fmt=*) ' ltrans_vis                =',ltrans_vis
       write (unit=*,fmt=*) ' ltrans_nir                =',ltrans_nir
       write (unit=*,fmt=*) ' lreflect_vis              =',lreflect_vis

@@ -692,7 +692,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('prec_slope','scenario',i,rval,texist)
         if(texist) prec_slope = real(rval)
         call getConfigINT  ('humid_scenario','scenario',i,ival,texist)
-        if(texist)  humid_scenario = real(ival)
+        if(texist)  humid_scenario = ival
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -772,7 +772,20 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) leaf_backscatter_vis = real(rval)
         call getConfigREAL  ('diffuse_backscatter_nir','radiation',i,rval,texist)
         if(texist) leaf_backscatter_nir = real(rval)
-        
+
+        !----- Crown closure index variables. ---------------------------------------------!
+        call getConfigREAL  ('cci_radius','radiation',i,rval,texist)
+        if(texist) cci_radius  = real(rval)
+        call getConfigREAL  ('cci_pixres','radiation',i,rval,texist)
+        if(texist) cci_pixres  = real(rval)
+        call getConfigREAL  ('cci_gapsize','radiation',i,rval,texist)
+        if(texist) cci_gapsize = real(rval)
+        call getConfigREAL  ('cci_gapmin','radiation',i,rval,texist)
+        if(texist) cci_gapmin  = real(rval)
+        call getConfigINT  ('cci_nretn','radiation',i,ival,texist)
+        if(texist) cci_nretn = ival
+        !----------------------------------------------------------------------------------!
+
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif

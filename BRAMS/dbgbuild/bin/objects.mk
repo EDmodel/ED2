@@ -360,6 +360,7 @@ OBJ_MODEL =                         \
 	pft_coms.o                  \
 	radiate_driver.o            \
 	radiate_utils.o             \
+	random_utils.o              \
 	reproduction.o              \
 	rk4_coms.o                  \
 	rk4_derivs.o                \
