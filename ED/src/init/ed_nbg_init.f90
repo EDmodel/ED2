@@ -34,6 +34,8 @@ subroutine near_bare_ground_init(cgrid)
          csite%dist_type          (1) = 3
          csite%age                (1) = 0.0
          csite%area               (1) = 1.0
+         csite%fbeam              (1) = 1.0
+         csite%light_type         (1) = 1
 
 
          !---------------------------------------------------------------------------------!
@@ -486,6 +488,8 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
             csite%dist_type          (ipa) = 3
             csite%age                (ipa) = 0.0
             csite%area               (ipa) = 1.0 / mypfts
+            csite%fbeam              (ipa) = 1.0
+            csite%light_type         (ipa) = 1
 
             select case (n_plant_lim)
             case (0)

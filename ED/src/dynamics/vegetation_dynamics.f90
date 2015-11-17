@@ -26,7 +26,8 @@ subroutine vegetation_dynamics(new_month,new_year)
                                    , normalize_ed_todaynpp_vars & ! sub-routine
                                    , zero_ed_today_vars         ! ! sub-routine
    use canopy_radiation_coms, only : ihrzrad                    ! ! intent(in)
-   use hrzshade_utils       , only : split_hrzshade             ! ! intent(in)
+   use hrzshade_utils       , only : split_hrzshade             & ! sub-routine
+                                   , reset_hrzshade             ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical          , intent(in)   :: new_month
@@ -143,15 +144,25 @@ subroutine vegetation_dynamics(new_month,new_year)
             ! shaded by taller neighbours.                                                 !
             !------------------------------------------------------------------------------!
             select case (ihrzrad)
-            case (1)
+            case (0)
+               !----- Make sure no horizontal shading is applied. -------------------------!
                do ipy = 1,cgrid%npolygons
                   cpoly => cgrid%polygon(ipy)
-                    
+                  do isi = 1, cpoly%nsites
+                     call reset_hrzshade(cpoly%site(isi))
+                  end do
+               end do
+               !---------------------------------------------------------------------------!
+            case (1)
+               !----- Run patch light assignment. -----------------------------------------!
+               do ipy = 1,cgrid%npolygons
+                  cpoly => cgrid%polygon(ipy)
                   do isi = 1, cpoly%nsites
                      call split_hrzshade(cpoly%site(isi))
                   end do
                end do
-            end select case
+               !---------------------------------------------------------------------------!
+            end select
             !------------------------------------------------------------------------------!
 
          case (1)

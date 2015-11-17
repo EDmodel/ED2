@@ -472,6 +472,11 @@ subroutine read_ed21_history_file
                   memsize(1)  = int(csite%npatches,8)
                   memoffs(1)  = 0
 
+                  do ipa=1,csite%npatches
+                     csite%fbeam     (ipa) = 1.0
+                     csite%light_type(ipa) = 1
+                  end do
+
                   call hdf_getslab_i(csite%dist_type ,'DIST_TYPE '                         &
                                     ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%age       ,'AGE '                               &
@@ -1651,6 +1656,11 @@ subroutine read_ed21_history_unstruct
                   memsize(1)  = int(csite%npatches,8)
                   memoffs(1)  = 0
 
+                  do ipa=1,csite%npatches
+                     csite%fbeam     (ipa) = 1.0
+                     csite%light_type(ipa) = 1
+                  end do
+
                   call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
                                     ,dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(csite%age               ,'AGE '                       &
@@ -2812,7 +2822,13 @@ subroutine read_ed21_polyclone
                      memdims(1)  = int(csite%npatches,8)
                      memsize(1)  = int(csite%npatches,8)
                      memoffs(1)  = 0
-                     
+
+
+                     do ipa=1,csite%npatches
+                        csite%fbeam     (ipa) = 1.0
+                        csite%light_type(ipa) = 1
+                     end do
+
                      call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
                           ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%age               ,'AGE '                       &

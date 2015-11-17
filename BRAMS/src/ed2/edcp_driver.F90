@@ -3,44 +3,46 @@
 ! Model 2, when run in coupled mode.                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine ed_coup_driver()
-   use grid_coms     , only : ngrids                & ! intent(in)
-                            , time                  & ! intent(in)
-                            , timmax                ! ! intent(in)
-   use ed_state_vars , only : allocate_edglobals    & ! subroutine
-                            , filltab_alltypes      & ! subroutine
-                            , edgrid_g              ! ! subroutine
-   use ed_misc_coms  , only : fast_diagnostics      & ! intent(in)
-                            , iyeara                & ! intent(in)
-                            , imontha               & ! intent(in)
-                            , idatea                & ! intent(in)
-                            , itimea                & ! intent(in)
-                            , runtype               & ! intent(in)
-                            , ifoutput              & ! intent(in)
-                            , idoutput              & ! intent(in)
-                            , imoutput              & ! intent(in)
-                            , iqoutput              & ! intent(in)
-                            , isoutput              & ! intent(in)
-                            , iyoutput              & ! intent(in)
-                            , writing_long          & ! intent(in)
-                            , writing_eorq          & ! intent(in)
-                            , writing_dcyc          & ! intent(in)
-                            , runtype               ! ! intent(in)
-   use ed_work_vars  , only : ed_dealloc_work       & ! subroutine
-                            , work_e                ! ! intent(inout)
-   use soil_coms     , only : alloc_soilgrid        ! ! subroutine
-   use ed_node_coms  , only : mynum                 & ! intent(in)
-                            , nnodetot              & ! intent(in)
-                            , sendnum               & ! intent(in)
-                            , recvnum               ! ! intent(in)
-   use io_params     , only : ioutput               ! ! intent(in)
-   use rk4_coms      , only : checkbudget           ! ! intent(in)
-   use phenology_aux , only : first_phenology       ! ! subroutine
-   use average_utils , only : update_ed_yearly_vars & ! sub-routine
-                            , zero_ed_fmean_vars    & ! sub-routine
-                            , zero_ed_dmean_vars    & ! sub-routine
-                            , zero_ed_qmean_vars    & ! sub-routine
-                            , zero_ed_mmean_vars    ! ! sub-routine
-                            
+   use grid_coms            , only : ngrids                & ! intent(in)
+                                   , time                  & ! intent(in)
+                                   , timmax                ! ! intent(in)
+   use ed_state_vars        , only : allocate_edglobals    & ! subroutine
+                                   , filltab_alltypes      & ! subroutine
+                                   , edgrid_g              ! ! subroutine
+   use ed_misc_coms         , only : fast_diagnostics      & ! intent(in)
+                                   , iyeara                & ! intent(in)
+                                   , imontha               & ! intent(in)
+                                   , idatea                & ! intent(in)
+                                   , itimea                & ! intent(in)
+                                   , runtype               & ! intent(in)
+                                   , ifoutput              & ! intent(in)
+                                   , idoutput              & ! intent(in)
+                                   , imoutput              & ! intent(in)
+                                   , iqoutput              & ! intent(in)
+                                   , isoutput              & ! intent(in)
+                                   , iyoutput              & ! intent(in)
+                                   , writing_long          & ! intent(in)
+                                   , writing_eorq          & ! intent(in)
+                                   , writing_dcyc          & ! intent(in)
+                                   , runtype               ! ! intent(in)
+   use ed_work_vars         , only : ed_dealloc_work       & ! subroutine
+                                   , work_e                ! ! intent(inout)
+   use soil_coms            , only : alloc_soilgrid        ! ! subroutine
+   use ed_node_coms         , only : mynum                 & ! intent(in)
+                                   , nnodetot              & ! intent(in)
+                                   , sendnum               & ! intent(in)
+                                   , recvnum               ! ! intent(in)
+   use io_params            , only : ioutput               ! ! intent(in)
+   use rk4_coms             , only : checkbudget           ! ! intent(in)
+   use phenology_aux        , only : first_phenology       ! ! subroutine
+   use average_utils        , only : update_ed_yearly_vars & ! sub-routine
+                                   , zero_ed_fmean_vars    & ! sub-routine
+                                   , zero_ed_dmean_vars    & ! sub-routine
+                                   , zero_ed_qmean_vars    & ! sub-routine
+                                   , zero_ed_mmean_vars    ! ! sub-routine
+   use hrzshade_utils       , only : init_cci_variables    ! ! subroutine
+   use canopy_radiation_coms, only : ihrzrad               ! ! intent(in)
+
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
@@ -224,6 +226,20 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
    call filltab_alltypes()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      In case this simulation will use horizontal shading, initialise the landscape    !
+   ! arrays.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case (ihrzrad)
+   case (1)
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
+      call init_cci_variables()
+   end select
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -231,6 +247,9 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
    call find_frqsum()
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Reset the diagnostic output variables, unless this is a history run, in which    !

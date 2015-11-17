@@ -475,6 +475,8 @@ subroutine read_ed10_ed20_history_file
                      end select
                      !---------------------------------------------------------------------!
 
+                     csite%fbeam             (ip2) = 1.0
+                     csite%light_type        (ip2) = 1
                      csite%age               (ip2) = age (ip)
                      csite%area              (ip2) = area(ip)
                      csite%fast_soil_C       (ip2) = fsc (ip)
@@ -552,6 +554,8 @@ subroutine read_ed10_ed20_history_file
                   end select
                   !------------------------------------------------------------------------!
 
+                  csite%fbeam             (ip) = 1.0
+                  csite%light_type        (ip) = 1
                   csite%age               (ip) = age (ip)
                   csite%area              (ip) = area(ip)
                   csite%fast_soil_C       (ip) = fsc (ip)

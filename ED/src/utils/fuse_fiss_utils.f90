@@ -4050,6 +4050,10 @@ module fuse_fiss_utils
                                      ( csite%age(donp)                * csite%area(donp)   &
                                      + csite%age(recp)                * csite%area(recp) )
 
+      csite%fbeam(recp)              = newareai *                                          &
+                                     ( csite%fbeam(donp)              * csite%area(donp)   &
+                                     + csite%fbeam(recp)              * csite%area(recp) )
+
       csite%fast_soil_C(recp)        = newareai *                                          &
                                      ( csite%fast_soil_C(donp)        * csite%area(donp)   &
                                      + csite%fast_soil_C(recp)        * csite%area(recp) )

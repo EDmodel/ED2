@@ -1638,6 +1638,8 @@ module disturbance_utils
       ! properties from the donor patches.                                                 !
       !------------------------------------------------------------------------------------!
       csite%age                        (np) = 0.0
+      csite%fbeam                      (np) = 1.0
+      csite%light_type                 (np) = 1
       csite%fast_soil_C                (np) = 0.0
       csite%slow_soil_C                (np) = 0.0
       csite%structural_soil_C          (np) = 0.0

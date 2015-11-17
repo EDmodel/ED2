@@ -232,8 +232,6 @@ module canopy_radiation_coms
    real(kind=4)    :: cci_gapsize  ! Gap size                                      [     m]
    real(kind=4)    :: cci_gapmin   ! # of gaps associated with the smallest area   [   ---]
    integer         :: cci_nretn    ! "Return density" to generate the TCH map      [  1/m2]
-   integer         :: cci_nxy      ! # of grip points of the "pseudo-raster"       [   ---]
-   integer         :: cci_ngap     ! # of grip points of the "pseudo-raster"       [   ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -242,11 +240,55 @@ module canopy_radiation_coms
    !     These variables are derived from the properties above, they will be allocated     !
    ! during the initialisation step.                                                       !
    !---------------------------------------------------------------------------------------!
-   real(kind=4), dimension(:,:), allocatable :: map_ztch
-   real(kind=4), dimension(:,:), allocatable :: map_cci
+   !----- Total area of each single gap. --------------------------------------------------!
+   real(kind=4)                              :: cci_gaparea
+   !----- Number of grid points in x and y direction (pseudo-landscape). ------------------!
+   integer                                   :: rls_nxy
+   !----- Number of pixels in the pseudo-landscape. ---------------------------------------!
+   integer                                   :: rls_npixel
+   !----- Number of gaps in the pseudo-landscape. -----------------------------------------!
+   integer                                   :: rls_ngap
+   !----- 'raster' length along x/y axes. -------------------------------------------------!
+   real(kind=4)                              :: rls_length
+   !----- Number of pixels in each gap. ---------------------------------------------------!
+   integer                                   :: gap_npixel
+   !----- Total 'raster' landscape area. --------------------------------------------------!
+   real(kind=4)                              :: rls_area
+   !----- x of the 'raster' landscape. ----------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_x
+   !----- y of the 'raster' landscape. ----------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_y
+   !----- Top-of-canopy height. -----------------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_ztch
+   !----- Crown closure index. ------------------------------------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_cci
+   !----- Absorption correction for incident beam radiation. ------------------------------!
+   real(kind=4), dimension(:,:), allocatable :: rls_fbeam
+   !----- Gap index. ----------------------------------------------------------------------!
+   integer     , dimension(:,:), allocatable :: rls_igp
+   !----- Gap origin. ---------------------------------------------------------------------!
    real(kind=4), dimension(:)  , allocatable :: gap_x0
    real(kind=4), dimension(:)  , allocatable :: gap_y0
+   !----- Mean absorption correction for incident beam radiation. -------------------------!
+   real(kind=4), dimension(:)  , allocatable :: gap_fbeam
+   !----- Patch associated with the gap. --------------------------------------------------!
    integer     , dimension(:)  , allocatable :: gap_ipa
+   !----- Auxiliary variable, patch index before shuffling, gap index after shuffling. ----!
+   integer     , dimension(:)  , allocatable :: gap_idx
+   !----- Mask to decide which gaps can be used for any patch. ----------------------------!
+   logical     , dimension(:)  , allocatable :: gap_mask
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Hold these parameters as constants, the functional form may change soon.          !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: at0       =  3.012569
+   real(kind=4), parameter :: at1       = -0.0044086
+   real(kind=4), parameter :: at_bright = 14.5
+   real(kind=4), parameter :: at_dark   = 10.5
+   real(kind=4), parameter :: at08      = dble(at0)
+   real(kind=4), parameter :: at18      = dble(at1)
    !---------------------------------------------------------------------------------------!
 
 

@@ -98,15 +98,18 @@ subroutine radiate_driver(cgrid)
             ! is still above the horizon.                                                  !
             !------------------------------------------------------------------------------!
             if (daytime) then
-               rshort_tot    = cpoly%met(isi)%rshort
-               par_beam_norm = max( 1.d-5 , dble(cpoly%met(isi)%par_beam   )               &
-                                          / dble(cpoly%met(isi)%rshort     ) )
-               par_diff_norm = max( 1.d-5 , dble(cpoly%met(isi)%par_diffuse)               &
-                                          / dble(cpoly%met(isi)%rshort     ) )
-               nir_beam_norm = max( 1.d-5 , dble(cpoly%met(isi)%nir_beam   )               &
-                                          / dble(cpoly%met(isi)%rshort     ) )
-               nir_diff_norm = max( 1.d-5 , dble(cpoly%met(isi)%nir_diffuse)               &
-                                          / dble(cpoly%met(isi)%rshort     ) )
+               rshort_tot    = cpoly%met(isi)%par_beam * csite%fbeam(ipa)                  &
+                             + cpoly%met(isi)%nir_beam * csite%fbeam(ipa)                  &
+                             + cpoly%met(isi)%par_diffuse                                  &
+                             + cpoly%met(isi)%nir_diffuse
+               par_beam_norm = max( 1.d-5 , dble(cpoly%met(isi)%par_beam*csite%fbeam(ipa)) &
+                                          / dble(rshort_tot                ) )
+               par_diff_norm = max( 1.d-5 , dble(cpoly%met(isi)%par_diffuse              ) &
+                                          / dble(rshort_tot                ) )
+               nir_beam_norm = max( 1.d-5 , dble(cpoly%met(isi)%nir_beam*csite%fbeam(ipa)) &
+                                          / dble(rshort_tot                ) )
+               nir_diff_norm = max( 1.d-5 , dble(cpoly%met(isi)%nir_diffuse              ) &
+                                          / dble(rshort_tot                ) )
                sum_norm      = par_beam_norm + par_diff_norm                               &
                              + nir_beam_norm + nir_diff_norm
             elseif (twilight) then

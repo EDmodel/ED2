@@ -859,10 +859,18 @@ module ed_state_vars
       !               4.  Fire.                                                            !
       !               5.  Forest regrowth.                                                 !
       !               6.  Logged forest.                                                   !
+      !  FBEAM     -- correction term to account for neighbouring shaded                   !
+      !               (1.0 unless ihrzrad = 1)                                             !
+      !  LIGHT_TYPE -- diagnostic variable supposed to tell which light environment is     !
+      !                represented by the site (1 - bright, 2 - intermediate, 3 - dark)    !
+      !                This is only assigned in case ihrzrad = 1, otherwise all patches    !
+      !                will be flagged as 1.                                               !
       !------------------------------------------------------------------------------------!
       real   , pointer,dimension(:) :: area
       real   , pointer,dimension(:) :: age
       integer, pointer,dimension(:) :: dist_type
+      real   , pointer,dimension(:) :: fbeam
+      integer, pointer,dimension(:) :: light_type
       !------------------------------------------------------------------------------------!
 
       ! Soil carbon concentration, fast pool (kg/m2)
@@ -4011,6 +4019,8 @@ module ed_state_vars
       allocate(csite%area                          (              npatches))
       allocate(csite%age                           (              npatches))
       allocate(csite%dist_type                     (              npatches))
+      allocate(csite%fbeam                         (              npatches))
+      allocate(csite%light_type                    (              npatches))
       allocate(csite%fast_soil_C                   (              npatches))
       allocate(csite%slow_soil_C                   (              npatches))
       allocate(csite%structural_soil_C             (              npatches))
@@ -5836,6 +5846,8 @@ module ed_state_vars
       nullify(csite%area                       )
       nullify(csite%age                        )
       nullify(csite%dist_type                  )
+      nullify(csite%fbeam                      )
+      nullify(csite%light_type                 )
       nullify(csite%fast_soil_C                )
       nullify(csite%slow_soil_C                )
       nullify(csite%structural_soil_C          )
@@ -7659,6 +7671,8 @@ module ed_state_vars
       if(associated(csite%area                  )) deallocate(csite%area                  )
       if(associated(csite%age                   )) deallocate(csite%age                   )
       if(associated(csite%dist_type             )) deallocate(csite%dist_type             )
+      if(associated(csite%fbeam                 )) deallocate(csite%fbeam                 )
+      if(associated(csite%light_type            )) deallocate(csite%light_type            )
       if(associated(csite%fast_soil_C           )) deallocate(csite%fast_soil_C           )
       if(associated(csite%slow_soil_C           )) deallocate(csite%slow_soil_C           )
       if(associated(csite%structural_soil_C     )) deallocate(csite%structural_soil_C     )
@@ -8626,6 +8640,8 @@ module ed_state_vars
          osite%area                       (opa) = isite%area                       (ipa)
          osite%age                        (opa) = isite%age                        (ipa)
          osite%dist_type                  (opa) = isite%dist_type                  (ipa)
+         osite%fbeam                      (opa) = isite%fbeam                      (ipa)
+         osite%light_type                 (opa) = isite%light_type                 (ipa)
          osite%fast_soil_C                (opa) = isite%fast_soil_C                (ipa)
          osite%slow_soil_C                (opa) = isite%slow_soil_C                (ipa)
          osite%structural_soil_C          (opa) = isite%structural_soil_C          (ipa)
@@ -9261,6 +9277,8 @@ module ed_state_vars
       osite%area                      (1:z) = pack(isite%area                      ,lmask)
       osite%age                       (1:z) = pack(isite%age                       ,lmask)
       osite%dist_type                 (1:z) = pack(isite%dist_type                 ,lmask)
+      osite%fbeam                     (1:z) = pack(isite%fbeam                     ,lmask)
+      osite%light_type                (1:z) = pack(isite%light_type                ,lmask)
       osite%fast_soil_C               (1:z) = pack(isite%fast_soil_C               ,lmask)
       osite%slow_soil_C               (1:z) = pack(isite%slow_soil_C               ,lmask)
       osite%structural_soil_C         (1:z) = pack(isite%structural_soil_C         ,lmask)
@@ -20295,28 +20313,35 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_i(npts,csite%paco_id,nvar,igr,init,csite%paglob_id, &
               var_len,var_len_global,max_ptrs,'PACO_ID :30:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'First index for patch','[NA]','ipa') 
       end if
 
       if (associated(csite%paco_n)) then
          nvar=nvar+1
            call vtable_edio_i(npts,csite%paco_n,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'PACO_N :30:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Cohort count in each patch','[NA]','ipatch') 
       end if
       
       if (associated(csite%dist_type)) then
          nvar=nvar+1
            call vtable_edio_i(npts,csite%dist_type,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'DIST_TYPE :30:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Disturbance type','[NA]','ipatch') 
+      end if
+      
+      if (associated(csite%light_type)) then
+         nvar=nvar+1
+           call vtable_edio_i(npts,csite%light_type,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'LIGHT_TYPE :30:hist:anal:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Light environment type','[NA]','ipatch') 
       end if
 
       if (associated(csite%nlev_sfcwater)) then
          nvar=nvar+1
            call vtable_edio_i(npts,csite%nlev_sfcwater,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'NLEV_SFCWATER :30:hist:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Number of surface water/snow layers','[NA]','ipatch') 
       end if
       !------------------------------------------------------------------------------------!
 
@@ -20368,14 +20393,21 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,csite%age,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'AGE :31:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Patch age','[yr]','ipatch') 
+      end if
+
+      if (associated(csite%fbeam)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%fbeam,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'FBEAM :31:hist:anal:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Horizontal shading factor','[0-1]','ipatch') 
       end if
 
       if (associated(csite%area)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%area,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'AREA :31:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Patch area relative to site area','[0-1]','ipatch') 
       end if
 
       if (associated(csite%fast_soil_C)) then

@@ -3726,13 +3726,21 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    globdims(1) = int(npatches_global,8)
    chnkdims(1) = int(csite%npatches,8)
    chnkoffs(1) = int(sipa_index - 1,8)
-   memdims (1)  = int(csite%npatches,8)
-   memsize (1)  = int(csite%npatches,8)
-   memoffs (1)  = 0_8
+   memdims (1) = int(csite%npatches,8)
+   memsize (1) = int(csite%npatches,8)
+   memoffs (1) = 0_8
    call hdf_getslab_i(csite%dist_type                                                      &
                      ,'DIST_TYPE                   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(csite%nlev_sfcwater                                                  &
                      ,'NLEV_SFCWATER               ',dsetrank,iparallel,.true. ,foundvar)
+   !----- Load light_type.  In case it isn't present, assume 1 for all patches. -----------!
+   call hdf_getslab_i(csite%light_type                                                     &
+                     ,'LIGHT_TYPE                  ',dsetrank,iparallel,.false.,foundvar)
+   if (.not. foundvar) then
+      do ipa=1,csite%npatches
+         csite%light_type(ipa) = 1
+      end do
+   end if
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -3787,6 +3795,15 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    memdims (1)  = int(csite%npatches,8)
    memsize (1)  = int(csite%npatches,8)
    memoffs (1)  = 0_8
+   !----- Load fbeam.  In case it isn't present, assume 1.0 for all patches. --------------!
+   call hdf_getslab_r(csite%fbeam                                                          &
+                     ,'FBEAM                       ',dsetrank,iparallel,.false.,foundvar)
+   if (.not. foundvar) then
+      do ipa=1,csite%npatches
+         csite%fbeam(ipa) = 1.0
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
    call hdf_getslab_r(csite%area                                                           &
                      ,'AREA                        ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(csite%age                                                            &

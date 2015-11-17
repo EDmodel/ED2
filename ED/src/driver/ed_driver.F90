@@ -6,25 +6,27 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
-   use grid_coms         , only : ngrids              & ! intent(in)
-                                , time                & ! intent(inout)
-                                , timmax              ! ! intent(inout)
-   use ed_state_vars     , only : allocate_edglobals  & ! sub-routine
-                                , filltab_alltypes    & ! sub-routine
-                                , edgrid_g            ! ! intent(inout)
-   use ed_misc_coms      , only : iyeara              & ! intent(in)
-                                , imontha             & ! intent(in)
-                                , idatea              & ! intent(in)
-                                , itimea              & ! intent(in)
-                                , runtype             ! ! intent(in)
-   use soil_coms         , only : alloc_soilgrid      ! ! sub-routine
-   use ed_node_coms      , only : mynum               & ! intent(in)
-                                , nnodetot            & ! intent(in)
-                                , sendnum             & ! intent(inout)
-                                , recvnum             ! ! intent(in)
-   use detailed_coms     , only : idetailed           & ! intent(in)
-                                , patch_keep          ! ! intent(in)
-   use phenology_aux     , only : first_phenology     ! ! subroutine
+   use grid_coms            , only : ngrids              & ! intent(in)
+                                   , time                & ! intent(inout)
+                                   , timmax              ! ! intent(inout)
+   use ed_state_vars        , only : allocate_edglobals  & ! sub-routine
+                                   , filltab_alltypes    & ! sub-routine
+                                   , edgrid_g            ! ! intent(inout)
+   use ed_misc_coms         , only : iyeara              & ! intent(in)
+                                   , imontha             & ! intent(in)
+                                   , idatea              & ! intent(in)
+                                   , itimea              & ! intent(in)
+                                   , runtype             ! ! intent(in)
+   use soil_coms            , only : alloc_soilgrid      ! ! sub-routine
+   use ed_node_coms         , only : mynum               & ! intent(in)
+                                   , nnodetot            & ! intent(in)
+                                   , sendnum             & ! intent(inout)
+                                   , recvnum             ! ! intent(in)
+   use detailed_coms        , only : idetailed           & ! intent(in)
+                                   , patch_keep          ! ! intent(in)
+   use phenology_aux        , only : first_phenology     ! ! subroutine
+   use hrzshade_utils       , only : init_cci_variables  ! ! subroutine
+   use canopy_radiation_coms, only : ihrzrad             ! ! intent(in)
    implicit none
    !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -109,7 +111,6 @@ subroutine ed_driver()
    if (nnodetot /= 1 )    call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
    !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -276,6 +277,19 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
    call filltab_alltypes
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      In case this simulation will use horizontal shading, initialise the landscape    !
+   ! arrays.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case (ihrzrad)
+   case (1)
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
+      call init_cci_variables()
+   end select
    !---------------------------------------------------------------------------------------!
 
 

@@ -64,6 +64,7 @@ rm -fv h5_output.?90                 h5_output.o                h5_output.mod
 rm -fv hdf5_coms.?90                 hdf5_coms.o                hdf5_coms.mod 
 rm -fv hdf5_utils.?90                hdf5_utils.o               hdf5_utils.mod 
 rm -fv heun_driver.?90               heun_driver.o              heun_driver.mod 
+rm -fv hrzshade_utils.?90            hrzshade_utils.o           hrzshade_utils.mod
 rm -fv hybrid_driver.?90             hybrid_driver.o            hybrid_driver.mod 
 rm -fv hydrology_coms.?90            hydrology_coms.o           hydrology_coms.mod 
 rm -fv hydrology_constants.?90       hydrology_constants.o      hydrology_constants.mod 

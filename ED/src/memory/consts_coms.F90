@@ -346,6 +346,7 @@ Module consts_coms
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
    real, parameter :: pi1        = 3.14159265358979  ! Pi                       [      ---]
+   real, parameter :: pii        = 1. / pi1          ! 1 /Pi                    [      ---]
    real, parameter :: halfpi     = pi1/2             ! Pi/2                     [      ---]
    real, parameter :: twopi      = pi1* 2.           ! 2 Pi                     [      ---]
    real, parameter :: sqrtpii    = 0.564189583547756 ! 1/(pi**0.5)              [      ---]

@@ -335,6 +335,7 @@ OBJ_MODEL =                         \
 	growth_balive.o             \
 	h5_output.o                 \
 	heun_driver.o               \
+	hrzshade_utils.o            \
 	hybrid_driver.o             \
 	hydrology_coms.o            \
 	hydrology_constants.o       \

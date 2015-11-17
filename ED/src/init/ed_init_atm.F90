@@ -49,6 +49,9 @@ subroutine ed_init_atm()
    use met_driver_coms       , only : met_driv_state         ! ! structure
    use canopy_struct_dynamics, only : canopy_turbulence      ! ! subroutine
    use budget_utils          , only : update_budget          ! ! subroutine
+   use canopy_radiation_coms , only : ihrzrad                ! ! intent(in)
+   use hrzshade_utils        , only : split_hrzshade         & ! sub-routine
+                                    , reset_hrzshade         ! ! sub-routine
    !$ use omp_lib
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -392,6 +395,51 @@ subroutine ed_init_atm()
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!
          call fuse_patches(cgrid,igr,.true.)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    MLO. 2015-11-17.                                                             !
+         !    Added terminate patches here.  this may remove very small patches that       !
+         ! existed in the initialisation.  Still debating whether this should be here or   !
+         ! not, but I reckon if anyone wants to keep small patches, they should set        !
+         ! MIN_PATCH_AREA in ED2IN.                                                        !
+         !---------------------------------------------------------------------------------!
+         do ipy = 1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
+              
+            do isi = 1, cpoly%nsites
+               call terminate_patches(cpoly%site(isi))
+            end do
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Call routine that will split patches based on probability of being          !
+         ! shaded by taller neighbours.                                                    !
+         !---------------------------------------------------------------------------------!
+         select case (ihrzrad)
+         case (0)
+            !----- Make sure no horizontal shading is applied. ----------------------------!
+            do ipy = 1,cgrid%npolygons
+               cpoly => cgrid%polygon(ipy)
+               do isi = 1, cpoly%nsites
+                  call reset_hrzshade(cpoly%site(isi))
+               end do
+            end do
+            !------------------------------------------------------------------------------!
+         case (1)
+            !----- Run patch light assignment. --------------------------------------------!
+            do ipy = 1,cgrid%npolygons
+               cpoly => cgrid%polygon(ipy)
+               do isi = 1, cpoly%nsites
+                  call split_hrzshade(cpoly%site(isi))
+               end do
+            end do
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
 
 

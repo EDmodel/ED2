@@ -222,6 +222,8 @@ subroutine ed_bigleaf_init(cgrid)
                csite%sum_dgd           (ipa) = 0.0
                csite%sum_chd           (ipa) = 0.0
                csite%cohort_count      (ipa) = 0
+               csite%fbeam             (ipa) = 1.
+               csite%light_type        (ipa) = 1
                !---------------------------------------------------------------------------!
 
             elseif (lu_npatch(ilu) /= 0) then
@@ -248,6 +250,8 @@ subroutine ed_bigleaf_init(cgrid)
                      csite%sum_dgd           (ipa) = sum_dgd(ilu)
                      csite%sum_chd           (ipa) = sum_chd(ilu)
                      csite%cohort_count      (ipa) = 1
+                     csite%fbeam             (ipa) = 1.
+                     csite%light_type        (ipa) = 1
 
                      !----- Big-leaf model, therefore only one cohort per patch. ----------!
                      cpatch => csite%patch(ipa)

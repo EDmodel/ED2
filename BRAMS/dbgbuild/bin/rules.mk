@@ -1654,6 +1654,11 @@ heun_driver.o: $(ED_DYNAMICS)/heun_driver.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+hrzshade_utils.o: $(ED_UTILS)/hrzshade_utils.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 hybrid_driver.o : $(ED_DYNAMICS)/hybrid_driver.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
