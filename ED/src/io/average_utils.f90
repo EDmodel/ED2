@@ -779,8 +779,7 @@ module average_utils
       use ed_state_vars  , only : edtype          & ! structure
                                 , polygontype     ! ! structure
       use met_driver_coms, only : met_driv_state  ! ! structure
-      use ed_misc_coms   , only : dtlsm           & ! intent(in)
-                                , frqsum          ! ! intent(in)
+      use ed_misc_coms   , only : dtlsm_o_frqsum  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)      , target  :: cgrid
@@ -789,17 +788,6 @@ module average_utils
       type(met_driv_state), pointer :: cmet
       integer                       :: ipy
       integer                       :: isi
-      !----- Locally saved variables. -----------------------------------------------------!
-      real              , save      :: dtlsm_o_frqsum = 1.e34
-      logical           , save      :: first_time     = .true.
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Assign the constant scaling factor. ------------------------------------------!
-      if (first_time) then
-         first_time     = .false.
-         dtlsm_o_frqsum = dtlsm / frqsum
-      end if
       !------------------------------------------------------------------------------------!
 
       polyloop: do ipy = 1,cgrid%npolygons
@@ -874,9 +862,7 @@ module average_utils
    !---------------------------------------------------------------------------------------!
    subroutine normalize_ed_fmean_vars(cgrid)
       use grid_coms    , only : nzg                ! ! intent(in)
-      use ed_misc_coms , only : dtlsm              & ! intent(in)
-                              , frqsum             & ! intent(in)
-                              , radfrq             & ! intent(in)
+      use ed_misc_coms , only : frqsumi            & ! intent(in)
                               , current_time       ! ! intent(in)
       use ed_state_vars, only : edtype             & ! structure
                               , polygontype        & ! structure
@@ -906,37 +892,11 @@ module average_utils
       integer                        :: ipa
       integer                        :: ico
       integer                        :: nsoil
-      real                           :: dtlsm_o_frqsum
-      real                           :: radfrq_o_frqsum
-      real                           :: frqsumi
       real                           :: pss_npp
       real                           :: pss_lai
       real                           :: atm_exner
       real                           :: can_exner
       integer                        :: k
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find some useful conversion factors.                                           !
-      ! 1. FRQSUMI         -- inverse of the elapsed time between two analyses (or one     !
-      !                       day).  This should be used by variables that are fluxes and  !
-      !                       are solved by RK4, they are holding the integral over the    !
-      !                       past frqsum seconds.                                         !
-      ! 2. DTLSM_O_FRQSUM  -- inverse of the number of the main time steps (DTLSM) since   !
-      !                       previous analysis.  Only photosynthesis- and decomposition-  !
-      !                       related variables, or STATE VARIABLES should use this        !
-      !                       factor.  Do not use this for energy and water fluxes, CO2    !
-      !                       eddy flux, and CO2 storage.                                  !
-      ! 3. RADFRQ_O_FRQSUM -- inverse of the number of radiation time steps since the      !
-      !                       previous analysis.  Only radiation-related variables should  !
-      !                       use this factor.                                             !
-      !------------------------------------------------------------------------------------!
-      frqsumi         =    1.0 / frqsum
-      dtlsm_o_frqsum  =  dtlsm * frqsumi
-      radfrq_o_frqsum = radfrq * frqsumi
       !------------------------------------------------------------------------------------!
 
 

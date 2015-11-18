@@ -13,8 +13,7 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    use consts_coms  , only : wdns                     & ! intent(in)
                            , umols_2_kgCyr            ! ! intent(in)
    use therm_lib    , only : uextcm2tl                ! ! function
-   use ed_misc_coms , only : dtlsm                    & ! intent(in)
-                           , frqsum                   ! ! intent(in)
+   use ed_misc_coms , only : dtlsm_o_frqsum           ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)                , target     :: csite
@@ -40,17 +39,6 @@ subroutine soil_respiration(csite,ipa,mzg,ntext_soil)
    !----- External functions. -------------------------------------------------------------!
    real                          , external   :: het_resp_weight
    real                          , external   :: root_resp_norm
-   !----- Locally saved variables. --------------------------------------------------------!
-   real                          , save       :: dtlsm_o_frqsum
-   logical                       , save       :: first_time = .true.
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Assign the constant scaling factor. ---------------------------------------------!
-   if (first_time) then
-      first_time     = .false.
-      dtlsm_o_frqsum = dtlsm / frqsum
-   end if
    !---------------------------------------------------------------------------------------!
 
 

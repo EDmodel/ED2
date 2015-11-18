@@ -66,7 +66,9 @@ subroutine ed_coup_driver()
    !----- External function. --------------------------------------------------------------!
    real             , external :: walltime    ! wall time
    !----- MPI header. ---------------------------------------------------------------------!
+#if defined(RAMS_MPI)
    include 'mpif.h'
+#endif
    !---------------------------------------------------------------------------------------!
    
    
@@ -98,53 +100,15 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    !     Overwrite the parameters in case a XML file is provided.                          !
    !---------------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
    if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,91,MPI_COMM_WORLD              &
                                 ,MPI_STATUS_IGNORE,ierr)
+#endif
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Checking for XML config...'
    call overwrite_with_xml_config(mynum)
+#if defined(RAMS_MPI)
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,91,MPI_COMM_WORLD,ierr)
-
-   !---------------------------------------------------------------------------------------!
-   !     Allocate soil grid arrays.                                                        !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Alloc_Soilgrid...'
-   call alloc_soilgrid()
-
-   !---------------------------------------------------------------------------------------!
-   !     Set some polygon-level basic information, such as lon/lat/soil texture.           !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) then
-      write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates (coupled)...'
-   end if
-   call set_polygon_coordinates_edcp()
-
-   !---------------------------------------------------------------------------------------!
-   !      Initialize inherent soil and vegetation properties.                              !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
-   call sfcdata_ed()
-
-   if (trim(runtype) == 'HISTORY') then
-
-      !------------------------------------------------------------------------------------!
-      !      Initialize the model state as a replicate image of a previous state.          !
-      !------------------------------------------------------------------------------------!
-      if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,90,MPI_COMM_WORLD           &
-                                   ,MPI_STATUS_IGNORE,ierr)
-
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
-      call init_full_history_restart()
-
-      if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,90,MPI_COMM_WORLD    &
-                                          ,ierr)
-   else
-
-      !------------------------------------------------------------------------------------!
-      !      Initialize state properties of polygons/sites/patches/cohorts.                !
-      !------------------------------------------------------------------------------------!
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
-      call load_ecosystem_state()
-   end if
+#endif
    !---------------------------------------------------------------------------------------!
 
 
@@ -163,10 +127,71 @@ subroutine ed_coup_driver()
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise derived radiation parameters.                                         !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_rad_variables...'
+   call init_derived_rad_params()
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Allocate soil grid arrays.                                                        !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Alloc_Soilgrid...'
+   call alloc_soilgrid()
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Set some polygon-level basic information, such as lon/lat/soil texture.           !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) then
+      write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates (coupled)...'
+   end if
+   call set_polygon_coordinates_edcp()
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Initialize inherent soil and vegetation properties.                              !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
+   call sfcdata_ed()
+
+   if (trim(runtype) == 'HISTORY') then
+
+      !------------------------------------------------------------------------------------!
+      !      Initialize the model state as a replicate image of a previous state.          !
+      !------------------------------------------------------------------------------------!
+#if defined(RAMS_MPI)
+      if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,90,MPI_COMM_WORLD           &
+                                   ,MPI_STATUS_IGNORE,ierr)
+#endif
+
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_Full_History_Restart...'
+      call init_full_history_restart()
+#if defined(RAMS_MPI)
+      if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,90,MPI_COMM_WORLD    &
+                                          ,ierr)
+#endif
+   else
+
+      !------------------------------------------------------------------------------------!
+      !      Initialize state properties of polygons/sites/patches/cohorts.                !
+      !------------------------------------------------------------------------------------!
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
+      call load_ecosystem_state()
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      Initialize hydrology related variables.                                          !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initializing Hydrology...'
    call initHydrology()
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -338,19 +363,22 @@ end subroutine ed_coup_driver
 ! variables.  FRQSUM should never exceed one day to avoid build up and overflows.          !
 !------------------------------------------------------------------------------------------!
 subroutine find_frqsum()
-   use ed_misc_coms, only : unitfast  & ! intent(in)
-                          , unitstate & ! intent(in)
-                          , isoutput  & ! intent(in)
-                          , itoutput  & ! intent(in)
-                          , ifoutput  & ! intent(in)
-                          , imoutput  & ! intent(in)
-                          , idoutput  & ! intent(in)
-                          , iqoutput  & ! intent(in)
-                          , frqstate  & ! intent(in)
-                          , frqfast   & ! intent(in)
-                          , frqsum    ! ! intent(out)
-   use consts_coms , only : day_sec   ! ! intent(in)
-   use io_params   , only : ioutput   ! ! intent(in)
+   use ed_misc_coms, only : unitfast        & ! intent(in)
+                          , unitstate       & ! intent(in)
+                          , isoutput        & ! intent(in)
+                          , itoutput        & ! intent(in)
+                          , ifoutput        & ! intent(in)
+                          , imoutput        & ! intent(in)
+                          , idoutput        & ! intent(in)
+                          , iqoutput        & ! intent(in)
+                          , frqstate        & ! intent(in)
+                          , frqfast         & ! intent(in)
+                          , frqsum          & ! intent(out)
+                          , frqsumi         & ! intent(out)
+                          , dtlsm_o_frqsum  & ! intent(out)
+                          , radfrq_o_frqsum ! ! intent(out)
+   use consts_coms , only : day_sec         ! ! intent(in)
+   use io_params   , only : ioutput         ! ! intent(in)
    implicit none
 
 
@@ -430,6 +458,30 @@ subroutine find_frqsum()
    else
       frqsum=min(frqstate,day_sec)
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find some useful conversion factors.                                              !
+   ! 1. FRQSUMI         -- inverse of the elapsed time between two analyses (or one day).  !
+   !                       This should be used by variables that are fluxes and are solved !
+   !                       by RK4, they are holding the integral over the past frqsum      !
+   !                       seconds.                                                        !
+   ! 2. DTLSM_O_FRQSUM  -- inverse of the number of the main time steps (DTLSM) since      !
+   !                       previous analysis.  Only photosynthesis- and decomposition-     !
+   !                       related variables, or STATE VARIABLES should use this factor.   !
+   !                       Do not use this for energy and water fluxes, CO2 eddy flux, and !
+   !                       CO2 storage.                                                    !
+   ! 3. RADFRQ_O_FRQSUM -- inverse of the number of radiation time steps since the         !
+   !                       previous analysis.  Only radiation-related variables should use !
+   !                       this factor.                                                    !
+   !---------------------------------------------------------------------------------------!
+   frqsumi         = 1.0    / frqsum
+   dtlsm_o_frqsum  = dtlsm  * frqsumi
+   radfrq_o_frqsum = radfrq * frqsumi
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine find_frqsum

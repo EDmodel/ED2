@@ -26,7 +26,8 @@ module rk4_driver
       use grid_coms              , only : nzg                  & ! intent(in)
                                         , nzs                  ! ! intent(in)
       use ed_misc_coms           , only : current_time         & ! intent(in)
-                                        , dtlsm                ! ! intent(in)
+                                        , dtlsm                & ! intent(in)
+                                        , dtlsm_o_frqsum       ! ! intent(in)
       use therm_lib              , only : tq2enthalpy          ! ! function
       use budget_utils           , only : update_budget        & ! function
                                         , compute_budget       ! ! function
@@ -463,17 +464,6 @@ module rk4_driver
       real        , parameter         :: thirtydays_sec = 30. * day_sec
       !----- External function ------------------------------------------------------------!
       real        , external          :: sngloff
-      !----- Locally saved variables. -----------------------------------------------------!
-      real        , save              :: dtlsm_o_frqsum
-      logical     , save              :: first_time = .true.
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Assign the constant scaling factor. ------------------------------------------!
-      if (first_time) then
-         first_time     = .false.
-         dtlsm_o_frqsum = dtlsm / frqsum
-      end if
       !------------------------------------------------------------------------------------!
 
 

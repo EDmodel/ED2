@@ -26,8 +26,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
                              , lnexp_min          & ! intent(in)
                              , tiny_num           ! ! intent(in)
    use ed_misc_coms   , only : current_time       & ! intent(in)
-                             , dtlsm              & ! intent(in)
-                             , frqsum             ! ! intent(in)
+                             , dtlsm_o_frqsum     ! ! intent(in)
    use met_driver_coms, only : met_driv_state     ! ! structure
    use physiology_coms, only : print_photo_debug  & ! intent(in)
                              , h2o_plant_lim      ! ! intent(in)
@@ -86,17 +85,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: llspan_tuco
    real                                    :: can_ssh
    integer, dimension(n_pft)               :: tuco_pft
-   !----- Locally saved variables. --------------------------------------------------------!
-   real                          , save    :: dtlsm_o_frqsum
-   logical                       , save    :: first_time = .true.
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Assign the constant scaling factor. ---------------------------------------------!
-   if (first_time) then
-      first_time     = .false.
-      dtlsm_o_frqsum = dtlsm / frqsum
-   end if
    !---------------------------------------------------------------------------------------!
 
 

@@ -113,6 +113,28 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !      In case this simulation will use horizontal shading, initialise the landscape    !
+   ! arrays.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case (ihrzrad)
+   case (1)
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
+      call init_cci_variables()
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Initialise derived radiation parameters.                                         !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_rad_variables...'
+   call init_derived_rad_params()
+   !---------------------------------------------------------------------------------------!
+
+
    !---------------------------------------------------------------------------------------!
    !      Allocate soil grid arrays.                                                       !
    !---------------------------------------------------------------------------------------!
@@ -217,19 +239,6 @@ subroutine ed_driver()
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,82,MPI_COMM_WORLD,ierr)
    if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      In case this simulation will use horizontal shading, initialise the landscape    !
-   ! arrays.                                                                               !
-   !---------------------------------------------------------------------------------------!
-   select case (ihrzrad)
-   case (1)
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
-      call init_cci_variables()
-   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -344,17 +353,22 @@ end subroutine ed_driver
 ! variables.  FRQSUM should never exceed one day to avoid build up and overflows.          !
 !------------------------------------------------------------------------------------------!
 subroutine find_frqsum()
-   use ed_misc_coms, only : unitfast   & ! intent(in)
-                          , unitstate  & ! intent(in)
-                          , isoutput   & ! intent(in)
-                          , ifoutput   & ! intent(in)
-                          , itoutput   & ! intent(in)
-                          , imoutput   & ! intent(in)
-                          , idoutput   & ! intent(in)
-                          , iqoutput   & ! intent(in)
-                          , frqstate   & ! intent(in)
-                          , frqfast    & ! intent(in)
-                          , frqsum     ! ! intent(out)
+   use ed_misc_coms, only : unitfast        & ! intent(in)
+                          , unitstate       & ! intent(in)
+                          , isoutput        & ! intent(in)
+                          , ifoutput        & ! intent(in)
+                          , itoutput        & ! intent(in)
+                          , imoutput        & ! intent(in)
+                          , idoutput        & ! intent(in)
+                          , iqoutput        & ! intent(in)
+                          , frqstate        & ! intent(in)
+                          , frqfast         & ! intent(in)
+                          , dtlsm           & ! intent(in)
+                          , radfrq          & ! intent(in)
+                          , frqsum          & ! intent(out)
+                          , frqsumi         & ! intent(out)
+                          , dtlsm_o_frqsum  & ! intent(out)
+                          , radfrq_o_frqsum ! ! intent(out)
    use consts_coms, only: day_sec
 
    implicit none 
@@ -425,6 +439,31 @@ subroutine find_frqsum()
    else
       frqsum=min(frqstate,day_sec)
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find some useful conversion factors.                                              !
+   ! 1. FRQSUMI         -- inverse of the elapsed time between two analyses (or one day).  !
+   !                       This should be used by variables that are fluxes and are solved !
+   !                       by RK4, they are holding the integral over the past frqsum      !
+   !                       seconds.                                                        !
+   ! 2. DTLSM_O_FRQSUM  -- inverse of the number of the main time steps (DTLSM) since      !
+   !                       previous analysis.  Only photosynthesis- and decomposition-     !
+   !                       related variables, or STATE VARIABLES should use this factor.   !
+   !                       Do not use this for energy and water fluxes, CO2 eddy flux, and !
+   !                       CO2 storage.                                                    !
+   ! 3. RADFRQ_O_FRQSUM -- inverse of the number of radiation time steps since the         !
+   !                       previous analysis.  Only radiation-related variables should use !
+   !                       this factor.                                                    !
+   !---------------------------------------------------------------------------------------!
+   frqsumi         = 1.0    / frqsum
+   dtlsm_o_frqsum  = dtlsm  * frqsumi
+   radfrq_o_frqsum = radfrq * frqsumi
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine find_frqsum
