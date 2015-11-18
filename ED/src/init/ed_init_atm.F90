@@ -25,6 +25,7 @@ subroutine ed_init_atm()
                                     , nzg                    & ! intent(in)
                                     , ngrids                 ! ! intent(in)
    use fuse_fiss_utils       , only : fuse_patches           & ! subroutine
+                                    , terminate_patches      & ! subroutine
                                     , rescale_patches        & ! subroutine
                                     , fuse_cohorts           & ! subroutine
                                     , terminate_cohorts      & ! subroutine
@@ -435,7 +436,7 @@ subroutine ed_init_atm()
             do ipy = 1,cgrid%npolygons
                cpoly => cgrid%polygon(ipy)
                do isi = 1, cpoly%nsites
-                  call split_hrzshade(cpoly%site(isi))
+                  call split_hrzshade(cpoly%site(isi),isi)
                end do
             end do
             !------------------------------------------------------------------------------!

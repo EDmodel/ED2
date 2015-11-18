@@ -66,7 +66,7 @@ module hrzshade_utils
          write(unit=*,fmt='(a)') '--------------------------------------------------------'
          call fatal_error('Invalid gapsize/pixres settings','init_cci_variables'           &
                          ,'hrzshade_utils.f90')
-      elseif (mod(cci_gapsize,cci_pixres) /= 0.) then
+      elseif (modulo(cci_gapsize,cci_pixres) /= 0.) then
          write(unit=*,fmt='(a)') '--------------------------------------------------------'
          write(unit=*,fmt='(a)') ' PIXRES is not a divisor of GAPSIZE.'
          write(unit=*,fmt='(a)') 'Adjusting PIXRES.'
@@ -137,7 +137,7 @@ module hrzshade_utils
       !      Assign southwestern corner coordinates for all sites.                         !
       !------------------------------------------------------------------------------------!
       do i=1,rls_ngap
-         gap_x0(i) = real(mod(i-1,gap_nxy)) * cci_gapsize
+         gap_x0(i) = real(modulo(i-1,gap_nxy)) * cci_gapsize
          gap_y0(i) = real((i-1)/gap_nxy)    * cci_gapsize
       end do
       !------------------------------------------------------------------------------------!
@@ -188,7 +188,9 @@ module hrzshade_utils
    ! this, we develop a pseudo-landscape and determine the probability of a gap belonging  !
    ! to each patch to be shaded by neighbouring patches.                                   !
    !---------------------------------------------------------------------------------------!
-   subroutine split_hrzshade(csite)
+   subroutine split_hrzshade(csite,isi)
+      use ed_max_dims           , only : str_len             ! ! intent(in)
+      use ed_misc_coms          , only : current_time        ! ! intent(in)
       use ed_state_vars         , only : sitetype            & ! structure
                                        , patchtype           & ! structure
                                        , allocate_sitetype   & ! subroutine
@@ -234,9 +236,12 @@ module hrzshade_utils
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)              , target      :: csite       ! Current site
+      integer                     , intent(in)  :: isi         ! Site index
       !----- Local variables. -------------------------------------------------------------!
       type(sitetype)              , pointer     :: tsite       ! Scratch site
       type(patchtype)             , pointer     :: cpatch      ! Current patch
+      character(len=str_len)                    :: raster_file ! Raster file
+      character(len=str_len)                    :: patch_table ! Patch table file
       integer     , dimension(:,:), allocatable :: ilight_ipa  ! Light type of subpatches
       integer     , dimension(:)  , allocatable :: gap_pool    ! Sequential
       integer     , dimension(:)  , allocatable :: ipa_ngaps   ! Sequential
@@ -259,7 +264,6 @@ module hrzshade_utils
       real(kind=4), dimension(:,:), allocatable :: fbeam_ipa   ! Absorption at the top
       real(kind=4)                              :: a_ptc       ! Angle of point
       real(kind=4)                              :: ca_ind      ! Crown area
-      real(kind=4)                              :: gap_area    ! Total gap area
       real(kind=4)                              :: rh_ind      ! Crown horizontal radius
       real(kind=4)                              :: rh_ptc      ! Hor. radius of the point
       real(kind=4)                              :: rv_ind      ! Crown vertical radius
@@ -270,9 +274,22 @@ module hrzshade_utils
       real(kind=4)                              :: y_ind       ! Y pos. of the individual
       real(kind=4)                              :: y_ptc       ! Y position of point
       real(kind=4)                              :: z_ptc       ! Z position of point
+      !----- Local constants. -------------------------------------------------------------!
+      logical                     , parameter   :: print_debug = .true.
+      logical                     , parameter   :: verbose     = .true.
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     Initialise raster file and patch name in case we must debug.                   !
+      !------------------------------------------------------------------------------------!
+      if (print_debug) then
+         write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                                 &
+            'raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                                 &
+            'ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+      end if
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !       Allocate temporary vectors.                                                  !
@@ -304,6 +321,7 @@ module hrzshade_utils
       ! case rounding errors leave gaps unassigned or too many gaps assigned.  This should !
       ! be a minor adjustment only (~ 1-2 gaps).                                           !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Assign patches to gaps...'
       do ipa=1,csite%npatches
          ipa_seq(ipa) = ipa
       end do
@@ -316,7 +334,13 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       ipa_ngaps(:) = nint(csite%area(:) * rls_ngap)
       ngap_diff    = sum(ipa_ngaps) - rls_ngap
-      if (ngap_diff > 0) then
+      if (ngap_diff < 0) then
+         !----- Turn the difference positive. ---------------------------------------------!
+         ngap_diff = abs(ngap_diff)
+         !---------------------------------------------------------------------------------!
+
+
+
          !---------------------------------------------------------------------------------!
          !     Loop through all patches in random order, adding one gap to the count until !
          ! all gaps have an associated patch.                                              !
@@ -330,7 +354,7 @@ module hrzshade_utils
 
 
             !------ Update shuffling index and patch. -------------------------------------!
-            isf = 1 + mod(isf,csite%npatches)
+            isf = 1 + modulo(isf,csite%npatches)
             ipa = ipa_shf(isf)
             !------------------------------------------------------------------------------!
 
@@ -340,7 +364,8 @@ module hrzshade_utils
             !------------------------------------------------------------------------------!
          end do addgap_loop
          !---------------------------------------------------------------------------------!
-      elseif (ngap_diff < 0) then
+      elseif (ngap_diff > 0) then
+
          !---------------------------------------------------------------------------------!
          !     Loop through all patches in random order, deleting one gap to the count     !
          ! until we don't have more gap indices than gaps.                                 !
@@ -354,7 +379,7 @@ module hrzshade_utils
 
 
             !------ Update shuffling index. -----------------------------------------------!
-            isf = 1 + mod(isf,csite%npatches)
+            isf = 1 + modulo(isf,csite%npatches)
             ipa = ipa_shf(isf)
             !------------------------------------------------------------------------------!
 
@@ -378,20 +403,15 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !       Assign gap indices in order (we will shuffle afterwards).                    !
       !------------------------------------------------------------------------------------!
-      ipa = 1
-      iii = 0
-      do igp=1,rls_ngap
-         !----- Update indices. -----------------------------------------------------------!
-         if (iii == ipa_ngaps(ipa)) then
-            ipa = ipa + 1
-            iii = 1
-         else
-            iii = iii + 1
-         end if
-         !---------------------------------------------------------------------------------!
-
-         !----- Assign patch index. -------------------------------------------------------!
-         gap_idx(igp) = ipa
+      if (verbose) write(unit=*,fmt='(a)') '    -> Assign patch index to all gaps...'
+      igp = 0
+      do ipa=1,csite%npatches
+         do iii=1,ipa_ngaps(ipa)
+            igp = igp + 1
+            !----- Assign patch index. ----------------------------------------------------!
+            gap_idx(igp) = ipa
+            !------------------------------------------------------------------------------!
+         end do
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -401,6 +421,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Shuffle gaps.                                                                  !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Shuffle gaps...'
       call isample(rls_ngap,gap_idx,rls_ngap,gap_ipa,.false.)
       !----- Replace gap_idx by the gap indices. ------------------------------------------!
       do igp=1,rls_ngap
@@ -409,11 +430,12 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
 
 
-
       !------------------------------------------------------------------------------------!
       !     Loop through all patches.                                                      !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Calculate TCH...'
       patchloop_1st: do ipa=1,csite%npatches
+         if (verbose) write(unit=*,fmt='(a,1x,i6)') '      ~ Patch ',ipa
          !----- Get current patch. --------------------------------------------------------!
          cpatch => csite%patch(ipa)
          !---------------------------------------------------------------------------------!
@@ -455,11 +477,11 @@ module hrzshade_utils
                   a_ptc           = runif_sca(0.,twopi)
                   rh_ptc          = rh_ind * (1.0 - runif_sca(0.,1.))
                   rv_ptc          = rv_ind * sqrt(1.0-rh_ptc*rh_ptc/(rh_ind*rh_ind))
-                  x_ptc           = x_ind + rh_ptc * cos(a_ptc)
-                  y_ptc           = y_ind + rh_ptc * sin(a_ptc)
+                  x_ptc           = modulo(x_ind + rh_ptc * cos(a_ptc),rls_length)
+                  y_ptc           = modulo(y_ind + rh_ptc * sin(a_ptc),rls_length)
                   z_ptc           = cpatch%hite(ico) - rv_ind + rv_ptc
-                  ix              = 1 + mod(floor(x_ptc/cci_pixres),rls_nxy)
-                  iy              = 1 + mod(floor(y_ptc/cci_pixres),rls_nxy)
+                  ix              = 1 + modulo(floor(x_ptc/cci_pixres),rls_nxy)
+                  iy              = 1 + modulo(floor(y_ptc/cci_pixres),rls_nxy)
                   !----- Update TCH height in case the point is higher. -------------------!
                   if (z_ptc > rls_ztch(ix,iy)) then
                      rls_ztch(ix,iy) = z_ptc
@@ -483,14 +505,38 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !      Find crown closure index.                                                     !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Calculate CCI...'
       call cci_lieberman(rls_npixel,rls_x,rls_y,rls_ztch,rls_length,rls_cci,.true.)
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
+      !     Print a matrix with the raster information.                                    !
+      !------------------------------------------------------------------------------------!
+      if (print_debug) then
+         if (verbose) write(unit=*,fmt='(a)') '    -> Print ''raster'' information...'
+         !----- Reset file. ---------------------------------------------------------------!
+         open(unit=72,file=trim(raster_file),status='replace',action='write')
+         write(unit=72,fmt='(2(1x,a6),4(1x,a12))')                                         &
+              '   IGP','   IPA','           X','           Y','        ZTCH','         CCI'
+         do iy=1,rls_nxy
+            do ix=1,rls_nxy
+               igp = rls_igp(ix,iy)
+               ipa = gap_ipa(igp)
+               write(unit=72,fmt='(2(1x,i6),4(1x,f12.5))')                                 &
+                          igp,ipa,rls_x(ix,iy),rls_y(ix,iy),rls_ztch(ix,iy),rls_cci(ix,iy)
+            end do
+         end do
+         close(unit=72,status='keep')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
       !      Find the uncorrected light illumination factor.                               !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Find uncorrected illumination factor...'
       call  cci_abstop(rls_npixel,rls_cci,rls_fbeam)
       do iy=1,rls_nxy
          do ix=1,rls_nxy
@@ -505,6 +551,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !      Find the mean absorption at the top and area under each category.             !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Find the mean illumination by class...'
       do igp=1,rls_ngap
          ipa = gap_ipa(igp)
          if (gap_fbeam(igp) > at_bright) then
@@ -524,6 +571,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Eliminate under-represented light environments.                                !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Fuse underrepresented environments...'
       do ipa=1,csite%npatches
          do iii=1,3
             if (cciarea_ipa(iii,ipa) > 0. .and. cciarea_ipa(iii,ipa) < cci_gapmin) then
@@ -538,7 +586,7 @@ module hrzshade_utils
                      cciarea_ipa(3,ipa) = cciarea_ipa(1,ipa) + cciarea_ipa(3,ipa)
                      !---------------------------------------------------------------------!
                   else
-                     !----- Merge bright and mid. -----------------------------------------!
+                     !----- Merge bright and intermediate. --------------------------------!
                      fbeam_ipa  (2,ipa) = ( fbeam_ipa  (1,ipa) * cciarea_ipa(1,ipa)        &
                                           + fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa) )      &
                                         / ( cciarea_ipa(1,ipa) + cciarea_ipa(2,ipa) )
@@ -556,14 +604,14 @@ module hrzshade_utils
                case (2)
                   !----- Find a patch to send data. ---------------------------------------!
                   if (cciarea_ipa(1,ipa) == 0.) then
-                     !----- Merge mid and dark. -------------------------------------------!
+                     !----- Merge intermediate and dark. ----------------------------------!
                      fbeam_ipa  (3,ipa) = ( fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa)        &
                                           + fbeam_ipa  (3,ipa) * cciarea_ipa(3,ipa) )      &
                                         / ( cciarea_ipa(2,ipa) + cciarea_ipa(3,ipa) )
                      cciarea_ipa(3,ipa) = cciarea_ipa(2,ipa) + cciarea_ipa(3,ipa)
                      !---------------------------------------------------------------------!
                   else
-                     !----- Merge mid and bright. -----------------------------------------!
+                     !----- Merge intermediate and bright. --------------------------------!
                      fbeam_ipa  (1,ipa) = ( fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa)        &
                                           + fbeam_ipa  (1,ipa) * cciarea_ipa(1,ipa) )      &
                                         / ( cciarea_ipa(2,ipa) + cciarea_ipa(1,ipa) )
@@ -581,7 +629,7 @@ module hrzshade_utils
                case (3)
                   !----- Find a patch to send data. ---------------------------------------!
                   if (cciarea_ipa(1,ipa) == 0.) then
-                     !----- Merge mid and dark. -------------------------------------------!
+                     !----- Merge intermediate and dark. ----------------------------------!
                      fbeam_ipa  (2,ipa) = ( fbeam_ipa  (3,ipa) * cciarea_ipa(3,ipa)        &
                                           + fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa) )      &
                                         / ( cciarea_ipa(3,ipa) + cciarea_ipa(2,ipa) )
@@ -627,6 +675,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Find the light type index.                                                     !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Assign light type index...'
       where (fbeam_ipa > at_bright)
          ilight_ipa   = 1
       elsewhere (fbeam_ipa > at_dark)
@@ -642,6 +691,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Find the area of all new patches.                                              !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Find area...'
       do ipa=1,csite%npatches
          cciarea_ipa(:,ipa) = csite%area(ipa) * cciarea_ipa(:,ipa)/sum(cciarea_ipa(:,ipa))
       end do
@@ -653,6 +703,7 @@ module hrzshade_utils
       !      Find the weighted mean of fbeam_ipa, and re-normalise so the weighted average !
       ! becomes always one.                                                                !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Normalise illumination index...'
       wa_fbeam = 0.0
       do ipa=1,csite%npatches
          do iii=1,3
@@ -661,6 +712,32 @@ module hrzshade_utils
       end do
       wa_fbeam       = wa_fbeam       / sum(cciarea_ipa)
       fbeam_ipa(:,:) = fbeam_ipa(:,:) / wa_fbeam
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print a matrix with the patch table information.                               !
+      !------------------------------------------------------------------------------------!
+      if (print_debug) then
+         if (verbose) write(unit=*,fmt='(a)') '    -> Print patch table...'
+         !----- Reset file. ---------------------------------------------------------------!
+         open(unit=72,file=trim(patch_table),status='replace',action='write')
+         write(unit=72,fmt='(2(1x,a6),5(1x,a12))')                                         &
+                                           '   IPA','ILIGHT','   ORIG_AREA','    CCI_AREA' &
+                                             ,'       FBEAM','         AGE','  VEG_HEIGHT'
+         do ipa=1,csite%npatches
+            do iii=1,3
+               if (cciarea_ipa(iii,ipa) > 0.) then
+                  write(unit=72,fmt='(2(1x,i6),5(1x,f12.5))')                              &
+                             ipa,ilight_ipa(iii,ipa),csite%area(ipa),cciarea_ipa (iii,ipa) &
+                                 ,fbeam_ipa(iii,ipa),csite%age (ipa),csite%veg_height(ipa)
+               end if
+            end do
+         end do
+         close(unit=72,status='keep')
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -675,6 +752,7 @@ module hrzshade_utils
       !      Allocate the new patch.  We will retain the order (tallest to shortest), and  !
       ! for the same original patch, we will organise it from brightest to darkest.        !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Create new patches...'
       npat_new = count(cciarea_ipa > 0.0)
       call allocate_sitetype(tsite,npat_new)
       npa = 0
@@ -702,6 +780,7 @@ module hrzshade_utils
 
 
       !----- Copy temporary site back to the ED structure. --------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Copy data back cpatch...'
       call deallocate_sitetype(csite)
       call allocate_sitetype(csite,npat_new)
       call copy_sitetype(tsite,csite,1,npat_new,1,npat_new)
@@ -710,6 +789,7 @@ module hrzshade_utils
 
 
       !------ Free memory before leaving the sub-routine. ---------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Free memory...'
       deallocate(tsite      )
       deallocate(ipa_shf    )
       deallocate(ipa_seq    )
@@ -736,7 +816,7 @@ module hrzshade_utils
    !        and the distribution of tropical forest tree species at La Selva, Costa Rica.  !
    !        J. Trop. Ecol., 11 (2), 161--177.                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine cci_lieberman(nxyz,x,y,z,xymax,cci,circular)
+   subroutine cci_lieberman(nxyz,x,y,z,xymax,cci,cyclic)
       use canopy_radiation_coms, only : cci_radius  ! ! intent(in)
       use rk4_coms             , only : tiny_offset ! ! intent(in)
       implicit none
@@ -747,7 +827,7 @@ module hrzshade_utils
       real(kind=4), dimension(nxyz), intent(in)            :: z
       real(kind=4)                 , intent(in)            :: xymax
       real(kind=4), dimension(nxyz), intent(out)           :: cci
-      logical                      , intent(in) , optional :: circular
+      logical                      , intent(in) , optional :: cyclic
       !----- Local variables. -------------------------------------------------------------!
       integer                                              :: m
       integer                                              :: n
@@ -761,7 +841,7 @@ module hrzshade_utils
       real(kind=8)                                         :: dy8
       real(kind=8)                                         :: dz8
       real(kind=8)                                         :: dr8
-      logical                                              :: circ_use
+      logical                                              :: cyclic_use
       !----- External function. -----------------------------------------------------------!
       real(kind=4)                 , external              :: sngloff
       !------------------------------------------------------------------------------------!
@@ -771,10 +851,10 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     In case circular is not provided, assume boundary conditions are not circular. !
       !------------------------------------------------------------------------------------!
-      if (present(circular)) then
-         circ_use = circular
+      if (present(cyclic)) then
+         cyclic_use = cyclic
       else
-         circ_use = .false.
+         cyclic_use = .false.
       end if
       !------------------------------------------------------------------------------------!
 
@@ -802,7 +882,7 @@ module hrzshade_utils
             !     Find distances.  In case the landscape is assumed circular, we must      !
             ! check distances with an offset of the loop.                                  !
             !------------------------------------------------------------------------------!
-            if (circ_use) then
+            if (cyclic_use) then
                dx8 = min( abs(x8(n) - x8(m)          )                                     &
                         , abs(x8(n) - x8(m) + xymax8 )                                     &
                         , abs(x8(n) - x8(m) - xymax8 ) )

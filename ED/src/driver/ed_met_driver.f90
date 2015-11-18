@@ -343,6 +343,7 @@ subroutine read_met_drivers_init
    use grid_coms         , only : ngrids           ! ! intent(in)
    use consts_coms       , only : day_sec          ! ! intent(in)
    use ed_node_coms      , only : mynum            ! ! intent(in)
+   use random_utils      , only : init_random_seed ! ! subroutine
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)          , pointer :: cgrid

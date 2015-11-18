@@ -458,10 +458,10 @@ radiate_utils.o : $(ED_UTILS)/radiate_utils.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-random_utils.o : $(ED_UTILS)/random_utils.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+random_utils.o : $(ED_UTILS)/random_utils.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90
 	cp -f $< $(<F:.f90=.f90)

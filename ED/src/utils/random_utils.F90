@@ -23,6 +23,18 @@ module random_utils
    !     http://gcc.gnu.org/onlinedocs/gfortran/RANDOM_005fSEED.html                       !
    !---------------------------------------------------------------------------------------!
    subroutine init_random_seed()
+      !------------------------------------------------------------------------------------!
+      !      GETPID must be explicitly loaded from standard intel modules in case you are  !
+      !  compiling with Intel.  In case you get an error, you may want to check your       !
+      !  include.mk file, look for CMACH, and replace by one of the options below, or      !
+      !  create a unique machine name (likely to require changes in rsys.F90 too).  In     !
+      !  case you create a new name, please be creative so it doesn't conflict with other  !
+      !  user's choice.                                                                    !
+      !------------------------------------------------------------------------------------!
+#if defined(ODYSSEY) || defined(SUNHPC) || defined(PC_INTEL)
+      use ifport, only : getpid
+#endif
+      !------------------------------------------------------------------------------------!
       implicit none
       !----- Local variables. -------------------------------------------------------------!
       integer, dimension(:), allocatable :: seed

@@ -201,7 +201,7 @@ USE_MPIWTIME=0
 #-----------------------------------------------------------------
 
 #-----------------  LINUX INTEL FORTRAN-95 Compiler/GCC  ---------
-CMACH=PC_LINUX1
+CMACH=PC_INTEL
 F_COMP=ifort
 C_COMP=icc
 LOADER=ifort

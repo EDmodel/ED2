@@ -158,7 +158,7 @@ subroutine vegetation_dynamics(new_month,new_year)
                do ipy = 1,cgrid%npolygons
                   cpoly => cgrid%polygon(ipy)
                   do isi = 1, cpoly%nsites
-                     call split_hrzshade(cpoly%site(isi))
+                     call split_hrzshade(cpoly%site(isi),isi)
                   end do
                end do
                !---------------------------------------------------------------------------!

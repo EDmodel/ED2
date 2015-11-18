@@ -1290,7 +1290,7 @@ subroutine write_ed_xml_config
   call libxml2f90_ll_opentag("misc")
      call putConfigINT("restart_mode",ied_init_mode)
      call putConfigSTRING("output_filepath",ffilout)
-     call putConfigSTRING("input_filepath",sfilin)
+     call putConfigSTRING("input_filepath",sfilin(1))
      call putConfigSTRING("history_out_filepath",sfilout)
      call putConfigINT("ivegt_dynamics",ivegt_dynamics)
      call putConfigINT("ibigleaf",ibigleaf)
@@ -1354,7 +1354,7 @@ subroutine write_ed_xml_config
      
 !! CANOPY RADIATION
         call putConfigREAL8("clumping_factor",clumping_factor(i))
-        call putConfigREAL("orient_factor",orient_factor(i))
+        call putConfigREAL8("orient_factor",orient_factor(i))
         call putConfigREAL8("leaf_emiss_tir",leaf_emiss_tir(i))
         call putConfigREAL8("wood_emiss_tir",wood_emiss_tir(i))
 
@@ -1502,19 +1502,20 @@ subroutine write_ed_xml_config
 
      !! LEAF DEPENDENT
         call putConfigINT("phenology",         phenology(i))
-        call putConfigINT("c_grn_leaf_dry",    c_grn_leaf_dry(i))
-        call putConfigINT("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
-        call putConfigINT("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
-        call putConfigINT("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
-        call putConfigINT("delta_c",           delta_c(i))
-        call putConfigINT("b1Cl",              b1Cl(i))
-        call putConfigINT("b2Cl",              b2Cl(i))
+        call putConfigREAL("c_grn_leaf_dry",    c_grn_leaf_dry(i))
+        call putConfigREAL("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
+        call putConfigREAL("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
+        call putConfigREAL("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
+        call putConfigREAL("delta_c",           delta_c(i))
+        call putConfigREAL("b1Cl",              b1Cl(i))
+        call putConfigREAL("b2Cl",              b2Cl(i))
 
      !! REPRODUCTION
         call putConfigREAL("r_fract", r_fract(i))
         call putConfigREAL("st_fract",st_fract(i))
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("repro_min_h",repro_min_h(i))
+        call putConfigREAL("min_recruit_size",min_recruit_size(i))
 
      !! OTHER
         call putConfigREAL("one_plant_c",      one_plant_c(i))
@@ -1579,12 +1580,7 @@ subroutine write_ed_xml_config
   !************   CANOPY RADIATION  *****************
   call libxml2f90_ll_opentag("radiation")
      call putConfigREAL("rlong_min",prec_slope)
-     call putConfigREAL("veg_temp_min",rk4min_veg_temp)
-     call putConfigREAL("leaf_scatter_nir",leaf_scatter_nir)
-     call putConfigREAL("leaf_reflect_nir",leaf_reflect_nir)
-     call putConfigREAL("leaf_trans_nir",leaf_trans_nir)
-     call putConfigREAL("diffuse_backscatter_vis",leaf_backscatter_vis)
-     call putConfigREAL("diffuse_backscatter_nir",leaf_backscatter_nir)
+     call putConfigREAL8("veg_temp_min",rk4min_veg_temp)
   call libxml2f90_ll_closetag("radiation")
 
   !************   SOILS  *****************
@@ -1623,7 +1619,7 @@ subroutine write_ed_xml_config
      call putConfigREAL("decay_rate_stsc",decay_rate_stsc)
      call putConfigREAL("decay_rate_fsc",decay_rate_fsc)
      call putConfigREAL("decay_rate_ssc",decay_rate_ssc)
-     call putConfigREAL("N_decomp_lim",N_decomp_lim)
+     call putConfigINT ("N_decomp_lim",N_decomp_lim)
      call putConfigREAL("rh_decay_low",rh_decay_low)
      call putConfigREAL("rh_decay_high",rh_decay_high)
      call putConfigREAL("rh_low_temp",rh_low_temp)
@@ -1637,12 +1633,11 @@ subroutine write_ed_xml_config
 
   !************   FUSION/FISSION  *****************
   call libxml2f90_ll_opentag("fusefiss")
-     call putConfigREAL("min_recruit_size",min_recruit_size)
      call putConfigREAL("fusetol",fusetol)
      call putConfigREAL("fusetol_h",fusetol_h)
      call putConfigREAL("lai_fuse_tol",lai_fuse_tol)
      call putConfigREAL("lai_tol",lai_tol)
-     call putConfigREAL("ff_nhgt",ff_nhgt)
+     call putConfigINT ("ff_nhgt",ff_nhgt)
      call putConfigREAL("coh_tolerance_max",coh_tolerance_max)
   call libxml2f90_ll_closetag("fusefiss")
 

@@ -1,4 +1,3 @@
-
 !==========================================================================================!
 !==========================================================================================!
 !     Main subroutine that initialises the several structures for the Ecosystem Demography !
@@ -27,6 +26,7 @@ subroutine ed_driver()
    use phenology_aux        , only : first_phenology     ! ! subroutine
    use hrzshade_utils       , only : init_cci_variables  ! ! subroutine
    use canopy_radiation_coms, only : ihrzrad             ! ! intent(in)
+   use random_utils         , only : init_random_seed    ! ! subroutine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -222,12 +222,26 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
+   !      In case this simulation will use horizontal shading, initialise the landscape    !
+   ! arrays.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case (ihrzrad)
+   case (1)
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
+      call init_cci_variables()
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      Initialise the site-level meteorological forcing.                                !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Update_met_drivers...'
    do ifm=1,ngrids
       call update_met_drivers(edgrid_g(ifm))
    end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -277,19 +291,6 @@ subroutine ed_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
    call filltab_alltypes
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      In case this simulation will use horizontal shading, initialise the landscape    !
-   ! arrays.                                                                               !
-   !---------------------------------------------------------------------------------------!
-   select case (ihrzrad)
-   case (1)
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
-      call init_cci_variables()
-   end select
    !---------------------------------------------------------------------------------------!
 
 

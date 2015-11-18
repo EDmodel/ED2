@@ -145,6 +145,22 @@ subroutine ed_coup_driver()
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
       call load_ecosystem_state()
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      In case this simulation will use horizontal shading, initialise the landscape    !
+   ! arrays.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case (ihrzrad)
+   case (1)
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
+      call init_cci_variables()
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Initialize hydrology related variables.                                          !
@@ -226,19 +242,6 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
    call filltab_alltypes()
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      In case this simulation will use horizontal shading, initialise the landscape    !
-   ! arrays.                                                                               !
-   !---------------------------------------------------------------------------------------!
-   select case (ihrzrad)
-   case (1)
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
-      call init_cci_variables()
-   end select
    !---------------------------------------------------------------------------------------!
 
 
