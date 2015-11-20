@@ -286,8 +286,6 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
    real(kind=4), parameter :: at0       =  3.012569
    real(kind=4), parameter :: at1       = -0.0044086
-   real(kind=4), parameter :: at_bright = 14.5
-   real(kind=4), parameter :: at_dark   = 10.5
    real(kind=4), parameter :: at08      = dble(at0)
    real(kind=4), parameter :: at18      = dble(at1)
    !---------------------------------------------------------------------------------------!

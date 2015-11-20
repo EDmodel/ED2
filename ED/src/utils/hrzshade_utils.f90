@@ -240,8 +240,6 @@ module hrzshade_utils
                                        , gap_y0              & ! intent(in)
                                        , cci_gaparea         & ! intent(in)
                                        , gap_npixel          & ! intent(in)
-                                       , at_bright           & ! intent(in)
-                                       , at_dark             & ! intent(in)
                                        , rls_igp             & ! intent(out)
                                        , rls_ztch            & ! intent(out)
                                        , rls_cci             & ! intent(out)
@@ -260,7 +258,9 @@ module hrzshade_utils
                                        , ipickone            & ! function
                                        , fpickone            ! ! function
       use consts_coms           , only : pii                 & ! intent(in)
-                                       , twopi               ! ! intent(in)
+                                       , twopi               & ! intent(in)
+                                       , onethird            & ! intent(in)
+                                       , twothirds           ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)              , target      :: csite       ! Current site
@@ -303,7 +303,9 @@ module hrzshade_utils
       real(kind=4)                              :: y_ptc       ! Y position of point
       real(kind=4)                              :: z_ptc       ! Z position of point
       real(kind=4)                              :: min_fbeam   ! Minimum rls_fbeam
-      real(kind=4)                              :: patch_tch   ! Top-of-canopy height. 
+      real(kind=4)                              :: patch_tch   ! Top-of-canopy height.
+      real(kind=4)                              :: at_bright   ! Minimum value for bright
+      real(kind=4)                              :: at_dark     ! Maximum value for dark
       !----- Local constants. -------------------------------------------------------------!
       logical                     , parameter   :: print_debug = .true.
       logical                     , parameter   :: verbose     = .true.
@@ -599,6 +601,12 @@ module hrzshade_utils
       end where
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !      Define brightness thresholds based on quantiles.                              !
+      !------------------------------------------------------------------------------------!
+      at_bright = fquant(rls_ngap,gap_fbeam,twothirds)
+      at_dark   = fquant(rls_ngap,gap_fbeam,onethird )
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !      Find the mean absorption at the top and area under each category.             !
@@ -616,99 +624,6 @@ module hrzshade_utils
             fbeam_ipa  (3,ipa) = fbeam_ipa  (3,ipa) + gap_fbeam(igp)
             cciarea_ipa(3,ipa) = cciarea_ipa(3,ipa) + 1.0
          end if
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Eliminate under-represented light environments.                                !
-      !------------------------------------------------------------------------------------!
-      if (verbose) write(unit=*,fmt='(a)') '    -> Fuse underrepresented environments...'
-      do ipa=1,csite%npatches
-         do iii=1,3
-            if (cciarea_ipa(iii,ipa) > 0. .and. cciarea_ipa(iii,ipa) < cci_gapmin) then
-               select case (iii)
-               case (1)
-                  !----- Find a patch to send data. ---------------------------------------!
-                  if (cciarea_ipa(2,ipa) == 0.) then
-                     !----- Merge bright and dark. ----------------------------------------!
-                     fbeam_ipa  (3,ipa) = ( fbeam_ipa  (1,ipa) * cciarea_ipa(1,ipa)        &
-                                          + fbeam_ipa  (3,ipa) * cciarea_ipa(3,ipa) )      &
-                                        / ( cciarea_ipa(1,ipa) + cciarea_ipa(3,ipa) )
-                     cciarea_ipa(3,ipa) = cciarea_ipa(1,ipa) + cciarea_ipa(3,ipa)
-                     !---------------------------------------------------------------------!
-                  else
-                     !----- Merge bright and intermediate. --------------------------------!
-                     fbeam_ipa  (2,ipa) = ( fbeam_ipa  (1,ipa) * cciarea_ipa(1,ipa)        &
-                                          + fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa) )      &
-                                        / ( cciarea_ipa(1,ipa) + cciarea_ipa(2,ipa) )
-                     cciarea_ipa(2,ipa) = cciarea_ipa(1,ipa) + cciarea_ipa(2,ipa)
-                     !---------------------------------------------------------------------!
-                  end if
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Remove information from bright patch. ----------------------------!
-                  fbeam_ipa  (1,ipa) = 0.
-                  cciarea_ipa(1,ipa) = 0.
-                  !------------------------------------------------------------------------!
-               case (2)
-                  !----- Find a patch to send data. ---------------------------------------!
-                  if (cciarea_ipa(1,ipa) == 0.) then
-                     !----- Merge intermediate and dark. ----------------------------------!
-                     fbeam_ipa  (3,ipa) = ( fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa)        &
-                                          + fbeam_ipa  (3,ipa) * cciarea_ipa(3,ipa) )      &
-                                        / ( cciarea_ipa(2,ipa) + cciarea_ipa(3,ipa) )
-                     cciarea_ipa(3,ipa) = cciarea_ipa(2,ipa) + cciarea_ipa(3,ipa)
-                     !---------------------------------------------------------------------!
-                  else
-                     !----- Merge intermediate and bright. --------------------------------!
-                     fbeam_ipa  (1,ipa) = ( fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa)        &
-                                          + fbeam_ipa  (1,ipa) * cciarea_ipa(1,ipa) )      &
-                                        / ( cciarea_ipa(2,ipa) + cciarea_ipa(1,ipa) )
-                     cciarea_ipa(1,ipa) = cciarea_ipa(2,ipa) + cciarea_ipa(1,ipa)
-                     !---------------------------------------------------------------------!
-                  end if
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Remove information from bright patch. ----------------------------!
-                  fbeam_ipa  (2,ipa) = 0.
-                  cciarea_ipa(2,ipa) = 0.
-                  !------------------------------------------------------------------------!
-               case (3)
-                  !----- Find a patch to send data. ---------------------------------------!
-                  if (cciarea_ipa(1,ipa) == 0.) then
-                     !----- Merge intermediate and dark. ----------------------------------!
-                     fbeam_ipa  (2,ipa) = ( fbeam_ipa  (3,ipa) * cciarea_ipa(3,ipa)        &
-                                          + fbeam_ipa  (2,ipa) * cciarea_ipa(2,ipa) )      &
-                                        / ( cciarea_ipa(3,ipa) + cciarea_ipa(2,ipa) )
-                     cciarea_ipa(2,ipa) = cciarea_ipa(3,ipa) + cciarea_ipa(2,ipa)
-                     !---------------------------------------------------------------------!
-                  else
-                     !----- Merge bright and dark. ----------------------------------------!
-                     fbeam_ipa  (1,ipa) = ( fbeam_ipa  (3,ipa) * cciarea_ipa(3,ipa)        &
-                                          + fbeam_ipa  (1,ipa) * cciarea_ipa(1,ipa) )      &
-                                        / ( cciarea_ipa(3,ipa) + cciarea_ipa(1,ipa) )
-                     cciarea_ipa(1,ipa) = cciarea_ipa(3,ipa) + cciarea_ipa(1,ipa)
-                     !---------------------------------------------------------------------!
-                  end if
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Remove information from bright patch. ----------------------------!
-                  fbeam_ipa  (3,ipa) = 0.
-                  cciarea_ipa(3,ipa) = 0.
-                  !------------------------------------------------------------------------!
-               end select
-               !---------------------------------------------------------------------------!
-            end if
-            !------------------------------------------------------------------------------!
-         end do
-         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
