@@ -242,6 +242,7 @@ module canopy_struct_dynamics
       real           :: tai_drygrass ! TAI for when a grass-only patch is dry   [    m2/m2]
       real           :: c3_lad       ! c3 * lad for estimating drag coefficient [      ---]
       real           :: c3_cumldrag  ! c3 * cumulative drag.                    [      ---]
+      real           :: rt_cumldrag  ! Aux variable to avoid underflow.         [      ---]
       real           :: snowfac_can  ! fraction of canopy covered in snow
       integer        :: ibuff
       !----- External functions. ----------------------------------------------------------!
@@ -1003,9 +1004,11 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          d0ohgt = 1.0
          do k=1,zcan
-            d0ohgt = d0ohgt - dzcan(k) / htop                                              &
-                            * exp(-2.0 * nn * (1.0 - canstr(ibuff)%cumldrag(k) /           &
-                            canstr(ibuff)%cumldrag(zcan)))
+            rt_cumldrag = min(lnexp_max,max( lnexp_min                                     &
+                                           , 2.0 * nn                                      &
+                                           * (1.0 - canstr(ibuff)%cumldrag(k)              &
+                                                  / canstr(ibuff)%cumldrag(zcan)) ))
+            d0ohgt = d0ohgt - dzcan(k) / htop * exp(-rt_cumldrag)
          end do
          z0ohgt = (1.0 - d0ohgt) * min(1.0, exp(- vonk / ustarouh + infunc))
          !---------------------------------------------------------------------------------!

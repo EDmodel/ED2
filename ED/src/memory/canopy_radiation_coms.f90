@@ -271,6 +271,7 @@ module canopy_radiation_coms
    real(kind=4), dimension(:)  , allocatable :: gap_y0
    !----- Mean absorption correction for incident beam radiation. -------------------------!
    real(kind=4), dimension(:)  , allocatable :: gap_fbeam
+   integer     , dimension(:)  , allocatable :: gap_nuse
    !----- Patch associated with the gap. --------------------------------------------------!
    integer     , dimension(:)  , allocatable :: gap_ipa
    !----- Auxiliary variable, patch index before shuffling, gap index after shuffling. ----!

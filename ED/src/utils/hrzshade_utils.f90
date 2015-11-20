@@ -25,6 +25,7 @@ module hrzshade_utils
                                       , cci_pixres     & ! intent(in)
                                       , cci_gapsize    & ! intent(in)
                                       , cci_nretn      & ! intent(in)
+                                      , cci_radius     & ! intent(in)
                                       , cci_gaparea    & ! intent(out)
                                       , rls_nxy        & ! intent(out)
                                       , rls_npixel     & ! intent(out)
@@ -42,13 +43,15 @@ module hrzshade_utils
                                       , gap_y0         & ! intent(out)
                                       , gap_ipa        & ! intent(out)
                                       , gap_fbeam      & ! intent(out)
+                                      , gap_nuse       & ! intent(out)
                                       , gap_idx        & ! intent(out)
                                       , gap_mask       ! ! intent(out)
       use disturb_coms         , only : min_patch_area ! ! intent(in)
       !----- Local variables. -------------------------------------------------------------!
-      integer  :: gap_nxy ! Total number of gaps in each direction.
-      integer  :: i       ! Counter
-      integer  :: j       ! Counter
+      integer            :: gap_nxy ! Total number of gaps in each direction.
+      integer            :: i       ! Counter
+      integer            :: j       ! Counter
+      logical, parameter :: print_dimensions = .true.
       !------------------------------------------------------------------------------------!
 
 
@@ -93,6 +96,34 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !     Print dimensions.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (print_dimensions) then
+         write(unit=*,fmt='(a)') ''
+         write(unit=*,fmt='(a)') ''
+         write(unit=*,fmt='(a)') '========================================================'
+         write(unit=*,fmt='(a)') '========================================================'
+         write(unit=*,fmt='(a)') '    HORIZONTAL SHADING DIMENSIONS.'
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(a,1x,f10.3)') ' CCI_GAPMIN  = ',cci_gapmin
+         write(unit=*,fmt='(a,1x,f10.3)') ' CCI_PIXRES  = ',cci_pixres
+         write(unit=*,fmt='(a,1x,i10)'  ) ' CCI_NRETN   = ',cci_nretn
+         write(unit=*,fmt='(a,1x,i10  )') ' RLS_NXY     = ',rls_nxy
+         write(unit=*,fmt='(a,1x,i10  )') ' RLS_NPIXEL  = ',rls_npixel
+         write(unit=*,fmt='(a,1x,i10  )') ' RLS_NGAP    = ',rls_ngap
+         write(unit=*,fmt='(a,1x,f10.3)') ' RLS_LENGTH  = ',rls_length
+         write(unit=*,fmt='(a,1x,f10.3)') ' RLS_AREA    = ',rls_length
+         write(unit=*,fmt='(a,1x,f10.3)') ' CCI_GAPSIZE = ',cci_gapsize
+         write(unit=*,fmt='(a,1x,f10.3)') ' CCI_GAPAREA = ',cci_gaparea
+         write(unit=*,fmt='(a,1x,f10.3)') ' CCI_RADIUS  = ',cci_radius
+         write(unit=*,fmt='(a,1x,i10)'  ) ' GAP_NPIXEL  = ',gap_npixel
+         write(unit=*,fmt='(a)') '========================================================'
+         write(unit=*,fmt='(a)') '========================================================'
+         write(unit=*,fmt='(a)') ''
+         write(unit=*,fmt='(a)') ''
+      end if
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -111,6 +142,7 @@ module hrzshade_utils
       allocate(gap_ipa   (rls_ngap))
       allocate(gap_mask  (rls_ngap))
       allocate(gap_fbeam (rls_ngap))
+      allocate(gap_nuse  (rls_ngap))
       !------------------------------------------------------------------------------------!
 
 
@@ -122,11 +154,6 @@ module hrzshade_utils
             !----- Coordinates. -----------------------------------------------------------!
             rls_x(i,j) = (i - 1) * cci_pixres
             rls_y(i,j) = (j - 1) * cci_pixres
-            !------------------------------------------------------------------------------!
-
-            !----- Check to which gap this point corresponds to. --------------------------!
-            rls_igp(i,j) = 1 + floor( rls_x(i,j) / cci_gapsize)                            &
-                             + floor( rls_y(i,j) / cci_gapsize) * gap_nxy
             !------------------------------------------------------------------------------!
          end do
       end do
@@ -209,20 +236,21 @@ module hrzshade_utils
                                        , rls_area            & ! intent(in)
                                        , rls_x               & ! intent(in)
                                        , rls_y               & ! intent(in)
-                                       , rls_igp             & ! intent(in)
                                        , gap_x0              & ! intent(in)
                                        , gap_y0              & ! intent(in)
                                        , cci_gaparea         & ! intent(in)
                                        , gap_npixel          & ! intent(in)
                                        , at_bright           & ! intent(in)
                                        , at_dark             & ! intent(in)
+                                       , rls_igp             & ! intent(out)
                                        , rls_ztch            & ! intent(out)
                                        , rls_cci             & ! intent(out)
                                        , rls_fbeam           & ! intent(out)
                                        , gap_ipa             & ! intent(out)
                                        , gap_idx             & ! intent(out)
                                        , gap_mask            & ! intent(out)
-                                       , gap_fbeam           ! ! intent(out)
+                                       , gap_fbeam           & ! intent(out)
+                                       , gap_nuse            ! ! intent(out)
       use allometry             , only : dbh2ca              & ! function
                                        , h2crownbh           ! ! function
       use random_utils          , only : fsample             & ! sub-routine
@@ -274,6 +302,8 @@ module hrzshade_utils
       real(kind=4)                              :: y_ind       ! Y pos. of the individual
       real(kind=4)                              :: y_ptc       ! Y position of point
       real(kind=4)                              :: z_ptc       ! Z position of point
+      real(kind=4)                              :: min_fbeam   ! Minimum rls_fbeam
+      real(kind=4)                              :: patch_tch   ! Top-of-canopy height. 
       !----- Local constants. -------------------------------------------------------------!
       logical                     , parameter   :: print_debug = .true.
       logical                     , parameter   :: verbose     = .true.
@@ -309,7 +339,9 @@ module hrzshade_utils
       rls_ztch   (:,:) = 0.0
       rls_cci    (:,:) = 0.0
       rls_fbeam  (:,:) = 0.0
+      rls_igp    (:,:) = 0
       gap_fbeam    (:) = 0.0
+      gap_nuse     (:) = 0
       fbeam_ipa  (:,:) = 0.0
       cciarea_ipa(:,:) = 0.0
       ilight_ipa (:,:) = 0
@@ -482,9 +514,14 @@ module hrzshade_utils
                   z_ptc           = cpatch%hite(ico) - rv_ind + rv_ptc
                   ix              = 1 + modulo(floor(x_ptc/cci_pixres),rls_nxy)
                   iy              = 1 + modulo(floor(y_ptc/cci_pixres),rls_nxy)
-                  !----- Update TCH height in case the point is higher. -------------------!
+                  !------------------------------------------------------------------------!
+                  !    Update TCH height in case the point is higher.  In case the         !
+                  ! individual "invaded" the neighbouring gap, then we must correct the    !
+                  ! gap index.                                                             !
+                  !------------------------------------------------------------------------!
                   if (z_ptc > rls_ztch(ix,iy)) then
                      rls_ztch(ix,iy) = z_ptc
+                     rls_igp (ix,iy) = igp
                   end if
                   !------------------------------------------------------------------------!
                end do ptcloop
@@ -506,7 +543,7 @@ module hrzshade_utils
       !      Find crown closure index.                                                     !
       !------------------------------------------------------------------------------------!
       if (verbose) write(unit=*,fmt='(a)') '    -> Calculate CCI...'
-      call cci_lieberman(rls_npixel,rls_x,rls_y,rls_ztch,rls_length,rls_cci,.true.)
+      call cci_lieberman(rls_nxy,rls_ztch,cci_pixres,rls_length,rls_cci)
       !------------------------------------------------------------------------------------!
 
 
@@ -518,14 +555,16 @@ module hrzshade_utils
          if (verbose) write(unit=*,fmt='(a)') '    -> Print ''raster'' information...'
          !----- Reset file. ---------------------------------------------------------------!
          open(unit=72,file=trim(raster_file),status='replace',action='write')
-         write(unit=72,fmt='(2(1x,a6),4(1x,a12))')                                         &
-              '   IGP','   IPA','           X','           Y','        ZTCH','         CCI'
+         write(unit=72,fmt='(2(1x,a6),4(1x,a12))')  '   IGP','   IPA','           X'       &
+                                                      ,'           Y','        ZTCH'       &
+                                                      ,'         CCI'
          do iy=1,rls_nxy
             do ix=1,rls_nxy
                igp = rls_igp(ix,iy)
                ipa = gap_ipa(igp)
-               write(unit=72,fmt='(2(1x,i6),4(1x,f12.5))')                                 &
-                          igp,ipa,rls_x(ix,iy),rls_y(ix,iy),rls_ztch(ix,iy),rls_cci(ix,iy)
+               write(unit=72,fmt='(2(1x,i6),4(1x,f12.5),1x,l12)')                          &
+                                         igp,ipa,rls_x(ix,iy),rls_y(ix,iy),rls_ztch(ix,iy) &
+                                                ,rls_cci(ix,iy)
             end do
          end do
          close(unit=72,status='keep')
@@ -540,11 +579,24 @@ module hrzshade_utils
       call  cci_abstop(rls_npixel,rls_cci,rls_fbeam)
       do iy=1,rls_nxy
          do ix=1,rls_nxy
-            igp = rls_igp(ix,iy)
+            igp            = rls_igp(ix,iy)
             gap_fbeam(igp) = gap_fbeam(igp) + rls_fbeam(ix,iy)
+            gap_nuse (igp) = gap_nuse (igp) + 1
          end do
       end do
-      gap_fbeam(:) = gap_fbeam(:) / gap_npixel
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Average by gap.  In the unlikely case that a gap is completely suppressed, we  !
+      ! assign the minimum value of rls_fbeam.                                             !
+      !------------------------------------------------------------------------------------!
+      min_fbeam = minval(rls_fbeam)
+      where (gap_nuse(:) > 0)
+         gap_fbeam(:) = gap_fbeam(:) / gap_nuse(:)
+      elsewhere
+         gap_fbeam(:) = min_fbeam
+      end where
       !------------------------------------------------------------------------------------!
 
 
@@ -724,15 +776,24 @@ module hrzshade_utils
          if (verbose) write(unit=*,fmt='(a)') '    -> Print patch table...'
          !----- Reset file. ---------------------------------------------------------------!
          open(unit=72,file=trim(patch_table),status='replace',action='write')
-         write(unit=72,fmt='(2(1x,a6),5(1x,a12))')                                         &
+         write(unit=72,fmt='(2(1x,a6),6(1x,a12))')                                         &
                                            '   IPA','ILIGHT','   ORIG_AREA','    CCI_AREA' &
-                                             ,'       FBEAM','         AGE','  VEG_HEIGHT'
+                                             ,'       FBEAM','         AGE','   PATCH_TCH' &
+                                             ,'   CAN_DEPTH'
          do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+            if (cpatch%ncohorts == 0) then
+               patch_tch = 0.
+            else
+               patch_tch = maxval(cpatch%hite)
+            end if
+
             do iii=1,3
                if (cciarea_ipa(iii,ipa) > 0.) then
-                  write(unit=72,fmt='(2(1x,i6),5(1x,f12.5))')                              &
+                  write(unit=72,fmt='(2(1x,i6),6(1x,f12.5))')                              &
                              ipa,ilight_ipa(iii,ipa),csite%area(ipa),cciarea_ipa (iii,ipa) &
-                                 ,fbeam_ipa(iii,ipa),csite%age (ipa),csite%veg_height(ipa)
+                                 ,fbeam_ipa(iii,ipa),csite%age (ipa),patch_tch             &
+                                 ,csite%can_depth(ipa)
                end if
             end do
          end do
@@ -816,105 +877,141 @@ module hrzshade_utils
    !        and the distribution of tropical forest tree species at La Selva, Costa Rica.  !
    !        J. Trop. Ecol., 11 (2), 161--177.                                              !
    !---------------------------------------------------------------------------------------!
-   subroutine cci_lieberman(nxyz,x,y,z,xymax,cci,cyclic)
+   subroutine cci_lieberman(nxy,z,dxy,xymax,cci)
       use canopy_radiation_coms, only : cci_radius  ! ! intent(in)
       use rk4_coms             , only : tiny_offset ! ! intent(in)
       implicit none
       !----- Variable declaration. --------------------------------------------------------!
-      integer                      , intent(in)            :: nxyz
-      real(kind=4), dimension(nxyz), intent(in)            :: x
-      real(kind=4), dimension(nxyz), intent(in)            :: y
-      real(kind=4), dimension(nxyz), intent(in)            :: z
-      real(kind=4)                 , intent(in)            :: xymax
-      real(kind=4), dimension(nxyz), intent(out)           :: cci
-      logical                      , intent(in) , optional :: cyclic
+      integer                         , intent(in)            :: nxy
+      real(kind=4), dimension(nxy,nxy), intent(in)            :: z
+      real(kind=4)                    , intent(in)            :: dxy
+      real(kind=4)                    , intent(in)            :: xymax
+      real(kind=4), dimension(nxy,nxy), intent(out)           :: cci
       !----- Local variables. -------------------------------------------------------------!
-      integer                                              :: m
-      integer                                              :: n
-      real(kind=8), dimension(nxyz)                        :: x8
-      real(kind=8), dimension(nxyz)                        :: y8
-      real(kind=8), dimension(nxyz)                        :: z8
-      real(kind=8), dimension(nxyz)                        :: cci8
-      real(kind=8)                                         :: xymax8
-      real(kind=8)                                         :: radius8
-      real(kind=8)                                         :: dx8
-      real(kind=8)                                         :: dy8
-      real(kind=8)                                         :: dz8
-      real(kind=8)                                         :: dr8
-      logical                                              :: cyclic_use
+      integer                                                 :: xn
+      integer                                                 :: yn
+      integer                                                 :: xm
+      integer                                                 :: ym
+      integer                                                 :: xa
+      integer                                                 :: xz
+      integer                                                 :: ya
+      integer                                                 :: yz
+      integer                                                 :: xtmp
+      integer                                                 :: ytmp
+      real(kind=8), dimension(nxy,nxy)                        :: z8
+      real(kind=8), dimension(nxy,nxy)                        :: cci8
+      real(kind=8)                                            :: dxy8
+      real(kind=8)                                            :: xymax8
+      real(kind=8)                                            :: radius8
+      real(kind=8)                                            :: dx8
+      real(kind=8)                                            :: dy8
+      real(kind=8)                                            :: dz8
+      real(kind=8)                                            :: dr8
       !----- External function. -----------------------------------------------------------!
-      real(kind=4)                 , external              :: sngloff
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     In case circular is not provided, assume boundary conditions are not circular. !
-      !------------------------------------------------------------------------------------!
-      if (present(cyclic)) then
-         cyclic_use = cyclic
-      else
-         cyclic_use = .false.
-      end if
+      real(kind=4)                 , external                 :: sngloff
       !------------------------------------------------------------------------------------!
 
 
 
       !----- Initialise double precision placeholders. ------------------------------------!
-      x8(:)   = dble(x(:))
-      y8(:)   = dble(y(:))
-      z8(:)   = dble(z(:))
-      cci8(:) = 0.d0
-      radius8 = dble(cci_radius)
-      xymax8  = dble(xymax)
+      z8  (:,:) = dble(z(:,:))
+      cci8(:,:) = 0.d0
+      radius8   = dble(cci_radius)
+      xymax8    = dble(xymax)
+      dxy8      = dble(dxy)
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !     Loop through each element, find CCI.                                           !
       !------------------------------------------------------------------------------------!
-      oloop: do m=1,nxyz
+      out_yloop: do yn=1,nxy
+         !---------------------------------------------------------------------------------!
+         !     Find ya and yz.  In case ya is greater than yz, we add nxy to yz so the     !
+         ! loop is simpler, then correct ym inside the loop.                               !
+         !---------------------------------------------------------------------------------!
+         ya = 1 + modulo(yn - ceiling(cci_radius / dxy) - 1,nxy)
+         yz = 1 + modulo(yn + ceiling(cci_radius / dxy) - 1,nxy)
+         if (ya > yz) yz = yz + nxy
+         !---------------------------------------------------------------------------------!
+
+
          !---------------------------------------------------------------------------------!
          !     Check every grid element.                                                   !
          !---------------------------------------------------------------------------------!
-         iloop: do n=1,nxyz
+         out_xloop: do xn=1,nxy
             !------------------------------------------------------------------------------!
-            !     Find distances.  In case the landscape is assumed circular, we must      !
-            ! check distances with an offset of the loop.                                  !
+            !     Find xa and xz.  In case xa is greater than xz, we add nxy to xz so the  !
+            ! loop is simpler, then correct xm inside the loop.                            !
             !------------------------------------------------------------------------------!
-            if (cyclic_use) then
-               dx8 = min( abs(x8(n) - x8(m)          )                                     &
-                        , abs(x8(n) - x8(m) + xymax8 )                                     &
-                        , abs(x8(n) - x8(m) - xymax8 ) )
-               dy8 = min( abs(y8(n) - y8(m)          )                                     &
-                        , abs(y8(n) - y8(m) + xymax8 )                                     &
-                        , abs(y8(n) - y8(m) - xymax8 ) )
-            else
-               dx8 = x8(n) - x8(m)
-               dy8 = y8(n) - y8(m)
-            end if
-            dz8 = x8(n) - x8(m)
-            dr8 = sqrt(dx8*dx8 + dy8*dy8)
+            xa = 1 + modulo(xn - ceiling(cci_radius / dxy) - 1,nxy)
+            xz = 1 + modulo(xn + ceiling(cci_radius / dxy) - 1,nxy)
+            if (xa > xz) xz = xz + nxy
             !------------------------------------------------------------------------------!
 
 
-            !----- Check whether point is within radius and taller than current point. ----!
-            if (dr8 > 0.d0 .and. dr8 <= radius8 .and. dz8 > 0.d0) then
-               cci8(m) = cci8(m) + sin(dz8 / sqrt(dz8*dz8 + dr8*dr8))
-            end if
+
             !------------------------------------------------------------------------------!
-         end do iloop
+            !   Inner y loop.                                                              !
+            !------------------------------------------------------------------------------!
+            in_yloop: do ytmp=ya,yz
+               !----- Make sure that Yn is bounded. ---------------------------------------!
+               ym = 1 + modulo((ytmp-1),nxy)
+               !---------------------------------------------------------------------------!
+
+               !----- Find distance along y axis. -----------------------------------------!
+               dy8  = min( abs(dble(ym-yn)*dxy8)                                           &
+                         , abs(dble(ym-yn)*dxy8+xymax8)                                    &
+                         , abs(dble(ym-yn)*dxy8-xymax8) )
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !    Inner X loop.                                                          !
+               !---------------------------------------------------------------------------!
+               in_xloop: do xtmp=xa,xz
+                  !----- Make sure that Xn is bounded. ------------------------------------!
+                  xm = 1 + modulo((xtmp-1),nxy)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Find distance along x axis. --------------------------------------!
+                  dx8  = min( abs(dble(xm-xn)*dxy8)                                        &
+                            , abs(dble(xm-xn)*dxy8+xymax8)                                 &
+                            , abs(dble(xm-xn)*dxy8-xymax8) )
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Find height difference and total distance.                         !
+                  !------------------------------------------------------------------------!
+                  dz8 = z8(xm,ym) - z8(xn,yn)
+                  dr8 = sqrt(dx8*dx8 + dy8*dy8)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Check whether point is within radius and taller than current       !
+                  ! point.                                                                 !
+                  !------------------------------------------------------------------------!
+                  if (dr8 > 0.d0 .and. dr8 <= radius8 .and. dz8 > 0.d0) then
+                     cci8(xn,yn) = cci8(xn,yn) + sin(dz8 / sqrt(dz8*dz8 + dr8*dr8))
+                  end if
+                  !------------------------------------------------------------------------!
+               end do in_xloop
+               !---------------------------------------------------------------------------!
+            end do in_yloop
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Find the single-precision CCI.                                           !
+            !------------------------------------------------------------------------------!
+            cci(xn,yn) = sngloff(cci8(xn,yn),tiny_offset)
+            !------------------------------------------------------------------------------!
+         end do out_xloop
          !---------------------------------------------------------------------------------!
-      end do oloop
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Loop through each element, find CCI.                                           !
-      !------------------------------------------------------------------------------------!
-      do m=1,nxyz
-         cci(m) = sngloff(cci8(m),tiny_offset)
-      end do
+      end do out_yloop
       !------------------------------------------------------------------------------------!
 
       return

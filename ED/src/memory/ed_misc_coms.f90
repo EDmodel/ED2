@@ -248,11 +248,27 @@ Module ed_misc_coms
 
    logical :: suppress_h5_warnings
 
+
+
+
    !---------------------------------------------------------------------------------------!
-   !      Ratio between different output time intervals.                                   !
+   !     Some useful conversion factors.                                                   !
+   ! 1. FRQSUMI         -- inverse of the elapsed time between two analyses (or one day).  !
+   !                       This should be used by variables that are fluxes and are solved !
+   !                       by RK4, they are holding the integral over the past frqsum      !
+   !                       seconds.                                                        !
+   ! 2. DTLSM_O_FRQSUM  -- inverse of the number of the main time steps (DTLSM) since      !
+   !                       previous analysis.  Only photosynthesis- and decomposition-     !
+   !                       related variables, or STATE VARIABLES should use this factor.   !
+   !                       Do not use this for energy and water fluxes, CO2 eddy flux, and !
+   !                       CO2 storage.                                                    !
+   ! 3. RADFRQ_O_FRQSUM -- inverse of the number of radiation time steps since the         !
+   !                       previous analysis.  Only radiation-related variables should use !
+   !                       this factor.                                                    !
    !---------------------------------------------------------------------------------------!
-   real :: radfrq_o_frqsum
+   real :: frqsumi
    real :: dtlsm_o_frqsum
+   real :: radfrq_o_frqsum
    !---------------------------------------------------------------------------------------!
 
 end module ed_misc_coms

@@ -84,7 +84,7 @@ subroutine init_derived_rad_params()
    ! non-zero.   Otherwise, we make it 1.d0, which is the limit of that equation when      !
    ! phi2 approaches zero.                                                                 !
    !---------------------------------------------------------------------------------------!
-   where (orient_factor(:) = 0.d0)
+   where (orient_factor(:) == 0.d0)
       mu_bar(:) = 1.d0
    elsewhere
       mu_bar(:) = ( 1.d0 - phi1(:) * log(1.d0 + phi2(:) / phi1(:)) / phi2(:) ) / phi2(:)
@@ -290,16 +290,15 @@ subroutine radiate_driver(cgrid)
 
 
                !----- Get unnormalized radiative transfer information. --------------------!
-               call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,ipa,nzg,nzs          &
-                             ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi),maxcohort,tuco  &
-                             ,cpoly%met(isi)%rlong,daytime,twilight)
+               call sfcrad_ed(cpoly%cosaoi(isi),csite,ipa,nzg,nzs,cpoly%ntext_soil(:,isi)  &
+                             ,cpoly%ncol_soil(isi),tuco,cpoly%met(isi)%rlong,twilight)
                !---------------------------------------------------------------------------!
 
 
 
                !----- Normalize the absorbed radiations. ----------------------------------!
-               call scale_ed_radiation(tuco,rshort_tot,cpoly%met(isi)%rshort_diffuse       &
-                                      ,cpoly%met(isi)%rlong,cpoly%nighttime(isi),csite,ipa)
+               call scale_ed_radiation(rshort_tot,cpoly%met(isi)%rlong                     &
+                                      ,cpoly%nighttime(isi),csite,ipa)
                !---------------------------------------------------------------------------!
             end do patchloop
             !------------------------------------------------------------------------------!
@@ -329,8 +328,7 @@ end subroutine radiate_driver
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosz,cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tuco     &
-                    ,rlong,daytime,twilight)
+subroutine sfcrad_ed(cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,twilight)
 
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
@@ -375,9 +373,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,maxcohor
    integer                         , intent(in)  :: ncol_soil
    real                            , intent(in)  :: rlong
    real                            , intent(in)  :: cosaoi
-   real                            , intent(in)  :: cosz
-   integer                         , intent(in)  :: maxcohort
-   logical                         , intent(in)  :: daytime
    logical                         , intent(in)  :: twilight
    integer                         , intent(out) :: tuco
    !----- Local variables. ----------------------------------------------------------------!
@@ -386,7 +381,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,maxcohor
    integer                                       :: ico
    integer                                       :: ipft
    integer                                       :: cohort_count
-   integer                                       :: max_cohort_count
    integer                                       :: nsoil
    integer                                       :: colour
    integer                                       :: k
@@ -435,8 +429,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,maxcohor
    real                                          :: wwood_tir
    real                                          :: bl_lai_each
    real                                          :: bl_wai_each
-   real                                          :: ground_par_check
-   real                                          :: ground_nir_check
    integer                                       :: ibuff
    !----- External function. --------------------------------------------------------------!
    real            , external                    :: sngloff
@@ -1623,19 +1615,18 @@ end function mean_daysecz
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,nighttime,csite,ipa)
+subroutine scale_ed_radiation(rshort,rlong,nighttime,csite,ipa)
 
    use ed_state_vars        , only : sitetype             & ! intent(in)
                                    , patchtype            ! ! intent(in)
    use ed_misc_coms         , only : writing_long         & ! intent(in)
+                                   , radfrq               & ! intent(in)
                                    , radfrq_o_frqsum      ! ! intent(in)
    !$ use omp_lib
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
-   integer         , intent(in) :: tuco
    real            , intent(in) :: rshort
-   real            , intent(in) :: rshort_diffuse
    real            , intent(in) :: rlong
    logical         , intent(in) :: nighttime
    integer         , intent(in) :: ipa

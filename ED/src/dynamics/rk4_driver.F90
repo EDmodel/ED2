@@ -26,8 +26,7 @@ module rk4_driver
       use grid_coms              , only : nzg                  & ! intent(in)
                                         , nzs                  ! ! intent(in)
       use ed_misc_coms           , only : current_time         & ! intent(in)
-                                        , dtlsm                & ! intent(in)
-                                        , dtlsm_o_frqsum       ! ! intent(in)
+                                        , dtlsm                ! ! intent(in)
       use therm_lib              , only : tq2enthalpy          ! ! function
       use budget_utils           , only : update_budget        & ! function
                                         , compute_budget       ! ! function
@@ -412,7 +411,7 @@ module rk4_driver
       use ed_misc_coms         , only : fast_diagnostics     & ! intent(in)
                                       , writing_long         & ! intent(in)
                                       , dtlsm                & ! intent(in)
-                                      , frqsum               ! ! intent(in)
+                                      , dtlsm_o_frqsum       ! ! intent(in)
       use soil_coms            , only : soil8                & ! intent(in)
                                       , dslz8                & ! intent(in)
                                       , slz8                 & ! intent(in)
