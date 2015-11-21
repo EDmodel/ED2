@@ -264,7 +264,8 @@ module canopy_radiation_coms
    real(kind=4), dimension(:,:), allocatable :: rls_cci
    !----- Absorption correction for incident beam radiation. ------------------------------!
    real(kind=4), dimension(:,:), allocatable :: rls_fbeam
-   !----- Gap index. ----------------------------------------------------------------------!
+   !----- Gap indices (zero is the default). ----------------------------------------------!
+   integer     , dimension(:,:), allocatable :: rls_igp0
    integer     , dimension(:,:), allocatable :: rls_igp
    !----- Gap origin. ---------------------------------------------------------------------!
    real(kind=4), dimension(:)  , allocatable :: gap_x0

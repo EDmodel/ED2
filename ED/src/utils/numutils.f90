@@ -2509,7 +2509,7 @@ real function fquant(nx,x,prob)
       write(unit=*,fmt='(a)'          ) ' '
       write(unit=*,fmt='(a)'          ) '================================================='
       write(unit=*,fmt='(a)'          ) '================================================='
-      write(unit=*,fmt='(a)'          ) '    In function fquant: Invalid PROB!
+      write(unit=*,fmt='(a)'          ) '    In function fquant: Invalid PROB!'
       write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
       write(unit=*,fmt='(a,1x,es12.5)') '   -> Provided PROB: ',prob
       write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
@@ -2529,14 +2529,23 @@ real function fquant(nx,x,prob)
    !---------------------------------------------------------------------------------------!
    !----- Position without interpolation. -------------------------------------------------!
    ridx   = 1. + prob * real(nx-1)
-   !----- Index just before ridx, and weight. ---------------------------------------------!
-   il     = floor(ridx)
-   wl     = ridx - real(il)
-   !----- Index just before ridx, and corresponding weight. -------------------------------!
-   ih     = ceiling(ridx)
-   wh     = real(ih) - ridx
+   !----- Index just before ridx. ---------------------------------------------------------!
+   il     = max(1,floor(ridx))
+   !----- Index just after ridx. ----------------------------------------------------------!
+   ih     = min(nx,ceiling(ridx))
    !----- Quantile is the interpolated value. ---------------------------------------------!
-   fquant = (wl * xsort(il) + wh * xsort(ih)) / (wl + wh)
+   if (il == ih) then
+      fquant = xsort(il)
+   else
+      !----- Weight factors. --------------------------------------------------------------!
+      wl     = ridx - real(il)
+      wh     = real(ih) - ridx
+      !------------------------------------------------------------------------------------!
+
+      !----- Quantile is the weighted average. --------------------------------------------!
+      fquant = (wl * xsort(il) + wh * xsort(ih)) / (wl + wh)
+      !------------------------------------------------------------------------------------!
+   end if
    !---------------------------------------------------------------------------------------!
 
 

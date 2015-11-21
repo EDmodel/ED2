@@ -37,6 +37,7 @@ module hrzshade_utils
                                       , rls_ztch       & ! intent(out)
                                       , rls_cci        & ! intent(out)
                                       , rls_fbeam      & ! intent(out)
+                                      , rls_igp0       & ! intent(out)
                                       , rls_igp        & ! intent(out)
                                       , gap_npixel     & ! intent(out)
                                       , gap_x0         & ! intent(out)
@@ -134,6 +135,7 @@ module hrzshade_utils
       allocate(rls_y     (rls_nxy,rls_nxy))
       allocate(rls_ztch  (rls_nxy,rls_nxy))
       allocate(rls_cci   (rls_nxy,rls_nxy))
+      allocate(rls_igp0  (rls_nxy,rls_nxy))
       allocate(rls_igp   (rls_nxy,rls_nxy))
       allocate(rls_fbeam (rls_nxy,rls_nxy))
       allocate(gap_x0    (rls_ngap))
@@ -154,6 +156,12 @@ module hrzshade_utils
             !----- Coordinates. -----------------------------------------------------------!
             rls_x(i,j) = (i - 1) * cci_pixres
             rls_y(i,j) = (j - 1) * cci_pixres
+            !------------------------------------------------------------------------------!
+
+
+            !----- Default gap index. -----------------------------------------------------!
+            rls_igp0(i,j) = 1 + floor(rls_x(i,j)/cci_gapsize)                              &
+                              + floor(rls_y(i,j)/cci_gapsize) * gap_nxy
             !------------------------------------------------------------------------------!
          end do
       end do
@@ -236,6 +244,7 @@ module hrzshade_utils
                                        , rls_area            & ! intent(in)
                                        , rls_x               & ! intent(in)
                                        , rls_y               & ! intent(in)
+                                       , rls_igp0            & ! intent(in)
                                        , gap_x0              & ! intent(in)
                                        , gap_y0              & ! intent(in)
                                        , cci_gaparea         & ! intent(in)
@@ -309,6 +318,8 @@ module hrzshade_utils
       !----- Local constants. -------------------------------------------------------------!
       logical                     , parameter   :: print_debug = .true.
       logical                     , parameter   :: verbose     = .true.
+      !----- External functions. ----------------------------------------------------------!
+      real                        , external    :: fquant
       !------------------------------------------------------------------------------------!
 
 
@@ -341,7 +352,7 @@ module hrzshade_utils
       rls_ztch   (:,:) = 0.0
       rls_cci    (:,:) = 0.0
       rls_fbeam  (:,:) = 0.0
-      rls_igp    (:,:) = 0
+      rls_igp    (:,:) = rls_igp0(:,:)
       gap_fbeam    (:) = 0.0
       gap_nuse     (:) = 0
       fbeam_ipa  (:,:) = 0.0
@@ -549,31 +560,6 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
 
 
-
-      !------------------------------------------------------------------------------------!
-      !     Print a matrix with the raster information.                                    !
-      !------------------------------------------------------------------------------------!
-      if (print_debug) then
-         if (verbose) write(unit=*,fmt='(a)') '    -> Print ''raster'' information...'
-         !----- Reset file. ---------------------------------------------------------------!
-         open(unit=72,file=trim(raster_file),status='replace',action='write')
-         write(unit=72,fmt='(2(1x,a6),4(1x,a12))')  '   IGP','   IPA','           X'       &
-                                                      ,'           Y','        ZTCH'       &
-                                                      ,'         CCI'
-         do iy=1,rls_nxy
-            do ix=1,rls_nxy
-               igp = rls_igp(ix,iy)
-               ipa = gap_ipa(igp)
-               write(unit=72,fmt='(2(1x,i6),4(1x,f12.5),1x,l12)')                          &
-                                         igp,ipa,rls_x(ix,iy),rls_y(ix,iy),rls_ztch(ix,iy) &
-                                                ,rls_cci(ix,iy)
-            end do
-         end do
-         close(unit=72,status='keep')
-      end if
-      !------------------------------------------------------------------------------------!
-
-
       !------------------------------------------------------------------------------------!
       !      Find the uncorrected light illumination factor.                               !
       !------------------------------------------------------------------------------------!
@@ -586,6 +572,31 @@ module hrzshade_utils
             gap_nuse (igp) = gap_nuse (igp) + 1
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Print a matrix with the raster information.                                    !
+      !------------------------------------------------------------------------------------!
+      if (print_debug) then
+         if (verbose) write(unit=*,fmt='(a)') '    -> Print ''raster'' information...'
+         !----- Reset file. ---------------------------------------------------------------!
+         open(unit=72,file=trim(raster_file),status='replace',action='write')
+         write(unit=72,fmt='(2(1x,a6),5(1x,a12))')  '   IGP','   IPA','           X'       &
+                                                      ,'           Y','        ZTCH'       &
+                                                      ,'         CCI','       FBEAM'
+         do iy=1,rls_nxy
+            do ix=1,rls_nxy
+               igp = rls_igp(ix,iy)
+               ipa = gap_ipa(igp)
+               write(unit=72,fmt='(2(1x,i6),5(1x,f12.5))')                                 &
+                                         igp,ipa,rls_x(ix,iy),rls_y(ix,iy),rls_ztch(ix,iy) &
+                                                ,rls_cci(ix,iy),rls_fbeam(ix,iy)
+            end do
+         end do
+         close(unit=72,status='keep')
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -604,8 +615,23 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !      Define brightness thresholds based on quantiles.                              !
       !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Find the mean illumination by class...'
       at_bright = fquant(rls_ngap,gap_fbeam,twothirds)
       at_dark   = fquant(rls_ngap,gap_fbeam,onethird )
+      if (verbose) then
+         write(unit=*,fmt='(a)')         ''
+         write(unit=*,fmt='(a)')         ''
+         write(unit=*,fmt='(a)')         '--------------------------------------------'
+         write(unit=*,fmt='(a)')         '   FBEAM Thresholds.'
+         write(unit=*,fmt='(a)')         '--------------------------------------------'
+         write(unit=*,fmt='(a,1x,f8.3)') ' BRIGHTEST = ',maxval(gap_fbeam)
+         write(unit=*,fmt='(a,1x,f8.3)') ' AT_BRIGHT = ',at_bright
+         write(unit=*,fmt='(a,1x,f8.3)') ' AT_DARK   = ',at_dark
+         write(unit=*,fmt='(a,1x,f8.3)') ' DARKEST   = ',minval(gap_fbeam)
+         write(unit=*,fmt='(a)')         '--------------------------------------------'
+         write(unit=*,fmt='(a)')         ''
+         write(unit=*,fmt='(a)')         ''
+      end if
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
