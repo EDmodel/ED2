@@ -21,6 +21,7 @@ cloud.metrics <<- function( x
                           , intmax     = Inf
                           , mat.out    = FALSE
                           , min.pts    = 500
+                          , summ.only  = FALSE
                           ){
 
    #----- Remove missing values. ----------------------------------------------------------#
@@ -81,6 +82,7 @@ cloud.metrics <<- function( x
                                 , intmax     = intmax
                                 , mat.out    = mat.out
                                 , min.pts    = min.pts
+                                , summ.only  = summ.only
                                 )#end cloud.metrics
       #------------------------------------------------------------------------------------#
 
@@ -104,18 +106,26 @@ cloud.metrics <<- function( x
 
 
    #----- Find the general metrics. -------------------------------------------------------#
-   every = .Int.cloud.metrics( z     = z
-                             , ptc   = ptc
-                             , pref  = "elev"
-                             , probs = probs
-                             , zbreaks = zbreaks
-                             , n.dens  = n.dens
-                             , zl.dens = zl.dens
-                             , zh.dens = zh.dens
-                             , zzdens  = zzdens
-                             , zmin    = zmin
-                             , zmax    = zmax
-                             )#end .Int.cloud.metrics
+   if (summ.only){
+      every = .Int.summary.metrics( z     = z
+                                  , ptc   = ptc
+                                  , pref  = "elev"
+                                  , probs = probs
+                                  )#end .Int.cloud.metrics
+   }else{
+      every = .Int.cloud.metrics( z       = z
+                                , ptc     = ptc
+                                , pref    = "elev"
+                                , probs   = probs
+                                , zbreaks = zbreaks
+                                , n.dens  = n.dens
+                                , zl.dens = zl.dens
+                                , zh.dens = zh.dens
+                                , zzdens  = zzdens
+                                , zmin    = zmin
+                                , zmax    = zmax
+                                )#end .Int.cloud.metrics
+   }#end summ.only
    #---------------------------------------------------------------------------------------#
 
 
@@ -137,19 +147,27 @@ cloud.metrics <<- function( x
       #------------------------------------------------------------------------------------#
 
 
-      #----- Find the general metrics. ----------------------------------------------------#
-      mah = .Int.cloud.metrics( z       = zmah
-                              , ptc     = ptcmah
-                              , pref    = "zmah"
-                              , probs   = probs
-                              , zbreaks = zbreaks
-                              , n.dens  = n.dens
-                              , zl.dens = zl.dens
-                              , zh.dens = zh.dens
-                              , zzdens  = NULL
-                              , zmin    = zmin
-                              , zmax    = zmax
-                              )#end .Int.cloud.metrics
+      #----- Find the Mac-Arthurn Horn metrics. -------------------------------------------#
+      if (summ.only){
+         mah = .Int.summary.metrics( z     = zmah
+                                   , ptc   = ptcmah
+                                   , pref  = "zmah"
+                                   , probs = probs
+                                   )#end .Int.cloud.metrics
+      }else{
+         mah = .Int.cloud.metrics( z       = zmah
+                                 , ptc     = ptcmah
+                                 , pref    = "zmah"
+                                 , probs   = probs
+                                 , zbreaks = zbreaks
+                                 , n.dens  = n.dens
+                                 , zl.dens = zl.dens
+                                 , zh.dens = zh.dens
+                                 , zzdens  = NULL
+                                 , zmin    = zmin
+                                 , zmax    = zmax
+                                 )#end .Int.cloud.metrics
+      }#end summ.only
       #------------------------------------------------------------------------------------#
 
    }else{
@@ -167,13 +185,26 @@ cloud.metrics <<- function( x
       #     Keep only the first returns.                                                   #
       #------------------------------------------------------------------------------------#
       sel1st = x$retn.number %in% min(x$retn.number)
-      z1st   = x$z[sel1st]
-      ptc1st = x$pt.class[sel1st]
+      #----- Check whether to use the subset or the entire thing (to generate NA). --------#
+      if (sum(sel1st) >= min.pts){
+         z1st   = x$z[sel1st]
+         ptc1st = x$pt.class[sel1st]
+      }else{
+         z1st   = x$z
+         ptc1st = x$pt.class
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
-      #----- Find the general metrics. ----------------------------------------------------#
-      if (length(z1st) > min.pts){
+
+      #----- Find the Mac-Arthurn Horn metrics. -------------------------------------------#
+      if (summ.only){
+         first = .Int.summary.metrics( z       = z1st
+                                     , ptc     = ptc1st
+                                     , pref    = "z1st"
+                                     , probs   = probs
+                                     )#end .Int.cloud.metrics
+      }else{
          first = .Int.cloud.metrics( z       = z1st
                                    , ptc     = ptc1st
                                    , pref    = "z1st"
@@ -186,19 +217,11 @@ cloud.metrics <<- function( x
                                    , zmin    = zmin
                                    , zmax    = zmax
                                    )#end .Int.cloud.metrics
-      }else{
-         first = .Int.cloud.metrics( z       = x$z
-                                   , ptc     = x$pt.class
-                                   , pref    = "z1st"
-                                   , probs   = probs
-                                   , zbreaks = zbreaks
-                                   , n.dens  = n.dens
-                                   , zl.dens = zl.dens
-                                   , zh.dens = zh.dens
-                                   , zzdens  = NULL
-                                   , zmin    = zmin
-                                   , zmax    = zmax
-                                   )#end .Int.cloud.metrics
+      }#end summ.only
+      #------------------------------------------------------------------------------------#
+
+      #------ Discard results in case the point cloud is too thin. ------------------------#
+      if (sum(sel1st) < min.pts){
          first = first + NA
       }#end if (length(z1st) > min.pts)
       #------------------------------------------------------------------------------------#
@@ -215,16 +238,29 @@ cloud.metrics <<- function( x
    #---------------------------------------------------------------------------------------#
    if (zveg.stats){
       #------------------------------------------------------------------------------------#
-      #     Keep only the first returns.                                                   #
+      #     Keep only the vegetation returns.                                              #
       #------------------------------------------------------------------------------------#
       selveg = x$pt.class %in% c(3,4,5)
-      zveg   = x$z[selveg]
-      ptcveg = x$pt.class[selveg]
+      #----- Check whether to use the subset or the entire thing (to generate NA). --------#
+      if (sum(selveg) >= min.pts){
+         zveg   = x$z[selveg]
+         ptcveg = x$pt.class[selveg]
+      }else{
+         zveg   = x$z
+         ptcveg = x$pt.class
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
-      #----- Find the general metrics. ----------------------------------------------------#
-      if (length(zveg) > min.pts){
+
+      #----- Find the Mac-Arthurn Horn metrics. -------------------------------------------#
+      if (summ.only){
+         plant = .Int.summary.metrics( z       = zveg
+                                     , ptc     = ptcveg
+                                     , pref    = "zveg"
+                                     , probs   = probs
+                                     )#end .Int.cloud.metrics
+      }else{
          plant = .Int.cloud.metrics( z       = zveg
                                    , ptc     = ptcveg
                                    , pref    = "zveg"
@@ -237,23 +273,15 @@ cloud.metrics <<- function( x
                                    , zmin    = zmin
                                    , zmax    = zmax
                                    )#end .Int.cloud.metrics
-      }else{
-         plant = .Int.cloud.metrics( z       = x$z
-                                   , ptc     = x$pt.class
-                                   , pref    = "zveg"
-                                   , probs   = probs
-                                   , zbreaks = zbreaks
-                                   , n.dens  = n.dens
-                                   , zl.dens = zl.dens
-                                   , zh.dens = zh.dens
-                                   , zzdens  = NULL
-                                   , zmin    = zmin
-                                   , zmax    = zmax
-                                   )#end .Int.cloud.metrics
-         plant = plant + NA
-      }#end if
+      }#end summ.only
       #------------------------------------------------------------------------------------#
 
+      #------ Discard results in case the point cloud is too thin. ------------------------#
+      if (sum(selveg) < min.pts){
+         plant = plant + NA
+      }#end if (length(zveg) > min.pts)
+      #------------------------------------------------------------------------------------#
+      
    }else{
       plant = NULL
    }#end if (zveg.stats)
@@ -266,16 +294,29 @@ cloud.metrics <<- function( x
    #---------------------------------------------------------------------------------------#
    if (zvfr.stats){
       #------------------------------------------------------------------------------------#
-      #     Keep only the first returns.                                                   #
+      #     Keep only the first returns that are vegetation.                               #
       #------------------------------------------------------------------------------------#
       selvfr = (x$pt.class %in% c(3,4,5)) & (x$retn.number %in% min(x$retn.number))
-      zvfr   = x$z[selvfr]
-      ptcvfr = x$pt.class[selvfr]
+      #----- Check whether to use the subset or the entire thing (to generate NA). --------#
+      if (sum(selvfr) >= min.pts){
+         zvfr   = x$z[selvfr]
+         ptcvfr = x$pt.class[selvfr]
+      }else{
+         zvfr   = x$z
+         ptcvfr = x$pt.class
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
-      #----- Find the general metrics. ----------------------------------------------------#
-      if (length(zvfr) > min.pts){
+
+      #----- Find the Mac-Arthurn Horn metrics. -------------------------------------------#
+      if (summ.only){
+         pl1st = .Int.summary.metrics( z       = zvfr
+                                     , ptc     = ptcvfr
+                                     , pref    = "zvfr"
+                                     , probs   = probs
+                                     )#end .Int.cloud.metrics
+      }else{
          pl1st = .Int.cloud.metrics( z       = zvfr
                                    , ptc     = ptcvfr
                                    , pref    = "zvfr"
@@ -288,21 +329,15 @@ cloud.metrics <<- function( x
                                    , zmin    = zmin
                                    , zmax    = zmax
                                    )#end .Int.cloud.metrics
-      }else{
-         pl1st = .Int.cloud.metrics( z       = x$z
-                                   , ptc     = x$pt.class
-                                   , pref    = "zvfr"
-                                   , probs   = probs
-                                   , zbreaks = zbreaks
-                                   , n.dens  = n.dens
-                                   , zl.dens = zl.dens
-                                   , zh.dens = zh.dens
-                                   , zzdens  = NULL
-                                   , zmin    = zmin
-                                   , zmax    = zmax
-                                   )#end .Int.cloud.metrics
+      }#end summ.only
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------ Discard results in case the point cloud is too thin. ------------------------#
+      if (sum(selvfr) < min.pts){
          pl1st = pl1st + NA
-      }#end if
+      }#end if (length(zvfr) > min.pts)
       #------------------------------------------------------------------------------------#
 
    }else{
@@ -376,10 +411,9 @@ cloud.metrics <<- function( x
    if (mess){
       wcm =  sapply(X=wcm,FUN=rbind)
       print(wcm)
-      bye =  paste( " Function .Int.cloud.metrics is internal,"
-                  , " and can only be called by cloud.metrics or grid.metrics"
-                  , sep = ""
-                  )#end paste
+      bye =  paste0( " Function .Int.cloud.metrics is internal,"
+                   , " and can only be called by cloud.metrics or grid.metrics"
+                   )#end paste
       stop(bye)
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -444,26 +478,39 @@ cloud.metrics <<- function( x
 
 
    #----- Find the density function, and use it to retrieve the mode. ---------------------#
-   if (is.null(zzdens)) zzdens = density(x=z,n=n.dens,from=zl.dens,to=zh.dens)
+   if (is.null(zzdens)) zzdens = density.safe(x=z,n=n.dens,from=zl.dens,to=zh.dens)
    zdens             = data.frame(x=zzdens$x,y=zzdens$y)
-   dz                = mean(diff(zdens$x))
-   spk               = peaks(zdens$y) & zdens$y %>% 1.e-10
-   zpeaks            = zdens[spk,]
-   o                 = order(zpeaks$y,decreasing=TRUE)
-   zpeaks            = zpeaks[o,]
-   top               = which.max(zpeaks$x)
-   bot               = which.min(zpeaks$x)
-   npeaks            = nrow(zpeaks)
-   ans$elev.1st.mode = if (npeaks >= 1){zpeaks$x[  1]     }else{NA}
-   ans$prob.1st.mode = if (npeaks >= 1){zpeaks$y[  1] * dz}else{NA}
-   ans$elev.2nd.mode = if (npeaks >= 2){zpeaks$x[  2]     }else{NA}
-   ans$prob.2nd.mode = if (npeaks >= 2){zpeaks$y[  2] * dz}else{NA}
-   ans$elev.3rd.mode = if (npeaks >= 3){zpeaks$x[  3]     }else{NA}
-   ans$prob.3rd.mode = if (npeaks >= 3){zpeaks$y[  3] * dz}else{NA}
-   ans$elev.top.mode = if (npeaks >= 1){zpeaks$x[top]     }else{NA}
-   ans$prob.top.mode = if (npeaks >= 1){zpeaks$y[top] * dz}else{NA}
-   ans$elev.bot.mode = if (npeaks >= 1){zpeaks$x[bot]     }else{NA}
-   ans$prob.bot.mode = if (npeaks >= 1){zpeaks$y[bot] * dz}else{NA}
+   if (any(is.finite(zzdens$y))){
+      dz                = mean(diff(zdens$x))
+      spk               = peaks(zdens$y) & zdens$y %>% 1.e-10
+      zpeaks            = zdens[spk,]
+      o                 = order(zpeaks$y,decreasing=TRUE)
+      zpeaks            = zpeaks[o,]
+      top               = which.max(zpeaks$x)
+      bot               = which.min(zpeaks$x)
+      npeaks            = nrow(zpeaks)
+      ans$elev.1st.mode = if (npeaks >= 1){zpeaks$x[  1]     }else{NA}
+      ans$prob.1st.mode = if (npeaks >= 1){zpeaks$y[  1] * dz}else{NA}
+      ans$elev.2nd.mode = if (npeaks >= 2){zpeaks$x[  2]     }else{NA}
+      ans$prob.2nd.mode = if (npeaks >= 2){zpeaks$y[  2] * dz}else{NA}
+      ans$elev.3rd.mode = if (npeaks >= 3){zpeaks$x[  3]     }else{NA}
+      ans$prob.3rd.mode = if (npeaks >= 3){zpeaks$y[  3] * dz}else{NA}
+      ans$elev.top.mode = if (npeaks >= 1){zpeaks$x[top]     }else{NA}
+      ans$prob.top.mode = if (npeaks >= 1){zpeaks$y[top] * dz}else{NA}
+      ans$elev.bot.mode = if (npeaks >= 1){zpeaks$x[bot]     }else{NA}
+      ans$prob.bot.mode = if (npeaks >= 1){zpeaks$y[bot] * dz}else{NA}
+   }else{
+      ans$elev.1st.mode = NA
+      ans$prob.1st.mode = NA
+      ans$elev.2nd.mode = NA
+      ans$prob.2nd.mode = NA
+      ans$elev.3rd.mode = NA
+      ans$prob.3rd.mode = NA
+      ans$elev.top.mode = NA
+      ans$prob.top.mode = NA
+      ans$elev.bot.mode = NA
+      ans$prob.bot.mode = NA
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
@@ -543,6 +590,108 @@ cloud.metrics <<- function( x
 #==========================================================================================#
 #==========================================================================================#
 
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This is the internal routine that computes the simple set of metrics.               #
+#------------------------------------------------------------------------------------------#
+.Int.summary.metrics <<- function(z,ptc,pref,probs){
+
+
+   #----- Make sure this function has been called by cloud.metrics or grid.metrics. -------#
+   patt  = "^([A-Za-z0-9]+)(\\({1})(.*)(\\){1})$"
+   repl  = "\\1"
+   n     = 0
+   mess  = TRUE
+   top   = FALSE
+   wcm   = list()
+   while (! top){
+      n = n + 1
+      wcm[[n]] = try( gsub( pattern     = patt
+                          , replacement = repl
+                          , x           = deparse(sys.call(-n))
+                          )#end gsub
+                    , silent = TRUE
+                    )#end try
+      if ("try-error" %in% is(wcm[[n]])){
+         wcm[[n]] = NA
+         top      = TRUE
+      }else{
+         #----- Not an error.  Check whether this has been called by a friend function. ---#
+         wcm[[n]] = paste(wcm[[n]],collapse="")
+         top      = substring(wcm[[n]],1,4) %==% "NULL"
+         mess     = mess && ! ( grepl("cloud.metrics",wcm[[n]]) ||
+                                grepl("grid.metrics" ,wcm[[n]])  )
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end while
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Do not allow this function to continue in case it was an externall call.          #
+   #---------------------------------------------------------------------------------------#
+   if (mess){
+      wcm =  sapply(X=wcm,FUN=rbind)
+      print(wcm)
+      bye =  paste0( " Function .Int.summary.metrics is internal,"
+                   , " and can only be called by cloud.metrics or grid.metrics"
+                   )#end paste
+      stop(bye)
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Lend of the point cloud. --------------------------------------------------------#
+   nz = length(z)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Labels for probabilities. -------------------------------------------------------#
+   prob.names = paste("p",sprintf(ifelse(probs==1,"%3.3i","%2.2i"),round(100*probs)),sep="")
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Initialise the vector with some basic statistics. -------------------------------#
+   ans            = list( elev.count = nz
+                        , elev.mean  = mean(z)
+                        , elev.max   = max (z)
+                        )#end list
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find quantiles. -----------------------------------------------------------------#
+   quant        = as.list(quantile(x=z,probs=probs,names=FALSE))
+   names(quant) = paste("elev",prob.names,sep=".")
+   ans          = modifyList(x=ans,val=quant)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Coerce ans to a vector. ---------------------------------------------------------#
+   ans          = sapply(X=ans,FUN=c)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Fix the names. ------------------------------------------------------------------#
+   names(ans) = gsub(pattern="elev",replacement=pref ,x=names(ans))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Send metrics back to cloud.metrics. ---------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function .Int.summary.metrics
+#==========================================================================================#
+#==========================================================================================#
 
 
 

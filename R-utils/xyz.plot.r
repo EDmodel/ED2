@@ -63,6 +63,7 @@ xyz.plot <<- function( x
                                       }else{
                                          6
                                       }#end if
+                   , shuffle        = TRUE
                    , ...
                    ){
 
@@ -307,7 +308,11 @@ xyz.plot <<- function( x
 
 
       #----- Call the function that actually plots the data. ------------------------------#
-      shf      = sample(x=length(x  [[p]]))
+      if (shuffle){
+         shf   = sample(x=length(x  [[p]]))
+      }else{
+         shf   = seq_along(x[[p]])
+      }#end if
       shf.x    = pmin(shf,length(x  [[p]]))
       shf.y    = pmin(shf,length(y  [[p]]))
       shf.pch  = pmin(shf,length(pch[[p]]))

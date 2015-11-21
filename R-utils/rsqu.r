@@ -59,7 +59,7 @@ rsqu <<- function(object){
 #==========================================================================================#
 #     Similar to rsqu, but applicable to other types of models.                            #
 #------------------------------------------------------------------------------------------#
-rsqu.gen <<- function(yobs,yhat,np,na.rm=TRUE,adjusted=TRUE){
+rsqu.gen <<- function(yobs,yhat,np=1,na.rm=TRUE,adjusted=TRUE){
 
    #------ Discard data in case na.rm = TRUE. ---------------------------------------------#
    if (na.rm){
@@ -67,6 +67,7 @@ rsqu.gen <<- function(yobs,yhat,np,na.rm=TRUE,adjusted=TRUE){
       yobs = yobs[keep]
       yhat = yhat[keep]
    }#end if (na.rm)
+   yres = yobs - yhat
    #---------------------------------------------------------------------------------------#
 
 
@@ -92,7 +93,7 @@ rsqu.gen <<- function(yobs,yhat,np,na.rm=TRUE,adjusted=TRUE){
    #      Get the number of data points and degrees of freedom.                            #
    #---------------------------------------------------------------------------------------#
    df.tot = ny - 1
-   df.exp = ny - np - 1
+   df.exp = ny - np
    #---------------------------------------------------------------------------------------#
 
 
@@ -103,7 +104,7 @@ rsqu.gen <<- function(yobs,yhat,np,na.rm=TRUE,adjusted=TRUE){
 
 
    #----- Get the residual sum of squares. ------------------------------------------------#
-   ssq.res  = sum((yobs-yhat)^2)
+   ssq.res  = sum(yres^2)
    var.res  = ssq.res / df.exp
    #---------------------------------------------------------------------------------------#
 

@@ -615,7 +615,7 @@
                       , dbhvar   = TRUE
                       , mort     = TRUE
                       , recr     = FALSE
-                      , plog     = FALSE
+                      , plog     = TRUE
                       , plog.dbh = TRUE
                       , plt      = TRUE
                       )#end list
@@ -3415,6 +3415,12 @@
                                      ,           "etue",            "rue",            "cue"
                                      ,           "ecue"
                                      )#end c
+                          , stringsAsFactors = FALSE
+                          )#end vname
+   scen.szpft = data.frame( vname = c(            "agb",            "lai",             "ba"
+                                     ,    "agb.ncbmort",     "agb.growth",     "agb.change"
+                                     ,      "sm.stress",       "leaf.gsw",       "leaf.vpd"
+                                     ,       "leaf.par")
                           , stringsAsFactors = FALSE
                           )#end vname
    #---------------------------------------------------------------------------------------#

@@ -59,7 +59,7 @@ four.vertices <<- function(x,y=NULL,delta=0.005,verbose=FALSE){
    ya               = min(vertex$y)
    yz               = max(vertex$y)
    domain           = data.frame(x=c(xa,xa,xz,xz),y=c(ya,yz,yz,ya))
-   rownames(domain) = c("sw","nw","ne","se")
+   rownames(domain) = c("00","0Y","XY","X0")
    #---------------------------------------------------------------------------------------#
 
 
@@ -68,19 +68,19 @@ four.vertices <<- function(x,y=NULL,delta=0.005,verbose=FALSE){
    #     Decide the vertex labels based on the closest distance to the "ideal" vertices,   #
    # and label them according to the minimum distance to the perfect vertices.             #
    #---------------------------------------------------------------------------------------#
-   idx.sw = which.min(sqrt((vertex$x-domain$x[1])^2+(vertex$y-domain$y[1])^2))
-   idx.nw = which.min(sqrt((vertex$x-domain$x[2])^2+(vertex$y-domain$y[2])^2))
-   idx.ne = which.min(sqrt((vertex$x-domain$x[3])^2+(vertex$y-domain$y[3])^2))
-   idx.se = which.min(sqrt((vertex$x-domain$x[4])^2+(vertex$y-domain$y[4])^2))
+   idx.00 = which.min(sqrt((vertex$x-domain$x[1])^2+(vertex$y-domain$y[1])^2))
+   idx.0Y = which.min(sqrt((vertex$x-domain$x[2])^2+(vertex$y-domain$y[2])^2))
+   idx.XY = which.min(sqrt((vertex$x-domain$x[3])^2+(vertex$y-domain$y[3])^2))
+   idx.X0 = which.min(sqrt((vertex$x-domain$x[4])^2+(vertex$y-domain$y[4])^2))
    #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
-   #     Re-order the vertices so the vertices always go clockwise, starting from the SW   #
-   # vertex.                                                                               #
+   #     Re-order the vertices so the vertices always go clockwise, starting from the      #
+   # X=0,Y=0 vertex.                                                                       #
    #---------------------------------------------------------------------------------------#
-   vertex           = vertex[c(idx.sw,idx.nw,idx.ne,idx.se),]
-   rownames(vertex) = c("sw","nw","ne","se")
+   vertex           = vertex[c(idx.00,idx.0Y,idx.XY,idx.X0),]
+   rownames(vertex) = c("00","Y0","XY","X0")
    #---------------------------------------------------------------------------------------#
 
 
@@ -179,10 +179,10 @@ grid.mesh <<- function(vertex,nx,ny){
 
 
    #----- Project the mesh onto the grid. -------------------------------------------------#
-   ee = ( (1 - xx) * (1 - yy) * vertex$x[1] +      xx  * (1 - yy) * vertex$x[2]
-        +      xx  *      yy  * vertex$x[3] + (1 - xx) *      yy  * vertex$x[4] )
-   nn = ( (1 - xx) * (1 - yy) * vertex$y[1] +      xx  * (1 - yy) * vertex$y[2]
-        +      xx  *      yy  * vertex$y[3] + (1 - xx) *      yy  * vertex$y[4] )
+   ee = ( (1 - xx) * (1 - yy) * vertex$x[1] + (1 - xx) *      yy  * vertex$x[2]
+        +      xx  *      yy  * vertex$x[3] +      xx  * (1 - yy) * vertex$x[4] )
+   nn = ( (1 - xx) * (1 - yy) * vertex$y[1] + (1 - xx) *      yy  * vertex$y[2]
+        +      xx  *      yy  * vertex$y[3] +      xx  * (1 - yy) * vertex$y[4] )
    ans      = array(data=NA,dim=c(nx+1,ny+1,2),dimnames=list(NULL,NULL,c("x","y")))
    ans[,,1] = ee
    ans[,,2] = nn
@@ -202,8 +202,8 @@ grid.mesh <<- function(vertex,nx,ny){
 #==========================================================================================#
 #==========================================================================================#
 #     This function transforms normalised X;Y coordinates into native coordinates, given   #
-# the four vertices of the domain (always in the SW;NW;NE;SE order).  This function        #
-# doesn't assume that the shape is a rectangle.                                            #
+# the four vertices of the domain (always clockwise, first vertex corresponding to the     #
+# X=0;Y=0 vertex).  This function doesn't assume that the shape is a rectangle.            #
 #------------------------------------------------------------------------------------------#
 norm.to.coord <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
 
@@ -287,10 +287,10 @@ norm.to.coord <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
 
 
    #----- Project the points onto the normalised grid. ------------------------------------#
-   ee = ( (1 - xx) * (1 - yy) * vertex$x[1] +      xx  * (1 - yy) * vertex$x[2]
-        +      xx  *      yy  * vertex$x[3] + (1 - xx) *      yy  * vertex$x[4] )
-   nn = ( (1 - xx) * (1 - yy) * vertex$y[1] +      xx  * (1 - yy) * vertex$y[2]
-        +      xx  *      yy  * vertex$y[3] + (1 - xx) *      yy  * vertex$y[4] )
+   ee = ( (1 - xx) * (1 - yy) * vertex$x[1] + (1 - xx) *      yy  * vertex$x[2]
+        +      xx  *      yy  * vertex$x[3] +      xx  * (1 - yy) * vertex$x[4] )
+   nn = ( (1 - xx) * (1 - yy) * vertex$y[1] + (1 - xx) *      yy  * vertex$y[2]
+        +      xx  *      yy  * vertex$y[3] +      xx  * (1 - yy) * vertex$y[4] )
    #---------------------------------------------------------------------------------------#
 
 
@@ -313,11 +313,10 @@ norm.to.coord <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
 #     This function normalises the X and Y coordinates of quadrilaters.  It doesn't        #
 # assume that the shape is a rectangle.                                                    #
 #     This function normalises native coordinates (X 0-1; Y 0-1), given the four vertices  #
-# of the domain (always in the SW;NW;NE;SE order).  This function doesn't assume that the  #
-# shape is a rectangle.                                                                    #
+# of the domain (always in the clockwise order, first vertex must be the X=0,Y=0 one).     #
+# This function doesn't assume that the shape is a rectangle.                              #
 #------------------------------------------------------------------------------------------#
 coord.to.norm <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
-
    #----- Check whether y has been provided.  In case not, check the x object. ------------#
    if (is.null(y)){
       xy = x
@@ -391,36 +390,44 @@ coord.to.norm <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
    #---------------------------------------------------------------------------------------#
    #     Find some auxiliary variables.                                                    #
    #---------------------------------------------------------------------------------------#
-   et = xy$x         - vertex$x[1]
-   eb = vertex$x[4] - vertex$x[1]
-   ec = vertex$x[3] - vertex$x[1]
-   ed = vertex$x[2] - vertex$x[1]
-   e3 = ec - eb - ed
-   nt = xy$y         - vertex$y[1]
-   nb = vertex$y[4] - vertex$y[1]
-   nc = vertex$y[3] - vertex$y[1]
-   nd = vertex$y[2] - vertex$y[1]
-   n3 = nc - nb - nd
+   et = xy$x        - vertex$x[1]
+   e2 = vertex$x[2] - vertex$x[1]
+   e3 = vertex$x[3] - vertex$x[2] - vertex$x[4] + vertex$x[1]
+   e4 = vertex$x[4] - vertex$x[1]
+   nt = xy$y        - vertex$y[1]
+   n2 = vertex$y[2] - vertex$y[1]
+   n3 = vertex$y[3] - vertex$y[2] - vertex$y[4] + vertex$y[1]
+   n4 = vertex$y[4] - vertex$y[1]
    #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
    #    Find coefficients for quadratic formula.                                           #
    #---------------------------------------------------------------------------------------#
-   aa = (nd * e3 - ed * n3)
-   bb = ( nd * eb - nb * ed + n3 * et - nt * e3 ) / aa
-   cc = ( nb * et - nt * eb )  / aa
+   aa = ( e3 * n2 - e2 * n3)
+   bb = ( e4 * n2 - e2 * n4 + et * n3 - e3 * nt ) / aa
+   cc = ( et * n4 - e4 * nt ) / aa
    #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
-   #     Find the y coordinates.                                                           #
+   #     Find the two possible y coordinates and the associated x coordinates.             #
    #---------------------------------------------------------------------------------------#
    dd = bb * bb - 4 * cc
    y1 = 0.5 * ( - bb - sqrt(dd) )
    y2 = 0.5 * ( - bb + sqrt(dd) )
-   yy = ifelse( y1 %wr% c(0,1), y1, ifelse( y2 %wr% c(0,1), y2, NA) )
-   xx = (et - yy * ed) / (eb + yy * e3)
+   x1 = (et - y1 * e2) / (e4 + y1 * e3)
+   x2 = (et - y2 * e2) / (e4 + y2 * e3)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Pick the one that makes the most sense.                                           #
+   #---------------------------------------------------------------------------------------#
+   one   = (x1 %wr% c(0.0,1.0)) & (y1 %wr% c(0.0,1.0))
+   two   = (x2 %wr% c(0.0,1.0)) & (y2 %wr% c(0.0,1.0))
+   three = (x1^2+y1^2) < (x2^2+y2^2)
+   xx  = ifelse(one,x1,ifelse(two,x2,ifelse(three,x1,x2)))
+   yy  = ifelse(one,y1,ifelse(two,y2,ifelse(three,y1,y2)))
    #---------------------------------------------------------------------------------------#
 
 

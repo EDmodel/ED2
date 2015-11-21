@@ -83,6 +83,7 @@ optim.lsq.htscd <<- function( lsq.formula
                             , maxit       = 100
                             , n.boot      = 1000
                             , ci.level    = 0.95
+                            , i1st.max    = 5
                             , verbose     = FALSE
                             , ...
                             ){
@@ -127,38 +128,78 @@ optim.lsq.htscd <<- function( lsq.formula
    #---------------------------------------------------------------------------------------#
 
 
-   #----- Make sure lsq.formula and sig.formula are both formulae. ------------------------#
-   lsq.formula = try(as.formula(lsq.formula),silent=TRUE)
+
+   #---------------------------------------------------------------------------------------#
+   #     Convert first guesses to lists, they will be eventually reverted to vectors.      #
+   #---------------------------------------------------------------------------------------#
+   lsq.first = as.list(lsq.first)
+   sig.first = as.list(sig.first)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Make sure lsq.formula is formula, and extract variable names from formula. ------#
+   lsq.formula    = try(as.formula(lsq.formula),silent=TRUE)
    if ("try-error" %in% is(lsq.formula)){
       lsq.formula = as.formula(eval(lsq.formula))
    }#end if
+   lsq.vars       = all.vars(lsq.formula)
+   yname          = lsq.vars[1]
+   names.lsq.1st  = names(lsq.first)
+   n.lsq.1st      = length(lsq.first)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      In case we want to fit a heteroscedastic fit, make sure sig.formula is formula,  #
+   # and extract variable names from formula.  Also, make sure sigma0 is one of the        #
+   # variables.                                                                            #
+   #---------------------------------------------------------------------------------------#
    if (! skip.sigma){
       sig.formula = try(as.formula(sig.formula),silent=TRUE)
       if ("try-error" %in% is(sig.formula)){
          sig.formula = as.formula(eval(sig.formula))
       }#end if
+      #----- Append sigma0 to sig.formula. ------------------------------------------------#
+      if (! "sigma0" %in% all.vars(sig.formula)){
+         #----- Append sigma0 to formula and to first guess. ------------------------------#
+         sig.formula = attr(x=terms(sig.formula),which="term.labels")
+         if (grepl(pattern="^I\\(",x=sig.formula) && grepl(pattern="\\)$",x=sig.formula)){
+            sig.formula = gsub(pattern="^I\\(",replacement="",x=sig.formula)
+            sig.formula = gsub(pattern="\\)$" ,replacement="",x=sig.formula)
+            sig.formula = as.formula(paste0("~ I(sigma0*",sig.formula,")"))
+         }else{
+            sig.formula = as.formula(paste0("~ I(sigma0*",sig.formula,")"))
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Evaluate the first guess then use residuals to estimate sigma0.             #
+         #---------------------------------------------------------------------------------#
+         zero      = optim.lsq.htscd( lsq.formula = lsq.formula
+                                    , sig.formula = NULL
+                                    , data        = data
+                                    , lsq.first   = lsq.first
+                                    , err.method  = "hess"
+                                    )#end optim.lsq.htscd
+         sig.first = c(list(sigma0=mean(zero$sigma)),sig.first)
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+      #----- Get variable names. ----------------------------------------------------------#
+      sig.vars      = all.vars(sig.formula)
+      names.sig.1st = names(sig.first)
+      n.sig.1st     = length(sig.first)
+      #------------------------------------------------------------------------------------#
+   }else{
+      sig.vars      = NULL
+      names.sig.1st = NULL
+      n.sig.1st     = 0
    }#end if
    #---------------------------------------------------------------------------------------#
 
 
-
-   #---------------------------------------------------------------------------------------#
-   #     Extract variable names from formula.                                              #
-   #---------------------------------------------------------------------------------------#
-   lsq.vars      = all.vars(lsq.formula)
-   yname         = lsq.vars[1]
-   names.lsq.1st = names(lsq.first)
-   n.lsq.1st     = length(lsq.first)
-   if (skip.sigma){
-      sig.vars      = NULL
-      names.sig.1st = NULL
-      n.sig.1st     = 0
-   }else{
-      sig.vars      = all.vars(sig.formula)
-      names.sig.1st = names(sig.first)
-      n.sig.1st     = length(sig.first)
-   }#end if (skip.sigma)
-   #---------------------------------------------------------------------------------------#
    
 
    #---------------------------------------------------------------------------------------#
@@ -282,29 +323,48 @@ optim.lsq.htscd <<- function( lsq.formula
    #    Update the first guess with Hessian, so it is not too far from the answer, then    #
    # determine the scale for each coefficient.                                             #
    #---------------------------------------------------------------------------------------#
-   opt.1st     = try( optim( par         = x.1st
-                           , fn          = support.lsq.htscd
-                           , lsq.formula = lsq.formula
-                           , sig.formula = sig.formula
-                           , data        = opt.data
-                           , control     = ctrl.optim
-                           , hessian     = TRUE
-                           , ...
-                           )#end optim
-                    , silent = TRUE
-                    )#end try
-   if ("try-error" %in% is(opt.1st)){
-      success = FALSE
-   }else{
+   success = FALSE
+   it      = 0
+   it.giveup = ifelse(test=skip.sigma,yes=1,no=i1st.max)
+   #----- Loop until a stable first guess is found. ---------------------------------------#
+   while (! success & (it < i1st.max)){
+      it          = it + 1
+      opt.1st     = try( optim( par         = x.1st
+                              , fn          = support.lsq.htscd
+                              , lsq.formula = lsq.formula
+                              , sig.formula = sig.formula
+                              , data        = opt.data
+                              , control     = ctrl.optim
+                              , hessian     = TRUE
+                              , ...
+                              )#end optim
+                       , silent = TRUE
+                       )#end try
+
+      #----- Check whether it worked. --------------------------------------------------#
+      if ("try-error" %in% is(opt.1st)){
+         success             = FALSE
+      }else{
+         #---------------------------------------------------------------------------------#
+         #     Accept step only if it converged.                                           #
+         #---------------------------------------------------------------------------------#
+         success             = opt.1st$convergence %==% 0
+         #---------------------------------------------------------------------------------#
+      }#end if ("try-error" %in% is(opt.1st))
       #------------------------------------------------------------------------------------#
-      #     Accept step only if it converged and if the log-likelihood is negative.   The  #
-      # negative requirement is to make sure the step did not converge to a bogus          #
-      # solution, as the likelihood is a product of probabilities, which should be less    #
-      # than 1, hence the negative requirement.                                            #
+
+
       #------------------------------------------------------------------------------------#
-      success     = opt.1st$convergence %==% 0
+      #    In case the first guess of sigma0 is far off, make it smaller and try again.    #
       #------------------------------------------------------------------------------------#
-   }#end if ("try-error" %in% is(opt.1st))
+      if ((! success) && (! skip.sigma)){
+         x.1st["sig.sigma0"] = x.1st["sig.sigma0"] / 2
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end while(! success & (i1st < i1st.max))
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Update both the first guess and the scale in case it converged. -----------------#
    if (success){
       x.1st      = opt.1st$par
@@ -661,7 +721,6 @@ optim.lsq.htscd <<- function( lsq.formula
    ans$sigma         = ypred$sigma
    ans$goodness      = test.goodness( x.mod        = ans$fitted.values
                                     , x.obs        = ans$actual.values
-                                    , x.sigma      = ans$sigma
                                     , n.parameters = length(lsq.first)
                                     )#end test.goodness
    ans$AIC           = 2*n.par - 2*ans$support + 2*n.par*(n.par+1)/(n.use-n.par-1)
@@ -701,6 +760,7 @@ optim.lsq.htscd <<- function( lsq.formula
                                 , sigma    = sigma.xval
                                 , rmse     = rmse.xval
                                 )#end data.frame
+      ans$xval.mat  = xval.boot
       #------------------------------------------------------------------------------------#
    }#end if (err.short %in% "b")
    #---------------------------------------------------------------------------------------#
@@ -715,7 +775,6 @@ optim.lsq.htscd <<- function( lsq.formula
          ,"\n",sep="")
    }#end if(verbose)
    #---------------------------------------------------------------------------------------#
-
 
    class(ans) = c("lsq.htscd")
 
@@ -1311,7 +1370,7 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
    #---------------------------------------------------------------------------------------#
    lsq.expr = attr(x=terms(lsq.formula),which="term.labels")
    if (! is.null(sig.formula)){
-      sig.expr = paste0("sigma0 * (",attr(x=terms(sig.formula),which="term.labels"),")")
+      sig.expr = attr(x=terms(sig.formula),which="term.labels")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -1349,10 +1408,8 @@ evaluate.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
    #     Find the scale for sigma (aka sigma0), and add to the model evaluation            #
    # environment.                                                                          #
    #---------------------------------------------------------------------------------------#
-   sigma0  = sqrt( sum(yres^2,na.rm=TRUE) / (n.use - n.par) )
-   dummy   = assign(x="sigma0",value=sigma0,envir=modeval)
    if (is.null(sig.formula)){
-      sigma   = rep(sigma0,times=length(yres))
+      sigma   = rep(sqrt( sum(yres^2,na.rm=TRUE) / (n.use - n.par) ),times=length(yres))
       dummy   = assign(x="sigma",value=sigma  ,envir=modeval)
    }else{
       sigma   = eval(expr=parse(text=sig.expr),envir=modeval)
@@ -1384,7 +1441,8 @@ support.lsq.htscd <<- function(x,lsq.formula,sig.formula,data,...){
 
    #---- Predict the values. --------------------------------------------------------------#
    ypred   = evaluate.lsq.htscd(x,lsq.formula,sig.formula,data,...)
-   support = with(ypred,sum(dnorm(x=yres,mean=0,sd=sigma,log=TRUE)))
+   lnprob  = dnorm(x=ypred$yres,mean=0,sd=ypred$sigma,log=TRUE)
+   support = sum(lnprob)
    return(support)
    #---------------------------------------------------------------------------------------#
 }#end fit.nls.htscd

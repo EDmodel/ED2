@@ -3,9 +3,9 @@
 #   Function that creates a nice greyscale colour scheme (dark to bright).                 #
 #------------------------------------------------------------------------------------------#
 greys.brighten <<- function(n){
-   rrr   = c(  32,  64,  96, 128, 159, 191, 223)
-   ggg   = c(  32,  64,  96, 128, 159, 191, 223)
-   bbb   = c(  32,  64,  96, 128, 159, 191, 223)
+   rrr   = c(  10, 245)
+   ggg   = c(  10, 245)
+   bbb   = c(  10, 245)
    pivot = round(seq(from=1,to=n,by=(n-1)/(length(rrr)-1)),digits=0)
 
    red   = pmin(255,pmax(0,as.integer(spline(x=pivot,y=rrr,n=n)$y)))
@@ -28,7 +28,7 @@ greys.brighten <<- function(n){
 #   Function that creates a nice greyscale colour scheme.                                  #
 #------------------------------------------------------------------------------------------#
 greys.darken <<- function(n){
-   mycolsch = rev(greys.brighter(n))
+   mycolsch = rev(greys.brighten(n))
    return(mycolsch)
 }#end function greys.darken
 #==========================================================================================#

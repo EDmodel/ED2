@@ -393,10 +393,9 @@ change.return.optim <<- function( datum
 change.return.nlrob <<- function( datum
                                 , y.crit      = 0
                                 , first       = NULL
-                                , tol.optim   = sqrt(.Machine$double.eps)
+                                , tol.optim   = 1e-5 # sqrt(.Machine$double.eps)
                                 , is.debug    = FALSE
                                 , maxit       = 100
-                                , n.boot      = 1000
                                 , verbose     = FALSE
                                 ){
 
@@ -498,7 +497,7 @@ change.return.nlrob <<- function( datum
                             , tol       = tol.optim
                             , control   = list( maxiter   = maxit
                                               , tol       = tol.optim
-                                              , minFactor = 1/32768
+                                              , minFactor = 2^-18
                                               )#end list
                             )#end nlfun
                      )#end try
@@ -534,7 +533,7 @@ change.return.nlrob <<- function( datum
    ans$df              = n.use - n.par
    ans$coefficients    = coeff
    ans$std.err         = se.coeff
-   ans$t.value         = f.mu / sqrt(f.sigma)
+   ans$t.value         = coeff / se.coeff
    ans$p.value         = 2.0 * pt(-abs(ans$t.value),df=ans$df)
    ans$first.guess     = x.1st
    #----- Save the fitted values and the residuals. ---------------------------------------#
@@ -629,9 +628,9 @@ change.return.htscd <<- function( datum
                                 , tol.optim   = sqrt(.Machine$double.eps)
                                 , is.debug    = FALSE
                                 , maxit       = 100
-                                , n.boot      = 1000
+                                , n.boot      = 100
                                 , verbose     = FALSE
-                                , err.method  = "hess"
+                                , err.method  = "boot"
                                 ){
 
    #---------------------------------------------------------------------------------------#
@@ -770,7 +769,7 @@ change.return.htscd <<- function( datum
    ans$df              = n.use - n.par
    ans$coefficients    = coeff
    ans$std.err         = se.coeff
-   ans$t.value         = f.mu / sqrt(f.sigma)
+   ans$t.value         = coeff / se.coeff
    ans$p.value         = 2.0 * pt(-abs(ans$t.value),df=ans$df)
    ans$first.guess     = x.1st
    #----- Save the fitted values and the residuals. ---------------------------------------#

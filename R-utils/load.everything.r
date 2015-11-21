@@ -203,6 +203,7 @@ par.user <<- list( bg       = "transparent"
 loaded.package = list()
 loaded.package[["abind"       ]] = require(abind       )
 loaded.package[["akima"       ]] = require(akima       )
+loaded.package[["beanplot"    ]] = require(beanplot    )
 loaded.package[["boot"        ]] = require(boot        )
 loaded.package[["car"         ]] = require(car         )
 loaded.package[["caTools"     ]] = require(caTools     )
@@ -212,6 +213,7 @@ loaded.package[["fields"      ]] = require(fields      )
 loaded.package[["gbm"         ]] = require(gbm         )
 loaded.package[["geoR"        ]] = require(geoR        )
 loaded.package[["glmulti"     ]] = require(glmulti     )
+loaded.package[["gpclib"      ]] = require(gpclib      )
 loaded.package[["grDevices"   ]] = require(grDevices   )
 loaded.package[["gstat"       ]] = require(gstat       )
 loaded.package[["hdf5"        ]] = require(hdf5        )
@@ -241,6 +243,7 @@ loaded.package[["splancs"     ]] = require(splancs     )
 loaded.package[["sn"          ]] = require(sn          )
 loaded.package[["sp"          ]] = require(sp          )
 loaded.package[["stats4"      ]] = require(stats4      )
+loaded.package[["vioplot"     ]] = require(vioplot     )
 loaded.package[["VoxR"        ]] = require(VoxR        )
 loaded.package[["zoo"         ]] = require(zoo         )
 loaded.package = unlist(loaded.package)
@@ -347,6 +350,46 @@ for (iscript in sequence(nscripts)){
 }#end for
 options(warn=warn.orig)
 #------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Check for fortran code to be loaded.                                                #
+#------------------------------------------------------------------------------------------#
+all.f90  = sort( c( list.files(path=srcdir,pattern="\\.[Ff]90$")
+                  , list.files(path=srcdir,pattern="\\.[Ff]$")
+                  )#end c
+               )#end sort
+nall.f90 = length(all.f90)
+nmiss    = 0
+for (if90 in sequence(nall.f90)){
+   fnow    = file.path(srcdir,all.f90[if90])
+   flib.so = fnow
+   flib.so = gsub(pattern = "\\.[Ff]90$",replacement=".so",x=flib.so)
+   flib.so = gsub(pattern = "\\.[Ff]$"  ,replacement=".so",x=flib.so)
+   flib.sl = fnow
+   flib.sl = gsub(pattern = "\\.[Ff]90$",replacement=".sl",x=flib.sl)
+   flib.sl = gsub(pattern = "\\.[Ff]$"  ,replacement=".sl",x=flib.sl)
+
+   #----- Check whether dynamic library can be loaded. ------------------------------------#
+   if (file.exists(flib.so)){
+      dummy = try(dyn.load(flib.so))
+      if ("try-error" %in% is(dummy)){
+         cat("   - Fortran library ",basename(flib.so)," must be recompiled here!","\n")
+      }#end if
+   }else if (file.exists(flib.sl)){
+      dyn.load(flib.sl)
+      if ("try-error" %in% is(dummy)){
+         cat("   - Fortran library ",basename(flib.sl)," must be recompiled here!","\n")
+      }#end if
+   }else{
+      cat("   - Fortran file ",basename(fnow)," must be compiled here!","\n")
+      nmiss = nmiss + 1
+   }#end if (! file.exists(flib))
+}#end for
+if (nmiss > 0) stop(" Fix problems with your fortran files.")
+#------------------------------------------------------------------------------------------#
+
 
 
 #------------------------------------------------------------------------------------------#

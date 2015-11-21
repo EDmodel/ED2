@@ -132,6 +132,23 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                         - mymont$QMEAN.ATM.PAR.DIFF.PY     )
       mymont$QMEAN.ATM.NIR.BEAM.PY    = ( mymont$QMEAN.ATM.RSHORT.BEAM.PY
                                         - mymont$QMEAN.ATM.PAR.BEAM.PY     )
+      #----- Make a growth respiration variable. ------------------------------------------#
+      if (! "MMEAN.GROWTH.RESP.PY" %in% names(mymont)){
+         mymont$MMEAN.GROWTH.RESP.PY  = ( mymont$MMEAN.LEAF.GROWTH.RESP.PY
+                                        + mymont$MMEAN.ROOT.GROWTH.RESP.PY
+                                        + mymont$MMEAN.SAPA.GROWTH.RESP.PY
+                                        + mymont$MMEAN.SAPB.GROWTH.RESP.PY )
+         mymont$QMEAN.GROWTH.RESP.PY  = ( mymont$QMEAN.LEAF.GROWTH.RESP.PY
+                                        + mymont$QMEAN.ROOT.GROWTH.RESP.PY
+                                        + mymont$QMEAN.SAPA.GROWTH.RESP.PY
+                                        + mymont$QMEAN.SAPB.GROWTH.RESP.PY )
+      }#end if (! "MMEAN.GROWTH.RESP.PY" %in% names(mymont))
+      if (! "MMEAN.VLEAF.RESP.PY" %in% names(mymont)){
+         mymont$MMEAN.VLEAF.RESP.PY = 0. * mymont$MMEAN.LEAF.RESP.PY
+         mymont$MMEAN.VLEAF.RESP.CO = 0. * mymont$MMEAN.LEAF.RESP.CO
+         mymont$QMEAN.VLEAF.RESP.PY = 0. * mymont$QMEAN.LEAF.RESP.PY
+         mymont$QMEAN.VLEAF.RESP.CO = 0. * mymont$QMEAN.LEAF.RESP.CO
+      }#end if
       #------------------------------------------------------------------------------------#
 
 

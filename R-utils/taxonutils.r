@@ -23,235 +23,447 @@ standard.common.name <<- function(x){
    x   = tolower(x)
    #---------------------------------------------------------------------------------------#
 
-   #----- Full replacements. --------------------------------------------------------------#
-   sel = (! is.na(x) & x == "?"                       ); x[sel] = NA
-   sel = (! is.na(x) & x == "araticu"                 ); x[sel] = "araticum"
-   sel = (! is.na(x) & x == "barbatimao"              ); x[sel] = "fava-barbatimao"
-   sel = (! is.na(x) & x == "baubarana"               ); x[sel] = "embaubarana"
-   sel = (! is.na(x) & x == "breu/louro preto?"       ); x[sel] = NA
-   sel = (! is.na(x) & x == "babao"                   ); x[sel] = "macauba"
-   sel = (! is.na(x) & x == "bolao"                   ); x[sel] = "fava-bolota"
-   sel = (! is.na(x) & x == "brau"                    ); x[sel] = "breu"
-   sel = (! is.na(x) & x == "cauba"                   ); x[sel] = "macacauba"
-   sel = (! is.na(x) & x == "cajuba"                  ); x[sel] = "caju"
-   sel = (! is.na(x) & x == "castanha"                ); x[sel] = "castanha do para"
-   sel = (! is.na(x) & x == "castanheiro"             ); x[sel] = "castanha do para"
-   sel = (! is.na(x) & x == "cip"                     ); x[sel] = "cipo"
-   sel = (! is.na(x) & x == "cipo(dbh a 0.9m do chao)"); x[sel] = "cipo"
-   sel = (! is.na(x) & x == "cipo+arapo"              ); x[sel] = "cipo"
-   sel = (! is.na(x) & x == "cutiti"                  ); x[sel] = "abiu cutite"
-   sel = (! is.na(x) & x == "cutite"                  ); x[sel] = "abiu cutite"
-   sel = (! is.na(x) & x == "cruzeiro"                ); x[sel] = "quina-cruzeiro"
-   sel = (! is.na(x) & x == "envira surucu"           ); x[sel] = "envira surucucu"
-   sel = (! is.na(x) & x == "fiora preta"             ); x[sel] = NA
-   sel = (! is.na(x) & x == "jambo"                   ); x[sel] = "jambo-do-mato"
-   sel = (! is.na(x) & x == "jara"                    ); x[sel] = "jarana"
-   sel = (! is.na(x) & x == "jito"                    ); x[sel] = "gito"
-   sel = (! is.na(x) & x == "louro?"                  ); x[sel] = "louro"
-   sel = (! is.na(x) & x == "maracatia"               ); x[sel] = "muiracatiara"
-   sel = (! is.na(x) & x == "mata pau+jito"           ); x[sel] = "gito"
-   sel = (! is.na(x) & x == "muruci"                  ); x[sel] = "muruci da mata"
-   sel = (! is.na(x) & x == "palmito"                 ); x[sel] = "acai"
-   sel = (! is.na(x) & x == "palmito babosa"          ); x[sel] = "acai"
-   sel = (! is.na(x) & x == "patua"                   ); x[sel] = "pataua"
-   sel = (! is.na(x) & x == "quariquara"              ); x[sel] = "acariquara"
-   sel = (! is.na(x) & x == "tachi preto ???"         ); x[sel] = "tachi preto"
-   sel = (! is.na(x) & x == "tachi preto folh"        ); x[sel] = "tachi preto"
-   sel = (! is.na(x) & x == "tento folha"             ); x[sel] = "tento"
-   sel = (! is.na(x) & x == "sapucaia"                ); x[sel] = "castanha sapucaia"
-   sel = (! is.na(x) & x == "saboeiro"                ); x[sel] = "fava-saboeiro"
-   sel = (! is.na(x) & x == "saboiera"                ); x[sel] = "fava-saboeiro"
-   sel = (! is.na(x) & x == "seringa"                 ); x[sel] = "seringueira"
-   sel = (! is.na(x) & x == "sajinera"                ); x[sel] = NA
-   sel = (! is.na(x) & x == "sorveira"                ); x[sel] = "sorva"
-   sel = (! is.na(x) & x == "sorvo"                   ); x[sel] = "sorva"
-   sel = (! is.na(x) & x == "sova"                    ); x[sel] = "sorva"
-   sel = (! is.na(x) & x == "tatapiririca verm."      ); x[sel] = "tatapiririca vermelha"
-   sel = (! is.na(x) & x == "umbia"                   ); x[sel] = "goiabarana"
+
+
+   #---------------------------------------------------------------------------------------#
+   #     General substitutions.  These are very aggressive, so don't use it too much.      #
+   # Good things to put here are names that are often misspelt.  It's wise to use regexpr  #
+   # rules such as ^ and $ to make sure gsub won't substitute more than it is supposed to. #
+   #---------------------------------------------------------------------------------------#
+   x = gsub(pattern="^abiuarana"      ,replacement="abiurana"    ,x=x)
+   x = gsub(pattern="^axicha"         ,replacement="axixa"       ,x=x)
+   x = gsub(pattern="^jaracatia"      ,replacement="jacaratia"   ,x=x)
+   x = gsub(pattern="^mara mara"      ,replacement="maramara"    ,x=x)
+   x = gsub(pattern="^mara-mara"      ,replacement="maramara"    ,x=x)
+   x = gsub(pattern="^mata mata"      ,replacement="matamata"    ,x=x)
+   x = gsub(pattern="^mata-mata"      ,replacement="matamata"    ,x=x)
+   x = gsub(pattern="^moratinga"      ,replacement="muiratinga"  ,x=x)
+   x = gsub(pattern="^muiracatiara"   ,replacement="maracatiara" ,x=x)
+   x = gsub(pattern="^muiraitinga"    ,replacement="muiratinga"  ,x=x)
+   x = gsub(pattern="^muiriatinga"    ,replacement="muiratinga"  ,x=x)
+   x = gsub(pattern="^muracatiara"    ,replacement="maracatiara" ,x=x)
+   x = gsub(pattern="^muratinga"      ,replacement="muiratinga"  ,x=x)
+   x = gsub(pattern="^murici"         ,replacement="muruci"      ,x=x)
+   x = gsub(pattern="^mutuxi"         ,replacement="mututi"      ,x=x)
+   x = gsub(pattern="muida$"          ,replacement="miuda"       ,x=x)
+   x = gsub(pattern="^ocooba"         ,replacement="ucuuba"      ,x=x)
+   x = gsub(pattern="^ocuuba"         ,replacement="ucuuba"      ,x=x)
+   x = gsub(pattern="^papa terra"     ,replacement="papa-terra"  ,x=x)
+   x = gsub(pattern="^papaterra"      ,replacement="papa-terra"  ,x=x)
+   x = gsub(pattern="^para para"      ,replacement="parapara"    ,x=x)
+   x = gsub(pattern="^para-para"      ,replacement="parapara"    ,x=x)
+   x = gsub(pattern="^quina quina"    ,replacement="quinaquina"  ,x=x)
+   x = gsub(pattern="^quina-quina"    ,replacement="quinaquina"  ,x=x)
+   x = gsub(pattern="^tamarino"       ,replacement="tamarindo"   ,x=x)
+   x = gsub(pattern="^taxi"           ,replacement="tachi"       ,x=x)
+   x = gsub(pattern="^uchi"           ,replacement="uxi"         ,x=x)
+   x = gsub(pattern="verdadiera"      ,replacement="verdadeira"  ,x=x)
+   x = gsub(pattern="^xixua"          ,replacement="chichua"     ,x=x)
    #---------------------------------------------------------------------------------------#
 
 
 
-   #----- Substitutions.  Only things that are not part of other words. -------------------#
-   x = sub(pattern="abacaba"                ,replacement="bacaba"                ,x=x)
-   x = sub(pattern="abicuiba"               ,replacement="ucuuba"                ,x=x)
-   x = sub(pattern="abiui"                  ,replacement="abiu"                  ,x=x)
-   x = sub(pattern="abiu casca grossa"      ,replacement="abiu-casca-grossa"     ,x=x)
-   x = sub(pattern="abiu cutite folha verde",replacement="abiu cutite"           ,x=x)
-   x = sub(pattern="abiu mangabinha"        ,replacement="abiu-mangabinha"       ,x=x)
-   x = sub(pattern="abiu vermelha"          ,replacement="abiu vermelho"         ,x=x)
-   x = sub(pattern="abiuarana vermelha"     ,replacement="abiurana vermelha"     ,x=x)
-   x = sub(pattern="abiuarana vermelho"     ,replacement="abiurana vermelha"     ,x=x)
-   x = sub(pattern="abiuarana vermlho"      ,replacement="abiurana vermelha"     ,x=x)
-   x = sub(pattern="abiurana vermelho"      ,replacement="abiurana vermelha"     ,x=x)
-   x = sub(pattern="abiuarana"              ,replacement="abiurana"              ,x=x)
-   x = sub(pattern="acoita cavalo"          ,replacement="acoita-cavalo"         ,x=x)
-   x = sub(pattern="algodoeira"             ,replacement="sumauma"               ,x=x)
-   x = sub(pattern="amalelinha"             ,replacement="amarelinho"            ,x=x)
-   x = sub(pattern="amarelinha"             ,replacement="amarelinho"            ,x=x)
-   x = sub(pattern="amerelinho"             ,replacement="amarelinho"            ,x=x)
-   x = sub(pattern="angelim margoso"        ,replacement="angelim amargoso"      ,x=x)
-   x = sub(pattern="angelim pedro"          ,replacement="angelim pedra"         ,x=x)
-   x = sub(pattern="apuii"                  ,replacement="apui"                  ,x=x)
-   x = sub(pattern="araca nego"             ,replacement="araca"                 ,x=x)
-   x = sub(pattern="bolao"                  ,replacement="fava bolota"           ,x=x)
-   x = sub(pattern="brejauba"               ,replacement="brejauva"              ,x=x)
-   x = sub(pattern="breu sucuuba"           ,replacement="breu sucuruba"         ,x=x)
-   x = sub(pattern="cabeca de urubu"        ,replacement="cabeca-de-urubu"       ,x=x)
-   x = sub(pattern="cabela"                 ,replacement="louro canela"          ,x=x)
-   x = sub(pattern="cabriuna"               ,replacement="cabriuva"              ,x=x)
-   x = sub(pattern="cacau bravo"            ,replacement="cacaui"                ,x=x)
-   x = sub(pattern="cachudinha"             ,replacement="cascudinha"            ,x=x)
-   x = sub(pattern="calcho"                 ,replacement="caucho"                ,x=x)
-   x = sub(pattern="canela de velho"        ,replacement="canela-de-velho"       ,x=x)
-   x = sub(pattern="canelha velha"          ,replacement="canela-de-velho"       ,x=x)
-   x = sub(pattern="canella de jacami"      ,replacement="canela-de-jacamim"     ,x=x)
-   x = sub(pattern="canella ge jacami"      ,replacement="canela-de-jacamim"     ,x=x)
-   x = sub(pattern="canniela"               ,replacement="canela"                ,x=x)
-   x = sub(pattern="carobia"                ,replacement="caroba"                ,x=x)
-   x = sub(pattern="cascudinho"             ,replacement="cascudinha"            ,x=x)
-   x = sub(pattern="cascudo"                ,replacement="cascudinha"            ,x=x)
-   x = sub(pattern="castanha de sapocaia"   ,replacement="castanha sapucaia"     ,x=x)
-   x = sub(pattern="castanha de sapucaia"   ,replacement="castanha sapucaia"     ,x=x)
-   x = sub(pattern="castanha sapocaia"      ,replacement="castanha sapucaia"     ,x=x)
-   x = sub(pattern="cauxo"                  ,replacement="caucho"                ,x=x)
-   x = sub(pattern="caxeta"                 ,replacement="caixeta"               ,x=x)
-   x = sub(pattern="caximbeira"             ,replacement="cachimbeiro"           ,x=x)
-   x = sub(pattern="caximbeiro"             ,replacement="cachimbeiro"           ,x=x)
-   x = sub(pattern="caxudinha"              ,replacement="cascudinha"            ,x=x)
-   x = sub(pattern="chocolate"              ,replacement="cacau"                 ,x=x)
-   x = sub(pattern="coracao  de negro"      ,replacement="coracao-de-negro"      ,x=x)
-   x = sub(pattern="coracao de nego"        ,replacement="coracao-de-negro"      ,x=x)
-   x = sub(pattern="coracao de negro"       ,replacement="coracao-de-negro"      ,x=x)
-   x = sub(pattern="corante de indio"       ,replacement="urucum"                ,x=x)
-   x = sub(pattern="coro preto"             ,replacement="louro preto"           ,x=x)
-   x = sub(pattern="coussarea racemosa"     ,replacement="caferana"              ,x=x)
-   x = sub(pattern="cutiti"                 ,replacement="cutite"                ,x=x)
-   x = sub(pattern="cumari"                 ,replacement="cumaru"                ,x=x)
-   x = sub(pattern="cumaru/apui"            ,replacement="apui"                  ,x=x)
-   x = sub(pattern="embauba branco"         ,replacement="embauba branca"        ,x=x)
-   x = sub(pattern="embauba vick"           ,replacement="embauba"               ,x=x)
-   x = sub(pattern="embirata"               ,replacement="envira ata"            ,x=x)
-   x = sub(pattern="embireira branca"       ,replacement="envira"                ,x=x)
-   x = sub(pattern="embireira rosa"         ,replacement="envira"                ,x=x)
-   x = sub(pattern="envira preto"           ,replacement="envira preta"          ,x=x)
-   x = sub(pattern="envira vermelho"        ,replacement="envira vermelha"       ,x=x)
-   x = sub(pattern="escorrega macaco"       ,replacement="escorrega-macaco"      ,x=x)
-   x = sub(pattern="escurrega macaco"       ,replacement="escorrega-macaco"      ,x=x)
-   x = sub(pattern="fava arara tucupi"      ,replacement="fava-arara-tucupi"     ,x=x)
-   x = sub(pattern="fava saboeira"          ,replacement="fava-saboeira"         ,x=x)
-   x = sub(pattern="feijo branco"           ,replacement="freijo branco"         ,x=x)
-   x = sub(pattern="figueira brava"         ,replacement="figueira"              ,x=x)
-   x = sub(pattern="gameleiro"              ,replacement="gameleira"             ,x=x)
-   x = sub(pattern="gapeba"                 ,replacement="abiu"                  ,x=x)
-   x = sub(pattern="guapeba"                ,replacement="abiu"                  ,x=x)
-   x = sub(pattern="gema de ovo"            ,replacement="amarelao"              ,x=x)
-   x = sub(pattern="genipapo"               ,replacement="jenipapo"              ,x=x)
-   x = sub(pattern="goibarana"              ,replacement="goiabarana"            ,x=x)
-   x = sub(pattern="gombeira vermelho"      ,replacement="gombeira vermelha"     ,x=x)
-   x = sub(pattern="goiaba"                 ,replacement="araca"                 ,x=x)
-   x = sub(pattern="guaiaba"                ,replacement="araca"                 ,x=x)
-   x = sub(pattern="guaiba"                 ,replacement="araca"                 ,x=x)
-   x = sub(pattern="guariuva"               ,replacement="guariuba"              ,x=x)
-   x = sub(pattern="ibirucu"                ,replacement="embirucu"              ,x=x)
-   x = sub(pattern="imbirata"               ,replacement="envira ata"            ,x=x)
-   x = sub(pattern="imbireira"              ,replacement="envira"                ,x=x)
-   x = sub(pattern="imbireira rosa"         ,replacement="envira"                ,x=x)
-   x = sub(pattern="imbiricu"               ,replacement="embirucu"              ,x=x)
-   x = sub(pattern="imbirucu"               ,replacement="embirucu"              ,x=x)
-   x = sub(pattern="inga f.p."              ,replacement="inga"                  ,x=x)
-   x = sub(pattern="inga vermelha"          ,replacement="inga vermelho"         ,x=x)
-   x = sub(pattern="inga titica"            ,replacement="inga xixica"           ,x=x)
-   x = sub(pattern="inga chichica"          ,replacement="inga xixica"           ,x=x)
-   x = sub(pattern="ipe amerelo"            ,replacement="ipe amarelo"           ,x=x)
-   x = sub(pattern="jaboticaba"             ,replacement="jabuticaba"            ,x=x)
-   x = sub(pattern="jaracatia"              ,replacement="jacaratia"             ,x=x)
-   x = sub(pattern="jenita"                 ,replacement="janita"                ,x=x)
-   x = sub(pattern="jotobazinho"            ,replacement="jatobazinho"           ,x=x)
-   x = sub(pattern="jutai mirim"            ,replacement="jutai-mirim"           ,x=x)
-   x = sub(pattern="jutai acu"              ,replacement="jutai-acu"             ,x=x)
-   x = sub(pattern="laranginha"             ,replacement="laranjinha"            ,x=x)
-   x = sub(pattern="leiteiro"               ,replacement="leiteira"              ,x=x)
-   x = sub(pattern="leitera"                ,replacement="leiteira"              ,x=x)
-   x = sub(pattern="louro branco"           ,replacement="louro"                 ,x=x)
-   x = sub(pattern="loro amarelo"           ,replacement="louro amarelo"         ,x=x)
-   x = sub(pattern="mamao jacatia"          ,replacement="jacaratia"             ,x=x)
-   x = sub(pattern="maracatiara"            ,replacement="muiracatiara"          ,x=x)
-   x = sub(pattern="massaranduba"           ,replacement="macaranduba"           ,x=x)
-   x = sub(pattern="mata-mata"              ,replacement="matamata"              ,x=x)
-   x = sub(pattern="mata mata"              ,replacement="matamata"              ,x=x)
-   x = sub(pattern="matamata branca"        ,replacement="matamata branco"       ,x=x)
-   x = sub(pattern="matamata vermelha"      ,replacement="matamata vermelho"     ,x=x)
-   x = sub(pattern="mata caldo"             ,replacement="mata-calado"           ,x=x)
-   x = sub(pattern="melanciera"             ,replacement="melancieira"           ,x=x)
-   x = sub(pattern="moratinga"              ,replacement="muiratinga"            ,x=x)
-   x = sub(pattern="muratinga"              ,replacement="muiratinga"            ,x=x)
-   x = sub(pattern="morta"                  ,replacement="defunta"               ,x=x)
-   x = sub(pattern="murucidu mata"          ,replacement="muruci da mata"        ,x=x)
-   x = sub(pattern="muiriatinga"            ,replacement="muiratinga"            ,x=x)
-   x = sub(pattern="mutama"                 ,replacement="mutambo"               ,x=x)
-   x = sub(pattern="mutamba"                ,replacement="mutambo"               ,x=x)
-   x = sub(pattern="ocooba"                 ,replacement="ucuuba"                ,x=x)
-   x = sub(pattern="ocuuba"                 ,replacement="ucuuba"                ,x=x)
-   x = sub(pattern="ouro branco"            ,replacement="seringueira"           ,x=x)
-   x = sub(pattern="papa terra"             ,replacement="papaterra"             ,x=x)
-   x = sub(pattern="papa-terra"             ,replacement="papaterra"             ,x=x)
-   x = sub(pattern="para para"              ,replacement="parapara"              ,x=x)
-   x = sub(pattern="para-para"              ,replacement="parapara"              ,x=x)
-   x = sub(pattern="papo de mutum"          ,replacement="papo-de-mutum"         ,x=x)
-   x = sub(pattern="passarinhiera"          ,replacement="passarinheira"         ,x=x)
-   x = sub(pattern="pata de vaca"           ,replacement="pata-de-vaca"          ,x=x)
-   x = sub(pattern="paineira"               ,replacement="sumauma"               ,x=x)
-   x = sub(pattern="pao de sangue"          ,replacement="pau-sangue"            ,x=x)
-   x = sub(pattern="pau de arco"            ,replacement="pau-de-arco"           ,x=x)
-   x = sub(pattern="pau d.arco"             ,replacement="pau-de-arco"           ,x=x)
-   x = sub(pattern="pau de cobra"           ,replacement="pau-cobra"             ,x=x)
-   x = sub(pattern="pau colher"             ,replacement="pau-de-colher"         ,x=x)
-   x = sub(pattern="pau de colher"          ,replacement="pau-de-colher"         ,x=x)
-   x = sub(pattern="pau de jacare"          ,replacement="pau-jacare"            ,x=x)
-   x = sub(pattern="pau de remo"            ,replacement="pau-de-remo"           ,x=x)
-   x = sub(pattern="pau de sangue"          ,replacement="pau-sangue"            ,x=x)
-   x = sub(pattern="pau jacare"             ,replacement="pau-jacare"            ,x=x)
-   x = sub(pattern="pratudo"                ,replacement="pau-para-tudo"         ,x=x)
-   x = sub(pattern="pau para tudo"          ,replacement="pau-para-tudo"         ,x=x)
-   x = sub(pattern="pau pereira"            ,replacement="peroba mica"           ,x=x)
-   x = sub(pattern="pau sangue"             ,replacement="pau-sangue"            ,x=x)
-   x = sub(pattern="pente de macaco"        ,replacement="pente-de-macaco"       ,x=x)
-   x = sub(pattern="perna de moca"          ,replacement="perna-de-moca"         ,x=x)
-   x = sub(pattern="piquiazeiro"            ,replacement="piquia"                ,x=x)
-   x = sub(pattern="piqui rosa"             ,replacement="piquia"                ,x=x)
-   x = sub(pattern="prapara"                ,replacement="parapara"              ,x=x)
-   x = sub(pattern="quaiquara"              ,replacement="acariquara"            ,x=x)
-   x = sub(pattern="quariquari"             ,replacement="acariquara"            ,x=x)
-   x = sub(pattern="quari quari"            ,replacement="acariquara"            ,x=x)
-   x = sub(pattern="quina cruzeiro"         ,replacement="quina-cruzeiro"        ,x=x)
-   x = sub(pattern="quina quina"            ,replacement="quinaquina"            ,x=x)
-   x = sub(pattern="quina-quina"            ,replacement="quinaquina"            ,x=x)
-   x = sub(pattern="muida"                  ,replacement="miuda"                 ,x=x)
-   x = sub(pattern="roxao"                  ,replacement="roxinho"               ,x=x)
-   x = sub(pattern="roxinao"                ,replacement="roxinho"               ,x=x)
-   x = sub(pattern="segador"                ,replacement="cegador"               ,x=x)
-   x = sub(pattern="seritinga"              ,replacement="seringueira"           ,x=x)
-   x = sub(pattern="seringa verdadeira"     ,replacement="seringueira"           ,x=x)
-   x = sub(pattern="sorveira leite"         ,replacement="sorva"                 ,x=x)
-   x = sub(pattern="taxi"                   ,replacement="tachi"                 ,x=x)
-   x = sub(pattern="tachi branca"           ,replacement="tachi branco"          ,x=x)
-   x = sub(pattern="tachi preta"            ,replacement="tachi preto"           ,x=x)
-   x = sub(pattern="tachi vermelha"         ,replacement="tachi vermelho"        ,x=x)
-   x = sub(pattern="tauri"                  ,replacement="tauari"                ,x=x)
-   x = sub(pattern="talquari"               ,replacement="tauari"                ,x=x)
-   x = sub(pattern="tamarindu"              ,replacement="azedinha"              ,x=x)
-   x = sub(pattern="tamarino"               ,replacement="azedinha"              ,x=x)
-   x = sub(pattern="tento foha grauda"      ,replacement="tento folha grauda"    ,x=x)
-   x = sub(pattern="ucuarana"               ,replacement="urucurana"             ,x=x)
-   x = sub(pattern="ucuuba terra firme"     ,replacement="ucuuba-terra-firme"    ,x=x)
-   x = sub(pattern="ucuuba tf"              ,replacement="ucuuba-terra-firme"    ,x=x)
-   x = sub(pattern="uruucurana"             ,replacement="urucurana"             ,x=x)
-   x = sub(pattern="ucuuba vermelho"        ,replacement="ucuuba vermelha"       ,x=x)
-   x = sub(pattern="uchi"                   ,replacement="uxi"                   ,x=x)
-   x = sub(pattern="unha de vaca"           ,replacement="pata-de-vaca"          ,x=x)
-   x = sub(pattern="verdadiera"             ,replacement="verdadeira"            ,x=x)
-   x = sub(pattern="xixua"                  ,replacement="chichua"               ,x=x)
+   #----- Full replacements. --------------------------------------------------------------#
+   sel = (x %in% "?"                             ); x[sel] = NA_character_
+   sel = (x %in% "abacaba"                       ); x[sel] = "bacaba"
+   sel = (x %in% "abicuiba"                      ); x[sel] = "ucuuba"
+   sel = (x %in% "abiui"                         ); x[sel] = "abiu"
+   sel = (x %in% "abiu acariquara"               ); x[sel] = "abiu-acariquara"
+   sel = (x %in% "abiu casca grossa"             ); x[sel] = "abiu-casca-grossa"
+   sel = (x %in% "abiu cramuri"                  ); x[sel] = "abiu-cramuri"
+   sel = (x %in% "abiu cutite"                   ); x[sel] = "abiu-cutite"
+   sel = (x %in% "abiu cutite folha verde"       ); x[sel] = "abiu-cutite"
+   sel = (x %in% "abiu cutiti"                   ); x[sel] = "abiu-cutite"
+   sel = (x %in% "abiu-cutiti"                   ); x[sel] = "abiu-cutite"
+   sel = (x %in% "abiu guajara"                  ); x[sel] = "abiu-guajara"
+   sel = (x %in% "abiu mangabinha"               ); x[sel] = "abiu-mangabinha"
+   sel = (x %in% "abiu tauari"                   ); x[sel] = "tauari"
+   sel = (x %in% "abiu vermelha"                 ); x[sel] = "abiu vermelho"
+   sel = (x %in% "abiurana vermelho"             ); x[sel] = "abiurana vermelha"
+   sel = (x %in% "abiurana vermlho"              ); x[sel] = "abiurana vermelha"
+   sel = (x %in% "abiuarana"                     ); x[sel] = "abiurana"
+   sel = (x %in% "abiurana rosadinha"            ); x[sel] = "abiu rosadinho"
+   sel = (x %in% "acoita cavalo"                 ); x[sel] = "acoita-cavalo"
+   sel = (x %in% "algodao brabo"                 ); x[sel] = "algodao-bravo"
+   sel = (x %in% "amalelinha"                    ); x[sel] = "amarelinho"
+   sel = (x %in% "amarelinha"                    ); x[sel] = "amarelinho"
+   sel = (x %in% "ameixa"                        ); x[sel] = "ameixa-do-para"
+   sel = (x %in% "amerelinho"                    ); x[sel] = "amarelinho"
+   sel = (x %in% "amoninha"                      ); x[sel] = "mamoninha"
+   sel = (x %in% "angelim aroreira"              ); x[sel] = "angelim-aroeira"
+   sel = (x %in% "angelim aroeira"               ); x[sel] = "angelim-aroeira"
+   sel = (x %in% "angelim margoso"               ); x[sel] = "angelim amargoso"
+   sel = (x %in% "angelim pedra"                 ); x[sel] = "angelim-pedra"
+   sel = (x %in% "angelim pedro"                 ); x[sel] = "angelim-pedra"
+   sel = (x %in% "angelim peroba"                ); x[sel] = "angelim-pedra"
+   sel = (x %in% "apuii"                         ); x[sel] = "apui"
+   sel = (x %in% "araca nego"                    ); x[sel] = "araca"
+   sel = (x %in% "araca de anta"                 ); x[sel] = "araca-de-anta"
+   sel = (x %in% "araticu"                       ); x[sel] = "araticum"
+   sel = (x %in% "bacaba de leque"               ); x[sel] = "bacaba-de-leque"
+   sel = (x %in% "bacupari"                      ); x[sel] = "bacuripari"
+   sel = (x %in% "barbatimao"                    ); x[sel] = "fava-barbatimao"
+   sel = (x %in% "bate puta"                     ); x[sel] = "batiputa"
+   sel = (x %in% "baubarana"                     ); x[sel] = "embaubarana"
+   sel = (x %in% "breu/louro preto?"             ); x[sel] = NA_character_
+   sel = (x %in% "babao"                         ); x[sel] = "macauba"
+   sel = (x %in% "bolao"                         ); x[sel] = "fava-bolota"
+   sel = (x %in% "bombeira"                      ); x[sel] = "pau-pombo"
+   sel = (x %in% "brau"                          ); x[sel] = "breu"
+   sel = (x %in% "brejauba"                      ); x[sel] = "brejauva"              
+   sel = (x %in% "breu sucuuba"                  ); x[sel] = "breu sucuruba"         
+   sel = (x %in% "cabeca de urubu"               ); x[sel] = "cabeca-de-urubu"       
+   sel = (x %in% "cabela"                        ); x[sel] = "louro canela"          
+   sel = (x %in% "cabriuva"                      ); x[sel] = "cabreuva"              
+   sel = (x %in% "cabriuna"                      ); x[sel] = "cabreuva"              
+   sel = (x %in% "cabreu"                        ); x[sel] = "cabreuva"              
+   sel = (x %in% "cabreuba"                      ); x[sel] = "cabreuva"              
+   sel = (x %in% "caca piolho"                   ); x[sel] = "mata-piolho"           
+   sel = (x %in% "cacau bravo"                   ); x[sel] = "cacaui"                
+   sel = (x %in% "cacaurana"                     ); x[sel] = "cacau"                 
+   sel = (x %in% "cachudinha"                    ); x[sel] = "cascudinha"            
+   sel = (x %in% "cagaca"                        ); x[sel] = "abiurana-cagaca"
+   sel = (x %in% "cajarana"                      ); x[sel] = "jarana"                
+   sel = (x %in% "cajuba"                        ); x[sel] = "caju"
+   sel = (x %in% "calcho"                        ); x[sel] = "caucho"                
+   sel = (x %in% "canafistula"                   ); x[sel] = "fava-marimari"
+   sel = (x %in% "canela brava"                  ); x[sel] = "catuaba"
+   sel = (x %in% "canela de anta"                ); x[sel] = "canela-de-anta"        
+   sel = (x %in% "canela de veado"               ); x[sel] = "canela-de-veado"       
+   sel = (x %in% "canela de velho"               ); x[sel] = "canela-de-velho"       
+   sel = (x %in% "canelha velha"                 ); x[sel] = "canela-de-velho"       
+   sel = (x %in% "canela de jacamim"             ); x[sel] = "canela-de-jacamim"     
+   sel = (x %in% "canella de jacami"             ); x[sel] = "canela-de-jacamim"     
+   sel = (x %in% "canella ge jacami"             ); x[sel] = "canela-de-jacamim"     
+   sel = (x %in% "canniela"                      ); x[sel] = "canela"                
+   sel = (x %in% "capa bode"                     ); x[sel] = "capa-bode"
+   sel = (x %in% "captiurana"                    ); x[sel] = "capitiurana"
+   sel = (x %in% "carobia"                       ); x[sel] = "caroba"                
+   sel = (x %in% "cascudinho"                    ); x[sel] = "cascudinha"            
+   sel = (x %in% "cascudo"                       ); x[sel] = "cascudinha"            
+   sel = (x %in% "castanha do para"              ); x[sel] = "castanha-do-para"
+   sel = (x %in% "castanha"                      ); x[sel] = "castanha-do-para"
+   sel = (x %in% "castanheiro"                   ); x[sel] = "castanha-do-para"
+   sel = (x %in% "castanha de galinha"           ); x[sel] = "castanha-de-galinha"   
+   sel = (x %in% "castanha de periquito"         ); x[sel] = "castanha-de-periquito" 
+   sel = (x %in% "castanha de sapocaia"          ); x[sel] = "castanha-sapucaia"     
+   sel = (x %in% "castanha de sapucaia"          ); x[sel] = "castanha-sapucaia"     
+   sel = (x %in% "castanha sapocaia"             ); x[sel] = "castanha-sapucaia"     
+   sel = (x %in% "castanheira"                   ); x[sel] = "castanha-do-para"      
+   sel = (x %in% "cauba"                         ); x[sel] = "macacauba"
+   sel = (x %in% "cauxo"                         ); x[sel] = "caucho"                
+   sel = (x %in% "caxeta"                        ); x[sel] = "caixeta"               
+   sel = (x %in% "caximbeira"                    ); x[sel] = "cachimbeiro"           
+   sel = (x %in% "caximbeiro"                    ); x[sel] = "cachimbeiro"           
+   sel = (x %in% "caxudinha"                     ); x[sel] = "cascudinha"            
+   sel = (x %in% "cedroarana"                    ); x[sel] = "cedrorana"
+   sel = (x %in% "cega jumenta"                  ); x[sel] = "cega-jumento"
+   sel = (x %in% "chamaecrista"                  ); x[sel] = "coracao-de-negro"
+   sel = (x %in% "chapeu de sol"                 ); x[sel] = "chapeu-de-sol"
+   sel = (x %in% "chocolate"                     ); x[sel] = "cacau"                 
+   sel = (x %in% "cip"                           ); x[sel] = "cipo"
+   sel = (x %in% "cipo(dbh a 0.9m do chao)"      ); x[sel] = "cipo"
+   sel = (x %in% "cipo+arapo"                    ); x[sel] = "cipo"
+   sel = (x %in% "coco pau"                      ); x[sel] = "coco-pau"
+   sel = (x %in% "comida de jaboti"              ); x[sel] = "comida-de-jabuti"      
+   sel = (x %in% "comida de jabuti"              ); x[sel] = "comida-de-jabuti"      
+   sel = (x %in% "comida de pomba"               ); x[sel] = "comida-de-pombo"       
+   sel = (x %in% "comida de pombo"               ); x[sel] = "comida-de-pombo"       
+   sel = (x %in% "coracao  de negro"             ); x[sel] = "coracao-de-negro"      
+   sel = (x %in% "coracao de nego"               ); x[sel] = "coracao-de-negro"      
+   sel = (x %in% "coracao de negro"              ); x[sel] = "coracao-de-negro"      
+   sel = (x %in% "corante de indio"              ); x[sel] = "urucum"                
+   sel = (x %in% "coro preto"                    ); x[sel] = "louro preto"           
+   sel = (x %in% "coussarea racemosa"            ); x[sel] = "caferana"              
+   sel = (x %in% "cumari"                        ); x[sel] = "cumaru"                
+   sel = (x %in% "cumaru/apui"                   ); x[sel] = "apui"                  
+   sel = (x %in% "cumaru de ferro"               ); x[sel] = "cumaru-ferro"          
+   sel = (x %in% "cumatezinho/goiabinha fm"      ); x[sel] = "cumatezinho"           
+   sel = (x %in% "cupiu"                         ); x[sel] = "cupui"
+   sel = (x %in% "cutiti"                        ); x[sel] = "abiu cutite"
+   sel = (x %in% "cutiti"                        ); x[sel] = "abiu cutite"
+   sel = (x %in% "cutite"                        ); x[sel] = "abiu cutite"
+   sel = (x %in% "cutiteriba"                    ); x[sel] = "cucutitiriba"
+   sel = (x %in% "cutitiriba"                    ); x[sel] = "cucutitiriba"
+   sel = (x %in% "cucutiteriba"                  ); x[sel] = "cucutitiriba"
+   sel = (x %in% "cutiteriba"                    ); x[sel] = "cucutitiriba"
+   sel = (x %in% "cruzeiro"                      ); x[sel] = "quina-cruzeiro"
+   sel = (x %in% "dulacia/cachaceira"            ); x[sel] = "cachaceiro"
+   sel = (x %in% "dulacia/cachaceira"            ); x[sel] = "cachaceiro"
+   sel = (x %in% "embauba branco"                ); x[sel] = "embauba branca"        
+   sel = (x %in% "embauba vick"                  ); x[sel] = "embauba"               
+   sel = (x %in% "embirata"                      ); x[sel] = "envira ata"            
+   sel = (x %in% "embireira branca"              ); x[sel] = "envira"                
+   sel = (x %in% "embireira rosa"                ); x[sel] = "envira"                
+   sel = (x %in% "envira biriba"                 ); x[sel] = "envira-biriba"         
+   sel = (x %in% "envira cana"                   ); x[sel] = "envira-cana"           
+   sel = (x %in% "envira cabo de rodo"           ); x[sel] = "envira cabo-de-rodo"   
+   sel = (x %in% "envira caju"                   ); x[sel] = "envira-caju"           
+   sel = (x %in% "envira conduru"                ); x[sel] = "envira-conduru"        
+   sel = (x %in% "envira cunauaru"               ); x[sel] = "envira-cunauaru"       
+   sel = (x %in% "envira-mao-de-onca"            ); x[sel] = "envira mao-de-onca"    
+   sel = (x %in% "envira preto"                  ); x[sel] = "envira preta"          
+   sel = (x %in% "envira quiabo"                 ); x[sel] = "axixa"
+   sel = (x %in% "envira-quiabo"                 ); x[sel] = "axixa"
+   sel = (x %in% "envira surucu"                 ); x[sel] = "envira-surucucu"
+   sel = (x %in% "envira surucucu"               ); x[sel] = "envira-surucucu"
+   sel = (x %in% "envira taia"                   ); x[sel] = "envira-taia"           
+   sel = (x %in% "envira turi"                   ); x[sel] = "envira-turi"
+   sel = (x %in% "envira turi duro"              ); x[sel] = "envira-turi"
+   sel = (x %in% "envira vermelho"               ); x[sel] = "envira vermelha"       
+   sel = (x %in% "escorrega macaco"              ); x[sel] = "escorrega-macaco"      
+   sel = (x %in% "escurrega macaco"              ); x[sel] = "escorrega-macaco"      
+   sel = (x %in% "espeturana f. g."              ); x[sel] = "espeturana"            
+   sel = (x %in% "fava amarg"                    ); x[sel] = "fava amargosa"
+   sel = (x %in% "fava arara"                    ); x[sel] = "fava-arara-tucupi"
+   sel = (x %in% "fava arara tucupi"             ); x[sel] = "fava-arara-tucupi"     
+   sel = (x %in% "fava atana"                    ); x[sel] = "fava-atana"
+   sel = (x %in% "fiora preta"                   ); x[sel] = NA_character_
+   sel = (x %in% "fava barbatimao"               ); x[sel] = "fava-barbatimao"       
+   sel = (x %in% "fava bolacha"                  ); x[sel] = "fava-bolacha"          
+   sel = (x %in% "fava bolota"                   ); x[sel] = "fava-bolota"           
+   sel = (x %in% "fava cana"                     ); x[sel] = "fava-cana"           
+   sel = (x %in% "fava core"                     ); x[sel] = "fava-core"           
+   sel = (x %in% "fava de anta"                  ); x[sel] = "fava-de-anta"          
+   sel = (x %in% "fava marimari"                 ); x[sel] = "fava-marimari"         
+   sel = (x %in% "fava mapuxique"                ); x[sel] = "fava-mapuxiqui"        
+   sel = (x %in% "fava mapuxiqui"                ); x[sel] = "fava-mapuxiqui"        
+   sel = (x %in% "fava orelha de macaco"         ); x[sel] = "fava orelha-de-macaco" 
+   sel = (x %in% "fava paricarana"               ); x[sel] = "fava-paricana"         
+   sel = (x %in% "fava saboeira"                 ); x[sel] = "fava-saboeira"         
+   sel = (x %in% "fava tambori"                  ); x[sel] = "fava-tamboril"         
+   sel = (x %in% "fava tamburi"                  ); x[sel] = "fava-tamboril"         
+   sel = (x %in% "favera amargosa"               ); x[sel] = "fava amargosa"         
+   sel = (x %in% "faveira branca"                ); x[sel] = "fava branca"           
+   sel = (x %in% "feijo branco"                  ); x[sel] = "freijo branco"         
+   sel = (x %in% "ferdinandusa elliptica"        ); x[sel] = "bacabinha quina"       
+   sel = (x %in% "figado de preguisa"            ); x[sel] = "figado-de-preguica"
+   sel = (x %in% "figueira brava"                ); x[sel] = "figueira"              
+   sel = (x %in% "gameleiro"                     ); x[sel] = "gameleira"             
+   sel = (x %in% "gapeba"                        ); x[sel] = "guapeva"               
+   sel = (x %in% "guapeba"                       ); x[sel] = "guapeva"               
+   sel = (x %in% "gema de ovo"                   ); x[sel] = "gema-de-ovo"           
+   sel = (x %in% "geniparana"                    ); x[sel] = "jeniparana"            
+   sel = (x %in% "genipapo"                      ); x[sel] = "jenipapo"              
+   sel = (x %in% "goiaba"                        ); x[sel] = "araca"
+   sel = (x %in% "goiaba de anta"                ); x[sel] = "goiaba-de-anta"
+   sel = (x %in% "goibarana"                     ); x[sel] = "goiabarana"            
+   sel = (x %in% "gombeira fg"                   ); x[sel] = "gombeira folha grande"
+   sel = (x %in% "gombeira vermelho"             ); x[sel] = "gombeira vermelha"     
+   sel = (x %in% "grao de galo"                  ); x[sel] = "grao-de-galo"          
+   sel = (x %in% "grao de guariba"               ); x[sel] = "grao-de-guariba"       
+   sel = (x %in% "gravilola brava"               ); x[sel] = "graviola-brava"        
+   sel = (x %in% "graviola brava"                ); x[sel] = "graviola-brava"        
+   sel = (x %in% "guaiba"                        ); x[sel] = "araca"                 
+   sel = (x %in% "guaiaba"                       ); x[sel] = "araca"
+   sel = (x %in% "guajara bolacha"               ); x[sel] = "guajara-bolacha"       
+   sel = (x %in% "guajara ferro"                 ); x[sel] = "guajara-ferro"         
+   sel = (x %in% "guajara pedra"                 ); x[sel] = "guajara-pedra"         
+   sel = (x %in% "guajara mirim"                 ); x[sel] = "guajara-mirim"         
+   sel = (x %in% "guariuva"                      ); x[sel] = "guariuba"              
+   sel = (x %in% "guaruba"                       ); x[sel] = "quaruba"
+   sel = (x %in% "ibirucu"                       ); x[sel] = "embirucu"              
+   sel = (x %in% "imbauba torem"                 ); x[sel] = "embauba toren"         
+   sel = (x %in% "imbirata"                      ); x[sel] = "envira ata"            
+   sel = (x %in% "imbireira"                     ); x[sel] = "envira"                
+   sel = (x %in% "imbireira rosa"                ); x[sel] = "envira"                
+   sel = (x %in% "imbiricu"                      ); x[sel] = "embirucu"              
+   sel = (x %in% "imbirucu"                      ); x[sel] = "embirucu"              
+   sel = (x %in% "inga a"                        ); x[sel] = "inga"
+   sel = (x %in% "inga branca"                   ); x[sel] = "inga branco"           
+   sel = (x %in% "inga chichica"                 ); x[sel] = "inga-xixica"           
+   sel = (x %in% "inga de orelha"                ); x[sel] = "inga-de-orelha"        
+   sel = (x %in% "inga de preguica"              ); x[sel] = "inga-de-preguica"      
+   sel = (x %in% "inga de rodo"                  ); x[sel] = "inga-de-rodo"          
+   sel = (x %in% "inga de rosca"                 ); x[sel] = "inga-de-rosca"         
+   sel = (x %in% "inga f g"                      ); x[sel] = "inga folha grauda"
+   sel = (x %in% "inga f.p."                     ); x[sel] = "inga folha peluda"     
+   sel = (x %in% "inga vermelha"                 ); x[sel] = "inga vermelho"         
+   sel = (x %in% "inga titica"                   ); x[sel] = "inga-xixica"           
+   sel = (x %in% "inga xixica"                   ); x[sel] = "inga-xixica"           
+   sel = (x %in% "ipe amerelo"                   ); x[sel] = "ipe amarelo"           
+   sel = (x %in% "jaboticaba"                    ); x[sel] = "jabuticaba"            
+   sel = (x %in% "jacariuba"                     ); x[sel] = "jacareuba"
+   sel = (x %in% "jambo"                         ); x[sel] = "jambo-do-mato"
+   sel = (x %in% "jara"                          ); x[sel] = "jarana"
+   sel = (x %in% "jaruma"                        ); x[sel] = "taruma"
+   sel = (x %in% "jauari"                        ); x[sel] = "tauari"
+   sel = (x %in% "jenita"                        ); x[sel] = "janita"                
+   sel = (x %in% "jito"                          ); x[sel] = "gito"
+   sel = (x %in% "joao mole"                     ); x[sel] = "joao-mole"             
+   sel = (x %in% "joao moleza"                   ); x[sel] = "joao-moleza"           
+   sel = (x %in% "jotobazinho"                   ); x[sel] = "jatobazinho"           
+   sel = (x %in% "jutai mirim"                   ); x[sel] = "jutai-mirim"           
+   sel = (x %in% "jutai acu"                     ); x[sel] = "jutai-acu"             
+   sel = (x %in% "jutai pororoca"                ); x[sel] = "jutai-pororoca"        
+   sel = (x %in% "lacre da mata"                 ); x[sel] = "lacre-da-mata"         
+   sel = (x %in% "laranginha"                    ); x[sel] = "laranjinha"            
+   sel = (x %in% "leiteiro"                      ); x[sel] = "leiteira"              
+   sel = (x %in% "leitera"                       ); x[sel] = "leiteira"              
+   sel = (x %in% "loro amarelo"                  ); x[sel] = "louro amarelo"         
+   sel = (x %in% "louro?"                        ); x[sel] = "louro"
+   sel = (x %in% "louro abacate"                 ); x[sel] = "louro-abacate"         
+   sel = (x %in% "louro aritu"                   ); x[sel] = "louro-aritu"           
+   sel = (x %in% "louro branco"                  ); x[sel] = "louro"                 
+   sel = (x %in% "louro bosta"                   ); x[sel] = "louro-bosta"           
+   sel = (x %in% "louro chumbo"                  ); x[sel] = "louro-chumbo"          
+   sel = (x %in% "louro p"                       ); x[sel] = "louro preto"
+   sel = (x %in% "louro pimenta"                 ); x[sel] = "louro-pimenta"         
+   sel = (x %in% "louro seda"                    ); x[sel] = "louro-seda"            
+   sel = (x %in% "macucu de sangue"              ); x[sel] = "macucu-de-sangue"
+   sel = (x %in% "mafim"                         ); x[sel] = "marfim"
+   sel = (x %in% "mamao jacatia"                 ); x[sel] = "jacaratia"             
+   sel = (x %in% "mamonini"                      ); x[sel] = "mamoninha"             
+   sel = (x %in% "mandioqueiro"                  ); x[sel] = "mandioqueira"
+   sel = (x %in% "mangueira"                     ); x[sel] = "manguerana"
+   sel = (x %in% "manguerano"                    ); x[sel] = "manguerana"
+   sel = (x %in% "maparajuba"                    ); x[sel] = "parajuba"
+   sel = (x %in% "maprounea"                     ); x[sel] = "caxixa"
+   sel = (x %in% "mapuxiqui"                     ); x[sel] = "fava-mapuxiqui"
+   sel = (x %in% "maquira"                       ); x[sel] = "muiratinga"
+   sel = (x %in% "maracata"                      ); x[sel] = "marassacaca"
+   sel = (x %in% "maracatia"                     ); x[sel] = "muiracatiara"
+   sel = (x %in% "maracacaca"                    ); x[sel] = "marassacaca"
+   sel = (x %in% "marimari"                      ); x[sel] = "fava-marimari"
+   sel = (x %in% "massaranduba"                  ); x[sel] = "macaranduba"
+   sel = (x %in% "matamata branca"               ); x[sel] = "matamata branco"
+   sel = (x %in% "matamata ci"                   ); x[sel] = "matamata-ci"
+   sel = (x %in% "matamata jiboia"               ); x[sel] = "matamata-jiboia"
+   sel = (x %in% "matamata vermelha"             ); x[sel] = "matamata vermelho"
+   sel = (x %in% "mata pau+jito"                 ); x[sel] = "gito"
+   sel = (x %in% "mata caldo"                    ); x[sel] = "mata-calado"
+   sel = (x %in% "melanciera"                    ); x[sel] = "melancieira"
+   sel = (x %in% "morto"                         ); x[sel] = "morta"
+   sel = (x %in% "muiratinga folha grande/amapa" ); x[sel] = "muiratinga folha grande"
+   sel = (x %in% "muiratinga fura fura"          ); x[sel] = "muiratinga fura-fura"
+   sel = (x %in% "mulatero"                      ); x[sel] = "mulateiro"
+   sel = (x %in% "mulugu"                        ); x[sel] = "mulungu"
+   sel = (x %in% "murta da mata"                 ); x[sel] = "murta-da-mata"
+   sel = (x %in% "murucidu mata"                 ); x[sel] = "muruci-da-mata"
+   sel = (x %in% "muruci da mata"                ); x[sel] = "muruci-da-mata"
+   sel = (x %in% "muruci fp"                     ); x[sel] = "muruci folha peluda"
+   sel = (x %in% "mutama"                        ); x[sel] = "mutambo"
+   sel = (x %in% "mutamba"                       ); x[sel] = "mutambo"
+   sel = (x %in% "mututiassu"                    ); x[sel] = "mututi-acu"
+   sel = (x %in% "orelha de burro"               ); x[sel] = "orelha-de-burro"
+   sel = (x %in% "orelha de macaco"              ); x[sel] = "fava orelha-de-macaco"
+   sel = (x %in% "olho de sapo"                  ); x[sel] = "olho-de-sapo"
+   sel = (x %in% "olho de veado"                 ); x[sel] = "olho-de-veado"
+   sel = (x %in% "olho de viado"                 ); x[sel] = "olho-de-veado"
+   sel = (x %in% "ouro branco"                   ); x[sel] = "seringueira"
+   sel = (x %in% "p bolacha"                     ); x[sel] = "guajara-bolacha"
+   sel = (x %in% "paineira"                      ); x[sel] = "sumauma"
+   sel = (x %in% "palmito"                       ); x[sel] = "acai"
+   sel = (x %in% "palmito babosa"                ); x[sel] = "acai"
+   sel = (x %in% "pao de sangue"                 ); x[sel] = "pau-sangue"
+   sel = (x %in% "papo de mutum"                 ); x[sel] = "papo-de-mutum"
+   sel = (x %in% "papo de mutum ff"              ); x[sel] = "papo-de-mutum folha fina"
+   sel = (x %in% "papo de mutum  ff"             ); x[sel] = "papo-de-mutum folha fina"
+   sel = (x %in% "papo-de-mutum ff"              ); x[sel] = "papo-de-mutum folha fina"
+   sel = (x %in% "papo-de-mutum  ff"             ); x[sel] = "papo-de-mutum folha fina"
+   sel = (x %in% "paricarana"                    ); x[sel] = "fava-paricana"
+   sel = (x %in% "passarinhiera"                 ); x[sel] = "passarinheira"
+   sel = (x %in% "pata de vaca"                  ); x[sel] = "pata-de-vaca"
+   sel = (x %in% "pata preta"                    ); x[sel] = "ata preta"
+   sel = (x %in% "patua"                         ); x[sel] = "pataua"
+   sel = (x %in% "pau de arco"                   ); x[sel] = "pau-de-arco"
+   sel = (x %in% "pau d.arco"                    ); x[sel] = "pau-de-arco"
+   sel = (x %in% "pau de bicho"                  ); x[sel] = "pau-de-bicho"
+   sel = (x %in% "pau de cobra"                  ); x[sel] = "pau-cobra"
+   sel = (x %in% "pau colher"                    ); x[sel] = "pau-de-colher"
+   sel = (x %in% "pau de colher"                 ); x[sel] = "pau-de-colher"
+   sel = (x %in% "pau de jacare"                 ); x[sel] = "pau-jacare"
+   sel = (x %in% "pau de macaco"                 ); x[sel] = "pau-de-macaco"
+   sel = (x %in% "pau de remo"                   ); x[sel] = "pau-de-remo"
+   sel = (x %in% "pau de sangue"                 ); x[sel] = "pau-sangue"
+   sel = (x %in% "pau jacare"                    ); x[sel] = "pau-jacare"
+   sel = (x %in% "pau marfim"                    ); x[sel] = "pau-marfim"
+   sel = (x %in% "pau mulato"                    ); x[sel] = "pau-mulato"
+   sel = (x %in% "pau para tudo"                 ); x[sel] = "pau-para-tudo"
+   sel = (x %in% "pau pereira"                   ); x[sel] = "peroba mica"
+   sel = (x %in% "pau pra tudo"                  ); x[sel] = "pau-para-tudo"
+   sel = (x %in% "paupratudo"                    ); x[sel] = "pau-para-tudo"
+   sel = (x %in% "pau prego"                     ); x[sel] = "pau-de-remo"
+   sel = (x %in% "pau rego"                      ); x[sel] = "pau-de-remo"
+   sel = (x %in% "pau sangue"                    ); x[sel] = "pau-sangue"
+   sel = (x %in% "pereauna"                      ); x[sel] = "perebuna"
+   sel = (x %in% "pedra umi"                     ); x[sel] = "pedra ume-caa"
+   sel = (x %in% "pelo de cutia"                 ); x[sel] = "pelo-de-cutia"
+   sel = (x %in% "pente de macaco"               ); x[sel] = "pente-de-macaco"
+   sel = (x %in% "pepino da mata"                ); x[sel] = "pepino-do-mato"
+   sel = (x %in% "pepino-da-mata"                ); x[sel] = "pepino-do-mato"
+   sel = (x %in% "pepino do mato"                ); x[sel] = "pepino-do-mato"
+   sel = (x %in% "pepino-do-mato"                ); x[sel] = "pepino-do-mato"
+   sel = (x %in% "perna de moca"                 ); x[sel] = "perna-de-moca"
+   sel = (x %in% "piquiazeiro"                   ); x[sel] = "piquia"
+   sel = (x %in% "piqui rosa"                    ); x[sel] = "piquia"
+   sel = (x %in% "pororoca"                      ); x[sel] = "jutai-pororoca"
+   sel = (x %in% "prapara"                       ); x[sel] = "parapara"
+   sel = (x %in% "pratudo"                       ); x[sel] = "pau-para-tudo"
+   sel = (x %in% "puruirana/purui branco"        ); x[sel] = "purui branco"
+   sel = (x %in% "quaiquara"                     ); x[sel] = "acariquara"
+   sel = (x %in% "quariquara"                    ); x[sel] = "acariquara"
+   sel = (x %in% "quariquarana"                  ); x[sel] = "acariquara"
+   sel = (x %in% "quariquari"                    ); x[sel] = "acariquara"            
+   sel = (x %in% "quari quari"                   ); x[sel] = "acariquara"            
+   sel = (x %in% "quebrado"                      ); x[sel] = NA_character_
+   sel = (x %in% "quina cruzeiro"                ); x[sel] = "quina-cruzeiro"        
+   sel = (x %in% "rim de paca"                   ); x[sel] = "rim-de-paca"           
+   sel = (x %in% "ripeiro"                       ); x[sel] = "ripeira"               
+   sel = (x %in% "roxao"                         ); x[sel] = "roxinho"               
+   sel = (x %in% "roxinao"                       ); x[sel] = "roxinho"               
+   sel = (x %in% "sangra de agua"                ); x[sel] = "sangra-de-agua"
+   sel = (x %in% "sapucaia"                      ); x[sel] = "castanha-sapucaia"
+   sel = (x %in% "saboeira"                      ); x[sel] = "fava-saboeiro"
+   sel = (x %in% "saboeira amarela"              ); x[sel] = "fava-saboeiro amarela"
+   sel = (x %in% "saboeiro"                      ); x[sel] = "fava-saboeiro"
+   sel = (x %in% "saboiera"                      ); x[sel] = "fava-saboeiro"
+   sel = (x %in% "sabueiro"                      ); x[sel] = "fava-saboeiro"
+   sel = (x %in% "sajinera"                      ); x[sel] = NA_character_
+   sel = (x %in% "segador"                       ); x[sel] = "cegador"               
+   sel = (x %in% "seringa"                       ); x[sel] = "seringueira"
+   sel = (x %in% "seringa branca"                ); x[sel] = "seringueira"           
+   sel = (x %in% "seringa branco"                ); x[sel] = "seringueira"           
+   sel = (x %in% "seringa verdadeira"            ); x[sel] = "seringueira"           
+   sel = (x %in% "seritinga"                     ); x[sel] = "seringueira"           
+   sel = (x %in% "sorveira"                      ); x[sel] = "sorva"
+   sel = (x %in% "sorveira leite"                ); x[sel] = "sorva"                 
+   sel = (x %in% "sorvo"                         ); x[sel] = "sorva"
+   sel = (x %in% "sova"                          ); x[sel] = "sorva"
+   sel = (x %in% "sucupira pele de sapo"         ); x[sel] = "sucupira pele-de-sapo" 
+   sel = (x %in% "tachi branca"                  ); x[sel] = "tachi branco"          
+   sel = (x %in% "tachi preta"                   ); x[sel] = "tachi preto"           
+   sel = (x %in% "tachi preto ???"               ); x[sel] = "tachi preto"
+   sel = (x %in% "tachi preto folh"              ); x[sel] = "tachi preto"
+   sel = (x %in% "tachi vermelha"                ); x[sel] = "tachi vermelho"        
+   sel = (x %in% "talquari"                      ); x[sel] = "tauari"                
+   sel = (x %in% "tamaquarao"                    ); x[sel] = "tamaquare"             
+   sel = (x %in% "tamarindu"                     ); x[sel] = "tamarindo"              
+   sel = (x %in% "tamboril"                      ); x[sel] = "fava-tamboril"
+   sel = (x %in% "tamboriul"                     ); x[sel] = "fava-tamboril"
+   sel = (x %in% "tanari roxo"                   ); x[sel] = "tauari"
+   sel = (x %in% "tangarana"                     ); x[sel] = "tangirana"
+   sel = (x %in% "tapiririca"                    ); x[sel] = "tatapiririca"
+   sel = (x %in% "tatapiririca verm."            ); x[sel] = "tatapiririca vermelha"
+   sel = (x %in% "taturana"                      ); x[sel] = "taturuba"
+   sel = (x %in% "tauri"                         ); x[sel] = "tauari"                
+   sel = (x %in% "tento folha"                   ); x[sel] = "tento"
+   sel = (x %in% "tento foha grauda"             ); x[sel] = "tento folha grauda"    
+   sel = (x %in% "tintero"                       ); x[sel] = "tinteiro"              
+   sel = (x %in% "tucuma acu"                    ); x[sel] = "tucuma-acu"
+   sel = (x %in% "ucuarana"                      ); x[sel] = "urucurana"             
+   sel = (x %in% "ucuuba da terra firme"         ); x[sel] = "ucuuba terra-firme"    
+   sel = (x %in% "ucuuba terra firme"            ); x[sel] = "ucuuba terra-firme"    
+   sel = (x %in% "ucuuba tf"                     ); x[sel] = "ucuuba terra-firme"    
+   sel = (x %in% "ucuuba vermelho"               ); x[sel] = "ucuuba vermelha"       
+   sel = (x %in% "umbia"                         ); x[sel] = "goiabarana"
+   sel = (x %in% "unha de vaca"                  ); x[sel] = "pata-de-vaca"          
+   sel = (x %in% "uruci"                         ); x[sel] = "muruci"
+   sel = (x %in% "urucu"                         ); x[sel] = "urucum"
+   sel = (x %in% "urucuri"                       ); x[sel] = "urucum"
+   sel = (x %in% "uruucurana"                    ); x[sel] = "urucurana"             
+   sel = (x %in% "virola"                        ); x[sel] = "ucuuba"
+   sel = (x %in% "xaonoquito"                    ); x[sel] = "pau vermelho"
    #---------------------------------------------------------------------------------------#
 
    return(x)
@@ -312,6 +524,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Aspidosperma desmathum"     ,"Aspidosperma desmanthum"      ,x=g.s)
    g.s = sub("Aspidosperma eteanun"       ,"Aspidosperma eteanum"         ,x=g.s)
    g.s = sub("Aspidosperma nitidum"       ,"Aspidosperma excelsum"        ,x=g.s)
+   g.s = sub("Astrocaryum gynacant"       ,"Astrocaryum aculeatum"        ,x=g.s)
    g.s = sub("Astrocaryum gynacanthum"    ,"Astrocaryum aculeatum"        ,x=g.s)
    g.s = sub("Astronium le-cointei"       ,"Astronium lecointei"          ,x=g.s)
    g.s = sub("Austroplenckia populnea"    ,"Plenckia populnea"            ,x=g.s)
@@ -322,10 +535,11 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Beureria"                   ,"Calycanthus"                  ,x=g.s)
    g.s = sub("Bosqueia"                   ,"Trilepisium"                  ,x=g.s)
    g.s = sub("Bracteanthus glycycarpus"   ,"Siparuna glycycarpa"          ,x=g.s)
+   g.s = sub("Brosimopsis obovata"        ,"Brosimum acutifolium"         ,x=g.s)
    g.s = sub("Brosimum autifolium"        ,"Brosimum acutifolium"         ,x=g.s)
    g.s = sub("Brosimum lactascens"        ,"Brosimum lactescens"          ,x=g.s)
    g.s = sub("Brosimum guianensis"        ,"Brosimum guianense"           ,x=g.s)
-   g.s = sub("Brosimum obovata"           ,"Brosimum"                     ,x=g.s)
+   g.s = sub("Brosimum obovata"           ,"Brosimum acutifolium"         ,x=g.s)
    g.s = sub("Byrsonima chrysophylla"     ,"Byrsonima spicata"            ,x=g.s)
    g.s = sub("Byrsonima estipulacea"      ,"Byrsonima stipulacea"         ,x=g.s)
    g.s = sub("Byrsonima schultesiana"     ,"Byrsonima arthropoda"         ,x=g.s)
@@ -436,6 +650,7 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Ocotea rubra"               ,"Sextonia rubra"               ,x=g.s)
    g.s = sub("Omedia perebea"             ,"Perebea mollis"               ,x=g.s)
    g.s = sub("Onichiopetalum amazonico"   ,"Onychopetalum amazonicum"     ,x=g.s)
+   g.s = sub("Orbignya phalerata"         ,"Attalea speciosa"             ,x=g.s)
    g.s = sub("Pancovia"                   ,"Eurhynchium"                  ,x=g.s)
    g.s = sub("Parkia oppositifolia"       ,"Parkia nitida"                ,x=g.s)
    g.s = sub("Pausandra densiflora"       ,"Pausandra trianae"            ,x=g.s)
@@ -498,7 +713,22 @@ standard.scientific.name <<- function(dat){
    g.s = sub("Swartizia microcarpum"      ,"Swartzia microcarpa"          ,x=g.s)
    g.s = sub("Swartzia retusa"            ,"Swartzia recurva"             ,x=g.s)
    g.s = sub("Swartzia viridiflora"       ,"Bocoa viridiflora"            ,x=g.s)
+   g.s = sub("Tabebuia avellanedae"       ,"Handroanthus impetiginosus"   ,x=g.s)
+   g.s = sub("Tabebuia barbata"           ,"Handroanthus barbatus"        ,x=g.s)
+   g.s = sub("Tabebuia billbergii"        ,"Handroanthus billbergii"      ,x=g.s)
+   g.s = sub("Tabebuia capitata"          ,"Handroanthus capitatus"       ,x=g.s)
+   g.s = sub("Tabebuia chrysantha"        ,"Handroanthus chrysanthus"     ,x=g.s)
    g.s = sub("Tabebuia chrysotricha"      ,"Handroanthus chrysotrichus"   ,x=g.s)
+   g.s = sub("Tabebuia donnell-smithii"   ,"Roseodendron donnell-smithii" ,x=g.s)
+   g.s = sub("Tabebuia guayacan"          ,"Handroanthus guayacan"        ,x=g.s)
+   g.s = sub("Tabebuia heptaphylla"       ,"Handroanthus heptaphyllus"    ,x=g.s)
+   g.s = sub("Tabebuia impetiginosa"      ,"Handroanthus impetiginosus"   ,x=g.s)
+   g.s = sub("Tabebuia incana"            ,"Handroanthus incanus"         ,x=g.s)
+   g.s = sub("Tabebuia lapacho"           ,"Handroanthus lapacho"         ,x=g.s)
+   g.s = sub("Tabebuia obscura"           ,"Handroanthus obscurus"        ,x=g.s)
+   g.s = sub("Tabebuia pedicellata"       ,"Handroanthus pedicellatus"    ,x=g.s)
+   g.s = sub("Tabebuia serratifolia"      ,"Handroanthus serratifolius"   ,x=g.s)
+   g.s = sub("Tabebuia vellosoi"          ,"Handroanthus vellosoi"        ,x=g.s)
    g.s = sub("Tachigalia alba"            ,"Tachigali paniculata"         ,x=g.s)
    g.s = sub("Tachigali alba"             ,"Tachigali paniculata"         ,x=g.s)
    g.s = sub("Tachigalia myrmecophila"    ,"Tachigali myrmecophila"       ,x=g.s)
@@ -700,6 +930,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Calliandra"         , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Calophyllum"        , family = "Calophyllaceae"    )
    n=n+1; g2f[[n]] = list( genus = "Calycanthus"        , family = "Calycanthaceae"    )
+   n=n+1; g2f[[n]] = list( genus = "Calycophyllum"      , family = "Rubiaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Calyptranthes"      , family = "Myrtaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Campomanesia"       , family = "Myrtaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Capirona"           , family = "Rubiaceae"         )
@@ -743,7 +974,9 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Clidemia"           , family = "Melastomataceae"   )
    n=n+1; g2f[[n]] = list( genus = "Clusia"             , family = "Clusiaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Cnidoscolus"        , family = "Euphorbiaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Cochlospermum"      , family = "Bixaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Coccoloba"          , family = "Polygonaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Colubrina"          , family = "Rhamnaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Commersonia"        , family = "Malvaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Commiphora"         , family = "Burseraceae"       )
    n=n+1; g2f[[n]] = list( genus = "Conceveiba"         , family = "Euphorbiaceae"     )
@@ -806,6 +1039,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Dussia"             , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Dystovomita"        , family = "Clusiaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Ecclinusa"          , family = "Sapotaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Elaeis"             , family = "Arecaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Elaeoluma"          , family = "Sapotaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Elateriospermum"    , family = "Euphorbiaceae"     )
    n=n+1; g2f[[n]] = list( genus = "Elizabetha"         , family = "Fabaceae"          )
@@ -834,6 +1068,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Funtumia"           , family = "Apocynaceae"       )
    n=n+1; g2f[[n]] = list( genus = "Fusaea"             , family = "Annonaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Galipea"            , family = "Rutaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Gallesia"           , family = "Phytolaccaceae"    )
    n=n+1; g2f[[n]] = list( genus = "Garcinia"           , family = "Clusiaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Gaulettia"          , family = "Chrysobalanaceae"  )
    n=n+1; g2f[[n]] = list( genus = "Geissospermum"      , family = "Apocynaceae"       )
@@ -1004,6 +1239,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Plenckia"           , family = "Celastraceae"      )
    n=n+1; g2f[[n]] = list( genus = "Pleuranthodendron"  , family = "Salicaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Podocarpus"         , family = "Podocarpaceae"     )
+   n=n+1; g2f[[n]] = list( genus = "Poeppigia"          , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Poecilanthe"        , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Pogonophora"        , family = "Euphorbiaceae"     )
    n=n+1; g2f[[n]] = list( genus = "Polyscias"          , family = "Araliaceae"        )
@@ -1017,6 +1253,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Protium"            , family = "Burseraceae"       )
    n=n+1; g2f[[n]] = list( genus = "Protomegabaria"     , family = "Phyllanthaceae"    )
    n=n+1; g2f[[n]] = list( genus = "Prunus"             , family = "Rosaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Pseudima"           , family = "Sapindaceae"       )
    n=n+1; g2f[[n]] = list( genus = "Pseudobombax"       , family = "Malvaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Pseudolmedia"       , family = "Moraceae"          )
    n=n+1; g2f[[n]] = list( genus = "Pseudopiptadenia"   , family = "Fabaceae"          )
@@ -1042,6 +1279,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Rinorea"            , family = "Violaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Robinsonella"       , family = "Malvaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Rollinia"           , family = "Annonaceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Roseodendron"       , family = "Bignoniaceae"      )
    n=n+1; g2f[[n]] = list( genus = "Roucheria"          , family = "Linaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Roupala"            , family = "Proteaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Ruizterania"        , family = "Vochysiaceae"      )
@@ -1093,6 +1331,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Taralea"            , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Tarenna"            , family = "Rubiaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Teclea"             , family = "Rutaceae"          )
+   n=n+1; g2f[[n]] = list( genus = "Tectona"            , family = "Lamiaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Terminalia"         , family = "Combretaceae"      )
    n=n+1; g2f[[n]] = list( genus = "Tetragastris"       , family = "Burseraceae"       )
    n=n+1; g2f[[n]] = list( genus = "Theobroma"          , family = "Malvaceae"         )
@@ -1120,6 +1359,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Vatairea"           , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Vataireopsis"       , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Vernonia"           , family = "Asteraceae"        )
+   n=n+1; g2f[[n]] = list( genus = "Viguieranthus"      , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Virola"             , family = "Myristicaceae"     )
    n=n+1; g2f[[n]] = list( genus = "Vismia"             , family = "Hypericaceae"      )
    n=n+1; g2f[[n]] = list( genus = "Vitex"              , family = "Lamiaceae"         )
@@ -1128,6 +1368,7 @@ standard.family.name <<- function(datum){
    n=n+1; g2f[[n]] = list( genus = "Vouacapoua"         , family = "Fabaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Warszewiczia"       , family = "Rubiaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Xanthophyllum"      , family = "Polygalaceae"      )
+   n=n+1; g2f[[n]] = list( genus = "Ximenia"            , family = "Olacaceae"         )
    n=n+1; g2f[[n]] = list( genus = "Xylopia"            , family = "Annonaceae"        )
    n=n+1; g2f[[n]] = list( genus = "Zanthoxylum"        , family = "Rutaceae"          )
    n=n+1; g2f[[n]] = list( genus = "Ziziphus"           , family = "Rhamnaceae"        )
@@ -1251,6 +1492,7 @@ standard.family.name <<- function(datum){
    n=n+1; f2nog[[n]] = list(family = "Pentaphylacaceae" , genus = "Ignotum.pentaphylax"   )
    n=n+1; f2nog[[n]] = list(family = "Peridiscaceae"    , genus = "Ignotum.peridiscus"    )
    n=n+1; f2nog[[n]] = list(family = "Phyllanthaceae"   , genus = "Ignotum.phyllanthus"   )
+   n=n+1; f2nog[[n]] = list(family = "Phytolaccaceae"   , genus = "Ignotum.phytolacca"    )
    n=n+1; f2nog[[n]] = list(family = "Piperaceae"       , genus = "Ignotum.piper"         )
    n=n+1; f2nog[[n]] = list(family = "Poaceae"          , genus = "Ignotum.poa"           )
    n=n+1; f2nog[[n]] = list(family = "Podocarpaceae"    , genus = "Ignotum.podocarpus"    )
@@ -1329,6 +1571,118 @@ standard.family.name <<- function(datum){
    datum$family     [yes.gen] = g2f$family [idx]
    #---------------------------------------------------------------------------------------#
 
+   return(datum)
+}#end function
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This attributes scientific names based on common names for surveys carried out by   #
+# the Sustainable Landscapes team.  It is not a good idea to use this function for any     #
+# other data sets because common names may mean completely different things for other      #
+# lads.                                                                                    #
+#------------------------------------------------------------------------------------------#
+scientific.lookup.SL <<- function(datum,lookup.path){
+   #----- Append columns in case they don't exist. ----------------------------------------#
+   if (! "scientific"    %in% names(datum)){
+      datum$scientific    = rep(NA_character_, nrow(datum))
+   }#end if (! "scientific"    %in% names(datum))
+   if (! "genus"         %in% names(datum)){
+      datum$genus         = rep(NA_character_, nrow(datum)) 
+   }#end if (! "scientific"    %in% names(datum))
+   if (! "gf.scientific" %in% names(datum)){
+      datum$gf.scientific = rep(0, nrow(datum))
+   }#end if (! "gf.scientific" %in% names(datum))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Read in the look-up table. ------------------------------------------------------#
+   lookup.file = paste(lookup.path,"SL_taxon_lookup.csv",sep="/")
+   look.up = read.csv(file=lookup.file,stringsAsFactors=FALSE)
+   look.up$common     = tolower(trim(look.up$common    ))
+   look.up$scientific = trim(look.up$scientific)
+   look.up$family     = trim(look.up$family    )
+   #---------------------------------------------------------------------------------------#
+        
+        
+        
+   #----- Break into genus and species. ---------------------------------------------------#
+   gs.list                  = sapply(X = tolower(look.up$scientific),FUN=strsplit,split=" ")
+   gs.length                = sapply(X = gs.list, FUN = length)
+   gs.mat                   = cbind( mapply(FUN="[",gs.list,MoreArgs=list(1))
+                                     , mapply(FUN="[",gs.list,MoreArgs=list(2))
+   )#end cbind
+   g                        = capwords(gs.mat[,1],strict=TRUE)
+   s                        = tolower(gs.mat[,2])
+   g.s                      = paste(g,s,sep=" ")
+   g.s[is.na(g) & is.na(s)] = NA
+   look.up$scientific       = g.s
+   look.up$genus            = g
+   #---------------------------------------------------------------------------------------#
+   
+   
+   
+   #----- Trim the common names, and simplify/replace some names. -------------------------#
+   datum$common                      = tolower(trim(datum$common))
+   datum$common[is.na(datum$common)] = "mato"
+   #---------------------------------------------------------------------------------------#
+        
+        
+       
+   #----- Find all unique common names. ---------------------------------------------------#
+   unique.common = unique(datum$common)
+   n.common      = length(unique.common)
+   notfound      = NULL
+   for (n in sequence(n.common)){
+      #----- Find the trees that have the same common name as this one. -------------------#
+      cat (" - ",n,"/",n.common," -- ",unique.common[n],"\n")
+      w.dat  = which(datum$common %in% unique.common[n])
+      n.dat  = length(w.dat)
+      #------------------------------------------------------------------------------------#
+      
+      
+      #----- Find the trees in the look-up table with the same common name. ---------------#
+      w.look = which(look.up$common %in% unique.common[n])
+      n.look = length(w.look)
+      #------------------------------------------------------------------------------------#
+      
+      
+      
+      #------------------------------------------------------------------------------------#
+      #      Check how many trees have the same common name in the look-up table.          #
+      #------------------------------------------------------------------------------------#
+      if (n.look >= 1){
+         #---------------------------------------------------------------------------------#
+         #   In case only one scientific name has been matched, this will allocate the     #
+         # same scientific name for all selected individuals, otherwise this will randomly #
+         # attribute the scientific names.                                                 #
+         #---------------------------------------------------------------------------------#
+         w.look                     = lit.sample(x=w.look,size=n.dat,replace=TRUE)
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Only one.  Use it. --------------------------------------------------------#
+         datum$scientific   [w.dat] = look.up$scientific[w.look]
+         datum$genus        [w.dat] = look.up$genus     [w.look]
+         datum$gf.scientific[w.dat] = 1
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Not found in the data base, warn the user. --------------------------------#
+         notfound                   = c(notfound,unique.common[n])
+         datum$scientific   [w.dat] = "Ignotum"
+         datum$genus        [w.dat] = "Ignotum"
+         datum$gf.scientific[w.dat] = 0
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+   }#end for
+   #---------------------------------------------------------------------------------------#
    return(datum)
 }#end function
 #==========================================================================================#
@@ -1506,10 +1860,10 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[ 50]] = list( common     = "carapanauba amarela"       
                     , scientific = "Aspidosperma auriculatum"        
                     )#end list
-   tnf[[ 51]] = list( common     = "castanha do para"          
+   tnf[[ 51]] = list( common     = "castanha-do-para"          
                     , scientific = "Bertholletia excelsa"            
                     )#end list
-   tnf[[ 52]] = list( common     = "castanha sapucaia"         
+   tnf[[ 52]] = list( common     = "castanha-sapucaia"         
                     , scientific = "Lecythis pisonis"                
                     )#end list
    tnf[[ 53]] = list( common     = "cedro"                     
@@ -1563,13 +1917,13 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[ 69]] = list( common     = "envira branca"             
                     , scientific = "Guatteria amazonica"             
                     )#end list
-   tnf[[ 70]] = list( common     = "envira cana"               
+   tnf[[ 70]] = list( common     = "envira-cana"               
                     , scientific = "Xylopia nitida"                  
                     )#end list
    tnf[[ 71]] = list( common     = "envira preta"              
                     , scientific = "Guatteria poeppigiana"           
                     )#end list
-   tnf[[ 72]] = list( common     = "envira surucucu"           
+   tnf[[ 72]] = list( common     = "envira-surucucu"           
                     , scientific = "Duguetia echinophora"            
                     )#end list
    tnf[[ 73]] = list( common     = "envira vermelha"           
@@ -1587,7 +1941,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[ 77]] = list( common     = "fava amargosa"             
                     , scientific = "Vataireopsis speciosa"           
                     )#end list
-   tnf[[ 78]] = list( common     = "fava bolota"               
+   tnf[[ 78]] = list( common     = "fava-bolota"               
                     , scientific = "Parkia pendula"                  
                     )#end list
    tnf[[ 79]] = list( common     = "fava da rosca"             
@@ -1596,13 +1950,13 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[ 80]] = list( common     = "fava folha fina"           
                     , scientific = "Pseudopiptadenia psilostachy"    
                     )#end list
-   tnf[[ 81]] = list( common     = "fava mapuxiqui"            
+   tnf[[ 81]] = list( common     = "fava-mapuxiqui"            
                     , scientific = "Albizia pedicellaris"            
                     )#end list
-   tnf[[ 82]] = list( common     = "fava saboeiro"             
+   tnf[[ 82]] = list( common     = "fava-saboeiro"             
                     , scientific = "Abarema"                         
                     )#end list
-   tnf[[ 83]] = list( common     = "fava timbauba"             
+   tnf[[ 83]] = list( common     = "fava-timbauba"             
                     , scientific = "Enterolobium maximum"            
                     )#end list
    tnf[[ 84]] = list( common     = "fava-arara-tucupi"         
@@ -1668,7 +2022,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[104]] = list( common     = "itaubarana"                
                     , scientific = "Casearia"                        
                     )#end list
-   tnf[[105]] = list( common     = "janita"                    
+   tnf[[105]] = list( common     = "amapa amargoso"                    
                     , scientific = "Brosimum guianense"              
                     )#end list
    tnf[[106]] = list( common     = "jarana"                    
@@ -1677,13 +2031,13 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[107]] = list( common     = "jatauba"                   
                     , scientific = "Matayba purgans"                 
                     )#end list
-   tnf[[108]] = list( common     = "joao mole"                 
+   tnf[[108]] = list( common     = "joao-mole"                 
                     , scientific = "Guapira venosa"                  
                     )#end list
-   tnf[[109]] = list( common     = "joao mole grande"          
+   tnf[[109]] = list( common     = "joao-mole grande"          
                     , scientific = "Neea"                            
                     )#end list
-   tnf[[110]] = list( common     = "jutai pororoca"            
+   tnf[[110]] = list( common     = "jutai-pororoca"            
                     , scientific = "Dialium guianense"               
                     )#end list
    tnf[[111]] = list( common     = "jutai-acu"                 
@@ -1695,7 +2049,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[113]] = list( common     = "jutaiarana"                
                     , scientific = "Swartzia arborescens"            
                     )#end list
-   tnf[[114]] = list( common     = "lacre da mata"             
+   tnf[[114]] = list( common     = "lacre-da-mata"             
                     , scientific = "Vismia"                          
                     )#end list
    tnf[[115]] = list( common     = "lacre vermelho"            
@@ -1704,7 +2058,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[116]] = list( common     = "louro"                     
                     , scientific = "Nectandra pulverulenta"          
                     )#end list
-   tnf[[117]] = list( common     = "louro abacate"             
+   tnf[[117]] = list( common     = "louro-abacate"             
                     , scientific = "Ocotea glomerata"                
                     )#end list
    tnf[[118]] = list( common     = "louro amarelo"             
@@ -1803,7 +2157,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[149]] = list( common     = "murta"                     
                     , scientific = "Myrcia fallax"                   
                     )#end list
-   tnf[[150]] = list( common     = "muruci da mata"            
+   tnf[[150]] = list( common     = "muruci-da-mata"            
                     , scientific = "Byrsonima arthropoda"            
                     )#end list
    tnf[[151]] = list( common     = "murure"                    
@@ -1818,13 +2172,13 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[154]] = list( common     = "pama"                      
                     , scientific = "Pseudolmedia macrophylla"        
                     )#end list
-   tnf[[155]] = list( common     = "papaterra"                 
+   tnf[[155]] = list( common     = "papa-terra"                 
                     , scientific = "Miconia ruficalyx"               
                     )#end list
-   tnf[[156]] = list( common     = "papaterra amarelo"         
+   tnf[[156]] = list( common     = "papa-terra amarelo"         
                     , scientific = "Miconia lepidota"                
                     )#end list
-   tnf[[157]] = list( common     = "papaterra folha peluda"    
+   tnf[[157]] = list( common     = "papa-terra folha peluda"    
                     , scientific = "Miconia phanerostila"            
                     )#end list
    tnf[[158]] = list( common     = "parapara"                  
@@ -1843,7 +2197,7 @@ scientific.lookup.tnf <<- function(datum){
                     , scientific = "Salacia impressifolia"           
                     )#end list
    tnf[[163]] = list( common     = "pau-de-arco amarelo"       
-                    , scientific = "Tabebuia serratifolia"           
+                    , scientific = "Handroanthus serratifolius"           
                     )#end list
    tnf[[164]] = list( common     = "pau-de-colher"             
                     , scientific = "Lacmellea aculeata"              
@@ -1860,7 +2214,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[168]] = list( common     = "pente-de-macaco"           
                     , scientific = "Apeiba glabra"                   
                     )#end list
-   tnf[[169]] = list( common     = "pepino da mata"            
+   tnf[[169]] = list( common     = "molongo"            
                     , scientific = "Ambelania acida"                 
                     )#end list
    tnf[[170]] = list( common     = "piquia"                    
@@ -1959,7 +2313,7 @@ scientific.lookup.tnf <<- function(datum){
    tnf[[201]] = list( common     = "ucuuba vermelha"           
                     , scientific = "Virola elongata"                 
                     )#end list
-   tnf[[202]] = list( common     = "ucuuba-terra-firme"        
+   tnf[[202]] = list( common     = "ucuuba terra-firme"        
                     , scientific = "Virola michelii"                 
                     )#end list
    tnf[[203]] = list( common     = "ucuubarana"                
@@ -2304,7 +2658,7 @@ find.wood.density <<- function( datum
    #     List all genera that were not filled with species information.                    #
    #---------------------------------------------------------------------------------------#
    sci.genus.mean = sci.genus.mean[order(sci.genus.mean[,"scientific"]),]
-   genus.only = grepl(pattern=" NA$",x=sci.genus.mean[,"scientific"])
+   genus.only     = grepl(pattern=" NA$",x=sci.genus.mean[,"scientific"],ignore.case=TRUE)
    if (verbose && (nrow(sci.genus.mean[!genus.only,,drop=FALSE]) > 0)){
       cat0("")
       cat0("-----------------------------------------------------------------------")
@@ -2396,7 +2750,7 @@ find.wood.density <<- function( datum
    #---------------------------------------------------------------------------------------#
    if (nrow(sci.family.sample) > 0){
       if (verbose){
-         cat (" Found families that unidentified genera!","\n")
+         cat (" Found families with unidentified genera!","\n")
          print(sci.family.sample,quote=FALSE)
       }#end if
    }#end if

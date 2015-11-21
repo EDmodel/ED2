@@ -8,7 +8,7 @@
 # the distribution of tropical forest tree species at La Selva, Costa Rica.  J. Trop.      #
 # Ecol., 11 (2), 161--177.                                                                 #
 #------------------------------------------------------------------------------------------#
-cci.lieberman <<- function(xyz,radius=10,closure=TRUE){
+cci.lieberman <<- function( xyz, radius  = 10, closure = TRUE){
    #---------------------------------------------------------------------------------------#
    #     Check whether the data are good to go.                                            #
    #---------------------------------------------------------------------------------------#
@@ -55,14 +55,29 @@ cci.lieberman <<- function(xyz,radius=10,closure=TRUE){
 
 
    #---------------------------------------------------------------------------------------#
-   #     Create a list with each element.                                                  #
+   #    Load Fortran.                                                                      #
    #---------------------------------------------------------------------------------------#
-   i.xyz = split(x=xyz,f=sequence(nrow(xyz)))
-   i.cci = mapply( FUN      = .Int.cci.lieberman
-                 , i.xyz    = i.xyz
-                 , MoreArgs = list(p.xyz=xyz,radius=radius,closure=closure)
-                 , SIMPLIFY = TRUE
-                 )#end mapply
+   dyn.load(file.path(srcdir,"cci_lieberman.so"))
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Keep only the columns of interest before we send it to Fortran.                   #
+   #---------------------------------------------------------------------------------------#
+   xyz  = xyz[,c("x","y","z"),drop=FALSE]
+   nxyz = nrow(xyz)
+   i.cci = rep(0,times=nrow(xyz))
+   i.cci = .Fortran( "cci_lieberman"
+                   , nxyz    = as.integer(nxyz)
+                   , xyz     = as.double(as.matrix(xyz))
+                   , radius  = as.double(radius)
+                   , closure = as.logical(closure)
+                   , cci     = as.double(i.cci)
+                   )#end .Fortran
+   i.cci = i.cci$cci
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Remove names from i.cci and return answer. --------------------------------------#
    names(i.cci) = NULL
    return(i.cci)
    #---------------------------------------------------------------------------------------#

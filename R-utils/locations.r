@@ -4411,10 +4411,10 @@ poitmp[[u]] = list( short           = "tanguro"
 u           = u + 1
 poitmp[[u]] = list( short           = "tapajos"     
                   , longname        = "Tapajos Natl. Forest, PA"
-                  , iata            = "tap"
-                  , lon             = -54.984
-                  , lat             =  -3.110
-                  , alt             = 124.
+                  , iata            = "tnf"
+                  , lon             = -54.955
+                  , lat             =  -2.857
+                  , alt             = 173.
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
