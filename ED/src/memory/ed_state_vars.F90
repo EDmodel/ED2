@@ -25526,7 +25526,7 @@ module ed_state_vars
                            ,'FMEAN_GPP_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Gross primary productivity'                  &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_npp             )) then
          nvar = nvar+1
@@ -25535,7 +25535,7 @@ module ed_state_vars
                            ,'FMEAN_NPP_CO               :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Net primary productivity'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_resp       )) then
          nvar = nvar+1
@@ -25544,7 +25544,7 @@ module ed_state_vars
                            ,'FMEAN_LEAF_RESP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf respiration'                            &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_root_resp       )) then
          nvar = nvar+1
@@ -25553,7 +25553,7 @@ module ed_state_vars
                            ,'FMEAN_ROOT_RESP_CO         :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root respiration'                            &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -25562,7 +25562,7 @@ module ed_state_vars
                            ,'FMEAN_LEAF_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf growth respiration'                     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_root_growth_resp)) then
          nvar = nvar+1
@@ -25571,7 +25571,7 @@ module ed_state_vars
                            ,'FMEAN_ROOT_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root growth respiration'                     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -25580,7 +25580,7 @@ module ed_state_vars
                            ,'FMEAN_SAPA_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Aboveground sapwood growth respiration'      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -25589,7 +25589,7 @@ module ed_state_vars
                            ,'FMEAN_SAPB_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Belowground sapwood growth respiration'      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -25598,7 +25598,7 @@ module ed_state_vars
                            ,'FMEAN_LEAF_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Leaf Storage respiration'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -25607,7 +25607,7 @@ module ed_state_vars
                            ,'FMEAN_ROOT_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Root Storage respiration'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -25616,7 +25616,7 @@ module ed_state_vars
                            ,'FMEAN_SAPA_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Aboveground Sapwood Storage respiration'     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -25625,7 +25625,7 @@ module ed_state_vars
                            ,'FMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Belowground Sapwood Storage respiration'     &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_plresp          )) then
          nvar = nvar+1
@@ -25634,7 +25634,7 @@ module ed_state_vars
                            ,'FMEAN_PLRESP_CO            :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Plant respiration'                           &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_leaf_energy     )) then
          nvar = nvar+1
@@ -26206,7 +26206,7 @@ module ed_state_vars
                            ,'DMEAN_GPP_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Gross primary productivity'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_npp             )) then
          nvar = nvar+1
@@ -26215,7 +26215,7 @@ module ed_state_vars
                            ,'DMEAN_NPP_CO               :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Net primary productivity'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_resp       )) then
          nvar = nvar+1
@@ -26224,7 +26224,7 @@ module ed_state_vars
                            ,'DMEAN_LEAF_RESP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf respiration'                                &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_root_resp       )) then
          nvar = nvar+1
@@ -26233,7 +26233,7 @@ module ed_state_vars
                            ,'DMEAN_ROOT_RESP_CO         :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root respiration'                                &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -26242,7 +26242,7 @@ module ed_state_vars
                            ,'DMEAN_LEAF_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf growth respiration'                         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_root_growth_resp)) then
          nvar = nvar+1
@@ -26251,7 +26251,7 @@ module ed_state_vars
                            ,'DMEAN_ROOT_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root growth respiration'                         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -26260,7 +26260,7 @@ module ed_state_vars
                            ,'DMEAN_SAPA_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Aboveground sapwood growth respiration'          &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -26269,7 +26269,7 @@ module ed_state_vars
                            ,'DMEAN_SAPB_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Belowground sapwood growth respiration'          &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -26278,7 +26278,7 @@ module ed_state_vars
                            ,'DMEAN_LEAF_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Leaf Storage respiration'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -26287,7 +26287,7 @@ module ed_state_vars
                            ,'DMEAN_ROOT_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Root storage respiration'                        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -26296,7 +26296,7 @@ module ed_state_vars
                            ,'DMEAN_SAPA_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Aboveground Sapwood Storage respiration'         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -26305,7 +26305,7 @@ module ed_state_vars
                            ,'DMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Belowground Sapwood Storage respiration'         &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_plresp          )) then
          nvar = nvar+1
@@ -26314,7 +26314,7 @@ module ed_state_vars
                            ,'DMEAN_PLRESP_CO            :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Plant respiration'                               &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_leaf_energy     )) then
          nvar = nvar+1
@@ -26828,7 +26828,7 @@ module ed_state_vars
                            ,'MMEAN_GPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Gross primary productivity'                    &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_npp             )) then
          nvar = nvar+1
@@ -26837,7 +26837,7 @@ module ed_state_vars
                            ,'MMEAN_NPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_resp       )) then
          nvar = nvar+1
@@ -26846,7 +26846,7 @@ module ed_state_vars
                            ,'MMEAN_LEAF_RESP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf respiration'                              &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_root_resp       )) then
          nvar = nvar+1
@@ -26855,7 +26855,7 @@ module ed_state_vars
                            ,'MMEAN_ROOT_RESP_CO         :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root respiration'                              &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -26864,7 +26864,7 @@ module ed_state_vars
                            ,'MMEAN_LEAF_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf growth respiration'                       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_root_growth_resp)) then
          nvar = nvar+1
@@ -26873,7 +26873,7 @@ module ed_state_vars
                            ,'MMEAN_ROOT_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root growth respiration'                       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -26882,7 +26882,7 @@ module ed_state_vars
                            ,'MMEAN_SAPA_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Aboveground sapwood growth respiration'        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -26891,7 +26891,7 @@ module ed_state_vars
                            ,'MMEAN_SAPB_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Belowground sapwood growth respiration'        &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -26900,7 +26900,7 @@ module ed_state_vars
                            ,'MMEAN_LEAF_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Leaf Storage respiration'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -26909,7 +26909,7 @@ module ed_state_vars
                            ,'MMEAN_ROOT_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root Storage respiration'                      &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -26918,7 +26918,7 @@ module ed_state_vars
                            ,'MMEAN_SAPA_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Aboveground Sapwood Storage respiration'       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -26927,7 +26927,7 @@ module ed_state_vars
                            ,'MMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Belowground Sapwood Storage respiration'       &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_plresp          )) then
          nvar = nvar+1
@@ -26936,7 +26936,7 @@ module ed_state_vars
                            ,'MMEAN_PLRESP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Plant respiration'                             &
-                           ,'[  kgC/m2/yr]','(icohort)'            )
+                           ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_energy     )) then
          nvar = nvar+1
@@ -27518,7 +27518,7 @@ module ed_state_vars
                            ,'MMSQU_GPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Gross primary productivity'                    &
-                           ,'[kgC2/m4/yr2]','(icohort)'            )
+                           ,'[kgC2/pl2/yr2]','(icohort)'            )
       end if
       if (associated(cpatch%mmsqu_npp             )) then
          nvar = nvar+1
@@ -27527,7 +27527,7 @@ module ed_state_vars
                            ,'MMSQU_NPP_CO               :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Net primary productivity'                      &
-                           ,'[kgC2/m4/yr2]','(icohort)'            )
+                           ,'[kgC2/pl2/yr2]','(icohort)'            )
       end if
       if (associated(cpatch%mmsqu_plresp          )) then
          nvar = nvar+1
@@ -27536,7 +27536,7 @@ module ed_state_vars
                            ,'MMSQU_PLRESP_CO            :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly MSSq - Plant respiration'                             &
-                           ,'[kgC2/m4/yr2]','(icohort)'            )
+                           ,'[kgC2/pl2/yr2]','(icohort)'            )
       end if
       if (associated(cpatch%mmsqu_sensible_lc     )) then
          nvar = nvar+1
@@ -27653,7 +27653,7 @@ module ed_state_vars
                            ,'QMEAN_GPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Gross primary productivity'                       &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_npp             )) then
          nvar = nvar+1
@@ -27662,7 +27662,7 @@ module ed_state_vars
                            ,'QMEAN_NPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Net primary productivity'                         &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_resp       )) then
          nvar = nvar+1
@@ -27671,7 +27671,7 @@ module ed_state_vars
                            ,'QMEAN_LEAF_RESP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf respiration'                                 &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_root_resp       )) then
          nvar = nvar+1
@@ -27680,7 +27680,7 @@ module ed_state_vars
                            ,'QMEAN_ROOT_RESP_CO        :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root respiration'                                 &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_growth_resp)) then
          nvar = nvar+1
@@ -27689,7 +27689,7 @@ module ed_state_vars
                            ,'QMEAN_LEAF_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf growth respiration'                          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_root_growth_resp)) then
          nvar = nvar+1
@@ -27698,7 +27698,7 @@ module ed_state_vars
                            ,'QMEAN_ROOT_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root growth respiration'                          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapa_growth_resp)) then
          nvar = nvar+1
@@ -27707,7 +27707,7 @@ module ed_state_vars
                            ,'QMEAN_SAPA_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Aboveground sapwood growth respiration'           &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapb_growth_resp)) then
          nvar = nvar+1
@@ -27716,7 +27716,7 @@ module ed_state_vars
                            ,'QMEAN_SAPB_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Belowground sapwood growth respiration'           &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_storage_resp    )) then
          nvar = nvar+1
@@ -27725,7 +27725,7 @@ module ed_state_vars
                            ,'QMEAN_LEAF_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Leaf Storage respiration'                         &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_root_storage_resp    )) then
          nvar = nvar+1
@@ -27734,7 +27734,7 @@ module ed_state_vars
                            ,'QMEAN_ROOT_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Root Storage respiration'                         &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapa_storage_resp    )) then
          nvar = nvar+1
@@ -27743,7 +27743,7 @@ module ed_state_vars
                            ,'QMEAN_SAPA_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Aboveground Sapwood Storage respiration'          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_sapb_storage_resp    )) then
          nvar = nvar+1
@@ -27752,7 +27752,7 @@ module ed_state_vars
                            ,'QMEAN_SAPB_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Belowground Sapwood Storage respiration'          &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_plresp          )) then
          nvar = nvar+1
@@ -27761,7 +27761,7 @@ module ed_state_vars
                            ,'QMEAN_PLRESP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Plant respiration'                                &
-                           ,'[  kgC/m2/yr]','(ndcycle,icohort)'    )
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_leaf_energy     )) then
          nvar = nvar+1
@@ -28207,7 +28207,7 @@ module ed_state_vars
                            ,'QMSQU_GPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Gross primary productivity'                       &
-                           ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
+                           ,'[kgC2/pl2/yr2]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmsqu_npp             )) then
          nvar = nvar+1
@@ -28216,7 +28216,7 @@ module ed_state_vars
                            ,'QMSQU_NPP_CO              :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Net primary productivity'                         &
-                           ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
+                           ,'[kgC2/pl2/yr2]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmsqu_plresp          )) then
          nvar = nvar+1
@@ -28225,7 +28225,7 @@ module ed_state_vars
                            ,'QMSQU_PLRESP_CO           :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'MSSq diel - Plant respiration'                                &
-                           ,'[kgC2/m4/yr2]','(ndcycle,icohort)'    )
+                           ,'[kgC2/pl2/yr2]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmsqu_sensible_lc     )) then
          nvar = nvar+1

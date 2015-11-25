@@ -18,6 +18,7 @@ graphics.off()
 here    = getwd()                                #   Current directory
 srcdir  = "/prj/prjidfca/marcosl/Util/Rsc"       #   Script directory
 outroot = file.path(here,"radprof_comp")         #   Output directory
+ascroot = file.path(here,"ascii_radprof")        #   ASCII output directory
 
 #------ Plot options. ---------------------------------------------------------------------#
 outform        = c("pdf")              # Formats for output file.  Supported formats are:
@@ -26,8 +27,8 @@ outform        = c("pdf")              # Formats for output file.  Supported for
                                        #   - "png" - for PNG printing
                                        #   - "pdf" - for PDF printing
 depth          = 96                    # PNG resolution, in pixels per inch
-paper          = "letter"              # Paper size, to define the plot shape
-wpaper         = "legal"               # Wide paper size, to define the plot shape
+paper          = "square"              # Paper size, to define the plot shape
+wpaper         = "letter"              # Wide paper size, to define the plot shape
 ptsz           = 18                    # Font size.
 ibackground    = 0                     # Make figures compatible to which background?
                                        # 0 -- white
@@ -50,61 +51,6 @@ prof.zen   = c(0,5,20,30,40,50,60,70,75,80,84,88,92) # Zenith angle breaks
 #------------------------------------------------------------------------------------------#
 
 
-#----- Default break for LAI classes. -----------------------------------------------------#
-lai.defbrk  = c(  1.5,  2.0,  2.5,  3.0,  3.5,  4.5,  5.5,  7.0)
-add.others  = FALSE
-report      = list()
-#---------------------------------------   1.5   2.0   2.5   3.0   3.5   4.5   5.5   7.0  -#
-report[[1]] = list( solar   = rbind( min = c(  NA ,  NA , 22.0,  8.9,  5.4,  NA ,  NA )
-                                   , max = c(  NA ,  NA , 45.4, 11.3,  6.7,  NA ,  NA )
-                                   )#end rbind
-                  , par     = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   )#end rbind
-                  , nir     = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   )#end rbind
-                  , colour  = "steelblue1"
-                  , angle   = 20
-                  , density = 40
-                  , lwd     = 2
-                  , desc    = "Torquebiau and Walter (1987)"
-                  )#end report
-#---------------------------------------   1.5   2.0   2.5   3.0   3.5   4.5   5.5   7.0  -#
-report[[2]] = list( solar   = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   )#end rbind
-                  , par     = rbind( min = c(  NA ,  NA , 10.8,  2.6, 0.35,  NA ,  NA )
-                                   , max = c(  NA ,  NA , 22.2,  3.3, 1.04,  NA ,  NA )
-                                   )#end rbind
-                  , nir     = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   )#end rbind
-                  , colour  = "mediumpurple1"
-                  , angle   = 70
-                  , density = 20
-                  , lwd     = 2
-                  , desc    = "Torquebiau (1988)"
-                  )#end report
-#---------------------------------------   1.5   2.0   2.5   3.0   3.5   4.5   5.5   7.0  -#
-report[[3]] = list( solar   = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA , 0.89)
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA , 1.61)
-                                   )#end rbind
-                  , par     = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   )#end rbind
-                  , nir     = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   , max = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA ,  NA )
-                                   )#end rbind
-                  , colour  = "sandybrown"
-                  , angle   = -20
-                  , density =  40
-                  , lwd     =   2
-                  , desc    = "Shuttleworth (1984)"
-                  )#end report
-#------------------------------------------------------------------------------------------#
-
-
 
 
 #------------------------------------------------------------------------------------------#
@@ -120,17 +66,28 @@ report[[3]] = list( solar   = rbind( min = c(  NA ,  NA ,  NA ,  NA ,  NA ,  NA 
 #     all of them, kind of useless...)                                                     #
 #------------------------------------------------------------------------------------------#
 sites      = list()
-sites[[1]] = list(iata="gyf",desc="Paracou"       ,lai=6.0,pch= 2,col="#520485",year=2004)
-sites[[2]] = list(iata="s67",desc="Santarem km 67",lai=4.0,pch= 5,col="#46FF32",year=2009)
-sites[[3]] = list(iata="s83",desc="Santarem km 83",lai=5.0,pch= 9,col="#FF5700",year=2001)
-sites[[4]] = list(iata="pdg",desc="Pe-de-Gigante" ,lai=3.5,pch=13,col="#A00014",year=2003)
-sites[[5]] = list(iata="rja",desc="Rebio Jaru"    ,lai=4.0,pch= 1,col="#006715",year=2001)
-sites[[6]] = list(iata="m34",desc="Manaus K34"    ,lai=5.8,pch= 6,col="#0742C3",year=2004)
-sites[[7]] = list(iata="pnz",desc="Petrolina"     ,lai=2.0,pch= 4,col="#B49ED2",year=2004)
-sites[[8]] = list(iata="ban",desc="Bananal"       ,lai=3.0,pch= 8,col="#F5C858",year=2005)
-sites[[9]] = list(iata="dcm",desc="Santarem km 67",lai=4.0,pch= 5,col="#46FF32",year=2009)
-use.sites  = "dcm" # "rja"
-imetrad    = paste0("imetrad",sprintf("%2.2i",c(2,3,4)))[3]
+sites[[1]] = list(iata="gyf",desc="Paracou"       ,yeara=2004,yearz=2004)
+sites[[2]] = list(iata="s67",desc="Santarem km 67",yeara=2004,yearz=2004)
+sites[[3]] = list(iata="s83",desc="Santarem km 83",yeara=2001,yearz=2001)
+sites[[4]] = list(iata="pdg",desc="Pe-de-Gigante" ,yeara=2003,yearz=2003)
+sites[[5]] = list(iata="rja",desc="Rebio Jaru"    ,yeara=2001,yearz=2001)
+sites[[6]] = list(iata="m34",desc="Manaus K34"    ,yeara=2004,yearz=2004)
+sites[[7]] = list(iata="pnz",desc="Petrolina"     ,yeara=2004,yearz=2004)
+sites[[8]] = list(iata="ban",desc="Bananal"       ,yeara=2005,yearz=2005)
+sites[[9]] = list(iata="dcm",desc="Santarem km 67",yeara=2009,yearz=2009)
+use.sites  = "s67" # "rja"
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Height characteristics for output.                                                   #
+#------------------------------------------------------------------------------------------#
+zdart.bot     = 1
+zdart.top     = 53
+dzdart        = 1
+dart.crit.par = 225 # Critical PAR above which the light utilisation decreases
+                    # Value in umol/m2leaf/s, the code will convert to W/m2 if needed
 #------------------------------------------------------------------------------------------#
 
 
@@ -140,57 +97,22 @@ imetrad    = paste0("imetrad",sprintf("%2.2i",c(2,3,4)))[3]
 #----- Info on hourly data. ---------------------------------------------------------------#
 reload.profile  = TRUE
 rdata.path      = file.path(here,"RData_profile")
-rdata.suffix    = paste0("radprof_",imetrad,"_ed22.RData")
-finished.suffix = paste0("radprof_",imetrad,"_ed22.txt")
+rdata.suffix    = paste0("radprof_ed22.RData")
+finished.suffix = paste0("radprof_ed22.txt")
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Info on hourly data. ---------------------------------------------------------------#
 reload.summary  = TRUE
-rdata.summary   = paste0("summary_radprof_",imetrad,"_ed22.RData")
+rdata.summary   = paste0("summary_radprof_ed22.RData")
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Flags to control whether to plot site-specific and multi-site comparison. ----------#
 plot.site    = c(FALSE,TRUE)[2]
-plot.patch   = c(FALSE,TRUE)[1]
 plot.month   = c(FALSE,TRUE)[2]
-plot.refonly = c(FALSE,TRUE)[2]
-dlai        = 0.25
-ci.estimate = "six.summary"    # How to define the statistics?
-                               # "boot.summary" -- Use bootstrap to get CI
-                               # "six.summary"  -- Use t distribution to get CI
-n.boot      = 1000
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Load some packages. ----------------------------------------------------------------#
-source(file.path(srcdir,"load.everything.r"))
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Load profiles from ABRACOS. --------------------------------------------------------#
-load(file.path(srcdir,"ABRACOS.light.RData"))
 #------------------------------------------------------------------------------------------#
 
 
@@ -199,49 +121,31 @@ load(file.path(srcdir,"ABRACOS.light.RData"))
 #------------------------------------------------------------------------------------------#
 #     List all simulations.                                                                #
 #------------------------------------------------------------------------------------------#
+n           = 0
 simul       = list()
-simul[[ 1]] = list( suff           = paste("labpar600",imetrad,sep="_")
-                  , desc           = "LA600"
-                  , colour         = "#0059B3"
-                  , bgcol          = "#537CA6"
+n           = n + 1
+simul[[ n]] = list( suff           = "ivdyn00_ihrzrad00"
+                  , desc           = "HRZ-OFF"
+                  , colour         = "#3B24B3"
+                  , bgcol          = "#3B24B3"
                   , mult.down      = 1.
                   , mult.beam.down = 1.
-                  , mult.diff.down = 0.97
+                  , mult.diff.down = 1. # 0.97
                   , mult.up        = 1.
-                  , angle          = -30
+                  , angle          = -45
                   , density        = 25
                   )#end list
-simul[[ 2]] = list( suff           = paste("labpar850",imetrad,sep="_")
-                  , desc           = "LA850"
-                  , colour         = "#4D0099"
-                  , bgcol          = "#8659B3"
-                  , mult.down      = 1.
-                  , mult.beam.down = 1.
-                  , mult.diff.down = 1.03
-                  , mult.up        = 0.985
-                  , angle          = 30
-                  , density        = 25
-                  )#end list
-simul[[ 3]] = list( suff           = paste("labpar925",imetrad,sep="_")
-                  , desc           = "LA925"
-                  , colour         = "#B3B300"
-                  , bgcol          = "#A6A653"
-                  , mult.down      = 1.03
-                  , mult.beam.down = 1.03
-                  , mult.diff.down = 1.
-                  , mult.up        = 1.
-                  , angle          = -60
-                  , density        = 25
-                  )#end list
-simul[[ 4]] = list( suff           = paste("labpar980",imetrad,sep="_")
-                  , desc           = "LA980"
-                  , colour         = "#446600"
-                  , bgcol          = "#AACC66"
-                  , mult.down      = 0.97
-                  , mult.beam.down = 0.97
+
+n           = n + 1
+simul[[ n]] = list( suff           = "ivdyn00_ihrzrad01"
+                  , desc           = "HRZ-ON"
+                  , colour         = "#E65C17"
+                  , bgcol          = "#E65C17"
+                  , mult.down      = 1. # 0.97
+                  , mult.beam.down = 1. # 0.97
                   , mult.diff.down = 1.
                   , mult.up        = 1.015
-                  , angle          = 60
+                  , angle          = +45
                   , density        = 25
                   )#end list
 #------------------------------------------------------------------------------------------#
@@ -277,6 +181,28 @@ band[[4]] =  list( key  = "tir"
 
 
 
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#      NO NEED TO CHANGE ANYTHING BEYOND THIS POINT UNLESS YOU ARE DEVELOPING THE CODE...  #
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Load some packages. ----------------------------------------------------------------#
+source(file.path(srcdir,"load.everything.r"))
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #      Convert lists to a data frames.  For sites only, we may skip several of them using  #
@@ -302,7 +228,16 @@ nsimul  = nrow(simul)
 nband   = nrow(band )
 nprof   = length(prof.hours)
 nhours  = length(my.hours)
-nreport = length(report)
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Height characteristics for output.                                                   #
+#------------------------------------------------------------------------------------------#
+zdart.above = zdart.top + dzdart
+zdart       = seq(from=zdart.above,to=zdart.bot,by=-dzdart)
+nzdart      = length(zdart)
 #------------------------------------------------------------------------------------------#
 
 
@@ -328,30 +263,22 @@ lo.simul = pretty.box(n=nsimul)
 #------------------------------------------------------------------------------------------#
 
 
+#----- Critical PAR in W/m2. --------------------------------------------------------------#
+dart.crit.par = dart.crit.par * Ein.2.Watts * 1.0e-6
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 #      Create all output directories, separated by format.                                 #
 #------------------------------------------------------------------------------------------#
-metroot = file.path(outroot,imetrad)
 if (! file.exists(rdata.path)) dir.create(rdata.path)
 if (! file.exists(outroot   )) dir.create(outroot   )
-if (! file.exists(metroot   )) dir.create(metroot   )
+if (! file.exists(ascroot   )) dir.create(ascroot   )
 #------------------------------------------------------------------------------------------#
 
 
 #----- Summary file. ----------------------------------------------------------------------#
 summary.fullname = file.path(rdata.path,rdata.summary)
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Zenith angle bins. -----------------------------------------------------------------#
-nzb       = length(prof.zen)
-zen.key   = paste("zen_",sprintf("%2.2i",prof.zen[-nzb]),"-"
-                        ,sprintf("%2.2i",prof.zen[-1]),sep="")
-zen.desc  = paste("Mean zenith angle ",sprintf("%.1f",mid.points(prof.zen)),sep="")
-nzen.prof = length(zen.key)
 #------------------------------------------------------------------------------------------#
 
 
@@ -366,8 +293,8 @@ if ( (! file.exists(summary.fullname)) || plot.site){
       #----- Retrieve site sinformation. --------------------------------------------------#
       iata     = sites$iata[p]
       ip       = match(iata,poilist$iata)
-      yeara    = sites$year[p]
-      yearz    = sites$year[p]
+      yeara    = sites$yeara[p]
+      yearz    = sites$yearz[p]
       lon      = poilist$lon     [ip]
       lat      = poilist$lat     [ip]
       desc     = poilist$longname[ip]
@@ -451,13 +378,15 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                         , lat          = lat
                         , yeara        = yeara
                         , yearz        = yearz
-                        , tresume      = 1
+                        , sresume      = 1
                         , tomonth      = sort(unique(w.tomonth))
                         , month        = nummonths(sort(unique(w.tomonth)))
                         , year         = numyears (sort(unique(w.tomonth)))
                         , hour         = sort(unique(w.hour))
                         , ntimes       = length(unique(w.tomonth))
                         , ndcycle      = length(unique(w.hour))
+                        , nzdart       = nzdart
+                        , zdart        = zdart
                         , zen          = zen
                         , diel         = round( 1 + day + night) + 0.*night
                         , gloom        = matrix( data = FALSE
@@ -493,7 +422,7 @@ if ( (! file.exists(summary.fullname)) || plot.site){
       lat       = model$lat
       longname  = model$longname
       short     = model$short
-      tresume   = model$tresume
+      sresume   = model$sresume
       ntimes    = model$ntimes
       ndcycle   = model$ndcycle
       tomonth   = model$tomonth
@@ -505,49 +434,53 @@ if ( (! file.exists(summary.fullname)) || plot.site){
       #------------------------------------------------------------------------------------#
 
       #---- Get the times that must be read. ----------------------------------------------#
-      if (tresume > ntimes){
-         loop.times = numeric(0)
+      if (sresume > nsimul){
+         loop.simul = numeric(0)
       }else{
-         loop.times = seq(from=tresume,to=ntimes,by=1)
+         loop.simul = seq(from=sresume,to=nsimul,by=1)
       }#end if
       #------------------------------------------------------------------------------------#
 
 
 
+
+
+
+
       #------------------------------------------------------------------------------------#
-      #     Loop over dates.                                                               #
+      #    Loop over simulations.                                                          #
       #------------------------------------------------------------------------------------#
-      for (w in loop.times){
+      for (s in loop.simul){
 
+         cat("   * Simulation ",simul$desc[s],":","\n",sep="")
 
-         #----- Grab date/time information on the data set. -------------------------------#
-         now   = tomonth[w]
-         yyyy = sprintf("%4.4i",numyears (now))
-         mm   = sprintf("%2.2i",nummonths(now))
-         dd   = sprintf("%2.2i",numdays  (now))
-         hh   = sprintf("%2.2i",hours    (now))
-         cat("   * ",paste(now),"\n",sep="")
+         #----- Simulation prefix. --------------------------------------------------------#
+         simplace = paste("t",iata,"_",simul$suff[s],sep="")
          #---------------------------------------------------------------------------------#
 
 
          #---------------------------------------------------------------------------------#
-
-
-
-         #----- Build file suffix. --------------------------------------------------------#
-         tsuff = paste(yyyy,"-",mm,"-00-000000-g01.h5",sep="")
+         #     Loop over dates.                                                            #
          #---------------------------------------------------------------------------------#
+         for (w in sequence(ntimes)){
+
+
+            #----- Grab date/time information on the data set. ----------------------------#
+            now   = tomonth[w]
+            yyyy = sprintf("%4.4i",numyears (now))
+            mm   = sprintf("%2.2i",nummonths(now))
+            dd   = sprintf("%2.2i",numdays  (now))
+            hh   = sprintf("%2.2i",hours    (now))
+            cat("     > ",paste(now),"\n",sep="")
+            #------------------------------------------------------------------------------#
 
 
 
-
-         #---------------------------------------------------------------------------------#
-         #    Loop over simulations.                                                       #
-         #---------------------------------------------------------------------------------#
-         for (s in sequence(nsimul)){
+            #----- Build file suffix. -----------------------------------------------------#
+            tsuff = paste(yyyy,"-",mm,"-00-000000-g01.h5",sep="")
+            #------------------------------------------------------------------------------#
 
             #----- Build the file name. ---------------------------------------------------#
-            simplace = paste("t",iata,"_",simul$suff[s],sep="")
             filenow  = paste(simplace,"Q",tsuff,sep="-")
             #------------------------------------------------------------------------------#
 
@@ -707,16 +640,62 @@ if ( (! file.exists(summary.fullname)) || plot.site){
 
 
 
+            #------------------------------------------------------------------------------#
+            #     Initialise the list with simulation data.                                #
+            #------------------------------------------------------------------------------#
+            if (w == 1 && s == 1){
+               #----- List with model simulations. ----------------------------------------#
+               model$simul = replicate(nsimul,list())
+               names(model$simul) = simul$suff
+               #---------------------------------------------------------------------------#
+
+
+               #----- Interpolated data to DART levels. -----------------------------------#
+               dart.ai     = array (data= NA,dim=c(nsimul,ntimes        ,nzdart))
+               dart.atm    = array (data= NA,dim=c(nsimul,ntimes,ndcycle       ))
+               dart.prof   = array (data= NA,dim=c(nsimul,ntimes,ndcycle,nzdart))
+               dart.list   = list  ( down.beam = dart.prof
+                                   , down.diff = dart.prof
+                                   , down.tot  = dart.prof
+                                   , up.tot    = dart.prof
+                                   , abs.lyr   = dart.prof
+                                   , abs.wood  = dart.prof
+                                   , abs.leaf  = dart.prof
+                                   , eff.leaf  = dart.prof
+                                   , cum.lyr   = dart.prof
+                                   , cum.wood  = dart.prof
+                                   , cum.leaf  = dart.prof
+                                   , cum.eff   = dart.prof
+                                   , atm.tot   = dart.atm
+                                   , atm.beam  = dart.atm
+                                   , atm.diff  = dart.atm
+                                   )#end list
+               model$dart  = list  ( par      = dart.list
+                                   , nir      = dart.list
+                                   , sol      = dart.list
+                                   , tir      = dart.list
+                                   , lai      = dart.ai
+                                   , cumlai   = dart.ai
+                                   )#end list
+               #---------------------------------------------------------------------------#
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
 
             #------------------------------------------------------------------------------#
             #      Load the patch and cohort information.                                  #
             #------------------------------------------------------------------------------#
-            if (w == 1 && s == 1){
+            if (w == 1){
                nsites    = mymont$PYSI.N
                npatches  = mymont$SIPA.N
                ncohorts  = mymont$PACO.N
                a.ico     = mymont$PACO.ID
                z.ico     = a.ico + ncohorts - 1
+
+               areapa    = mymont$AREA * rep(mymont$AREA.SI,times=npatches)
+               areaco    = rep(areapa,times=ncohorts  )
+               pareaco   = rep(areapa,times=ncohorts+1)
 
                isi       = rep(sequence(nsites),times=npatches)
                ipa       = sequence(npatches)
@@ -724,13 +703,13 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                ppaco     = rep(ipa,times=ncohorts+1)
                ico       = sequence(ncohorts)
                pco       = sequence(ncohorts+1)-1
-
                nlayer    = sum(ncohorts+1)
 
+
                #----- Initialise data regarding this polygon. -----------------------------#
-               empty.ai    = array (data= NA,dim=c(nsimul,ntimes        ,nlayer))
-               empty.atm   = array (data= NA,dim=c(nsimul,ntimes,ndcycle       ))
-               empty.prof  = array (data= NA,dim=c(nsimul,ntimes,ndcycle,nlayer))
+               empty.ai    = array (data= NA,dim=c(ntimes        ,nlayer))
+               empty.atm   = array (data= NA,dim=c(ntimes,ndcycle       ))
+               empty.prof  = array (data= NA,dim=c(ntimes,ndcycle,nlayer))
                empty.list  = list  ( down.beam = empty.prof
                                    , down.diff = empty.prof
                                    , down.tot  = empty.prof
@@ -746,31 +725,32 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                #---------------------------------------------------------------------------#
 
 
-
                #---------------------------------------------------------------------------#
-               #      Append initial conditions to this polygon.                           #
+               #     Simul is a template for each simulation.                              #
                #---------------------------------------------------------------------------#
-               model = modifyList( x   = model
-                                 , val = list( npatches = npatches
-                                             , ncohorts = ncohorts
-                                             , desert   = sum(ncohorts) == 0
-                                             , nlayer   = nlayer
-                                             , ipa      = ipa
-                                             , ipaco    = ipaco
-                                             , ppaco    = ppaco
-                                             , ico      = ico
-                                             , pco      = pco
-                                             , lai      = empty.ai
-                                             , wai      = empty.ai
-                                             , tai      = empty.ai
-                                             , par      = empty.list
-                                             , nir      = empty.list
-                                             , sol      = empty.list
-                                             , tir      = empty.list
-                                             )#end list
-                                 )#end modifyList
+               model$simul[[s]] = list( npatches = npatches
+                                      , ncohorts = ncohorts
+                                      , desert   = sum(ncohorts) == 0
+                                      , nlayer   = nlayer
+                                      , ipa      = ipa
+                                      , ipaco    = ipaco
+                                      , ppaco    = ppaco
+                                      , ico      = ico
+                                      , pco      = pco
+                                      , areapa   = areapa
+                                      , areaco   = areaco
+                                      , pareaco  = pareaco
+                                      , height   = empty.ai
+                                      , lai      = empty.ai
+                                      , wai      = empty.ai
+                                      , tai      = empty.ai
+                                      , par      = empty.list
+                                      , nir      = empty.list
+                                      , sol      = empty.list
+                                      , tir      = empty.list
+                                      )#end list
                #---------------------------------------------------------------------------#
-            }#end if (w == 1 && s == 1)
+            }#end if (w == 1)
             #------------------------------------------------------------------------------#
 
 
@@ -778,20 +758,22 @@ if ( (! file.exists(summary.fullname)) || plot.site){
             #------------------------------------------------------------------------------#
             #     Retrieve some useful data from this run.                                 #
             #------------------------------------------------------------------------------#
-            npatches = model$npatches
-            ipa      = model$ipa
-            ipaco    = model$ipaco
-            ico      = model$ico
-            ppaco    = model$ppa
-            pco      = model$pco
-            desert   = model$desert
+            simnow   = model$simul[[s]]
+            npatches = simnow$npatches
+            ipa      = simnow$ipa
+            ipaco    = simnow$ipaco
+            ico      = simnow$ico
+            ppaco    = simnow$ppa
+            pco      = simnow$pco
+            desert   = simnow$desert
             #------------------------------------------------------------------------------#
 
 
 
             #------ Variables to fill in constant boundary conditions. --------------------#
-            zero     = rep(0   ,times=npatches)
-            veritas  = rep(TRUE,times=npatches)
+            zero        = rep(0               ,times=npatches)
+            veritas     = rep(TRUE            ,times=npatches)
+            zabove.pa   = rep(zdart.above     ,times=npatches)
             #------------------------------------------------------------------------------#
 
 
@@ -803,27 +785,54 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                lai.prof = zero
                wai.prof = zero
                tai.prof = zero
+               hgt.prof = zabove.pa
                use.lyr  = veritas
             }else{
-               lai.prof = append.patch(ipaco=ipaco,xpa=zero,xco=mymont$MMEAN.LAI.CO)
-               wai.prof = append.patch(ipaco=ipaco,xpa=zero,xco=mymont$WAI.CO)
+               lai.prof = append.patch( ipa   = ipa
+                                      , ipaco = ipaco
+                                      , xpa   = zero
+                                      , xco   = mymont$MMEAN.LAI.CO
+                                      )#end append.path
+               wai.prof = append.patch( ipa   = ipa
+                                      , ipaco = ipaco
+                                      , xpa   = zero
+                                      , xco   = mymont$WAI.CO
+                                      )#end append.path
                tai.prof = lai.prof + wai.prof
-               use.lyr  = append.patch( ipaco = ipaco
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Map the height to the closest DART level.                             #
+               #---------------------------------------------------------------------------#
+               ipft     = mymont$PFT
+               ed.hgt   = mymont$HITE
+               dart.hgt = ( zdart.above * (ed.hgt            - pft$hgt.min[ipft])
+                                        / (pft$hgt.max[ipft] - pft$hgt.min[ipft]) )
+               dart.hgt = mapply(FUN=closest,x=dart.hgt,MoreArgs=list(A=zdart[-1]))
+               #---------------------------------------------------------------------------#
+
+
+               #------ Height profile and flag for resolved cohort. -----------------------#
+               hgt.prof = append.patch(ipa=ipa,ipaco=ipaco,xpa=zabove.pa,xco=dart.hgt)
+               use.lyr  = append.patch( ipa   = ipa
+                                      , ipaco = ipaco
                                       , xpa   = veritas
                                       , xco   = mymont$MMEAN.RLONG.L.CO != 0.
                                       )#end append.patch
+               #---------------------------------------------------------------------------#
+
             }#end if
             #------------------------------------------------------------------------------#
-
 
 
 
             #------------------------------------------------------------------------------#
             #     Append layer characteristics for this time.                              #
             #------------------------------------------------------------------------------#
-            model$lai      [s,w,] = lai.prof
-            model$wai      [s,w,] = wai.prof
-            model$tai      [s,w,] = tai.prof
+            simnow$lai[w,] = lai.prof
+            simnow$wai[w,] = wai.prof
+            simnow$tai[w,] = tai.prof
             #------------------------------------------------------------------------------#
 
 
@@ -832,9 +841,9 @@ if ( (! file.exists(summary.fullname)) || plot.site){
             #     Loop over radiation bands.                                               #
             #------------------------------------------------------------------------------#
             for (b in sequence(nband)){
-               bnd  = band$key [b]
-               ed2  = band$ed2 [b]
-
+               bnd   = band$key [b]
+               ed2   = band$ed2 [b]
+               bdesc = band$desc[b]
 
 
                #----- Get the components. -------------------------------------------------#
@@ -859,6 +868,8 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                #---------------------------------------------------------------------------#
                for (h in sequence(ndcycle)){
 
+                  cat("       - ",bdesc,": ",sprintf("%2.2i",h)," UTC","\n",sep="")
+                  
                   #------------------------------------------------------------------------#
                   #     Add top boundary condition to each cohort.                         #
                   #------------------------------------------------------------------------#
@@ -868,22 +879,27 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                      down.diff = down.diff.top[,h]
                      up.tot    = up.top       [,h]
                      abs.leaf  = zero
+                     
                      #---------------------------------------------------------------------#
                   }else{
                      #----- Append the patch-level top boundary condition. ----------------#
-                     down.beam = append.patch( ipaco = ipaco
+                     down.beam = append.patch( ipa   = ipa
+                                             , ipaco = ipaco
                                              , xpa   = down.beam.top[,h]
                                              , xco   = down.beam.coh[,h]
                                              )#end append.patch
-                     down.diff = append.patch( ipaco = ipaco
+                     down.diff = append.patch( ipa   = ipa
+                                             , ipaco = ipaco
                                              , xpa   = down.diff.top[,h]
                                              , xco   = down.diff.coh[,h]
                                              )#end append.patch
-                     up.tot    = append.patch( ipaco = ipaco
+                     up.tot    = append.patch( ipa   = ipa
+                                             , ipaco = ipaco
                                              , xpa   = up.tot.top   [,h]
                                              , xco   = up.tot.coh   [,h]
                                              )#end append.patch
-                     abs.leaf  = append.patch( ipaco = ipaco
+                     abs.leaf  = append.patch( ipa   = ipa
+                                             , ipaco = ipaco
                                              , xpa   = zero
                                              , xco   = abs.leaf.coh [,h]
                                              )#end append.patch
@@ -905,22 +921,220 @@ if ( (! file.exists(summary.fullname)) || plot.site){
                   down.tot  = down.beam + down.diff
                   abs.lyr   = layer.absorption(ipaco=ppaco,down=down.tot,up=up.tot)
                   abs.wood  = abs.lyr - abs.leaf
-                  abs.tot   = unlist(tapply(X=abs.lyr ,INDEX=ppaco,FUN=cumsum))
-                  abs.leaf  = unlist(tapply(X=abs.leaf,INDEX=ppaco,FUN=cumsum))
-                  abs.wood  = unlist(tapply(X=abs.wood,INDEX=ppaco,FUN=cumsum))
+                  cum.lyr   = unlist(tapply(X=abs.lyr ,INDEX=ppaco,FUN=cumsum))
+                  cum.leaf  = unlist(tapply(X=abs.leaf,INDEX=ppaco,FUN=cumsum))
+                  cum.wood  = unlist(tapply(X=abs.wood,INDEX=ppaco,FUN=cumsum))
                   #------------------------------------------------------------------------#
 
 
 
                   #----- Update profile. --------------------------------------------------#
-                  model[[bnd]]$down.beam [s,w,h,] = down.beam
-                  model[[bnd]]$down.diff [s,w,h,] = down.diff
-                  model[[bnd]]$down.tot  [s,w,h,] = down.tot
-                  model[[bnd]]$up.tot    [s,w,h,] = up.tot
-                  model[[bnd]]$abs.lyr   [s,w,h,] = abs.lyr
-                  model[[bnd]]$abs.tot   [s,w,h,] = abs.tot
-                  model[[bnd]]$abs.leaf  [s,w,h,] = abs.leaf
-                  model[[bnd]]$abs.wood  [s,w,h,] = abs.wood
+                  simnow[[bnd]]$down.beam [w,h,] = down.beam
+                  simnow[[bnd]]$down.diff [w,h,] = down.diff
+                  simnow[[bnd]]$down.tot  [w,h,] = down.tot
+                  simnow[[bnd]]$up.tot    [w,h,] = up.tot
+                  simnow[[bnd]]$abs.lyr   [w,h,] = abs.lyr
+                  simnow[[bnd]]$abs.tot   [w,h,] = cum.lyr
+                  simnow[[bnd]]$abs.leaf  [w,h,] = cum.leaf
+                  simnow[[bnd]]$abs.wood  [w,h,] = cum.wood
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #    Eliminate duplicates within each patch.  We keep only the last      #
+                  # light level for each group of duplicates, the sum of absorption and    #
+                  # LAI, TRUE if any of the use.lyr is TRUE, and the commonest height and  #
+                  # ppaco.                                                                 #
+                  #------------------------------------------------------------------------#
+                  #------ Split data. -----------------------------------------------------#
+                  unq.index     = 10000*ppaco - hgt.prof
+                  unq.ppaco     = tapply( X     = ppaco
+                                        , INDEX = unq.index
+                                        , FUN   = commonest
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.hgt.prof  = tapply( X     = hgt.prof
+                                        , INDEX = unq.index
+                                        , FUN   = commonest
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.down.beam = tapply( X     = down.beam
+                                        , INDEX = unq.index
+                                        , FUN   = get.last
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.down.diff = tapply( X     = down.diff
+                                        , INDEX = unq.index
+                                        , FUN   = get.last
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.up.tot    = tapply( X     = up.tot
+                                        , INDEX = unq.index
+                                        , FUN   = get.last
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.use.lyr   = tapply( X     = use.lyr
+                                        , INDEX = unq.index
+                                        , FUN   = any
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.abs.leaf  = tapply( X     = abs.leaf
+                                        , INDEX = unq.index
+                                        , FUN   = sum
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  unq.lai.prof  = tapply( X     = lai.prof
+                                        , INDEX = unq.index
+                                        , FUN   = sum
+                                        , na.rm = TRUE
+                                        )#end tapply
+                  #------ Re-combine data. ------------------------------------------------#
+                  names(unq.ppaco    ) = NULL
+                  names(unq.hgt.prof ) = NULL
+                  names(unq.down.beam) = NULL
+                  names(unq.down.diff) = NULL
+                  names(unq.up.tot   ) = NULL
+                  names(unq.use.lyr  ) = NULL
+                  names(unq.abs.leaf ) = NULL
+                  names(unq.lai.prof ) = NULL
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Initialise matrix profiles. --------------------------------------#
+                  dart.down.beam = matrix(data=     0,nrow=nzdart,ncol=npatches)
+                  dart.down.diff = matrix(data=     0,nrow=nzdart,ncol=npatches)
+                  dart.up.tot    = matrix(data=     0,nrow=nzdart,ncol=npatches)
+                  dart.use.lyr   = matrix(data= FALSE,nrow=nzdart,ncol=npatches)
+                  dart.abs.leaf  = matrix(data=     0,nrow=nzdart,ncol=npatches)
+                  dart.lai       = matrix(data=     0,nrow=nzdart,ncol=npatches)
+                  dart.area      = matrix(data=areapa,nrow=nzdart,ncol=npatches,byrow=TRUE)
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Create height/patch index. ---------------------------------------#
+                  idx                  = cbind(match(unq.hgt.prof,zdart),unq.ppaco)
+                  dart.down.beam [idx] = unq.down.beam
+                  dart.down.diff [idx] = unq.down.diff
+                  dart.up.tot    [idx] = unq.up.tot
+                  dart.use.lyr   [idx] = unq.use.lyr
+                  dart.abs.leaf  [idx] = unq.abs.leaf
+                  dart.lai       [idx] = unq.lai.prof
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Convert matrices to data frame (so mapply works). ----------------#
+                  dart.down.beam = as.data.frame(dart.down.beam)
+                  dart.down.diff = as.data.frame(dart.down.diff)
+                  dart.up.tot    = as.data.frame(dart.up.tot   )
+                  dart.use.lyr   = as.data.frame(dart.use.lyr  )
+                  dart.abs.leaf  = as.data.frame(dart.abs.leaf )
+                  dart.lai       = as.data.frame(dart.lai      )
+                  dart.area      = as.data.frame(dart.area     )
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #----- Find effective light absorption. ---------------------------------#
+                  if (bnd %in% "par"){
+                     dart.eff.leaf  = ( 0 * dart.abs.leaf
+                                      + pmin(dart.crit.par*dart.lai,dart.abs.leaf)
+                                      )#end dart.eff.lyr
+                  }else{
+                     dart.eff.leaf  = dart.abs.leaf
+                  }#end if (bnd %in% "par")
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #----- Convert matrices to data frame (so mapply works). ----------------#
+                  dart.down.beam = mapply( FUN      = fill.unresolved
+                                         , x        = dart.down.beam
+                                         , use      = dart.use.lyr
+                                         , MoreArgs = list(ipaco=rep(1,nzdart))
+                                         )#end mapply
+                  dart.down.diff = mapply( FUN      = fill.unresolved
+                                         , x        = dart.down.diff
+                                         , use      = dart.use.lyr
+                                         , MoreArgs = list(ipaco=rep(1,nzdart))
+                                         )#end mapply
+                  dart.up.tot    = mapply( FUN      = fill.unresolved
+                                         , x        = dart.up.tot
+                                         , use      = dart.use.lyr
+                                         , MoreArgs = list(ipaco=rep(1,nzdart))
+                                         )#end mapply
+                  dart.down.beam = as.data.frame(dart.down.beam)
+                  dart.down.diff = as.data.frame(dart.down.diff)
+                  dart.up.tot    = as.data.frame(dart.up.tot   )
+                  #------------------------------------------------------------------------#
+
+
+
+
+                  #----- Find the derived quantities. -------------------------------------#
+                  dart.down.tot  = dart.down.beam + dart.down.diff
+                  dart.abs.lyr   = mapply( FUN      = layer.absorption
+                                         , down     = dart.down.tot
+                                         , up       = dart.up.tot
+                                         , MoreArgs = list(ipaco=rep(1,nzdart))
+                                         )#end mapply
+                  dart.abs.lyr   = as.data.frame(dart.abs.lyr)
+                  dart.abs.wood  = dart.abs.lyr - dart.abs.leaf
+                  #------------------------------------------------------------------------#
+
+
+                  #------------------------------------------------------------------------#
+                  #     Find the average light level and absorption.                       #
+                  #------------------------------------------------------------------------#
+                  dart.lai       = rowSums(dart.lai      *dart.area)
+                  dart.down.beam = rowSums(dart.down.beam*dart.area)
+                  dart.down.diff = rowSums(dart.down.diff*dart.area)
+                  dart.down.tot  = rowSums(dart.down.tot *dart.area)
+                  dart.up.tot    = rowSums(dart.up.tot   *dart.area)
+                  dart.abs.lyr   = rowSums(dart.abs.lyr  *dart.area)
+                  dart.abs.wood  = rowSums(dart.abs.wood *dart.area)
+                  dart.abs.leaf  = rowSums(dart.abs.leaf *dart.area)
+                  dart.eff.leaf  = rowSums(dart.eff.leaf *dart.area)
+                  dart.cumlai    = cumsum(dart.lai     )
+                  dart.cum.lyr   = cumsum(dart.abs.lyr )
+                  dart.cum.wood  = cumsum(dart.abs.wood)
+                  dart.cum.leaf  = cumsum(dart.abs.leaf)
+                  dart.cum.eff   = cumsum(dart.eff.leaf)
+                  #------------------------------------------------------------------------#
+
+
+                  #----- Update profile. --------------------------------------------------#
+                  model$dart[[bnd]]$down.beam [s,w,h,] = dart.down.beam
+                  model$dart[[bnd]]$down.diff [s,w,h,] = dart.down.diff
+                  model$dart[[bnd]]$down.tot  [s,w,h,] = dart.down.tot
+                  model$dart[[bnd]]$up.tot    [s,w,h,] = dart.up.tot
+                  model$dart[[bnd]]$abs.lyr   [s,w,h,] = dart.abs.lyr
+                  model$dart[[bnd]]$abs.wood  [s,w,h,] = dart.abs.wood
+                  model$dart[[bnd]]$abs.leaf  [s,w,h,] = dart.abs.leaf
+                  model$dart[[bnd]]$eff.leaf  [s,w,h,] = dart.eff.leaf
+                  model$dart[[bnd]]$cum.lyr   [s,w,h,] = dart.cum.lyr
+                  model$dart[[bnd]]$cum.wood  [s,w,h,] = dart.cum.wood
+                  model$dart[[bnd]]$cum.leaf  [s,w,h,] = dart.cum.leaf
+                  model$dart[[bnd]]$cum.eff   [s,w,h,] = dart.cum.eff
+                  if (h == 1 && b == 1){
+                     model$dart$lai   [s,w,] = dart.lai
+                     model$dart$cumlai[s,w,] = dart.cumlai
+                  }#end if
+                  #------------------------------------------------------------------------#
+
+
+
+                  #----- Free memory. -----------------------------------------------------#
+                  rm(unq.index,unq.ppaco,unq.hgt.prof,unq.down.beam,uq.down.diff)
+                  rm(unq.up.tot,unq.use.lyr,unq.abs.leaf,unq.lai.prof)
+                  rm(dart.lai,dart.down.beam,dart.down.diff,dart.down.tot,dart.up.tot)
+                  rm(dart.abs.lyr,dart.abs.wood,dart.abs.leaf,dart.eff.leaf)
+                  rm(dart.cumlai,dart.cum.lyr,dart.cum.wood,dart.cum.leaf,dart.cum.eff)
+                  rm(dart.area,idx,down.tot,abs.lyr,abs.wood,cum.lyr,cum.leaf,cum.wood)
+                  rm(down.beam,down.diff,up.tot,abs.leaf)
                   #------------------------------------------------------------------------#
                }#end for (h in sequence(ndcycle))
                #---------------------------------------------------------------------------#
@@ -928,49 +1142,33 @@ if ( (! file.exists(summary.fullname)) || plot.site){
 
 
                #----- Update ToC radiation. -----------------------------------------------#
-               model[[bnd]]$atm.beam  [s,w,] =  atm.beam
-               model[[bnd]]$atm.diff  [s,w,] =  atm.diff
-               model[[bnd]]$atm.tot   [s,w,] =  atm.tot
+               simnow[[bnd]]$atm.beam    [  w,] = atm.beam
+               simnow[[bnd]]$atm.diff    [  w,] = atm.diff
+               simnow[[bnd]]$atm.tot     [  w,] = atm.tot
+               model$dart[[bnd]]$atm.beam[s,w,] = atm.beam
+               model$dart[[bnd]]$atm.diff[s,w,] = atm.diff
+               model$dart[[bnd]]$atm.tot [s,w,] = atm.tot
+               rm(atm.beam,atm.diff,atm.tot,down.beam.top,down.diff.top,up.tot.top)
+               rm(down.beam.coh,down.diff.coh,up.tot.coh,abs.leaf.coh)
                #---------------------------------------------------------------------------#
             }#end for (b in sequence(nband))
             #------------------------------------------------------------------------------#
-
-         }#end for (s in sequence(nsimul))
+         }#end for (w in sequence(nwhen))
          #---------------------------------------------------------------------------------#
-      }#end for (w in sequence(nwhen))
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #------------------------------------------------------------------------------------#
-      cat("     > Prepare to save...","\n",sep="")
-      if (tresume <= ntimes){
-         #---------------------------------------------------------------------------------#
-         #     Now we find which patch has the most, the least and the median LAI.         #
-         #---------------------------------------------------------------------------------#
-         model$lai.pa   = qapply(X=model$lai,INDEX =model$ppaco,DIM=3,FUN=sum ,na.rm=TRUE)
-         lai.bar        = apply (X=model$lai.pa,MARGIN=3,FUN=mean,na.rm=TRUE)
-         model$lai.plot = c( max = which.max(lai.bar)
-                           , mid = which.closest(x=median(lai.bar),A=lai.bar)
-                           , min = which.min(lai.bar)
-                           )#end c
-         #---------------------------------------------------------------------------------#
-
-
 
          #----- Reload data and copy to the general list. ---------------------------------#
          rdata.iata     = file.path(rdata.path,paste(iata,rdata.suffix,sep="_"))
          rdata.finished = file.path(rdata.path
                                    ,paste("loaded",iata,finished.suffix,sep="_"))
          cat(" + Saving data to ",basename(rdata.iata),"...","\n",sep="")
-         model$tresume = ntimes+1
-         dummy         = save(model,file=rdata.iata)
-         dummy         = write(x=paste(Sys.time()),file=rdata.finished)
-         eft[[iata]]   = model
-         rm(model)
+         model$sresume  = s+1
+         eft[[iata]]    = model
+         dummy          = save(model,file=rdata.iata)
+         dummy          = write(x=paste(Sys.time()),file=rdata.finished)
+         rm(mymont,simnow,lai.prof,wai.prof,tai.prof,ed.hgt,dart.hgt,hgt.prof,use.lyr)
          #---------------------------------------------------------------------------------#
-      }#end if (tresume <= nwhen)
+      }#end for (s in sequence(nsimul))
+      #------------------------------------------------------------------------------------#
    }#end for (p in sequence(nsites))
    #=======================================================================================#
    #=======================================================================================#
@@ -983,116 +1181,11 @@ if ( (! file.exists(summary.fullname)) || plot.site){
 
 
 
-
-
-#==========================================================================================#
-#==========================================================================================#
-#     Patch-level summary for all sites.                                                   #
-#------------------------------------------------------------------------------------------#
-if (! file.exists(summary.fullname) && plot.patch){
-   summ = list()
-
-
-   for (p in sequence(nsites)){
-      #----- Retrieve site information. ---------------------------------------------------#
-      iata     = sites$iata[p]
-      model    = eft[[iata]]
-      yeara    = model$yeara
-      yearz    = model$yearz
-      lon      = model$lon
-      lat      = model$lat
-      desc     = model$longname
-      cat(" - Generating patch-level summary for ",desc,"...","\n")
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Load LAI/WAI/TAI profiles.                                                     #
-      #------------------------------------------------------------------------------------#
-      lai     = qapply(X=model$lai,INDEX=model$month,DIM=2,FUN=mean)
-      wai     = qapply(X=model$wai,INDEX=model$month,DIM=2,FUN=mean)
-      tai     = qapply(X=model$tai,INDEX=model$month,DIM=2,FUN=mean)
-      tot.lai = qapply(X=model$lai,INDEX=model$ppaco,DIM=3,FUN=sum )
-      tot.wai = qapply(X=model$wai,INDEX=model$ppaco,DIM=3,FUN=sum )
-      tot.tai = qapply(X=model$tai,INDEX=model$ppaco,DIM=3,FUN=sum )
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Initialise arrays that will hold the mean diel. ------------------------------#
-      npatches = model$npatches
-      empty    = array( data     = NA
-                      , dim      = c(nband,nsimul,12,ndcycle,npatches)
-                      , dimnames = list( band$key
-                                       , simul$suff
-                                       , month.abb
-                                       , model$w.hour
-                                       , sequence(npatches)
-                                       )#end list
-                      )#end array
-      flux     = list( down.beam = empty
-                     , down.diff = empty
-                     , down.tot  = empty
-                     , up.tot    = empty
-                     )#end list
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #----- Band loop. -------------------------------------------------------------------#
-      for (b in sequence(nband)){
-         bnd      = band$key [b]
-         bnd.desc = band$desc[b]
-         prof     = model[[bnd]]
-
-
-         #----- Find the annual averages for each cohort. ---------------------------------#
-         down.beam = qapply(X=prof$down.beam,INDEX=model$month,DIM=2,FUN=mean)
-         down.diff = qapply(X=prof$down.diff,INDEX=model$month,DIM=2,FUN=mean)
-         down.tot  = qapply(X=prof$down.tot ,INDEX=model$month,DIM=2,FUN=mean)
-         up.tot    = qapply(X=prof$up.tot   ,INDEX=model$month,DIM=2,FUN=mean)
-         #---------------------------------------------------------------------------------#
-
-         #----- Get only the bottom of the cohort. ----------------------------------------#
-         flux$down.beam[b,,,] = qapply(X=down.beam,INDEX=model$ppaco,DIM=3,FUN=rel.last)
-         flux$down.diff[b,,,] = qapply(X=down.diff,INDEX=model$ppaco,DIM=3,FUN=rel.last)
-         flux$down.tot [b,,,] = qapply(X=down.tot ,INDEX=model$ppaco,DIM=3,FUN=rel.last)
-         flux$up.tot   [b,,,] = qapply(X=up.tot   ,INDEX=model$ppaco,DIM=3,FUN=rel.last)
-         #---------------------------------------------------------------------------------#
-      }#end for (b in sequence(nband))
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Save the summary for this site. ----------------------------------------------#
-      summ[[iata]] = list( lai = tot.lai, wai = tot.wai, tai = tot.tai, flux = flux )
-      #------------------------------------------------------------------------------------#
-
-   }#end for (p in sequence(nsites))
-   #---------------------------------------------------------------------------------------#
-
-   cat(" - Saving patch-level summary...","\n")
-   dummy = save(summ,file=summary.fullname)
-
-}else if (plot.patch){
-   cat(" - Retrieving patch-level summary...","\n")
-   dummy = load(summary.fullname)
-}#end if (! file.exists(summary.fullname))
-#==========================================================================================#
-#==========================================================================================#
-
-
-
-
-
-
 #==========================================================================================#
 #==========================================================================================#
 #     Site-specific plots.                                                                 #
 #------------------------------------------------------------------------------------------#
+cat(" + Entering plot.site...","\n")
 if (plot.site){
    #---------------------------------------------------------------------------------------#
    #    Site loop.                                                                         #
@@ -1106,12 +1199,13 @@ if (plot.site){
       lon      = model$lon
       lat      = model$lat
       desc     = model$longname
+      dart     = model$dart
       cat(" - Generating profiles for ",desc,"...","\n")
       #------------------------------------------------------------------------------------#
 
 
       #----- Make output path for this place. ---------------------------------------------#
-      sitepath = file.path(metroot,model$short)
+      sitepath = file.path(outroot,model$short)
       if (! file.exists(sitepath)) dir.create(sitepath)
       #------------------------------------------------------------------------------------#
 
@@ -1120,33 +1214,10 @@ if (plot.site){
       #----- Choose the patches to plot based on the LAI. ---------------------------------#
       cat("   > LAI by month...","\n")
       if (plot.month){
-         lai.mon  = qapply(X = model$lai.pa, INDEX  = model$month, DIM = 2, FUN = mean)
-         lai.mon  = apply (X = lai.mon     , MARGIN = c(2,3), FUN = mean)
          loop.mon = sequence(12)
       }else{
          loop.mon = numeric(0)
       }#end if (plot.month)
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Select patches to be plotted. ------------------------------------------------#
-      lai.bar      = apply (X=model$lai.pa,MARGIN=3,FUN=mean,na.rm=TRUE)
-      use.lai.plot = c( ref = which.closest( x    = sites$lai[p]
-                                           , A    = lai.bar
-                                           , mask = lai.bar-sites$lai[p]>0
-                                           )#end which.closest
-                      , max = which.max(lai.bar)
-                      , mid = which.closest(x=median(lai.bar),A=lai.bar)
-                      , min = which.min(lai.bar)
-                      )#end c
-      use.lai.key  = c("lairef","laimax","laimed","laimin")
-      use.lai.desc = c("Default","Greenest","Medium","Brownest")
-      if (plot.refonly){
-         use.lai.plot = use.lai.plot[1]
-         use.lai.key  = use.lai.key [1]
-         use.lai.desc = use.lai.desc[1]
-      }#end if (plot.refonly)
       #------------------------------------------------------------------------------------#
 
 
@@ -1165,365 +1236,170 @@ if (plot.site){
 
 
 
-      #------------------------------------------------------------------------------------#
-      #     Loop over the LAI profiles we will plot.                                       #
-      #------------------------------------------------------------------------------------#
-      for (l in seq_along(use.lai.plot)){
-         pnow      = use.lai.plot[l]
-         lai.key   = use.lai.key [l]
-         lai.desc  = use.lai.desc[l]
-         pp        = model$ppaco == pnow
-         ptb       = c(which.min(which(pp)),which.max(which(pp)))
-
-         cat("   * ",lai.desc," patch","\n")
+      #----- Loop over months and hours. --------------------------------------------------#
+      for (m in loop.mon){
+         mm   = sprintf("%2.2i",m)
+         ms   = model$month %in% m
+         cat("     > ",month.name[m],"\n")
 
 
-         #----- Loop over months and hours. -----------------------------------------------#
-         for (m in loop.mon){
-            mm   = sprintf("%2.2i",m)
-            ms   = model$month %in% m
-            cat("     > ",month.name[m],"\n")
-            cat("       ~ Average profile by hour of the day...","\n")
+         #---------------------------------------------------------------------------------#
+         #     Load LAI/WAI/TAI profiles.                                                  #
+         #---------------------------------------------------------------------------------#
+         lai     = dart$lai
+         cum.lai = dart$cumlai
+         #---------------------------------------------------------------------------------#
 
 
-            for (h in prof.hours){
-               hh      = sprintf("%2.2i",h)
-               hs      = model$hour %in% h
-               zen.bar = mean(model$zen[ms,hs])
+         #----- Fix the limits for the Y axis. --------------------------------------------#
+         lai.lim = range(-cum.lai,finite=TRUE)
+         lai.at   = pretty(lai.lim)
+         lai.lab  = -lai.at
+         #---------------------------------------------------------------------------------#
 
 
-
-               #------ Create path for this hour. -----------------------------------------#
-               profhrpath  = file.path(profilepath,paste(hh,"utc",sep=""))
-               if (! file.exists(profhrpath)) dir.create(profhrpath)
-               #---------------------------------------------------------------------------#
+         zen.mon = colMeans(model$zen[ms,,drop=FALSE])
 
 
+         #---------------------------------------------------------------------------------#
+         #     Generate table with indices and hours.                                      #
+         #---------------------------------------------------------------------------------#
+         for (b in sequence(nband)){
+            bnd      = band$key [b]
+            bnd.desc = band$desc[b]
+            cat("       * ",bnd.desc,"\n")
 
-               #---------------------------------------------------------------------------#
-               #     Load LAI/WAI/TAI profiles.                                            #
-               #---------------------------------------------------------------------------#
-               lai     = apply(X=model$lai[,ms,pp,drop=FALSE],MARGIN=c(1,3),FUN=mean)
-               wai     = apply(X=model$wai[,ms,pp,drop=FALSE],MARGIN=c(1,3),FUN=mean)
-               tai     = apply(X=model$tai[,ms,pp,drop=FALSE],MARGIN=c(1,3),FUN=mean)
-               cum.lai = t(apply(X=lai,MARGIN=1,FUN=cumsum))
-               cum.wai = t(apply(X=wai,MARGIN=1,FUN=cumsum))
-               cum.tai = t(apply(X=tai,MARGIN=1,FUN=cumsum))
-               #---------------------------------------------------------------------------#
-
-
-               #----- Fix the limits for the Y axis. --------------------------------------#
-               lai.lim = range(-cum.lai)
-               lai.at   = pretty(lai.lim)
-               lai.lab  = -lai.at
-               #---------------------------------------------------------------------------#
-
-
-
-               #----- Band loop. ----------------------------------------------------------#
-               for (b in sequence(nband)){
-                  bnd      = band$key [b]
-                  bnd.desc = band$desc[b]
-
-                  mult     = if (bnd %in% c("par")){Watts.2.Ein * 1.e6}else{1.0}
-                  prof     = model[[bnd]]
-
-                  #----- Find the averages for the hour and month. ------------------------#
-                  down.beam = apply( X      = prof$down.beam[,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  down.diff = apply( X      = prof$down.diff[,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  down.tot  = apply( X      = prof$down.tot [,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  up.tot    = apply( X      = prof$up.tot   [,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  abs.lyr   = apply( X      = prof$abs.lyr  [,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  abs.tot   = apply( X      = prof$abs.tot  [,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  abs.leaf  = apply( X      = prof$abs.leaf [,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  abs.wood  = apply( X      = prof$abs.wood [,ms,hs,pp,drop=FALSE] * mult
-                                   , MARGIN = c(1,4)
-                                   , FUN    = mean
-                                   )#end apply
-                  #------------------------------------------------------------------------#
-
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Shift the results a bit so we can see when two curves are on top   #
-                  # of each other.                                                         #
-                  #------------------------------------------------------------------------#
-                  if ( ! bnd %in% "tir"){
-                     down.beam = apply(X = down.beam,MARGIN=2,FUN="*",simul$mult.beam.down)
-                     down.diff = apply(X = down.diff,MARGIN=2,FUN="*",simul$mult.diff.down)
-                     up.tot    = apply(X = up.tot   ,MARGIN=2,FUN="*",simul$mult.up       )
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-
-
-                  #------------------------------------------------------------------------#
-                  #     Skip plot if it is solar radiation and it is nighttime.            #
-                  #------------------------------------------------------------------------#
-                  if (max(down.tot) > 1.){
-
-
-                     #----- Retrieve the data. --------------------------------------------#
-                     if (! bnd %in% "tir"){
-                        down.lim = pretty.xylim(u=c(down.beam,down.diff))
-                     }else{
-                        down.lim = pretty.xylim(u=down.diff)
-                     }#end if
-                     up.lim   = pretty.xylim(u=up.tot )
-                     abs.lim  = pretty.xylim(u=c(0,abs.tot,abs.leaf))
-                     #---------------------------------------------------------------------#
-
-
-                     for (o in sequence(nout)){
-                        #----- Open file. -------------------------------------------------#
-                        fichier = file.path(profhrpath
-                                           ,paste0("profile-",iata,"-",bnd,"-",imetrad,"-"
-                                                  ,mm,"-",hh,"utc-",lai.key,".",outform[o]))
-                        if (bnd %in% "tir"){nsize=wsize}else{nsize=size}
-                        if       (outform[o] == "x11"){
-                          X11(width=nsize$width,height=nsize$height,pointsize=ptsz)
-                        }else if (outform[o] == "png"){
-                          png(filename=fichier,width=nsize$width*depth
-                             ,height=nsize$height*depth,pointsize=ptsz,res=depth)
-                        }else if (outform[o] == "eps"){
-                          postscript(file=fichier,width=nsize$width,height=nsize$height
-                                    ,pointsize=ptsz,paper=nsize$paper)
-                        }else if (outform[o] == "pdf"){
-                          pdf(file=fichier,onefile=FALSE,width=nsize$width
-                             ,height=nsize$height,pointsize=ptsz,paper=nsize$paper)
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-                        #----- Set up the plotting window. --------------------------------#
-                        par(par.user)
-                        par(oma=c(0,1,4,0))
-                        if (bnd %in% "tir"){
-                           layout(mat=rbind(c(2,3,4),c(1,1,1)),heights=c(6,1))
-                        }else{
-                           layout(mat=rbind(c(2,4),c(3,5),c(1,1)),heights=c(3,3,1))
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-
-
-                        #----- First plot: the legend. ------------------------------------#
-                        par(mar=c(0.1,4.1,0.1,2.1))
-                        plot.new()
-                        plot.window(xlim=c(0,1),ylim=c(0,1))
-                        legend( x      = "bottom"
-                              , inset  = 0.0
-                              , legend = simul$desc
-                              , col    = simul$colour
-                              , lty    = "solid"
-                              , lwd    = 2.5
-                              , cex    = 0.9 * cex.ptsz
-                              , ncol   = 2
-                              , xpd    = TRUE
-                              )#end legend
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #      Direct radiation is not plotted for TIR.                    #
-                        #------------------------------------------------------------------#
-                        if (! bnd %in% "tir"){
-                           #------ Second plot: Downward direct. --------------------------#
-                           par(mar=c(3.1,3.1,3.1,1.1))
-                           plot.new()
-                           plot.window(xlim=down.lim,ylim=lai.lim)
-                           axis(side=1,cex.axis=0.8,padj=-0.8)
-                           axis(side=2,at=lai.at,labels=lai.lab,las=1)
-                           grid(col=grid.colour,lwd=1.0,lty="solid")
-                           box()
-                           title(main="Downward - Direct",font.main=1,line=1)
-                           for (s in sequence(nsimul)){
-                              lines(x=down.beam[s,],y=-cum.lai[s,]
-                                   ,col=simul$colour[s],lwd=2.5,lty="solid")
-                           }#end for
-                           #---------------------------------------------------------------#
-                        }#end if
-                        #------------------------------------------------------------------#
-
-
-
-
-                        #------ Third plot: Downward diffuse. -----------------------------#
-                        par(mar=c(4.1,3.1,2.1,1.1))
-                        plot.new()
-                        plot.window(xlim=down.lim,ylim=lai.lim)
-                        axis(side=1,cex.axis=0.8,padj=-0.8)
-                        axis(side=2,at=lai.at,labels=lai.lab,las=1)
-                        grid(col=grid.colour,lwd=1.0,lty="solid")
-                        box()
-                        title(main="Downward - Diffuse",font.main=1,line=1)
-                        for (s in sequence(nsimul)){
-                           lines(x=down.diff[s,],y=-cum.lai[s,]
-                                ,col=simul$colour[s],lwd=2.5,lty="solid")
-                        }#end for
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #     Fourth plot: Upward radiation.  Margins depend on the band.  #
-                        #------------------------------------------------------------------#
-                        if (bnd %in% "tir"){
-                           par(mar=c(4.1,3.1,2.1,1.1))
-                        }else{
-                           par(mar=c(3.1,2.1,3.1,2.1))
-                        }#end if
-                        plot.new()
-                        plot.window(xlim=up.lim,ylim=lai.lim)
-                        axis(side=1,cex.axis=0.8,padj=-0.8)
-                        axis(side=2,at=lai.at,labels=lai.lab,las=1)
-                        grid(col=grid.colour,lwd=1.0,lty="solid")
-                        box()
-                        title(main="Upward",font.main=1,line=1)
-                        for (s in sequence(nsimul)){
-                           lines(x=up.tot[s,],y=-cum.lai[s,]
-                                ,col=simul$colour[s],lwd=2.5,lty="solid")
-                        }#end for
-                        #------------------------------------------------------------------#
-
-
-
-                        #------ Fifth plot: Absorbed radiation. ---------------------------#
-                        par(mar=c(4.1,2.1,2.1,2.1))
-                        plot.new()
-                        plot.window(xlim=abs.lim,ylim=lai.lim)
-                        axis(side=1,cex.axis=0.8,padj=-0.8)
-                        axis(side=2,at=lai.at,labels=lai.lab,las=1)
-                        grid(col=grid.colour,lwd=1.0,lty="solid")
-                        box()
-                        title(main="Cumulative absorption (dashed = leaves)"
-                             ,font.main=1,line=1)
-                        for (s in sequence(nsimul)){
-                           lines(x=abs.leaf[s,],y=-cum.lai[s,]
-                                ,col=simul$colour[s],lwd=2.0,lty="dotdash")
-                           lines(x=abs.tot [s,],y=-cum.lai[s,]
-                                ,col=simul$colour[s],lwd=2.5,lty="solid")
-                        }#end for
-                        #------------------------------------------------------------------#
-
-
-
-                        #------------------------------------------------------------------#
-                        #     Plot the general annotation.                                 #
-                        #------------------------------------------------------------------#
-                        lex     = desc.unit( desc = paste(band$desc[b],"Irradiance")
-                                           , unit = untab[[band$unit[b]]]
-                                           )#end desc.unit
-                        ley     = desc.unit(desc="Cumulative LAI",unit=untab$m2lom2)
-                        whenlab = paste(month.name[m],"-",hh,"UTC")
-                        letitre = paste(desc," - Canopy profiles","  -  ",whenlab,sep="")
-                        lelai   = desc.unit( desc = paste("Average LAI"
-                                                         ,sprintf("%6.2f",lai.mon[m,pnow])
-                                                         )#end paste
-                                           , unit = untab$m2lom2
-                                           , bracket = FALSE
-                                           )#end desc.unit
-                        lezen   = desc.unit( desc    = paste("Sun zenith angle"
-                                                            ,sprintf("%5.2f",zen.bar)
-                                                            )#end paste
-                                           , unit    = untab$deg
-                                           , bracket = FALSE
-                                           )#end desc.unit
-                        lesub   = parse(text = paste(lelai,lezen,sep=" - "))
-                        gtitle( main      = letitre
-                              , sub       = lesub
-                              , xlab      = lex
-                              , ylab      = ley
-                              , line.xlab = 3.2
-                              , line.ylab = 2.6
-                              , line.sub  = 4.2
-                              , off.sub   = 2/21
-                              , cex.main  = 1.0*cex.ptsz
-                              , cex.xlab  = 0.9*cex.ptsz
-                              , cex.ylab  = 0.9*cex.ptsz
-                              , cex.sub   = 0.7*cex.ptsz
-                              )#end gtitle
-                        #------------------------------------------------------------------#
-
-
-
-                        #----- Close the device. ------------------------------------------#
-                        if (outform[o] == "x11"){
-                           locator(n=1)
-                           dev.off()
-                        }else{
-                           dev.off()
-                        }#end if
-                        clean.tmp()
-                        #------------------------------------------------------------------#
-                     }#end for (o in sequence(nout))
-                     #---------------------------------------------------------------------#
-                  }#end if (max(tot.down) > 1.)
-                  #------------------------------------------------------------------------#
-               }#end for (b in sequence(nband))
-               #---------------------------------------------------------------------------#
-            }#end for (h in prof.hours)
-            #------------------------------------------------------------------------------#
-
-
+            mult     = if (bnd %in% c("par")){Watts.2.Ein * 1.e6}else{1.0}
+            prof     = dart[[bnd]]
 
 
 
             #------------------------------------------------------------------------------#
-            #      Create diel plots for radiation profile at the bottom and top of the    #
-            # canopy.                                                                      #
+            #     Loop over each simulation.                                               #
             #------------------------------------------------------------------------------#
-            cat("       ~ Diel plots above and beneath canopy.","\n")
+            for (ss in sequence(nsimul)){
+               s.suff = simul$suff[ss]
+               s.desc = simul$desc[ss]
+               cat("         - ",s.desc,"\n")
 
-            mn = model$month == m
 
-            #----- Initialise arrays that will hold the mean diel. ------------------------#
-            empty     = array( data     = NA
-                             , dim      = c(nband,nsimul,nhours,2)
-                             , dimnames = list(band$key,simul$suff
-                                              ,my.hours,c("top","bottom"))
-                             )#end array
-            flux      = list( down.beam = empty
-                            , down.diff = empty
-                            , down.tot  = empty
-                            , up.tot    = empty
-                            )#end list
+               #----- Find the averages for the hour and month. ---------------------------#
+               down.beam = apply( X      = prof$down.beam[ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               down.diff = apply( X      = prof$down.diff[ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               down.tot  = apply( X      = prof$down.tot [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               up.tot    = apply( X      = prof$up.tot   [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               abs.lyr   = apply( X      = prof$abs.lyr  [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               abs.wood  = apply( X      = prof$abs.wood [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               abs.leaf  = apply( X      = prof$abs.leaf [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               eff.leaf  = apply( X      = prof$eff.leaf [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.lyr   = apply( X      = prof$cum.lyr  [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.wood  = apply( X      = prof$cum.wood [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.leaf  = apply( X      = prof$cum.leaf [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.eff   = apply( X      = prof$cum.eff  [ss,ms,,,drop=FALSE] * mult
+                                , MARGIN = c(1,3,4)
+                                , FUN    = mean
+                                )#end apply
+               down.beam = aperm(a=down.beam,perm=c(3,2,1))[,,1]
+               down.diff = aperm(a=down.diff,perm=c(3,2,1))[,,1]
+               down.tot  = aperm(a=down.tot ,perm=c(3,2,1))[,,1]
+               up.tot    = aperm(a=up.tot   ,perm=c(3,2,1))[,,1]
+               abs.lyr   = aperm(a=abs.lyr  ,perm=c(3,2,1))[,,1]
+               abs.wood  = aperm(a=abs.wood ,perm=c(3,2,1))[,,1]
+               abs.leaf  = aperm(a=abs.leaf ,perm=c(3,2,1))[,,1]
+               eff.leaf  = aperm(a=eff.leaf ,perm=c(3,2,1))[,,1]
+               cum.lyr   = aperm(a=cum.lyr  ,perm=c(3,2,1))[,,1]
+               cum.wood  = aperm(a=cum.wood ,perm=c(3,2,1))[,,1]
+               cum.leaf  = aperm(a=cum.leaf ,perm=c(3,2,1))[,,1]
+               cum.eff   = aperm(a=cum.eff  ,perm=c(3,2,1))[,,1]
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Create data frame that will be written to a csv file. ---------------#
+               out.df = data.frame( hour      = model$hour[col(abs.leaf)]
+                                  , zen.sun   = zen.mon   [col(abs.leaf)]
+                                  , height    = rep(model$zdart    ,times=nhours)
+                                  , lai.lyr   = rep(lai    [ss,ms,],times=nhours)
+                                  , cum.lai   = rep(cum.lai[ss,ms,],times=nhours)
+                                  , down.beam = c(down.beam)
+                                  , down.diff = c(down.diff)
+                                  , down.tot  = c(down.tot)
+                                  , up.tot    = c(up.tot)
+                                  , abs.lyr   = c(abs.lyr)
+                                  , abs.wood  = c(abs.wood)
+                                  , abs.leaf  = c(abs.leaf)
+                                  , eff.leaf  = c(eff.leaf)
+                                  , cum.lyr   = c(cum.lyr)
+                                  , cum.wood  = c(cum.wood)
+                                  , cum.leaf  = c(cum.leaf)
+                                  , cum.eff   = c(cum.eff )
+                                  )#end data.frame
+               #---------------------------------------------------------------------------#
+
+               #---------------------------------------------------------------------------#
+               #     Save data frame.                                                      #
+               #---------------------------------------------------------------------------#
+               basefile  = paste0(iata,"_",bnd,"_",mm,"-",tolower(month.abb[m])
+                                 ,"_",s.suff,".csv")
+               asciifile = file.path(ascroot,basefile)
+               dummy     = write.csv(x=format(out.df),file=asciifile,quote=FALSE
+                                    ,na="NaN",row.names=FALSE)
+               #---------------------------------------------------------------------------#
+            }#end for (ss in sequence(nsimul))
             #------------------------------------------------------------------------------#
 
+         }#end for (b in sequence(nband))
+         #---------------------------------------------------------------------------------#
 
 
-            #------------------------------------------------------------------------------#
-            #      Find the mean diurnal flag for each hour.  We will skip the nighttime   #
-            # for relative components, to avoid weird results.                             #
-            #------------------------------------------------------------------------------#
-            sel.day = apply(X=model$diel[mn,,drop=FALSE],MARGIN=2,FUN=commonest)
-            sel.day = sel.day %==% 2
+
+         #---------------------------------------------------------------------------------#
+         #     Generate profiles for each hour of the day.                                 #
+         #---------------------------------------------------------------------------------#
+         cat("       ~ Average profile by hour of the day...","\n")
+         for (h in prof.hours){
+            hh      = sprintf("%2.2i",h)
+            hs      = model$hour %in% h
+            zen.bar = mean(model$zen[ms,hs])
+
+
+
+            #------ Create path for this hour. --------------------------------------------#
+            profhrpath  = file.path(profilepath,paste(hh,"utc",sep=""))
+            if (! file.exists(profhrpath)) dir.create(profhrpath)
             #------------------------------------------------------------------------------#
 
 
@@ -1532,229 +1408,290 @@ if (plot.site){
             for (b in sequence(nband)){
                bnd      = band$key [b]
                bnd.desc = band$desc[b]
-               prof     = model[[bnd]]
 
+               mult     = if (bnd %in% c("par")){Watts.2.Ein * 1.e6}else{1.0}
+               prof     = dart[[bnd]]
 
                #----- Find the averages for the hour and month. ---------------------------#
-               flux$down.beam[b,,,] = apply( X      = prof$down.beam[,mn,,ptb,drop=FALSE]
-                                           , MARGIN = c(1,3,4)
-                                           , FUN    = mean
-                                           )#end apply
-               flux$down.diff[b,,,] = apply( X      = prof$down.diff[,mn,,ptb,drop=FALSE]
-                                           , MARGIN = c(1,3,4)
-                                           , FUN    = mean
-                                           )#end apply
-               flux$down.tot [b,,,] = apply( X      = prof$down.tot [,mn,,ptb,drop=FALSE]
-                                           , MARGIN = c(1,3,4)
-                                           , FUN    = mean
-                                           )#end apply
-               flux$up.tot   [b,,,] = apply( X      = prof$up.tot   [,mn,,ptb,drop=FALSE]
-                                           , MARGIN = c(1,3,4)
-                                           , FUN    = mean
-                                           )#end apply
+               down.beam = apply( X      = prof$down.beam[,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               down.diff = apply( X      = prof$down.diff[,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               down.tot  = apply( X      = prof$down.tot [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               up.tot    = apply( X      = prof$up.tot   [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               abs.lyr   = apply( X      = prof$abs.lyr  [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               abs.wood  = apply( X      = prof$abs.wood [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               abs.leaf  = apply( X      = prof$abs.leaf [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               eff.leaf  = apply( X      = prof$eff.leaf [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.lyr   = apply( X      = prof$cum.lyr  [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.wood  = apply( X      = prof$cum.wood [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.leaf  = apply( X      = prof$cum.leaf [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               cum.eff   = apply( X      = prof$cum.eff  [,ms,hs,,drop=FALSE] * mult
+                                , MARGIN = c(1,4)
+                                , FUN    = mean
+                                )#end apply
+               #---------------------------------------------------------------------------#
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Shift the results a bit so we can see when two curves are on top      #
+               # of each other.                                                            #
+               #---------------------------------------------------------------------------#
+               if ( ! bnd %in% "tir"){
+                  down.beam = apply(X = down.beam,MARGIN=2,FUN="*",simul$mult.beam.down)
+                  down.diff = apply(X = down.diff,MARGIN=2,FUN="*",simul$mult.diff.down)
+                  up.tot    = apply(X = up.tot   ,MARGIN=2,FUN="*",simul$mult.up       )
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+
+
+               #---------------------------------------------------------------------------#
+               #     Skip plot if it is solar radiation and it is nighttime.               #
+               #---------------------------------------------------------------------------#
+               if (max(down.tot,na.rm=TRUE) > 1.){
+
+
+                  #----- Retrieve the data. -----------------------------------------------#
+                  if (! bnd %in% "tir"){
+                     down.lim = pretty.xylim(u=c(down.beam,down.diff))
+                  }else{
+                     down.lim = pretty.xylim(u=down.diff)
+                  }#end if
+                  up.lim   = pretty.xylim(u=up.tot )
+                  abs.lim  = pretty.xylim(u=c(0,cum.eff,cum.leaf))
+                  #------------------------------------------------------------------------#
+
+
+                  for (o in sequence(nout)){
+                     #----- Open file. ----------------------------------------------------#
+                     fichier = file.path(profhrpath
+                                        ,paste0("profile-",iata,"-",bnd,"-"
+                                               ,mm,"-",hh,"utc",".",outform[o]))
+                     if (bnd %in% "tir"){nsize=wsize}else{nsize=size}
+                     if       (outform[o] == "x11"){
+                       X11(width=nsize$width,height=nsize$height,pointsize=ptsz)
+                     }else if (outform[o] == "png"){
+                       png(filename=fichier,width=nsize$width*depth
+                          ,height=nsize$height*depth,pointsize=ptsz,res=depth)
+                     }else if (outform[o] == "eps"){
+                       postscript(file=fichier,width=nsize$width,height=nsize$height
+                                 ,pointsize=ptsz,paper=nsize$paper)
+                     }else if (outform[o] == "pdf"){
+                       pdf(file=fichier,onefile=FALSE,width=nsize$width
+                          ,height=nsize$height,pointsize=ptsz,paper=nsize$paper)
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+                     #----- Set up the plotting window. -----------------------------------#
+                     par(par.user)
+                     par(oma=c(0,1,4,0))
+                     if (bnd %in% "tir"){
+                        layout(mat=rbind(c(2,3,4),c(1,1,1)),heights=c(6,1))
+                     }else{
+                        layout(mat=rbind(c(2,4),c(3,5),c(1,1)),heights=c(3,3,1))
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #----- First plot: the legend. ---------------------------------------#
+                     par(mar=c(0.1,4.1,0.1,2.1))
+                     plot.new()
+                     plot.window(xlim=c(0,1),ylim=c(0,1))
+                     legend( x      = "bottom"
+                           , inset  = 0.0
+                           , legend = simul$desc
+                           , col    = simul$colour
+                           , lty    = "solid"
+                           , lwd    = 2.5
+                           , cex    = 0.9 * cex.ptsz
+                           , ncol   = nsimul
+                           , xpd    = TRUE
+                           )#end legend
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #      Direct radiation is not plotted for TIR.                       #
+                     #---------------------------------------------------------------------#
+                     if (! bnd %in% "tir"){
+                        #------ Second plot: Downward direct. -----------------------------#
+                        par(mar=c(3.1,3.1,3.1,1.1))
+                        plot.new()
+                        plot.window(xlim=down.lim,ylim=lai.lim)
+                        axis(side=1,cex.axis=0.8,padj=-0.8)
+                        axis(side=2,at=lai.at,labels=lai.lab,las=1)
+                        grid(col=grid.colour,lwd=1.0,lty="solid")
+                        box()
+                        title(main="Downward - Direct",font.main=1,line=1)
+                        for (s in sequence(nsimul)){
+                           lines(x=down.beam[s,],y=-cum.lai[s,ms,]
+                                ,col=simul$colour[s],lwd=2.5,lty="solid")
+                        }#end for
+                        #------------------------------------------------------------------#
+                     }#end if
+                     #---------------------------------------------------------------------#
+
+
+
+
+                     #------ Third plot: Downward diffuse. --------------------------------#
+                     par(mar=c(4.1,3.1,2.1,1.1))
+                     plot.new()
+                     plot.window(xlim=down.lim,ylim=lai.lim)
+                     axis(side=1,cex.axis=0.8,padj=-0.8)
+                     axis(side=2,at=lai.at,labels=lai.lab,las=1)
+                     grid(col=grid.colour,lwd=1.0,lty="solid")
+                     box()
+                     title(main="Downward - Diffuse",font.main=1,line=1)
+                     for (s in sequence(nsimul)){
+                        lines(x=down.diff[s,],y=-cum.lai[s,ms,]
+                             ,col=simul$colour[s],lwd=2.5,lty="solid")
+                     }#end for
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Fourth plot: Upward radiation.  Margins depend on the band.     #
+                     #---------------------------------------------------------------------#
+                     if (bnd %in% "tir"){
+                        par(mar=c(4.1,3.1,2.1,1.1))
+                     }else{
+                        par(mar=c(3.1,2.1,3.1,2.1))
+                     }#end if
+                     plot.new()
+                     plot.window(xlim=up.lim,ylim=lai.lim)
+                     axis(side=1,cex.axis=0.8,padj=-0.8)
+                     axis(side=2,at=lai.at,labels=lai.lab,las=1)
+                     grid(col=grid.colour,lwd=1.0,lty="solid")
+                     box()
+                     title(main="Upward",font.main=1,line=1)
+                     for (s in sequence(nsimul)){
+                        lines(x=up.tot[s,],y=-cum.lai[s,ms,]
+                             ,col=simul$colour[s],lwd=2.5,lty="solid")
+                     }#end for
+                     #---------------------------------------------------------------------#
+
+
+
+                     #------ Fifth plot: Absorbed radiation. ------------------------------#
+                     par(mar=c(4.1,2.1,2.1,2.1))
+                     plot.new()
+                     plot.window(xlim=abs.lim,ylim=lai.lim)
+                     axis(side=1,cex.axis=0.8,padj=-0.8)
+                     axis(side=2,at=lai.at,labels=lai.lab,las=1)
+                     grid(col=grid.colour,lwd=1.0,lty="solid")
+                     box()
+                     title(main="Cumulative absorption (dashed = effective)"
+                          ,font.main=1,line=1)
+                     for (s in sequence(nsimul)){
+                        lines(x=cum.eff [s,],y=-cum.lai[s,ms,]
+                             ,col=simul$colour[s],lwd=2.0,lty="dotdash")
+                        lines(x=cum.leaf[s,],y=-cum.lai[s,ms,]
+                             ,col=simul$colour[s],lwd=2.5,lty="solid")
+                     }#end for
+                     #---------------------------------------------------------------------#
+
+
+
+                     #---------------------------------------------------------------------#
+                     #     Plot the general annotation.                                    #
+                     #---------------------------------------------------------------------#
+                     lex     = desc.unit( desc = paste(band$desc[b],"Irradiance")
+                                        , unit = untab[[band$unit[b]]]
+                                        )#end desc.unit
+                     ley     = desc.unit(desc="Cumulative LAI",unit=untab$m2lom2)
+                     whenlab = paste(month.name[m],"-",hh,"UTC")
+                     letitre = paste(desc," - Canopy profiles","  -  ",whenlab,sep="")
+                     laimon  = max(cum.lai[,ms,],na.rm=TRUE)
+                     lelai   = desc.unit( desc = paste("Average LAI"
+                                                      ,sprintf("%6.2f",laimon)
+                                                      )#end paste
+                                        , unit = untab$m2lom2
+                                        , bracket = FALSE
+                                        )#end desc.unit
+                     lezen   = desc.unit( desc    = paste("Sun zenith angle"
+                                                         ,sprintf("%5.2f",zen.bar)
+                                                         )#end paste
+                                        , unit    = untab$deg
+                                        , bracket = FALSE
+                                        )#end desc.unit
+                     lesub   = parse(text = paste(lelai,lezen,sep=" - "))
+                     gtitle( main      = letitre
+                           , sub       = lesub
+                           , xlab      = lex
+                           , ylab      = ley
+                           , line.xlab = 3.2
+                           , line.ylab = 2.6
+                           , line.sub  = 4.2
+                           , off.sub   = 2/21
+                           , cex.main  = 1.0*cex.ptsz
+                           , cex.xlab  = 0.9*cex.ptsz
+                           , cex.ylab  = 0.9*cex.ptsz
+                           , cex.sub   = 0.7*cex.ptsz
+                           )#end gtitle
+                     #---------------------------------------------------------------------#
+
+
+
+                     #----- Close the device. ---------------------------------------------#
+                     if (outform[o] == "x11"){
+                        locator(n=1)
+                        dev.off()
+                     }else{
+                        dev.off()
+                     }#end if
+                     clean.tmp()
+                     #---------------------------------------------------------------------#
+                  }#end for (o in sequence(nout))
+                  #------------------------------------------------------------------------#
+               }#end if (max(tot.down) > 1.)
                #---------------------------------------------------------------------------#
             }#end for (b in sequence(nband))
             #------------------------------------------------------------------------------#
-
-
-
-
-            #------------------------------------------------------------------------------#
-            #     Define range for x and y.                                                #
-            #------------------------------------------------------------------------------#
-            hour.limit = range(my.hours)
-            hour.at    = prof.hours
-            #------------------------------------------------------------------------------#
-
-
-
-
-            #------------------------------------------------------------------------------#
-            #      Loop over the components.  Since shortwave and longwave are very        #
-            # different, we only plot shortwave components, and we only use the hours that #
-            # are "sufficiently diurnal".                                                  #
-            #------------------------------------------------------------------------------#
-            nflux = length(flux)
-            for (f in sequence(nflux)){
-               #----- Get this flux component. --------------------------------------------#
-               flux.key   = names(flux)[f]
-               flux.desc  = c("Downward (direct)","Downward (diffuse)"
-                             ,"Downward (total)" ,"Upward")[f]
-               if (flux.key %in% c("down.beam","down.diff")){
-                  bwhich     = which(! band$key %in% "tir")
-                  nbwhich    = length(bwhich)
-               }else{
-                  bwhich     = sequence(nband)
-                  nbwhich    = nband
-               }#end if
-               this       = flux[[f]]
-               this.limit = range(c(this[bwhich,,,]))
-               #---------------------------------------------------------------------------#
-
-
-
-
-               #---------------------------------------------------------------------------#
-               #      Loop over formats.                                                   #
-               #---------------------------------------------------------------------------#
-               for (o in sequence(nout)){
-                  #----- Open file. -------------------------------------------------------#
-                  fichier = file.path(dielpath
-                                     ,paste0("diel-",iata,"-",flux.key,"-",imetrad,"-",mm
-                                            ,"-",lai.key,".",outform[o]))
-                  if       (outform[o] == "x11"){
-                    X11(width=size$width,height=size$height,pointsize=ptsz)
-                  }else if (outform[o] == "png"){
-                    png(filename=fichier,width=size$width*depth
-                       ,height=size$height*depth,pointsize=ptsz,res=depth)
-                  }else if (outform[o] == "eps"){
-                    postscript(file=fichier,width=size$width,height=size$height
-                              ,pointsize=ptsz,paper=size$paper)
-                  }else if (outform[o] == "pdf"){
-                    pdf(file=fichier,onefile=FALSE,width=size$width
-                       ,height=size$height,pointsize=ptsz,paper=size$paper)
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-                  #----- Set up the plotting window. --------------------------------------#
-                  par(par.user)
-                  par(oma=c(0,1,4,0))
-                  layout( mat     = rbind(lo.simul$mat.off,rep(1,times=lo.simul$ncol))
-                        , heights = c(rep(6/lo.simul$nrow,lo.simul$nrow),1)
-                        )#end layout
-                  #------------------------------------------------------------------------#
-
-
-
-
-                  #------------------------------------------------------------------------#
-                  #      First plot: the legend.  No reason to plot thermal IR radiation   #
-                  # for direct component.                                                  #
-                  #------------------------------------------------------------------------#
-                  if (flux.key %in% c("down.beam","down.diff")){
-                     #------ Select the bands that should be used. ------------------------#
-                     par(mar=c(0.1,4.1,0.1,2.1))
-                     plot.new()
-                     plot.window(xlim=c(0,1),ylim=c(0,1))
-                     legend( x      = "bottom"
-                           , inset  = 0.0
-                           , legend = c(band$desc[bwhich],"","Top","Bottom")
-                           , fill   = c(band$col [bwhich],rep("transparent",3))
-                           , border = c(band$col [bwhich],rep("transparent",3))
-                           , col    = c(rep("transparent",nband),rep(foreground,2))
-                           , lty    = c(rep("solid",nband),"solid","dashed")
-                           , lwd    = 2.5
-                           , cex    = 0.9 * cex.ptsz
-                           , ncol   = 3
-                           , xpd    = TRUE
-                           )#end legend
-                     #---------------------------------------------------------------------#
-                  }else{
-                     #------ All bands shall be used. -------------------------------------#
-                     par(mar=c(0.1,4.1,0.1,2.1))
-                     plot.new()
-                     plot.window(xlim=c(0,1),ylim=c(0,1))
-                     legend( x      = "bottom"
-                           , inset  = 0.0
-                           , legend = c(band$desc,"Top","Bottom")
-                           , fill   = c(band$col ,rep("transparent",2))
-                           , border = c(band$col ,rep("transparent",2))
-                           , col    = c(rep("transparent",nband),rep(foreground,2))
-                           , lty    = c(rep("solid",nband),"solid","dashed")
-                           , lwd    = 2.5
-                           , cex    = 0.9 * cex.ptsz
-                           , ncol   = 3
-                           , xpd    = TRUE
-                           )#end legend
-                     #---------------------------------------------------------------------#
-                  }#end if
-                  #------------------------------------------------------------------------#
-
-
-
-
-                  #------------------------------------------------------------------------#
-                  #      Loop over the simulations, and the bands.                         #
-                  #------------------------------------------------------------------------#
-                  for (s in sequence(nsimul)){
-                     #------ Open plotting device. ----------------------------------------#
-                     par(mar=lo.simul$mar0)
-                     plot.new()
-                     plot.window(xlim = hour.limit,ylim = this.limit)
-                     axis(side=1,at=hour.at)
-                     axis(side=2,las=1)
-                     abline(v=hour.at,h=axTicks(2),col=grid.colour,lty="dotted")
-                     #---------------------------------------------------------------------#
-
-
-
-                     #----- Loop over bands to be plotted. --------------------------------#
-                     for (b in bwhich){
-                         lines(x=my.hours,y=this[b,s,,1],col=band$col[b],type="o",pch=16
-                              ,lty="solid" ,lwd=2.0)
-                         lines(x=my.hours,y=this[b,s,,2],col=band$col[b],type="o",pch=16
-                              ,lty="dashed",lwd=2.0)
-                     }#end for (b in bwhich)
-                     #---------------------------------------------------------------------#
-
-
-                     #----- Plot the final information. -----------------------------------#
-                     box()
-                     title(main=simul$desc[s],font.main=1,line=1)
-                     #---------------------------------------------------------------------#
-                  }#end for (s in sequence(nsimul))
-                  #------------------------------------------------------------------------#
-
-
-                  #------------------------------------------------------------------------#
-                  #     Plot the general annotation.                                       #
-                  #------------------------------------------------------------------------#
-                  lex     = desc.unit(desc="Hour"      ,unit=untab$utc )
-                  ley     = desc.unit(desc="Irradiance",unit=untab$wom2)
-                  lesub   = desc.unit( desc    = paste("Average LAI"
-                                                      ,sprintf("%6.2f",lai.mon[m,pnow])
-                                                      )#end paste
-                                     , unit    = untab$m2lom2
-                                     , bracket = FALSE
-                                     )#end desc.unit
-                  letitre = paste(desc," - Mean diel of ",flux.desc,"  -  ",month.name[m]
-                                 ,sep="")
-                  gtitle( main      = letitre
-                        , sub       = lesub
-                        , xlab      = lex
-                        , ylab      = ley
-                        , line.xlab = 3.2
-                        , line.ylab = 2.6
-                        , line.sub  = 4.2
-                        , off.sub   = 2/21
-                        , cex.main  = 1.0*cex.ptsz
-                        , cex.xlab  = 0.9*cex.ptsz
-                        , cex.ylab  = 0.9*cex.ptsz
-                        , cex.sub   = 0.7*cex.ptsz
-                        )#end gtitle
-                  #------------------------------------------------------------------------#
-
-
-
-                  #----- Close the device. ------------------------------------------------#
-                  if (outform[o] == "x11"){
-                     locator(n=1)
-                     dev.off()
-                  }else{
-                     dev.off()
-                  }#end if
-                  clean.tmp()
-                  #------------------------------------------------------------------------#
-               }#end for (o in sequence(nout))
-               #---------------------------------------------------------------------------#
-
-            }#end for (f in sequence(nflux))
-            #------------------------------------------------------------------------------#
-         }#end for (m in sequence(12))
+         }#end for (h in prof.hours)
          #---------------------------------------------------------------------------------#
-      }#end for (l in seq_along(model$lai.plot)
+      }#end for (m in sequence(12))
       #------------------------------------------------------------------------------------#
    }#end for (p in sequence(nsites))
 #------------------------------------------------------------------------------------------#

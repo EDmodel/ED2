@@ -1416,7 +1416,6 @@ subroutine sfcrad_ed(cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,tw
    end if
    !---------------------------------------------------------------------------------------!
 
-   !$OMP END PARALLEL DO
 
    return
 end subroutine sfcrad_ed

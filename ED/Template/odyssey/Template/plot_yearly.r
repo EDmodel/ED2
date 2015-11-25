@@ -46,6 +46,7 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "quartz" - for printing on Mac OS screen
                                         #   - "eps"    - for postscript printing
                                         #   - "png"    - for PNG printing
+                                        #   - "tif"    - for TIFF printing
                                         #   - "pdf"    - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
@@ -549,7 +550,10 @@ for (place in myplaces){
                quartz(width=size$width,height=size$height,pointsize=ptsz)
             }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
@@ -742,7 +746,10 @@ for (place in myplaces){
                   quartz(width=size$width,height=size$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if (outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
@@ -940,7 +947,10 @@ for (place in myplaces){
                   quartz(width=size$width,height=size$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if (outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
@@ -1080,7 +1090,10 @@ for (place in myplaces){
                quartz(width=size$width,height=size$height,pointsize=ptsz)
             }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
@@ -1209,7 +1222,10 @@ for (place in myplaces){
             quartz(width=size$width,height=size$height,pointsize=ptsz)
          }else if(outform[o] %in% "png"){
             png(filename=fichier,width=size$width*depth,height=size$height*depth
-               ,pointsize=ptsz,res=depth)
+               ,pointsize=ptsz,res=depth,bg="transparent")
+         }else if(outform[o] %in% "tif"){
+            tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
          }else if(outform[o] %in% "eps"){
             postscript(file=fichier,width=size$width,height=size$height
                       ,pointsize=ptsz,paper=size$paper)
@@ -1413,7 +1429,10 @@ for (place in myplaces){
                quartz(width=size$width,height=size$height,pointsize=ptsz)
             }else if (outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if (outform[o] %in% "tiff"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if (outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
@@ -1582,7 +1601,10 @@ for (place in myplaces){
                   quartz(width=size$width,height=size$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if (outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
@@ -1750,7 +1772,10 @@ for (place in myplaces){
                quartz(width=size$width,height=size$height,pointsize=ptsz)
             }else if (outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if (outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if (outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
@@ -1886,7 +1911,10 @@ for (place in myplaces){
                   quartz(width=size$width,height=size$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if (outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
@@ -2137,7 +2165,10 @@ for (place in myplaces){
                      quartz(width=size$width,height=size$height,pointsize=ptsz)
                   }else if(outform[o] %in% "png"){
                      png(filename=fichier,width=size$width*depth,height=size$height*depth
-                        ,pointsize=ptsz,res=depth)
+                        ,pointsize=ptsz,res=depth,bg="transparent")
+                  }else if(outform[o] %in% "tif"){
+                     tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                         ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                   }else if(outform[o] %in% "eps"){
                      postscript(file=fichier,width=size$width,height=size$height
                                ,pointsize=ptsz,paper=size$paper)

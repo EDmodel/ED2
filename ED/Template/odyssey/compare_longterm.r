@@ -14,13 +14,13 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 here    = getwd()                               #   Current directory
-srcdir  = "/n/home00/mlongo/util/Rsc"           #   Script directory
+srcdir  = "/prj/prjidfca/marcosl/Util/Rsc"      #   Script directory
 ibackground    = 0                              # Make figures compatible to background
                                                 # 0 -- white
                                                 # 1 -- black
                                                 # 2 -- dark grey
 #----- Output directory -------------------------------------------------------------------#
-outroot = file.path(here,paste("longterm_comp_ibg",sprintf("%2.2i",ibackground),sep=""))
+outroot = file.path(here,paste0("longterm_comp_ibg",sprintf("%2.2i",ibackground)))
 #------------------------------------------------------------------------------------------#
 
 
@@ -34,11 +34,16 @@ rdata.suffix = "longterm_ed22.RData"
 
 
 
-#----- Default phenology and fire model. --------------------------------------------------#
-default.iphen = "phen+02"
-default.ifire = "fire03"
-emean.yeara   = 1972
-emean.yearz   = 2011
+#----- Default settings. ------------------------------------------------------------------#
+emean.yeara = 2002  # First year
+emean.yearz = 2007  # Last year
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Default settings. ------------------------------------------------------------------#
+pdens.range = c(0.05,1.0)      # First year
+pdens.log   = c(FALSE,TRUE)[1] # Plot density function as logarithm?
 #------------------------------------------------------------------------------------------#
 
 
@@ -150,7 +155,7 @@ sites[[n]] = list( iata = "nat"
                  , drya = "08/19"
                  , dryz = "02/07"
                  )#end list
-use.sites  = TRUE
+use.sites  = "s67"
 #------------------------------------------------------------------------------------------#
 
 
@@ -163,100 +168,56 @@ use.sites  = TRUE
 # verbose -- long description (for titles)                                                 #
 # colour  -- colour to represent this simulation                                           #
 #------------------------------------------------------------------------------------------#
-sim.struct  = list( name        = c("ble_age30_pft02"  ,"ble_age30_pft05"
-                                   ,"sas_age01_pft02"  ,"sas_age01_pft05"
-                                   ,"sas_age30_pft02"  ,"sas_age30_pft05"  )
-                  , desc        = c("Size 01 + Age 01 + PFT 02"
-                                   ,"Size 01 + Age 01 + PFT 05"
-                                   ,"Size 80 + Age 01 + PFT 02"
-                                   ,"Size 80 + Age 01 + PFT 05"
-                                   ,"Size 80 + Age 30 + PFT 02"
-                                   ,"Size 80 + Age 30 + PFT 05"
+sim.struct  = list( name        = c("ivdyn00_ihrzrad00","ivdyn00_ihrzrad01"
+                                   ,"ivdyn01_ihrzrad00","ivdyn01_ihrzrad01")
+                  , desc        = c("Dynamics OFF; Horizontal OFF"
+                                   ,"Dynamics OFF; Horizontal ON"
+                                   ,"Dynamics ON; Horizontal OFF"
+                                   ,"Dynamics ON; Horizontal ON"
                                    )#end c
-                  , verbose     = c("2 PFTs"             ,"5 PFTs"
-                                   ,"Size + 2 PFTs"      ,"Size + 5 PFTs"
-                                   ,"Size + Age + 2 PFTs","Size + Age + 5 PFTs"
+                  , verbose     = c("Dyn. OFF; Hrz. OFF"
+                                   ,"Dyn. OFF; Hrz. ON"
+                                   ,"Dyn. ON; Hrz. OFF"
+                                   ,"Dyn. ON; Hrz. ON"
                                    )#end c
-                   , colour     = c("#3B24B3","#2996CC"
-                                   ,"#990F0F","#E65C17"
-                                   ,"#306614","#A3CC52"
-                                   )#end c
-                   , fgcol      = c("#160959","#0A4766"
-                                   ,"#4D0404","#732A06"
-                                   ,"#143305","#4B6614"
-                                   )#end c
-                   , age.interp = c(    FALSE,    FALSE
-                                   ,    FALSE,    FALSE
-                                   ,     TRUE,     TRUE
-                                   )#end c
-                   )#end list
+                  , colour     = c("#3B24B3","#2996CC","#990F0F","#E65C17")
+                  , fgcol      = c("#160959","#0A4766","#4D0404","#732A06")
+                  , age.interp = c(    FALSE,    FALSE,    FALSE,    FALSE)
+                  )#end list
+sim.struct  = list( name        = c("ivdyn00_ihrzrad00","ivdyn00_ihrzrad01")
+                  , desc        = c("Horizontal OFF","Horizontal ON")
+                  , verbose     = c("Hrz. OFF","Hrz. ON")
+                  , colour     = c("#3B24B3","#2996CC")
+                  , fgcol      = c("#160959","#0A4766")
+                  , age.interp = c(    FALSE,    FALSE)
+                  )#end list
 #----- List the default simulation. -------------------------------------------------------#
-sim.default = 6
+sim.default = 1
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #       Plot options.                                                                      #
 #------------------------------------------------------------------------------------------#
-outform           = c("pdf")  # Formats for output file.  Supported formats are:
-                              #   - "X11" - for printing on screen
-                              #   - "eps" - for postscript printing
-                              #   - "png" - for PNG printing
-                              #   - "pdf" - for PDF printing
+outform           = c("pdf")          # Formats for output file.  Supported formats are:
+                                      #   - "X11" - for printing on screen
+                                      #   - "eps" - for postscript printing
+                                      #   - "png" - for PNG printing
+                                      #   - "tif" - for TIFF printing
+                                      #   - "pdf" - for PDF printing
 
-byeold            = TRUE      # Remove old files of the given format?
+byeold            = TRUE              # Remove old files of the given format?
 
-depth             = 96        # PNG resolution, in pixels per inch
-paper             = "letter"  # Paper size, to define the plot shape
-wpaper            = "legal"   # Wide paper size, to define the plot shape
-ptsz              = 22        # Font size.
-
-st.cex.min        = 1.0       # Minimum and maximum sizes for points in the 
-st.cex.max        = 2.5       #     Skill and Taylor diagrams
-st.lwd.min        = 1.3       # Minimum and maximum sizes for points in the 
-st.lwd.max        = 3.0       #     Skill and Taylor diagrams
-
-
-light.method      = "nls"     # Which method to apply (nls or optim)
-light.skew        = FALSE     # Use skew-normal distribution on residuals?
-light.n.boot      = 1000      # # of bootstrap iterations (light response fit)
-ftnight.n.boot    = 1000      # # of bootstrap iterations (fn mean)
-
-n.quant           = 1024      # # of quantiles to produce the density function.
-                              #    We strongly advise to choose a number that is
-                              #    a power of two, especially when using EDF 
-                              #    (otherwise distributions will be interpolated).
-nhour.min         = 16        # Minimum number of hours to use the data.
-ust.key.frac      = 1/9       # Fraction of u* plot width used for key
-ust.leg.frac      = 1/8       # Fraction of u* plot height used for legend
-ncol.ust          = 100       # Number of colours for u*-filter "map"
-slz.reference     = -0.50     # Reference level for comparing soil data.
-slz.reco.ref      = -0.25     # Reference level for comparing soil data.
-n.dens            = 512       # Number of density points. 
-dens.min          = 0.00001   # Minimum density (relative to maximum)
-
-keep.gf.low.ustar = FALSE     # Keep data that has been discarded due to low u*, but
-                              # otherwise with flux/storage measurements?
-                              # TRUE  -- discard only missing data
-                              # FALSE -- discard missing data and gap filled due to low
-                              #          turbulence.
-
-pft.use           = c(1,2,3,4,16,18)
-ncolours.xyz      = 96
-
+depth             = 96                # PNG resolution, in pixels per inch
+paper             = "square"          # Paper size, to define the plot shape
+ptsz              = 20                # Font size.
+n.dens            = 512               # Number of density points. 
+dens.min          = 0.00001           # Minimum density (relative to maximum)
+pft.use           = c(1,2,3,4,16,18)  # PFTs to use
+ncolours.xyz      = 96                # # colours for xyz plots
+f.leg             = 1/6               # Factor to expand plot devices
 #----- Maximum absolute value for Bowen ratio. --------------------------------------------#
 bmn = -0.09
 bmx =  1.99
-#------------------------------------------------------------------------------------------#
-
-#------------------------------------------------------------------------------------------#
-#      Colours for model comparison.                                                       #
-#------------------------------------------------------------------------------------------#
-obs.col   = "#6D6D6D"
-obs.fg    = "#131313"
-ed22.col  = "#99FF02"
-ed22.fg   = "#548901"
-alt.col   = "#9D57F8"
-alt.fg    = "#2B0071"
 #------------------------------------------------------------------------------------------#
 
 
@@ -264,10 +225,11 @@ alt.fg    = "#2B0071"
 #------------------------------------------------------------------------------------------#
 #      Switch controls to plot only the needed ones.                                       #
 #------------------------------------------------------------------------------------------#
+plot.tseries    = c(FALSE,TRUE)[2]
 plot.ts.pft     = c(FALSE,TRUE)[2]
 plot.pdf.patch  = c(FALSE,TRUE)[2]
-plot.xyz.patch  = c(FALSE,TRUE)[2]
-plot.ym.patch   = c(FALSE,TRUE)[2]
+plot.xyz.patch  = c(FALSE,TRUE)[1]
+plot.ym.patch   = c(FALSE,TRUE)[1]
 plot.ym.theme   = c(FALSE,TRUE)[2]
 col.dryseason   = "papayawhip"
 col.ust.altern  = "firebrick4"
@@ -313,85 +275,79 @@ n             = n + 1
 compvar[[ n]] = list( vnam         = "agb"
                     , desc         = "Above-ground biomass"
                     , unit         = untab$kgcom2
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = "nplant"
                     , zlog         = TRUE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "ba"
                     , desc         = "Basal area"
                     , unit         = untab$m2om2
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = "nplant"
                     , zlog         = TRUE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "lai"
                     , desc         = "Leaf area index"
                     , unit         = untab$m2lom2
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "gpp"
                     , desc         = "Gross primary productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "reco"
                     , desc         = "Ecosystem respiration"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "nep"
                     , desc         = "Net Ecosystem Productivity"
                     , unit         = untab$kgcom2oyr
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "hflxca"
@@ -405,35 +361,32 @@ compvar[[ n]] = list( vnam         = "hflxca"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "wflxca"
                     , desc         = "Water vapour flux"
                     , unit         = untab$kgwom2oday
-                    , cscheme.mean = "ipanoply"
-                    , hue.low      = "orangered"
-                    , hue.high     = "blue"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "transp"
                     , desc         = "Transpiration"
                     , unit         = untab$kgwom2oday
-                    , cscheme.mean = "ipanoply"
-                    , hue.low      = "orangered"
-                    , hue.high     = "blue"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = TRUE
                     , cohortvar    = TRUE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "bowen"
@@ -447,7 +400,6 @@ compvar[[ n]] = list( vnam         = "bowen"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "tratio"
@@ -461,7 +413,6 @@ compvar[[ n]] = list( vnam         = "tratio"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "ustar"
@@ -475,7 +426,6 @@ compvar[[ n]] = list( vnam         = "ustar"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "rshortup"
@@ -489,7 +439,6 @@ compvar[[ n]] = list( vnam         = "rshortup"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "albedo"
@@ -503,7 +452,6 @@ compvar[[ n]] = list( vnam         = "albedo"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "rlongup"
@@ -517,7 +465,6 @@ compvar[[ n]] = list( vnam         = "rlongup"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "parup"
@@ -531,7 +478,175 @@ compvar[[ n]] = list( vnam         = "parup"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "par.gnd"
+                    , desc         = "Ground absorption - PAR"
+                    , unit         = untab$umolom2os
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = FALSE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "rshort.gnd"
+                    , desc         = "Ground absorption - SW"
+                    , unit         = untab$umolom2os
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = FALSE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "leaf.gpp"
+                    , desc         = "Leaf GPP"
+                    , unit         = untab$kgcom2loyr
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "leaf.gsw"
+                    , desc         = "Stomatal conductance"
+                    , unit         = untab$kgwom2loday
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "par.leaf"
+                    , desc         = "Leaf Absorption - PAR"
+                    , unit         = untab$umolom2os
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "par.leaf.beam"
+                    , desc         = "Leaf Absorption - Direct PAR"
+                    , unit         = untab$umolom2os
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "par.leaf.diff"
+                    , desc         = "Leaf Absorption - Diffuse PAR"
+                    , unit         = untab$umolom2os
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = FALSE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "leaf.par"
+                    , desc         = "Norm. Leaf Absorption - PAR"
+                    , unit         = untab$umolom2los
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "leaf.par.beam"
+                    , desc         = "Norm. Leaf Absorption - Direct PAR"
+                    , unit         = untab$umolom2los
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "leaf.par.diff"
+                    , desc         = "Norm. Leaf Absorption - Diffuse PAR"
+                    , unit         = untab$umolom2los
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "assim.light"
+                    , desc         = "Light-limited Assimilation"
+                    , unit         = untab$umolom2los
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "assim.rubp"
+                    , desc         = "RuBP-limited Assimilation"
+                    , unit         = untab$umolom2los
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam         = "assim.co2"
+                    , desc         = "CO2-limited Assimilation"
+                    , unit         = untab$umolom2los
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
+                    , szpftvar     = TRUE
+                    , patchvar     = TRUE
+                    , cohortvar    = TRUE
+                    , scalevar     = NA
+                    , zlog         = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "fast.soil.c"
@@ -545,7 +660,6 @@ compvar[[ n]] = list( vnam         = "fast.soil.c"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "struct.soil.c"
@@ -559,7 +673,6 @@ compvar[[ n]] = list( vnam         = "struct.soil.c"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "slow.soil.c"
@@ -573,7 +686,6 @@ compvar[[ n]] = list( vnam         = "slow.soil.c"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "tot.soil.c"
@@ -587,49 +699,45 @@ compvar[[ n]] = list( vnam         = "tot.soil.c"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "can.depth"
                     , desc         = "Mean canopy height"
                     , unit         = untab$m
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "can.area"
                     , desc         = "Mean canopy area"
                     , unit         = untab$empty
-                    , cscheme.mean = "clife"
-                    , hue.low      = "purple"
-                    , hue.high     = "green"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "wood.dens"
                     , desc         = "Mean wood density"
                     , unit         = untab$gocm3
-                    , cscheme.mean = "ipanoply"
-                    , hue.low      = "orangered"
-                    , hue.high     = "blue"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = FALSE
                     , patchvar     = TRUE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = FALSE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "firemort"
@@ -643,49 +751,45 @@ compvar[[ n]] = list( vnam         = "firemort"
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "ncbmort"
                     , desc         = "Density-dependent mortality"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "iclife"
-                    , hue.low      = "green"
-                    , hue.high     = "purple"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = FALSE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "dimort"
                     , desc         = "Density independent mortality"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "iclife"
-                    , hue.low      = "green"
-                    , hue.high     = "purple"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = FALSE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam         = "mort"
                     , desc         = "Mortality rate"
                     , unit         = untab$pcpopoyr
-                    , cscheme.mean = "iclife"
-                    , hue.low      = "green"
-                    , hue.high     = "purple"
+                    , cscheme.mean = "panoply"
+                    , hue.low      = "blue"
+                    , hue.high     = "orangered"
                     , szpftvar     = TRUE
                     , patchvar     = FALSE
                     , cohortvar    = FALSE
                     , scalevar     = NA
                     , zlog         = TRUE
-                    , spider       = FALSE
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -857,19 +961,37 @@ lo.site  = pretty.box(n=nsites)
 
 
 #----- Define plot window size ------------------------------------------------------------#
-one.h   = 3.5
-one.w   = 3.5 * golden
+f.ext   = f.leg / (1. - f.leg)
+size0   = plotsize(proje=FALSE,paper=paper)
+height0 = size0$height
+width0  = size0$width
+zsize   = plotsize(proje=FALSE,paper=paper,extendfc="lat",extfactor=f.ext)
+#----- Scale for monthly and annual means. ------------------------------------------------#
+eywidth  = width0 * 2
+eyheight = height0
+eysize   = plotsize( proje     = FALSE
+                   , stdheight = eyheight
+                   , stdwidth  = eywidth
+                   , extendfc  = "lat"
+                   , extfactor = f.ext
+                   )#end plotsize
+#----- Scale for multi-simulation plots. --------------------------------------------------#
+swidth  = width0  * max(1.,lo.simul$ncol / lo.simul$nrow)
+sheight = height0 * max(1.,lo.simul$nrow / lo.simul$ncol)
 ssize   = plotsize( proje     = FALSE
-                  , stdheight = lo.simul$nrow * 7/6 * one.h
-                  , stdwidth  = lo.simul$ncol * one.w
+                  , stdheight = sheight
+                  , stdwidth  = swidth
+                  , extendfc  = "lat"
+                  , extfactor = f.ext
                   )#end plotsize
+#----- Scale for multi-site plots. --------------------------------------------------------#
+pwidth  = width0  * max(1.,lo.site$ncol  / lo.site$nrow )
+pheight = height0 * max(1.,lo.site$nrow  / lo.site$ncol )
 psize   = plotsize( proje     = FALSE
-                  , stdheight = lo.site$nrow  * 7/6 * one.h
-                  , stdwidth  = lo.site$ncol  * one.w
-                  )#end plotsize
-zsize   = plotsize( proje     = FALSE
-                  , stdheight = 8.5 * 7/6
-                  , stdwidth  = 11
+                  , stdheight = sheight
+                  , stdwidth  = swidth
+                  , extendfc  = "lat"
+                  , extfactor = f.ext
                   )#end plotsize
 #------------------------------------------------------------------------------------------#
 
@@ -897,30 +1019,34 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the time series of annual means.                                 #
    #---------------------------------------------------------------------------------------#
-   o.main   = file.path(o.form$main,"ts_pft")
-   o.ts.pft = list( main      = o.main
-                  , default   = file.path(o.main,"default")
-                  , variables = list( main = file.path(o.main,"variables"))
-                  )#end list
-   if (is.figure){
-      if (! file.exists(o.ts.pft$main          )) dir.create(o.ts.pft$main          )
-      if (! file.exists(o.ts.pft$default       )) dir.create(o.ts.pft$default       )
-      if (! file.exists(o.ts.pft$variables$main)) dir.create(o.ts.pft$variables$main)
-   }#end if
-   for (v in sequence(ncompvar)){
-      this.compvar     = compvar[[v]]
-      this.vnam        = this.compvar$vnam
-      is.szpft         = this.compvar$szpftvar
-
-      #----- Sites. -----------------------------------------------------------------------#
-      if (is.szpft){
-         o.compvar        = file.path(o.ts.pft$variables$main,this.vnam)
-         if (is.figure && ! file.exists(o.compvar)) dir.create(o.compvar)
-         o.ts.pft$variables[[this.vnam]] = o.compvar
+   if (plot.tseries){
+      o.tseries = file.path(o.form$main,"tseries")
+      if (is.figure){
+         if (! file.exists(o.tseries     )) dir.create(o.tseries     )
       }#end if
-      #------------------------------------------------------------------------------------#
-   }#end for (v in sequence(ncompvar))
-   o.form$ts.pft = o.ts.pft
+      o.form$tseries = o.tseries
+   }#end if (plot.tseries)
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Create paths for the time series of annual means.                                 #
+   #---------------------------------------------------------------------------------------#
+   if (plot.ts.pft){
+      o.main   = file.path(o.form$main,"ts_pft")
+      o.ts.pft = list( main      = o.main
+                     , default   = file.path(o.main,"default"  )
+                     , variables = file.path(o.main,"variables")
+                     )#end list
+      if (is.figure){
+         if (! file.exists(o.ts.pft$main     )) dir.create(o.ts.pft$main     )
+         if (! file.exists(o.ts.pft$default  )) dir.create(o.ts.pft$default  )
+         if (! file.exists(o.ts.pft$variables)) dir.create(o.ts.pft$variables)
+      }#end if
+      o.form$ts.pft = o.ts.pft
+   }#end if (plot.ts.pft)
    #---------------------------------------------------------------------------------------#
 
 
@@ -929,30 +1055,19 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the ym by time of year and patch.                               #
    #---------------------------------------------------------------------------------------#
-   o.main  = file.path(o.form$main,"ym_patch")
-   o.ym.patch = list( main      = o.main
-                 , default   = file.path(o.main,"default")
-                 , variables = list( main = file.path(o.main,"variables"))
-                 )#end list
-   if (is.figure){
-      if (! file.exists(o.ym.patch$main          )) dir.create(o.ym.patch$main          )
-      if (! file.exists(o.ym.patch$default       )) dir.create(o.ym.patch$default       )
-      if (! file.exists(o.ym.patch$variables$main)) dir.create(o.ym.patch$variables$main)
-   }#end if
-   for (v in sequence(ncompvar)){
-      this.compvar     = compvar[[v]]
-      this.vnam        = this.compvar$vnam
-      is.patch         = this.compvar$patchvar
-
-      #----- Sites. -----------------------------------------------------------------------#
-      if (is.patch){
-         o.compvar        = file.path(o.ym.patch$variables$main,this.vnam)
-         if (is.figure && ! file.exists(o.compvar)) dir.create(o.compvar)
-         o.ym.patch$variables[[this.vnam]] = o.compvar
+   if (plot.ym.patch){
+      o.main  = file.path(o.form$main,"ym_patch")
+      o.ym.patch = list( main      = o.main
+                    , default   = file.path(o.main,"default")
+                    , variables = file.path(o.main,"variables")
+                    )#end list
+      if (is.figure){
+         if (! file.exists(o.ym.patch$main     )) dir.create(o.ym.patch$main     )
+         if (! file.exists(o.ym.patch$default  )) dir.create(o.ym.patch$default  )
+         if (! file.exists(o.ym.patch$variables)) dir.create(o.ym.patch$variables)
       }#end if
-      #------------------------------------------------------------------------------------#
-   }#end for (v in sequence(ncompvar))
-   o.form$ym.patch = o.ym.patch
+      o.form$ym.patch = o.ym.patch
+   }#end if (plot.ym.patch)
    #---------------------------------------------------------------------------------------#
 
 
@@ -961,30 +1076,19 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the PDF by time of year and patch.                               #
    #---------------------------------------------------------------------------------------#
-   o.main  = file.path(o.form$main,"pdf_patch")
-   o.pdf.patch = list( main      = o.main
-                 , default   = file.path(o.main,"default")
-                 , variables = list( main = file.path(o.main,"variables"))
-                 )#end list
-   if (is.figure){
-      if (! file.exists(o.pdf.patch$main          )) dir.create(o.pdf.patch$main          )
-      if (! file.exists(o.pdf.patch$default       )) dir.create(o.pdf.patch$default       )
-      if (! file.exists(o.pdf.patch$variables$main)) dir.create(o.pdf.patch$variables$main)
-   }#end if
-   for (v in sequence(ncompvar)){
-      this.compvar     = compvar[[v]]
-      this.vnam        = this.compvar$vnam
-      is.patch         = this.compvar$patchvar
-
-      #----- Sites. -----------------------------------------------------------------------#
-      if (is.patch){
-         o.compvar        = file.path(o.pdf.patch$variables$main,this.vnam)
-         if (is.figure && ! file.exists(o.compvar)) dir.create(o.compvar)
-         o.pdf.patch$variables[[this.vnam]] = o.compvar
+   if (plot.pdf.patch){
+      o.main  = file.path(o.form$main,"pdf_patch")
+      o.pdf.patch = list( main      = o.main
+                        , default   = file.path(o.main,"default"  )
+                        , variables = file.path(o.main,"variables")
+                        )#end list
+      if (is.figure){
+         if (! file.exists(o.pdf.patch$main     )) dir.create(o.pdf.patch$main     )
+         if (! file.exists(o.pdf.patch$default  )) dir.create(o.pdf.patch$default  )
+         if (! file.exists(o.pdf.patch$variables)) dir.create(o.pdf.patch$variables)
       }#end if
-      #------------------------------------------------------------------------------------#
-   }#end for (v in sequence(ncompvar))
-   o.form$pdf.patch = o.pdf.patch
+      o.form$pdf.patch = o.pdf.patch
+   }#end if (plot.pdf.patch)
    #---------------------------------------------------------------------------------------#
 
 
@@ -993,30 +1097,19 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the mean annual cycle by age.                                    #
    #---------------------------------------------------------------------------------------#
-   o.main  = file.path(o.form$main,"xyz_patch")
-   o.xyz.patch = list( main      = o.main
-                 , default   = file.path(o.main,"default")
-                 , variables = list( main = file.path(o.main,"variables"))
-                 )#end list
-   if (is.figure){
-      if (! file.exists(o.xyz.patch$main          )) dir.create(o.xyz.patch$main          )
-      if (! file.exists(o.xyz.patch$default       )) dir.create(o.xyz.patch$default       )
-      if (! file.exists(o.xyz.patch$variables$main)) dir.create(o.xyz.patch$variables$main)
-   }#end if
-   for (v in sequence(ncompvar)){
-      this.compvar     = compvar[[v]]
-      this.vnam        = this.compvar$vnam
-      is.patch         = this.compvar$patchvar
-
-      #----- Sites. -----------------------------------------------------------------------#
-      if (is.patch){
-         o.compvar        = file.path(o.xyz.patch$variables$main,this.vnam)
-         if (is.figure && ! file.exists(o.compvar)) dir.create(o.compvar)
-         o.xyz.patch$variables[[this.vnam]] = o.compvar
-      }#end if (is.patch)
-      #------------------------------------------------------------------------------------#
-   }#end for (v in sequence(ncompvar))
-   o.form$xyz.patch = o.xyz.patch
+   if (plot.xyz.patch){
+      o.main  = file.path(o.form$main,"xyz_patch")
+      o.xyz.patch = list( main      = o.main
+                    , default   = file.path(o.main,"default")
+                    , variables = file.path(o.main,"variables")
+                    )#end list
+      if (is.figure){
+         if (! file.exists(o.xyz.patch$main     )) dir.create(o.xyz.patch$main     )
+         if (! file.exists(o.xyz.patch$default  )) dir.create(o.xyz.patch$default  )
+         if (! file.exists(o.xyz.patch$variables)) dir.create(o.xyz.patch$variables)
+      }#end if
+      o.form$xyz.patch = o.xyz.patch
+   }#end if (plot.xyz.patch)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1025,44 +1118,19 @@ for (o in sequence(nout)){
    #---------------------------------------------------------------------------------------#
    #     Create paths for the theme plots.                                                 #
    #---------------------------------------------------------------------------------------#
-   o.main     = file.path(o.form$main,"ym_theme")
-   o.ym.theme = list( main      = o.main
-                    , default   = file.path(o.main,"default")
-                    , variables = list( main = file.path(o.main,"variables"))
-                    )#end list
-   if (is.figure){
-      if (! file.exists(o.ym.theme$main          )) dir.create(o.ym.theme$main          )
-      if (! file.exists(o.ym.theme$default       )) dir.create(o.ym.theme$default       )
-      if (! file.exists(o.ym.theme$variables$main)) dir.create(o.ym.theme$variables$main)
-   }#end if
-   for (th in sequence(nym.theme)){
-      this.theme       = ym.theme[[th]]
-      this.prefix      = this.theme$prefix
-
-      #----- Themes. ----------------------------------------------------------------------#
-      o.prefix = file.path(o.ym.theme$variables$main,this.prefix)
-      if (is.figure && ! file.exists(o.prefix)) dir.create(o.prefix)
-      o.ym.theme$variables[[this.prefix]] = o.prefix
-      #------------------------------------------------------------------------------------#
-   }#end for (v in sequence(ncompvar))
-   o.form$ym.theme = o.ym.theme
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Create paths for the spider web plots.                                            #
-   #---------------------------------------------------------------------------------------#
-   o.main   = file.path(o.form$main,"spider")
-   o.spider = list( main      = o.main
-                  , variables = file.path(o.main,"variables")
-                  )#end list
-   if (is.figure){
-      if (! file.exists(o.spider$main     )) dir.create(o.spider$main     )
-      if (! file.exists(o.spider$variables)) dir.create(o.spider$variables)
-   }#end if
-   o.form$spider = o.spider
+   if (plot.ym.theme){
+      o.main     = file.path(o.form$main,"ym_theme")
+      o.ym.theme = list( main      = o.main
+                       , default   = file.path(o.main,"default")
+                       , variables = file.path(o.main,"variables")
+                       )#end list
+      if (is.figure){
+         if (! file.exists(o.ym.theme$main     )) dir.create(o.ym.theme$main     )
+         if (! file.exists(o.ym.theme$default  )) dir.create(o.ym.theme$default  )
+         if (! file.exists(o.ym.theme$variables)) dir.create(o.ym.theme$variables)
+      }#end if
+      o.form$ym.theme = o.ym.theme
+   }#end if (plot.ym.theme)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1089,7 +1157,7 @@ for (p in sequence(nsites)){
    rdata.iata = file.path(rdata.path,paste(iata,rdata.suffix,sep="_"))
    if (file.exists(rdata.iata)){
       #----- Reload data and copy to the general list. ------------------------------------#
-      cat(" + Loading data from ",basename(rdata.iata),"...","\n",sep="")
+      cat0(" + Load data from ",basename(rdata.iata),"...")
       dummy       = load(file=rdata.iata)
       res.iata    = paste("res",iata,sep=".")
       res[[iata]] = get(res.iata)
@@ -1114,26 +1182,25 @@ for (p in sequence(nsites)){
 rdata.range = file.path(rdata.path,paste("var_range",rdata.suffix,sep="_"))
 if (reload.range && file.exists(rdata.range)){
    #----- Reload ranges. ------------------------------------------------------------------#
-   cat ("   - Loading the ranges...","\n")
+   cat0("   - Load the ranges...")
    dummy = load(file=rdata.range)
    #---------------------------------------------------------------------------------------#
 }else{
    #----- Find ranges. --------------------------------------------------------------------#
-   cat ("   - Finding the ranges...","\n")
+   cat0("   - Find the ranges...")
    age.range = array(data=NA,dim=c(2,nsites,nsimul))
    var.range = array(data=NA,dim=c(2,ncompvar,nsites,nsimul))
    for (p in sequence(nsites)){
       iata          = sites$iata[p]
       longname      = sites$desc[p]
-      cat("    > ",sites$desc[p],"...","\n")
+      cat0("    > ",sites$desc[p],"...")
       for (s in sequence(nsimul)){
-         cat("      # Simulation: ",simul$desc[s],"...","\n")
+         cat0("      # Simulation: ",simul$desc[s],"...")
 
          #----- Load hourly averages. -----------------------------------------------------#
-         ans.name = paste("e",iata,"_wmo_",simul$name[s],"_",default.iphen
-                         ,"_",default.ifire,sep="")
+         ans.name = paste0(eort,iata,"_",simul$name[s])
          ans.path = file.path(here,ans.name)
-         ans.file = file.path(ans.path,"rdata_month",paste(ans.name,".RData",sep=""))
+         ans.file = file.path(ans.path,"rdata_month",paste0(ans.name,".RData"))
          load(ans.file)
          #---------------------------------------------------------------------------------#
 
@@ -1155,7 +1222,7 @@ if (reload.range && file.exists(rdata.range)){
             emap  = match(tomonth[e],datum$when)
             mm    = nummonths(now)
             yyyy  = numyears (now)
-            stamp = paste("y",sprintf("%4.4i",yyyy),"m",sprintf("%2.2i",mm),sep="")
+            stamp = paste0("y",sprintf("%4.4i",yyyy),"m",sprintf("%2.2i",mm))
             if (simul$age.interp[s]){
                agenow          = pmax(1/12,agepa[[stamp]])
                age.range[,p,s] = range(c(age.range[,p,s],agenow),finite=TRUE)
@@ -1250,7 +1317,7 @@ if (reload.range && file.exists(rdata.range)){
 
 
    #----- Save range. ---------------------------------------------------------------------#
-   cat ("   - Finding the ranges...","\n")
+   cat0("   - Finding the ranges...")
    dummy = save(list=c("age.range","var.range"),file=rdata.range)
    #---------------------------------------------------------------------------------------#
 }#end if (reload.range && file.exists(rdata.range))
@@ -1275,7 +1342,7 @@ n.age.at = length(age.at)
 # the same number of defined points (so if measurements are biased towards daytime, the    #
 # model will also be equally biased).                                                      #
 #------------------------------------------------------------------------------------------#
-if (length(loop.sites) != 0) cat (" + Processing missing hourly data...","\n")
+if (length(loop.sites) != 0) cat0(" + Processing missing hourly data...")
 for (p in loop.sites){
    #----- Get the basic information. ------------------------------------------------------#
    iata          = sites$iata[p]
@@ -1287,7 +1354,7 @@ for (p in loop.sites){
    this$lon      = poilist$lon     [im]
    this$lat      = poilist$lat     [im]
    this.sim      = list()
-   cat("   - Site :",this$longname,"...","\n")
+   cat0("   - Site :",this$longname,"...")
    #---------------------------------------------------------------------------------------#
 
 
@@ -1297,15 +1364,14 @@ for (p in loop.sites){
    #---------------------------------------------------------------------------------------#
    #     Get all the statistics and actual values for every simulation.                    #
    #---------------------------------------------------------------------------------------#
-   cat("    * Aggregate and find statistics for simulations for this site...","\n")
+   cat0("    * Aggregate and find statistics for simulations for this site...")
    for (s in sequence(nsimul)){
-      cat("      # Simulation: ",simul$desc[s],"...","\n")
+      cat0("      # Simulation: ",simul$desc[s],"...")
 
       #----- Load hourly averages. --------------------------------------------------------#
-      ans.name = paste("e",iata,"_wmo_",simul$name[s],"_",default.iphen,"_",default.ifire
-                      ,sep="")
+      ans.name = paste0(eort,iata,"_",simul$name[s])
       ans.path = file.path(here,ans.name)
-      ans.file = file.path(ans.path,"rdata_month",paste(ans.name,".RData",sep=""))
+      ans.file = file.path(ans.path,"rdata_month",paste0(ans.name,".RData"))
       load(ans.file)
       #------------------------------------------------------------------------------------#
 
@@ -1316,9 +1382,9 @@ for (p in loop.sites){
       #----- Create some variables to describe season and time of the day. ----------------#
       model = list()
       #----- Create time stamp for annual and monthly means. ------------------------------#
-      model$toyear  = unique(numyears(datum$when))
       esel          = numyears(datum$when) %wr% c(emean.yeara,emean.yearz)
       model$tomonth = datum$when[esel]
+      model$toyear  = unique(numyears(datum$when[esel]))
       nymean        = length(model$toyear)
       nemean        = length(model$tomonth)
       #------------------------------------------------------------------------------------#
@@ -1330,7 +1396,7 @@ for (p in loop.sites){
       #------------------------------------------------------------------------------------#
       #      Load all variables, interpolate them and make the table.                      #
       #------------------------------------------------------------------------------------#
-      cat("       ~ Loading variables...","\n")
+      cat0("       ~ Load variables...")
       for (v in sequence(ncompvar)){
          #----- Load information. ---------------------------------------------------------#
          this.compvar   = compvar[[v]]
@@ -1341,7 +1407,7 @@ for (p in loop.sites){
          this.patchvar  = this.compvar$patchvar
          this.cohortvar = this.compvar$cohortvar
          this.scalevar  = this.compvar$scalevar
-         cat("         > ",this.desc,"...","\n")
+         cat0("         > ",this.desc,"...")
          #---------------------------------------------------------------------------------#
 
 
@@ -1449,13 +1515,15 @@ for (p in loop.sites){
          #     Find the annual mean, and crop the monthly mean to the period of interest.  #
          #---------------------------------------------------------------------------------#
          if (! is.null(emean)){
+            emean = emean[esel,,drop=FALSE]
             ymean = qapply( X     = emean
-                          , INDEX = numyears(datum$when)
+                          , INDEX = numyears(model$tomonth)
                           , DIM   = 1
                           , FUN   = mean
                           , na.rm = TRUE
                           )#end qapply
-            emean = emean[esel,,drop=FALSE]
+         }else{
+            ymean = NULL
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1465,8 +1533,8 @@ for (p in loop.sites){
          #---------------------------------------------------------------------------------#
          if (! is.null(szpft)){
             em.szpft = szpft[esel,,,drop=FALSE]
-            ym.szpft = qapply( X     = szpft
-                             , INDEX = numyears(datum$when)
+            ym.szpft = qapply( X     = em.szpft
+                             , INDEX = numyears(model$tomonth)
                              , DIM   = 1
                              , FUN   = mean
                              , na.rm = TRUE
@@ -1483,11 +1551,11 @@ for (p in loop.sites){
          #     Find mortality rates, "interest" style.                                     #
          #---------------------------------------------------------------------------------#
          if (this.vnam %in% c("mort","dimort","ncbmort","firemort")){
-            emean    = 100. * ( 1.0 - exp( - emean    ) )
-            ymean    = 100. * ( 1.0 - exp( - ymean    ) )
-            szpft    = 100. * ( 1.0 - exp( - szpft    ) )
-            em.szpft = 100. * ( 1.0 - exp( - em.szpft ) )
-            ym.szpft = 100. * ( 1.0 - exp( - ym.szpft ) )
+            if (! is.null(emean   )) emean    = 100. * ( 1.0 - exp( - emean    ) )
+            if (! is.null(ymean   )) ymean    = 100. * ( 1.0 - exp( - ymean    ) )
+            if (! is.null(szpft   )) szpft    = 100. * ( 1.0 - exp( - szpft    ) )
+            if (! is.null(em.szpft)) em.szpft = 100. * ( 1.0 - exp( - em.szpft ) )
+            if (! is.null(ym.szpft)) ym.szpft = 100. * ( 1.0 - exp( - ym.szpft ) )
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1509,7 +1577,7 @@ for (p in loop.sites){
                now     = model$tomonth[e]
                mm      = nummonths(now)
                yyyy    = numyears (now)
-               stamp   = paste("y",sprintf("%4.4i",yyyy),"m",sprintf("%2.2i",mm),sep="")
+               stamp   = paste0("y",sprintf("%4.4i",yyyy),"m",sprintf("%2.2i",mm))
                vnow    = patch [[stamp]]
                agenow  = pmax(1/12,agepa[[stamp]])
                areanow = areapa[[stamp]]
@@ -1616,7 +1684,7 @@ for (p in loop.sites){
    #      Save processed data to RData.                                                    #
    #---------------------------------------------------------------------------------------#
    rdata.iata = file.path(rdata.path,paste(iata,rdata.suffix,sep="_"))
-   cat(" + Saving processed data to ",basename(rdata.iata),"...","\n")
+   cat0(" + Saving processed data to ",basename(rdata.iata),"...")
    dummy = save(list=c(res.iata), file=rdata.iata)
    rm(res.iata,this.sim)
    #---------------------------------------------------------------------------------------#
@@ -1655,10 +1723,253 @@ for (p in loop.sites){
 #==========================================================================================#
 #==========================================================================================#
 #==========================================================================================#
+#     Plot the time series for each site.                                                  #
+#------------------------------------------------------------------------------------------#
+if (plot.tseries){
+   cat0(" + Plot long-term time series...")
+
+   #---------------------------------------------------------------------------------------#
+   #     Loop over variables.                                                              #
+   #---------------------------------------------------------------------------------------#
+   for (v in sequence(ncompvar)){
+      #----- Load variable settings. ------------------------------------------------------#
+      this.compvar    = compvar[[v]]
+      this.vnam       = this.compvar$vnam
+      this.desc       = this.compvar$desc
+      this.unit       = this.compvar$unit
+      cscheme         = get(this.compvar$cscheme.mean)
+      hue.low         = this.compvar$hue.low
+      hue.high        = this.compvar$hue.high
+      #------------------------------------------------------------------------------------#
+
+
+
+      cat0("   - ",this.desc,"...")
+      #------------------------------------------------------------------------------------#
+      #     Loop over all sites and simulations, and get the range.                        #
+      #------------------------------------------------------------------------------------#
+      em.xrange = array(NA,dim=c(2,nsites,nsimul))
+      em.yrange = array(NA,dim=c(2,nsites,nsimul))
+      ym.xrange = array(NA,dim=c(2,nsites,nsimul))
+      ym.yrange = array(NA,dim=c(2,nsites,nsimul))
+      for (p in sequence(nsites)){
+         iata = sites$iata[p]
+         for (s in sequence(nsimul)){
+            #------ Get the data. ---------------------------------------------------------#
+            sname    = simul$name[s]
+            model    = res[[iata]][[sname]]
+            tomonth  = model$tomonth
+            toyear   = model$toyear
+            emean    = model[[this.vnam]]$emean
+            ymean    = model[[this.vnam]]$ymean
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Update range.                                                            #
+            #------------------------------------------------------------------------------#
+            em.xrange[,p,s] = range(c(em.xrange[,p,s],tomonth),finite=TRUE)
+            em.yrange[,p,s] = range(c(em.yrange[,p,s],emean  ),finite=TRUE)
+            ym.xrange[,p,s] = range(c(ym.xrange[,p,s],toyear ),finite=TRUE)
+            ym.yrange[,p,s] = range(c(ym.yrange[,p,s],ymean  ),finite=TRUE)
+            #------------------------------------------------------------------------------#
+         }#end for (s in sequence(nsimul))
+         #---------------------------------------------------------------------------------#
+      }#end for (p in sequence(nsites))
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Make one panel for each simulation, and one plot per site.                     #
+      #------------------------------------------------------------------------------------#
+      cat0("     * Plot by sites...")
+      for (p in sequence(nsites)){
+         #----- Get the basic information. ------------------------------------------------#
+         iata            = sites$iata[p]
+         this.longname   = sites$desc[p]
+         em.xlimit       = pretty.xylim(u=em.xrange[,p,],fracexp=0.0,is.log=FALSE)
+         em.ylimit       = pretty.xylim(u=em.yrange[,p,],fracexp=0.0,is.log=FALSE)
+         ym.xlimit       = pretty.xylim(u=ym.xrange[,p,],fracexp=0.0,is.log=FALSE)
+         ym.ylimit       = pretty.xylim(u=ym.yrange[,p,],fracexp=0.0,is.log=FALSE)
+         em.pretty       = pretty.time(chron(em.xlimit),n=5)
+         cat0("       > ",this.longname,"...")
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #------ Set some common features. ------------------------------------------------#
+         letitre = paste(this.longname)
+         ley     = desc.unit(desc=this.desc,unit=this.unit)
+         lex     = "Time"
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Loop over formats.                                                         #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            out.now = out[[outform[o]]]$tseries
+            fichier = file.path( out.now
+                               , paste0("tseries-",this.vnam,"-",iata,".",outform[o])
+                               )#end file.path
+            if (outform[o] %in% "x11"){
+               X11(width=ssize$width,height=ssize$height,pointsize=col.use)
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
+               png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
+               postscript(file=fichier,width=ssize$width,height=ssize$height
+                         ,pointsize=ptsz,paper=ssize$paper)
+            }else if(outform[o] %in% "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
+                  ,pointsize=ptsz,paper=ssize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Split device. ----------------------------------------------------------#
+            par(par.user)
+            par(oma=c(0,0.0,2.5,0))
+            layout(mat= rbind(c(2,3),c(1,1)),heights=c(1.-f.leg,f.leg))
+            #------------------------------------------------------------------------------#
+
+
+            #----- Plot legend. -----------------------------------------------------------#
+            par(mar=c(0.1,4.6,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x       = "center"
+                  , inset   = 0.0
+                  , legend  = simleg.key
+                  , fill    = simcol.key
+                  , border  = simcol.key
+                  , ncol    = min(3,pretty.box(n=length(n.sim))$ncol)
+                  , title   = expression(bold("Simulation"))
+                  , xpd     = TRUE
+                  , bty     = "o"
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot monthly means.                                                     #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.6,2.1,0.6))
+            plot.new()
+            plot.window(xlim=em.xlimit,ylim=em.ylimit)
+            axis(side=1,las=1,at=em.pretty$levels,labels=em.pretty$labels)
+            axis(side=2,las=2)
+            title(main="Monthly means",line=0.5,cex.main=1.0)
+            for (s in sequence(nsimul)){
+               #----- Load variables. -----------------------------------------------------#
+               sname    = simul$name[s]
+               model    = res[[iata]][[sname]]
+               tomonth  = model$tomonth
+               emean    = model[[this.vnam]]$emean
+               lines(x=tomonth,y=emean,col=simcol.key[s],lwd=1.5,type="l")
+               #---------------------------------------------------------------------------#
+            }#end for (s in sequence(nsimul))
+            box()
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot annual means.                                                      #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.6,2.1,0.6))
+            plot.new()
+            plot.window(xlim=ym.xlimit,ylim=ym.ylimit)
+            axis(side=1,las=1)
+            axis(side=2,las=2)
+            title(main="Annual means",line=0.5,cex.main=1.0)
+            for (s in sequence(nsimul)){
+               #----- Load variables. -----------------------------------------------------#
+               sname    = simul$name[s]
+               model    = res[[iata]][[sname]]
+               toyear   = model$toyear
+               ymean    = model[[this.vnam]]$ymean
+               lines(x=toyear,y=ymean,col=simcol.key[s],lwd=1.5,type="l")
+               #---------------------------------------------------------------------------#
+            }#end for (s in sequence(nsimul))
+            box()
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Plot the global title. -------------------------------------------------#
+            gtitle( main      = letitre
+                  , xlab      = lex
+                  , ylab      = ley
+                  , off.xlab  = f.leg / (1. + f.leg)
+                  , cex.main  = 1.0
+                  , line.ylab = 2.6
+                  )#end gtitle
+            #------------------------------------------------------------------------------#
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] %in% c("x11","quartz")){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in sequence(nout))
+         #---------------------------------------------------------------------------------#
+      }#end for (p in sequence(nsites))
+      #------------------------------------------------------------------------------------#
+   }#end for (v in sequence(ncompvar))
+   #---------------------------------------------------------------------------------------#
+}#end if (plot.tseries)
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
 #     Plot the time series by PFT for each site.                                           #
 #------------------------------------------------------------------------------------------#
 if (plot.ts.pft){
-   cat(" + Plotting long-term time series...","\n")
+   cat0(" + Plot long-term time series by PFT...")
 
    #---------------------------------------------------------------------------------------#
    #     Loop over variables.                                                              #
@@ -1682,7 +1993,7 @@ if (plot.ts.pft){
       #     Skip variable if it isn't PFT-dependent.                                       #
       #------------------------------------------------------------------------------------#
       if (is.szpft){
-         cat("   - ",this.desc,"...","\n")
+         cat0("   - ",this.desc,"...")
 
 
          #---------------------------------------------------------------------------------#
@@ -1719,14 +2030,14 @@ if (plot.ts.pft){
          #---------------------------------------------------------------------------------#
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
-         cat("     * Plotting by sites...","\n")
+         cat0("     * Plot by sites...")
          for (p in sequence(nsites)){
             #----- Get the basic information. ---------------------------------------------#
             iata            = sites$iata[p]
             this.longname   = sites$desc[p]
             xlimit          = pretty.xylim(u=xrange[,p,],fracexp=0.0,is.log=FALSE)
             ylimit          = pretty.xylim(u=yrange[,p,],fracexp=0.0,is.log=FALSE)
-            cat("       > ",this.longname,"...","\n")
+            cat0("       > ",this.longname,"...")
             #------------------------------------------------------------------------------#
 
 
@@ -1745,20 +2056,24 @@ if (plot.ts.pft){
             #------------------------------------------------------------------------------#
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
-               out.now = out[[outform[o]]]$ts.pft$variables[[this.vnam]]
+               out.now = out[[outform[o]]]$ts.pft$variables
                fichier = file.path( out.now
-                                  , paste("ts_pft-",this.vnam,"-",iata,".",outform[o]
-                                         ,sep="")
+                                  , paste0("ts_pft-",this.vnam,"-",iata,".",outform[o])
                                   )#end file.path
-               if (outform[o] == "x11"){
+               if (outform[o] %in% "x11"){
                   X11(width=ssize$width,height=ssize$height,pointsize=col.use)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=ssize$width,height=ssize$height
                             ,pointsize=ptsz,paper=ssize$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
                      ,pointsize=ptsz,paper=ssize$paper)
                }#end if
@@ -1770,7 +2085,7 @@ if (plot.ts.pft){
                par(par.user)
                par(oma=c(0,0,2.5,0))
                layout( mat     = rbind(lo.simul$mat.off,rep(1,times=lo.simul$ncol))
-                     , heights = c(rep(5/lo.simul$nrow,lo.simul$nrow),1)
+                     , heights = c(rep((1.-f.leg)/lo.simul$nrow,lo.simul$nrow),f.leg)
                      )#end layout
                #---------------------------------------------------------------------------#
 
@@ -1779,7 +2094,7 @@ if (plot.ts.pft){
                par(mar=c(0.1,4.6,0.1,2.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
-               legend( x       = "bottom"
+               legend( x       = "center"
                      , inset   = 0.0
                      , legend  = pft$name  [pft.use]
                      , fill    = pft$colour[pft.use]
@@ -1787,6 +2102,7 @@ if (plot.ts.pft){
                      , ncol    = min(3,pretty.box(n=length(pft.use))$ncol)
                      , title   = expression(bold("Plant Functional Type"))
                      , xpd     = TRUE
+                     , bty     = "o"
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -1807,7 +2123,7 @@ if (plot.ts.pft){
 
 
                   #----- Open window and plot all time series by PFT. ---------------------#
-                  par(mar=lo.simul$mar[s,])
+                  par(mar=c(4.1,4.6,2.1,0.6))
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit)
                   grid(col=grid.colour,lty="dotted")
@@ -1819,8 +2135,8 @@ if (plot.ts.pft){
                           , type = "l"
                           )#end lines
                   }#end for (f in pft.use)
-                  if (lo.simul$bottom[s]) axis(side=1)
-                  if (lo.simul$left  [s]) axis(side=2,las=1)
+                  axis(side=1,las=1)
+                  axis(side=2,las=1)
                   title(main=simul$desc[s],line=0.5)
                   box()
                   #------------------------------------------------------------------------#
@@ -1833,13 +2149,14 @@ if (plot.ts.pft){
                gtitle( main     = letitre
                      , xlab     = lex
                      , ylab     = ley
-                     , off.xlab = 1/12
+                     , off.xlab = f.leg / (1 + f.leg)
+                     , cex.main = 1.0
                      )#end gtitle
                #---------------------------------------------------------------------------#
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -1859,7 +2176,7 @@ if (plot.ts.pft){
          #     Plot default simulation.                                                    #
          #---------------------------------------------------------------------------------#
          s = sim.default
-         cat("     * Plotting default simulation...","\n")
+         cat0("     * Plotting default simulation...")
          #----- Get the basic information. ------------------------------------------------#
          sname           = simul$name[s]
          sdesc           = simul$desc[s]
@@ -1885,18 +2202,22 @@ if (plot.ts.pft){
             #----- Make the file name. ----------------------------------------------------#
             out.now = out[[outform[o]]]$ts.pft$default
             fichier = file.path( out.now
-                               , paste("ts_pft-",this.vnam,"-",sname,".",outform[o]
-                                      ,sep="")
+                               , paste0("ts_pft-",this.vnam,"-",sname,".",outform[o])
                                )#end file.path
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=psize$width,height=psize$height,pointsize=col.use)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=psize$width,height=psize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=psize$width*depth,height=psize$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=psize$width*depth,height=psize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=psize$width,height=psize$height
                          ,pointsize=ptsz,paper=psize$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
                   ,pointsize=ptsz,paper=psize$paper)
             }#end if
@@ -1908,7 +2229,7 @@ if (plot.ts.pft){
             par(par.user)
             par(oma=c(0,0.25,2.5,0))
             layout( mat     = rbind(lo.site$mat.off,rep(1,times=lo.site$ncol))
-                  , heights = c(rep(6/lo.site$nrow,lo.site$nrow),1)
+                  , heights = c(rep((1.-f.leg)/lo.site$nrow,lo.site$nrow),f.leg)
                   )#end layout
             #------------------------------------------------------------------------------#
 
@@ -1917,7 +2238,7 @@ if (plot.ts.pft){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend( x       = "bottom"
+            legend( x       = "center"
                   , inset   = 0.0
                   , legend  = pft$name  [pft.use]
                   , fill    = pft$colour[pft.use]
@@ -1925,6 +2246,7 @@ if (plot.ts.pft){
                   , ncol    = min(3,pretty.box(n=length(pft.use))$ncol)
                   , title   = expression(bold("Plant Functional Type"))
                   , xpd     = TRUE
+                  , bty     = "o"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -1945,7 +2267,7 @@ if (plot.ts.pft){
 
 
                #----- Open window and plot all time series by PFT. ------------------------#
-               par(mar=lo.site$mar[p,])
+               par(mar=c(4.1,4.6,2.1,0.6))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit)
                grid(col=grid.colour,lty="dotted")
@@ -1957,8 +2279,8 @@ if (plot.ts.pft){
                        , type = "l"
                        )#end lines
                }#end for (f in pft.use)
-               if (lo.site$bottom[p]) axis(side=1)
-               if (lo.site$left  [p]) axis(side=2,las=1)
+               axis(side=1,las=1)
+               axis(side=2,las=1)
                title(main=this.longname,line=0.5)
                box()
                #---------------------------------------------------------------------------#
@@ -1971,14 +2293,15 @@ if (plot.ts.pft){
             gtitle( main      = letitre
                   , xlab      = lex
                   , ylab      = ley
-                  , off.xlab  = 1/12
+                  , off.xlab  = f.leg / (1. + f.leg)
                   , line.ylab = 3.0
+                  , cex.axis  = 1.0
                   )#end gtitle
             #------------------------------------------------------------------------------#
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2033,7 +2356,7 @@ if (plot.ts.pft){
 #     Plot the mean annual cycle by age structure.                                         #
 #------------------------------------------------------------------------------------------#
 if (plot.ym.patch){
-   cat(" + Plotting equilibrium averages as a function of age...","\n")
+   cat0(" + Plot equilibrium averages as a function of age...")
 
    x.at     = pretty.log(x=ceiling(age.at))
    x.labels = sprintf("%g",x.at)
@@ -2064,7 +2387,7 @@ if (plot.ym.patch){
       #     Skip variable if it isn't PFT-dependent.                                       #
       #------------------------------------------------------------------------------------#
       if (is.patch){
-         cat("   - ",this.desc,"...","\n")
+         cat0("   - ",this.desc,"...")
 
 
          #---------------------------------------------------------------------------------#
@@ -2119,12 +2442,12 @@ if (plot.ym.patch){
          #---------------------------------------------------------------------------------#
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
-         cat("     * Plotting by sites...","\n")
+         cat0("     * Plot by sites...")
          for (p in sequence(nsites)){
             #----- Get the basic information. ---------------------------------------------#
             iata           = sites$iata[p]
             this.longname  = sites$desc[p]
-            cat("       > ",this.longname,"...","\n")
+            cat0("       > ",this.longname,"...")
             #------------------------------------------------------------------------------#
 
 
@@ -2161,8 +2484,7 @@ if (plot.ym.patch){
 
 
             #------ Set some common features. ---------------------------------------------#
-            letitre = paste(this.desc," - ",this.longname,"\n","Means at equilibrium"
-                           ,sep="")
+            letitre = paste0(this.desc," - ",this.longname,"\n","Means at equilibrium")
             lex     = desc.unit(desc="Age",unit=untab$yr)
             ley     = desc.unit(desc=this.desc,unit=this.unit)
             #------------------------------------------------------------------------------#
@@ -2174,20 +2496,24 @@ if (plot.ym.patch){
             #------------------------------------------------------------------------------#
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
-               out.now = out[[outform[o]]]$ym.patch$variables[[this.vnam]]
+               out.now = out[[outform[o]]]$ym.patch$variables
                fichier = file.path( out.now
-                                  , paste("ym_patch-",this.vnam,"-",iata,".",outform[o]
-                                         ,sep="")
+                                  , paste0("ym_patch-",this.vnam,"-",iata,".",outform[o])
                                   )#end file.path
-               if (outform[o] == "x11"){
+               if (outform[o] %in% "x11"){
                   X11(width=zsize$width,height=zsize$height,pointsize=col.use)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=zsize$width,height=zsize$height,pointsize=col.use)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=zsize$width*depth,height=zsize$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=zsize$width*depth,height=zsize$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=zsize$width,height=zsize$height
                             ,pointsize=ptsz,paper=zsize$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE,width=zsize$width,height=zsize$height
                      ,pointsize=ptsz,paper=zsize$paper)
                }#end if
@@ -2199,7 +2525,7 @@ if (plot.ym.patch){
                #      Split the device area into two.                                      #
                #---------------------------------------------------------------------------#
                par(par.user)
-               layout(mat=rbind(2,1),heights=c(6,1))
+               layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
                #---------------------------------------------------------------------------#
 
 
@@ -2210,8 +2536,8 @@ if (plot.ym.patch){
                par(mar=c(0.1,0.1,0.1,0.1))
                plot.new()
                plot.window(xlim=c(0,1),ylim=c(0,1))
-               legend( x       = "bottom"
-                     , inset   = 0
+               legend( x       = "center"
+                     , inset   = 0.0
                      , legend  = simul$desc
                      , fill    = simul$colour
                      , border  = simul$colour
@@ -2219,6 +2545,7 @@ if (plot.ym.patch){
                      , title   = expression(bold("Simulations"))
                      , cex     = 0.75
                      , xpd     = TRUE
+                     , bty     = "o"
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -2246,7 +2573,7 @@ if (plot.ym.patch){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -2268,7 +2595,7 @@ if (plot.ym.patch){
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
          s = sim.default
-         cat("     * Plotting default simulation...","\n")
+         cat0("     * Plot default simulation...")
          #----- Get the basic information. ------------------------------------------------#
          sname     = simul$name[s]
          sdesc     = simul$desc[s]
@@ -2309,7 +2636,7 @@ if (plot.ym.patch){
 
 
          #------ Set some common features. ------------------------------------------------#
-         letitre = paste(this.desc," - ",sdesc,"\n","Means at equilibrium",sep="")
+         letitre = paste0(this.desc," - ",sdesc,"\n","Means at equilibrium")
          lex     = desc.unit(desc="Age",unit=untab$yr)
          lay     = desc.unit(desc=this.desc,unit=this.unit)
          #---------------------------------------------------------------------------------#
@@ -2323,18 +2650,22 @@ if (plot.ym.patch){
             #----- Make the file name. ----------------------------------------------------#
             out.now = out[[outform[o]]]$ym.patch$default
             fichier = file.path( out.now
-                               , paste("ym_patch-",this.vnam,"-",sname,".",outform[o]
-                                      ,sep="")
+                               , paste0("ym_patch-",this.vnam,"-",sname,".",outform[o])
                                )#end file.path
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=zsize$width,height=zsize$height,pointsize=col.use)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=zsize$width,height=zsize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=zsize$width*depth,height=zsize$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=zsize$width*depth,height=zsize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=zsize$width,height=zsize$height
                          ,pointsize=ptsz,paper=zsize$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE,width=zsize$width,height=zsize$height
                   ,pointsize=ptsz,paper=zsize$paper)
             }#end if
@@ -2348,7 +2679,7 @@ if (plot.ym.patch){
             #      Split the device area into two.                                         #
             #------------------------------------------------------------------------------#
             par(par.user)
-            layout(mat=rbind(2,1),heights=c(6,1))
+            layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
             #------------------------------------------------------------------------------#
 
 
@@ -2360,14 +2691,15 @@ if (plot.ym.patch){
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x       = "bottom"
-                  , inset   = 0
-                  , legend  = paste(sites$desc," (",toupper(sites$iata),")",sep="")
+                  , inset   = 0.0
+                  , legend  = paste0(sites$desc," (",toupper(sites$iata),")")
                   , fill    = sites$col
                   , border  = sites$col
                   , ncol    = min(3,pretty.box(nsites)$ncol)
                   , title   = expression(bold("Sites"))
                   , cex     = 0.75
                   , xpd     = TRUE
+                  , bty     = "o"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -2394,7 +2726,7 @@ if (plot.ym.patch){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2434,7 +2766,7 @@ if (plot.ym.patch){
 #     Plot the mean annual cycle by age structure.                                         #
 #------------------------------------------------------------------------------------------#
 if (plot.xyz.patch){
-   cat(" + Plotting mean annual cycle as a function of age...","\n")
+   cat0(" + Plot mean annual cycle as a function of age...")
 
    y.at   = pretty.log(x=ceiling(age.at))
    xlimit = pretty.xylim(u=c(1.0,13.0),is.log=FALSE)
@@ -2465,7 +2797,7 @@ if (plot.xyz.patch){
       #     Skip variable if it isn't PFT-dependent.                                       #
       #------------------------------------------------------------------------------------#
       if (is.patch){
-         cat("   - ",this.desc,"...","\n")
+         cat0("   - ",this.desc,"...")
 
 
          #---------------------------------------------------------------------------------#
@@ -2519,7 +2851,7 @@ if (plot.xyz.patch){
          #---------------------------------------------------------------------------------#
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
-         cat("     * Plotting by sites...","\n")
+         cat0("     * Plot by sites...")
          for (p in sequence(nsites)){
             #----- Get the basic information. ---------------------------------------------#
             iata           = sites$iata[p]
@@ -2541,7 +2873,7 @@ if (plot.xyz.patch){
             }else{
                z.colours      = cscheme(n=length(z.at)-1)
             }#end if
-            cat("       > ",this.longname,"...","\n")
+            cat0("       > ",this.longname,"...")
             #------------------------------------------------------------------------------#
 
 
@@ -2611,20 +2943,24 @@ if (plot.xyz.patch){
             #------------------------------------------------------------------------------#
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
-               out.now = out[[outform[o]]]$xyz.patch$variables[[this.vnam]]
+               out.now = out[[outform[o]]]$xyz.patch$variables
                fichier = file.path( out.now
-                                  , paste("xyz_patch-",this.vnam,"-",iata,".",outform[o]
-                                         ,sep="")
+                                  , paste0("xyz_patch-",this.vnam,"-",iata,".",outform[o])
                                   )#end file.path
-               if (outform[o] == "x11"){
+               if (outform[o] %in% "x11"){
                   X11(width=ssize$width,height=ssize$height,pointsize=col.use)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=ssize$width,height=ssize$height
                             ,pointsize=ptsz,paper=ssize$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
                      ,pointsize=ptsz,paper=ssize$paper)
                }#end if
@@ -2661,7 +2997,7 @@ if (plot.xyz.patch){
                          , matrix.plot     = TRUE
                          , byrow           = FALSE
                          , plot.after      = plot.after
-                         , f.key           = 1/6
+                         , f.key           = f.leg
                          , smidgen         = 0.04
                          )#end image.map
                #---------------------------------------------------------------------------#
@@ -2670,7 +3006,7 @@ if (plot.xyz.patch){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -2692,7 +3028,7 @@ if (plot.xyz.patch){
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
          s = sim.default
-         cat("     * Plotting default simulation...","\n")
+         cat0("     * Plot default simulation...")
          #----- Get the basic information. ------------------------------------------------#
          sname     = simul$name[s]
          sdesc     = simul$desc[s]
@@ -2783,18 +3119,22 @@ if (plot.xyz.patch){
             #----- Make the file name. ----------------------------------------------------#
             out.now = out[[outform[o]]]$xyz.patch$default
             fichier = file.path( out.now
-                               , paste("xyz_patch-",this.vnam,"-",sname,".",outform[o]
-                                      ,sep="")
+                               , paste0("xyz_patch-",this.vnam,"-",sname,".",outform[o])
                                )#end file.path
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=psize$width,height=psize$height,pointsize=col.use)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=psize$width,height=psize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=psize$width*depth,height=psize$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=psize$width*depth,height=psize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=psize$width,height=psize$height
                          ,pointsize=ptsz,paper=psize$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
                   ,pointsize=ptsz,paper=psize$paper)
             }#end if
@@ -2831,7 +3171,7 @@ if (plot.xyz.patch){
                       , matrix.plot     = TRUE
                       , byrow           = TRUE
                       , plot.after      = plot.after
-                      , f.key           = 1/8
+                      , f.key           = f.leg
                       , smidgen         = 0.04
                       )#end image.map
             #------------------------------------------------------------------------------#
@@ -2840,7 +3180,7 @@ if (plot.xyz.patch){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2880,7 +3220,7 @@ if (plot.xyz.patch){
 #     Plot the mean annual cycle by age structure.                                         #
 #------------------------------------------------------------------------------------------#
 if (plot.pdf.patch){
-   cat(" + Plotting mean annual cycle of variables PDF...","\n")
+   cat0(" + Plot mean annual cycle of variables PDF...")
    xlimit = pretty.xylim(u=c(1.0,13.0),is.log=FALSE)
 
 
@@ -2916,7 +3256,7 @@ if (plot.pdf.patch){
       #     Skip variable if it isn't PFT-dependent.                                       #
       #------------------------------------------------------------------------------------#
       if (is.patch){
-         cat("   - ",this.desc,"...","\n")
+         cat0("   - ",this.desc,"...")
 
 
          #---------------------------------------------------------------------------------#
@@ -2937,7 +3277,7 @@ if (plot.pdf.patch){
                #     Update range.                                                         #
                #---------------------------------------------------------------------------#
                if (any(is.finite(mm.pdf))){
-                  zrange[,p,s] = c(5.0e-4,1.0)*max(mm.pdf,na.rm=TRUE)
+                  zrange[,p,s] = pdens.range*max(mm.pdf,na.rm=TRUE)
                }#end if
                #---------------------------------------------------------------------------#
             }#end for (s in sequence(nsimul))
@@ -2951,7 +3291,7 @@ if (plot.pdf.patch){
          #---------------------------------------------------------------------------------#
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
-         cat("     * Plotting by sites...","\n")
+         cat0("     * Plotting by sites...")
          for (p in sequence(nsites)){
             #----- Get the basic information. ---------------------------------------------#
             iata           = sites$iata[p]
@@ -2959,9 +3299,14 @@ if (plot.pdf.patch){
             ylimit         = pretty.xylim(u=var.range[,v,p,],fracexp=c(0.05,0.05))
             y.at           = pretty(ylimit)
             y.labels       = sprintf("%g",y.at)
-            z.at           = pretty.log(zrange[,p,],n=ncolours.xyz,forcelog=TRUE)
-            z.colours      = cscheme(n=length(z.at)-1)
-            cat("       > ",this.longname,"...","\n")
+            if (pdens.log){
+               z.at           = pretty.log(zrange[,p,],n=ncolours.xyz,forcelog=TRUE)
+               z.colours      = cscheme(n=length(z.at)-1)
+            }else{
+               z.at           = pretty(zrange[,p,],n=ncolours.xyz)
+               z.colours      = cscheme(n=length(z.at)-1)
+            }#end if
+            cat0("       > ",this.longname,"...")
             #------------------------------------------------------------------------------#
 
 
@@ -2996,12 +3341,7 @@ if (plot.pdf.patch){
                                          ,labels=substring(c(month.abb,month.abb[1]),1,1))
                y.axis.options[[s]] = list(side=2,las=1,at=y.at,labels=y.labels)
                sub.options   [[s]] = list(main=simul$desc[s],line=0.6)
-               plot.after    [[s]] = list( abline = list( v   = 1:13
-                                                        , h   = y.at
-                                                        , col = grid.colour
-                                                        , lty = "dotted"
-                                                        )#end list
-                                         , points = list( x   = xdw
+               plot.after    [[s]] = list( points = list( x   = xdw
                                                         , y   = ydw
                                                         , pch = 20
                                                         , cex = 0.4
@@ -3016,7 +3356,7 @@ if (plot.pdf.patch){
             letitre = paste(this.desc,this.longname,"Annual means",sep=" - ")
             ley     = desc.unit(desc=this.desc,unit=this.unit)
             lex     = "" # "Month"
-            lacle   = desc.unit(desc="Probability distribution function",unit=untab$empty)
+            lacle   = desc.unit(desc="Probability density function",unit=untab$empty)
             #------------------------------------------------------------------------------#
 
 
@@ -3026,20 +3366,24 @@ if (plot.pdf.patch){
             #------------------------------------------------------------------------------#
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
-               out.now = out[[outform[o]]]$pdf.patch$variables[[this.vnam]]
+               out.now = out[[outform[o]]]$pdf.patch$variables
                fichier = file.path( out.now
-                                  , paste("pdf_patch-",this.vnam,"-",iata,".",outform[o]
-                                         ,sep="")
+                                  , paste0("pdf_patch-",this.vnam,"-",iata,".",outform[o])
                                   )#end file.path
-               if (outform[o] == "x11"){
+               if (outform[o] %in% "x11"){
                   X11(width=ssize$width,height=ssize$height,pointsize=col.use)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=ssize$width,height=ssize$height
                             ,pointsize=ptsz,paper=ssize$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
                      ,pointsize=ptsz,paper=ssize$paper)
                }#end if
@@ -3070,12 +3414,12 @@ if (plot.pdf.patch){
                                                  , cex.main = cex.main
                                                  , line     = 1.0
                                                  )#end list
-                         , key.log         = TRUE
+                         , key.log         = pdens.log
                          , key.vertical    = FALSE
                          , matrix.plot     = TRUE
                          , byrow           = FALSE
                          , plot.after      = plot.after
-                         , f.key           = 1/6
+                         , f.key           = f.leg
                          , smidgen         = 0.04
                          )#end image.map
                #---------------------------------------------------------------------------#
@@ -3084,7 +3428,7 @@ if (plot.pdf.patch){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -3106,12 +3450,17 @@ if (plot.pdf.patch){
          #     Make one panel for each simulation, and one plot per site.                  #
          #---------------------------------------------------------------------------------#
          s = sim.default
-         cat("     * Plotting default simulation...","\n")
+         cat0("     * Plot default simulation...")
          #----- Get the basic information. ------------------------------------------------#
          sname     = simul$name[s]
          sdesc     = simul$desc[s]
-         z.at      = pretty.log(zrange[,,s],n=ncolours.xyz,forcelog=TRUE)
-         z.colours = cscheme(n=length(z.at)-1)
+         if (pdens.log){
+            z.at      = pretty.log(zrange[,,s],n=ncolours.xyz,forcelog=TRUE)
+            z.colours = cscheme(n=length(z.at)-1)
+         }else{
+            z.at      = pretty(zrange[,,s],n=ncolours.xyz)
+            z.colours = cscheme(n=length(z.at)-1)
+         }#end if
          ylimit    = pretty.xylim(u=var.range[,v,,s],fracexp=c(0.05,0.05))
          y.at      = pretty(ylimit)
          y.labels  = sprintf("%g",y.at)
@@ -3149,12 +3498,7 @@ if (plot.pdf.patch){
                                       ,labels=substring(c(month.abb,month.abb[1]),1,1))
             y.axis.options[[p]] = list(side=2,las=1,at=y.at,labels=y.labels)
             sub.options   [[p]] = list(main=longname,line=0.6)
-            plot.after    [[p]] = list( abline = list( v   = 1:13
-                                                     , h   = y.at
-                                                     , col = grid.colour
-                                                     , lty = "dotted"
-                                                     )#end list
-                                      , points = list( x   = xdw
+            plot.after    [[p]] = list( points = list( x   = xdw
                                                      , y   = ydw
                                                      , pch = 20
                                                      , cex = 0.4
@@ -3169,7 +3513,7 @@ if (plot.pdf.patch){
          letitre = paste(this.desc,sdesc,sep=" - ")
          ley     = desc.unit(desc=this.desc,unit=this.unit)
          lex     = "" # "Month"
-         lacle   = desc.unit(desc="Probability distribution function",unit=untab$empty)
+         lacle   = desc.unit(desc="Probability density function",unit=untab$empty)
          #---------------------------------------------------------------------------------#
 
 
@@ -3181,18 +3525,22 @@ if (plot.pdf.patch){
             #----- Make the file name. ----------------------------------------------------#
             out.now = out[[outform[o]]]$pdf.patch$default
             fichier = file.path( out.now
-                               , paste("pdf_patch-",this.vnam,"-",sname,".",outform[o]
-                                      ,sep="")
+                               , paste0("pdf_patch-",this.vnam,"-",sname,".",outform[o])
                                )#end file.path
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=psize$width,height=psize$height,pointsize=col.use)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=psize$width,height=psize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=psize$width*depth,height=psize$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=psize$width*depth,height=psize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=psize$width,height=psize$height
                          ,pointsize=ptsz,paper=psize$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
                   ,pointsize=ptsz,paper=psize$paper)
             }#end if
@@ -3223,12 +3571,12 @@ if (plot.pdf.patch){
                                               , cex.main = cex.main
                                               , line     = 1.0
                                               )#end list
-                      , key.log         = TRUE
+                      , key.log         = pdens.log
                       , key.vertical    = FALSE
                       , byrow           = TRUE
                       , matrix.plot     = TRUE
                       , plot.after      = plot.after
-                      , f.key           = 1/8
+                      , f.key           = f.leg
                       , smidgen         = 0.04
                       )#end image.map
             #------------------------------------------------------------------------------#
@@ -3237,7 +3585,7 @@ if (plot.pdf.patch){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -3295,7 +3643,7 @@ if (plot.pdf.patch){
 #      Plot the themes.                                                                    #
 #------------------------------------------------------------------------------------------#
 if (plot.ym.theme){
-   cat(" + Plotting annual means for themes...","\n")
+   cat0(" + Plot annual means for themes...")
    for (th in sequence(nym.theme)){
       this.theme   = ym.theme[[th]]
       theme.vnam   = this.theme$vnam
@@ -3306,7 +3654,7 @@ if (plot.ym.theme){
       theme.prefix = this.theme$prefix
       theme.title  = this.theme$title
       theme.unit   = this.theme$unit
-      cat("   - ",theme.desc,"...","\n")
+      cat0("   - ",theme.desc,"...")
 
       ntheme.vnam  = length(theme.vnam)
       plog         = ifelse(ylog,"y","")
@@ -3342,7 +3690,7 @@ if (plot.ym.theme){
       #------------------------------------------------------------------------------------#
       #     Plot by site (all scenarios).                                                  #
       #------------------------------------------------------------------------------------#
-      cat("     * Plotting by sites...","\n")
+      cat0("     * Plotting by sites...")
       for (p in sequence(nsites)){
          #----- Get the basic information. ------------------------------------------------#
          iata          = sites$iata[p]
@@ -3358,7 +3706,7 @@ if (plot.ym.theme){
             y.at       = pretty(ylimit)
             y.labels   = sprintf("%g",y.at)
          }#end if
-         cat("       > ",this.longname,"...","\n")
+         cat0("       > ",this.longname,"...")
          #---------------------------------------------------------------------------------#
 
 
@@ -3377,20 +3725,24 @@ if (plot.ym.theme){
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
             #----- Make the file name. ----------------------------------------------------#
-            out.now = out[[outform[o]]]$ym.theme$variables[[theme.prefix]]
+            out.now = out[[outform[o]]]$ym.theme$variables
             fichier = file.path( out.now
-                               , paste("ym_theme-",theme.prefix,"-",iata,".",outform[o]
-                                      ,sep="")
+                               , paste0("ym_theme-",theme.prefix,"-",iata,".",outform[o])
                                )#end file.path
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=ssize$width,height=ssize$height,pointsize=col.use)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=ssize$width,height=ssize$height
                          ,pointsize=ptsz,paper=ssize$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
                   ,pointsize=ptsz,paper=ssize$paper)
             }#end if
@@ -3402,7 +3754,7 @@ if (plot.ym.theme){
             par(par.user)
             par(oma=c(0,0,2.5,0))
             layout( mat     = rbind(lo.simul$mat.off,rep(1,times=lo.simul$ncol))
-                  , heights = c(rep(5/lo.simul$nrow,lo.simul$nrow),1)
+                  , heights = c(rep((1.-f.leg)/lo.simul$nrow,lo.simul$nrow),f.leg)
                   )#end layout
             #------------------------------------------------------------------------------#
 
@@ -3411,7 +3763,7 @@ if (plot.ym.theme){
             par(mar=c(0.1,4.6,0.1,2.1))
             plot.new()
             plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend( x       = "bottom"
+            legend( x       = "center"
                   , inset   = 0.0
                   , legend  = theme.desc
                   , fill    = theme.colour
@@ -3421,6 +3773,7 @@ if (plot.ym.theme){
                                     , min(4,pretty.box(n=ntheme.vnam)$ncol)
                                     )#end ifelse
                   , xpd     = TRUE
+                  , bty     = "o"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -3438,7 +3791,7 @@ if (plot.ym.theme){
 
 
                #----- Open window and plot all time series by PFT. ------------------------#
-               par(mar=lo.simul$mar[s,])
+               par(mar=c(4.1,4.6,2.1,0.6))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                abline(h=y.at,v=x.at,col=grid.colour,lty="dotted")
@@ -3450,8 +3803,8 @@ if (plot.ym.theme){
                        , type = "l"
                        )#end lines
                }#end for (v in rev(ntheme.vnam))
-               if (lo.simul$bottom[s]) axis(side=1,at=x.at,labels=x.labels)
-               if (lo.simul$left  [s]) axis(side=2,las=1,at=y.at,labels=y.labels)
+               axis(side=1,las=1,at=x.at,labels=x.labels)
+               axis(side=2,las=1,at=y.at,labels=y.labels)
                title(main=simul$desc[s],line=0.5)
                box()
                #---------------------------------------------------------------------------#
@@ -3464,13 +3817,13 @@ if (plot.ym.theme){
             gtitle( main     = letitre
                   , xlab     = lex
                   , ylab     = ley
-                  , off.xlab = 1/12
+                  , off.xlab = f.leg / (1. + f.leg)
                   )#end gtitle
             #------------------------------------------------------------------------------#
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -3490,7 +3843,7 @@ if (plot.ym.theme){
       #     Plot default simulation.                                                       #
       #------------------------------------------------------------------------------------#
       s = sim.default
-      cat("     * Plotting default simulation...","\n")
+      cat0("     * Plotting default simulation...")
       #----- Get the basic information. ---------------------------------------------------#
       sname       = simul$name[s]
       sdesc       = simul$desc[s]
@@ -3525,18 +3878,22 @@ if (plot.ym.theme){
          #----- Make the file name. -------------------------------------------------------#
          out.now = out[[outform[o]]]$ym.theme$default
          fichier = file.path( out.now
-                            , paste("ym_theme-",theme.prefix,"-",sname,".",outform[o]
-                                   ,sep="")
+                            , paste0("ym_theme-",theme.prefix,"-",sname,".",outform[o])
                             )#end file.path
-         if (outform[o] == "x11"){
+         if (outform[o] %in% "x11"){
             X11(width=psize$width,height=psize$height,pointsize=col.use)
-         }else if(outform[o] == "png"){
+         }else if (outform[o] %in% "quartz"){
+            quartz(width=psize$width,height=psize$height,pointsize=col.use)
+         }else if(outform[o] %in% "png"){
             png(filename=fichier,width=psize$width*depth,height=psize$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
+               ,pointsize=ptsz,res=depth,bg="transparent")
+         }else if(outform[o] %in% "tif"){
+            tiff(filename=fichier,width=psize$width*depth,height=psize$height*depth
+                ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+         }else if(outform[o] %in% "eps"){
             postscript(file=fichier,width=psize$width,height=psize$height
                       ,pointsize=ptsz,paper=psize$paper)
-         }else if(outform[o] == "pdf"){
+         }else if(outform[o] %in% "pdf"){
             pdf(file=fichier,onefile=FALSE,width=psize$width,height=psize$height
                ,pointsize=ptsz,paper=psize$paper)
          }#end if
@@ -3548,7 +3905,7 @@ if (plot.ym.theme){
          par(par.user)
          par(oma=c(0,0.25,2.5,0))
          layout( mat     = rbind(lo.site$mat.off,rep(1,times=lo.site$ncol))
-               , heights = c(rep(6/lo.site$nrow,lo.site$nrow),1)
+               , heights = c(rep((1.-f.leg)/lo.site$nrow,lo.site$nrow),f.leg)
                )#end layout
          #---------------------------------------------------------------------------------#
 
@@ -3557,7 +3914,7 @@ if (plot.ym.theme){
          par(mar=c(0.1,4.6,0.1,2.1))
          plot.new()
          plot.window(xlim=c(0,1),ylim=c(0,1))
-         legend( x       = "bottom"
+         legend( x       = "center"
                , inset   = 0.0
                , legend  = theme.desc
                , fill    = theme.colour
@@ -3567,6 +3924,7 @@ if (plot.ym.theme){
                                  , min(4,pretty.box(n=ntheme.vnam)$ncol)
                                  )#end ifelse
                , xpd     = TRUE
+               , bty     = "o"
                )#end legend
          #---------------------------------------------------------------------------------#
 
@@ -3584,7 +3942,7 @@ if (plot.ym.theme){
 
 
             #----- Open window and plot all time series by PFT. ---------------------------#
-            par(mar=lo.site$mar[p,])
+            par(mar=c(4.1,4.6,2.1,0.6))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=plog)
             abline(h=y.at,v=x.at,col=grid.colour,lty="dotted")
@@ -3596,8 +3954,8 @@ if (plot.ym.theme){
                     , type = "l"
                     )#end lines
             }#end for (v in rev(ntheme.vnam))
-            if (lo.site$bottom[p]) axis(side=1,at=x.at,labels=x.labels)
-            if (lo.site$left  [p]) axis(side=2,las=1,at=y.at,labels=y.labels)
+            axis(side=1,las=1,at=x.at,labels=x.labels)
+            axis(side=2,las=1,at=y.at,labels=y.labels)
             title(main=this.longname,line=0.5)
             box()
             #------------------------------------------------------------------------------#
@@ -3610,14 +3968,14 @@ if (plot.ym.theme){
          gtitle( main      = letitre
                , xlab      = lex
                , ylab      = ley
-               , off.xlab  = 1/12
+               , off.xlab  = f.leg / (1. + f.leg)
                , line.ylab = 3.0
                )#end gtitle
          #---------------------------------------------------------------------------------#
 
 
          #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
+         if (outform[o] %in% c("x11","quartz")){
             locator(n=1)
             dev.off()
          }else{
