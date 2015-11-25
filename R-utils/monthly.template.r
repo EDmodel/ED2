@@ -292,6 +292,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$par.diff                = rep(NA,times=ntimes)
    emean$par.gnd                 = rep(NA,times=ntimes)
    emean$parup                   = rep(NA,times=ntimes)
+   emean$par.leaf                = rep(NA,times=ntimes)
+   emean$par.leaf.beam           = rep(NA,times=ntimes)
+   emean$par.leaf.diff           = rep(NA,times=ntimes)
    emean$rnet                    = rep(NA,times=ntimes)
    emean$albedo                  = rep(NA,times=ntimes)
    emean$albedo.par              = rep(NA,times=ntimes)
@@ -351,6 +354,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$f.bseeds                = rep(NA,times=ntimes)
    emean$f.dcbadt                = rep(NA,times=ntimes)
    emean$leaf.par                = rep(NA,times=ntimes)
+   emean$leaf.par.beam           = rep(NA,times=ntimes)
+   emean$leaf.par.diff           = rep(NA,times=ntimes)
+   emean$leaf.gpp                = rep(NA,times=ntimes)
    emean$phap.lpar               = rep(NA,times=ntimes)
    emean$last.1yr.lpar           = rep(NA,times=ntimes)
    emean$last.2yr.lpar           = rep(NA,times=ntimes)
@@ -457,6 +463,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$census.tai        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.agb        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.ba         = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$par.leaf          = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$par.leaf.beam     = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$par.leaf.diff     = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    #----- Initial value should be NA. -----------------------------------------------------#
    szpft$wood.dens         = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$gpp               = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
@@ -540,6 +549,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$f.broot           = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$f.bseeds          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$leaf.par          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$leaf.par.beam     = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$leaf.par.diff     = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$leaf.gpp          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$phap.lpar         = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$leaf.rshort       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$leaf.rlong        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
@@ -663,6 +675,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$par.diff       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$par.gnd        = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$parup          = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$par.leaf       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$par.leaf.beam  = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$par.leaf.diff  = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$rnet           = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$albedo         = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$albedo.par     = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
@@ -750,6 +765,11 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$rshortup      = list()
    patch$rlongup       = list()
    patch$parup         = list()
+   patch$rshort.gnd    = list()
+   patch$par.gnd       = list()
+   patch$par.leaf      = list()
+   patch$par.leaf.beam = list()
+   patch$par.leaf.diff = list()
    patch$rnet          = list()
    patch$lai           = list()
    patch$wai           = list()
@@ -762,6 +782,14 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$leaf.temp     = list()
    patch$leaf.water    = list()
    patch$leaf.vpd      = list()
+   patch$leaf.gpp      = list()
+   patch$leaf.gsw      = list()
+   patch$leaf.par      = list()
+   patch$leaf.par.beam = list()
+   patch$leaf.par.diff = list()
+   patch$assim.light   = list()
+   patch$assim.rubp    = list()
+   patch$assim.co2     = list()
    patch$wood.temp     = list()
    patch$gpp           = list()
    patch$npp           = list()
@@ -862,6 +890,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$f.broot        = list()
    cohort$f.bseeds       = list()
    cohort$leaf.par       = list()
+   cohort$leaf.par.beam  = list()
+   cohort$leaf.par.diff  = list()
+   cohort$leaf.gpp       = list()
    cohort$phap.lpar      = list()
    cohort$leaf.rshort    = list()
    cohort$leaf.rlong     = list()
@@ -1089,6 +1120,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$par.diff          [idx ] = old.datum$emean$par.diff            [sel ]
    new.datum$emean$par.gnd           [idx ] = old.datum$emean$par.gnd             [sel ]
    new.datum$emean$parup             [idx ] = old.datum$emean$parup               [sel ]
+   new.datum$emean$par.leaf          [idx ] = old.datum$emean$par.leaf            [sel ]
+   new.datum$emean$par.leaf.beam     [idx ] = old.datum$emean$par.leaf.beam       [sel ]
+   new.datum$emean$par.leaf.diff     [idx ] = old.datum$emean$par.leaf.diff       [sel ]
    new.datum$emean$rnet              [idx ] = old.datum$emean$rnet                [sel ]
    new.datum$emean$albedo            [idx ] = old.datum$emean$albedo              [sel ]
    new.datum$emean$albedo.par        [idx ] = old.datum$emean$albedo.par          [sel ]
@@ -1137,6 +1171,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$phap.lgbw         [idx ] = old.datum$emean$phap.lgbw           [sel ]
    new.datum$emean$wood.gbw          [idx ] = old.datum$emean$wood.gbw            [sel ]
    new.datum$emean$leaf.par          [idx ] = old.datum$emean$leaf.par            [sel ]
+   new.datum$emean$leaf.par.beam     [idx ] = old.datum$emean$leaf.par.beam       [sel ]
+   new.datum$emean$leaf.par.diff     [idx ] = old.datum$emean$leaf.par.diff       [sel ]
+   new.datum$emean$leaf.gpp          [idx ] = old.datum$emean$leaf.gpp            [sel ]
    new.datum$emean$phap.lpar         [idx ] = old.datum$emean$phap.lpar           [sel ]
    new.datum$emean$last.1yr.lpar     [idx ] = old.datum$emean$last.1yr.lpar       [sel ]
    new.datum$emean$last.2yr.lpar     [idx ] = old.datum$emean$last.2yr.lpar       [sel ]
@@ -1283,6 +1320,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$census.tai     [idx,,] = old.datum$szpft$census.tai      [sel,,]
    new.datum$szpft$census.agb     [idx,,] = old.datum$szpft$census.agb      [sel,,]
    new.datum$szpft$census.ba      [idx,,] = old.datum$szpft$census.ba       [sel,,]
+   new.datum$szpft$par.leaf       [idx,,] = old.datum$szpft$par.leaf        [sel,,]
+   new.datum$szpft$par.leaf.beam  [idx,,] = old.datum$szpft$par.leaf.beam   [sel,,]
+   new.datum$szpft$par.leaf.diff  [idx,,] = old.datum$szpft$par.leaf.diff   [sel,,]
    new.datum$szpft$i.gpp          [idx,,] = old.datum$szpft$i.gpp           [sel,,]
    new.datum$szpft$i.npp          [idx,,] = old.datum$szpft$i.npp           [sel,,]
    new.datum$szpft$i.plant.resp   [idx,,] = old.datum$szpft$i.plant.resp    [sel,,]
@@ -1306,6 +1346,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$f.bseeds       [idx,,] = old.datum$szpft$f.bseeds        [sel,,]
    new.datum$szpft$f.dcbadt       [idx,,] = old.datum$szpft$f.dcbadt        [sel,,]
    new.datum$szpft$leaf.par       [idx,,] = old.datum$szpft$leaf.par        [sel,,]
+   new.datum$szpft$leaf.par.beam  [idx,,] = old.datum$szpft$leaf.par.beam   [sel,,]
+   new.datum$szpft$leaf.par.diff  [idx,,] = old.datum$szpft$leaf.par.diff   [sel,,]
+   new.datum$szpft$leaf.gpp       [idx,,] = old.datum$szpft$leaf.gpp        [sel,,]
    new.datum$szpft$phap.lpar      [idx,,] = old.datum$szpft$phap.lpar       [sel,,]
    new.datum$szpft$leaf.rshort    [idx,,] = old.datum$szpft$leaf.rshort     [sel,,]
    new.datum$szpft$leaf.rlong     [idx,,] = old.datum$szpft$leaf.rlong      [sel,,]
@@ -1417,6 +1460,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$par.diff      [idx,] = old.datum$qmean$par.diff       [sel,]
    new.datum$qmean$par.gnd       [idx,] = old.datum$qmean$par.gnd        [sel,]
    new.datum$qmean$parup         [idx,] = old.datum$qmean$parup          [sel,]
+   new.datum$qmean$par.leaf      [idx,] = old.datum$qmean$par.leaf       [sel,]
+   new.datum$qmean$par.leaf.beam [idx,] = old.datum$qmean$par.leaf.beam  [sel,]
+   new.datum$qmean$par.leaf.diff [idx,] = old.datum$qmean$par.leaf.diff  [sel,]
    new.datum$qmean$rnet          [idx,] = old.datum$qmean$rnet           [sel,]
    new.datum$qmean$albedo        [idx,] = old.datum$qmean$albedo         [sel,]
    new.datum$qmean$albedo.par    [idx,] = old.datum$qmean$albedo.par     [sel,]
@@ -1502,6 +1548,11 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$rshortup      = old.datum$patch$rshortup
    new.datum$patch$rlongup       = old.datum$patch$rlongup
    new.datum$patch$parup         = old.datum$patch$parup
+   new.datum$patch$rshort.gnd    = old.datum$patch$rshort.gnd
+   new.datum$patch$par.gnd       = old.datum$patch$par.gnd
+   new.datum$patch$par.leaf      = old.datum$patch$par.leaf
+   new.datum$patch$par.leaf.beam = old.datum$patch$par.leaf.beam
+   new.datum$patch$par.leaf.diff = old.datum$patch$par.leaf.diff
    new.datum$patch$rnet          = old.datum$patch$rnet
    new.datum$patch$lai           = old.datum$patch$lai
    new.datum$patch$wai           = old.datum$patch$wai
@@ -1514,6 +1565,14 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$leaf.temp     = old.datum$patch$leaf.temp
    new.datum$patch$leaf.water    = old.datum$patch$leaf.water
    new.datum$patch$leaf.vpd      = old.datum$patch$leaf.vpd
+   new.datum$patch$leaf.gpp      = old.datum$patch$leaf.gpp
+   new.datum$patch$leaf.gsw      = old.datum$patch$leaf.gsw
+   new.datum$patch$leaf.par      = old.datum$patch$leaf.par
+   new.datum$patch$leaf.par.beam = old.datum$patch$leaf.par.beam
+   new.datum$patch$leaf.par.diff = old.datum$patch$leaf.par.diff
+   new.datum$patch$assim.light   = old.datum$patch$assim.light
+   new.datum$patch$assim.rubp    = old.datum$patch$assim.rubp
+   new.datum$patch$assim.co2     = old.datum$patch$assim.co2
    new.datum$patch$wood.temp     = old.datum$patch$wood.temp
    new.datum$patch$gpp           = old.datum$patch$gpp
    new.datum$patch$npp           = old.datum$patch$npp
@@ -1612,6 +1671,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$f.bseeds         = old.datum$cohort$f.bseeds
    new.datum$cohort$f.dcbadt         = old.datum$cohort$f.dcbadt 
    new.datum$cohort$leaf.par         = old.datum$cohort$leaf.par
+   new.datum$cohort$leaf.par.beam    = old.datum$cohort$leaf.par.beam
+   new.datum$cohort$leaf.par.diff    = old.datum$cohort$leaf.par.diff
+   new.datum$cohort$leaf.gpp         = old.datum$cohort$leaf.gpp
    new.datum$cohort$phap.lpar        = old.datum$cohort$phap.lpar
    new.datum$cohort$leaf.rshort      = old.datum$cohort$leaf.rshort
    new.datum$cohort$leaf.rlong       = old.datum$cohort$leaf.rlong

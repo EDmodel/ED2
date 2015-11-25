@@ -932,7 +932,7 @@ tspftdbh[[n]]     = list( vnam     = "f.bseeds"
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.par"
-                        , desc     = "Absorbed PAR - Leaf"
+                        , desc     = "Norm. Absorbed PAR - Leaf"
                         , e.unit   = untab$umolom2los
                         , i.unit   = untab$umolom2los
                         , plog     = FALSE
@@ -944,8 +944,34 @@ tspftdbh[[n]]     = list( vnam     = "leaf.par"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "par.leaf"
+                        , desc     = "Absolute Absorbed PAR - Leaf"
+                        , e.unit   = untab$umolom2os
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "leaf.gpp"
+                        , desc     = "Leaf-level GPP"
+                        , e.unit   = untab$kgcom2loyr
+                        , i.unit   = untab$kgcom2loyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
-                        , desc     = "Absorbed SW - Leaf"
+                        , desc     = "Norm. Absorbed SW - Leaf"
                         , e.unit   = untab$wom2l
                         , i.unit   = untab$wom2l
                         , plog     = FALSE
@@ -958,7 +984,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
-                        , desc     = "Net absorbed LW - Leaf"
+                        , desc     = "Norm. Net absorbed LW - Leaf"
                         , e.unit   = untab$wom2l
                         , i.unit   = untab$wom2l
                         , plog     = FALSE

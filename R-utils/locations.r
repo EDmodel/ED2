@@ -447,6 +447,12 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                       , values  = seq(from=0,to=2,by=1)
                                       , names   = c("Medvigy","Zhao and Qualls","Liou")
                                       )#end list
+   #----- ihrzrad is the horizontal shading model. ----------------------------------------#
+   flagvar[["ihrzrad"]]         = list( descr   = "Horizontal shading"
+                                      , numeric = TRUE
+                                      , values  = seq(from=0,to=1,by=1)
+                                      , names   = c("OFF","ON")
+                                      )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"
                                       , numeric = TRUE
@@ -1193,10 +1199,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(     6,    14,          20)
          nz     = c(     8,    15,          21)
       }else if (lenici == 22){
-         nparms = 3
-         param  = c("met.forcing","iustar","icanturb")
-         na     = c(            6,      14,        21)
-         nz     = c(            8,      15,        22)
+         nparms = 2
+         param  = c("ivegt.dynamics","ihrzrad")
+         na     = c(             11,        21)
+         nz     = c(             12,        22)
       }else if (lenici == 23){
          nparms = 2
          param  = c("treefall","sm.fire")
@@ -1218,10 +1224,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(          10,               17,             24)
          nz     = c(          11,               18,             26)
       }else if (lenici == 27){
-         nparms = 3
-         param  = c("soil.depth","sand", "clay")
-         na     = c(          10,    17,     25)
-         nz     = c(          11,    19,     27)
+         nparms = 2
+         param  = c("ivegt.dynamics","ihrzrad")
+         na     = c(             16,        26)
+         nz     = c(             17,        27)
       }else if (lenici == 28){
          nparms = 3
          param  = c("iphen.scheme", "isoil.text","treefall")
