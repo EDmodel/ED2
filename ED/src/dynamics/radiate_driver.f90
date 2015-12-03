@@ -758,10 +758,11 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.           !
          !                                                                                 !
          !---------------------------------------------------------------------------------!
-         albedo_sfcw_par = albedo_damp_par + csite%sfcwater_fracliq(ksn,ipa)               &
-                                           * ( snow_albedo_vis - albedo_damp_par )
-         albedo_sfcw_nir = albedo_damp_nir + csite%sfcwater_fracliq(ksn,ipa)               &
-                                           * ( snow_albedo_nir - albedo_damp_nir )
+         albedo_sfcw_par = snow_albedo_vis + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * ( albedo_damp_par - snow_albedo_vis )
+         albedo_sfcw_nir = snow_albedo_nir + csite%sfcwater_fracliq(ksn,ipa)               &
+                                           * ( albedo_damp_nir - snow_albedo_nir )
+
          !---------------------------------------------------------------------------------!
 
 
@@ -1055,15 +1056,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                         + upward_nir_above_diffuse
             !------------------------------------------------------------------------------!
 
-
-
             !----- Below-canopy downwelling radiation. ------------------------------------!
             downward_rshort_below_beam    = downward_par_below_beam                        &
                                           + downward_nir_below_beam
             downward_rshort_below_diffuse = downward_par_below_diffuse                     &
                                           + downward_nir_below_diffuse
             !------------------------------------------------------------------------------!
-
 
             !----- Soil+sfcwater+veg albedo (PAR, NIR, and Total Shortwave). --------------!
             ! (par_beam_norm,par_diff_norm,nir_beam_norm and nir_diff_norm are site level  !
@@ -1073,6 +1071,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    / sngloff( nir_beam_norm + nir_diff_norm, tiny_offset )
             csite%albedo     (ipa) = upward_rshort_above_diffuse
             !------------------------------------------------------------------------------!
+
          else
 
 
@@ -1095,7 +1094,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
-
 
          !---------------------------------------------------------------------------------!
          !     Absorption rates of PAR, rshort, and rlong of the vegetation.  Here we      !
@@ -1340,6 +1338,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          csite%albedo              (ipa) = upward_rshort_above_diffuse
          csite%rlongup             (ipa) = rlong - surface_netabs_longwave
          csite%rlong_albedo        (ipa) = csite%rlongup(ipa) / rlong
+
       end if
 
 
