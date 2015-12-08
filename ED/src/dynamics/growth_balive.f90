@@ -1102,6 +1102,17 @@ module growth_balive
                          ( available_carbon > 0.0 .and. cpatch%phenology_status(ico) == 1 )
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !     Maximum bleaf that the allometric relationship would allow.  If the plant is   !
+      ! drought stressed (elongf < 1), we don't allow it to get back to full allometry.    !
+      !------------------------------------------------------------------------------------!
+      bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+      bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
+      broot_aim      = bleaf_aim * q(ipft)
+      bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
+      bsapwoodb_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * (1. - agf_bs(ipft))
+      balive_aim     = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -1118,17 +1129,6 @@ module growth_balive
             ! pools, and put any excess in storage.                                        !
             !------------------------------------------------------------------------------!
 
-            !------------------------------------------------------------------------------!
-            !     Maximum bleaf that the allometric relationship would allow.  If the      !
-            ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
-            ! to full allometry.                                                           !
-            !------------------------------------------------------------------------------!
-            bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
-            bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
-            broot_aim      = bleaf_aim * q(ipft)
-            bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
-            bsapwoodb_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * (1. - agf_bs(ipft))
-            balive_aim     = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim
             !---- Amount that bleaf, broot, and bsapwood are off allometry. ---------------!
             delta_bleaf     = max (0.0, bleaf_aim     - cpatch%bleaf    (ico))
             delta_broot     = max (0.0, broot_aim     - cpatch%broot    (ico))
