@@ -144,9 +144,10 @@ PAR_DEFS=-DRAMS_MPI
 #-----------------------------------------------------------------
 
 # For IBM,HP,SGI,ALPHA,LINUX use these:
-ARCHIVE=ar rs
+#ARCHIVE=ar rs
 # For NEC SX-6
 #ARCHIVE=sxar rs
 # For SUN,CONVEX
 #ARCHIVE=ar r'
-
+# For Mac
+ARCHIVE=libtool -c -static -o
