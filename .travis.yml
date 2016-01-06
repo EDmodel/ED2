@@ -1,0 +1,8 @@
+language: c
+sudo: required
+
+before_install:
+    - sudo apt-get install gcc-4.8 gfortran-4.8 libhdf5-dev
+
+script:
+    - make OPT=opt.gfortran
