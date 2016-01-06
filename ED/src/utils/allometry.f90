@@ -400,7 +400,7 @@ module allometry
          select case (iallom)
          case (0,1,2)
             dbh2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
-         case (3)
+         case (3,4)
             !------------------------------------------------------------------------------!
             !      Force crown area to be the local LAI for small trees, to avoid the      !
             ! "bouncing" effect (crown area of small trees decreasing with size.  This     !
@@ -662,7 +662,7 @@ module allometry
          !     Decide the WAI according to the allometry.                                  !
          !---------------------------------------------------------------------------------!
          select case (iallom)
-         case (3)
+         case (3,4)
             !------------------------------------------------------------------------------!
             !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
             ! always 11% of the potential LAI.                                             !

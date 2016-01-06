@@ -150,9 +150,18 @@ ccc="${HOME}/util/calc.sh"  # Calculator
 #------ Queue: moorcroft_6100. ------------------------------------------------------------#
 m61max=60   # moorcroft_6100
 amdmax=60   # moorcroft_amd
+wsymax=60   # wofsy
 uremax=60   # unrestricted
 #------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#    Default command and possible output formats for squeue.                               #
+#------------------------------------------------------------------------------------------#
+squeue="squeue --noheader -u ${moi}"
+outform="%.200j %.25T"
+partform="%.200j %.25P"
+#------------------------------------------------------------------------------------------#
 
 
 #----- Requested memory and time. ---------------------------------------------------------#
@@ -212,7 +221,8 @@ fi
 
 
 #----- Executable name. -------------------------------------------------------------------#
-execname="ed_2.1-opt"
+execname_def="ed_2.1-opt"
+execname_m61="ed_2.1-opt"
 initrc="${HOME}/.bashrc"
 #------------------------------------------------------------------------------------------#
 
@@ -252,9 +262,15 @@ initrc="${HOME}/.bashrc"
 #   Check whether the executable is copied.  If not, let the user know and stop the        #
 # script.                                                                                  #
 #------------------------------------------------------------------------------------------#
-if [ ! -s ${here}/executable/${execname} ]
+if [ ! -s ${here}/executable/${execname_def} ]
 then
-   echo "Executable file : ${execname} is not in the executable directory"
+   echo "Executable file : ${execname_def} is not in the executable directory"
+   echo "Copy the executable to the file before running this script!"
+   exit 99
+fi
+if [ ${m61max} -gt 0 ] && [ ! -s ${here}/executable/${execname_m61} ]
+then
+   echo "Executable file : ${execname_m61} is not in the executable directory"
    echo "Copy the executable to the file before running this script!"
    exit 99
 fi
@@ -1316,7 +1332,7 @@ then
       # priority user have priority over yours, second-class user.  If so, kill the job    #
       # and re-submit, it may be faster.                                                   #
       #------------------------------------------------------------------------------------#
-      jobstat=$(squeue -h -u ${moi} -n ${jobname} -o "%T")
+      jobstat=$(${squeue} -o "${outform}" | grep ${jobname} | tail -1 | awk '{print $2}')
       if [ "x${jobstat}" == "x" ]
       then
          jobstat="NOT_FOUND"
@@ -1610,6 +1626,7 @@ then
                   #----- The new queue is by default the general. -------------------------#
                   newqueue="general"
                   runtime=${runtime_gen}
+                  execname=${execname_def}
                   #------------------------------------------------------------------------#
 
 
@@ -1705,8 +1722,8 @@ then
 
          elif [ ${runt} == "EXTINCT" -o ${runt} == "STSTATE" ] 
          then
-            running=$(squeue -h -u ${moi} -n ${jobname} -o "%T")
-            if [ "x${running}" == "xRUNNING" ]
+            running=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
+            if [ ${running} -gt 0 ]
             then
                deathrow="${deathrow} ${jobname}"
                if [ ${runt} == "EXTINCT" ]
@@ -1752,13 +1769,9 @@ then
       if [ ${runt} != "THE_END" ] && [ ${runt} != "STSTATE" ] && 
          [ ${runt} != "EXTINCT" ] && [ ${runt} != "BAD_MET" ]
       then
-         running=$(squeue -h -u ${moi} -n ${jobname} -o "%T")
-         if [ "x${running}" == "x" ]
-         then
-            running="NOT_FOUND"
-         fi
+         running=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
 
-         if [ "x${running}" != "xRUNNING" ]
+         if [ ${running} -eq 0 ]
          then
             echo "${polyname} is missing.  Re-submitting..." >> ${situation}
 
@@ -1994,6 +2007,7 @@ then
             #----- The new queue is by default the general. -------------------------------#
             newqueue="general"
             runtime=${runtime_gen}
+            execname=${execname_def}
             #------------------------------------------------------------------------------#
 
 
@@ -2055,12 +2069,7 @@ then
       #------------------------------------------------------------------------------------#
       if [ ${runt} == "INITIAL" ] && [ -s ${here}/${polyname} ]
       then
-         running=$(squeue -h -u ${moi} -n ${jobname} -o "%T")
-         if [ "x${running}" == "x" ]
-         then
-            running="NOT_FOUND"
-         fi
-         #---------------------------------------------------------------------------------#
+         running=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
 
 
 
@@ -2073,7 +2082,7 @@ then
          else
             readytostart=1
          fi
-         if [ "x${running}" != "xRUNNING" ] && [ ${readytostart} -eq 1 ]
+         if [ ${running} -eq 0 ] && [ ${readytostart} -eq 1 ]
          then
             let nstart=${nstart}+1
             echo " >>> Initial submission of polygon ${polyname}!!!!"
@@ -2104,7 +2113,7 @@ then
       if [ ${runt} != "THE_END" ] && [ ${runt} != "STSTATE" ] && [ ${runt} != "EXTINCT" ]
       then
          polyIATA=$(echo ${polyiata} | tr '[:lower:]' '[:upper:]')
-         polyqueue=$(squeue -h -u ${moi} -n ${jobname} -o "%P")
+         polyqueue=$(${squeue} -o "${partform}" | grep ${jobname} | awk '{print $2}')
 
          if [ "x${polyqueue}" != "x" ]
          then
@@ -2284,7 +2293,7 @@ then
 
 
       jobname="${desc}-${polyname}"
-      jobqueue=$(squeue -h -u ${moi} -n ${jobname} -o "%P")
+      jobqueue=$(${squeue} -o "${partform}" | grep ${jobname} | awk '{print $2}')
 
       #----- Update the queue in joborder.txt. --------------------------------------------#
       if [ "x${jobqueue}" != "x" ]
@@ -2366,7 +2375,7 @@ echo "Counting the number of polygons in queue on general..."
 genpen=$(scount -g "${desc}-" -p general -t PENDING)
 genrun=$(scount -g "${desc}-" -p general -t RUNNING)
 /bin/rm -f ${pendfile}
-squeue -h -t PENDING -u ${moi} -p general -o "%.j %.N %.P" | grep ${desc} > ${pendfile}
+${squeue} -t PENDING -p general -o "%.j %.N %.P" | grep ${desc} > ${pendfile}
 #------------------------------------------------------------------------------------------#
 
 
@@ -2586,7 +2595,6 @@ do
    #---------------------------------------------------------------------------------------#
 
 
-
    #----- Find the job name (or the alternative job name). --------------------------------#
    jobname="${desc}-${polyname}"
    #---------------------------------------------------------------------------------------#
@@ -2621,6 +2629,18 @@ do
 
       #----- Kill the job. ----------------------------------------------------------------#
       scancel -u ${moi} -n ${jobname}
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Decide the executable name based on queue.                                     #
+      #------------------------------------------------------------------------------------#
+      if [ "x${newqueue}" == "xmoorcroft_6100" ]
+      then
+         execname=${execname_m61}
+      else
+         execname=${execname_def}
+      fi
       #------------------------------------------------------------------------------------#
 
 

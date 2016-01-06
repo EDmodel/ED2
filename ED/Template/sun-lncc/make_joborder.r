@@ -177,16 +177,16 @@ default = list( run           = "unnamed"
               , imort.scheme  = 1
               , ddmort.const  = 0.8
               , cbr.scheme    = 0
-              , isfclyrm      = 3
+              , isfclyrm      = 4
               , icanturb      = 2
-              , ubmin         = 0.65
-              , ugbmin        = 0.25
-              , ustmin        = 0.05
+              , ubmin         = 1.00
+              , ugbmin        = 0.40
+              , ustmin        = 0.10
               , gamm          = 13.0
               , gamh          = 13.0
               , tprandtl      = 0.74
               , ribmax        = 0.50
-              , atmco2        = 378.
+              , atmco2        = 400.
               , thcrit        = -1.20
               , sm.fire       = 0.45
               , ifire         = 0
@@ -209,10 +209,10 @@ default = list( run           = "unnamed"
               , ivegtdyn      = 1
               , igndvap       = 0
               , iphen         = -1
-              , iallom        = 3
+              , iallom        = 4
               , ibigleaf      = 0
               , irepro        = 2
-              , treefall      = -0.0125
+              , treefall      = -0.0140
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               ) #end list

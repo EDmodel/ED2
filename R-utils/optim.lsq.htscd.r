@@ -76,9 +76,10 @@ optim.lsq.htscd <<- function( lsq.formula
                             , lsq.first
                             , sig.first
                             , err.method  = c("hessian","hess","bootstrap","boot")
-                            , maxit.optim = 20000
-                            , tol.gain    = 0.0001
-                            , tol.optim   = 0.00001
+                            , maxit.optim    = 20000
+                            , tol.gain       = 0.000001
+                            , tol.optim      = 0.0000001
+                            , boot.tol.optim = 0.000005
                             , is.debug    = FALSE
                             , maxit       = 100
                             , n.boot      = 1000
@@ -581,6 +582,18 @@ optim.lsq.htscd <<- function( lsq.formula
                            , nrow = nrow(opt.data)
                            , dimnames = list(rownames(opt.data),NULL)
                            )#end matrix
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Change tolerance for bootstrap.                                                #
+      #------------------------------------------------------------------------------------#
+      ctrl.optim  = modifyList( x   = ctrl.optim
+                              , val = list( reltol= boot.tol.optim
+                                          , ndeps = rep(sqrt(boot.tol.optim),times=n.par)
+                                          )#end list
+                              )#end modifyList
       #------------------------------------------------------------------------------------#
 
 

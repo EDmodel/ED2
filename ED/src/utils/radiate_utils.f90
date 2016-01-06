@@ -120,6 +120,22 @@ subroutine solar_radiation_breakdown(cgrid,ipy)
          cgrid%met(ipy)%par_beam       = 0.
       end if
       !------------------------------------------------------------------------------------!
+
+   case (5)
+      !------------------------------------------------------------------------------------!
+      !     Re-calculate all components using the clearness index method.                  !
+      !------------------------------------------------------------------------------------!
+      call short_bdown_clearidx(cgrid%met(ipy)%rshort                                      &
+                               ,cgrid%cosz(ipy)                                            &
+                               ,cgrid%met(ipy)%par_beam                                    &
+                               ,cgrid%met(ipy)%par_diffuse                                 &
+                               ,cgrid%met(ipy)%nir_beam                                    &
+                               ,cgrid%met(ipy)%nir_diffuse                                 &
+                               ,cgrid%met(ipy)%rshort_diffuse )
+      !----- Make sure the total radiation is preserved. ----------------------------------!
+      cgrid%met(ipy)%rshort = cgrid%met(ipy)%par_beam + cgrid%met(ipy)%par_diffuse         &
+                            + cgrid%met(ipy)%nir_beam + cgrid%met(ipy)%nir_diffuse
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -346,6 +362,148 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
 
    return
 end subroutine short_bdown_weissnorman
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine computes the split between direct and diffuse radiation, and        !
+! between visible and near-infrared radiation using a combination of methods suggested by: !
+!                                                                                          !
+! Boland, J., B. Ridley, B. Brown, 2008: Models of diffuse solar radiation.  Renew.        !
+!     Energy, 33, 575-584. doi:10.1016/j.renene.2007.04.012 (BD08).                        !
+!                                                                                          !
+! Tsubo, M., S. Walker, 2005: Relationships between photosynthetically active radiation    !
+!     and clearness index at Bloemfontein, South Africa.  Theor. Appl. Climatol., 80,      !
+!     17-25.  doi:10.1007/s00704-004-0080-5 (TW05).                                        !
+!                                                                                          !
+! Bendix, J., B. Silva, K. Roos, D. O. Gottlicher, R. Rollenbeck, T. Nauﬂ, E. Beck, 2010:  !
+!     Model parameterization to simulate and compare the PAR absorption potential of two   !
+!     competing plant species.  Int. J. Biometeorol. 54, 283-295.                          !
+!     doi:10.1007/s00484-009-0279-3 (BX10).                                                !
+!------------------------------------------------------------------------------------------!
+subroutine short_bdown_clearidx(rshort_full,cosz,par_beam,par_diff,nir_beam,nir_diff       &
+                               ,rshort_diff)
+   use consts_coms          , only : solar         & ! intent(in)
+                                   , lnexp_min     & ! intent(in)
+                                   , lnexp_max     ! ! intent(in)
+   use canopy_radiation_coms, only : cosz_min      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in)    :: rshort_full          ! Incident SW radiation   (total)   [  W/m≤]
+   real, intent(in)    :: cosz                 ! cos(zenith distance)              [   ---]
+   real, intent(out)   :: par_beam             ! Incident PAR            (direct ) [  W/m≤]
+   real, intent(out)   :: par_diff             ! Incident PAR            (diffuse) [  W/m≤]
+   real, intent(out)   :: nir_beam             ! Incident near-infrared  (direct ) [  W/m≤]
+   real, intent(out)   :: nir_diff             ! Incident near-infrared  (diffuse) [  W/m≤]
+   real, intent(out)   :: rshort_diff          ! Incident SW radiation   (diffuse) [  W/m≤]
+   !----- Local variables. ----------------------------------------------------------------!
+   real                :: rshort_toa           ! Incident SW at the top of atmos.  [  W/m≤]
+   real                :: par_toa              ! Incident SW at the top of atmos.  [  W/m≤]
+   real                :: nir_toa              ! Incident SW at the top of atmos.  [  W/m≤]
+   real                :: par_full             ! Incident PAR (Direct+Diffuse)     [  W/m≤]
+   real                :: nir_full             ! Incident NIR (Direct+Diffuse)     [  W/m≤]
+   real                :: fkt                  ! Clearness index                   [   ---]
+   real                :: fpar                 ! PAR/SW ratio                      [   ---]
+   real                :: fdiff_aux            ! Dummy      [   ---]
+   real                :: fdiff_1st            ! Uncorrected diffuse fraction      [   ---]
+   real                :: fdiff                ! Corrected diffuse fraction        [   ---]
+   !---------------------------------------------------------------------------------------!
+   !    Local constants.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   !----- Coefficients for Diffuse/total fraction. (equations 24,26, 32 of BD10) ----------!
+   real, dimension(2), parameter :: bd08_eqn32 = (/ -5.0033,  8.6025 /)
+   !----- PAR/SW fraction coefficients (equation 2 of TW05). ------------------------------!
+   real, dimension(3), parameter :: tw05_eqn02 = (/  0.613, -0.334,  0.121 /)
+   !----- Flag to activate BX10's correction for sun angle. -------------------------------!
+   logical                       :: apply_bx10_corr = .false.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     First thing to check is whether this is daytime or "night-time".  If the zenith   !
+   ! angle is too close to horizon, we assume it's dawn/dusk and all radiation goes to     !
+   ! diffuse.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   if (cosz <= cosz_min) then
+      rshort_diff  = rshort_full
+      par_beam     = 0.0
+      nir_beam     = 0.0
+      par_diff     = tw05_eqn02(1) * rshort_diff
+      nir_diff     = rshort_diff - par_diff
+   else
+      !----- Total radiation at the top of the atmosphere [  W/m≤], using ED defaults. ----!
+      rshort_toa = solar * cosz
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find the clearness index based on total shortwave radiation.                    !
+      !------------------------------------------------------------------------------------!
+      fkt = max(0.,min(1.,rshort_full / rshort_toa))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the fraction of PAR radiation as a function of total radiation and        !
+      ! clearness index, following TW05, eqn. 2.                                           !
+      !------------------------------------------------------------------------------------!
+      fpar     = tw05_eqn02(1) + fkt * ( tw05_eqn02(2) + fkt * tw05_eqn02(3) )
+      par_full = fpar * rshort_full
+      nir_full = rshort_full - par_full
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the uncorrected diffuse fraction based on BD08.  We use this equation     !
+      ! instead of the method proposed by BX10 because it is a continuous function and     !
+      ! results are very similar to BX10 curve except at high fkt, where BD08 predicts     !
+      ! higher fraction of direct -- a reasonable assumption because total radiation       !
+      ! should be entirely direct if the it is the same as the TOA radiation.              !
+      !------------------------------------------------------------------------------------!
+      fdiff_aux = max(lnexp_min, min(lnexp_max, bd08_eqn32(1) + bd08_eqn32(2) * fkt ) )
+      fdiff_1st = 1.0 / (1.0 + exp(fdiff_aux) )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     One option is to apply the correction term by BX10.  I'm still not sure if     !
+      ! this term is really necessary, because the higher proportion of diffuse radiation  !
+      ! at low sun angles should be due to thicker optical depth, and a lower ratio        !
+      ! between incident radiation at the ground and extraterrestrial radiation should be  !
+      ! naturally lower.  If direct radiation is too high, then we may include this term.  !
+      !------------------------------------------------------------------------------------!
+      if (apply_bx10_corr) then
+         fdiff = fdiff_1st / ( (1.0-fdiff_1st) * cosz + fdiff_1st)
+      else
+         fdiff = fdiff_1st
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the radiation components.                                                 !
+      !------------------------------------------------------------------------------------!
+      par_diff    = fdiff * par_full
+      par_beam    = par_full - par_diff
+      nir_diff    = fdiff * nir_full
+      nir_beam    = nir_full - nir_diff
+      rshort_diff = par_diff + nir_diff
+      !------------------------------------------------------------------------------------!
+   end if
+
+   return
+end subroutine short_bdown_clearidx
 !==========================================================================================!
 !==========================================================================================!
 

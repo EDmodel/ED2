@@ -405,7 +405,7 @@ C2B    <<- 2.0
 if ("iallom" %in% ls()){
    iallom <<- iallom
 }else{
-   iallom <<- 3
+   iallom <<- 4
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -431,7 +431,7 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
-}else if (iallom %in% c(2)){
+}else if (iallom %in% c(2,3)){
    #---------------------------------------------------------------------------------------#
    #     Use the allometry proposed by:                                                    #
    #                                                                                       #
@@ -443,7 +443,7 @@ if (iallom %in% c(0,1)){
    b1Ht.trop    = 0.0352
    b2Ht.trop    = 0.694
    #---------------------------------------------------------------------------------------#
-}else if (iallom %in% c(3)){
+}else if (iallom %in% c(4)){
    #---------------------------------------------------------------------------------------#
    #     Allometric equation based on the Sustainable Landscapes data.                     #
    #                                                                                       #
@@ -457,15 +457,15 @@ if (iallom %in% c(0,1)){
    # is very similar to Feldpausch et al (2012) equation for South America.                #
    #                                                                                       #
    # Total number of trees: 14860                                                          #
-   # hgt_ref = 45.78   (95% CI: [  42.24;  49.73])                                         #
-   # b1Ht    = 0.04525 (95% CI: [0.04318;0.04681])                                         #
-   # b2Ht    = 0.8082  (95% CI: [ 0.7783; 0.8464])                                         #
+   # hgt_ref = 46.2515 (95% CI: [  45.67;  47.16])                                         #
+   # b1Ht    = 0.04364 (95% CI: [0.04247;0.04467])                                         #
+   # b2Ht    = 0.81644 (95% CI: [0.8019; 0.8271])                                          #
    # R2      = 0.660                                                                       #
    # RMSE    = 5.5                                                                         #
    #---------------------------------------------------------------------------------------#
-   hgt.ref.trop = 45.78
-   b1Ht.trop    = 0.04525
-   b2Ht.trop    = 0.8082
+   hgt.ref.trop = 46.2515
+   b1Ht.trop    = 0.04364
+   b2Ht.trop    = 0.81644
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -1299,7 +1299,7 @@ for (p in sequence(npft+1)){
 #------------------------------------------------------------------------------------------#
 #      Change maximum height of tropical trees to 99% of the maximum height.               #
 #------------------------------------------------------------------------------------------#
-if (iallom %in% c(3)){
+if (iallom %in% c(4)){
    for (ipft in sequence(npft)){
       if (pft$tropical[ipft] && (! pft$grass[ipft])){
          pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
@@ -1319,7 +1319,7 @@ for (ipft in sequence(npft)){
       if (iallom %in% c(0,1)){
          pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit[ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-      }else if (iallom %in% c(2,3)){
+      }else if (iallom %in% c(2,3,4)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
                               / pft$b1Ht[ipft] ) ^ (1.0 / pft$b2Ht[ipft])
@@ -1389,15 +1389,15 @@ for (ipft in sequence(npft)){
       if (iallom %in% c(0,1)){
          pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
          pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom %in% c(2)){
+      }else if (iallom %in% c(2,3)){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
-      }else if (iallom %in% c(3)){
+      }else if (iallom %in% c(4)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Ca[ipft] = pi * 0.3951^2
-         pft$b2Ca[ipft] = 2. * 0.6156
+         pft$b1Ca[ipft] = pi * 0.40309^2
+         pft$b2Ca[ipft] = 2. * 0.61278
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1425,7 +1425,7 @@ for (ipft in sequence(npft)){
          pft$b2Bl.large [ipft] = pft$b2Bl.small[ipft]
          pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
                                  * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
-      }else if(iallom %in% c(3)){
+      }else if(iallom %in% c(3,4)){
          #---------------------------------------------------------------------------------#
          #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
          # mid-successional to be 20gC/plant and interpolate biomass for saplings using a  #
@@ -1469,13 +1469,13 @@ for (ipft in sequence(npft)){
          pft$b2Bs.small[ipft] = odead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(odead.large[1]) * pft$rho[ipft] / odead.large[3]
          pft$b2Bs.large[ipft] = odead.large[2]
-      }else if (iallom %in% c(2)){
+      }else if (iallom %in% c(2,3)){
          #---- Based an alternative modification of Chave et al. (2001) allometry. --------#
          pft$b1Bs.small[ipft] = C2B * exp(ndead.small[1]) * pft$rho[ipft] / ndead.small[3]
          pft$b2Bs.small[ipft] = ndead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
-      }else if (iallom %in% c(3)){
+      }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
          pft$b1Bs.small[ipft] = C2B * 0.3201235 * pft$rho[ipft]
          pft$b2Bs.small[ipft] = 2.2940237
@@ -1498,24 +1498,29 @@ for (ipft in sequence(npft)){
       # squares approach.                                                                  #
       #                                                                                    #
       # Total number of trees: 14731                                                       #
-      # b1Cl    = 0.25972 (95% CI: [0.24661;0.27272])                                      #
-      # b2Cl    = 1.0755  (95% CI: [ 1.0603; 1.0922])                                      #
+      # b1Cl    = 0.29711 (95% CI: [0.28833;0.30821])                                      #
+      # b2Cl    = 1.0326  (95% CI: [ 1.0193; 1.0421])                                      #
       # R2      = 0.677                                                                    #
       # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(3) && (! pft$grass[ipft])){
-         pft$b1Cl[ipft] = 0.25972
-         pft$b2Cl[ipft] = 1.0755
+      if (iallom %in% c(4) && (! pft$grass[ipft])){
+         pft$b1Cl[ipft] = 0.29711
+         pft$b2Cl[ipft] = 1.0326
       }#end if
       #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#
-      #     Replace the coefficients for WAI in case iallom is 3.                          #
-      #  These numbers come from fitting Chambers et al. (2001) and Chambers et al. (2004) #
-      #  allometries for stem area index.                                                  #
+      #     Replace the coefficients for WAI in case iallom is 3 or 4.                     #
+      #  These numbers come from fixing WAI to be 11% of the Maximum Leaf Area Index based #
+      #  on observation by                                                                 #
+      #                                                                                    #
+      #  Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,             #
+      #     J. J. O'Brien, and H. Ordonez, 2013: Comparison of direct and indirect methods #
+      #     for assessing leaf area index across a tropical rain forest landscape.         #
+      #     Agric. For. Meteorol., 177, 110--116. doi:10.1016/j.agrformet.2013.04.010.     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(3)){
+      if (iallom %in% c(3,4)){
          pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl.large[ipft]
          pft$b2WAI[ipft] = pft$b2Bl.large[ipft]
       }#end if
@@ -1551,7 +1556,7 @@ if (iallom %in% c(0)){
    pft$b2Rd[12:16] = 0.000
    pft$b2Rd[   17] = 0.277
 
-}else if (iallom %in% c(1,2,3)){
+}else{
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
    pft$b1Rd[1:17]  = -1.1140580
    pft$b2Rd[1:17]  =  0.4223014
@@ -1565,19 +1570,6 @@ if (iallom %in% c(0)){
 #------------------------------------------------------------------------------------------#
 pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#     Update colours.                                                                      #
-#------------------------------------------------------------------------------------------#
-#pft$red    = c( 254,   1,  68,   0, 203,  13,   0,  37, 255
-#              , 195, 143, 213, 170, 180, 120, 145, 119,  75 )
-#pft$green  = c( 204, 229, 178,  83, 149, 245, 164, 101,  21
-#              ,  19,  34, 109,  46,  36,   0, 125,  69,  75 )
-#pft$blue   = c(  47,   0,  71,   3,   0, 250, 168, 102,  63
-#              ,  50,  53, 198, 152, 255, 190,  82, 255,  75 )
-#pft$colour = rgb(red=pft$red,green=pft$green,blue=pft$blue,maxColorValue=255)
 #------------------------------------------------------------------------------------------#
 
 

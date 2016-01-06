@@ -39,6 +39,8 @@ module hrzshade_utils
                                       , rls_fbeam      & ! intent(out)
                                       , rls_igp0       & ! intent(out)
                                       , rls_igp        & ! intent(out)
+                                      , rls_ipa        & ! intent(out)
+                                      , rls_mask       & ! intent(out)
                                       , gap_npixel     & ! intent(out)
                                       , gap_x0         & ! intent(out)
                                       , gap_y0         & ! intent(out)
@@ -137,7 +139,9 @@ module hrzshade_utils
       allocate(rls_cci   (rls_nxy,rls_nxy))
       allocate(rls_igp0  (rls_nxy,rls_nxy))
       allocate(rls_igp   (rls_nxy,rls_nxy))
+      allocate(rls_ipa   (rls_nxy,rls_nxy))
       allocate(rls_fbeam (rls_nxy,rls_nxy))
+      allocate(rls_mask  (rls_nxy,rls_nxy))
       allocate(gap_x0    (rls_ngap))
       allocate(gap_y0    (rls_ngap))
       allocate(gap_idx   (rls_ngap))
@@ -232,7 +236,8 @@ module hrzshade_utils
                                        , deallocate_sitetype & ! subroutine
                                        , copy_sitetype_mask  & ! subroutine
                                        , copy_sitetype       ! ! subroutine
-      use canopy_radiation_coms , only : cci_radius          & ! intent(in)
+      use canopy_radiation_coms , only : ihrzrad             & ! intent(in)
+                                       , cci_radius          & ! intent(in)
                                        , cci_pixres          & ! intent(in)
                                        , cci_gapsize         & ! intent(in)
                                        , cci_gapmin          & ! intent(in)
@@ -250,9 +255,11 @@ module hrzshade_utils
                                        , cci_gaparea         & ! intent(in)
                                        , gap_npixel          & ! intent(in)
                                        , rls_igp             & ! intent(out)
+                                       , rls_ipa             & ! intent(out)
                                        , rls_ztch            & ! intent(out)
                                        , rls_cci             & ! intent(out)
                                        , rls_fbeam           & ! intent(out)
+                                       , rls_mask            & ! intent(out)
                                        , gap_ipa             & ! intent(out)
                                        , gap_idx             & ! intent(out)
                                        , gap_mask            & ! intent(out)
@@ -316,8 +323,8 @@ module hrzshade_utils
       real(kind=4)                              :: at_bright   ! Minimum value for bright
       real(kind=4)                              :: at_dark     ! Maximum value for dark
       !----- Local constants. -------------------------------------------------------------!
-      logical                     , parameter   :: print_debug = .true.
-      logical                     , parameter   :: verbose     = .true.
+      logical                     , parameter   :: print_debug   = .true.
+      logical                     , parameter   :: verbose       = .true.
       !----- External functions. ----------------------------------------------------------!
       real                        , external    :: fquant
       !------------------------------------------------------------------------------------!
@@ -327,10 +334,18 @@ module hrzshade_utils
       !     Initialise raster file and patch name in case we must debug.                   !
       !------------------------------------------------------------------------------------!
       if (print_debug) then
-         write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                                 &
-            'raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-         write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                                 &
-            'ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         select case (ihrzrad)
+         case (1)
+            write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
+               'gap_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+            write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
+               'gap_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         case (2)
+            write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
+               'pix_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+            write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
+               'pix_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         end select
       end if
       !------------------------------------------------------------------------------------!
 
@@ -553,25 +568,25 @@ module hrzshade_utils
 
 
       !------------------------------------------------------------------------------------!
-      !      Find crown closure index.                                                     !
+      !      Find corresponding patch.                                                     !
       !------------------------------------------------------------------------------------!
-      if (verbose) write(unit=*,fmt='(a)') '    -> Calculate CCI...'
-      call cci_lieberman(rls_nxy,rls_ztch,cci_pixres,rls_length,rls_cci)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !      Find the uncorrected light illumination factor.                               !
-      !------------------------------------------------------------------------------------!
-      if (verbose) write(unit=*,fmt='(a)') '    -> Find uncorrected illumination factor...'
-      call  cci_abstop(rls_npixel,rls_cci,rls_fbeam)
+      if (verbose) write(unit=*,fmt='(a)') '    -> Find patch...'
       do iy=1,rls_nxy
          do ix=1,rls_nxy
             igp            = rls_igp(ix,iy)
-            gap_fbeam(igp) = gap_fbeam(igp) + rls_fbeam(ix,iy)
-            gap_nuse (igp) = gap_nuse (igp) + 1
+            rls_ipa(ix,iy) = gap_ipa(igp)
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Find crown closure index and the uncorrected illumination factor.             !
+      !------------------------------------------------------------------------------------!
+      if (verbose) write(unit=*,fmt='(a)') '    -> Calculate CCI...'
+      call cci_lieberman(rls_nxy,rls_ztch,cci_pixres,rls_length,rls_cci)
+      if (verbose) write(unit=*,fmt='(a)') '    -> Find uncorrected illumination factor...'
+      call cci_abstop   (rls_npixel,rls_cci,rls_fbeam)
       !------------------------------------------------------------------------------------!
 
 
@@ -600,22 +615,79 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     Average by gap.  In the unlikely case that a gap is completely suppressed, we  !
-      ! assign the minimum value of rls_fbeam.                                             !
-      !------------------------------------------------------------------------------------!
-      min_fbeam = minval(rls_fbeam)
-      where (gap_nuse(:) > 0)
-         gap_fbeam(:) = gap_fbeam(:) / gap_nuse(:)
-      elsewhere
-         gap_fbeam(:) = min_fbeam
-      end where
-      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
-      !      Define brightness thresholds based on quantiles.                              !
+      !      Aggregate the illumination factor differently depending on ihrzrad.           !
       !------------------------------------------------------------------------------------!
-      if (verbose) write(unit=*,fmt='(a)') '    -> Find the mean illumination by class...'
+      if (verbose) write(unit=*,fmt='(a)') '    -> Aggregate illumination factor...'
+      select case (ihrzrad)
+      case (1)
+         !---------------------------------------------------------------------------------!
+         !    Gap illumination factor is going to be proportional to the gap average.      !
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     First step: add fbeam and count pixels.                                     !
+         !---------------------------------------------------------------------------------!
+         do iy=1,rls_nxy
+            do ix=1,rls_nxy
+               igp            = rls_igp(ix,iy)
+               gap_fbeam(igp) = gap_fbeam(igp) + rls_fbeam(ix,iy)
+               gap_nuse (igp) = gap_nuse (igp) + 1
+            end do
+         end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Average by gap.  In the unlikely case that a gap is completely suppressed,  !
+         ! we assign the minimum value at pixel level (minval(rls_fbeam)).                 !
+         !---------------------------------------------------------------------------------!
+         min_fbeam = minval(rls_fbeam)
+         where (gap_nuse(:) > 0)
+            gap_fbeam(:) = gap_fbeam(:) / gap_nuse(:)
+         elsewhere
+            gap_fbeam(:) = min_fbeam
+         end where
+         !---------------------------------------------------------------------------------!
+
+      case default
+         !---------------------------------------------------------------------------------!
+         !    Gap illumination factor is going to be proportional to the gap maximum.  In  !
+         ! case the gap was completely suppressed, we take the minimum value at pixel      !
+         ! scale (minval(rls_fbeam)).                                                      !
+         !---------------------------------------------------------------------------------!
+         min_fbeam = minval(rls_fbeam)
+         do igp=1,rls_ngap
+            rls_mask   (:,:) = rls_igp(:,:) == igp
+            !----- Check whether any pixel still belongs to the gap. ----------------------!
+            if (any(rls_mask)) then
+               !----- Yes, take the highest value. ----------------------------------------!
+               gap_fbeam(igp) = maxval(rls_fbeam,mask=rls_mask)
+               !---------------------------------------------------------------------------!
+            else
+               !----- No, take the minimum pixel value. -----------------------------------!
+               gap_fbeam(igp) = min_fbeam
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+         end do 
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Define brightness thresholds and assign correction terms based on gap         !
+      ! averages.                                                                          !
+      !------------------------------------------------------------------------------------!
+      if (verbose) then
+         write(unit=*,fmt='(a)') '    -> Find the mean illumination by class...'
+      end if
       at_bright = fquant(rls_ngap,gap_fbeam,twothirds)
       at_dark   = fquant(rls_ngap,gap_fbeam,onethird )
       if (verbose) then
@@ -637,9 +709,12 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !      Find the mean absorption at the top and area under each category.             !
       !------------------------------------------------------------------------------------!
-      if (verbose) write(unit=*,fmt='(a)') '    -> Find the mean illumination by class...'
+      if (verbose) then
+         write(unit=*,fmt='(a)') '    -> Find the mean illumination by patch...'
+      end if
       do igp=1,rls_ngap
          ipa = gap_ipa(igp)
+         !----- Count gaps. ---------------------------------------------------------------!
          if (gap_fbeam(igp) > at_bright) then
             fbeam_ipa  (1,ipa) = fbeam_ipa  (1,ipa) + gap_fbeam(igp)
             cciarea_ipa(1,ipa) = cciarea_ipa(1,ipa) + 1.0
@@ -650,6 +725,7 @@ module hrzshade_utils
             fbeam_ipa  (3,ipa) = fbeam_ipa  (3,ipa) + gap_fbeam(igp)
             cciarea_ipa(3,ipa) = cciarea_ipa(3,ipa) + 1.0
          end if
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 

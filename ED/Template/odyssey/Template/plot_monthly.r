@@ -93,6 +93,7 @@ idbh.type           = myidbhtype   # Type of DBH class
 klight              = myklight     # Weighting factor for maximum carbon balance
 corr.growth.storage = mycorrection # Correction factor to be applied to growth and
                                    #   storage respiration
+iallom              = myallom      # Allometry to use
 #------------------------------------------------------------------------------------------#
 
 

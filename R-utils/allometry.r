@@ -9,7 +9,7 @@ h2dbh <<- function(h,ipft){
    }#end if
 
    tropo = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn = pft$tropical[zpft] & iallom %in% c(2,3)
+   tropn = pft$tropical[zpft] & iallom %in% c(2,3,4)
    tempe = ! pft$tropical[zpft]
 
    dbh = NA * h
@@ -44,7 +44,7 @@ dbh2h <<- function(ipft,dbh){
    dbhuse[large] = pft$dbh.crit[zpft[large]]
 
    tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
+   tropn         = pft$tropical[zpft] & iallom %in% c(2,3,4)
    tempe         = ! pft$tropical[zpft]
 
    h         = NA * dbh
@@ -141,9 +141,9 @@ dbh2ca <<- function(dbh,ipft){
    #---------------------------------------------------------------------------------------#
    #     Decide how to calculate based on allometry.                                       #
    #---------------------------------------------------------------------------------------#
-   if (iallom %in% c(0,1,2)){
+   if (iallom %in% c(0,1,2,3)){
       crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
-   }else if (iallom %in% c(3)){
+   }else if (iallom %in% c(4)){
       crown = ifelse( dbhuse >= pft$dbh.adult[ipft]
                     , pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
                     , loclai
@@ -201,7 +201,7 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
       abranch  = pi*kterm*log(dcb.use/dbmin)
       wai      = ( abole + abranch )
       wai      = wai * dbh2ca(dbh=pft$dbh.crit[zpft],ipft=zpft)/max(wai)
-   }else if(! iallom %in% c(3)){
+   }else if(iallom %in% c(0,1,2)){
       wai      = pft$b1WAI[zpft] * dbh.use ^ pft$b2WAI[zpft]
    }else{
       wai      = 0.11 * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
@@ -247,7 +247,7 @@ dbh2rd <<- function(hgt,dbh,ipft){
       #------------------------------------------------------------------------------------#
       vol  = dbh2vol(hgt,dbh,ipft)
       rd   = pft$b1Rd[ipft] * vol ^ pft$b2Rd[ipft]
-   }else if (iallom %in% c(1,2,3)){
+   }else{
        #-----------------------------------------------------------------------------------#
        #    This is just a test allometry, that imposes root depth to be 0.5 m for         #
        # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.             #

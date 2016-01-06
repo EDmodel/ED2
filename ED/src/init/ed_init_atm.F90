@@ -431,7 +431,7 @@ subroutine ed_init_atm()
                end do
             end do
             !------------------------------------------------------------------------------!
-         case (1)
+         case (1,2)
             !----- Run patch light assignment. --------------------------------------------!
             do ipy = 1,cgrid%npolygons
                cpoly => cgrid%polygon(ipy)

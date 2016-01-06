@@ -306,5 +306,6 @@ pretty.time <<- function(when,n=10,...){
    vresult=list(levels=vlevels,labels=vlabels,n=length(vlevels),scale=myunit,padj=padj)
    return(vresult)
 }#end function
-
+#==========================================================================================#
+#==========================================================================================#
 

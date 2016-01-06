@@ -153,7 +153,7 @@ subroutine vegetation_dynamics(new_month,new_year)
                   end do
                end do
                !---------------------------------------------------------------------------!
-            case (1)
+            case (1,2)
                !----- Run patch light assignment. -----------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cpoly => cgrid%polygon(ipy)

@@ -281,7 +281,7 @@ cloud.metrics <<- function( x
          plant = plant + NA
       }#end if (length(zveg) > min.pts)
       #------------------------------------------------------------------------------------#
-      
+
    }else{
       plant = NULL
    }#end if (zveg.stats)
@@ -721,7 +721,7 @@ open.fcan <<- function( pt.cloud
       ans = rep(NA,times=length(zabove))
    }else{
       #----- Discard data that are not classified as vegetation. --------------------------#
-      zveg    = ifelse( pt.cloud$pt.class %in% c(3,4,5) & pt.cloud$pt.class %>=% zabove[1]
+      zveg    = ifelse( pt.cloud$pt.class %in% c(3,4,5) & pt.cloud$z %>=% zabove[1]
                       , pt.cloud$z
                       , NA
                       )#end ifelse

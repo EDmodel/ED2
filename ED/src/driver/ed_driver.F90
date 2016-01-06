@@ -119,7 +119,7 @@ subroutine ed_driver()
    ! arrays.                                                                               !
    !---------------------------------------------------------------------------------------!
    select case (ihrzrad)
-   case (1)
+   case (1,2)
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
       call init_cci_variables()
    end select

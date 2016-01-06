@@ -779,6 +779,14 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$wood.dens     = list()
    patch$can.depth     = list()
    patch$can.area      = list()
+   patch$phap.lpar     = list()
+   patch$phap.ltemp    = list()
+   patch$phap.lwater   = list()
+   patch$phap.lvpd     = list()
+   patch$phap.sms      = list()
+   patch$phap.lgbw     = list()
+   patch$phap.lgsw     = list()
+   patch$sm.stress     = list()
    patch$leaf.temp     = list()
    patch$leaf.water    = list()
    patch$leaf.vpd      = list()
@@ -794,6 +802,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$gpp           = list()
    patch$npp           = list()
    patch$plant.resp    = list()
+   patch$cba           = list()
    patch$reco          = list()
    patch$hflxlc        = list()
    patch$hflxwc        = list()
@@ -1562,6 +1571,14 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$wood.dens     = old.datum$patch$wood.dens
    new.datum$patch$can.depth     = old.datum$patch$can.depth
    new.datum$patch$can.area      = old.datum$patch$can.area
+   new.datum$patch$phap.lpar     = old.datum$patch$phap.lpar
+   new.datum$patch$phap.ltemp    = old.datum$patch$phap.ltemp
+   new.datum$patch$phap.lwater   = old.datum$patch$phap.lwater
+   new.datum$patch$phap.lvpd     = old.datum$patch$phap.lvpd
+   new.datum$patch$phap.sms      = old.datum$patch$phap.sms
+   new.datum$patch$phap.lgbw     = old.datum$patch$phap.lgbw
+   new.datum$patch$phap.lgsw     = old.datum$patch$phap.lgsw
+   new.datum$patch$sm.stress     = old.datum$patch$sm.stress
    new.datum$patch$leaf.temp     = old.datum$patch$leaf.temp
    new.datum$patch$leaf.water    = old.datum$patch$leaf.water
    new.datum$patch$leaf.vpd      = old.datum$patch$leaf.vpd
@@ -1576,6 +1593,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$wood.temp     = old.datum$patch$wood.temp
    new.datum$patch$gpp           = old.datum$patch$gpp
    new.datum$patch$npp           = old.datum$patch$npp
+   new.datum$patch$cba           = old.datum$patch$cba
    new.datum$patch$plant.resp    = old.datum$patch$plant.resp
    new.datum$patch$reco          = old.datum$patch$reco
    new.datum$patch$hflxlc        = old.datum$patch$hflxlc

@@ -433,12 +433,13 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- imetrad is the radiation splitting method. --------------------------------------# 
    flagvar[["imetrad"]]         = list( descr   = "SW Radiation splitting"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=4,by=1)
+                                      , values  = seq(from=0,to=5,by=1)
                                       , names   = c( "Input files"
                                                    , "SiB"
                                                    , "Weissman-Norman"
                                                    , "100% diffuse"
                                                    , "100% direct"
+                                                   , "Clearness Index"
                                                    )#end c
                                       )#end list
    #----- icanrad is the canopy radiation model. ------------------------------------------#
@@ -450,8 +451,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- ihrzrad is the horizontal shading model. ----------------------------------------#
    flagvar[["ihrzrad"]]         = list( descr   = "Horizontal shading"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=1,by=1)
-                                      , names   = c("OFF","ON")
+                                      , values  = seq(from=0,to=2,by=1)
+                                      , names   = c("OFF","GAP","PIXEL")
                                       )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"
@@ -908,6 +909,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c("-","+")
                                        , names  = c("0.05","0.15")
                                        )#end list
+   flagvar[["iunder"]]           = list( descr  = "Initial condition"
+                                       , numeric = TRUE
+                                       , values = c(0,1)
+                                       , names  = c("Inventory","Equilibrium")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1234,10 +1240,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(            11,           20,        25)
          nz     = c(            13,           21,        28)
       }else if (lenici == 29){
-         nparms = 3
-         param  = c("yeara","iphen.scheme", "isoil.text")
-         na     = c(      9,            19,           28)
-         nz     = c(     12,            21,           29)
+         nparms = 2
+         param  = c("ivegt.dynamics","ihrzrad","leaf.absorb.vis")
+         na     = c(             11,        18,               26)
+         nz     = c(             12,        19,               29)
       }else if (lenici == 30){
          nparms = 3
          param  = c("include.fire","isoil.text","treefall")
@@ -1259,10 +1265,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(            11,             19,             22,          35)
          nz     = c(            12,             20,             28,          36)
       }else if (lenici == 37){
-         nparms = 4
-         param  = c("yeara","iphen.scheme","isoil.text","treefall")
-         na     = c(      9,            18,          27,        35)
-         nz     = c(     11,            20,          28,        37)
+         nparms = 2
+         param  = c("ihrzrad","imetrad","leaf.absorb.vis","iunder")
+         na     = c(       10,       17,               25,      36)
+         nz     = c(       11,       18,               28,      37)
       }else if (lenici == 38){
          nparms = 4
          param  = c("yeara","iphen.scheme","isoil.text","treefall")
@@ -4418,21 +4424,21 @@ u           = u + 1
 poitmp[[u]] = list( short           = "tapajos"     
                   , longname        = "Tapajos Natl. Forest, PA"
                   , iata            = "tnf"
-                  , lon             = -54.955
+                  , lon             = -54.959
                   , lat             =  -2.857
-                  , alt             = 173.
+                  , alt             = 198.
                   , wmo             = NA
-                  , isoilflg        = 1
-                  , ntext           = 1
-                  , sand            = -1.000
-                  , clay            = -1.000
+                  , isoilflg        = 2
+                  , ntext           = 16
+                  , sand            = 0.390
+                  , clay            = 0.590
                   , depth           = "H"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Santarem_Km67"
+                  , yeara           = 1996
+                  , yearz           = 2012
                   , iphen           = -1
                   )#end list
 u           = u + 1

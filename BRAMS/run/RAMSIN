@@ -2258,8 +2258,11 @@ $ED2_INFO
    !                  instead of wood density.  Also, the leaf allometry is split into     !
    !                  small classes ("saplings") and large classes ("trees"), like in Cole !
    !                  and Ewel (2006).                                                     !
+   !           4.  DBH->Height, DBH-> Crown Area, and Height->Crown Length are based on    !
+   !                  field measurements in the Brazilian Amazon (Sustainable Landscapes   !
+   !                  project).  Leaf biomass follows IALLOM=3.                            !
    !---------------------------------------------------------------------------------------!
-   IALLOM          = 3,
+   IALLOM          = 4,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2384,10 +2387,19 @@ $ED2_INFO
    ! IHRZRAD      -- Specifies how horizontal canopy radiation is solved.                  !
    !                 0.  Default ED-2.0: no horizontal patch shading.  All patches receive !
    !                     the same amount of light at the top.                              !
-   !                 1.  UNDER DEVELOPMENT, USE IT AT YOUR OWN RISK! Crown closure         !
-   !                     modifies the total incident light the the top cohort receives     !
-   !                     based on the probability of being next to a taller or shorter     !
-   !                     patch.                                                            !
+   !                 1.  A realized map of the plant community is built by randomly        !
+   !                     assigning gaps associated with gaps (number of gaps proportional  !
+   !                     to the patch area), and populating them with individuals,         !
+   !                     respecting the cohort distribution in each patch.  The crown      !
+   !                     closure index is calculated for the entire landscape and used     !
+   !                     to change the amount of direct light reaching the top of the      !
+   !                     canopy.  Patches are then split into 1-3 patches based on the     !
+   !                     light condition (so expect simulations to be slower).  This       !
+   !                     method is under development, suggestions on how to improve are    !
+   !                     welcome.                                                          !
+   !                 2.  Similar to option 1, except that when the correction factor is    !
+   !                     aggregated for each gap, option 2 uses the maximum value instead  !
+   !                     of the mean.  This allows somewhat more variability               !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
@@ -2806,6 +2818,8 @@ $ED2_INFO
    !                break radiation down to the four components.                           !
    !            3.  Gloomy -- All radiation goes to diffuse.                               !
    !            4.  Sesame street -- all radiation goes to direct, except at night.        !
+   !            5.  Add them together, then break radiation down to the four components    !
+   !                based on clearness index (incident at TOC / incident at TOA).          !
    !                                                                                       !
    !      Options 0 and 2 are different only when ISWRTYP = 4 (CARMA).  Otherwise, option  !
    ! 2 is the default.  This could change in the future if someone with good understanding !

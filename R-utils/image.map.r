@@ -76,6 +76,7 @@ image.map <<- function( x
                       , ny.interp        = NA
                       , useRaster        = TRUE
                       , byrow            = TRUE
+                      , lo.panel         = NULL
                       , ...
                       ){
 
@@ -139,7 +140,7 @@ image.map <<- function( x
 
 
    #----- Find the box structure for the panels. ------------------------------------------#
-   lo.panel = pretty.box(npanels,byrow=byrow)
+   if (is.null(lo.panel)) lo.panel = pretty.box(npanels,byrow=byrow)
    #---------------------------------------------------------------------------------------#
 
 
@@ -383,59 +384,20 @@ image.map <<- function( x
    #---------------------------------------------------------------------------------------#
    for (p in sequence(npanels)){
       #----- Find out where the box goes, and set up axes and margins. --------------------#
-      left    = lo.panel$left  [p]
-      right   = lo.panel$right [p]
-      top     = lo.panel$top   [p]
-      bottom  = lo.panel$bottom[p]
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Set the window. --------------------------------------------------------------#
-      if (matrix.plot & edge.axes){
-         if (left && right){
-            mar.left  = 4.6
-            mar.right = 0.6
-         }else if (left){
-            mar.left  = 3.1
-            mar.right = 0.1
-         }else if (right){
-            mar.left  = 0.1
-            mar.right = 3.1
-         }else{
-            mar.left  = 1.6
-            mar.right = 1.6
-         }#end if
-         if (bottom && top){
-            mar.bottom = 5.1
-            mar.top    = 4.1
-         }else if (bottom){
-            mar.bottom = 3.1
-            mar.top    = 1.1
-         }else if (top){
-            mar.bottom = 1.1
-            mar.top    = 3.1
-         }else{
-            mar.bottom = 1.1
-            mar.top    = 1.1
-         }#end if
-         mar.now = c(mar.bottom,mar.left,mar.top,mar.right)
-         #---------------------------------------------------------------------------------#
-      }else if (matrix.plot){
-         mar.left   = 3.1 + 1.0 * (npanels == 1)
-         mar.right  = 1.1 + 1.0 * (npanels == 1)
-         mar.bottom = 4.1 + 1.0 * (npanels == 1)
-         mar.top    = 3.1 + 1.0 * (npanels == 1)
-         mar.now = c(mar.bottom,mar.left,mar.top,mar.right)
-      }else{
-         #----- Find out where the box goes, and set up axes and margins. -----------------#
+      if (edge.axes){
          left    = TRUE
          right   = TRUE
-         bottom  = TRUE
          top     = TRUE
-         mar.now = mar.orig
-         if (! key.vertical) mar.now[1] = 4.1
-         #---------------------------------------------------------------------------------#
+         bottom  = TRUE
+         mar.now = lo.panel$mar0
+      }else{
+         left    = lo.panel$left  [p]
+         right   = lo.panel$right [p]
+         top     = lo.panel$top   [p]
+         bottom  = lo.panel$bottom[p]
+         mar.now = lo.panel$mar   [p,]
       }#end if
+      #------------------------------------------------------------------------------------#
       plog = ""
       if (xlog) plog = paste(plog,"x",sep="")
       if (ylog) plog = paste(plog,"y",sep="")

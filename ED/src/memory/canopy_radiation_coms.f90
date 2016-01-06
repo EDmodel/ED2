@@ -267,6 +267,9 @@ module canopy_radiation_coms
    !----- Gap indices (zero is the default). ----------------------------------------------!
    integer     , dimension(:,:), allocatable :: rls_igp0
    integer     , dimension(:,:), allocatable :: rls_igp
+   integer     , dimension(:,:), allocatable :: rls_ipa
+   !----- Mask to decide which gaps can be used for any patch. ----------------------------!
+   logical     , dimension(:,:), allocatable :: rls_mask
    !----- Gap origin. ---------------------------------------------------------------------!
    real(kind=4), dimension(:)  , allocatable :: gap_x0
    real(kind=4), dimension(:)  , allocatable :: gap_y0

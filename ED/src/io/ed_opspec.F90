@@ -1649,9 +1649,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iallom < 0 .or. iallom > 3) then
+   if (iallom < 0 .or. iallom > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IALLOM, it must be between 0 and 3. Yours is set to'          &
+                    'Invalid IALLOM, it must be between 0 and 4. Yours is set to'          &
                     ,iallom,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -2141,9 +2141,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if  (ihrzrad < 0 .or. ihrzrad > 1) then
+   if  (ihrzrad < 0 .or. ihrzrad > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IHRZRAD, it must be either 0 and 1.  Yours is set to'         &
+                    'Invalid IHRZRAD, it must be between 0 and 2.  Yours is set to'        &
                     ,ihrzrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
@@ -2370,9 +2370,9 @@ end do
 
 #endif
 
-   if (imetrad < 0 .or. imetrad > 4) then
+   if (imetrad < 0 .or. imetrad > 5) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IMETRAD, it must be between 0 and 4.  Yours is set to'        &
+                    'Invalid IMETRAD, it must be between 0 and 5.  Yours is set to'        &
                     ,imetrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')

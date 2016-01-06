@@ -2712,7 +2712,7 @@ subroutine init_pft_alloc_params()
             ! hgt_ref(ipft) = 0.0
          end if
       end do
-   case (2)
+   case (2,3)
       !------------------------------------------------------------------------------------!
       !     Use the allometry proposed by:                                                 !
       !                                                                                    !
@@ -2730,7 +2730,7 @@ subroutine init_pft_alloc_params()
          end if
       end do
       !------------------------------------------------------------------------------------!
-   case (3)
+   case (4)
       !------------------------------------------------------------------------------------!
       !     Allometric equation based on the Sustainable Landscapes data.                  !
       !                                                                                    !
@@ -2803,7 +2803,7 @@ subroutine init_pft_alloc_params()
    hgt_max(17) = 35.0
    !----- Allow trees to grow up 99% of the allometry size. -------------------------------!
    select case (iallom)
-   case (3)
+   case (4)
       hgt_max( 2) = 0.99 * hgt_ref( 2)
       hgt_max( 3) = 0.99 * hgt_ref( 3)
       hgt_max( 4) = 0.99 * hgt_ref( 4)
@@ -2837,7 +2837,7 @@ subroutine init_pft_alloc_params()
             b2Ca(ipft) = b2Ht(ipft) * 1.888
          end if
       end do
-   case (2)
+   case (2,3)
       !----- Fitted values obtained using Poorter h->DBH to obtain function of DBH. -------!
       do ipft=1,n_pft
          if (is_tropical(ipft)) then
@@ -2845,7 +2845,7 @@ subroutine init_pft_alloc_params()
             b2Ca(ipft) = ncrown_area(2)
          end if
       end do
-   case (3)
+   case (4)
       !------------------------------------------------------------------------------------!
       !     Allometric equation based on the Sustainable Landscapes data.                  !
       !                                                                                    !
@@ -2882,7 +2882,7 @@ subroutine init_pft_alloc_params()
    !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
    !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
    !   DBH_ADULT   -- minimum DBH for the tree to be considered adult (used only when      !
-   !                  IALLOM = 3 and PFT is tropical).                                     !
+   !                  IALLOM = 3 or 4 and PFT is tropical).                                !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
@@ -3016,7 +3016,7 @@ subroutine init_pft_alloc_params()
             b2Bl_large (ipft) = b2Bl_small(ipft)
             bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
             !------------------------------------------------------------------------------!
-         case (3)
+         case (3,4)
             !------------------------------------------------------------------------------!
             !     ED-2.2 allometry.  For large trees, it is based on:                      !
             !                                                                              !
@@ -3038,8 +3038,11 @@ subroutine init_pft_alloc_params()
             !     DBH_Adult is by definition the minimum size that local LAI can become    !
             ! greater than 1.                                                              !
             !------------------------------------------------------------------------------!
-            dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)        &
-                              ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
+            select case (iallom)
+            case (4)
+               dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)     &
+                                 ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
+            end select
             bleaf_adult(ipft) = b1Bl_large(ipft)                                           &
                               / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
             !------------------------------------------------------------------------------!
@@ -3120,7 +3123,7 @@ subroutine init_pft_alloc_params()
             b2Bs_large(ipft) = odead_large(2)
             !------------------------------------------------------------------------------!
 
-         case (2)
+         case (2,3)
             !---- Based an alternative modification of Chave et al. (2001) allometry. -----!
             b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
             b2Bs_small(ipft) = ndead_small(2)
@@ -3128,7 +3131,7 @@ subroutine init_pft_alloc_params()
             b2Bs_large(ipft) = ndead_large(2)
             !------------------------------------------------------------------------------!
 
-         case (3)
+         case (4)
             !------------------------------------------------------------------------------!
             !     Parameters based on a model re-fit from Chave et al. (2014).             !
             !  Biomass was estimated from rho*D^2*h using the height allometry from SL     !
@@ -3236,6 +3239,7 @@ subroutine init_pft_alloc_params()
    b2WAI(14:16) = 2.0947       ! Tiny WAI for grasses
    b2WAI(17)    = 1.9769       ! Needleleaf
    !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -3591,7 +3595,7 @@ subroutine init_pft_leaf_params()
    ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
    !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
    !                                                                                       !
-   !    For iallom = 3, we use the allometric equation based on the Sustainable Landscapes !
+   !    For iallom = 4, we use the allometric equation based on the Sustainable Landscapes !
    ! data set.                                                                             !
    !                                                                                       !
    !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass      !
@@ -3615,12 +3619,12 @@ subroutine init_pft_leaf_params()
          b2Cl(ipft) = 1.00
       elseif (is_tropical(ipft)) then
          select case (iallom)
-         case (0,1,2)
-            b1Cl(ipft) = 0.3106775
-            b2Cl(ipft) = 1.098
-         case (3)
+         case (4)
             b1Cl(ipft) = 0.25972
             b2Cl(ipft) = 1.0755
+         case default
+            b1Cl(ipft) = 0.3106775
+            b2Cl(ipft) = 1.098
          end select
       else
          !---------------------------------------------------------------------------------!

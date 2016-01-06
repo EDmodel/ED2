@@ -860,10 +860,10 @@ module ed_state_vars
       !               5.  Forest regrowth.                                                 !
       !               6.  Logged forest.                                                   !
       !  FBEAM     -- correction term to account for neighbouring shaded                   !
-      !               (1.0 unless ihrzrad = 1)                                             !
+      !               (1.0 unless ihrzrad /= 0)                                            !
       !  LIGHT_TYPE -- diagnostic variable supposed to tell which light environment is     !
       !                represented by the site (1 - bright, 2 - intermediate, 3 - dark)    !
-      !                This is only assigned in case ihrzrad = 1, otherwise all patches    !
+      !                This is only assigned in case ihrzrad /= 0, otherwise all patches   !
       !                will be flagged as 1.                                               !
       !------------------------------------------------------------------------------------!
       real   , pointer,dimension(:) :: area

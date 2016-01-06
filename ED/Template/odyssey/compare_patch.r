@@ -36,7 +36,7 @@ rdata.suffix = "patches_ed22.RData"
 
 #----- Default settings. ------------------------------------------------------------------#
 emean.yeara = 2002  # First year
-emean.yearz = 2004  # Last year
+emean.yearz = 2005  # Last year
 #------------------------------------------------------------------------------------------#
 
 
@@ -157,6 +157,11 @@ compvar[[ n]] = list( vnam     = "rshort.gnd"
                     , unit     = "umolom2os"
                     )#end list
 n             = n + 1
+compvar[[ n]] = list( vnam     = "sm.stress"
+                    , desc     = "Soil moisture stress"
+                    , unit     = "empty"
+                    )#end list
+n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gpp"
                     , desc     = "Leaf GPP"
                     , unit     = "kgcom2loyr"
@@ -221,6 +226,21 @@ compvar[[ n]] = list( vnam     = "assim.co2"
                     , desc     = "CO2-limited Assimilation"
                     , unit     = "umolom2los"
                     )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam     = "phap.lvpd"
+                    , desc     = "Daytime Leaf VPD"
+                    , unit     = "hpa"
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam     = "phap.ltemp"
+                    , desc     = "Daytime Leaf Temperature"
+                    , unit     = "degC"
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam     = "phap.sms"
+                    , desc     = "Daytime soil moisture stress"
+                    , unit     = "empty"
+                    )#end list
 #------------------------------------------------------------------------------------------#
 
 
@@ -233,8 +253,8 @@ compvar[[ n]] = list( vnam     = "assim.co2"
 # verbose -- long description (for titles)                                                 #
 # colour  -- colour to represent this simulation                                           #
 #------------------------------------------------------------------------------------------#
-sim.suffix  = "irad05_lfabs0850_iunder01"
-sim.struct  = c(ctrl = "ihrz00", test = "ihrz01")
+sim.suffix  = "irad01_lfabs0910_iunder01"
+sim.struct  = c(ctrl = "ihrz00", test = "ihrz02")
 #------------------------------------------------------------------------------------------#
 
 
@@ -252,7 +272,7 @@ outform           = c("pdf")             # Formats for output file.  Supported f
 
 byeold            = TRUE                 # Remove old files of the given format?
 
-depth             = 96                   # PNG resolution, in pixels per inch
+depth             = 300                  # PNG resolution, in pixels per inch
 paper             = "square"             # Paper size, to define the plot shape
 ptsz              = 17                   # Font size.
 f.leg             = 1/6                  # Factor to expand plot devices
@@ -828,7 +848,6 @@ for (s in sequence(nsites)){
 
             #----- Split device. ----------------------------------------------------------#
             par(par.user)
-            par(oma=c(0,0.0,2.5,0))
             layout(mat= rbind(c(3,3),c(1,2)),heights=c(1.-f.leg,f.leg))
             #------------------------------------------------------------------------------#
 
@@ -872,7 +891,7 @@ for (s in sequence(nsites)){
             #------------------------------------------------------------------------------#
             #      Plot monthly means.                                                     #
             #------------------------------------------------------------------------------#
-            par(mar=c(3.1,4.6,3.1,1.1))
+            par(mar=c(3.1,4.6,3.1,1.6))
             plot.new()
             plot.window(xlim=em.xlimit,ylim=em.ylimit)
             axis(side=1,las=1,at=em.pretty$levels,labels=em.pretty$labels)
@@ -933,7 +952,6 @@ for (s in sequence(nsites)){
 
             #----- Split device. ----------------------------------------------------------#
             par(par.user)
-            par(oma=c(0,0.0,2.5,0))
             layout(mat= rbind(c(3,3),c(1,2)),heights=c(1.-f.leg,f.leg))
             #------------------------------------------------------------------------------#
 
@@ -978,7 +996,7 @@ for (s in sequence(nsites)){
             #------------------------------------------------------------------------------#
             #      Plot annual means.                                                      #
             #------------------------------------------------------------------------------#
-            par(mar=c(3.1,4.6,3.1,1.1))
+            par(mar=c(3.1,4.6,3.1,1.6))
             plot.new()
             plot.window(xlim=ym.xlimit,ylim=ym.ylimit)
             axis(side=1,las=1,at=toyear,labels=sprintf("%g",toyear))
