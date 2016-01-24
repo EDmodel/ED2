@@ -1,0 +1,10 @@
+<map id="phenology_aux::first_phenology" name="phenology_aux::first_phenology">
+<area shape="rect" id="node2" href="$namespaceed__therm__lib.html#a882f2cd5f4a75f8c01d2167f45afebb7" title="ed_therm_lib::calc\l_veg_hcap" alt="" coords="206,5,334,47"/>
+<area shape="rect" id="node3" href="$namespaceallometry.html#af723dc0f45a94b8812583457c53d4308" title="allometry::area_indices" alt="" coords="192,71,348,98"/>
+<area shape="rect" id="node7" href="$namespacetherm__lib.html#a2db60e1f300fadcd09ef451059aa571b" title="therm_lib::cmtl2uext" alt="" coords="200,122,340,149"/>
+<area shape="rect" id="node8" href="$namespacephenology__aux.html#a678dc0aeea995ed48f816c0588d15965" title="phenology_aux::pheninit\l_balive_bstorage" alt="" coords="396,165,559,207"/>
+<area shape="rect" id="node9" href="$stable__cohorts_8f90.html#ab5ac37217798e11401f727d8bcbb2b70" title="is_resolvable" alt="" coords="222,223,318,250"/>
+<area shape="rect" id="node4" href="$namespaceallometry.html#abacdf8e8e585ce8d788a1fc2be133243" title="allometry::dbh2ca" alt="" coords="415,63,540,90"/>
+<area shape="rect" id="node5" href="$namespaceallometry.html#a45ced9bf9ccd03debe8def35b579f4bd" title="allometry::size2bl" alt="" coords="607,114,731,141"/>
+<area shape="rect" id="node6" href="$namespaceallometry.html#a31aa8db06e86ec74efb5e692417399df" title="allometry::h2dbh" alt="" coords="779,89,897,115"/>
+</map>

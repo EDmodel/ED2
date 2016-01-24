@@ -1,0 +1,151 @@
+\hypertarget{ed__type__init_8f90}{}\section{ed\+\_\+type\+\_\+init.\+f90 File Reference}
+\label{ed__type__init_8f90}\index{ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{ed__type__init_8f90_af7c8e0a520dfca016f7eb7cf1c08b6ca}{init\+\_\+ed\+\_\+cohort\+\_\+vars} (cpatch, ico, lsl)
+\item 
+subroutine \hyperlink{ed__type__init_8f90_ad4cd2d9291dc969b63d1592d0f2a3164}{init\+\_\+ed\+\_\+patch\+\_\+vars} (csite, ipaa, ipaz, lsl)
+\item 
+subroutine \hyperlink{ed__type__init_8f90_ab95c7280a3c8ff39333ac7145d0ccecf}{init\+\_\+ed\+\_\+site\+\_\+vars} (cpoly, lat)
+\item 
+subroutine \hyperlink{ed__type__init_8f90_a67afe21be4346c13ced583c229e2bb4c}{init\+\_\+ed\+\_\+poly\+\_\+vars} (cgrid)
+\item 
+subroutine \hyperlink{ed__type__init_8f90_aa6a689a6e6981ff6c33afcb419db9b28}{new\+\_\+patch\+\_\+sfc\+\_\+props} (csite, ipa, mzg, mzs, ntext\+\_\+soil)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}!init\+\_\+ed\+\_\+cohort\+\_\+vars@{init\+\_\+ed\+\_\+cohort\+\_\+vars}}
+\index{init\+\_\+ed\+\_\+cohort\+\_\+vars@{init\+\_\+ed\+\_\+cohort\+\_\+vars}!ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}}
+\subsubsection[{\texorpdfstring{init\+\_\+ed\+\_\+cohort\+\_\+vars(cpatch, ico, lsl)}{init_ed_cohort_vars(cpatch, ico, lsl)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine init\+\_\+ed\+\_\+cohort\+\_\+vars (
+\begin{DoxyParamCaption}
+\item[{type({\bf patchtype}), target}]{cpatch, }
+\item[{integer, intent(in)}]{ico, }
+\item[{integer, intent(in)}]{lsl}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__type__init_8f90_af7c8e0a520dfca016f7eb7cf1c08b6ca}{}\label{ed__type__init_8f90_af7c8e0a520dfca016f7eb7cf1c08b6ca}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_af7c8e0a520dfca016f7eb7cf1c08b6ca_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_af7c8e0a520dfca016f7eb7cf1c08b6ca_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}!init\+\_\+ed\+\_\+patch\+\_\+vars@{init\+\_\+ed\+\_\+patch\+\_\+vars}}
+\index{init\+\_\+ed\+\_\+patch\+\_\+vars@{init\+\_\+ed\+\_\+patch\+\_\+vars}!ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}}
+\subsubsection[{\texorpdfstring{init\+\_\+ed\+\_\+patch\+\_\+vars(csite, ipaa, ipaz, lsl)}{init_ed_patch_vars(csite, ipaa, ipaz, lsl)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine init\+\_\+ed\+\_\+patch\+\_\+vars (
+\begin{DoxyParamCaption}
+\item[{type({\bf sitetype}), target}]{csite, }
+\item[{integer, intent(in)}]{ipaa, }
+\item[{integer, intent(in)}]{ipaz, }
+\item[{integer, intent(in)}]{lsl}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__type__init_8f90_ad4cd2d9291dc969b63d1592d0f2a3164}{}\label{ed__type__init_8f90_ad4cd2d9291dc969b63d1592d0f2a3164}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_ad4cd2d9291dc969b63d1592d0f2a3164_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}!init\+\_\+ed\+\_\+poly\+\_\+vars@{init\+\_\+ed\+\_\+poly\+\_\+vars}}
+\index{init\+\_\+ed\+\_\+poly\+\_\+vars@{init\+\_\+ed\+\_\+poly\+\_\+vars}!ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}}
+\subsubsection[{\texorpdfstring{init\+\_\+ed\+\_\+poly\+\_\+vars(cgrid)}{init_ed_poly_vars(cgrid)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine init\+\_\+ed\+\_\+poly\+\_\+vars (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__type__init_8f90_a67afe21be4346c13ced583c229e2bb4c}{}\label{ed__type__init_8f90_a67afe21be4346c13ced583c229e2bb4c}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=341pt]{ed__type__init_8f90_a67afe21be4346c13ced583c229e2bb4c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_a67afe21be4346c13ced583c229e2bb4c_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}!init\+\_\+ed\+\_\+site\+\_\+vars@{init\+\_\+ed\+\_\+site\+\_\+vars}}
+\index{init\+\_\+ed\+\_\+site\+\_\+vars@{init\+\_\+ed\+\_\+site\+\_\+vars}!ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}}
+\subsubsection[{\texorpdfstring{init\+\_\+ed\+\_\+site\+\_\+vars(cpoly, lat)}{init_ed_site_vars(cpoly, lat)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine init\+\_\+ed\+\_\+site\+\_\+vars (
+\begin{DoxyParamCaption}
+\item[{type({\bf polygontype}), target}]{cpoly, }
+\item[{real, intent(in)}]{lat}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__type__init_8f90_ab95c7280a3c8ff39333ac7145d0ccecf}{}\label{ed__type__init_8f90_ab95c7280a3c8ff39333ac7145d0ccecf}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_ab95c7280a3c8ff39333ac7145d0ccecf_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}!new\+\_\+patch\+\_\+sfc\+\_\+props@{new\+\_\+patch\+\_\+sfc\+\_\+props}}
+\index{new\+\_\+patch\+\_\+sfc\+\_\+props@{new\+\_\+patch\+\_\+sfc\+\_\+props}!ed\+\_\+type\+\_\+init.\+f90@{ed\+\_\+type\+\_\+init.\+f90}}
+\subsubsection[{\texorpdfstring{new\+\_\+patch\+\_\+sfc\+\_\+props(csite, ipa, mzg, mzs, ntext\+\_\+soil)}{new_patch_sfc_props(csite, ipa, mzg, mzs, ntext_soil)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine new\+\_\+patch\+\_\+sfc\+\_\+props (
+\begin{DoxyParamCaption}
+\item[{type({\bf sitetype}), target}]{csite, }
+\item[{integer, intent(in)}]{ipa, }
+\item[{integer, intent(in)}]{mzg, }
+\item[{integer, intent(in)}]{mzs, }
+\item[{integer, dimension(mzg), intent(in)}]{ntext\+\_\+soil}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__type__init_8f90_aa6a689a6e6981ff6c33afcb419db9b28}{}\label{ed__type__init_8f90_aa6a689a6e6981ff6c33afcb419db9b28}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_aa6a689a6e6981ff6c33afcb419db9b28_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__type__init_8f90_aa6a689a6e6981ff6c33afcb419db9b28_icgraph}
+\end{center}
+\end{figure}
+
+

@@ -1,0 +1,288 @@
+\hypertarget{rk4__coms_8f90}{}\section{rk4\+\_\+coms.\+f90 File Reference}
+\label{rk4__coms_8f90}\index{rk4\+\_\+coms.\+f90@{rk4\+\_\+coms.\+f90}}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structrk4__coms_1_1rk4patchtype}{rk4\+\_\+coms\+::rk4patchtype}
+\item 
+type \hyperlink{structrk4__coms_1_1bdf2patchtype}{rk4\+\_\+coms\+::bdf2patchtype}
+\item 
+type \hyperlink{structrk4__coms_1_1rk4sitetype}{rk4\+\_\+coms\+::rk4sitetype}
+\item 
+type \hyperlink{structrk4__coms_1_1rk4auxtype}{rk4\+\_\+coms\+::rk4auxtype}
+\item 
+type \hyperlink{structrk4__coms_1_1integration__vars}{rk4\+\_\+coms\+::integration\+\_\+vars}
+\end{DoxyCompactItemize}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespacerk4__coms}{rk4\+\_\+coms}
+\end{DoxyCompactItemize}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespacerk4__coms_a292fa2f7c65668f516015eff1a3b74e2}{rk4\+\_\+coms\+::allocate\+\_\+bdf2\+\_\+patch} (y, maxcohort)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a38274254cb16401c20124f7620f64ab2}{rk4\+\_\+coms\+::deallocate\+\_\+bdf2\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a22f63b46db00ae302b1ae688abecc22d}{rk4\+\_\+coms\+::nullify\+\_\+bdf2\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a52256ca0348235c95a467581d6067dac}{rk4\+\_\+coms\+::allocate\+\_\+rk4\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a34a6a346af3d032c14f416435801598a}{rk4\+\_\+coms\+::nullify\+\_\+rk4\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a4dc0257365f3ec4614c2e41451517e28}{rk4\+\_\+coms\+::zero\+\_\+bdf2\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a4206f404f555c50ee6570211356bd537}{rk4\+\_\+coms\+::zero\+\_\+rk4\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_ad2699a814198d0d9a0133d1eb579542c}{rk4\+\_\+coms\+::deallocate\+\_\+rk4\+\_\+patch} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_ac355c3cf81ffef1c269338cf8b07c4bc}{rk4\+\_\+coms\+::allocate\+\_\+rk4\+\_\+coh} (maxcohort, y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_afe54efd0ad9ab38983314ca0d2557e26}{rk4\+\_\+coms\+::nullify\+\_\+rk4\+\_\+cohort} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a1053434edb41147cb74257d6339eab8f}{rk4\+\_\+coms\+::zero\+\_\+rk4\+\_\+cohort} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a56a9eb1fd462e81374c5993b69d3d05c}{rk4\+\_\+coms\+::deallocate\+\_\+rk4\+\_\+coh} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a02aeb5f0e99479e6eef3029472a79781}{rk4\+\_\+coms\+::reset\+\_\+rk4\+\_\+fluxes} (y)
+\item 
+subroutine \hyperlink{namespacerk4__coms_ad9cf07917e6000f8f46e84428647b494}{rk4\+\_\+coms\+::norm\+\_\+rk4\+\_\+fluxes} (y, hdid)
+\item 
+subroutine \hyperlink{namespacerk4__coms_afe1de3958c4ca4c64d5fb2160fced95f}{rk4\+\_\+coms\+::allocate\+\_\+rk4\+\_\+aux} (crk4aux, mzg, mzs, mcoh)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a306ba21ba388b2e51767aa9f5d76eda0}{rk4\+\_\+coms\+::nullify\+\_\+rk4\+\_\+aux} (crk4aux)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a0af8d3f6d5452c98c81c5230f3b22343}{rk4\+\_\+coms\+::zero\+\_\+rk4\+\_\+aux} (crk4aux)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a5af13b35af38a83aed0e367f7053ffc3}{rk4\+\_\+coms\+::deallocate\+\_\+rk4\+\_\+aux} (crk4aux)
+\item 
+subroutine \hyperlink{namespacerk4__coms_a8266a2612a37eea2fc3106633e25f954}{rk4\+\_\+coms\+::alloc\+\_\+integ\+\_\+err} ()
+\item 
+subroutine \hyperlink{namespacerk4__coms_aa58f2e011f087e610d94022bed90be7a}{rk4\+\_\+coms\+::reset\+\_\+integ\+\_\+err} ()
+\item 
+subroutine \hyperlink{namespacerk4__coms_ae49c70a18c8dfa81befa51bc5244ab8c}{rk4\+\_\+coms\+::assign\+\_\+err\+\_\+label} ()
+\item 
+subroutine \hyperlink{namespacerk4__coms_ae622426587059dbf68f96f24c502091a}{rk4\+\_\+coms\+::find\+\_\+derived\+\_\+thbounds} (can\+\_\+rhos, can\+\_\+theta, can\+\_\+temp,                                                                                                                                                                                                                                                   can\+\_\+shv, can\+\_\+prss, can\+\_\+depth)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+type(integration\+\_\+vars), dimension(\+:), pointer \hyperlink{namespacerk4__coms_a3c62cf3b7294822d789a72c33ed42538}{rk4\+\_\+coms\+::integration\+\_\+buff}
+\item 
+type(rk4sitetype) \hyperlink{namespacerk4__coms_a3b1e8e5ff59d681b92bc9f477f91a111}{rk4\+\_\+coms\+::rk4site}
+\item 
+type(rk4auxtype), dimension(\+:), pointer \hyperlink{namespacerk4__coms_af06182f853d5a71c46e249e55fe5a678}{rk4\+\_\+coms\+::rk4aux}
+\item 
+integer \hyperlink{namespacerk4__coms_a33cf51cec0937e19a61030894187ddbc}{rk4\+\_\+coms\+::ibranch\+\_\+thermo}
+\item 
+real \hyperlink{namespacerk4__coms_ab839ff31cd3abc7dd1fd40e4d3983a31}{rk4\+\_\+coms\+::rk4\+\_\+tolerance}
+\item 
+integer \hyperlink{namespacerk4__coms_a49c5428026d0aece9bcf4f9a87c7b823}{rk4\+\_\+coms\+::ipercol}
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a3d0ca14edbf0ca895d40d7a9c49e75da}{rk4\+\_\+coms\+::tiny\+\_\+offset} = 1.d-\/20
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a09bb1518d1ed93891ef24fa73feb7cbe}{rk4\+\_\+coms\+::huge\+\_\+offset} = 1.d30
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aaccaa3d4ec955eecd38ce2c8c8813cf9}{rk4\+\_\+coms\+::rk4\+\_\+a2} = 2.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aaa2167ee06ad594c46793e7280b248f7}{rk4\+\_\+coms\+::rk4\+\_\+a3} = 3.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aaa712c298024351472a4f80d5020e7fc}{rk4\+\_\+coms\+::rk4\+\_\+a4} = 6.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_ac364eca74fa5b87b0821f6e547e30368}{rk4\+\_\+coms\+::rk4\+\_\+a5} = 1.d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a572359022b68f636423b3dde68f9c34a}{rk4\+\_\+coms\+::rk4\+\_\+a6} = 8.\+75d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a34abdb75b43eceb865d986e7874e03d7}{rk4\+\_\+coms\+::rk4\+\_\+b21} = 2.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a25fefbdc031aa0c923082df76e233542}{rk4\+\_\+coms\+::rk4\+\_\+b31} = 3.d0/4.d1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aeadece49a8e779db69ab3c866d710851}{rk4\+\_\+coms\+::rk4\+\_\+b32} = 9.d0/4.d1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a027909c6e9575ba7ea384f530f1fea8c}{rk4\+\_\+coms\+::rk4\+\_\+b41} = 3.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a8e97d0778db0718264f454af0d04e0da}{rk4\+\_\+coms\+::rk4\+\_\+b42} = -\/9.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a5c0f66631b902af266e04130bea41001}{rk4\+\_\+coms\+::rk4\+\_\+b43} = 1.\+2d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a0667d689a2690f395681dd54718dd9b0}{rk4\+\_\+coms\+::rk4\+\_\+b51} = -\/1.\+1d1/5.\+4d1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a08136775ca79aa4cfb6e2bc844bfb689}{rk4\+\_\+coms\+::rk4\+\_\+b52} = 2.\+5d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_adedd306e0a9a351610026b3a12d2e5ce}{rk4\+\_\+coms\+::rk4\+\_\+b53} = -\/7.d1/2.\+7d1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a3d702309397c009b9a62c0900da4a7c5}{rk4\+\_\+coms\+::rk4\+\_\+b54} = 3.\+5d1/2.\+7d1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a69b8b27ac5165b14e52efd1d57e3247d}{rk4\+\_\+coms\+::rk4\+\_\+b61} = 1.\+631d3/5.\+52960d4
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a1424e7b77cc58817b30146a6ed80c076}{rk4\+\_\+coms\+::rk4\+\_\+b62} = 1.\+750d2/5.\+120d2
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a2943f8989d0d72c6913d114141dcfe5d}{rk4\+\_\+coms\+::rk4\+\_\+b63} = 5.\+750d2/1.\+38240d4
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a6738b7b2098994211bfcafa79e4cc584}{rk4\+\_\+coms\+::rk4\+\_\+b64} = 4.\+42750d4/1.\+105920d5
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a5635aa326f6d3f256b21cb6aaf2d4ed0}{rk4\+\_\+coms\+::rk4\+\_\+b65} = 2.\+530d2/4.\+0960d3
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a1dd142bdfa35986937ac4396a759dda0}{rk4\+\_\+coms\+::rk4\+\_\+c1} = 3.\+70d1/3.\+780d2
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a94a604a5d0d271bf875f0fd3338fef3e}{rk4\+\_\+coms\+::rk4\+\_\+c3} = 2.\+500d2/6.\+210d2
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_ae29e60a0912723f4124b219bb67135d8}{rk4\+\_\+coms\+::rk4\+\_\+c4} = 1.\+250d2/5.\+940d2
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a50aa680b806d041ad4b2d83b838ce6e4}{rk4\+\_\+coms\+::rk4\+\_\+c6} = 5.\+120d2/1.\+7710d3
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aa2ab2d5fa0e976ca56e10da08c4409a6}{rk4\+\_\+coms\+::rk4\+\_\+dc5} = -\/2.\+770d2/1.\+43360d4
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a8f2ecc1ddfd20579092c340f3cde39b4}{rk4\+\_\+coms\+::rk4\+\_\+dc1} = rk4\+\_\+c1-\/2.\+8250d3/2.\+76480d4
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_ad50fbfa221dd0da30f0c1f4bbc5d4f3e}{rk4\+\_\+coms\+::rk4\+\_\+dc3} = rk4\+\_\+c3-\/1.\+85750d4/4.\+83840d4
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a1bb5b9bcaddfd294bf37a8ea838adf3f}{rk4\+\_\+coms\+::rk4\+\_\+dc4} = rk4\+\_\+c4-\/1.\+35250d4/5.\+52960d4
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_abf3a30685db4e4c9f6cd9f903eb1a2fd}{rk4\+\_\+coms\+::rk4\+\_\+dc6} = rk4\+\_\+c6-\/2.\+5d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a87d69315c8ce5a8eece7631c044e56e5}{rk4\+\_\+coms\+::heun\+\_\+a2} = 1.d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_ae8d76c010784094c3299f39f54d015c1}{rk4\+\_\+coms\+::heun\+\_\+b21} = 1.d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aacfe35ff98522754e71ad11a44b521b4}{rk4\+\_\+coms\+::heun\+\_\+c1} = 5.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_afad602ec1632d28447fa784393dd4777}{rk4\+\_\+coms\+::heun\+\_\+c2} = 5.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_aeea9fe3a451738a304eacef0dfa174a1}{rk4\+\_\+coms\+::heun\+\_\+dc1} = heun\+\_\+c1 -\/ 1.d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_ad638286586253a3741b0fd05bd2456a3}{rk4\+\_\+coms\+::heun\+\_\+dc2} = heun\+\_\+c2 -\/ 0.d0
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_ab0aa0551adf0417c09a0a0e4f4bcb934}{rk4\+\_\+coms\+::safety} = 9.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a796865569153ec93dae2cc10d6dd7909}{rk4\+\_\+coms\+::pgrow} = -\/2.d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a83a7b5210aa05ed67147b0b6e4250f46}{rk4\+\_\+coms\+::pshrnk} = -\/2.\+5d-\/1
+\item 
+real(kind=8), parameter \hyperlink{namespacerk4__coms_a5b9d4d10eb75a3f0b44f3876ade2c3eb}{rk4\+\_\+coms\+::errcon} = 1.\+89d-\/4
+\item 
+integer \hyperlink{namespacerk4__coms_a9fc78b38e070c62f9669f9db9d966784}{rk4\+\_\+coms\+::maxstp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_aa154e17784b65f05a89af9b4f86bb879}{rk4\+\_\+coms\+::rk4eps}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a2d6ae9880c44662592dc0e0d238c3229}{rk4\+\_\+coms\+::rk4epsi}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a2b1484b3befa3c0d446279fa4001a56d}{rk4\+\_\+coms\+::rk4eps2}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a5bf08e5e23fca150f09adc446272b7fb}{rk4\+\_\+coms\+::hmin}
+\item 
+logical \hyperlink{namespacerk4__coms_a45d06376c0007b5db575b229cc2d11b1}{rk4\+\_\+coms\+::print\+\_\+diags}
+\item 
+logical \hyperlink{namespacerk4__coms_a9b8354d59e352fedb78f49d2195a9d7a}{rk4\+\_\+coms\+::checkbudget}
+\item 
+logical \hyperlink{namespacerk4__coms_a8758ba5171a32f83e20dd93601fa21d6}{rk4\+\_\+coms\+::record\+\_\+err}
+\item 
+logical \hyperlink{namespacerk4__coms_a9b7ff048a348436a9163405f31d72e29}{rk4\+\_\+coms\+::print\+\_\+detailed}
+\item 
+logical \hyperlink{namespacerk4__coms_ad87029f758f9a6906b3aea2205873427}{rk4\+\_\+coms\+::print\+\_\+thbnd}
+\item 
+logical \hyperlink{namespacerk4__coms_a062e3f5a857cb1364f87fda6223f2259}{rk4\+\_\+coms\+::print\+\_\+budget}
+\item 
+logical \hyperlink{namespacerk4__coms_a304419c7dc18d710be779d2d1a1378e7}{rk4\+\_\+coms\+::supersat\+\_\+ok}
+\item 
+logical \hyperlink{namespacerk4__coms_ab6eb51e1fa8b861cc6fb6359631bdec3}{rk4\+\_\+coms\+::leaf\+\_\+intercept}
+\item 
+logical \hyperlink{namespacerk4__coms_a5abb49d2a6e86524f3c3bf3f67468c21}{rk4\+\_\+coms\+::debug}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_ac687fa7b7b3d3a5b1d3bd179e62c8052}{rk4\+\_\+coms\+::toocold}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a759040e06196aa6e44844e731b1140ba}{rk4\+\_\+coms\+::toohot}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a5af034bb3daf3fd270550fe26a843ced}{rk4\+\_\+coms\+::lai\+\_\+to\+\_\+cover}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a5896e577e06a78e013f72e048e907250}{rk4\+\_\+coms\+::rk4min\+\_\+can\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a6eed732a4c1930bb16dbe70b959bb270}{rk4\+\_\+coms\+::rk4max\+\_\+can\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a0f723d7acf2f73c4f997825e4b79eb66}{rk4\+\_\+coms\+::rk4min\+\_\+can\+\_\+shv}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a8f00e104965b6c83b49b597f34d8432a}{rk4\+\_\+coms\+::rk4max\+\_\+can\+\_\+shv}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_aea541e4460a2030f1873fb118b1b3341}{rk4\+\_\+coms\+::rk4min\+\_\+can\+\_\+rhv}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_addc14b5fd10ebce828e187eb2e0c8101}{rk4\+\_\+coms\+::rk4max\+\_\+can\+\_\+rhv}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_ab56f9190507acf74210f49d44165dd57}{rk4\+\_\+coms\+::rk4min\+\_\+can\+\_\+co2}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_ab0d46d8c6ddc6f99dd0a0800217b712e}{rk4\+\_\+coms\+::rk4max\+\_\+can\+\_\+co2}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a4995d06d19518eaad240d240ce72ebf3}{rk4\+\_\+coms\+::rk4min\+\_\+soil\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_ae58a286e741a74a2ef97b1b9c1244efd}{rk4\+\_\+coms\+::rk4max\+\_\+soil\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a47c8d9b57e934ed14af1cbf674ac8121}{rk4\+\_\+coms\+::rk4min\+\_\+veg\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a98bd8400baa088828a1aef2e4ecb1c65}{rk4\+\_\+coms\+::rk4max\+\_\+veg\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_af9e3e44bc9f58496638933f7d9594172}{rk4\+\_\+coms\+::rk4min\+\_\+sfcw\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_ad4588558a29ea0d798ee7146b3d2d403}{rk4\+\_\+coms\+::rk4max\+\_\+sfcw\+\_\+temp}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a72cb854b5fc4d3e198b318f596828d90}{rk4\+\_\+coms\+::rk4min\+\_\+veg\+\_\+lwater}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a6a0da8f33fe6255b50d37269cc4c5696}{rk4\+\_\+coms\+::rk4min\+\_\+sfcw\+\_\+moist}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a7de60af9cd3a8a43651da0ed30f0d878}{rk4\+\_\+coms\+::rk4min\+\_\+virt\+\_\+moist}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a59856872bd14cf839fe440bfe839560f}{rk4\+\_\+coms\+::rk4min\+\_\+sfcw\+\_\+mass}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a06cc5f6b7afaa313576b32bc56bf80d9}{rk4\+\_\+coms\+::rk4min\+\_\+virt\+\_\+water}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a546ef5b5ec1d1def51dcae82893eb2bc}{rk4\+\_\+coms\+::rk4tiny\+\_\+sfcw\+\_\+mass}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a9a7486e4755f548d744d266af9052d4f}{rk4\+\_\+coms\+::rk4water\+\_\+stab\+\_\+thresh}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a8d12416210875d4e246328901524e941}{rk4\+\_\+coms\+::rk4snowmin}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a3f7465768e9a9783cb2c7633da03acd6}{rk4\+\_\+coms\+::rk4leaf\+\_\+drywhc}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_ac35950b114c389050144c9293d9a4e8a}{rk4\+\_\+coms\+::rk4leaf\+\_\+maxwhc}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a91e4907e16271a89cb5b965a061e20e2}{rk4\+\_\+coms\+::rk4tiny\+\_\+sfcw\+\_\+depth}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a9b09c4fc7f09c642c1115df229cedb1e}{rk4\+\_\+coms\+::tbeg}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a489d1f63edd639eb7a5c248163b59f9b}{rk4\+\_\+coms\+::tend}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_affa4e03ec127e7def8035b8b32bdb5b8}{rk4\+\_\+coms\+::dtrk4}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_a987c7ccf90cfcf40c2a925b2c1057404}{rk4\+\_\+coms\+::dtrk4i}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_af575cfc8fb0e2063e1d3a08be26aea3a}{rk4\+\_\+coms\+::effarea\+\_\+heat}
+\item 
+real(kind=8) \hyperlink{namespacerk4__coms_aae531dd6ba4cf10a03c3fad2b61071bb}{rk4\+\_\+coms\+::effarea\+\_\+evap}
+\item 
+real(kind=8), dimension(n\+\_\+pft) \hyperlink{namespacerk4__coms_aa9b9a7fcec09aad8a6d3423c30c3b1de}{rk4\+\_\+coms\+::effarea\+\_\+transp}
+\item 
+integer, parameter \hyperlink{namespacerk4__coms_a8f0596202fc6dc04e70e600a544ae155}{rk4\+\_\+coms\+::nerrfix} = 21
+\item 
+integer \hyperlink{namespacerk4__coms_a8e2fcadf9c0fe34be391e95bd3caa31c}{rk4\+\_\+coms\+::nerr}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacerk4__coms_af90527ec55879335bb58710234142b14}{rk4\+\_\+coms\+::errmax\+\_\+fout}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacerk4__coms_a673279a49daaa7f21ade0992c6fe0c0d}{rk4\+\_\+coms\+::sanity\+\_\+fout}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacerk4__coms_ab106d324ed571335ee763dd190e7430d}{rk4\+\_\+coms\+::thbnds\+\_\+fout}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacerk4__coms_acd58047348a9b1ff25ec1afda9163705}{rk4\+\_\+coms\+::detail\+\_\+pref}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacerk4__coms_a2da1f732b9648b485c93d62814060cf2}{rk4\+\_\+coms\+::budget\+\_\+pref}
+\item 
+integer(kind=8), dimension(\+:,\+:), allocatable \hyperlink{namespacerk4__coms_aecab6dfff0aaea0938b5c59d550860bc}{rk4\+\_\+coms\+::integ\+\_\+err}
+\item 
+character(len=13), dimension(\+:), allocatable \hyperlink{namespacerk4__coms_a4f5c8dc79c821a459a356f283b4831c8}{rk4\+\_\+coms\+::integ\+\_\+lab}
+\item 
+integer \hyperlink{namespacerk4__coms_ac28f34645e6cd2065bc8c458ae43f642}{rk4\+\_\+coms\+::osow}
+\item 
+integer \hyperlink{namespacerk4__coms_a62d65ed745bfd02b36c79be5861b7cee}{rk4\+\_\+coms\+::osoe}
+\item 
+integer \hyperlink{namespacerk4__coms_ae9733bb77416a4d137c65ddd1adc5c23}{rk4\+\_\+coms\+::oswe}
+\item 
+integer \hyperlink{namespacerk4__coms_a588b443c0107fd03a7642394a2df5cc9}{rk4\+\_\+coms\+::oswm}
+\end{DoxyCompactItemize}

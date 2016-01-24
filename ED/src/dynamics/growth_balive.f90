@@ -1,6 +1,12 @@
-
 !==========================================================================================!
 !==========================================================================================!
+! MODULE: GROWTH_BALIVE
+!
+!> \brief   Various routines handling plant C and N use given size and allometry.
+!> \details Essentially, this file contains dbalive_dt[_eq0] and their libraries of fns.
+!> \author  Translated from ED1 by Ryan Knox and Marcos Longo
+!> \author  31 Aug 2015 - Big refactoring in commit b8fb585, Daniel Scott
+!------------------------------------------------------------------------------------------!
 module growth_balive
    !=======================================================================================!
    !=======================================================================================!
@@ -12,11 +18,16 @@ module growth_balive
 
    !=======================================================================================!
    !=======================================================================================!
-
-   !     This subroutine will update the alive biomass, and compute the respiration terms  !
-   ! other than leaf respiration.                                                          !
-   ! IMPORTANT: The order of the operations here affect the C/N budgets, so don't change   !
-   !            the order of the operations unless you really know what you are doing.     !
+   !  SUBROUTINE: DBALIVE_DT
+   !
+   !> \brief   Updates living biomass.
+   !> \details Calls a variety of subroutines controlling plant carbon balances, C and N 
+   !>          xfers among plant pools, updating of storage and growth respiration,
+   !>          leaf maintenance,and update mortality rates.
+   !> \author  Translated from ED1 by Ryan Knox and Marcos Longo
+   !> \author  31 Aug 2015 - Big refactoring in commit b8fb585, Daniel Scott
+   !> \warning The order of the operations here affect the C/N budgets, so don't
+   !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
    subroutine dbalive_dt(cgrid, tfact)
       use ed_state_vars   , only : edtype                 & ! structure
@@ -48,8 +59,8 @@ module growth_balive
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype)     , target     :: cgrid
-      real             , intent(in) :: tfact
+      type(edtype)     , target     :: cgrid !< the ed grid
+      real             , intent(in) :: tfact !< "time factor" i.e. call frequency
       !----- Local variables. -------------------------------------------------------------!
       type(polygontype), pointer    :: cpoly
       type(sitetype)   , pointer    :: csite
@@ -1004,33 +1015,41 @@ module growth_balive
    
    !=======================================================================================!
    !=======================================================================================!
+   !  SUBROUTINE: GET_C_XFERS
+   !
+   !> \brief   Calculates plant-internal C transfers for growth and maintainance.
+   !> \details Uses phenology, allometry, carbon balance, and current C pool sizes to
+   !>          determine (signed) transfers to leaf, root, sapwooda, sapwoodb, and storage.
+   !> \warning The order of the operations here affect the C/N budgets, so don't
+   !>          change it unless you really know what you are doing.
+   !---------------------------------------------------------------------------------------!
    subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,tr_bleaf,tr_broot &
                          ,tr_bsapwooda,tr_bsapwoodb,tr_bstorage,carbon_debt,flushing       &
                          ,balive_aim)
-      use ed_state_vars , only : sitetype                 & ! structure
-                               , patchtype                ! ! structure
-      use pft_coms      , only : phenology                ! ! intent(in)
+      use ed_state_vars , only : sitetype     & ! structure
+                               , patchtype    ! ! structure
+      use pft_coms      , only : phenology    ! ! intent(in)
       use pft_coms      , only : q            & ! intent(in)
                                , qsw          & ! intent(in)
                                , agf_bs       ! ! intent(in)
-      use allometry     , only : size2bl                  ! ! function
+      use allometry     , only : size2bl      ! ! function
       use decomp_coms   , only : f_labile     ! ! intent(in)
       use consts_coms   , only : tiny_num     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype) , target        :: csite
-      integer        , intent(in)    :: ipa
-      integer        , intent(in)    :: ico
-      real           , intent(in)    :: carbon_balance
-      real           , intent(in)    :: green_leaf_factor
-      real           , intent(out)   :: tr_bleaf
-      real           , intent(out)   :: tr_broot
-      real           , intent(out)   :: tr_bsapwooda
-      real           , intent(out)   :: tr_bsapwoodb
-      real           , intent(out)   :: tr_bstorage
-      real           , intent(out)   :: carbon_debt
-      logical        , intent(out)   :: flushing
-      real           , intent(out)   :: balive_aim
+      type(sitetype) , target        :: csite               !< Current Site
+      integer        , intent(in)    :: ipa                 !< Loop-Current Patch
+      integer        , intent(in)    :: ico                 !< Loop-Current Cohort
+      real           , intent(in)    :: carbon_balance      !< Plant net carbon uptake
+      real           , intent(in)    :: green_leaf_factor   !< Cohort leaf-age param.
+      real           , intent(out)   :: tr_bleaf            !< Transfer to leaf C pool
+      real           , intent(out)   :: tr_broot            !< Transfer to root C pool
+      real           , intent(out)   :: tr_bsapwooda        !< Transfer to sapwooda C pool
+      real           , intent(out)   :: tr_bsapwoodb        !< Transfer to sapwoodb C pool
+      real           , intent(out)   :: tr_bstorage         !< Transfer to storage C pool
+      real           , intent(out)   :: carbon_debt         !< Net cohort carbon uptake
+      logical        , intent(out)   :: flushing            !< Flag for leaf flush
+      real           , intent(out)   :: balive_aim          !< Desired cohort balive value
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype), pointer       :: cpatch
       integer                        :: ipft

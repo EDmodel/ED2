@@ -1,0 +1,108 @@
+\hypertarget{twostream__rad_8f90}{}\section{twostream\+\_\+rad.\+f90 File Reference}
+\label{twostream__rad_8f90}\index{twostream\+\_\+rad.\+f90@{twostream\+\_\+rad.\+f90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{twostream__rad_8f90_a6581b5d4ea4bd5a6c7a8e742257dd0d1}{lw\+\_\+two\+\_\+stream} (grnd\+\_\+emiss4, grnd\+\_\+temp4, rlong\+\_\+top4, ncoh, pft, lai, wai, cai, leaf\+\_\+temp                                                                                               ,wood\+\_\+temp, radprof\+\_\+flip, tir\+\_\+flip, dw\+\_\+tirlo, uw\+\_\+tirlo, uw\+\_\+tirhi)
+\item 
+subroutine \hyperlink{twostream__rad_8f90_abe93885fe642dcef8db1fb3977179585}{sw\+\_\+two\+\_\+stream} (grnd\+\_\+alb\+\_\+par4, grnd\+\_\+alb\+\_\+nir4, cosaoi4, ncoh, pft, lai, wai, cai                                                                                                                               ,radprof\+\_\+flip, par\+\_\+beam\+\_\+flip, par\+\_\+diff\+\_\+flip, sw\+\_\+abs\+\_\+beam\+\_\+flip                                                                                                                           ,sw\+\_\+abs\+\_\+diff\+\_\+flip, dw\+\_\+parlo\+\_\+beam, dw\+\_\+parlo\+\_\+diff                                                                                                                                                                               ,uw\+\_\+parhi\+\_\+diff, dw\+\_\+nirlo\+\_\+beam, dw\+\_\+nirlo\+\_\+diff, uw\+\_\+nirhi\+\_\+diff                                                                                                                                   ,par\+\_\+level\+\_\+beam, par\+\_\+level\+\_\+diffd, par\+\_\+level\+\_\+diffu                                                                                                                                                                   ,light\+\_\+level, light\+\_\+beam\+\_\+level                                                                                                                       ,light\+\_\+diff\+\_\+level)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{twostream\+\_\+rad.\+f90@{twostream\+\_\+rad.\+f90}!lw\+\_\+two\+\_\+stream@{lw\+\_\+two\+\_\+stream}}
+\index{lw\+\_\+two\+\_\+stream@{lw\+\_\+two\+\_\+stream}!twostream\+\_\+rad.\+f90@{twostream\+\_\+rad.\+f90}}
+\subsubsection[{\texorpdfstring{lw\+\_\+two\+\_\+stream(grnd\+\_\+emiss4, grnd\+\_\+temp4, rlong\+\_\+top4, ncoh, pft, lai, wai, cai, leaf\+\_\+temp                                                                                               ,wood\+\_\+temp, radprof\+\_\+flip, tir\+\_\+flip, dw\+\_\+tirlo, uw\+\_\+tirlo, uw\+\_\+tirhi)}{lw_two_stream(grnd_emiss4, grnd_temp4, rlong_top4, ncoh, pft, lai, wai, cai, leaf_temp                                                                                               ,wood_temp, radprof_flip, tir_flip, dw_tirlo, uw_tirlo, uw_tirhi)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine lw\+\_\+two\+\_\+stream (
+\begin{DoxyParamCaption}
+\item[{real(kind=4), intent(in)}]{grnd\+\_\+emiss4, }
+\item[{real(kind=4), intent(in)}]{grnd\+\_\+temp4, }
+\item[{real(kind=4), intent(in)}]{rlong\+\_\+top4, }
+\item[{integer, intent(in)}]{ncoh, }
+\item[{integer, dimension(ncoh), intent(in)}]{pft, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{lai, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{wai, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{cai, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{leaf\+\_\+temp, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{wood\+\_\+temp, }
+\item[{real(kind=4), dimension(n\+\_\+radprof,ncoh), intent(inout)}]{radprof\+\_\+flip, }
+\item[{real(kind=4), dimension(ncoh), intent(out)}]{tir\+\_\+flip, }
+\item[{real(kind=4), intent(out)}]{dw\+\_\+tirlo, }
+\item[{real(kind=4), intent(out)}]{uw\+\_\+tirlo, }
+\item[{real(kind=4), intent(out)}]{uw\+\_\+tirhi}
+\end{DoxyParamCaption}
+)}\hypertarget{twostream__rad_8f90_a6581b5d4ea4bd5a6c7a8e742257dd0d1}{}\label{twostream__rad_8f90_a6581b5d4ea4bd5a6c7a8e742257dd0d1}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=269pt]{twostream__rad_8f90_a6581b5d4ea4bd5a6c7a8e742257dd0d1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{twostream__rad_8f90_a6581b5d4ea4bd5a6c7a8e742257dd0d1_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{twostream\+\_\+rad.\+f90@{twostream\+\_\+rad.\+f90}!sw\+\_\+two\+\_\+stream@{sw\+\_\+two\+\_\+stream}}
+\index{sw\+\_\+two\+\_\+stream@{sw\+\_\+two\+\_\+stream}!twostream\+\_\+rad.\+f90@{twostream\+\_\+rad.\+f90}}
+\subsubsection[{\texorpdfstring{sw\+\_\+two\+\_\+stream(grnd\+\_\+alb\+\_\+par4, grnd\+\_\+alb\+\_\+nir4, cosaoi4, ncoh, pft, lai, wai, cai                                                                                                                               ,radprof\+\_\+flip, par\+\_\+beam\+\_\+flip, par\+\_\+diff\+\_\+flip, sw\+\_\+abs\+\_\+beam\+\_\+flip                                                                                                                           ,sw\+\_\+abs\+\_\+diff\+\_\+flip, dw\+\_\+parlo\+\_\+beam, dw\+\_\+parlo\+\_\+diff                                                                                                                                                                               ,uw\+\_\+parhi\+\_\+diff, dw\+\_\+nirlo\+\_\+beam, dw\+\_\+nirlo\+\_\+diff, uw\+\_\+nirhi\+\_\+diff                                                                                                                                   ,par\+\_\+level\+\_\+beam, par\+\_\+level\+\_\+diffd, par\+\_\+level\+\_\+diffu                                                                                                                                                                   ,light\+\_\+level, light\+\_\+beam\+\_\+level                                                                                                                       ,light\+\_\+diff\+\_\+level)}{sw_two_stream(grnd_alb_par4, grnd_alb_nir4, cosaoi4, ncoh, pft, lai, wai, cai                                                                                                                               ,radprof_flip, par_beam_flip, par_diff_flip, sw_abs_beam_flip                                                                                                                           ,sw_abs_diff_flip, dw_parlo_beam, dw_parlo_diff                                                                                                                                                                               ,uw_parhi_diff, dw_nirlo_beam, dw_nirlo_diff, uw_nirhi_diff                                                                                                                                   ,par_level_beam, par_level_diffd, par_level_diffu                                                                                                                                                                   ,light_level, light_beam_level                                                                                                                       ,light_diff_level)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine sw\+\_\+two\+\_\+stream (
+\begin{DoxyParamCaption}
+\item[{real(kind=4), intent(in)}]{grnd\+\_\+alb\+\_\+par4, }
+\item[{real(kind=4), intent(in)}]{grnd\+\_\+alb\+\_\+nir4, }
+\item[{real(kind=4), intent(in)}]{cosaoi4, }
+\item[{integer, intent(in)}]{ncoh, }
+\item[{integer, dimension(ncoh), intent(in)}]{pft, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{lai, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{wai, }
+\item[{real(kind=8), dimension(ncoh), intent(in)}]{cai, }
+\item[{real(kind=4), dimension(n\+\_\+radprof,ncoh), intent(inout)}]{radprof\+\_\+flip, }
+\item[{real(kind=4), dimension(ncoh), intent(out)}]{par\+\_\+beam\+\_\+flip, }
+\item[{real(kind=4), dimension(ncoh), intent(out)}]{par\+\_\+diff\+\_\+flip, }
+\item[{real(kind=4), dimension(ncoh), intent(out)}]{sw\+\_\+abs\+\_\+beam\+\_\+flip, }
+\item[{real(kind=4), dimension(ncoh), intent(out)}]{sw\+\_\+abs\+\_\+diff\+\_\+flip, }
+\item[{real(kind=4), intent(out)}]{dw\+\_\+parlo\+\_\+beam, }
+\item[{real(kind=4), intent(out)}]{dw\+\_\+parlo\+\_\+diff, }
+\item[{real(kind=4), intent(out)}]{uw\+\_\+parhi\+\_\+diff, }
+\item[{real(kind=4), intent(out)}]{dw\+\_\+nirlo\+\_\+beam, }
+\item[{real(kind=4), intent(out)}]{dw\+\_\+nirlo\+\_\+diff, }
+\item[{real(kind=4), intent(out)}]{uw\+\_\+nirhi\+\_\+diff, }
+\item[{real(kind=8), dimension(ncoh), intent(out)}]{par\+\_\+level\+\_\+beam, }
+\item[{real(kind=8), dimension(ncoh), intent(out)}]{par\+\_\+level\+\_\+diffd, }
+\item[{real(kind=8), dimension(ncoh), intent(out)}]{par\+\_\+level\+\_\+diffu, }
+\item[{real(kind=8), dimension(ncoh), intent(out)}]{light\+\_\+level, }
+\item[{real(kind=8), dimension(ncoh), intent(out)}]{light\+\_\+beam\+\_\+level, }
+\item[{real(kind=8), dimension(ncoh), intent(out)}]{light\+\_\+diff\+\_\+level}
+\end{DoxyParamCaption}
+)}\hypertarget{twostream__rad_8f90_abe93885fe642dcef8db1fb3977179585}{}\label{twostream__rad_8f90_abe93885fe642dcef8db1fb3977179585}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=272pt]{twostream__rad_8f90_abe93885fe642dcef8db1fb3977179585_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{twostream__rad_8f90_abe93885fe642dcef8db1fb3977179585_icgraph}
+\end{center}
+\end{figure}
+
+

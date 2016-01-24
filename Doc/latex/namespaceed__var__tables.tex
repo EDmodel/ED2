@@ -1,0 +1,319 @@
+\hypertarget{namespaceed__var__tables}{}\section{ed\+\_\+var\+\_\+tables Module Reference}
+\label{namespaceed__var__tables}\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structed__var__tables_1_1var__table}{var\+\_\+table}
+\item 
+type \hyperlink{structed__var__tables_1_1var__table__vector}{var\+\_\+table\+\_\+vector}
+\end{DoxyCompactItemize}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_a36d6819fcfd324eb837656868073559d}{vtable\+\_\+edio\+\_\+r} (npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_a2d5460567ac0681fd8910275ab986334}{vtable\+\_\+edio\+\_\+d} (npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_aee69080af76c9fa42c7ed981b68e5ce5}{vtable\+\_\+edio\+\_\+i} (npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_aaac5e1ef08aa7ccf93e7916d12ce9c37}{vtable\+\_\+edio\+\_\+c} (npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_a204fa52552675c94e71b2a23cb5d2d63}{vtable\+\_\+edio\+\_\+r\+\_\+sca} (var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_a6d6f4602657a7fd22ab760b6be0ab061}{vtable\+\_\+edio\+\_\+d\+\_\+sca} (var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_a9729653cf659295bb68d54f3979f7615}{vtable\+\_\+edio\+\_\+i\+\_\+sca} (var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)
+\item 
+recursive subroutine \hyperlink{namespaceed__var__tables_a9bcc45986b101b7495287ad999e5d52e}{vtable\+\_\+edio\+\_\+c\+\_\+sca} (var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)
+\item 
+subroutine \hyperlink{namespaceed__var__tables_a163fc43f01ed02a236a290d4b1d9575b}{metadata\+\_\+edio} (nv, igr, lname, units, dimstr)
+\item 
+subroutine \hyperlink{namespaceed__var__tables_aed76c1293872b5f6cf4c39c0747d2bb4}{reset\+\_\+vt\+\_\+vector\+\_\+pointers} (vt)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer, parameter \hyperlink{namespaceed__var__tables_a932cd6738531dd3348d40636bd8a20ae}{maxvars} = 1800
+\item 
+type(\hyperlink{structed__var__tables_1_1var__table}{var\+\_\+table}), dimension(\+:,\+:), allocatable \hyperlink{namespaceed__var__tables_a949fa9110a835bd59e16bd0a5e153498}{vt\+\_\+info}
+\item 
+integer, dimension(\+:), allocatable \hyperlink{namespaceed__var__tables_ae879757190201e461d3bc09131321a64}{num\+\_\+var}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!metadata\+\_\+edio@{metadata\+\_\+edio}}
+\index{metadata\+\_\+edio@{metadata\+\_\+edio}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{metadata\+\_\+edio(nv, igr, lname, units, dimstr)}{metadata_edio(nv, igr, lname, units, dimstr)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+var\+\_\+tables\+::metadata\+\_\+edio (
+\begin{DoxyParamCaption}
+\item[{integer}]{nv, }
+\item[{integer}]{igr, }
+\item[{character (len=$\ast$)}]{lname, }
+\item[{character (len=$\ast$)}]{units, }
+\item[{character (len=$\ast$)}]{dimstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a163fc43f01ed02a236a290d4b1d9575b}{}\label{namespaceed__var__tables_a163fc43f01ed02a236a290d4b1d9575b}
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!reset\+\_\+vt\+\_\+vector\+\_\+pointers@{reset\+\_\+vt\+\_\+vector\+\_\+pointers}}
+\index{reset\+\_\+vt\+\_\+vector\+\_\+pointers@{reset\+\_\+vt\+\_\+vector\+\_\+pointers}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{reset\+\_\+vt\+\_\+vector\+\_\+pointers(vt)}{reset_vt_vector_pointers(vt)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+var\+\_\+tables\+::reset\+\_\+vt\+\_\+vector\+\_\+pointers (
+\begin{DoxyParamCaption}
+\item[{type({\bf var\+\_\+table}), intent(inout)}]{vt}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_aed76c1293872b5f6cf4c39c0747d2bb4}{}\label{namespaceed__var__tables_aed76c1293872b5f6cf4c39c0747d2bb4}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{namespaceed__var__tables_aed76c1293872b5f6cf4c39c0747d2bb4_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+c@{vtable\+\_\+edio\+\_\+c}}
+\index{vtable\+\_\+edio\+\_\+c@{vtable\+\_\+edio\+\_\+c}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+c(npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)}{vtable_edio_c(npts, var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                   ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+c (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{npts, }
+\item[{character(len=str\+\_\+len), dimension(npts), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_aaac5e1ef08aa7ccf93e7916d12ce9c37}{}\label{namespaceed__var__tables_aaac5e1ef08aa7ccf93e7916d12ce9c37}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_aaac5e1ef08aa7ccf93e7916d12ce9c37_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+c\+\_\+sca@{vtable\+\_\+edio\+\_\+c\+\_\+sca}}
+\index{vtable\+\_\+edio\+\_\+c\+\_\+sca@{vtable\+\_\+edio\+\_\+c\+\_\+sca}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+c\+\_\+sca(var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)}{vtable_edio_c_sca(var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                                       ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+c\+\_\+sca (
+\begin{DoxyParamCaption}
+\item[{character(len=str\+\_\+len), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a9bcc45986b101b7495287ad999e5d52e}{}\label{namespaceed__var__tables_a9bcc45986b101b7495287ad999e5d52e}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_a9bcc45986b101b7495287ad999e5d52e_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+d@{vtable\+\_\+edio\+\_\+d}}
+\index{vtable\+\_\+edio\+\_\+d@{vtable\+\_\+edio\+\_\+d}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+d(npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)}{vtable_edio_d(npts, var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                   ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+d (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{npts, }
+\item[{real(kind=8), dimension(npts), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a2d5460567ac0681fd8910275ab986334}{}\label{namespaceed__var__tables_a2d5460567ac0681fd8910275ab986334}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_a2d5460567ac0681fd8910275ab986334_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+d\+\_\+sca@{vtable\+\_\+edio\+\_\+d\+\_\+sca}}
+\index{vtable\+\_\+edio\+\_\+d\+\_\+sca@{vtable\+\_\+edio\+\_\+d\+\_\+sca}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+d\+\_\+sca(var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)}{vtable_edio_d_sca(var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                                       ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+d\+\_\+sca (
+\begin{DoxyParamCaption}
+\item[{real(kind=8), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a6d6f4602657a7fd22ab760b6be0ab061}{}\label{namespaceed__var__tables_a6d6f4602657a7fd22ab760b6be0ab061}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_a6d6f4602657a7fd22ab760b6be0ab061_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+i@{vtable\+\_\+edio\+\_\+i}}
+\index{vtable\+\_\+edio\+\_\+i@{vtable\+\_\+edio\+\_\+i}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+i(npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)}{vtable_edio_i(npts, var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                   ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+i (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{npts, }
+\item[{integer, dimension(npts), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_aee69080af76c9fa42c7ed981b68e5ce5}{}\label{namespaceed__var__tables_aee69080af76c9fa42c7ed981b68e5ce5}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_aee69080af76c9fa42c7ed981b68e5ce5_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_aee69080af76c9fa42c7ed981b68e5ce5_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+i\+\_\+sca@{vtable\+\_\+edio\+\_\+i\+\_\+sca}}
+\index{vtable\+\_\+edio\+\_\+i\+\_\+sca@{vtable\+\_\+edio\+\_\+i\+\_\+sca}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+i\+\_\+sca(var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)}{vtable_edio_i_sca(var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                                       ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+i\+\_\+sca (
+\begin{DoxyParamCaption}
+\item[{integer, target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a9729653cf659295bb68d54f3979f7615}{}\label{namespaceed__var__tables_a9729653cf659295bb68d54f3979f7615}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_a9729653cf659295bb68d54f3979f7615_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+r@{vtable\+\_\+edio\+\_\+r}}
+\index{vtable\+\_\+edio\+\_\+r@{vtable\+\_\+edio\+\_\+r}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+r(npts, var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                   ,max\+\_\+ptrs, tabstr)}{vtable_edio_r(npts, var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                   ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+r (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{npts, }
+\item[{real(kind=4), dimension(npts), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a36d6819fcfd324eb837656868073559d}{}\label{namespaceed__var__tables_a36d6819fcfd324eb837656868073559d}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_a36d6819fcfd324eb837656868073559d_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{namespaceed__var__tables_a36d6819fcfd324eb837656868073559d_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vtable\+\_\+edio\+\_\+r\+\_\+sca@{vtable\+\_\+edio\+\_\+r\+\_\+sca}}
+\index{vtable\+\_\+edio\+\_\+r\+\_\+sca@{vtable\+\_\+edio\+\_\+r\+\_\+sca}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vtable\+\_\+edio\+\_\+r\+\_\+sca(var, nv, igr, init, glob\+\_\+id, var\+\_\+len, var\+\_\+len\+\_\+global                                                                                                                                                                       ,max\+\_\+ptrs, tabstr)}{vtable_edio_r_sca(var, nv, igr, init, glob_id, var_len, var_len_global                                                                                                                                                                       ,max_ptrs, tabstr)}}]{\setlength{\rightskip}{0pt plus 5cm}recursive subroutine ed\+\_\+var\+\_\+tables\+::vtable\+\_\+edio\+\_\+r\+\_\+sca (
+\begin{DoxyParamCaption}
+\item[{real(kind=4), target}]{var, }
+\item[{integer, intent(in)}]{nv, }
+\item[{integer, intent(in)}]{igr, }
+\item[{integer, intent(in)}]{init, }
+\item[{integer, intent(in)}]{glob\+\_\+id, }
+\item[{integer, intent(in)}]{var\+\_\+len, }
+\item[{integer, intent(in)}]{var\+\_\+len\+\_\+global, }
+\item[{integer, intent(in)}]{max\+\_\+ptrs, }
+\item[{character (len=$\ast$), intent(in)}]{tabstr}
+\end{DoxyParamCaption}
+)}\hypertarget{namespaceed__var__tables_a204fa52552675c94e71b2a23cb5d2d63}{}\label{namespaceed__var__tables_a204fa52552675c94e71b2a23cb5d2d63}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespaceed__var__tables_a204fa52552675c94e71b2a23cb5d2d63_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+\subsection{Variable Documentation}
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!maxvars@{maxvars}}
+\index{maxvars@{maxvars}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{maxvars}{maxvars}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter ed\+\_\+var\+\_\+tables\+::maxvars = 1800}\hypertarget{namespaceed__var__tables_a932cd6738531dd3348d40636bd8a20ae}{}\label{namespaceed__var__tables_a932cd6738531dd3348d40636bd8a20ae}
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!num\+\_\+var@{num\+\_\+var}}
+\index{num\+\_\+var@{num\+\_\+var}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{num\+\_\+var}{num_var}}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\+:), allocatable ed\+\_\+var\+\_\+tables\+::num\+\_\+var}\hypertarget{namespaceed__var__tables_ae879757190201e461d3bc09131321a64}{}\label{namespaceed__var__tables_ae879757190201e461d3bc09131321a64}
+\index{ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}!vt\+\_\+info@{vt\+\_\+info}}
+\index{vt\+\_\+info@{vt\+\_\+info}!ed\+\_\+var\+\_\+tables@{ed\+\_\+var\+\_\+tables}}
+\subsubsection[{\texorpdfstring{vt\+\_\+info}{vt_info}}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf var\+\_\+table}), dimension(\+:,\+:), allocatable ed\+\_\+var\+\_\+tables\+::vt\+\_\+info}\hypertarget{namespaceed__var__tables_a949fa9110a835bd59e16bd0a5e153498}{}\label{namespaceed__var__tables_a949fa9110a835bd59e16bd0a5e153498}
