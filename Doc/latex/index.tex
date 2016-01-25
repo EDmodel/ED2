@@ -1,23 +1,26 @@
 \subsection*{Please Note\+:}
 
-The structure of this documentation is under development. As of the 2016 E\+D+ Meeting in CO we\textquotesingle{}ve established Doxygen as our auto-\/documentation tool and further pull requests to the mainline will require some basic tags in order to be accepted. Specifically, please mark up any routine you modify with the brief, details, and author tags, as well as inline argument documentation. For the time being Daniel\+N\+Scott will version and periodically update the documentation. For more information on Doxygen, see \href{#info}{\tt Further Info} below.
+The structure of this documentation is under development. As of the 2016 E\+D+ Meeting in CO we\textquotesingle{}ve established Doxygen as our auto-\/documentation tool and further pull requests to the mainline will require some basic tags in order to be accepted. Specifically, please mark up any routine you modify with the brief, details, and author tags, as well as inline argument documentation. For the time being Daniel\+N\+Scott will version and periodically update the documentation. For more information on Doxygen, see \mbox{[}Further Info\mbox{]} below.
 
 \subsection*{Table of Contents}
 
 
 \begin{DoxyEnumerate}
-\item \href{#desc}{\tt Model Overview}
-\item \href{#contents}{\tt Repository Contents}
-\item \href{#implement}{\tt Implementation Notes}
-\item \href{#info}{\tt Further Info}
+\item \href{#overview}{\tt Model Overview }
+\item \href{#contents}{\tt Repository Contents }
+\item \href{#implementation}{\tt Implementation Notes }
+\item \href{#info}{\tt Further Info }
+\begin{DoxyEnumerate}
+\item \href{#doxyinfo}{\tt Doxygen Info }
+\end{DoxyEnumerate}
 \end{DoxyEnumerate}
 
-\subsection*{\label{_#desc}%
+\subsection*{\label{_overview}%
  Model Overview }
 
 The Ecosystem Demography Biosphere Model (E\+D2) is an integrated terrestrial biosphere model incorporating hydrology, land-\/surface biophysics, vegetation dynamics, and soil carbon and nitrogen biogeochemistry (Medvigy et al., 2009). Like its predecessor, ED (Hurtt et al., 1998, Moorcroft et al., 2001), E\+D2 utilizes a set of size-\/ and age-\/structured partial differential equations that track the changing structure and composition of the plant canopy. With the E\+D2 model, in contrast to conventional biosphere models in which ecosystems with climatological grid cells are represented in a highly aggregated manner, the state of the aboveground ecosystem is described by the density of trees of different sizes and how this varies across horizontal space for a series of plant functional types. This more detailed description of ecosystem composition and structure enables the E\+D2 model to make realistic projections of both the fast-\/timescale exchanges of carbon, water and energy between the land and atmosphere, and long-\/term vegetation dynamics incorporating effects of ecosystem heterogeneity, including disturbance history and recovery (Hurtt et al., 2012).
 
-\subsection*{\label{_#contents}%
+\subsection*{\label{_contents}%
  Repository Contents }
 
 Copies of the E\+D2 repository should contain the following directories\+:
@@ -32,7 +35,7 @@ Copies of the E\+D2 repository should contain the following directories\+:
 \item {\bfseries  R-\/utils\+: } A collection of utilities for model pre-\/ and post-\/processing.
 \end{DoxyItemize}
 
-\subsection*{\label{_#implement}%
+\subsection*{\label{_implementation}%
  Implementation Notes }
 
 The primary data structure in ED, which can be found in \hyperlink{ed__state__vars_8_f90}{ed\+\_\+state\+\_\+vars.\+f90}, is a named, nested array of arrays. Each level of the heirarchy contains many fields of depth one, but the key large scale structure is as follows\+:
@@ -48,7 +51,7 @@ Note\+: height and age, being continuous variables, are \char`\"{}binned\char`\"
 
 If you\textquotesingle{}re not sure where to start in browsing the documentation, consider looking at \hyperlink{ed__model_8_f90}{ed\+\_\+model.\+f90}, which controls the actual simulation of ecosystem processes. \hyperlink{ed__driver_8_f90}{ed\+\_\+driver.\+f90} and \hyperlink{edmain_8_f90}{edmain.\+f90} mostly do model initialization and coordination of things like mpi.
 
-\subsection*{\label{_#info}%
+\subsection*{\label{_info}%
  Further Info }
 
 This documentation includes clickable callgraphs and caller-\/graphs for each function in the code, except the routine \char`\"{}fatal\+\_\+error\char`\"{} which is connected to just about everything.
@@ -93,6 +96,4 @@ Configuration\+:
 \item \href{http://www.doxygen.nl/config.html}{\tt http\+://www.\+doxygen.\+nl/config.\+html}
 \end{DoxyItemize}
 
-~\newline
-~\newline
 {\itshape Documentation updated 1/24/2016 by Daniel\+N\+Scott} 

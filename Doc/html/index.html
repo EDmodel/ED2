@@ -85,17 +85,20 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><h2>Please Note:</h2>
-<p>The structure of this documentation is under development. As of the 2016 ED+ Meeting in CO we've established Doxygen as our auto-documentation tool and further pull requests to the mainline will require some basic tags in order to be accepted. Specifically, please mark up any routine you modify with the brief, details, and author tags, as well as inline argument documentation. For the time being DanielNScott will version and periodically update the documentation. For more information on Doxygen, see <a href="#info">Further Info</a> below.</p>
+<p>The structure of this documentation is under development. As of the 2016 ED+ Meeting in CO we've established Doxygen as our auto-documentation tool and further pull requests to the mainline will require some basic tags in order to be accepted. Specifically, please mark up any routine you modify with the brief, details, and author tags, as well as inline argument documentation. For the time being DanielNScott will version and periodically update the documentation. For more information on Doxygen, see [Further Info] below.</p>
 <h2>Table of Contents</h2>
 <ol type="1">
-<li><a href="#desc">Model Overview</a></li>
-<li><a href="#contents">Repository Contents</a></li>
-<li><a href="#implement">Implementation Notes</a></li>
-<li><a href="#info">Further Info</a></li>
+<li><a href="#overview">Model Overview </a></li>
+<li><a href="#contents">Repository Contents </a></li>
+<li><a href="#implementation">Implementation Notes </a></li>
+<li><a href="#info">Further Info </a><ol type="a">
+<li><a href="#doxyinfo">Doxygen Info </a></li>
 </ol>
-<h2><a class="anchor" id="#desc"></a> Model Overview </h2>
+</li>
+</ol>
+<h2><a class="anchor" id="overview"></a> Model Overview </h2>
 <p>The Ecosystem Demography Biosphere Model (ED2) is an integrated terrestrial biosphere model incorporating hydrology, land-surface biophysics, vegetation dynamics, and soil carbon and nitrogen biogeochemistry (Medvigy et al., 2009). Like its predecessor, ED (Hurtt et al., 1998, Moorcroft et al., 2001), ED2 utilizes a set of size- and age-structured partial differential equations that track the changing structure and composition of the plant canopy. With the ED2 model, in contrast to conventional biosphere models in which ecosystems with climatological grid cells are represented in a highly aggregated manner, the state of the aboveground ecosystem is described by the density of trees of different sizes and how this varies across horizontal space for a series of plant functional types. This more detailed description of ecosystem composition and structure enables the ED2 model to make realistic projections of both the fast-timescale exchanges of carbon, water and energy between the land and atmosphere, and long-term vegetation dynamics incorporating effects of ecosystem heterogeneity, including disturbance history and recovery (Hurtt et al., 2012).</p>
-<h2><a class="anchor" id="#contents"></a> Repository Contents </h2>
+<h2><a class="anchor" id="contents"></a> Repository Contents </h2>
 <p>Copies of the ED2 repository should contain the following directories:</p><ul>
 <li><b> BRAMS: </b> Contains the Brazilian Regional Atmospheric Model Somethingorother.</li>
 <li><b> Doc: </b> Contains the ED2 documentation.</li>
@@ -106,7 +109,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li><b> RAPP: </b> This directory contains the NCEP reanalysis pre-processor, that produces meteorological forcing in the ED-friendly format (HDF5) based on the NCEP/NCAR reanalysis (Kalnay et al 1996). The source code (src) and a build directory are included. The run directory contains the namelist and a shell script to help with the downloading process. A brief instruction can be found in the directory too.</li>
 <li><b> R-utils: </b> A collection of utilities for model pre- and post-processing.</li>
 </ul>
-<h2><a class="anchor" id="#implement"></a> Implementation Notes </h2>
+<h2><a class="anchor" id="implementation"></a> Implementation Notes </h2>
 <p>The primary data structure in ED, which can be found in <a class="el" href="ed__state__vars_8_f90.html">ed_state_vars.f90</a>, is a named, nested array of arrays. Each level of the heirarchy contains many fields of depth one, but the key large scale structure is as follows:</p><ul>
 <li><b> grid: </b> The most coarse data in the model. Basically just a simulation book-keeping linking of polygons.</li>
 <li><b> polygon: </b> A collection of sites sharing a meteorology.</li>
@@ -116,7 +119,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </ul>
 <p>Note: height and age, being continuous variables, are "binned". "Identical" in the above refers to bin membership.</p>
 <p>If you're not sure where to start in browsing the documentation, consider looking at <a class="el" href="ed__model_8_f90.html">ed_model.f90</a>, which controls the actual simulation of ecosystem processes. <a class="el" href="ed__driver_8_f90.html">ed_driver.f90</a> and <a class="el" href="edmain_8_f90.html">edmain.f90</a> mostly do model initialization and coordination of things like mpi.</p>
-<h2><a class="anchor" id="#info"></a> Further Info </h2>
+<h2><a class="anchor" id="info"></a> Further Info </h2>
 <p>This documentation includes clickable callgraphs and caller-graphs for each function in the code, except the routine "fatal_error" which is connected to just about everything.</p>
 <p>More information about ED can be found in the paper written by <a href="http://flux.aos.wisc.edu/~adesai/documents/macrosys_papers-ankur/modeling/Moorcroft-EcolMono-EDmodel.pdf">Moorcroft et al.</a></p>
 <p>r956 aka 0c1bf644bd377bc0636c4f612b6f766f8e682599 from April 9th, is considered "somewhat stable", see report: <a href="https://github.com/EDmodel/ED2Documents/blob/master/EDTS/r956vr922rapid.pdf">https://github.com/EDmodel/ED2Documents/blob/master/EDTS/r956vr922rapid.pdf</a></p>
@@ -144,9 +147,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <p>Configuration:</p><ul>
 <li><a href="http://www.doxygen.nl/config.html">http://www.doxygen.nl/config.html</a></li>
 </ul>
-<p><br />
-<br />
-<em>Documentation updated 1/24/2016 by DanielNScott</em> </p>
+<p><em>Documentation updated 1/24/2016 by DanielNScott</em> </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
