@@ -241,7 +241,7 @@ module growth_balive
                      !---------------------------------------------------------------------!
                      !     Update the phenology status.                                    !
                      !---------------------------------------------------------------------!
-                     on_allometry = (balive_aim - cpatch%balive(ico))/balive_aim < 0.000001
+                     on_allometry = balive_aim - cpatch%balive(ico) <= 0.000001*balive_aim
                      if (flushing .and. cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                         cpatch%phenology_status(ico) = 0
                      elseif(cpatch%bleaf(ico) < tiny_num .and.                             &
