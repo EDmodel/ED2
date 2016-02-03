@@ -2,7 +2,7 @@ language: c
 sudo: required
 
 before_install:
-    - sudo apt-get install gcc-4.6 gfortran-4.6 libhdf5-serial-dev
+    - sudo apt-get install gcc-4.6 libhdf5-dev
 
 script:
     - make OPT=opt.gfortran
