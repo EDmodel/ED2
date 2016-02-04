@@ -3,7 +3,8 @@ sudo: required
 
 before_install:
     - sudo apt-get clean && sudo apt-get update
-    - sudo apt-get install gcc-4.6 hdf5-tools
+    - sudo apt-get install gcc-4.6 hdf5-tools libmpich1.0-dev libhdf5-mpich-dev
 
 script:
+    - cd EDmodel/ED2/ED/build/bin
     - make OPT=opt.gfortran
