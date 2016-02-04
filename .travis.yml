@@ -2,6 +2,7 @@ language: c
 sudo: required
 
 before_install:
+    - sudo apt-get clean && sudo apt-get update
     - sudo apt-get install gcc-4.6 hdf5-tools
 
 script:
