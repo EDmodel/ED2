@@ -7,5 +7,5 @@ before_install:
 
 script:
     - pwd
-    - cd ED2/ED/build/bin
+    - cd ED/build/bin
     - make OPT=opt.gfortran
