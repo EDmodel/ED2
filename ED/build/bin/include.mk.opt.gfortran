@@ -86,7 +86,7 @@ USE_MPIWTIME=1
 
 #----------------- gfortran on Linux (optimized build)-----------
 CMACH=PC_GFORTRAN
-F_COMP=mpif90
+F_COMP=gfortran-4.6
 F_OPTS=-g -ffree-line-length-none -fno-whole-file -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
 C_COMP=mpicc 
 C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
