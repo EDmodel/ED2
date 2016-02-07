@@ -45,6 +45,7 @@ BASE=$(ED_ROOT)/build/
 
 USE_HDF5=1
 
+HDF5_HOME=/usr
 HDF5_INCS=-I${HDF5_HOME}/include
 HDF5C_INCS=-I${HDF5_HOME}/include
 HDF5_LIBS=${HDF5_HOME}/lib/libhdf5_fortran.a \
