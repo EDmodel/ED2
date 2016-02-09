@@ -49,10 +49,10 @@ r956 aka 0c1bf644bd377bc0636c4f612b6f766f8e682599 from April 9th, is considered 
 
 ### <a name="doxygit"> Doxygen and Git Commits: </a>
 In order for further pull requests to the mainline to be accepted, modified subroutines will require the following doxygen tags:
-1. Brief subroutine descriptions using the brief tag
-2. Detailed subroutine descriptions using the details tag
-3. Subroutine authorship statements using author tag
-4. Inline subroutine argument descriptions using "!< comment"
+ - Brief subroutine descriptions using the brief tag
+ - Detailed subroutine descriptions using the details tag
+ - Subroutine authorship statements using author tag
+ - Inline subroutine argument descriptions using "!< comment"
 
 Please do not commit changes to model code and documentation together if high numbers of documentation files have been modified. Instead ...
  - Submit a pull request to the mainline with a comment that docs needs regeneration or
