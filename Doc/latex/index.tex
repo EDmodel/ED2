@@ -78,7 +78,11 @@ Please do not commit changes to model code and documentation together if high nu
 \item Seperately pull request code changes and documentation updates
 \end{DoxyItemize}
 
-Seperating code and doc changes will make inter-\/branch comparison much easier when many files are modified.
+Finally, please note\+:
+\begin{DoxyItemize}
+\item Seperating code and doc changes will make inter-\/branch comparison much easier when many files are modified.
+\item Regenerating documentation may produce many spurious line-\/end encoding differences which git will pick up on. \char`\"{}git add\char`\"{}-\/ing such files will often return them to the repo standard C\+R\+LF, and they will cease to be listed as modified.
+\end{DoxyItemize}
 
 \subsubsection*{\label{_doxyinfo}%
  General Doxygen Info }

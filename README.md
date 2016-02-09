@@ -58,7 +58,9 @@ Please do not commit changes to model code and documentation together if high nu
  - Submit a pull request to the mainline with a comment that docs needs regeneration or
  - Seperately pull request code changes and documentation updates
 
-Seperating code and doc changes will make inter-branch comparison much easier when many files are modified.
+Finally, please note:
+ - Seperating code and doc changes will make inter-branch comparison much easier when many files are modified. 
+ - Regenerating documentation may produce many spurious line-end encoding differences which git will pick up on. "git add"-ing such files will often return them to the repo standard CRLF, and they will cease to be listed as modified.
 
 ### <a name="doxyinfo"> General Doxygen Info </a>
 The following info may be helpful for familiarizing one's self with Doxygen, an auto-documentation program which utilizes a system of tags in source code. To tag a subroutine in the ED model as required above, try taking ed_model.f90 as a template and/or browsing the first few links below.

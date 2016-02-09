@@ -136,7 +136,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>Submit a pull request to the mainline with a comment that docs needs regeneration or</li>
 <li>Seperately pull request code changes and documentation updates</li>
 </ul>
-<p>Seperating code and doc changes will make inter-branch comparison much easier when many files are modified.</p>
+<p>Finally, please note:</p><ul>
+<li>Seperating code and doc changes will make inter-branch comparison much easier when many files are modified.</li>
+<li>Regenerating documentation may produce many spurious line-end encoding differences which git will pick up on. "git add"-ing such files will often return them to the repo standard CRLF, and they will cease to be listed as modified.</li>
+</ul>
 <h3><a class="anchor" id="doxyinfo"></a> General Doxygen Info </h3>
 <p>The following info may be helpful for familiarizing one's self with Doxygen, an auto-documentation program which utilizes a system of tags in source code. To tag a subroutine in the ED model as required above, try taking <a class="el" href="ed__model_8_f90.html">ed_model.f90</a> as a template and/or browsing the first few links below.</p><ul>
 <li>NASA Doxygen Quickstart: <a href="https://modelingguru.nasa.gov/docs/DOC-1811">https://modelingguru.nasa.gov/docs/DOC-1811</a></li>
