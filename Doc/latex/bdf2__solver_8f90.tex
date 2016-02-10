@@ -1,0 +1,139 @@
+\hypertarget{bdf2__solver_8f90}{}\section{bdf2\+\_\+solver.\+f90 File Reference}
+\label{bdf2__solver_8f90}\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{bdf2__solver_8f90_a341c7d28b12d70f7ad3cbf4b4919f510}{bdf2\+\_\+solver} (cpatch, yprev, ycurr, ynext, dydt, dtf, dtb)
+\item 
+subroutine \hyperlink{bdf2__solver_8f90_a8dbb8aa5a5523ba3d3eab9c0a85cd089}{selective\+\_\+gaussian\+\_\+2body} (ad, yd, xd, np)
+\item 
+subroutine \hyperlink{bdf2__solver_8f90_a552f7b3d1a9f5be9c86c45d03135d4b3}{ludcmp\+\_\+dble} (ad, n, np, indx, d)
+\item 
+subroutine \hyperlink{bdf2__solver_8f90_a39e26f963dd59a961a595767eba16dc4}{lubksb\+\_\+dble} (ad, n, np, indx, bd)
+\item 
+subroutine \hyperlink{bdf2__solver_8f90_a1d52c0b6e396cbbca4ef5cb6600a36bc}{migs} (A, N, X, I\+N\+DX)
+\item 
+subroutine \hyperlink{bdf2__solver_8f90_a20b2b6c5902d735ebf45af8197ca2172}{elgs} (A, N, I\+N\+DX)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}!bdf2\+\_\+solver@{bdf2\+\_\+solver}}
+\index{bdf2\+\_\+solver@{bdf2\+\_\+solver}!bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsubsection[{\texorpdfstring{bdf2\+\_\+solver(cpatch, yprev, ycurr, ynext, dydt, dtf, dtb)}{bdf2_solver(cpatch, yprev, ycurr, ynext, dydt, dtf, dtb)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine bdf2\+\_\+solver (
+\begin{DoxyParamCaption}
+\item[{type({\bf patchtype}), target}]{cpatch, }
+\item[{type({\bf bdf2patchtype}), target}]{yprev, }
+\item[{type({\bf rk4patchtype}), target}]{ycurr, }
+\item[{type({\bf rk4patchtype}), target}]{ynext, }
+\item[{type({\bf rk4patchtype}), target}]{dydt, }
+\item[{real(kind=8), intent(in)}]{dtf, }
+\item[{real(kind=8), intent(in)}]{dtb}
+\end{DoxyParamCaption}
+)}\hypertarget{bdf2__solver_8f90_a341c7d28b12d70f7ad3cbf4b4919f510}{}\label{bdf2__solver_8f90_a341c7d28b12d70f7ad3cbf4b4919f510}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bdf2__solver_8f90_a341c7d28b12d70f7ad3cbf4b4919f510_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bdf2__solver_8f90_a341c7d28b12d70f7ad3cbf4b4919f510_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}!elgs@{elgs}}
+\index{elgs@{elgs}!bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsubsection[{\texorpdfstring{elgs(\+A, N, I\+N\+D\+X)}{elgs(A, N, INDX)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine elgs (
+\begin{DoxyParamCaption}
+\item[{real, dimension (n,n), intent(inout)}]{A, }
+\item[{integer, intent(in)}]{N, }
+\item[{integer, dimension (n), intent(out)}]{I\+N\+DX}
+\end{DoxyParamCaption}
+)}\hypertarget{bdf2__solver_8f90_a20b2b6c5902d735ebf45af8197ca2172}{}\label{bdf2__solver_8f90_a20b2b6c5902d735ebf45af8197ca2172}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=189pt]{bdf2__solver_8f90_a20b2b6c5902d735ebf45af8197ca2172_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}!lubksb\+\_\+dble@{lubksb\+\_\+dble}}
+\index{lubksb\+\_\+dble@{lubksb\+\_\+dble}!bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsubsection[{\texorpdfstring{lubksb\+\_\+dble(ad, n, np, indx, bd)}{lubksb_dble(ad, n, np, indx, bd)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine lubksb\+\_\+dble (
+\begin{DoxyParamCaption}
+\item[{real(kind=8), dimension(np,np), intent(in)}]{ad, }
+\item[{integer, intent(in)}]{n, }
+\item[{integer, intent(in)}]{np, }
+\item[{integer, dimension(n), intent(in)}]{indx, }
+\item[{real(kind=8), dimension(n), intent(inout)}]{bd}
+\end{DoxyParamCaption}
+)}\hypertarget{bdf2__solver_8f90_a39e26f963dd59a961a595767eba16dc4}{}\label{bdf2__solver_8f90_a39e26f963dd59a961a595767eba16dc4}
+\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}!ludcmp\+\_\+dble@{ludcmp\+\_\+dble}}
+\index{ludcmp\+\_\+dble@{ludcmp\+\_\+dble}!bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsubsection[{\texorpdfstring{ludcmp\+\_\+dble(ad, n, np, indx, d)}{ludcmp_dble(ad, n, np, indx, d)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ludcmp\+\_\+dble (
+\begin{DoxyParamCaption}
+\item[{real(kind=8), dimension(np,np), intent(inout)}]{ad, }
+\item[{integer, intent(in)}]{n, }
+\item[{integer, intent(in)}]{np, }
+\item[{integer, dimension(n), intent(out)}]{indx, }
+\item[{real, intent(out)}]{d}
+\end{DoxyParamCaption}
+)}\hypertarget{bdf2__solver_8f90_a552f7b3d1a9f5be9c86c45d03135d4b3}{}\label{bdf2__solver_8f90_a552f7b3d1a9f5be9c86c45d03135d4b3}
+\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}!migs@{migs}}
+\index{migs@{migs}!bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsubsection[{\texorpdfstring{migs(\+A, N, X, I\+N\+D\+X)}{migs(A, N, X, INDX)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine migs (
+\begin{DoxyParamCaption}
+\item[{real, dimension (n,n), intent(inout)}]{A, }
+\item[{integer, intent(in)}]{N, }
+\item[{real, dimension (n,n), intent(out)}]{X, }
+\item[{integer, dimension (n), intent(out)}]{I\+N\+DX}
+\end{DoxyParamCaption}
+)}\hypertarget{bdf2__solver_8f90_a1d52c0b6e396cbbca4ef5cb6600a36bc}{}\label{bdf2__solver_8f90_a1d52c0b6e396cbbca4ef5cb6600a36bc}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=189pt]{bdf2__solver_8f90_a1d52c0b6e396cbbca4ef5cb6600a36bc_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}!selective\+\_\+gaussian\+\_\+2body@{selective\+\_\+gaussian\+\_\+2body}}
+\index{selective\+\_\+gaussian\+\_\+2body@{selective\+\_\+gaussian\+\_\+2body}!bdf2\+\_\+solver.\+f90@{bdf2\+\_\+solver.\+f90}}
+\subsubsection[{\texorpdfstring{selective\+\_\+gaussian\+\_\+2body(ad, yd, xd, np)}{selective_gaussian_2body(ad, yd, xd, np)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine selective\+\_\+gaussian\+\_\+2body (
+\begin{DoxyParamCaption}
+\item[{real(kind=8), dimension(np,np), intent(in)}]{ad, }
+\item[{real(kind=8), dimension(np), intent(out)}]{yd, }
+\item[{real(kind=8), dimension(np), intent(in)}]{xd, }
+\item[{integer, intent(in)}]{np}
+\end{DoxyParamCaption}
+)}\hypertarget{bdf2__solver_8f90_a8dbb8aa5a5523ba3d3eab9c0a85cd089}{}\label{bdf2__solver_8f90_a8dbb8aa5a5523ba3d3eab9c0a85cd089}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{bdf2__solver_8f90_a8dbb8aa5a5523ba3d3eab9c0a85cd089_icgraph}
+\end{center}
+\end{figure}
+
+

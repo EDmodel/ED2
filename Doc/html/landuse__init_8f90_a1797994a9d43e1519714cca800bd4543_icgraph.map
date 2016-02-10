@@ -1,0 +1,7 @@
+<map id="read_plantation_fractions" name="read_plantation_fractions">
+<area shape="rect" id="node2" href="$landuse__init_8f90.html#a1b05ad72da8b4de7bfc42f7f70459f8e" title="landuse_init" alt="" coords="220,31,311,57"/>
+<area shape="rect" id="node3" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="359,5,512,32"/>
+<area shape="rect" id="node6" href="$ed__init__full__history_8_f90.html#aae7df21bdc388f535c22bf77f8acb93f" title="init_full_history_restart" alt="" coords="359,56,511,83"/>
+<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="560,31,633,57"/>
+<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="681,31,732,57"/>
+</map>

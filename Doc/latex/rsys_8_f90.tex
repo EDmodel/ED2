@@ -1,0 +1,98 @@
+\hypertarget{rsys_8_f90}{}\section{rsys.\+F90 File Reference}
+\label{rsys_8_f90}\index{rsys.\+F90@{rsys.\+F90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{rsys_8_f90_a00064fe2d51a3d606c81cfe4d7757b20}{ugetarg} (i, arg)
+\item 
+subroutine \hyperlink{rsys_8_f90_a88ea73aa768991551583f9a085350ca1}{endian} (mach\+\_\+type)
+\item 
+integer function \hyperlink{rsys_8_f90_ad022b26acfc99eb89b941038c720f437}{iran\+\_\+recsize} ()
+\item 
+subroutine \hyperlink{rsys_8_f90_a41ecaae8b0c09305c1db8113d3ab07b7}{timing} (icall, t1)
+\item 
+subroutine \hyperlink{rsys_8_f90_a8b8b300d11361b51f5d66f5459c7676b}{dcw\+\_\+swap16} (a, n)
+\item 
+subroutine \hyperlink{rsys_8_f90_a0ed4b139c302f641fee090adae27c99c}{dcw\+\_\+swap32} (a, n)
+\item 
+subroutine \hyperlink{rsys_8_f90_a4ded7d0d49182e2cc7650178eaefdb36}{dcw\+\_\+swap64} (a, n)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{rsys.\+F90@{rsys.\+F90}!dcw\+\_\+swap16@{dcw\+\_\+swap16}}
+\index{dcw\+\_\+swap16@{dcw\+\_\+swap16}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{dcw\+\_\+swap16(a, n)}{dcw_swap16(a, n)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dcw\+\_\+swap16 (
+\begin{DoxyParamCaption}
+\item[{integer(kind=2), dimension(n), intent(inout)}]{a, }
+\item[{integer, intent(in)}]{n}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_a8b8b300d11361b51f5d66f5459c7676b}{}\label{rsys_8_f90_a8b8b300d11361b51f5d66f5459c7676b}
+\index{rsys.\+F90@{rsys.\+F90}!dcw\+\_\+swap32@{dcw\+\_\+swap32}}
+\index{dcw\+\_\+swap32@{dcw\+\_\+swap32}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{dcw\+\_\+swap32(a, n)}{dcw_swap32(a, n)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dcw\+\_\+swap32 (
+\begin{DoxyParamCaption}
+\item[{integer(kind=4), dimension(n), intent(inout)}]{a, }
+\item[{integer, intent(in)}]{n}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_a0ed4b139c302f641fee090adae27c99c}{}\label{rsys_8_f90_a0ed4b139c302f641fee090adae27c99c}
+\index{rsys.\+F90@{rsys.\+F90}!dcw\+\_\+swap64@{dcw\+\_\+swap64}}
+\index{dcw\+\_\+swap64@{dcw\+\_\+swap64}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{dcw\+\_\+swap64(a, n)}{dcw_swap64(a, n)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine dcw\+\_\+swap64 (
+\begin{DoxyParamCaption}
+\item[{integer(kind=8), dimension(n), intent(inout)}]{a, }
+\item[{integer, intent(in)}]{n}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_a4ded7d0d49182e2cc7650178eaefdb36}{}\label{rsys_8_f90_a4ded7d0d49182e2cc7650178eaefdb36}
+\index{rsys.\+F90@{rsys.\+F90}!endian@{endian}}
+\index{endian@{endian}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{endian(mach\+\_\+type)}{endian(mach_type)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine endian (
+\begin{DoxyParamCaption}
+\item[{character(len=$\ast$)}]{mach\+\_\+type}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_a88ea73aa768991551583f9a085350ca1}{}\label{rsys_8_f90_a88ea73aa768991551583f9a085350ca1}
+\index{rsys.\+F90@{rsys.\+F90}!iran\+\_\+recsize@{iran\+\_\+recsize}}
+\index{iran\+\_\+recsize@{iran\+\_\+recsize}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{iran\+\_\+recsize()}{iran_recsize()}}]{\setlength{\rightskip}{0pt plus 5cm}integer function iran\+\_\+recsize (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_ad022b26acfc99eb89b941038c720f437}{}\label{rsys_8_f90_ad022b26acfc99eb89b941038c720f437}
+\index{rsys.\+F90@{rsys.\+F90}!timing@{timing}}
+\index{timing@{timing}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{timing(icall, t1)}{timing(icall, t1)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine timing (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{icall, }
+\item[{real, intent(out)}]{t1}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_a41ecaae8b0c09305c1db8113d3ab07b7}{}\label{rsys_8_f90_a41ecaae8b0c09305c1db8113d3ab07b7}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{rsys_8_f90_a41ecaae8b0c09305c1db8113d3ab07b7_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{rsys.\+F90@{rsys.\+F90}!ugetarg@{ugetarg}}
+\index{ugetarg@{ugetarg}!rsys.\+F90@{rsys.\+F90}}
+\subsubsection[{\texorpdfstring{ugetarg(i, arg)}{ugetarg(i, arg)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ugetarg (
+\begin{DoxyParamCaption}
+\item[{integer}]{i, }
+\item[{character(len=$\ast$)}]{arg}
+\end{DoxyParamCaption}
+)}\hypertarget{rsys_8_f90_a00064fe2d51a3d606c81cfe4d7757b20}{}\label{rsys_8_f90_a00064fe2d51a3d606c81cfe4d7757b20}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=203pt]{rsys_8_f90_a00064fe2d51a3d606c81cfe4d7757b20_icgraph}
+\end{center}
+\end{figure}
+
+

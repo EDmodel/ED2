@@ -1,0 +1,7 @@
+<map id="ed_state_vars::polygontype" name="ed_state_vars::polygontype">
+<area shape="rect" id="node2" href="$structphenology__coms_1_1prescribed__phen.html" title="phenology_coms::prescribed_phen" alt="" coords="257,5,480,32"/>
+<area shape="rect" id="node3" href="$structmet__driver__coms_1_1met__driv__state.html" title="met_driver_coms::met\l_driv_state" alt="" coords="293,57,444,98"/>
+<area shape="rect" id="node4" href="$structdisturb__coms_1_1lutime.html" title="disturb_coms::lutime" alt="" coords="297,123,440,149"/>
+<area shape="rect" id="node5" href="$structed__state__vars_1_1sitetype.html" title="ed_state_vars::sitetype" alt="" coords="291,173,447,200"/>
+<area shape="rect" id="node6" href="$structed__state__vars_1_1patchtype.html" title="ed_state_vars::patchtype" alt="" coords="5,173,172,200"/>
+</map>

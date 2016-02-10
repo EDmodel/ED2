@@ -1,0 +1,17 @@
+<map id="update_patch_thermo_props" name="update_patch_thermo_props">
+<area shape="rect" id="node2" href="$namespacedisturbance__utils.html#a29d6db4e94463404643e5c3666c67767" title="disturbance_utils::\lapply_disturbances" alt="" coords="409,71,543,112"/>
+<area shape="rect" id="node8" href="$euler__driver_8f90.html#a5219f633b6d9b0d321429096e0d3ea66" title="euler_timestep" alt="" coords="628,238,735,265"/>
+<area shape="rect" id="node9" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="228,137,332,163"/>
+<area shape="rect" id="node11" href="$namespacefuse__fiss__utils.html#ac265957681eedff0e33bd5c3cdeca31d" title="fuse_fiss_utils::fuse\l_2_patches" alt="" coords="212,11,348,52"/>
+<area shape="rect" id="node14" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="423,289,529,315"/>
+<area shape="rect" id="node15" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="624,339,739,366"/>
+<area shape="rect" id="node16" href="$namespacerk4__driver.html#abf8bd20405c7ed6a7bab3bdb18d8de87" title="rk4_driver::rk4_timestep" alt="" coords="200,187,360,214"/>
+<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="610,133,753,159"/>
+<area shape="rect" id="node7" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="592,78,771,105"/>
+<area shape="rect" id="node4" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="824,187,903,214"/>
+<area shape="rect" id="node5" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="956,134,1029,161"/>
+<area shape="rect" id="node6" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="1077,134,1128,161"/>
+<area shape="rect" id="node10" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="417,137,535,163"/>
+<area shape="rect" id="node12" href="$namespacefuse__fiss__utils.html#aee30640ff825246fb4c9f5f1f41470be" title="fuse_fiss_utils::fuse\l_patches" alt="" coords="408,5,544,47"/>
+<area shape="rect" id="node13" href="$ed__init__atm_8_f90.html#a67ae59514caf7fea8936bca72628f5ca" title="ed_init_atm" alt="" coords="819,79,908,106"/>
+</map>

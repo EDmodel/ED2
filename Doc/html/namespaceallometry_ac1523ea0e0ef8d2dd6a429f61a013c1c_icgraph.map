@@ -1,0 +1,30 @@
+<map id="allometry::dbh2krdepth" name="allometry::dbh2krdepth">
+<area shape="rect" id="node2" href="$ed__type__init_8f90.html#af7c8e0a520dfca016f7eb7cf1c08b6ca" title="init_ed_cohort_vars" alt="" coords="209,477,343,503"/>
+<area shape="rect" id="node25" href="$namespacefuse__fiss__utils.html#ad49d6cf9affbac930e3d5be9c8baae39" title="fuse_fiss_utils::fuse\l_2_cohorts" alt="" coords="208,237,344,279"/>
+<area shape="rect" id="node3" href="$namespacedisturbance__utils.html#a9fc5ab9ef8e1fa7eb1798412d868db50" title="disturbance_utils::\lplant_patch" alt="" coords="419,216,547,257"/>
+<area shape="rect" id="node14" href="$ed__bigleaf__init_8f90.html#a1e7ca0536a5eed8f8eaee3c6271bcbde" title="ed_bigleaf_init" alt="" coords="664,493,768,519"/>
+<area shape="rect" id="node16" href="$ed__nbg__init_8f90.html#af70da4da4393f0a1a762d00743aa5dfe" title="init_nbg_cohorts" alt="" coords="425,629,542,655"/>
+<area shape="rect" id="node18" href="$ed__nbg__init_8f90.html#a887131bd992a6a2217e6a4a2c8217056" title="init_cohorts_by_layers" alt="" coords="407,578,559,605"/>
+<area shape="rect" id="node19" href="$ed__nbg__init_8f90.html#ae233eb5a6f6ba6ec38dc130b00231ba7" title="near_bare_ground_big\l_leaf_init" alt="" coords="641,427,791,468"/>
+<area shape="rect" id="node20" href="$ed__read__ed10__20__history_8f90.html#ae4e49e107b22c0bb119ee87348e513b8" title="read_ed10_ed20_history_file" alt="" coords="623,543,809,570"/>
+<area shape="rect" id="node21" href="$ed__read__ed21__history_8_f90.html#ab0faf0a20947c74801841975108b59ba" title="read_ed21_history_file" alt="" coords="408,679,559,706"/>
+<area shape="rect" id="node22" href="$ed__read__ed21__history_8_f90.html#a7853e92e8b5f8ed0d9ad31f5259b3b8a" title="read_ed21_history_unstruct" alt="" coords="392,730,575,757"/>
+<area shape="rect" id="node23" href="$ed__read__ed21__history_8_f90.html#a1e9d28328ec655a6bcac03ee1618759a" title="read_ed21_polyclone" alt="" coords="411,375,555,402"/>
+<area shape="rect" id="node24" href="$reproduction_8f90.html#ab93bbb9a2c0f8aa6853ede0ae86d0a20" title="reproduction" alt="" coords="887,294,981,321"/>
+<area shape="rect" id="node4" href="$namespacedisturbance__utils.html#a29d6db4e94463404643e5c3666c67767" title="disturbance_utils::\lapply_disturbances" alt="" coords="867,125,1001,167"/>
+<area shape="rect" id="node10" href="$events_8f90.html#ad9cbf1522be96cc9af2fbf80b1402d5c" title="event_harvest" alt="" coords="666,274,766,301"/>
+<area shape="rect" id="node12" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="664,173,768,199"/>
+<area shape="rect" id="node13" href="$events_8f90.html#a322bdb70cc0c534c9e30db1a3a4b58a0" title="event_fertilize" alt="" coords="666,223,766,250"/>
+<area shape="rect" id="node5" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="1077,179,1219,206"/>
+<area shape="rect" id="node9" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="1059,129,1237,155"/>
+<area shape="rect" id="node6" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="1291,165,1369,191"/>
+<area shape="rect" id="node7" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="1423,165,1496,191"/>
+<area shape="rect" id="node8" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="1544,165,1595,191"/>
+<area shape="rect" id="node11" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="875,213,993,239"/>
+<area shape="rect" id="node15" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="857,518,1011,545"/>
+<area shape="rect" id="node17" href="$ed__nbg__init_8f90.html#a9bc82bf4faa4da0286c424058d8519a1" title="near_bare_ground_init" alt="" coords="641,594,791,621"/>
+<area shape="rect" id="node26" href="$namespacefuse__fiss__utils.html#adebb5663823fc54b5e7f28ce1e365afe" title="fuse_fiss_utils::fuse\l_cohorts" alt="" coords="415,64,551,105"/>
+<area shape="rect" id="node27" href="$namespacefuse__fiss__utils.html#ac265957681eedff0e33bd5c3cdeca31d" title="fuse_fiss_utils::fuse\l_2_patches" alt="" coords="648,5,784,47"/>
+<area shape="rect" id="node28" href="$namespacefuse__fiss__utils.html#aee30640ff825246fb4c9f5f1f41470be" title="fuse_fiss_utils::fuse\l_patches" alt="" coords="866,60,1002,101"/>
+<area shape="rect" id="node29" href="$ed__init__atm_8_f90.html#a67ae59514caf7fea8936bca72628f5ca" title="ed_init_atm" alt="" coords="1285,86,1375,113"/>
+</map>
