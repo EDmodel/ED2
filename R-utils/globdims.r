@@ -256,11 +256,10 @@ if (idbh.type == 1){
    classdbh   <<- seq(from=0,to=(ndbh-1)*ddbh,by=ddbh)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
    dbhlabel   <<- "11_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
    dbhcols    <<- c(         "purple3",   "mediumpurple1",      "royalblue4"
                    ,      "steelblue3",     "deepskyblue",         "#004E00"
                    ,     "chartreuse3",      "olivedrab3", "lightgoldenrod3"
@@ -269,49 +268,39 @@ if (idbh.type == 1){
                    )#end c
 
 }else if (idbh.type == 2){
-   ndbh       <<-  5
-   classdbh   <<- c(0,10,20,35,55)
+   ndbh       <<-  6
+   classdbh   <<- c(0,10,20,35,55,80)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "05_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(      "royalblue3",     "chartreuse3" ,         "yellow3"
-                   ,     "darkorange1",       "firebrick" ,        all.colour
-                   )#end c
+   dbhlabel   <<- "06_szclss"
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#306614","#3B24B3","#2996CC","#A3CC52","#E65C17","#990F0F",all.colour)
 }else if (idbh.type == 3){
    ndbh       <<-  4
    classdbh   <<- c(0,10,35,55)
    dbhlabel   <<- "04_szclss"
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(         "#3B24B3",     "#2996CC"
-                   ,         "#FF9466",     "#990F0F",         all.colour
-                   )#end c
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#3B24B3","#2996CC","#FF9466","#990F0F",all.colour)
 }else if (idbh.type == 4){
-   ndbh       <<-  6
-   classdbh   <<- c(0,2,10,20,45,70)
+   ndbh       <<-  5
+   classdbh   <<- c(0,10,30,50,80)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "06_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(         "purple3",       "royalblue3",     "chartreuse3"
-                   ,         "yellow3",      "darkorange1",       "firebrick"
-                   ,        all.colour
-                   )#end c
+   dbhlabel   <<- "05_szclss"
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#3B24B3", "#306614", "#A3CC52", "#E65C17", "#990F0F",all.colour)
 }else{
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")
-   stop(" Invalid IDBH.TYPE, it must be between 1 and 5 (feel free to add more options.")
+   stop(" Invalid IDBH.TYPE, it must be between 1 and 4 (feel free to add more options.")
 }#end if
 #==========================================================================================#
 #==========================================================================================#

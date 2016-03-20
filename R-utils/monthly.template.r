@@ -379,6 +379,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$last.2yr.ncbmort        = rep(NA,times=ntimes)
    emean$last.3yr.ncbmort        = rep(NA,times=ntimes)
    emean$agb.change              = rep(NA,times=ntimes)
+   emean$acc.change              = rep(NA,times=ntimes)
+   emean$acc.growth              = rep(NA,times=ntimes)
+   emean$acc.mort                = rep(NA,times=ntimes)
+   emean$acc.ncbmort             = rep(NA,times=ntimes)
+   emean$acc.dimort              = rep(NA,times=ntimes)
+   emean$acc.recr                = rep(NA,times=ntimes)
    emean$last.1yr.change         = rep(NA,times=ntimes)
    emean$last.2yr.change         = rep(NA,times=ntimes)
    emean$last.3yr.change         = rep(NA,times=ntimes)
@@ -518,6 +524,12 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$agb.growth        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$agb.recr          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$agb.change        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$acc.mort          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$acc.dimort        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$acc.ncbmort       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$acc.growth        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$acc.recr          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$acc.change        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bsa.mort          = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bsa.dimort        = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bsa.ncbmort       = array(data=NA,dim=c(ntimes,ndbh+1,npft+1))
@@ -1206,6 +1218,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$last.2yr.ncbmort  [idx ] = old.datum$emean$last.2yr.ncbmort    [sel ]
    new.datum$emean$last.3yr.ncbmort  [idx ] = old.datum$emean$last.3yr.ncbmort    [sel ]
    new.datum$emean$agb.change        [idx ] = old.datum$emean$agb.change          [sel ]
+   new.datum$emean$acc.change        [idx ] = old.datum$emean$acc.change          [sel ]
+   new.datum$emean$acc.growth        [idx ] = old.datum$emean$acc.growth          [sel ]
+   new.datum$emean$acc.mort          [idx ] = old.datum$emean$acc.mort            [sel ]
+   new.datum$emean$acc.ncbmort       [idx ] = old.datum$emean$acc.ncbmort         [sel ]
+   new.datum$emean$acc.dimort        [idx ] = old.datum$emean$acc.dimort          [sel ]
+   new.datum$emean$acc.recr          [idx ] = old.datum$emean$acc.recr            [sel ]
    new.datum$emean$last.1yr.change   [idx ] = old.datum$emean$last.1yr.change     [sel ]
    new.datum$emean$last.2yr.change   [idx ] = old.datum$emean$last.2yr.change     [sel ]
    new.datum$emean$last.3yr.change   [idx ] = old.datum$emean$last.3yr.change     [sel ]
@@ -1306,6 +1324,12 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$agb.growth     [idx,,] = old.datum$szpft$agb.growth      [sel,,]
    new.datum$szpft$agb.recr       [idx,,] = old.datum$szpft$agb.recr        [sel,,]
    new.datum$szpft$agb.change     [idx,,] = old.datum$szpft$agb.change      [sel,,]
+   new.datum$szpft$acc.mort       [idx,,] = old.datum$szpft$acc.mort        [sel,,]
+   new.datum$szpft$acc.dimort     [idx,,] = old.datum$szpft$acc.dimort      [sel,,]
+   new.datum$szpft$acc.ncbmort    [idx,,] = old.datum$szpft$acc.ncbmort     [sel,,]
+   new.datum$szpft$acc.growth     [idx,,] = old.datum$szpft$acc.growth      [sel,,]
+   new.datum$szpft$acc.recr       [idx,,] = old.datum$szpft$acc.recr        [sel,,]
+   new.datum$szpft$acc.change     [idx,,] = old.datum$szpft$acc.change      [sel,,]
    new.datum$szpft$bsa.mort       [idx,,] = old.datum$szpft$bsa.mort        [sel,,]
    new.datum$szpft$bsa.dimort     [idx,,] = old.datum$szpft$bsa.dimort      [sel,,]
    new.datum$szpft$bsa.ncbmort    [idx,,] = old.datum$szpft$bsa.ncbmort     [sel,,]

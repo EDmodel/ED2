@@ -212,7 +212,7 @@ weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
 
 
    ans = list(q = qout, case = case)
-   return(ans)
+   return(qout)
 }#end function weighted.quantile
 #==========================================================================================#
 #==========================================================================================#

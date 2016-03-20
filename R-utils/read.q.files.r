@@ -718,11 +718,14 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
 
 
          #----- Define the previous DBH class (for recruitment). --------------------------#
-         dbhconow.lastmon = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT/12))
-         dbhconow.1ago    = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT))
-         dbhcut.1ago      = cut(dbhconow.1ago,breaks=breakdbh)
-         dbhlevs.1ago     = levels(dbhcut.1ago)
-         dbhfac.1ago      = match(dbhcut.1ago,dbhlevs.1ago)
+         dbhconow.lmon = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT/12))
+         dbhconow.1ago = mymont$DBH * exp(-pmax(0,mymont$DLNDBH.DT))
+         dbhcut.1ago   = cut   (dbhconow.1ago,breaks=breakdbh)
+         dbhlevs.1ago  = levels(dbhcut.1ago)
+         dbhfac.1ago   = match (dbhcut.1ago,dbhlevs.1ago)
+         dbhcut.lmon   = cut   (dbhconow.lmon,breaks=breakdbh)
+         dbhlevs.lmon  = levels(dbhcut.lmon)
+         dbhfac.lmon   = match (dbhcut.lmon,dbhlevs.lmon)
          #---------------------------------------------------------------------------------#
 
 
@@ -754,7 +757,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          bleafconow        = mymont$MMEAN.BLEAF.CO
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
          if (all(mymont$MMEAN.BROOT.CO == 0)){
-            bfrootconow    = ( dbh2bl(dbh=dbhconow.lastmon,ipft=pftconow)
+            bfrootconow    = ( dbh2bl(dbh=dbhconow.lmon,ipft=pftconow)
                              * pft$qroot[pftconow] )
          }else{
             bfrootconow    = mymont$MMEAN.BROOT.CO
@@ -1189,6 +1192,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          dbhcut.1ago         = NA
          dbhlevs.1ago        = NA
          dbhfac.1ago         = NA
+         dbhconow.lmon       = NA
+         dbhcut.lmon         = NA
+         dbhlevs.lmon        = NA
+         dbhfac.lmon         = NA
          ageconow            = NA
          pftconow            = NA
          nplantconow         = NA
@@ -1794,6 +1801,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          if (all(is.na(dbhfac))){
             sel.dbh       = rep(FALSE,times=length(dbhfac     ))
             sel.dbh.1ago  = rep(FALSE,times=length(dbhfac.1ago))
+            sel.dbh.lmon  = rep(FALSE,times=length(dbhfac.lmon))
 
             #----- Define the minimum DBH. ------------------------------------------------#
             dbhminconow   = rep(Inf,times=length(pftconow))
@@ -1801,6 +1809,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          }else{
             sel.dbh       = dbhfac      == d | d == (ndbh+1)
             sel.dbh.1ago  = dbhfac.1ago == d | d == (ndbh+1)
+            sel.dbh.lmon  = dbhfac.lmon == d | d == (ndbh+1)
 
             #----- Define the minimum DBH. ------------------------------------------------#
             dbhminconow   = pft$dbh.min[pftconow] * (d == 1) + census.dbh.min * (d != 1)
@@ -2241,8 +2250,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                            * baconow             [sel]
                                                        )#end weighted.mean
                                         )#end log
+               acc.growth = sum( w.nplant[sel]
+                               * agbconow[sel] * (1.-exp(-agb.growthconow[sel]))
+                               )#end sum
                szpft$growth     [m,d,p] = dbh.growth
                szpft$agb.growth [m,d,p] = agb.growth
+               szpft$acc.growth [m,d,p] = acc.growth
                szpft$bsa.growth [m,d,p] = bsa.growth
                #---------------------------------------------------------------------------#
 
@@ -2277,6 +2290,23 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                szpft$agb.mort   [m,d,p] = log( previous     / survivor )
                szpft$agb.ncbmort[m,d,p] = log( ncb.previous / survivor )
                szpft$agb.dimort [m,d,p] = log( di.previous  / survivor )
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Find the total AGB and previous AGB if the only mortality was the    #
+               # mortality we test.                                                        #
+               #---------------------------------------------------------------------------#
+               survivor                 = sum( w.nplant[sel] * agbcolmon[sel])
+               previous                 = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(mortconow            [sel] / 12.) )
+               ncb.previous             = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(ncbmortconow         [sel] / 12. ) )
+               di.previous              = sum( w.nplant[sel] * agbcolmon[sel]
+                                             * exp(dimortconow          [sel] / 12. ) )
+               szpft$acc.mort   [m,d,p] = 12. * (previous     - survivor)
+               szpft$acc.ncbmort[m,d,p] = 12. * (ncb.previous - survivor)
+               szpft$acc.dimort [m,d,p] = 12. * (di.previous  - survivor)
                #---------------------------------------------------------------------------#
 
 
@@ -2307,6 +2337,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             #------------------------------------------------------------------------------#
             sel.pop = sel.pft & sel.dbh      & dbhconow      >= dbhminconow
             sel.est = sel.pop & sel.dbh.1ago & dbhconow.1ago >= dbhminconow
+            sel.elm = sel.pop & sel.dbh.lmon & dbhconow.lmon >= dbhminconow
             if (any(sel.pop) & any(sel.est)){
                #----- Recruitment rate in terms of individuals. ---------------------------#
                population             = sum(w.nplant[sel.pop])
@@ -2319,6 +2350,13 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                population             = sum(w.nplant[sel.pop] * agbconow[sel.pop])
                established            = sum(w.nplant[sel.est] * agbconow[sel.est])
                szpft$agb.recr [m,d,p] = log(population / established)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Recruitment rate in terms of above-ground biomass. ------------------#
+               population             = sum(w.nplant[sel.pop] * agbconow[sel.pop])
+               established            = sum(w.nplant[sel.elm] * agbconow[sel.elm])
+               szpft$acc.recr [m,d,p] = 12. * (population - established)
                #---------------------------------------------------------------------------#
 
 
@@ -2360,12 +2398,15 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
             if (m == 1){
                szpft$change     [m,d,p] = 0.
                szpft$agb.change [m,d,p] = 0.
+               szpft$acc.change [m,d,p] = 0.
                szpft$bsa.change [m,d,p] = 0.
             }else{
                szpft$change     [m,d,p] = ( 12. * log( szpft$nplant[m  ,d,p]
                                                      / szpft$nplant[m-1,d,p] ) )
                szpft$agb.change [m,d,p] = ( 12. * log( szpft$agb   [m  ,d,p]
                                                      / szpft$agb   [m-1,d,p] ) )
+               szpft$acc.change [m,d,p] = ( 12. *    ( szpft$agb   [m  ,d,p]
+                                                     - szpft$agb   [m-1,d,p] ) )
                szpft$bsa.change [m,d,p] = ( 12. * log( szpft$ba    [m  ,d,p]
                                                      / szpft$ba    [m-1,d,p] ) )
             }#end if
@@ -2474,6 +2515,12 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$agb.dimort      [m] = szpft$agb.dimort     [m,ndbh+1,npft+1]
       emean$agb.ncbmort     [m] = szpft$agb.ncbmort    [m,ndbh+1,npft+1]
       emean$agb.change      [m] = szpft$agb.change     [m,ndbh+1,npft+1]
+      emean$acc.change      [m] = szpft$acc.change     [m,ndbh+1,npft+1]
+      emean$acc.growth      [m] = szpft$acc.growth     [m,ndbh+1,npft+1]
+      emean$acc.mort        [m] = szpft$acc.mort       [m,ndbh+1,npft+1]
+      emean$acc.ncbmort     [m] = szpft$acc.ncbmort    [m,ndbh+1,npft+1]
+      emean$acc.dimort      [m] = szpft$acc.dimort     [m,ndbh+1,npft+1]
+      emean$acc.recr        [m] = szpft$acc.recr       [m,ndbh+1,npft+1]
       emean$wood.dens       [m] = szpft$wood.dens      [m,ndbh+1,npft+1]
       emean$phap.lpar       [m] = szpft$phap.lpar      [m,ndbh+1,npft+1]
       emean$phap.ltemp      [m] = szpft$phap.ltemp     [m,ndbh+1,npft+1]

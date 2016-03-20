@@ -96,8 +96,8 @@ error.bar <<- function(x, y,xerr=NULL,yerr=NULL,xlow=NULL,xhigh=NULL,ylow=NULL,y
 
 
        #---- Plot the caps. ---------------------------------------------------------------#
-       segments(xlow ,ycapa,xlow ,ycapa,lty=lty,lwd=lwd,col=err.col)
-       segments(xhigh,ycapz,xhigh,ycapz,lty=lty,lwd=lwd,col=err.col)
+       segments(xlow ,ycapa,xlow ,ycapz,lty=lty,lwd=lwd,col=err.col)
+       segments(xhigh,ycapa,xhigh,ycapz,lty=lty,lwd=lwd,col=err.col)
        #-----------------------------------------------------------------------------------#
     }#end if
     #--------------------------------------------------------------------------------------#
@@ -110,7 +110,7 @@ error.bar <<- function(x, y,xerr=NULL,yerr=NULL,xlow=NULL,xhigh=NULL,ylow=NULL,y
     if (! is.null(yerr)){
        #----- Scale the cap with the total scale. -----------------------------------------#
        xcoord = par()$usr[1:2]
-       smidge = cap * (xcoord[2] - xcoord[1])/2
+       smidge = 0.5 * cap * (xcoord[2] - xcoord[1])
        #-----------------------------------------------------------------------------------#
 
 

@@ -2214,7 +2214,7 @@ subroutine init_pft_mort_params()
    else
       treefall_disturbance_rate = abs(treefall_disturbance_rate)
       tdr_default               = 0.014 ! 0.01137329
-      m3_slope                  = 0.05  ! 0.02939297
+      m3_slope                  = 0.075 ! 0.02939297
       m3_scale                  = treefall_disturbance_rate / tdr_default
    end if
    mort3(1)  = m3_scale * ( m3_slope * (1. - rho( 1) / rho( 4)) )
@@ -2734,7 +2734,7 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
       !     Allometric equation based on the Sustainable Landscapes data.                  !
       !                                                                                    !
-      !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   !
+      !    Longo, M. et al. 2016.  Effects of forest degradation and recovery on biomass   !
       !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     !
       !       prep.                                                                        !
       !                                                                                    !
@@ -2742,21 +2742,14 @@ subroutine init_pft_alloc_params()
       ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least        !
       ! squares approach (though results converged to a homoscedastic fit).  This equation !
       ! is very similar to Feldpausch et al (2012) equation for South America.             !
-      !                                                                                    !
-      ! Total number of trees: 14860                                                       !
-      ! hgt_ref = 45.78   (95% CI: [  42.24;  49.73])                                      !
-      ! b1Ht    = 0.04525 (95% CI: [0.04318;0.04681])                                      !
-      ! b2Ht    = 0.8082  (95% CI: [ 0.7783; 0.8464])                                      !
-      ! R2      = 0.660                                                                    !
-      ! RMSE    = 5.5                                                                      !
       !------------------------------------------------------------------------------------!
       do ipft=1,n_pft
          if (is_tropical(ipft)) then
             !----- b1Ht is their "a1" and b2Ht is their "a2". -----------------------------!
-            b1Ht   (ipft) = 0.04525
-            b2Ht   (ipft) = 0.8082
+            b1Ht   (ipft) = 0.044307
+            b2Ht   (ipft) = 0.76866
             !----- hgt_ref is their "H-Infinity". -----------------------------------------!
-            hgt_ref(ipft) = 45.78
+            hgt_ref(ipft) = 50.655
          end if
       end do
       !------------------------------------------------------------------------------------!
@@ -2849,25 +2842,19 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
       !     Allometric equation based on the Sustainable Landscapes data.                  !
       !                                                                                    !
-      !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   !
+      !    Longo, M. et al. 2016.  Effects of forest degradation and recovery on biomass   !
       !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     !
       !       prep.                                                                        !
       !                                                                                    !
       !    Equation was derived from forest inventory measurements carried out at          !
       ! multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic     !
       ! least squares approach.                                                            !
-      !                                                                                    !
-      ! Total number of trees: 14411                                                       !
-      ! b1Radius = 0.39507 (95% CI: [0.37689;0.41380])                                     !
-      ! b2Radius = 0.61558 (95% CI: [0.60023;0.63010])                                     !
-      ! R2       = 0.577                                                                   !
-      ! RMSE     = 1.02                                                                    !
       !------------------------------------------------------------------------------------!
       do ipft=1,n_pft
          if (is_tropical(ipft)) then
             !----- b1Ca is their "a1" and b2Ca is their "a2". -----------------------------!
-            b1Ca   (ipft) = pi1 * 0.39507**2
-            b2Ca   (ipft) = 2. * 0.61558
+            b1Ca   (ipft) = pi1 * 0.40309**2
+            b2Ca   (ipft) = 2. * 0.61278
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -3139,10 +3126,11 @@ subroutine init_pft_alloc_params()
             !  to include below ground biomass.  The result was fit using a DBH-dependent  !
             !  only model.                                                                 !
             !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.3201235 * rho(ipft)
-            b2Bs_small(ipft) = 2.2940237
-            b1Bs_large(ipft) = C2B * 2.040761  * rho(ipft)
-            b2Bs_large(ipft) = 1.970171
+            b1Bs_small(ipft) = C2B * 0.4408322 * rho(ipft)
+            b2Bs_small(ipft) = 2.2334009
+            b2Bs_large(ipft) = 1.9696220
+            b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
+                             * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -3598,19 +3586,13 @@ subroutine init_pft_leaf_params()
    !    For iallom = 4, we use the allometric equation based on the Sustainable Landscapes !
    ! data set.                                                                             !
    !                                                                                       !
-   !    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass      !
+   !    Longo, M. et al. 2016.  Effects of forest degradation and recovery on biomass      !
    !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in        !
    !       prep.                                                                           !
    !                                                                                       !
    !    Equation was derived from forest inventory measurements carried out at multiple    !
    ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
    ! squares approach.                                                                     !
-   !                                                                                       !
-   ! Total number of trees: 14731                                                          !
-   ! b1Cl    = 0.25972 (95% CI: [0.24661;0.27272])                                         !
-   ! b2Cl    = 1.0755  (95% CI: [ 1.0603; 1.0922])                                         !
-   ! R2      = 0.677                                                                       !
-   ! RMSE    = 2.29                                                                        !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       !----- Check life form. -------------------------------------------------------------!
@@ -3620,8 +3602,8 @@ subroutine init_pft_leaf_params()
       elseif (is_tropical(ipft)) then
          select case (iallom)
          case (4)
-            b1Cl(ipft) = 0.25972
-            b2Cl(ipft) = 1.0755
+            b1Cl(ipft) = 0.29711
+            b2Cl(ipft) = 1.03260
          case default
             b1Cl(ipft) = 0.3106775
             b2Cl(ipft) = 1.098
@@ -3656,22 +3638,23 @@ end subroutine init_pft_leaf_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_repro_params()
 
-   use pft_coms, only : r_fract            & ! intent(out)
+   use pft_coms, only : hgt_max            & ! intent(in)
+                      , r_fract            & ! intent(out)
                       , st_fract           & ! intent(out)
                       , nonlocal_dispersal & ! intent(out)
                       , repro_min_h        ! ! intent(out)
    implicit none
 
-   r_fract(1)              = 0.3
+   r_fract(1)              = 1.0
    r_fract(2:4)            = 0.3
    r_fract(5)              = 0.3
    r_fract(6:11)           = 0.3
    r_fract(12:15)          = 0.3
-   r_fract(16)             = 0.3
+   r_fract(16)             = 1.0
    r_fract(17)             = 0.3
 
    st_fract(1)             = 0.0
-   st_fract(2:4)           = 0.0
+   st_fract(2:4)           = 0.1
    st_fract(5)             = 0.0
    st_fract(6:11)          = 0.0
    st_fract(12:15)         = 0.0
@@ -3696,12 +3679,12 @@ subroutine init_pft_repro_params()
    nonlocal_dispersal(16)  =  1.000 ! 1.000
    nonlocal_dispersal(17)  =  0.766 ! 0.600
 
-   repro_min_h(1)          =  0.0
+   repro_min_h(1)          = hgt_max(1)
    repro_min_h(2:4)        = 18.0
    repro_min_h(5)          =  0.0
    repro_min_h(6:11)       = 18.0
    repro_min_h(12:15)      =  0.0
-   repro_min_h(16)         =  0.0
+   repro_min_h(16)         = hgt_max(16)
    repro_min_h(17)         = 18.0
 
    return
@@ -3982,7 +3965,7 @@ subroutine init_disturb_params
    implicit none
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   treefall_hite_threshold = 10.0 
+   treefall_hite_threshold = 15.0 
 
    !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
    fire_hite_threshold     = 5.0
