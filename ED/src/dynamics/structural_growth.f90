@@ -79,7 +79,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: old_leaf_hcap
    real                          :: old_wood_hcap
-   logical          , parameter  :: printout  = .false.
+   logical          , parameter  :: printout  = .true.
    character(len=17), parameter  :: fracfile  = 'struct_growth.txt'
    !----- Locally saved variables. --------------------------------------------------------!
    logical          , save       :: first_time = .true.
@@ -1289,23 +1289,21 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
    !---------------------------------------------------------------------------------------!
    basal_area_growth(ipft,idbh) = basal_area_growth(ipft,idbh)                             &
                                 + area * cpatch%nplant(ico) * pio4                         &
-                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)    &
-                                * 12.0
+                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)
    agb_growth(ipft,idbh)        = agb_growth(ipft,idbh)                                    &
                                 + area * cpatch%nplant(ico)                                &
-                                * (cpatch%agb(ico) - agb_in)                               &
-                                * 12.0 
+                                * (cpatch%agb(ico) - agb_in)
 
    !---------------------------------------------------------------------------------------!
    !    Computed for plants alive at past census but dead at current census.  These        !
    ! variables are also given in cm2/m2/yr and kgC/m2/yr, respectively.                    !
    !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
-                              + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
+                              + area * (nplant_in - cpatch%nplant(ico)) * ba_in
 
    !----- Calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]. -------!
    agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
-                              + area * (nplant_in - cpatch%nplant(ico)) * agb_in * 12.0
+                              + area * (nplant_in - cpatch%nplant(ico)) * agb_in
 
    return
 end subroutine update_vital_rates
