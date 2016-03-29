@@ -5,7 +5,7 @@
 
 #----- Define path and compilation --------------------------------------------------------#
 include paths.mk
-include include.mk.$(OPT)
+include include.mk
 #------------------------------------------------------------------------------------------#
 
 
@@ -20,7 +20,9 @@ ifeq ($(F_LOWO_OPTS),)
 endif
 #------------------------------------------------------------------------------------------#
 
-
+ifeq ($(OPT),"dbg")
+	INCLUDES = ""
+endif
 
 #----- Compiler commands. -----------------------------------------------------------------#
 INCLUDES         = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) 
@@ -37,8 +39,8 @@ CXX_COMMAND      = $(C_COMP) -c $(C_OPTS) -D$(CMACH) $(HDF5_INCS) $(INCLUDES) $(
 
 
 #----- Define archive and executable names. -----------------------------------------------#
-EXE=$(BASE)/ed_$(ED_VERSION)-$(OPT)
-LIBMODEL=$(BASE)/ed_$(ED_VERSION)-$(OPT).a
+EXE=$(BASE)/ed_$(ED_VERSION)-$(OPT)$(GIT_TAG)
+LIBMODEL=$(BASE)/ed_$(ED_VERSION)-$(OPT)$(GIT_TAG).a
 #------------------------------------------------------------------------------------------#
 
 include objects.mk
@@ -88,7 +90,7 @@ clean:
 	@echo ""
 	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.F90 *.f90 *.stb *.d dependency.mk 
 	rm -f ../$(EXE) ../$(LIBMODEL)
-	touch dependency.mk
+	rm -f include.* Makefile *.mk *.sh configure *.pl
 	@echo ""
 
 #----- Define rules -----------------------------------------------------------------------#

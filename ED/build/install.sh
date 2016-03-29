@@ -1,5 +1,5 @@
 #!/bin/bash
-######################### COMPILER OPTIONS (INTEL AND ODYSSEY ONLY) ########################
+################ COMPILER OPTIONS (INTEL, ODYSSEY, and EMBRAPA ONLY) #######################
 #------------------------------------------------------------------------------------------#
 # A/B. Pickiest - Use this whenever you change arguments on functions and subroutines.     #
 #                 This will perform the same tests as B but it will also check whether all #
@@ -31,36 +31,87 @@ nargs=$#
 args=$@
 #------------------------------------------------------------------------------------------#
 
+# Initialize vars
+CLEAN=""
+KIND=""
+PLATFORM=""
+OPT=""
 
-#----- Default parameters. ----------------------------------------------------------------#
-kind="B"
-clean=""
-#------------------------------------------------------------------------------------------#
+# Argument parsing
+while [[ $# > 0 ]]
+do
+key="$1"
+   case $key in
+   -p|--platform)
+      PLATFORM="$2"
+      shift # past argument
+      ;;
+   -k|--kind)
+      KIND="$2"
+      shift # past argument
+      ;;
+   -c|--clean)
+      CLEAN="clean"
+      ;;
+   *)
+      echo "Unknown key-value argument pair."
+      exit 2
+      ;;
+   esac
 
+   shift # past argument or value
+done
 
-
-#------------------------------------------------------------------------------------------#
-#     Check whether the user gave options.                                                 #
-#------------------------------------------------------------------------------------------#
-if [ ${nargs} -gt 0 ]
+if [ "${PLATFORM}" == "" ]
 then
-   for arg in ${args}
-   do
-      #----- Check whether which argument this is. ----------------------------------------#
-      if [ "x${arg}" == "xclean" ]
-      then
-         clean="clean"
-      else
-         kind=`echo ${arg} | tr '[:lower:]' '[:upper:]'`
-      fi
-      #------------------------------------------------------------------------------------#
-   done
-   #---------------------------------------------------------------------------------------#
+   echo "No platform specified, defaulting to gfortran."
+   PLATFORM="gfortran"
 fi
-#------------------------------------------------------------------------------------------#
 
+if [ "${KIND}" == "" ]
+then  
+   echo "No optimization level specified, defaulting to E."
+   KIND="E"
+fi
 
+# Set opt and bin
+case ${KIND} in
+['A','B','C','D']*)
+   OPT='dbg'
+   BIN='dbgbin'
+   ;;
+['E']*)
+   OPT='opt'
+   BIN='bin'
+   ;;
+*)
+   # Default to opt
+   echo "Compiler optimization not recognized as opt or dbg."
+   exit 1
+   ;;
+esac
+
+# Tag executables with a git version and branch name if possible.
+GIT=`git rev-parse --is-inside-work-tree`
+if [ ${GIT} == "true" ]
+then
+   GIT_TAG=`git branch -v | awk '/\*/ {print "-" $2 "-" $3}'`
+else
+   GIT_TAG=''
+fi
+
+# Move to optbin or dbgbin
+cd ${BIN}
+
+# Link to makefiles, includes, and shell scripts
+rm -rf ./*
+ln -s ../make/*.mk ./
+ln -s ../make/Makefile ./
+ln -s ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
+ln -s ../shell/* ./
 
 #----- Launch the compiler. ---------------------------------------------------------------#
-make OPT=opt KIND_COMP=${kind} ${clean}
+make OPT=${OPT} KIND_COMP=${KIND} ${CLEAN} GIT_TAG=${GIT_TAG}
 #------------------------------------------------------------------------------------------#
+
+echo "Installation Complete."

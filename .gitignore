@@ -3,7 +3,7 @@
 # ignore output files
 *.o
 *.a
-ED/build/ed_2.1-opt
+ED/build/ed_2.1-*
 .nfs*
 
 # ignore backup files
@@ -13,9 +13,16 @@ ED/build/ed_2.1-opt
 *.swo
 
 # very general rules to ignore files in bin folder
-*/bin/*.c
-*/bin/*.mod
-*/bin/*.[fF]90
+ED/build/*bin/*
+#ED/build/*bin/*.c
+#ED/build/*bin/*.mod
+#ED/build/*bin/*.[fF]90
+#ED/build/*bin/*.c
+#ED/build/*bin/include.*
+#ED/build/*bin/*.mk
+#ED/build/*bin/*.sh
+#ED/build/*bin/*.pl
+#ED/build/*bin/configure
 
 # specific rules
 BRAMS/*/bin/*.mod
@@ -30,13 +37,6 @@ Ramspost/*/bin/*.mod
 Ramspost/*/bin/*.f90
 Ramspost/*/bin/*.F90
 Ramspost/*/bin/*.c
-ED/*/bin/include.mk.opt
-ED/*/bin/dependency.mk
-ED/*/bin/*.mod
-ED/*/bin/*.f90
-ED/*/bin/*.F90
-ED/*/bin/*.c
-RAPP/*/bin/include.mk
 RAPP/*/bin/dependency.mk
 RAPP/*/bin/*.mod
 RAPP/*/bin/*.f90
