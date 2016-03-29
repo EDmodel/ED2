@@ -98,6 +98,7 @@ GIT_EXIST=`git rev-parse --is-inside-work-tree`
 if [ ${GIT_EXIST} == "true" -a ${USE_GIT} ]
 then
    GIT_TAG=`git branch -v | awk '/\*/ {print "-" $2 "-" $3}'`
+   GIT_TAG=`echo ${GIT_TAG} | tr -d '()/[]'`
    echo "Git found, it will be used to tag things."
    echo "To disable revision tagging, use --gitoff or -g."
 else
