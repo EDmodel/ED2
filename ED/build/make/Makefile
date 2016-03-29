@@ -50,11 +50,6 @@ include objects.mk
 all:
 	make gendep
 	make $(EXE)
-	make $(EXE)
-	make $(EXE)
-	make $(EXE)
-	make $(EXE)
-
 
 gendep:
 	@echo ""
@@ -68,7 +63,6 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""
-	ln -sf $(EXE) $(BASE)/ed_$(ED_VERSION)-$(OPT)
 
 $(MAINOBJ):  $(MAIN) 
 	@echo ""
