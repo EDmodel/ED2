@@ -36,6 +36,7 @@ CLEAN=""
 KIND=""
 PLATFORM=""
 OPT=""
+USE_GIT=true
 
 # Argument parsing
 while [[ $# > 0 ]]
@@ -52,6 +53,9 @@ key="$1"
       ;;
    -c|--clean)
       CLEAN="clean"
+      ;;
+   -g|--gitoff)
+      USE_GIT=false
       ;;
    *)
       echo "Unknown key-value argument pair."
@@ -78,11 +82,9 @@ fi
 case ${KIND} in
 ['A','B','C','D']*)
    OPT='dbg'
-   BIN='dbgbin'
    ;;
 ['E']*)
    OPT='opt'
-   BIN='bin'
    ;;
 *)
    # Default to opt
@@ -92,16 +94,24 @@ case ${KIND} in
 esac
 
 # Tag executables with a git version and branch name if possible.
-GIT=`git rev-parse --is-inside-work-tree`
-if [ ${GIT} == "true" ]
+GIT_EXIST=`git rev-parse --is-inside-work-tree`
+if [ ${GIT_EXIST} == "true" -a ${USE_GIT} ]
 then
    GIT_TAG=`git branch -v | awk '/\*/ {print "-" $2 "-" $3}'`
+   echo "Git found, it will be used to tag things."
+   echo "To disable revision tagging, use --gitoff or -g."
 else
    GIT_TAG=''
 fi
 
-# Move to optbin or dbgbin
+BIN=${OPT}bin-${KIND}${GIT_TAG}
+
+# Move to the binary directory
+if [ ! -d "$BIN" ]; then
+   mkdir ${BIN}
+fi
 cd ${BIN}
+
 
 # Link to makefiles, includes, and shell scripts
 ln -sf ../make/*.mk ./

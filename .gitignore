@@ -13,7 +13,8 @@ ED/build/ed_2.1-*
 *.swo
 
 # very general rules to ignore files in bin folder
-ED/build/*bin/*
+ED/build/bin*/*
+ED/build/dbgbin*/*
 #ED/build/*bin/*.c
 #ED/build/*bin/*.mod
 #ED/build/*bin/*.[fF]90
