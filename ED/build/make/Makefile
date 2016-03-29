@@ -68,6 +68,7 @@ $(EXE): $(LIBMODEL) $(MAINOBJ)
 	@echo ""
 	@echo Finished building === $(EXE)
 	@echo ""
+	ln -sf $(EXE) $(BASE)/ed_$(ED_VERSION)-$(OPT)
 
 $(MAINOBJ):  $(MAIN) 
 	@echo ""
@@ -88,7 +89,9 @@ install:
 
 clean:
 	@echo ""
-	rm -f $(LIBMODEL) $(EXE) *.o *.mod *.F90 *.f90 *.stb *.d dependency.mk 
+	rm -f $(LIBMODEL) $(EXE)
+	rm -f ./$(BIN)/*.mk ./$(BIN)/*.sh ./$(BIN)/*.c ./$(BIN)/*.f90 ./$(BIN)/*.F90
+	rm -f ./$(BIN)/*.mod ./$(BIN)/*.o ./$(BIN)/dependency.mk~
 	rm -f ../$(EXE) ../$(LIBMODEL)
 	rm -f include.* Makefile *.mk *.sh configure *.pl
 	@echo ""

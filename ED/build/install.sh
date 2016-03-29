@@ -104,11 +104,11 @@ fi
 cd ${BIN}
 
 # Link to makefiles, includes, and shell scripts
-rm -rf ./*
-ln -s ../make/*.mk ./
-ln -s ../make/Makefile ./
-ln -s ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
-ln -s ../shell/* ./
+ln -sf ../make/*.mk ./
+ln -sf ../make/Makefile ./
+ln -sf ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
+ln -sf ../shell/* ./
+touch dependency.mk
 
 #----- Launch the compiler. ---------------------------------------------------------------#
 make OPT=${OPT} KIND_COMP=${KIND} ${CLEAN} GIT_TAG=${GIT_TAG}
