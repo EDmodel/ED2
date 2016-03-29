@@ -10,4 +10,4 @@ before_install:
 script:
     - pwd
     - cd ED/build/
-    - install.sh --kind E --platform gfortran
+    - install.sh

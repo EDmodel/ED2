@@ -14,16 +14,6 @@ ED/build/ed_2.1-*
 
 # very general rules to ignore files in bin folder
 ED/build/bin*/*
-ED/build/dbgbin*/*
-#ED/build/*bin/*.c
-#ED/build/*bin/*.mod
-#ED/build/*bin/*.[fF]90
-#ED/build/*bin/*.c
-#ED/build/*bin/include.*
-#ED/build/*bin/*.mk
-#ED/build/*bin/*.sh
-#ED/build/*bin/*.pl
-#ED/build/*bin/configure
 
 # specific rules
 BRAMS/*/bin/*.mod

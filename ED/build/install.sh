@@ -105,7 +105,7 @@ else
    GIT_TAG=''
 fi
 
-BIN=${OPT}bin-${KIND}${GIT_TAG}
+BIN=bin-${OPT}-${KIND}${GIT_TAG}
 
 # Move to the binary directory
 if [ ! -d "$BIN" ]; then
@@ -123,6 +123,13 @@ touch dependency.mk
 
 #----- Launch the compiler. ---------------------------------------------------------------#
 make OPT=${OPT} KIND_COMP=${KIND} ${CLEAN} GIT_TAG=${GIT_TAG}
+make_exit_code=$?
 #------------------------------------------------------------------------------------------#
 
-echo "Installation Complete."
+if [ ${make_exit_code} != 0 ]
+then
+   exit 1
+else
+   echo "Installation Complete."
+   exit 0
+fi
