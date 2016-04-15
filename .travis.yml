@@ -9,6 +9,5 @@ before_install:
 
 script:
     - pwd
-    - cd ED/build/bin
-    - ./generate_deps.sh
-    - make OPT=opt.gfortran
+    - cd ED/build/
+    - install.sh

@@ -42,11 +42,21 @@ BASE=$(ED_ROOT)/build/
 # If you wish to use this functionality specify USE_HDF5=1
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
-
 USE_HDF5=1
-HDF5_INCS=-I/n/Moorcroft_Lab/Lab/apps/i91/lib -I/n/Moorcroft_Lab/Lab/apps/i91/include
-HDF5_LIBS=-L/n/Moorcroft_Lab/Lab/apps/i91/lib  -lhdf5 -lm -lhdf5_fortran \
-          -lhdf5 -lhdf5_hl -L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf4_64/zlib/lib -lz
+HDF5_INCS=-I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
+          -I/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/include
+HDF5_LIBS=-L/n/Moorcroft_Lab/Users/mlongo/util/hdflib/hdf5_32/hdf5/lib \
+          -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl                   \
+          -L/n/Moorcroft_Lab/Lab/mlongo/util/hdflib/hdf5_32/zlib/lib -lz
+
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+ 
+#---------------------------------------------------------------
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -81,7 +91,6 @@ USE_MPIWTIME=0
 #LOADER=f90
 #LOADER_OPTS=-n32
 #LIBS=-lm
-#-----------------------------------------------------------------
 
 #----------------- IBM ------------------------------------
 #CMACH=IBM
@@ -165,7 +174,7 @@ USE_MPIWTIME=0
 #C_COMP=pgcc
 #C_OPTS=-O3 -DUNDERSCORE -DLITTLE
 #LOADER=pgf90
-#LOADER_OPTS=-v -Wl,-static
+#LOADER_OPTS=-v -Wl,
 #LIBS=
 #-----------------------------------------------------------------
 
@@ -192,13 +201,6 @@ USE_MPIWTIME=0
 #-----------------------------------------------------------------
 
 #-----------------  LINUX INTEL FORTRAN-95 Compiler/GCC  ---------
-#CMACH=PC_LINUX1
-#F_COMP=/n/Moorcroft_Lab/Lab/apps/intel9.1/bin/ifort
-#C_COMP=/n/Moorcroft_Lab/Lab/apps/intel9.1/bin/icc
-#LOADER=/n/Moorcroft_Lab/Lab/apps/intel9.1/bin/ifort
-#C_LOADER=/n/Moorcroft_Lab/Lab/apps/intel9.1/bin/icc
-#LIBS=
-#MOD_EXT=mod
 CMACH=PC_LINUX1
 F_COMP=ifort
 C_COMP=icc
@@ -206,72 +208,102 @@ LOADER=ifort
 C_LOADER=icc
 LIBS=
 MOD_EXT=mod
+##################################### COMPILER OPTIONS #####################################
 
-#----------------- gfortran on Linux x86_64 --------------------
-#CMACH=PC_LINUX1
-#F_COMP=mpif77
-#F_OPTS=-FR -O3
-#C_COMP=mpicc
-#C_OPTS=
-#CPP_OPTS=
-#LOADER=$(F_COMP)
-#LOADER_OPTS=
-#C_LOADER=$(C_COMP)
-#C_LOADER_OPTS=
-#LIBS=
-#MOD_EXT=mod
-#PAR_DEFS=-DRAMS_MPI
+#------------------------------------------------------------------------------------------#
+# A. Pickiest - Use this whenever you change arguments on functions and subroutines.       #
+#               This will perform the same tests as B but it will also check whether all   #
+#               arguments match between subroutine declaration and subroutine calls.       #
+#               WARNING: In order to really check all interfaces you must compile with     #
+#                        this option twice:                                                #
+#               1. Compile (./compile.sh)                                                  #
+#               2. Prepare second compilation(./2ndcomp.sh)                                #
+#               3. Compile one more time (./compile.sh)                                    #
+#               If the compilation fails either at step 1 or 3, then your code has inter-  #
+#                  face problems. If it successfully compiles, then you can switch to B.   #
+#------------------------------------------------------------------------------------------#
+USE_INTERF=0
+F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
+        -warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
+        -traceback -ftrapuv -fp-stack-check -implicitnone -openmp
+C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
+LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
+            -warn interfaces -debug extended -debug inline_debug_info  \
+            -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone -openmp
+C_LOADER_OPTS=-v -g -traceback
+#------------------------------------------------------------------------------------------#
 
-#Compiler options
 
-# A. Pickiest
-#USE_INTERF=0
-#F_OPTS= -FR -O2 -Vaxlib -static -check all -warn all -g -fpe0 -ftz -gen-interfaces \
-#       -warn interfaces -debug extended -debug-parameters all -traceback -ftrapuv 
-#C_OPTS= -O2 -DLITTLE -static -g -traceback -debug extended
-#LOADER_OPTS= -FR -O2 -Vaxlib -static -warn all -check all -g -fpe0 -ftz -gen-interfaces \
-#       -warn interfaces -debug extended -debug-parameters all -traceback -ftrapuv
+#------------------------------------------------------------------------------------------#
+# B. Pickiest with no interface - This will compile fast but the run will be slow due to   #
+#    the -O0 option. However, by setting -O0 you will take full advantage of the intel     #
+#    debugger.                                                                             #
+#    Ideally, you should compile your code with this option whenever you make any changes. #
+#    Note, however, that if you change arguments you should first try A.                   #
+#------------------------------------------------------------------------------------------#
+#USE_INTERF=1
+#F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
+         -fp-stack-check -implicitnone -openmp
+#C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
+#LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
+              -fp-stack-check -implicitnone -openmp
 #C_LOADER_OPTS=-v -g -traceback
+#------------------------------------------------------------------------------------------#
 
-# B. Full interfacing, no fpe0
-#USE_INTERF=0
-#F_OPTS= -FR -O3 -Vaxlib -static -check all -warn all -gen-interfaces -traceback
-#C_OPTS= -O3 -DLITTLE -static -traceback
-#LOADER_OPTS= -FR -O3 -Vaxlib -static -warn all -check all -gen-interfaces -traceback
-#C_LOADER_OPTS=-v -traceback
 
-# C. No interface, with fpe0
+#------------------------------------------------------------------------------------------#
+# C. Fast debugging - This will check pretty much the same as B, but with higher optimiza- #
+#    tion. However, by setting -O2 you won't be able to see all variables on the debugger. #
+#    You should use this if your run seems to be working fine at the beginning, but it is  #
+#    failing or giving instabilities, or funny results after a long time.                  #
+#------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O2 -Vaxlib -static -fpe0 -no-ftz -check all -warn all -traceback -g \
-	-debug extended -debug-parameters all -ftrapuv
-#C_OPTS= -O2 -DLITTLE -static -traceback -g -debug extended
-#LOADER_OPTS= -FR -O2 -Vaxlib -static -fpe0 -no-ftz -check all -warn all -traceback \
-	-g -debug extended -debug-parameters all -ftrapuv
-#C_LOADER_OPTS=-v -traceback -g 
+#F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+         -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
+         -fp-stack-check -implicitnone -openmp
+#C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
+#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended        \
+              -debug inline_debug_info -debug-parameters all -traceback -ftrapuv \
+              -fp-stack-check -implicitnone -openmp
+#C_LOADER_OPTS=-v -g -traceback
+#------------------------------------------------------------------------------------------#
 
-# D. No interface, no fpe0
+
+#------------------------------------------------------------------------------------------#
+# D. Fast check - This will check pretty much the same as C, but it will not set up        #
+#    anything for the debugger. Use this only if you really don't want to deal with idb    #
+#    or if you have a good idea of which problem you are dealing with.                     #
+#------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -FR -O2 -Vaxlib -static -check all -traceback
-#C_OPTS= -O2 -DLITTLE -static -traceback
-#LOADER_OPTS= -FR -O2 -Vaxlib -static -check all -traceback
+#F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv \
+-fp-stack-check -implicitnone -openmp
+#C_OPTS= -O2 -DLITTLE -traceback
+#LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv \
+-fp-stack-check -implicitnone -openmp
 #C_LOADER_OPTS=-v -traceback
+#------------------------------------------------------------------------------------------#
 
-#F_OPTS= -g -free -prec-div -check all -inline-debug-info -traceback -debug extended -check uninit -ftrapuv -auto -fpe0 ## Full traceback debugging
-#F_OPTS= -g -check all -inline-debug-info -traceback -debug extended  ## Full traceback debugging
-#LOADER_OPTS = $(F_OPTS)
 
-## E. Fast...
-USE_INTERF=1
-F_OPTS=-O3 -fno-alias -prec-div -free## -FR -O3 -Vaxlib -static -traceback -recursive
-C_OPTS= -O3 -DUNDERSCORE -DLITTLE# -static -traceback
-LOADER_OPTS= -i-static $(F_OPTS)##-FR -O3 -Vaxlib -static -traceback
-C_LOADER_OPTS=-v -traceback
+#------------------------------------------------------------------------------------------#
+# E. Fast - This is all about performance, use only when you are sure that the model has   #
+#           no code problem, and you want results asap. This will not check for any        #
+#           problems, which means that this is an option suitable for end users, not de-   #
+#           velopers.                                                                      #
+#------------------------------------------------------------------------------------------#
+#USE_INTERF=1
+#F_OPTS= -FR -O3 -recursive -Vaxlib -traceback
+#C_OPTS= -O3 -DLITTLE -traceback
+#LOADER_OPTS= -FR -O3 -Vaxlib  -traceback
+#C_LOADER_OPTS=-v -traceback
+#------------------------------------------------------------------------------------------#
 
+############################################################################################
 
 
 
 #-----------------------------------------------------------------
-
 # If compiling for a single-CPU platform only (without MPI):
 
 #-----------------------------------------------------------------
@@ -314,7 +346,7 @@ C_LOADER_OPTS=-v -traceback
 #-----------------------------------------------------------------
 
 #---------------LINUX Portland Group pgf77/gcc--------------------
-MPI_PATH=/n/Moorcroft_Lab/Lab/apps
+MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_32
 PAR_INCS=-I$(MPI_PATH)/include
 PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
 PAR_DEFS=-DRAMS_MPI
