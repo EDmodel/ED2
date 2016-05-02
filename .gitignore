@@ -145,3 +145,4 @@ R-utils/read.q.temporary.r
 
 #Manfredo ignores
 *.DS_Store
+ED/build/csspss*/*
