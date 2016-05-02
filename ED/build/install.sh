@@ -68,8 +68,8 @@ done
 
 if [ "${PLATFORM}" == "" ]
 then
-   echo "No platform specified, defaulting to gfortran."
-   PLATFORM="gfortran"
+   echo "No platform specified, defaulting to intel."
+   PLATFORM="intel"
 fi
 
 if [ "${KIND}" == "" ]
