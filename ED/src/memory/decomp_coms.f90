@@ -128,7 +128,8 @@ Module decomp_coms
    !---------------------------------------------------------------------------------------!
    real :: decay_rate_ssc
    !---------------------------------------------------------------------------------------!
-   !     Labile fraction of leaves, fine roots and sapwood.                                !
+   !     Labile fraction of leaves, fine roots and sapwood. (parte non immediatamente      !
+   !     solubile che però a un certo punto diventa disponibile)                           !
    !     ([[MCD]].  Moved setting of values to initialize_pft_resp_params)                 !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: f_labile 

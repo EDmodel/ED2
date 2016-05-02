@@ -202,6 +202,7 @@ module growth_balive
 
                   !------------------------------------------------------------------------!
                   !      Compute respiration rates for coming day [kgC/plant/day].         !
+                  !    growth resp scheme decide se allocare solo a bsapwooda o a tutto    !
                   !------------------------------------------------------------------------!
                   select case(growth_resp_scheme)
                   case(0)
@@ -1179,7 +1180,8 @@ module growth_balive
                !------------------------------------------------------------------------------!
                !     If the available carbon is less than what we need to get back to         !
                ! allometry.  Grow pools in proportion to demand.  If we have enough carbon,   !
-               ! we'll put the extra into bstorage.                                           !
+               !we'll put the extra into bstorage. f € [0,1] è la frazione off-all o anche una!
+               !misura di quando carbonio mi serve: se è 0 sono in pari e non devo trasferirlo!                                         !
                !------------------------------------------------------------------------------!
                f_bleaf     = delta_bleaf     / bleaf_aim
                f_broot     = delta_broot     / broot_aim
@@ -1548,7 +1550,7 @@ module growth_balive
 
          !---------------------------------------------------------------------------------!
          !      Calculate potential carbon balance (used for nitrogen demand function).    !
-         ! [kgC/plant/day].                                                                !
+         ! [kgC/plant/day].     today_gpp_pot è la fotosintesi max senza limitazione in N  !
          !---------------------------------------------------------------------------------!
          daily_C_gain_pot       = umol_2_kgC * day_sec * ( cpatch%today_gpp_pot(ico)       &
                                                          - cpatch%today_leaf_resp(ico)     &
@@ -1760,7 +1762,7 @@ module growth_balive
             !------------------------------------------------------------------------------!
             !     Maximum bleaf that the allometric relationship would allow.  If the      !
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
-            ! to full allometry.                                                           !
+            ! to full allometry.   green_leaf_factor e elongf misurano il grado di stress  !
             !------------------------------------------------------------------------------!
             bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
@@ -2754,14 +2756,14 @@ module growth_balive
 
          plant_litter   = ( cpatch%leaf_maintenance(ico) + cpatch%root_maintenance(ico) )  &
                         * cpatch%nplant(ico)
-         plant_litter_f = plant_litter * f_labile(ipft)
-         plant_litter_s = plant_litter - plant_litter_f
+         plant_litter_f = plant_litter * f_labile(ipft) !parte labile (non proprio solubile)!
+         plant_litter_s = plant_litter - plant_litter_f !parte strutturale                    !
 
-         csite%fsc_in(ipa) = csite%fsc_in(ipa) + plant_litter_f
-         csite%fsn_in(ipa) = csite%fsn_in(ipa) + plant_litter_f / c2n_leaf(ipft)
+         csite%fsc_in(ipa) = csite%fsc_in(ipa) + plant_litter_f !labile C in soil
+         csite%fsn_in(ipa) = csite%fsn_in(ipa) + plant_litter_f / c2n_leaf(ipft) !labile N in soil
 
-         csite%ssc_in(ipa) = csite%ssc_in(ipa) + plant_litter_s
-         csite%ssl_in(ipa) = csite%ssl_in(ipa) + plant_litter_s * l2n_stem / c2n_stem(ipft)
+         csite%ssc_in(ipa) = csite%ssc_in(ipa) + plant_litter_s ! structural soil C
+         csite%ssl_in(ipa) = csite%ssl_in(ipa) + plant_litter_s * l2n_stem / c2n_stem(ipft) ! structural soil N
       end do
       return
    end subroutine litter
