@@ -144,6 +144,7 @@ ED/slurmdbg
 R-utils/read.q.temporary.r
 
 #Manfredo ignores
+.*
 .metadata*/*
 *.DS_Store
 ED/build/csspss*/*
