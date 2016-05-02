@@ -146,3 +146,11 @@ R-utils/read.q.temporary.r
 #Manfredo ignores
 *.DS_Store
 ED/build/csspss*/*
+ED/build/analy*/*
+ED/build/histo*/*
+ED/build/OGE2*/*
+ED/build/FAO*/*
+ED/build/Paracou*/*
+ED/build/post_process*/*
+ED/build/thermal_sums*/*
+ED/build/ED2IN
