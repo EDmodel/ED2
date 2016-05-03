@@ -155,3 +155,6 @@ ED/build/FAO*/*
 ED/build/Paracou*/*
 ED/build/post_process*/*
 ED/build/thermal_sums*/*
+Doc/*
+Script*.sh
+src_script.sh
