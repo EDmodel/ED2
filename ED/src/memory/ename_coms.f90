@@ -138,6 +138,7 @@ module ename_coms
       integer                                           :: ibigleaf
       integer                                           :: integration_scheme
       integer                                           :: growth_resp_scheme
+      integer                                           :: storage_resp_scheme
       real                                              :: rk4_tolerance
       integer                                           :: ibranch_thermo
       integer                                           :: iphysiol
@@ -406,6 +407,7 @@ module ename_coms
       enl%ibigleaf                  = undef_integer
       enl%integration_scheme        = undef_integer
       enl%growth_resp_scheme        = undef_integer
+      enl%storage_resp_scheme       = undef_integer
       enl%rk4_tolerance             = undef_real
       enl%ibranch_thermo            = undef_integer
       enl%iphysiol                  = undef_integer

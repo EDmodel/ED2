@@ -1,0 +1,9 @@
+<map id="ed_state_vars::edtype" name="ed_state_vars::edtype">
+<area shape="rect" id="node2" href="$structmet__driver__coms_1_1met__driv__state.html" title="met_driver_coms::met\l_driv_state" alt="" coords="293,5,444,47"/>
+<area shape="rect" id="node4" href="$structed__state__vars_1_1polygontype.html" title="ed_state_vars::polygontype" alt="" coords="593,83,773,110"/>
+<area shape="rect" id="node3" href="$structmet__driver__coms_1_1met__driv__data.html" title="met_driver_coms::met\l_driv_data" alt="" coords="608,135,759,176"/>
+<area shape="rect" id="node5" href="$structphenology__coms_1_1prescribed__phen.html" title="phenology_coms::prescribed_phen" alt="" coords="257,81,480,107"/>
+<area shape="rect" id="node6" href="$structdisturb__coms_1_1lutime.html" title="disturb_coms::lutime" alt="" coords="297,131,440,158"/>
+<area shape="rect" id="node7" href="$structed__state__vars_1_1sitetype.html" title="ed_state_vars::sitetype" alt="" coords="291,182,447,209"/>
+<area shape="rect" id="node8" href="$structed__state__vars_1_1patchtype.html" title="ed_state_vars::patchtype" alt="" coords="5,182,172,209"/>
+</map>

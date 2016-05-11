@@ -1,0 +1,13 @@
+<map id="phenology_aux::prescribed_leaf_state" name="phenology_aux::prescribed_leaf_state">
+<area shape="rect" id="node2" href="$phenology__driv_8f90.html#aebe550e627508a275e8a1000e3bc9c13" title="phenology_driver" alt="" coords="261,5,380,32"/>
+<area shape="rect" id="node7" href="$phenology__driv_8f90.html#ab9a0459d8cb63117c39488527da2a451" title="phenology_driver_eq_0" alt="" coords="244,56,397,83"/>
+<area shape="rect" id="node9" href="$namespacephenology__startup.html#aa83586e75a022d6fcb5816972361282d" title="phenology_startup::\lread_prescribed_phenology" alt="" coords="231,107,411,149"/>
+<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="477,5,619,32"/>
+<area shape="rect" id="node4" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="723,35,801,61"/>
+<area shape="rect" id="node5" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="887,85,960,112"/>
+<area shape="rect" id="node6" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="1008,85,1059,112"/>
+<area shape="rect" id="node8" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="459,56,637,83"/>
+<area shape="rect" id="node10" href="$namespacephenology__startup.html#abebba7585ef5aec3dd00f7cfa0b56067" title="phenology_startup::\lphenology_init" alt="" coords="480,107,616,149"/>
+<area shape="rect" id="node11" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="685,85,839,112"/>
+<area shape="rect" id="node12" href="$ed__init__full__history_8_f90.html#aae7df21bdc388f535c22bf77f8acb93f" title="init_full_history_restart" alt="" coords="686,136,838,163"/>
+</map>

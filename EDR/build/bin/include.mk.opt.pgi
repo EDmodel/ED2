@@ -1,0 +1,142 @@
+#Makefile include include.mk.opt
+############################## Change Log ##################################
+# 1.0.0.2
+#
+# 000908 MJB include.mk-mrc ##
+#            Added MAKE environment varaible.
+#            Added free format option to F_OPTS for some platforms. ##
+# 000907 MJB include.mk-mrc ##
+#            Changed the defualts to no NCAR Graphics and no parallel.
+#            Also commented out the machine specifics to force the user to
+#            select the appropriate machine for them. ##
+# 000823 MJB include.mk-mrc ##
+#            New - defines all make environment varaibles and is included
+#            in all make files. ##
+#
+############################################################################
+
+# Define make (gnu make works best).
+
+MAKE=/usr/bin/make
+
+# libraries.
+
+BASE=$(ED_ROOT)/build/
+
+# Activate appropriate parts below, comment out others.
+
+#---------------------------------------------------------------
+# If you are using a real distribution of NCAR Graphics...
+#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
+#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
+#---------------------------------------------------------------
+
+# HDF libraries  -----------------------------------------------
+# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
+# If you run "configure" script, you don't need to edit line bellow
+#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+# --------------------------------------------------------------
+
+# HDF 5  Libraries
+# ED2 HAS OPTIONAL HDF 5 I/O
+# If you wish to use this functionality specify USE_HDF5=1
+# and specify the location of the include directory
+# library files. Make sure you include the zlib.a location too.
+
+USE_HDF5=1
+
+#HDF5_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
+#HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
+#HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
+#	-lhdf5_fortran -lhdf5 -lhdf5_hl
+
+HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
+	-lhdf5_fortran -lhdf5 -lhdf5_hl
+
+#---------------------------------------------------------------
+# If you have a version of hdf5 compiled in parallel, then you
+# may benefit from collective I/O, then use this flag = 1
+# Otherwise, set it to zero.
+
+USE_COLLECTIVE_MPIO=0
+
+
+#---------------------------------------------------------------
+
+
+
+# netCDF libraries ---------------------------------------------
+# If you have netCDF set USENC=1 and type the lib folder
+# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
+# If you don't have it, leave USENC=0 and type a dummy
+# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
+USENC=0
+NC_LIBS=-L/dev/null
+# --------------------------------------------------------------
+
+# interface ----------------------------------------------------
+# This should be 1 unless you are running with -gen-interfaces.
+# Interfaces usually make the compilation to crash when the 
+# -gen-interfaces option are on, so this flag bypass all 
+# interfaces in the code.
+USE_INTERF=1
+
+
+# MPI_Wtime.  
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=1
+
+#----------------- PGI Compiler on Linux x86_64 ----------------
+CMACH=PC_LINUX1
+F_COMP=mpif90
+F_OPTS=-O2
+#F_OPTS = -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check
+#F_OPTS= -Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
+#       -Mfree
+#  -Mbyteswapio
+# -tp athlonxp -fastsse
+#F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
+#	-Mcache_align -Mconcur=nonuma -Msmartalloc
+#F_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf -Mbounds
+C_COMP=mpicc 
+C_OPTS=-O2
+#C_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf -Mbounds
+#C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
+#	-Mcache_align -Msmartalloc
+#C_OPTS= -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check
+USE_INTERF=1
+CPP_OPTS=
+LOADER=$(F_COMP)
+LOADER_OPTS=$(F_OPTS)
+C_LOADER=$(C_COMP)
+C_LOADER_OPTS=
+LIBS=
+MOD_EXT=mod
+PAR_DEFS=-DRAMS_MPI
+
+
+#-----------------  LINUX Portland Group pgf77/gcc ---------------
+#CMACH=PC_LINUX1
+#F_COMP=pgf90
+#F_OPTS=-Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
+#       -Mfree
+#  -Mbyteswapio
+
+# -tp athlonxp -fastsse
+
+#C_COMP=gcc
+#C_COMP=pgcc
+#C_OPTS=-O3 -DUNDERSCORE -DLITTLE
+#LOADER=pgf90
+#LOADER_OPTS=-v -Wl,-static
+#LIBS=
+#-----------------------------------------------------------------
+
+ARCHIVE=ar rs
+
+

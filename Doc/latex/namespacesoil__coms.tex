@@ -1,0 +1,511 @@
+\hypertarget{namespacesoil__coms}{}\section{soil\+\_\+coms Module Reference}
+\label{namespacesoil__coms}\index{soil\+\_\+coms@{soil\+\_\+coms}}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structsoil__coms_1_1soil__class}{soil\+\_\+class}
+\item 
+type \hyperlink{structsoil__coms_1_1soil__class8}{soil\+\_\+class8}
+\item 
+type \hyperlink{structsoil__coms_1_1soilcol__class}{soilcol\+\_\+class}
+\item 
+type \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}
+\end{DoxyCompactItemize}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespacesoil__coms_ad616d97c9e0bec81cd93be86cd178216}{alloc\+\_\+soilgrid} ()
+\item 
+integer function \hyperlink{namespacesoil__coms_af8e155e8412b0de0b7b1aa35463611e6}{find\+\_\+soil\+\_\+class} (sandfrac, clayfrac)
+\item 
+real(kind=4) function \hyperlink{namespacesoil__coms_af338b81aceade9a67dff90cf850e5cc6}{ed\+\_\+soil\+\_\+idx2water} (soil\+\_\+index, ntext)
+\item 
+real(kind=4) function \hyperlink{namespacesoil__coms_ac656cda53ab267fd2e927c65359524fd}{matric\+\_\+potential} (nsoil, soil\+\_\+water)
+\item 
+real(kind=8) function \hyperlink{namespacesoil__coms_a7c1fb8a910aaa86ed2ec34257db6e5e3}{matric\+\_\+potential8} (nsoil, soil\+\_\+water)
+\item 
+real(kind=4) function \hyperlink{namespacesoil__coms_a465d9c7443ba25dad5afd0f2fe6d8cae}{hydr\+\_\+conduct} (k, nsoil, soil\+\_\+water, soil\+\_\+fracliq)
+\item 
+real(kind=8) function \hyperlink{namespacesoil__coms_aa4131e33c26dc4f026bca85034eba1b9}{hydr\+\_\+conduct8} (k, nsoil, soil\+\_\+water, soil\+\_\+fracliq)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}{ed\+\_\+nstyp} = 17
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_a359b4988ce0556dd6f2138752c38d3dc}{ed\+\_\+nscol} = 21
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_a8cb5da734a6673c4b75b841d0b4221aa}{ed\+\_\+nvtyp} = 21
+\item 
+integer \hyperlink{namespacesoil__coms_aaaf0d1eb40467ca926f9c31a296885bc}{isoilbc}
+\item 
+real \hyperlink{namespacesoil__coms_af1b6a6b86baeaad4354a141fdf9cfb04}{sldrain}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_aa7685a29e0e9621f0cde33dfcca345cc}{sldrain8}
+\item 
+real \hyperlink{namespacesoil__coms_a7162076a5aaec83255f06fe55f799e31}{sin\+\_\+sldrain}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_a29640d5396281a106cd29a5433cc4896}{sin\+\_\+sldrain8}
+\item 
+integer, dimension(maxgrds) \hyperlink{namespacesoil__coms_af246f6fbfc228e2eb7f079f811c1f3da}{isoilflg}
+\item 
+integer \hyperlink{namespacesoil__coms_a461eb2939beb7809ce27cce9b68cb38f}{nslcon}
+\item 
+integer \hyperlink{namespacesoil__coms_aa4458d218daa96cebe1a8c8a63cbf72f}{isoilcol}
+\item 
+real \hyperlink{namespacesoil__coms_a148f65826100f4c235d31e4dbc2c9b1e}{slxclay}
+\item 
+real \hyperlink{namespacesoil__coms_a4efc340287b7aa303bb409d4c537e55a}{slxsand}
+\item 
+real \hyperlink{namespacesoil__coms_ae83360d4f03ca2a56ab9de2732d47533}{zrough}
+\item 
+real, dimension(nzgmax) \hyperlink{namespacesoil__coms_aa22f925477a7c574761c66d5f157cc7d}{slz}
+\item 
+real, dimension(nzgmax) \hyperlink{namespacesoil__coms_a6a020a30c4f8a882edc28462a83e55ba}{slmstr}
+\item 
+real, dimension(nzgmax) \hyperlink{namespacesoil__coms_abe490ee71d5f063358005df47f9dee38}{stgoff}
+\item 
+character(len=str\+\_\+len), dimension(maxgrds) \hyperlink{namespacesoil__coms_a635e352f4923b8060b939ac82c23dbef}{veg\+\_\+database}
+\item 
+character(len=str\+\_\+len), dimension(maxgrds) \hyperlink{namespacesoil__coms_a194bdfd0c85724271f3424bb0674755f}{soil\+\_\+database}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacesoil__coms_a7a54852974f4d42c4e4bfbd1145a3e44}{soilstate\+\_\+db}
+\item 
+character(len=str\+\_\+len) \hyperlink{namespacesoil__coms_a5d607eec910da5341af027871e06a16e}{soildepth\+\_\+db}
+\item 
+integer \hyperlink{namespacesoil__coms_a947d75e4045f6ba45a69e5334f834222}{isoilstateinit}
+\item 
+integer \hyperlink{namespacesoil__coms_a8495256902c21d8ea298192d9e9a9f60}{isoildepthflg}
+\item 
+real \hyperlink{namespacesoil__coms_a4560c15d785323d98ca7f84a60e07fd2}{runoff\+\_\+time}
+\item 
+real \hyperlink{namespacesoil__coms_abbda4cf2bb85860666afd7f70310f519}{runoff\+\_\+time\+\_\+i}
+\item 
+logical \hyperlink{namespacesoil__coms_ae8cfc7c2c5c0a303067e834b6ba03694}{simplerunoff}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_a2bcc1e9ab626c4a0ac76283c272805c6}{soil\+\_\+rough}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_a42917920add793523d269a722a3cfa3b}{snow\+\_\+rough}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_aabd4871bca5e3dfef69f79324610f998}{ny07\+\_\+eq04\+\_\+a}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_a881853a16ef7d613c94c38cc5f56f4c0}{ny07\+\_\+eq04\+\_\+m}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_a33d9bb430514fde199b526e39479b7a4}{soil\+\_\+rough8}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_a205c07f5f6550972f802f9444dfc934c}{snow\+\_\+rough8}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_a559c28af94beb8a91e67184ebcb73c6e}{ny07\+\_\+eq04\+\_\+a8}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_a07f28ceeca19ec2e550501c1bc0fc39d}{ny07\+\_\+eq04\+\_\+m8}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_a633ce5532050eb5cf840d24a6da41ca1}{dewmax}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_ab3465a7eaa76b6f27830280b15c20d68}{water\+\_\+stab\+\_\+thresh}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_a15a18b26140182f9af4a448864b04663}{tiny\+\_\+sfcwater\+\_\+mass}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_adad6557f24a788e2cc72fabaa3baa968}{snowmin}
+\item 
+integer \hyperlink{namespacesoil__coms_a2e92f050d04249187d11251e58727a56}{infiltration\+\_\+method}
+\item 
+real(kind=4) \hyperlink{namespacesoil__coms_ad286e8223fbc4a8830c8f87bdbe2b459}{freezecoef}
+\item 
+real(kind=8) \hyperlink{namespacesoil__coms_a091312b8a88f238d1f6b75ade71f41d2}{freezecoef8}
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_af53befc38b94519f45c1037eefe15e1c}{pctlcon} = 1
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_aae84e5a9fa25d15c1b11e7e3e9c8c35d}{nvgcon} = 7
+\item 
+real(kind=8), dimension(6), parameter \hyperlink{namespacesoil__coms_a39d9ab50ccb8cb1642f28ba113c2719e}{ss} = (/ 1.\+093d-\/3, 2.\+800d-\/2, 3.\+000d-\/2 , 3.\+030d-\/4,-\/1.\+770d-\/7, 2.\+250d-\/9 /)
+\item 
+real, dimension(\hyperlink{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}{ed\+\_\+nstyp}) \hyperlink{namespacesoil__coms_ab18d5a835f6246621b56d3023dd721da}{slden}
+\item 
+real, dimension(\hyperlink{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}{ed\+\_\+nstyp}) \hyperlink{namespacesoil__coms_a89f3eedbb5e476acda53f258a75756c6}{fhydraul}
+\item 
+integer, dimension(\hyperlink{namespacesoil__coms_a8cb5da734a6673c4b75b841d0b4221aa}{ed\+\_\+nvtyp}) \hyperlink{namespacesoil__coms_aeec7623ed3fca9e7fce1f7f599a2b1b1}{kroot}
+\item 
+real, dimension(nzgmax, \hyperlink{namespacesoil__coms_a8cb5da734a6673c4b75b841d0b4221aa}{ed\+\_\+nvtyp}) \hyperlink{namespacesoil__coms_a22f6f63238ed3e10355d0dcc258d2441}{root}
+\item 
+real, dimension(\+:,\+:), allocatable \hyperlink{namespacesoil__coms_a0550c5c548dbfde659a2d622a91b26f5}{slcons1}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a5e8ee111d9295bf4b74579a88285b613}{dslz}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_af12370b1017ccb30ff0d20906aa4a45d}{dslzo2}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_af2b544726d6dd9705d4b8c7c5714d92d}{dslzi}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a4b61cf24c813f2846a39570dd4ea05a8}{dslzidt}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a2a9957b4fa1ef14eea11a18d85ba6e3d}{slzt}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a94ad39e6d9d5ff44b58fc26edd54e28d}{dslzt}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_af5edf2523e90d608f848782aad517da2}{dslzti}
+\item 
+real, dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a40f71a36860d25e091b99e5ecead9cbe}{dslztidt}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_ad701b5cd7609d6ffbd1b800df6a04bb5}{slz8}
+\item 
+real(kind=8), dimension(\+:,\+:), allocatable \hyperlink{namespacesoil__coms_ade6e1d0e2d355c5f3a340352163128d9}{slcons18}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_ac6e349c53a31e55f1966a12b2b609523}{dslz8}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_af39809572006ef58a973b409d4dc013e}{dslzo28}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_ad8684255b655da1970dfa6f829724dce}{dslzi8}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_ab5f252a1d4e385eaa66e06a4e7de7bc9}{dslzidt8}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a93fd7b06c92beb4d98c9c197b1d7b445}{slzt8}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_a7b1c34644ae733852ef371e7764e23d1}{dslzt8}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_ad8c0bc69f2eebddc89763e0789953239}{dslzti8}
+\item 
+real(kind=8), dimension(\+:), allocatable \hyperlink{namespacesoil__coms_aed792678a3757670fef365202ee15c39}{dslztidt8}
+\item 
+real(kind=8), dimension(20) \hyperlink{namespacesoil__coms_a82fb9ea0980b1bf483abde43cb04cbd3}{thicknet}
+\item 
+real(kind=8), dimension(20, 20) \hyperlink{namespacesoil__coms_a5e41e535957c9e40c2836496d007477f}{thick}
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_a8430352c5e4200574649e445fbe0e682}{nlon\+\_\+lyr} =360
+\item 
+integer, parameter \hyperlink{namespacesoil__coms_ab0f3f3665b8b408861fcded1094fa91c}{nlat\+\_\+lyr} =180
+\item 
+integer, dimension(\+:,\+:), allocatable \hyperlink{namespacesoil__coms_a09e8408810b16557b7bcc84cd165645a}{layer\+\_\+index}
+\item 
+type(\hyperlink{structsoil__coms_1_1soil__class8}{soil\+\_\+class8}), dimension(\hyperlink{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}{ed\+\_\+nstyp}) \hyperlink{namespacesoil__coms_a5d71d43e3458fde6c6f89d29af5225c8}{soil8}
+\item 
+type(\hyperlink{structsoil__coms_1_1soil__class}{soil\+\_\+class}), dimension(\hyperlink{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}{ed\+\_\+nstyp}) \hyperlink{namespacesoil__coms_a18bef58fe90e83fad032983a8e079a60}{soil}
+\item 
+type(\hyperlink{structsoil__coms_1_1soilcol__class}{soilcol\+\_\+class}), dimension(\hyperlink{namespacesoil__coms_a359b4988ce0556dd6f2138752c38d3dc}{ed\+\_\+nscol}) \hyperlink{namespacesoil__coms_a90e160d33d6fa2c289ce1742bc852139}{soilcol}
+\item 
+type(\hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}), dimension(0\+:\hyperlink{namespacesoil__coms_a8cb5da734a6673c4b75b841d0b4221aa}{ed\+\_\+nvtyp}), parameter \hyperlink{namespacesoil__coms_abc30de75cb7efc15f13116fb03fff8bc}{veget} =(/ \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+14, .\+99, 0.\+0, 0.\+0, .\+00, .\+00, .\+00, 0.\+1, .\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+14, .\+99, 0.\+0, 0.\+0, .\+00, .\+00, .\+00, 0.\+1, .\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+40, .\+82, 0.\+0, 0.\+0, .\+00, .\+00, .\+01, 0.\+1, .\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+30, .\+86, 0.\+0, 0.\+0, .\+00, .\+00, .\+05, .\+1, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+10, .\+97, 6.\+0, 1.\+0, .\+80, .\+10, 1.\+00, 15.\+0, 1.\+5 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+10, .\+95, 6.\+0, 5.\+0, .\+80, .\+30, 1.\+00, 20.\+0, 1.\+5 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+20, .\+95, 6.\+0, 5.\+0, .\+80, .\+30, .\+80, 15.\+0, 2.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+15, .\+95, 6.\+0, 1.\+0, .\+90, .\+50, 2.\+00, 20.\+0, 3.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+26, .\+96, 2.\+0, 1.\+5, .\+80, .\+10, .\+02, .\+2, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+16, .\+96, 6.\+0, 5.\+5, .\+80, .\+30, .\+10, 1.\+0, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+25, .\+96, 6.\+0, 5.\+5, .\+10, .\+10, .\+10, .\+5, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+20, .\+95, 6.\+0, 5.\+5, .\+60, .\+20, .\+04, .\+1, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+10, .\+97, 6.\+0, 1.\+0, .\+80, .\+20, .\+10, 1.\+0, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+20, .\+97, 6.\+0, 5.\+0, .\+80, .\+30, .\+10, 1.\+0, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+15, .\+96, 6.\+0, 3.\+0, .\+80, .\+20, .\+80, 20.\+0, 2.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+20, .\+95, 6.\+0, 5.\+5, .\+85, .\+60, .\+06, .\+7, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+18, .\+95, 6.\+0, 5.\+5, .\+80, .\+60, .\+06, .\+7, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+12, .\+98, 6.\+0, 5.\+5, .\+80, .\+40, .\+03, 1.\+0, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+18, .\+96, 5.\+0, 4.\+0, .\+80, .\+20, .\+51, 3.\+6, 1.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+15, .\+90, 4.\+8, 3.\+6, .\+74, .\+31, .\+80, 1.\+1, .\+8 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+21, .\+95, 6.\+0, 0.\+8, .\+90, .\+50, 2.\+00, 20.\+0, 3.\+0 ) , \hyperlink{structsoil__coms_1_1veg__class}{veg\+\_\+class}(.\+15, .\+96, 4.\+8, 3.\+6, .\+10, .\+05, 1.\+40, 1.\+1, .\+8 ) /)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!alloc\+\_\+soilgrid@{alloc\+\_\+soilgrid}}
+\index{alloc\+\_\+soilgrid@{alloc\+\_\+soilgrid}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{alloc\+\_\+soilgrid()}{alloc_soilgrid()}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine soil\+\_\+coms\+::alloc\+\_\+soilgrid (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_ad616d97c9e0bec81cd93be86cd178216}{}\label{namespacesoil__coms_ad616d97c9e0bec81cd93be86cd178216}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacesoil__coms_ad616d97c9e0bec81cd93be86cd178216_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ed\+\_\+soil\+\_\+idx2water@{ed\+\_\+soil\+\_\+idx2water}}
+\index{ed\+\_\+soil\+\_\+idx2water@{ed\+\_\+soil\+\_\+idx2water}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ed\+\_\+soil\+\_\+idx2water(soil\+\_\+index, ntext)}{ed_soil_idx2water(soil_index, ntext)}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) function soil\+\_\+coms\+::ed\+\_\+soil\+\_\+idx2water (
+\begin{DoxyParamCaption}
+\item[{real(kind=4), intent(in)}]{soil\+\_\+index, }
+\item[{integer, intent(in)}]{ntext}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_af338b81aceade9a67dff90cf850e5cc6}{}\label{namespacesoil__coms_af338b81aceade9a67dff90cf850e5cc6}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!find\+\_\+soil\+\_\+class@{find\+\_\+soil\+\_\+class}}
+\index{find\+\_\+soil\+\_\+class@{find\+\_\+soil\+\_\+class}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{find\+\_\+soil\+\_\+class(sandfrac, clayfrac)}{find_soil_class(sandfrac, clayfrac)}}]{\setlength{\rightskip}{0pt plus 5cm}integer function soil\+\_\+coms\+::find\+\_\+soil\+\_\+class (
+\begin{DoxyParamCaption}
+\item[{real, intent(in)}]{sandfrac, }
+\item[{real, intent(in)}]{clayfrac}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_af8e155e8412b0de0b7b1aa35463611e6}{}\label{namespacesoil__coms_af8e155e8412b0de0b7b1aa35463611e6}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=277pt]{namespacesoil__coms_af8e155e8412b0de0b7b1aa35463611e6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacesoil__coms_af8e155e8412b0de0b7b1aa35463611e6_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{soil\+\_\+coms@{soil\+\_\+coms}!hydr\+\_\+conduct@{hydr\+\_\+conduct}}
+\index{hydr\+\_\+conduct@{hydr\+\_\+conduct}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{hydr\+\_\+conduct(k, nsoil, soil\+\_\+water, soil\+\_\+fracliq)}{hydr_conduct(k, nsoil, soil_water, soil_fracliq)}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) function soil\+\_\+coms\+::hydr\+\_\+conduct (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{k, }
+\item[{integer, intent(in)}]{nsoil, }
+\item[{real(kind=4), intent(in)}]{soil\+\_\+water, }
+\item[{real(kind=4), intent(in)}]{soil\+\_\+fracliq}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_a465d9c7443ba25dad5afd0f2fe6d8cae}{}\label{namespacesoil__coms_a465d9c7443ba25dad5afd0f2fe6d8cae}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!hydr\+\_\+conduct8@{hydr\+\_\+conduct8}}
+\index{hydr\+\_\+conduct8@{hydr\+\_\+conduct8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{hydr\+\_\+conduct8(k, nsoil, soil\+\_\+water, soil\+\_\+fracliq)}{hydr_conduct8(k, nsoil, soil_water, soil_fracliq)}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) function soil\+\_\+coms\+::hydr\+\_\+conduct8 (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{k, }
+\item[{integer, intent(in)}]{nsoil, }
+\item[{real(kind=8), intent(in)}]{soil\+\_\+water, }
+\item[{real(kind=8), intent(in)}]{soil\+\_\+fracliq}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_aa4131e33c26dc4f026bca85034eba1b9}{}\label{namespacesoil__coms_aa4131e33c26dc4f026bca85034eba1b9}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!matric\+\_\+potential@{matric\+\_\+potential}}
+\index{matric\+\_\+potential@{matric\+\_\+potential}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{matric\+\_\+potential(nsoil, soil\+\_\+water)}{matric_potential(nsoil, soil_water)}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) function soil\+\_\+coms\+::matric\+\_\+potential (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nsoil, }
+\item[{real(kind=4), intent(in)}]{soil\+\_\+water}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_ac656cda53ab267fd2e927c65359524fd}{}\label{namespacesoil__coms_ac656cda53ab267fd2e927c65359524fd}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!matric\+\_\+potential8@{matric\+\_\+potential8}}
+\index{matric\+\_\+potential8@{matric\+\_\+potential8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{matric\+\_\+potential8(nsoil, soil\+\_\+water)}{matric_potential8(nsoil, soil_water)}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) function soil\+\_\+coms\+::matric\+\_\+potential8 (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{nsoil, }
+\item[{real(kind=8), intent(in)}]{soil\+\_\+water}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacesoil__coms_a7c1fb8a910aaa86ed2ec34257db6e5e3}{}\label{namespacesoil__coms_a7c1fb8a910aaa86ed2ec34257db6e5e3}
+
+
+\subsection{Variable Documentation}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dewmax@{dewmax}}
+\index{dewmax@{dewmax}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dewmax}{dewmax}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::dewmax}\hypertarget{namespacesoil__coms_a633ce5532050eb5cf840d24a6da41ca1}{}\label{namespacesoil__coms_a633ce5532050eb5cf840d24a6da41ca1}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslz@{dslz}}
+\index{dslz@{dslz}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslz}{dslz}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslz}\hypertarget{namespacesoil__coms_a5e8ee111d9295bf4b74579a88285b613}{}\label{namespacesoil__coms_a5e8ee111d9295bf4b74579a88285b613}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslz8@{dslz8}}
+\index{dslz8@{dslz8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslz8}{dslz8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslz8}\hypertarget{namespacesoil__coms_ac6e349c53a31e55f1966a12b2b609523}{}\label{namespacesoil__coms_ac6e349c53a31e55f1966a12b2b609523}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzi@{dslzi}}
+\index{dslzi@{dslzi}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzi}{dslzi}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslzi}\hypertarget{namespacesoil__coms_af2b544726d6dd9705d4b8c7c5714d92d}{}\label{namespacesoil__coms_af2b544726d6dd9705d4b8c7c5714d92d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzi8@{dslzi8}}
+\index{dslzi8@{dslzi8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzi8}{dslzi8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslzi8}\hypertarget{namespacesoil__coms_ad8684255b655da1970dfa6f829724dce}{}\label{namespacesoil__coms_ad8684255b655da1970dfa6f829724dce}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzidt@{dslzidt}}
+\index{dslzidt@{dslzidt}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzidt}{dslzidt}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslzidt}\hypertarget{namespacesoil__coms_a4b61cf24c813f2846a39570dd4ea05a8}{}\label{namespacesoil__coms_a4b61cf24c813f2846a39570dd4ea05a8}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzidt8@{dslzidt8}}
+\index{dslzidt8@{dslzidt8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzidt8}{dslzidt8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslzidt8}\hypertarget{namespacesoil__coms_ab5f252a1d4e385eaa66e06a4e7de7bc9}{}\label{namespacesoil__coms_ab5f252a1d4e385eaa66e06a4e7de7bc9}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzo2@{dslzo2}}
+\index{dslzo2@{dslzo2}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzo2}{dslzo2}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslzo2}\hypertarget{namespacesoil__coms_af12370b1017ccb30ff0d20906aa4a45d}{}\label{namespacesoil__coms_af12370b1017ccb30ff0d20906aa4a45d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzo28@{dslzo28}}
+\index{dslzo28@{dslzo28}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzo28}{dslzo28}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslzo28}\hypertarget{namespacesoil__coms_af39809572006ef58a973b409d4dc013e}{}\label{namespacesoil__coms_af39809572006ef58a973b409d4dc013e}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzt@{dslzt}}
+\index{dslzt@{dslzt}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzt}{dslzt}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslzt}\hypertarget{namespacesoil__coms_a94ad39e6d9d5ff44b58fc26edd54e28d}{}\label{namespacesoil__coms_a94ad39e6d9d5ff44b58fc26edd54e28d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzt8@{dslzt8}}
+\index{dslzt8@{dslzt8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzt8}{dslzt8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslzt8}\hypertarget{namespacesoil__coms_a7b1c34644ae733852ef371e7764e23d1}{}\label{namespacesoil__coms_a7b1c34644ae733852ef371e7764e23d1}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzti@{dslzti}}
+\index{dslzti@{dslzti}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzti}{dslzti}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslzti}\hypertarget{namespacesoil__coms_af5edf2523e90d608f848782aad517da2}{}\label{namespacesoil__coms_af5edf2523e90d608f848782aad517da2}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslzti8@{dslzti8}}
+\index{dslzti8@{dslzti8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslzti8}{dslzti8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslzti8}\hypertarget{namespacesoil__coms_ad8c0bc69f2eebddc89763e0789953239}{}\label{namespacesoil__coms_ad8c0bc69f2eebddc89763e0789953239}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslztidt@{dslztidt}}
+\index{dslztidt@{dslztidt}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslztidt}{dslztidt}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::dslztidt}\hypertarget{namespacesoil__coms_a40f71a36860d25e091b99e5ecead9cbe}{}\label{namespacesoil__coms_a40f71a36860d25e091b99e5ecead9cbe}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!dslztidt8@{dslztidt8}}
+\index{dslztidt8@{dslztidt8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{dslztidt8}{dslztidt8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::dslztidt8}\hypertarget{namespacesoil__coms_aed792678a3757670fef365202ee15c39}{}\label{namespacesoil__coms_aed792678a3757670fef365202ee15c39}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ed\+\_\+nscol@{ed\+\_\+nscol}}
+\index{ed\+\_\+nscol@{ed\+\_\+nscol}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nscol}{ed_nscol}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::ed\+\_\+nscol = 21}\hypertarget{namespacesoil__coms_a359b4988ce0556dd6f2138752c38d3dc}{}\label{namespacesoil__coms_a359b4988ce0556dd6f2138752c38d3dc}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ed\+\_\+nstyp@{ed\+\_\+nstyp}}
+\index{ed\+\_\+nstyp@{ed\+\_\+nstyp}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nstyp}{ed_nstyp}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::ed\+\_\+nstyp = 17}\hypertarget{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}{}\label{namespacesoil__coms_a354035bf03f4bb65c1636100aa6737e8}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ed\+\_\+nvtyp@{ed\+\_\+nvtyp}}
+\index{ed\+\_\+nvtyp@{ed\+\_\+nvtyp}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nvtyp}{ed_nvtyp}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::ed\+\_\+nvtyp = 21}\hypertarget{namespacesoil__coms_a8cb5da734a6673c4b75b841d0b4221aa}{}\label{namespacesoil__coms_a8cb5da734a6673c4b75b841d0b4221aa}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!fhydraul@{fhydraul}}
+\index{fhydraul@{fhydraul}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{fhydraul}{fhydraul}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension({\bf ed\+\_\+nstyp}) soil\+\_\+coms\+::fhydraul}\hypertarget{namespacesoil__coms_a89f3eedbb5e476acda53f258a75756c6}{}\label{namespacesoil__coms_a89f3eedbb5e476acda53f258a75756c6}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!freezecoef@{freezecoef}}
+\index{freezecoef@{freezecoef}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{freezecoef}{freezecoef}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::freezecoef}\hypertarget{namespacesoil__coms_ad286e8223fbc4a8830c8f87bdbe2b459}{}\label{namespacesoil__coms_ad286e8223fbc4a8830c8f87bdbe2b459}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!freezecoef8@{freezecoef8}}
+\index{freezecoef8@{freezecoef8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{freezecoef8}{freezecoef8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::freezecoef8}\hypertarget{namespacesoil__coms_a091312b8a88f238d1f6b75ade71f41d2}{}\label{namespacesoil__coms_a091312b8a88f238d1f6b75ade71f41d2}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!infiltration\+\_\+method@{infiltration\+\_\+method}}
+\index{infiltration\+\_\+method@{infiltration\+\_\+method}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{infiltration\+\_\+method}{infiltration_method}}]{\setlength{\rightskip}{0pt plus 5cm}integer soil\+\_\+coms\+::infiltration\+\_\+method}\hypertarget{namespacesoil__coms_a2e92f050d04249187d11251e58727a56}{}\label{namespacesoil__coms_a2e92f050d04249187d11251e58727a56}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!isoilbc@{isoilbc}}
+\index{isoilbc@{isoilbc}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{isoilbc}{isoilbc}}]{\setlength{\rightskip}{0pt plus 5cm}integer soil\+\_\+coms\+::isoilbc}\hypertarget{namespacesoil__coms_aaaf0d1eb40467ca926f9c31a296885bc}{}\label{namespacesoil__coms_aaaf0d1eb40467ca926f9c31a296885bc}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!isoilcol@{isoilcol}}
+\index{isoilcol@{isoilcol}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{isoilcol}{isoilcol}}]{\setlength{\rightskip}{0pt plus 5cm}integer soil\+\_\+coms\+::isoilcol}\hypertarget{namespacesoil__coms_aa4458d218daa96cebe1a8c8a63cbf72f}{}\label{namespacesoil__coms_aa4458d218daa96cebe1a8c8a63cbf72f}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!isoildepthflg@{isoildepthflg}}
+\index{isoildepthflg@{isoildepthflg}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{isoildepthflg}{isoildepthflg}}]{\setlength{\rightskip}{0pt plus 5cm}integer soil\+\_\+coms\+::isoildepthflg}\hypertarget{namespacesoil__coms_a8495256902c21d8ea298192d9e9a9f60}{}\label{namespacesoil__coms_a8495256902c21d8ea298192d9e9a9f60}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!isoilflg@{isoilflg}}
+\index{isoilflg@{isoilflg}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{isoilflg}{isoilflg}}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(maxgrds) soil\+\_\+coms\+::isoilflg}\hypertarget{namespacesoil__coms_af246f6fbfc228e2eb7f079f811c1f3da}{}\label{namespacesoil__coms_af246f6fbfc228e2eb7f079f811c1f3da}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!isoilstateinit@{isoilstateinit}}
+\index{isoilstateinit@{isoilstateinit}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{isoilstateinit}{isoilstateinit}}]{\setlength{\rightskip}{0pt plus 5cm}integer soil\+\_\+coms\+::isoilstateinit}\hypertarget{namespacesoil__coms_a947d75e4045f6ba45a69e5334f834222}{}\label{namespacesoil__coms_a947d75e4045f6ba45a69e5334f834222}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!kroot@{kroot}}
+\index{kroot@{kroot}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{kroot}{kroot}}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension({\bf ed\+\_\+nvtyp}) soil\+\_\+coms\+::kroot}\hypertarget{namespacesoil__coms_aeec7623ed3fca9e7fce1f7f599a2b1b1}{}\label{namespacesoil__coms_aeec7623ed3fca9e7fce1f7f599a2b1b1}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!layer\+\_\+index@{layer\+\_\+index}}
+\index{layer\+\_\+index@{layer\+\_\+index}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{layer\+\_\+index}{layer_index}}]{\setlength{\rightskip}{0pt plus 5cm}integer, dimension(\+:,\+:), allocatable soil\+\_\+coms\+::layer\+\_\+index}\hypertarget{namespacesoil__coms_a09e8408810b16557b7bcc84cd165645a}{}\label{namespacesoil__coms_a09e8408810b16557b7bcc84cd165645a}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!nlat\+\_\+lyr@{nlat\+\_\+lyr}}
+\index{nlat\+\_\+lyr@{nlat\+\_\+lyr}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{nlat\+\_\+lyr}{nlat_lyr}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::nlat\+\_\+lyr =180}\hypertarget{namespacesoil__coms_ab0f3f3665b8b408861fcded1094fa91c}{}\label{namespacesoil__coms_ab0f3f3665b8b408861fcded1094fa91c}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!nlon\+\_\+lyr@{nlon\+\_\+lyr}}
+\index{nlon\+\_\+lyr@{nlon\+\_\+lyr}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{nlon\+\_\+lyr}{nlon_lyr}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::nlon\+\_\+lyr =360}\hypertarget{namespacesoil__coms_a8430352c5e4200574649e445fbe0e682}{}\label{namespacesoil__coms_a8430352c5e4200574649e445fbe0e682}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!nslcon@{nslcon}}
+\index{nslcon@{nslcon}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{nslcon}{nslcon}}]{\setlength{\rightskip}{0pt plus 5cm}integer soil\+\_\+coms\+::nslcon}\hypertarget{namespacesoil__coms_a461eb2939beb7809ce27cce9b68cb38f}{}\label{namespacesoil__coms_a461eb2939beb7809ce27cce9b68cb38f}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!nvgcon@{nvgcon}}
+\index{nvgcon@{nvgcon}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{nvgcon}{nvgcon}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::nvgcon = 7}\hypertarget{namespacesoil__coms_aae84e5a9fa25d15c1b11e7e3e9c8c35d}{}\label{namespacesoil__coms_aae84e5a9fa25d15c1b11e7e3e9c8c35d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ny07\+\_\+eq04\+\_\+a@{ny07\+\_\+eq04\+\_\+a}}
+\index{ny07\+\_\+eq04\+\_\+a@{ny07\+\_\+eq04\+\_\+a}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ny07\+\_\+eq04\+\_\+a}{ny07_eq04_a}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::ny07\+\_\+eq04\+\_\+a}\hypertarget{namespacesoil__coms_aabd4871bca5e3dfef69f79324610f998}{}\label{namespacesoil__coms_aabd4871bca5e3dfef69f79324610f998}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ny07\+\_\+eq04\+\_\+a8@{ny07\+\_\+eq04\+\_\+a8}}
+\index{ny07\+\_\+eq04\+\_\+a8@{ny07\+\_\+eq04\+\_\+a8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ny07\+\_\+eq04\+\_\+a8}{ny07_eq04_a8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::ny07\+\_\+eq04\+\_\+a8}\hypertarget{namespacesoil__coms_a559c28af94beb8a91e67184ebcb73c6e}{}\label{namespacesoil__coms_a559c28af94beb8a91e67184ebcb73c6e}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ny07\+\_\+eq04\+\_\+m@{ny07\+\_\+eq04\+\_\+m}}
+\index{ny07\+\_\+eq04\+\_\+m@{ny07\+\_\+eq04\+\_\+m}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ny07\+\_\+eq04\+\_\+m}{ny07_eq04_m}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::ny07\+\_\+eq04\+\_\+m}\hypertarget{namespacesoil__coms_a881853a16ef7d613c94c38cc5f56f4c0}{}\label{namespacesoil__coms_a881853a16ef7d613c94c38cc5f56f4c0}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ny07\+\_\+eq04\+\_\+m8@{ny07\+\_\+eq04\+\_\+m8}}
+\index{ny07\+\_\+eq04\+\_\+m8@{ny07\+\_\+eq04\+\_\+m8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ny07\+\_\+eq04\+\_\+m8}{ny07_eq04_m8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::ny07\+\_\+eq04\+\_\+m8}\hypertarget{namespacesoil__coms_a07f28ceeca19ec2e550501c1bc0fc39d}{}\label{namespacesoil__coms_a07f28ceeca19ec2e550501c1bc0fc39d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!pctlcon@{pctlcon}}
+\index{pctlcon@{pctlcon}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{pctlcon}{pctlcon}}]{\setlength{\rightskip}{0pt plus 5cm}integer, parameter soil\+\_\+coms\+::pctlcon = 1}\hypertarget{namespacesoil__coms_af53befc38b94519f45c1037eefe15e1c}{}\label{namespacesoil__coms_af53befc38b94519f45c1037eefe15e1c}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!root@{root}}
+\index{root@{root}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{root}{root}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(nzgmax,{\bf ed\+\_\+nvtyp}) soil\+\_\+coms\+::root}\hypertarget{namespacesoil__coms_a22f6f63238ed3e10355d0dcc258d2441}{}\label{namespacesoil__coms_a22f6f63238ed3e10355d0dcc258d2441}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!runoff\+\_\+time@{runoff\+\_\+time}}
+\index{runoff\+\_\+time@{runoff\+\_\+time}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{runoff\+\_\+time}{runoff_time}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::runoff\+\_\+time}\hypertarget{namespacesoil__coms_a4560c15d785323d98ca7f84a60e07fd2}{}\label{namespacesoil__coms_a4560c15d785323d98ca7f84a60e07fd2}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!runoff\+\_\+time\+\_\+i@{runoff\+\_\+time\+\_\+i}}
+\index{runoff\+\_\+time\+\_\+i@{runoff\+\_\+time\+\_\+i}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{runoff\+\_\+time\+\_\+i}{runoff_time_i}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::runoff\+\_\+time\+\_\+i}\hypertarget{namespacesoil__coms_abbda4cf2bb85860666afd7f70310f519}{}\label{namespacesoil__coms_abbda4cf2bb85860666afd7f70310f519}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!simplerunoff@{simplerunoff}}
+\index{simplerunoff@{simplerunoff}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{simplerunoff}{simplerunoff}}]{\setlength{\rightskip}{0pt plus 5cm}logical soil\+\_\+coms\+::simplerunoff}\hypertarget{namespacesoil__coms_ae8cfc7c2c5c0a303067e834b6ba03694}{}\label{namespacesoil__coms_ae8cfc7c2c5c0a303067e834b6ba03694}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!sin\+\_\+sldrain@{sin\+\_\+sldrain}}
+\index{sin\+\_\+sldrain@{sin\+\_\+sldrain}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{sin\+\_\+sldrain}{sin_sldrain}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::sin\+\_\+sldrain}\hypertarget{namespacesoil__coms_a7162076a5aaec83255f06fe55f799e31}{}\label{namespacesoil__coms_a7162076a5aaec83255f06fe55f799e31}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!sin\+\_\+sldrain8@{sin\+\_\+sldrain8}}
+\index{sin\+\_\+sldrain8@{sin\+\_\+sldrain8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{sin\+\_\+sldrain8}{sin_sldrain8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::sin\+\_\+sldrain8}\hypertarget{namespacesoil__coms_a29640d5396281a106cd29a5433cc4896}{}\label{namespacesoil__coms_a29640d5396281a106cd29a5433cc4896}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slcons1@{slcons1}}
+\index{slcons1@{slcons1}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slcons1}{slcons1}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:,\+:), allocatable soil\+\_\+coms\+::slcons1}\hypertarget{namespacesoil__coms_a0550c5c548dbfde659a2d622a91b26f5}{}\label{namespacesoil__coms_a0550c5c548dbfde659a2d622a91b26f5}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slcons18@{slcons18}}
+\index{slcons18@{slcons18}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slcons18}{slcons18}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:,\+:), allocatable soil\+\_\+coms\+::slcons18}\hypertarget{namespacesoil__coms_ade6e1d0e2d355c5f3a340352163128d9}{}\label{namespacesoil__coms_ade6e1d0e2d355c5f3a340352163128d9}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slden@{slden}}
+\index{slden@{slden}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slden}{slden}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension({\bf ed\+\_\+nstyp}) soil\+\_\+coms\+::slden}\hypertarget{namespacesoil__coms_ab18d5a835f6246621b56d3023dd721da}{}\label{namespacesoil__coms_ab18d5a835f6246621b56d3023dd721da}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!sldrain@{sldrain}}
+\index{sldrain@{sldrain}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{sldrain}{sldrain}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::sldrain}\hypertarget{namespacesoil__coms_af1b6a6b86baeaad4354a141fdf9cfb04}{}\label{namespacesoil__coms_af1b6a6b86baeaad4354a141fdf9cfb04}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!sldrain8@{sldrain8}}
+\index{sldrain8@{sldrain8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{sldrain8}{sldrain8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::sldrain8}\hypertarget{namespacesoil__coms_aa7685a29e0e9621f0cde33dfcca345cc}{}\label{namespacesoil__coms_aa7685a29e0e9621f0cde33dfcca345cc}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slmstr@{slmstr}}
+\index{slmstr@{slmstr}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slmstr}{slmstr}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(nzgmax) soil\+\_\+coms\+::slmstr}\hypertarget{namespacesoil__coms_a6a020a30c4f8a882edc28462a83e55ba}{}\label{namespacesoil__coms_a6a020a30c4f8a882edc28462a83e55ba}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slxclay@{slxclay}}
+\index{slxclay@{slxclay}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slxclay}{slxclay}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::slxclay}\hypertarget{namespacesoil__coms_a148f65826100f4c235d31e4dbc2c9b1e}{}\label{namespacesoil__coms_a148f65826100f4c235d31e4dbc2c9b1e}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slxsand@{slxsand}}
+\index{slxsand@{slxsand}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slxsand}{slxsand}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::slxsand}\hypertarget{namespacesoil__coms_a4efc340287b7aa303bb409d4c537e55a}{}\label{namespacesoil__coms_a4efc340287b7aa303bb409d4c537e55a}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slz@{slz}}
+\index{slz@{slz}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slz}{slz}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(nzgmax) soil\+\_\+coms\+::slz}\hypertarget{namespacesoil__coms_aa22f925477a7c574761c66d5f157cc7d}{}\label{namespacesoil__coms_aa22f925477a7c574761c66d5f157cc7d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slz8@{slz8}}
+\index{slz8@{slz8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slz8}{slz8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::slz8}\hypertarget{namespacesoil__coms_ad701b5cd7609d6ffbd1b800df6a04bb5}{}\label{namespacesoil__coms_ad701b5cd7609d6ffbd1b800df6a04bb5}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slzt@{slzt}}
+\index{slzt@{slzt}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slzt}{slzt}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(\+:), allocatable soil\+\_\+coms\+::slzt}\hypertarget{namespacesoil__coms_a2a9957b4fa1ef14eea11a18d85ba6e3d}{}\label{namespacesoil__coms_a2a9957b4fa1ef14eea11a18d85ba6e3d}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!slzt8@{slzt8}}
+\index{slzt8@{slzt8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{slzt8}{slzt8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(\+:), allocatable soil\+\_\+coms\+::slzt8}\hypertarget{namespacesoil__coms_a93fd7b06c92beb4d98c9c197b1d7b445}{}\label{namespacesoil__coms_a93fd7b06c92beb4d98c9c197b1d7b445}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!snow\+\_\+rough@{snow\+\_\+rough}}
+\index{snow\+\_\+rough@{snow\+\_\+rough}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{snow\+\_\+rough}{snow_rough}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::snow\+\_\+rough}\hypertarget{namespacesoil__coms_a42917920add793523d269a722a3cfa3b}{}\label{namespacesoil__coms_a42917920add793523d269a722a3cfa3b}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!snow\+\_\+rough8@{snow\+\_\+rough8}}
+\index{snow\+\_\+rough8@{snow\+\_\+rough8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{snow\+\_\+rough8}{snow_rough8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::snow\+\_\+rough8}\hypertarget{namespacesoil__coms_a205c07f5f6550972f802f9444dfc934c}{}\label{namespacesoil__coms_a205c07f5f6550972f802f9444dfc934c}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!snowmin@{snowmin}}
+\index{snowmin@{snowmin}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{snowmin}{snowmin}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::snowmin}\hypertarget{namespacesoil__coms_adad6557f24a788e2cc72fabaa3baa968}{}\label{namespacesoil__coms_adad6557f24a788e2cc72fabaa3baa968}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soil@{soil}}
+\index{soil@{soil}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soil}{soil}}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf soil\+\_\+class}), dimension({\bf ed\+\_\+nstyp}) soil\+\_\+coms\+::soil}\hypertarget{namespacesoil__coms_a18bef58fe90e83fad032983a8e079a60}{}\label{namespacesoil__coms_a18bef58fe90e83fad032983a8e079a60}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soil8@{soil8}}
+\index{soil8@{soil8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soil8}{soil8}}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf soil\+\_\+class8}), dimension({\bf ed\+\_\+nstyp}) soil\+\_\+coms\+::soil8}\hypertarget{namespacesoil__coms_a5d71d43e3458fde6c6f89d29af5225c8}{}\label{namespacesoil__coms_a5d71d43e3458fde6c6f89d29af5225c8}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soil\+\_\+database@{soil\+\_\+database}}
+\index{soil\+\_\+database@{soil\+\_\+database}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soil\+\_\+database}{soil_database}}]{\setlength{\rightskip}{0pt plus 5cm}character(len=str\+\_\+len), dimension(maxgrds) soil\+\_\+coms\+::soil\+\_\+database}\hypertarget{namespacesoil__coms_a194bdfd0c85724271f3424bb0674755f}{}\label{namespacesoil__coms_a194bdfd0c85724271f3424bb0674755f}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soil\+\_\+rough@{soil\+\_\+rough}}
+\index{soil\+\_\+rough@{soil\+\_\+rough}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soil\+\_\+rough}{soil_rough}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::soil\+\_\+rough}\hypertarget{namespacesoil__coms_a2bcc1e9ab626c4a0ac76283c272805c6}{}\label{namespacesoil__coms_a2bcc1e9ab626c4a0ac76283c272805c6}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soil\+\_\+rough8@{soil\+\_\+rough8}}
+\index{soil\+\_\+rough8@{soil\+\_\+rough8}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soil\+\_\+rough8}{soil_rough8}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8) soil\+\_\+coms\+::soil\+\_\+rough8}\hypertarget{namespacesoil__coms_a33d9bb430514fde199b526e39479b7a4}{}\label{namespacesoil__coms_a33d9bb430514fde199b526e39479b7a4}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soilcol@{soilcol}}
+\index{soilcol@{soilcol}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soilcol}{soilcol}}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf soilcol\+\_\+class}), dimension({\bf ed\+\_\+nscol}) soil\+\_\+coms\+::soilcol}\hypertarget{namespacesoil__coms_a90e160d33d6fa2c289ce1742bc852139}{}\label{namespacesoil__coms_a90e160d33d6fa2c289ce1742bc852139}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soildepth\+\_\+db@{soildepth\+\_\+db}}
+\index{soildepth\+\_\+db@{soildepth\+\_\+db}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soildepth\+\_\+db}{soildepth_db}}]{\setlength{\rightskip}{0pt plus 5cm}character(len=str\+\_\+len) soil\+\_\+coms\+::soildepth\+\_\+db}\hypertarget{namespacesoil__coms_a5d607eec910da5341af027871e06a16e}{}\label{namespacesoil__coms_a5d607eec910da5341af027871e06a16e}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!soilstate\+\_\+db@{soilstate\+\_\+db}}
+\index{soilstate\+\_\+db@{soilstate\+\_\+db}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{soilstate\+\_\+db}{soilstate_db}}]{\setlength{\rightskip}{0pt plus 5cm}character(len=str\+\_\+len) soil\+\_\+coms\+::soilstate\+\_\+db}\hypertarget{namespacesoil__coms_a7a54852974f4d42c4e4bfbd1145a3e44}{}\label{namespacesoil__coms_a7a54852974f4d42c4e4bfbd1145a3e44}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!ss@{ss}}
+\index{ss@{ss}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{ss}{ss}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(6), parameter soil\+\_\+coms\+::ss = (/ 1.\+093d-\/3, 2.\+800d-\/2, 3.\+000d-\/2 , 3.\+030d-\/4,-\/1.\+770d-\/7, 2.\+250d-\/9 /)}\hypertarget{namespacesoil__coms_a39d9ab50ccb8cb1642f28ba113c2719e}{}\label{namespacesoil__coms_a39d9ab50ccb8cb1642f28ba113c2719e}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!stgoff@{stgoff}}
+\index{stgoff@{stgoff}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{stgoff}{stgoff}}]{\setlength{\rightskip}{0pt plus 5cm}real, dimension(nzgmax) soil\+\_\+coms\+::stgoff}\hypertarget{namespacesoil__coms_abe490ee71d5f063358005df47f9dee38}{}\label{namespacesoil__coms_abe490ee71d5f063358005df47f9dee38}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!thick@{thick}}
+\index{thick@{thick}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{thick}{thick}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(20,20) soil\+\_\+coms\+::thick}\hypertarget{namespacesoil__coms_a5e41e535957c9e40c2836496d007477f}{}\label{namespacesoil__coms_a5e41e535957c9e40c2836496d007477f}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!thicknet@{thicknet}}
+\index{thicknet@{thicknet}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{thicknet}{thicknet}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=8), dimension(20) soil\+\_\+coms\+::thicknet}\hypertarget{namespacesoil__coms_a82fb9ea0980b1bf483abde43cb04cbd3}{}\label{namespacesoil__coms_a82fb9ea0980b1bf483abde43cb04cbd3}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!tiny\+\_\+sfcwater\+\_\+mass@{tiny\+\_\+sfcwater\+\_\+mass}}
+\index{tiny\+\_\+sfcwater\+\_\+mass@{tiny\+\_\+sfcwater\+\_\+mass}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{tiny\+\_\+sfcwater\+\_\+mass}{tiny_sfcwater_mass}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::tiny\+\_\+sfcwater\+\_\+mass}\hypertarget{namespacesoil__coms_a15a18b26140182f9af4a448864b04663}{}\label{namespacesoil__coms_a15a18b26140182f9af4a448864b04663}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!veg\+\_\+database@{veg\+\_\+database}}
+\index{veg\+\_\+database@{veg\+\_\+database}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{veg\+\_\+database}{veg_database}}]{\setlength{\rightskip}{0pt plus 5cm}character(len=str\+\_\+len), dimension(maxgrds) soil\+\_\+coms\+::veg\+\_\+database}\hypertarget{namespacesoil__coms_a635e352f4923b8060b939ac82c23dbef}{}\label{namespacesoil__coms_a635e352f4923b8060b939ac82c23dbef}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!veget@{veget}}
+\index{veget@{veget}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{veget}{veget}}]{\setlength{\rightskip}{0pt plus 5cm}type({\bf veg\+\_\+class}), dimension(0\+:{\bf ed\+\_\+nvtyp}), parameter soil\+\_\+coms\+::veget =(/ {\bf veg\+\_\+class}(.\+14, .\+99, 0.\+0, 0.\+0, .\+00, .\+00, .\+00, 0.\+1, .\+0 ) , {\bf veg\+\_\+class}(.\+14, .\+99, 0.\+0, 0.\+0, .\+00, .\+00, .\+00, 0.\+1, .\+0 ) , {\bf veg\+\_\+class}(.\+40, .\+82, 0.\+0, 0.\+0, .\+00, .\+00, .\+01, 0.\+1, .\+0 ) , {\bf veg\+\_\+class}(.\+30, .\+86, 0.\+0, 0.\+0, .\+00, .\+00, .\+05, .\+1, 1.\+0 ) , {\bf veg\+\_\+class}(.\+10, .\+97, 6.\+0, 1.\+0, .\+80, .\+10, 1.\+00, 15.\+0, 1.\+5 ) , {\bf veg\+\_\+class}(.\+10, .\+95, 6.\+0, 5.\+0, .\+80, .\+30, 1.\+00, 20.\+0, 1.\+5 ) , {\bf veg\+\_\+class}(.\+20, .\+95, 6.\+0, 5.\+0, .\+80, .\+30, .\+80, 15.\+0, 2.\+0 ) , {\bf veg\+\_\+class}(.\+15, .\+95, 6.\+0, 1.\+0, .\+90, .\+50, 2.\+00, 20.\+0, 3.\+0 ) , {\bf veg\+\_\+class}(.\+26, .\+96, 2.\+0, 1.\+5, .\+80, .\+10, .\+02, .\+2, 1.\+0 ) , {\bf veg\+\_\+class}(.\+16, .\+96, 6.\+0, 5.\+5, .\+80, .\+30, .\+10, 1.\+0, 1.\+0 ) , {\bf veg\+\_\+class}(.\+25, .\+96, 6.\+0, 5.\+5, .\+10, .\+10, .\+10, .\+5, 1.\+0 ) , {\bf veg\+\_\+class}(.\+20, .\+95, 6.\+0, 5.\+5, .\+60, .\+20, .\+04, .\+1, 1.\+0 ) , {\bf veg\+\_\+class}(.\+10, .\+97, 6.\+0, 1.\+0, .\+80, .\+20, .\+10, 1.\+0, 1.\+0 ) , {\bf veg\+\_\+class}(.\+20, .\+97, 6.\+0, 5.\+0, .\+80, .\+30, .\+10, 1.\+0, 1.\+0 ) , {\bf veg\+\_\+class}(.\+15, .\+96, 6.\+0, 3.\+0, .\+80, .\+20, .\+80, 20.\+0, 2.\+0 ) , {\bf veg\+\_\+class}(.\+20, .\+95, 6.\+0, 5.\+5, .\+85, .\+60, .\+06, .\+7, 1.\+0 ) , {\bf veg\+\_\+class}(.\+18, .\+95, 6.\+0, 5.\+5, .\+80, .\+60, .\+06, .\+7, 1.\+0 ) , {\bf veg\+\_\+class}(.\+12, .\+98, 6.\+0, 5.\+5, .\+80, .\+40, .\+03, 1.\+0, 1.\+0 ) , {\bf veg\+\_\+class}(.\+18, .\+96, 5.\+0, 4.\+0, .\+80, .\+20, .\+51, 3.\+6, 1.\+0 ) , {\bf veg\+\_\+class}(.\+15, .\+90, 4.\+8, 3.\+6, .\+74, .\+31, .\+80, 1.\+1, .\+8 ) , {\bf veg\+\_\+class}(.\+21, .\+95, 6.\+0, 0.\+8, .\+90, .\+50, 2.\+00, 20.\+0, 3.\+0 ) , {\bf veg\+\_\+class}(.\+15, .\+96, 4.\+8, 3.\+6, .\+10, .\+05, 1.\+40, 1.\+1, .\+8 ) /)}\hypertarget{namespacesoil__coms_abc30de75cb7efc15f13116fb03fff8bc}{}\label{namespacesoil__coms_abc30de75cb7efc15f13116fb03fff8bc}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!water\+\_\+stab\+\_\+thresh@{water\+\_\+stab\+\_\+thresh}}
+\index{water\+\_\+stab\+\_\+thresh@{water\+\_\+stab\+\_\+thresh}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{water\+\_\+stab\+\_\+thresh}{water_stab_thresh}}]{\setlength{\rightskip}{0pt plus 5cm}real(kind=4) soil\+\_\+coms\+::water\+\_\+stab\+\_\+thresh}\hypertarget{namespacesoil__coms_ab3465a7eaa76b6f27830280b15c20d68}{}\label{namespacesoil__coms_ab3465a7eaa76b6f27830280b15c20d68}
+\index{soil\+\_\+coms@{soil\+\_\+coms}!zrough@{zrough}}
+\index{zrough@{zrough}!soil\+\_\+coms@{soil\+\_\+coms}}
+\subsubsection[{\texorpdfstring{zrough}{zrough}}]{\setlength{\rightskip}{0pt plus 5cm}real soil\+\_\+coms\+::zrough}\hypertarget{namespacesoil__coms_ae83360d4f03ca2a56ab9de2732d47533}{}\label{namespacesoil__coms_ae83360d4f03ca2a56ab9de2732d47533}

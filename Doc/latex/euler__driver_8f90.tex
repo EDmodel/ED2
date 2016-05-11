@@ -1,0 +1,129 @@
+\hypertarget{euler__driver_8f90}{}\section{euler\+\_\+driver.\+f90 File Reference}
+\label{euler__driver_8f90}\index{euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{euler__driver_8f90_a5219f633b6d9b0d321429096e0d3ea66}{euler\+\_\+timestep} (cgrid)
+\item 
+subroutine \hyperlink{euler__driver_8f90_a284012473d288e2474d9eaebf1456c2a}{integrate\+\_\+patch\+\_\+euler} (csite, initp, dinitp, ytemp, yscal, yerr, dydx, ipa, isi                                                                                                                                                               ,nighttime, wcurr\+\_\+loss2atm, ecurr\+\_\+netrad, ecurr\+\_\+loss2atm                                                                                                                                               ,co2curr\+\_\+loss2atm, wcurr\+\_\+loss2drainage, ecurr\+\_\+loss2drainage                                                                                                                               ,wcurr\+\_\+loss2runoff, ecurr\+\_\+loss2runoff, nsteps)
+\item 
+subroutine \hyperlink{euler__driver_8f90_a70d969f0d0abf5f83e128f4c616079e1}{euler\+\_\+integ} (h1, csite, initp, dinitp, ytemp, yscal, yerr, dydx, ipa, isi, nsteps)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}!euler\+\_\+integ@{euler\+\_\+integ}}
+\index{euler\+\_\+integ@{euler\+\_\+integ}!euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}}
+\subsubsection[{\texorpdfstring{euler\+\_\+integ(h1, csite, initp, dinitp, ytemp, yscal, yerr, dydx, ipa, isi, nsteps)}{euler_integ(h1, csite, initp, dinitp, ytemp, yscal, yerr, dydx, ipa, isi, nsteps)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine euler\+\_\+integ (
+\begin{DoxyParamCaption}
+\item[{real(kind=8), intent(in)}]{h1, }
+\item[{type({\bf sitetype}), target}]{csite, }
+\item[{type({\bf rk4patchtype}), target}]{initp, }
+\item[{type({\bf rk4patchtype}), target}]{dinitp, }
+\item[{type({\bf rk4patchtype}), target}]{ytemp, }
+\item[{type({\bf rk4patchtype}), target}]{yscal, }
+\item[{type({\bf rk4patchtype}), target}]{yerr, }
+\item[{type({\bf rk4patchtype}), target}]{dydx, }
+\item[{integer, intent(in)}]{ipa, }
+\item[{integer, intent(in)}]{isi, }
+\item[{integer, intent(out)}]{nsteps}
+\end{DoxyParamCaption}
+)}\hypertarget{euler__driver_8f90_a70d969f0d0abf5f83e128f4c616079e1}{}\label{euler__driver_8f90_a70d969f0d0abf5f83e128f4c616079e1}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{euler__driver_8f90_a70d969f0d0abf5f83e128f4c616079e1_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{euler__driver_8f90_a70d969f0d0abf5f83e128f4c616079e1_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}!euler\+\_\+timestep@{euler\+\_\+timestep}}
+\index{euler\+\_\+timestep@{euler\+\_\+timestep}!euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}}
+\subsubsection[{\texorpdfstring{euler\+\_\+timestep(cgrid)}{euler_timestep(cgrid)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine euler\+\_\+timestep (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid}
+\end{DoxyParamCaption}
+)}\hypertarget{euler__driver_8f90_a5219f633b6d9b0d321429096e0d3ea66}{}\label{euler__driver_8f90_a5219f633b6d9b0d321429096e0d3ea66}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{euler__driver_8f90_a5219f633b6d9b0d321429096e0d3ea66_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{euler__driver_8f90_a5219f633b6d9b0d321429096e0d3ea66_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}!integrate\+\_\+patch\+\_\+euler@{integrate\+\_\+patch\+\_\+euler}}
+\index{integrate\+\_\+patch\+\_\+euler@{integrate\+\_\+patch\+\_\+euler}!euler\+\_\+driver.\+f90@{euler\+\_\+driver.\+f90}}
+\subsubsection[{\texorpdfstring{integrate\+\_\+patch\+\_\+euler(csite, initp, dinitp, ytemp, yscal, yerr, dydx, ipa, isi                                                                                                                                                               ,nighttime, wcurr\+\_\+loss2atm, ecurr\+\_\+netrad, ecurr\+\_\+loss2atm                                                                                                                                               ,co2curr\+\_\+loss2atm, wcurr\+\_\+loss2drainage, ecurr\+\_\+loss2drainage                                                                                                                               ,wcurr\+\_\+loss2runoff, ecurr\+\_\+loss2runoff, nsteps)}{integrate_patch_euler(csite, initp, dinitp, ytemp, yscal, yerr, dydx, ipa, isi                                                                                                                                                               ,nighttime, wcurr_loss2atm, ecurr_netrad, ecurr_loss2atm                                                                                                                                               ,co2curr_loss2atm, wcurr_loss2drainage, ecurr_loss2drainage                                                                                                                               ,wcurr_loss2runoff, ecurr_loss2runoff, nsteps)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine integrate\+\_\+patch\+\_\+euler (
+\begin{DoxyParamCaption}
+\item[{type({\bf sitetype}), target}]{csite, }
+\item[{type({\bf rk4patchtype}), target}]{initp, }
+\item[{type({\bf rk4patchtype}), target}]{dinitp, }
+\item[{type({\bf rk4patchtype}), target}]{ytemp, }
+\item[{type({\bf rk4patchtype}), target}]{yscal, }
+\item[{type({\bf rk4patchtype}), target}]{yerr, }
+\item[{type({\bf rk4patchtype}), target}]{dydx, }
+\item[{integer, intent(in)}]{ipa, }
+\item[{integer, intent(in)}]{isi, }
+\item[{logical, intent(in)}]{nighttime, }
+\item[{real, intent(out)}]{wcurr\+\_\+loss2atm, }
+\item[{real, intent(out)}]{ecurr\+\_\+netrad, }
+\item[{real, intent(out)}]{ecurr\+\_\+loss2atm, }
+\item[{real, intent(out)}]{co2curr\+\_\+loss2atm, }
+\item[{real, intent(out)}]{wcurr\+\_\+loss2drainage, }
+\item[{real, intent(out)}]{ecurr\+\_\+loss2drainage, }
+\item[{real, intent(out)}]{wcurr\+\_\+loss2runoff, }
+\item[{real, intent(out)}]{ecurr\+\_\+loss2runoff, }
+\item[{integer, intent(out)}]{nsteps}
+\end{DoxyParamCaption}
+)}\hypertarget{euler__driver_8f90_a284012473d288e2474d9eaebf1456c2a}{}\label{euler__driver_8f90_a284012473d288e2474d9eaebf1456c2a}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{euler__driver_8f90_a284012473d288e2474d9eaebf1456c2a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{euler__driver_8f90_a284012473d288e2474d9eaebf1456c2a_icgraph}
+\end{center}
+\end{figure}
+
+
