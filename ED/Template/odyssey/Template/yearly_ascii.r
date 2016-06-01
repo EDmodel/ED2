@@ -687,7 +687,7 @@ for (place in myplaces){
    dummy = write.table(x=ymean ,file=csv.ymean,quote=FALSE,sep=",",row.names=FALSE)
    dummy = write.table(x=ypft  ,file=csv.ympft,quote=FALSE,sep=",",row.names=FALSE)
    dummy = write.table(x=ydbh  ,file=csv.ymdbh,quote=FALSE,sep=",",row.names=FALSE)
-   dummy = write.table(x=ypatch,file=csv.ympat,quote=FALSE,sep=",",row.names=FALSE)
+   dummy = write.table(x=yglob ,file=csv.ympat,quote=FALSE,sep=",",row.names=FALSE)
    #---------------------------------------------------------------------------------------#
 
 }#end for (place in myplaces)
