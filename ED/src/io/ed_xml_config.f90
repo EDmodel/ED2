@@ -75,7 +75,7 @@ recursive subroutine read_ed_xml_config(filename)
 !  use ed_data
   use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms, only : rk4min_veg_temp
-  implicitn one
+  implicit none
   integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival = 0
   logical(4) :: texist = .false.
   real(8) :: rval
