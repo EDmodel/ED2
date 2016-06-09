@@ -400,7 +400,9 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) cbr_severe_stress(myPFT) = real(rval)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
            if(texist) seedling_mortality(myPFT) = real(rval)
-
+	   
+	   if(texist) treefall_gt(myPFT) = real(rval)
+	   call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
