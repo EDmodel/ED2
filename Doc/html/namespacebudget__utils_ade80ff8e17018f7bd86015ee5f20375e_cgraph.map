@@ -1,9 +1,8 @@
 <map id="budget_utils::compute_budget" name="budget_utils::compute_budget">
-<area shape="rect" id="node2" href="$namespacetherm__lib.html#addd05382298a8487d09d7f6e2664dd62" title="therm_lib::tq2enthalpy" alt="" coords="412,150,563,176"/>
-<area shape="rect" id="node3" href="$namespacebudget__utils.html#ae7ad8d90c28490b0b1c920e7a2656345" title="budget_utils::ddens\l_dt_effect" alt="" coords="217,41,351,82"/>
-<area shape="rect" id="node4" href="$namespacebudget__utils.html#a117874382f22a7cb0883681d23606828" title="budget_utils::sum_plant\l_cfluxes" alt="" coords="204,106,364,148"/>
-<area shape="rect" id="node5" href="$namespacebudget__utils.html#aa1c4f8466010b1673f2914f1bfe9b6ee" title="budget_utils::compute\l_co2_storage" alt="" coords="209,172,359,213"/>
-<area shape="rect" id="node6" href="$namespacebudget__utils.html#ad0c764047c557100b3a3cdcd836103a0" title="budget_utils::compute\l_water_storage" alt="" coords="209,237,359,278"/>
-<area shape="rect" id="node7" href="$namespacebudget__utils.html#a319c5f7252c344bcebbd162593e25ec8" title="budget_utils::compute\l_energy_storage" alt="" coords="209,302,359,344"/>
-<area shape="rect" id="node8" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="245,368,323,395"/>
+<area shape="rect" id="node2" href="$namespacetherm__lib.html#addd05382298a8487d09d7f6e2664dd62" title="therm_lib::tq2enthalpy" alt="" coords="416,148,569,175"/>
+<area shape="rect" id="node3" href="$namespacebudget__utils.html#ae7ad8d90c28490b0b1c920e7a2656345" title="budget_utils::ddens\l_dt_effect" alt="" coords="218,40,355,81"/>
+<area shape="rect" id="node4" href="$namespacebudget__utils.html#a117874382f22a7cb0883681d23606828" title="budget_utils::sum_plant\l_cfluxes" alt="" coords="205,105,368,146"/>
+<area shape="rect" id="node5" href="$namespacebudget__utils.html#aa1c4f8466010b1673f2914f1bfe9b6ee" title="budget_utils::compute\l_co2_storage" alt="" coords="211,170,363,212"/>
+<area shape="rect" id="node6" href="$namespacebudget__utils.html#ad0c764047c557100b3a3cdcd836103a0" title="budget_utils::compute\l_water_storage" alt="" coords="211,236,363,277"/>
+<area shape="rect" id="node7" href="$namespacebudget__utils.html#a319c5f7252c344bcebbd162593e25ec8" title="budget_utils::compute\l_energy_storage" alt="" coords="211,301,363,342"/>
 </map>

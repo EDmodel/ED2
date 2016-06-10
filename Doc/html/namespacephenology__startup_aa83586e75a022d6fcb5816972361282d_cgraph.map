@@ -1,4 +1,3 @@
 <map id="phenology_startup::read_prescribed_phenology" name="phenology_startup::read_prescribed_phenology">
-<area shape="rect" id="node2" href="$namespacephenology__aux.html#ac2a698e44f1d2308f845a66ad92600e1" title="phenology_aux::prescribed\l_leaf_state" alt="" coords="233,5,411,47"/>
-<area shape="rect" id="node3" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="283,71,361,98"/>
+<area shape="rect" id="node2" href="$namespacephenology__aux.html#ac2a698e44f1d2308f845a66ad92600e1" title="phenology_aux::prescribed\l_leaf_state" alt="" coords="240,5,423,47"/>
 </map>

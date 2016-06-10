@@ -12,13 +12,9 @@ var searchData=
   ['normalize_5fed_5ftoday_5fvars',['normalize_ed_today_vars',['../namespaceaverage__utils.html#a538e2e59c7c2889ae624b6e1d2a9e5f2',1,'average_utils']]],
   ['normalize_5fed_5ftodaynpp_5fvars',['normalize_ed_todaynpp_vars',['../namespaceaverage__utils.html#a446f9090fbbcf3eb12f4b9231d946e89',1,'average_utils']]],
   ['nullify_5fbdf2_5fpatch',['nullify_bdf2_patch',['../namespacerk4__coms.html#a22f63b46db00ae302b1ae688abecc22d',1,'rk4_coms']]],
-  ['nullify_5fedtype',['nullify_edtype',['../namespaceed__state__vars.html#a0df5f674bdb76d915f34b1c6987f6815',1,'ed_state_vars']]],
-  ['nullify_5fpatchtype',['nullify_patchtype',['../namespaceed__state__vars.html#af1a07724c13a8dceb6ba2d3dab21b899',1,'ed_state_vars']]],
-  ['nullify_5fpolygontype',['nullify_polygontype',['../namespaceed__state__vars.html#ade6f2776a02bd9a26ee31fe75cda6170',1,'ed_state_vars']]],
   ['nullify_5fradscratch',['nullify_radscratch',['../namespacecanopy__radiation__coms.html#a5d6cfa703bca9703874fe55efaf4f05d',1,'canopy_radiation_coms']]],
   ['nullify_5frk4_5faux',['nullify_rk4_aux',['../namespacerk4__coms.html#a306ba21ba388b2e51767aa9f5d76eda0',1,'rk4_coms']]],
   ['nullify_5frk4_5fcohort',['nullify_rk4_cohort',['../namespacerk4__coms.html#afe54efd0ad9ab38983314ca0d2557e26',1,'rk4_coms']]],
   ['nullify_5frk4_5fpatch',['nullify_rk4_patch',['../namespacerk4__coms.html#a34a6a346af3d032c14f416435801598a',1,'rk4_coms']]],
-  ['nullify_5fsitetype',['nullify_sitetype',['../namespaceed__state__vars.html#aa13b6faa5a0031bd5df50581ac0db0ff',1,'ed_state_vars']]],
   ['num_5fdays',['num_days',['../invmondays_8f90.html#ac5102abe4057964dceefd23fb743bc67',1,'invmondays.f90']]]
 ];

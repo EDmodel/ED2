@@ -1,9 +1,5 @@
 <map id="update_polygon_derived_props" name="update_polygon_derived_props">
-<area shape="rect" id="node2" href="$ed__init__atm_8_f90.html#a67ae59514caf7fea8936bca72628f5ca" title="ed_init_atm" alt="" coords="469,5,558,32"/>
-<area shape="rect" id="node5" href="$update__derived__props_8f90.html#aca71347e6bbc44bc819245407450904d" title="update_derived_props" alt="" coords="440,56,587,83"/>
-<area shape="rect" id="node6" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="231,107,374,133"/>
-<area shape="rect" id="node8" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="213,157,392,184"/>
-<area shape="rect" id="node3" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="635,56,708,83"/>
-<area shape="rect" id="node4" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="756,56,807,83"/>
-<area shape="rect" id="node7" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="474,107,553,133"/>
+<area shape="rect" id="node2" href="$update__derived__props_8f90.html#aca71347e6bbc44bc819245407450904d" title="update_derived_props" alt="" coords="236,5,391,32"/>
+<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="240,56,387,83"/>
+<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="221,107,405,133"/>
 </map>

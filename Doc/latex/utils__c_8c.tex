@@ -7,7 +7,6 @@
 {\ttfamily \#include $<$ctype.\+h$>$}\\*
 {\ttfamily \#include $<$dirent.\+h$>$}\\*
 {\ttfamily \#include $<$string.\+h$>$}\\*
-{\ttfamily \#include $<$utmpx.\+h$>$}\\*
 Include dependency graph for utils\+\_\+c.\+c\+:\nopagebreak
 \begin{figure}[H]
 \begin{center}
@@ -20,11 +19,11 @@ Include dependency graph for utils\+\_\+c.\+c\+:\nopagebreak
 \item 
 \#define \hyperlink{utils__c_8c_a6b1a08be4d91e910e7a0592ffbdbed1e}{nlocrams}~1000
 \item 
-\#define \hyperlink{utils__c_8c_aee607f864fc7e8c0cef308d7035a8d1e}{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH}~6
+\#define \hyperlink{utils__c_8c_aee607f864fc7e8c0cef308d7035a8d1e}{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H}~6
 \item 
-\#define \hyperlink{utils__c_8c_a0a776c60489f8cec6fa4c5f5801fccdc}{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET}~1.e-\/20
+\#define \hyperlink{utils__c_8c_a0a776c60489f8cec6fa4c5f5801fccdc}{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T}~1.e-\/20
 \item 
-\#define \hyperlink{utils__c_8c_a77369401d637a4124b5c2070663f7ca1}{V\+F\+O\+R\+M\+M\+A\+SK}~63
+\#define \hyperlink{utils__c_8c_a77369401d637a4124b5c2070663f7ca1}{V\+F\+O\+R\+M\+M\+A\+S\+K}~63
 \end{DoxyCompactItemize}
 \subsection*{Functions}
 \begin{DoxyCompactItemize}
@@ -57,8 +56,6 @@ int \hyperlink{utils__c_8c_ab10f44141e244d8ebcc0d6450fec8371}{vfscale} (float $\
 \item 
 void \hyperlink{utils__c_8c_a00744de31206aff2471e761aa8647d36}{filelist\+\_\+c\+\_\+} (int $\ast$inum, int $\ast$indices, char $\ast$prefix, char $\ast$chario, int dirlen, int charlen)
 \item 
-int \hyperlink{utils__c_8c_a42888a490b3af636fd5bfc0535de12c0}{sched\+\_\+getcpu} ()
-\item 
 int \hyperlink{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f}{findmycpu\+\_\+} ()
 \end{DoxyCompactItemize}
 \subsection*{Variables}
@@ -66,33 +63,33 @@ int \hyperlink{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f}{findmycpu\+\_\+} (
 \item 
 void $\ast$ \hyperlink{utils__c_8c_a9a1984a4282124cfb751e4308216392a}{iaddrams} \mbox{[}\hyperlink{utils__c_8c_a6b1a08be4d91e910e7a0592ffbdbed1e}{nlocrams}\mbox{]}
 \item 
-F\+I\+LE $\ast$ \hyperlink{utils__c_8c_a6fb6b1fe075bb83210bfa93071a61057}{ramsfile}
+F\+I\+L\+E $\ast$ \hyperlink{utils__c_8c_a6fb6b1fe075bb83210bfa93071a61057}{ramsfile}
 \item 
 char \hyperlink{utils__c_8c_a361d5b27f9aa65e78fabf63bcd0dcba3}{vc} \mbox{[}65\mbox{]}
 \end{DoxyCompactItemize}
 
 
 \subsection{Macro Definition Documentation}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH@{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH}}
-\index{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH@{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH}{BITFIELDLENGTH}}]{\setlength{\rightskip}{0pt plus 5cm}\#define B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+TH~6}\hypertarget{utils__c_8c_aee607f864fc7e8c0cef308d7035a8d1e}{}\label{utils__c_8c_aee607f864fc7e8c0cef308d7035a8d1e}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!nlocrams@{nlocrams}}
+\hypertarget{utils__c_8c_aee607f864fc7e8c0cef308d7035a8d1e}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H@{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H}}
+\index{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H@{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
+\subsubsection[{B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H}]{\setlength{\rightskip}{0pt plus 5cm}\#define B\+I\+T\+F\+I\+E\+L\+D\+L\+E\+N\+G\+T\+H~6}\label{utils__c_8c_aee607f864fc7e8c0cef308d7035a8d1e}
+\hypertarget{utils__c_8c_a6b1a08be4d91e910e7a0592ffbdbed1e}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!nlocrams@{nlocrams}}
 \index{nlocrams@{nlocrams}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{nlocrams}{nlocrams}}]{\setlength{\rightskip}{0pt plus 5cm}\#define nlocrams~1000}\hypertarget{utils__c_8c_a6b1a08be4d91e910e7a0592ffbdbed1e}{}\label{utils__c_8c_a6b1a08be4d91e910e7a0592ffbdbed1e}
+\subsubsection[{nlocrams}]{\setlength{\rightskip}{0pt plus 5cm}\#define nlocrams~1000}\label{utils__c_8c_a6b1a08be4d91e910e7a0592ffbdbed1e}
 \subparagraph*{\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\# Change Log}
 
-! 2.\+0.\+0 ! !\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\# ! Copyright (C) 1990, 1995, 1999, 2000, 2003 -\/ All Rights Reserved ! Regional Atmospheric Modeling System -\/ R\+A\+MS !\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\# \index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET@{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET}}
-\index{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET@{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET}{SMALL_OFFSET}}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+ET~1.e-\/20}\hypertarget{utils__c_8c_a0a776c60489f8cec6fa4c5f5801fccdc}{}\label{utils__c_8c_a0a776c60489f8cec6fa4c5f5801fccdc}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!V\+F\+O\+R\+M\+M\+A\+SK@{V\+F\+O\+R\+M\+M\+A\+SK}}
-\index{V\+F\+O\+R\+M\+M\+A\+SK@{V\+F\+O\+R\+M\+M\+A\+SK}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{V\+F\+O\+R\+M\+M\+A\+SK}{VFORMMASK}}]{\setlength{\rightskip}{0pt plus 5cm}\#define V\+F\+O\+R\+M\+M\+A\+SK~63}\hypertarget{utils__c_8c_a77369401d637a4124b5c2070663f7ca1}{}\label{utils__c_8c_a77369401d637a4124b5c2070663f7ca1}
+! 2.\+0.\+0 ! !\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\# ! Copyright (C) 1990, 1995, 1999, 2000, 2003 -\/ All Rights Reserved ! Regional Atmospheric Modeling System -\/ R\+A\+M\+S !\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\# \hypertarget{utils__c_8c_a0a776c60489f8cec6fa4c5f5801fccdc}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T@{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T}}
+\index{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T@{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
+\subsubsection[{S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\+M\+A\+L\+L\+\_\+\+O\+F\+F\+S\+E\+T~1.e-\/20}\label{utils__c_8c_a0a776c60489f8cec6fa4c5f5801fccdc}
+\hypertarget{utils__c_8c_a77369401d637a4124b5c2070663f7ca1}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!V\+F\+O\+R\+M\+M\+A\+S\+K@{V\+F\+O\+R\+M\+M\+A\+S\+K}}
+\index{V\+F\+O\+R\+M\+M\+A\+S\+K@{V\+F\+O\+R\+M\+M\+A\+S\+K}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
+\subsubsection[{V\+F\+O\+R\+M\+M\+A\+S\+K}]{\setlength{\rightskip}{0pt plus 5cm}\#define V\+F\+O\+R\+M\+M\+A\+S\+K~63}\label{utils__c_8c_a77369401d637a4124b5c2070663f7ca1}
 
 
 \subsection{Function Documentation}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!filelist\+\_\+c\+\_\+@{filelist\+\_\+c\+\_\+}}
+\hypertarget{utils__c_8c_a00744de31206aff2471e761aa8647d36}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!filelist\+\_\+c\+\_\+@{filelist\+\_\+c\+\_\+}}
 \index{filelist\+\_\+c\+\_\+@{filelist\+\_\+c\+\_\+}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{filelist\+\_\+c\+\_\+(int $\ast$inum, int $\ast$indices, char $\ast$prefix, char $\ast$chario, int dirlen, int charlen)}{filelist_c_(int *inum, int *indices, char *prefix, char *chario, int dirlen, int charlen)}}]{\setlength{\rightskip}{0pt plus 5cm}void filelist\+\_\+c\+\_\+ (
+\subsubsection[{filelist\+\_\+c\+\_\+(int $\ast$inum, int $\ast$indices, char $\ast$prefix, char $\ast$chario, int dirlen, int charlen)}]{\setlength{\rightskip}{0pt plus 5cm}void filelist\+\_\+c\+\_\+ (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{inum, }
 \item[{int $\ast$}]{indices, }
@@ -101,147 +98,96 @@ char \hyperlink{utils__c_8c_a361d5b27f9aa65e78fabf63bcd0dcba3}{vc} \mbox{[}65\mb
 \item[{int}]{dirlen, }
 \item[{int}]{charlen}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a00744de31206aff2471e761aa8647d36}{}\label{utils__c_8c_a00744de31206aff2471e761aa8647d36}
-
-
-Here is the call graph for this function\+:\nopagebreak
-\begin{figure}[H]
-\begin{center}
-\leavevmode
-\includegraphics[width=350pt]{utils__c_8c_a00744de31206aff2471e761aa8647d36_cgraph}
-\end{center}
-\end{figure}
-
-
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!findmycpu\+\_\+@{findmycpu\+\_\+}}
+)}\label{utils__c_8c_a00744de31206aff2471e761aa8647d36}
+\hypertarget{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!findmycpu\+\_\+@{findmycpu\+\_\+}}
 \index{findmycpu\+\_\+@{findmycpu\+\_\+}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{findmycpu\+\_\+()}{findmycpu_()}}]{\setlength{\rightskip}{0pt plus 5cm}int findmycpu\+\_\+ (
+\subsubsection[{findmycpu\+\_\+()}]{\setlength{\rightskip}{0pt plus 5cm}int findmycpu\+\_\+ (
 \begin{DoxyParamCaption}
 {}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f}{}\label{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f}
-
-
-Here is the call graph for this function\+:\nopagebreak
-\begin{figure}[H]
-\begin{center}
-\leavevmode
-\includegraphics[width=259pt]{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f_cgraph}
-\end{center}
-\end{figure}
-
-
-
-
-Here is the caller graph for this function\+:\nopagebreak
-\begin{figure}[H]
-\begin{center}
-\leavevmode
-\includegraphics[width=239pt]{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f_icgraph}
-\end{center}
-\end{figure}
-
-
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!iralloc@{iralloc}}
+)}\label{utils__c_8c_a61157ab692a9326ab9208bfa7fff2f0f}
+\hypertarget{utils__c_8c_aa9ad290e3e4b0f4a3940b6a0ae0d56d9}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!iralloc@{iralloc}}
 \index{iralloc@{iralloc}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{iralloc(int $\ast$memtot, int $\ast$ia, int $\ast$ioff)}{iralloc(int *memtot, int *ia, int *ioff)}}]{\setlength{\rightskip}{0pt plus 5cm}int iralloc (
+\subsubsection[{iralloc(int $\ast$memtot, int $\ast$ia, int $\ast$ioff)}]{\setlength{\rightskip}{0pt plus 5cm}int iralloc (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{memtot, }
 \item[{int $\ast$}]{ia, }
 \item[{int $\ast$}]{ioff}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_aa9ad290e3e4b0f4a3940b6a0ae0d56d9}{}\label{utils__c_8c_aa9ad290e3e4b0f4a3940b6a0ae0d56d9}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!irfree@{irfree}}
+)}\label{utils__c_8c_aa9ad290e3e4b0f4a3940b6a0ae0d56d9}
+\hypertarget{utils__c_8c_a97f5502ebef1ee23e9118aca5e6c8c59}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!irfree@{irfree}}
 \index{irfree@{irfree}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{irfree(int $\ast$nmem)}{irfree(int *nmem)}}]{\setlength{\rightskip}{0pt plus 5cm}int irfree (
+\subsubsection[{irfree(int $\ast$nmem)}]{\setlength{\rightskip}{0pt plus 5cm}int irfree (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{nmem}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a97f5502ebef1ee23e9118aca5e6c8c59}{}\label{utils__c_8c_a97f5502ebef1ee23e9118aca5e6c8c59}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!irsleep@{irsleep}}
+)}\label{utils__c_8c_a97f5502ebef1ee23e9118aca5e6c8c59}
+\hypertarget{utils__c_8c_a5897a77f2bd0f398ca26d3adbd0f2a9d}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!irsleep@{irsleep}}
 \index{irsleep@{irsleep}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{irsleep(int $\ast$seconds)}{irsleep(int *seconds)}}]{\setlength{\rightskip}{0pt plus 5cm}void irsleep (
+\subsubsection[{irsleep(int $\ast$seconds)}]{\setlength{\rightskip}{0pt plus 5cm}void irsleep (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{seconds}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a5897a77f2bd0f398ca26d3adbd0f2a9d}{}\label{utils__c_8c_a5897a77f2bd0f398ca26d3adbd0f2a9d}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+close@{rams\+\_\+c\+\_\+close}}
+)}\label{utils__c_8c_a5897a77f2bd0f398ca26d3adbd0f2a9d}
+\hypertarget{utils__c_8c_aa8d2954ed4d7d73a7f0f631f78bc9fee}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+close@{rams\+\_\+c\+\_\+close}}
 \index{rams\+\_\+c\+\_\+close@{rams\+\_\+c\+\_\+close}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+close()}{rams_c_close()}}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+close (
+\subsubsection[{rams\+\_\+c\+\_\+close()}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+close (
 \begin{DoxyParamCaption}
 {}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_aa8d2954ed4d7d73a7f0f631f78bc9fee}{}\label{utils__c_8c_aa8d2954ed4d7d73a7f0f631f78bc9fee}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+open@{rams\+\_\+c\+\_\+open}}
+)}\label{utils__c_8c_aa8d2954ed4d7d73a7f0f631f78bc9fee}
+\hypertarget{utils__c_8c_a922061919147e0747d863e9afbbcdd6d}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+open@{rams\+\_\+c\+\_\+open}}
 \index{rams\+\_\+c\+\_\+open@{rams\+\_\+c\+\_\+open}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+open(char $\ast$filename, char $\ast$faccess)}{rams_c_open(char *filename, char *faccess)}}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+open (
+\subsubsection[{rams\+\_\+c\+\_\+open(char $\ast$filename, char $\ast$faccess)}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+open (
 \begin{DoxyParamCaption}
 \item[{char $\ast$}]{filename, }
 \item[{char $\ast$}]{faccess}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a922061919147e0747d863e9afbbcdd6d}{}\label{utils__c_8c_a922061919147e0747d863e9afbbcdd6d}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+pos@{rams\+\_\+c\+\_\+pos}}
+)}\label{utils__c_8c_a922061919147e0747d863e9afbbcdd6d}
+\hypertarget{utils__c_8c_a839b711375635e10b43f5bdb4e8d08c1}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+pos@{rams\+\_\+c\+\_\+pos}}
 \index{rams\+\_\+c\+\_\+pos@{rams\+\_\+c\+\_\+pos}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+pos(long int $\ast$fbyte)}{rams_c_pos(long int *fbyte)}}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+pos (
+\subsubsection[{rams\+\_\+c\+\_\+pos(long int $\ast$fbyte)}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+pos (
 \begin{DoxyParamCaption}
 \item[{long int $\ast$}]{fbyte}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a839b711375635e10b43f5bdb4e8d08c1}{}\label{utils__c_8c_a839b711375635e10b43f5bdb4e8d08c1}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+read@{rams\+\_\+c\+\_\+read}}
+)}\label{utils__c_8c_a839b711375635e10b43f5bdb4e8d08c1}
+\hypertarget{utils__c_8c_a339a8f6e8795dae27ff38a995085163a}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+read@{rams\+\_\+c\+\_\+read}}
 \index{rams\+\_\+c\+\_\+read@{rams\+\_\+c\+\_\+read}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+read(int $\ast$fbyte, int $\ast$numbytes, int $\ast$a)}{rams_c_read(int *fbyte, int *numbytes, int *a)}}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+read (
+\subsubsection[{rams\+\_\+c\+\_\+read(int $\ast$fbyte, int $\ast$numbytes, int $\ast$a)}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+read (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{fbyte, }
 \item[{int $\ast$}]{numbytes, }
 \item[{int $\ast$}]{a}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a339a8f6e8795dae27ff38a995085163a}{}\label{utils__c_8c_a339a8f6e8795dae27ff38a995085163a}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+read\+\_\+char@{rams\+\_\+c\+\_\+read\+\_\+char}}
+)}\label{utils__c_8c_a339a8f6e8795dae27ff38a995085163a}
+\hypertarget{utils__c_8c_a8333814f43d330c669173351673df333}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+read\+\_\+char@{rams\+\_\+c\+\_\+read\+\_\+char}}
 \index{rams\+\_\+c\+\_\+read\+\_\+char@{rams\+\_\+c\+\_\+read\+\_\+char}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+read\+\_\+char(int $\ast$fbyte, int $\ast$numbytes, int $\ast$a)}{rams_c_read_char(int *fbyte, int *numbytes, int *a)}}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+read\+\_\+char (
+\subsubsection[{rams\+\_\+c\+\_\+read\+\_\+char(int $\ast$fbyte, int $\ast$numbytes, int $\ast$a)}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+read\+\_\+char (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{fbyte, }
 \item[{int $\ast$}]{numbytes, }
 \item[{int $\ast$}]{a}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a8333814f43d330c669173351673df333}{}\label{utils__c_8c_a8333814f43d330c669173351673df333}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+tell@{rams\+\_\+c\+\_\+tell}}
+)}\label{utils__c_8c_a8333814f43d330c669173351673df333}
+\hypertarget{utils__c_8c_acefce5719f6f3066a89740a6eb09e4cd}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+tell@{rams\+\_\+c\+\_\+tell}}
 \index{rams\+\_\+c\+\_\+tell@{rams\+\_\+c\+\_\+tell}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+tell(int $\ast$pos)}{rams_c_tell(int *pos)}}]{\setlength{\rightskip}{0pt plus 5cm}void rams\+\_\+c\+\_\+tell (
+\subsubsection[{rams\+\_\+c\+\_\+tell(int $\ast$pos)}]{\setlength{\rightskip}{0pt plus 5cm}void rams\+\_\+c\+\_\+tell (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{pos}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_acefce5719f6f3066a89740a6eb09e4cd}{}\label{utils__c_8c_acefce5719f6f3066a89740a6eb09e4cd}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+write@{rams\+\_\+c\+\_\+write}}
+)}\label{utils__c_8c_acefce5719f6f3066a89740a6eb09e4cd}
+\hypertarget{utils__c_8c_a54ff5d179343165ef67fef85211ea208}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!rams\+\_\+c\+\_\+write@{rams\+\_\+c\+\_\+write}}
 \index{rams\+\_\+c\+\_\+write@{rams\+\_\+c\+\_\+write}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{rams\+\_\+c\+\_\+write(int $\ast$fbyte, int $\ast$numbytes, int $\ast$a)}{rams_c_write(int *fbyte, int *numbytes, int *a)}}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+write (
+\subsubsection[{rams\+\_\+c\+\_\+write(int $\ast$fbyte, int $\ast$numbytes, int $\ast$a)}]{\setlength{\rightskip}{0pt plus 5cm}int rams\+\_\+c\+\_\+write (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{fbyte, }
 \item[{int $\ast$}]{numbytes, }
 \item[{int $\ast$}]{a}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a54ff5d179343165ef67fef85211ea208}{}\label{utils__c_8c_a54ff5d179343165ef67fef85211ea208}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!sched\+\_\+getcpu@{sched\+\_\+getcpu}}
-\index{sched\+\_\+getcpu@{sched\+\_\+getcpu}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{sched\+\_\+getcpu()}{sched_getcpu()}}]{\setlength{\rightskip}{0pt plus 5cm}int sched\+\_\+getcpu (
-\begin{DoxyParamCaption}
-{}
-\end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a42888a490b3af636fd5bfc0535de12c0}{}\label{utils__c_8c_a42888a490b3af636fd5bfc0535de12c0}
-
-
-Here is the caller graph for this function\+:\nopagebreak
-\begin{figure}[H]
-\begin{center}
-\leavevmode
-\includegraphics[width=350pt]{utils__c_8c_a42888a490b3af636fd5bfc0535de12c0_icgraph}
-\end{center}
-\end{figure}
-
-
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vfirecr@{vfirecr}}
+)}\label{utils__c_8c_a54ff5d179343165ef67fef85211ea208}
+\hypertarget{utils__c_8c_a665598b66ce9a193c83c0d895560cf58}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vfirecr@{vfirecr}}
 \index{vfirecr@{vfirecr}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{vfirecr(int $\ast$unit, float $\ast$a, int $\ast$n, char $\ast$type, char $\ast$b, int $\ast$irec)}{vfirecr(int *unit, float *a, int *n, char *type, char *b, int *irec)}}]{\setlength{\rightskip}{0pt plus 5cm}void vfirecr (
+\subsubsection[{vfirecr(int $\ast$unit, float $\ast$a, int $\ast$n, char $\ast$type, char $\ast$b, int $\ast$irec)}]{\setlength{\rightskip}{0pt plus 5cm}void vfirecr (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{unit, }
 \item[{float $\ast$}]{a, }
@@ -250,10 +196,10 @@ Here is the caller graph for this function\+:\nopagebreak
 \item[{char $\ast$}]{b, }
 \item[{int $\ast$}]{irec}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_a665598b66ce9a193c83c0d895560cf58}{}\label{utils__c_8c_a665598b66ce9a193c83c0d895560cf58}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vforecr@{vforecr}}
+)}\label{utils__c_8c_a665598b66ce9a193c83c0d895560cf58}
+\hypertarget{utils__c_8c_af3f961b3098a093b9b640c833c3be71f}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vforecr@{vforecr}}
 \index{vforecr@{vforecr}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{vforecr(int $\ast$unit, float $\ast$a, int $\ast$n, int $\ast$nbits, float $\ast$scr, char $\ast$cscr, char $\ast$type, int $\ast$irec)}{vforecr(int *unit, float *a, int *n, int *nbits, float *scr, char *cscr, char *type, int *irec)}}]{\setlength{\rightskip}{0pt plus 5cm}void vforecr (
+\subsubsection[{vforecr(int $\ast$unit, float $\ast$a, int $\ast$n, int $\ast$nbits, float $\ast$scr, char $\ast$cscr, char $\ast$type, int $\ast$irec)}]{\setlength{\rightskip}{0pt plus 5cm}void vforecr (
 \begin{DoxyParamCaption}
 \item[{int $\ast$}]{unit, }
 \item[{float $\ast$}]{a, }
@@ -264,7 +210,7 @@ Here is the caller graph for this function\+:\nopagebreak
 \item[{char $\ast$}]{type, }
 \item[{int $\ast$}]{irec}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_af3f961b3098a093b9b640c833c3be71f}{}\label{utils__c_8c_af3f961b3098a093b9b640c833c3be71f}
+)}\label{utils__c_8c_af3f961b3098a093b9b640c833c3be71f}
 
 
 Here is the call graph for this function\+:\nopagebreak
@@ -276,16 +222,16 @@ Here is the call graph for this function\+:\nopagebreak
 \end{figure}
 
 
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vfscale@{vfscale}}
+\hypertarget{utils__c_8c_ab10f44141e244d8ebcc0d6450fec8371}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vfscale@{vfscale}}
 \index{vfscale@{vfscale}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{vfscale(float $\ast$a, int n, double $\ast$min, double $\ast$max)}{vfscale(float *a, int n, double *min, double *max)}}]{\setlength{\rightskip}{0pt plus 5cm}int vfscale (
+\subsubsection[{vfscale(float $\ast$a, int n, double $\ast$min, double $\ast$max)}]{\setlength{\rightskip}{0pt plus 5cm}int vfscale (
 \begin{DoxyParamCaption}
 \item[{float $\ast$}]{a, }
 \item[{int}]{n, }
 \item[{double $\ast$}]{min, }
 \item[{double $\ast$}]{max}
 \end{DoxyParamCaption}
-)}\hypertarget{utils__c_8c_ab10f44141e244d8ebcc0d6450fec8371}{}\label{utils__c_8c_ab10f44141e244d8ebcc0d6450fec8371}
+)}\label{utils__c_8c_ab10f44141e244d8ebcc0d6450fec8371}
 
 
 Here is the caller graph for this function\+:\nopagebreak
@@ -300,15 +246,15 @@ Here is the caller graph for this function\+:\nopagebreak
 
 
 \subsection{Variable Documentation}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!iaddrams@{iaddrams}}
+\hypertarget{utils__c_8c_a9a1984a4282124cfb751e4308216392a}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!iaddrams@{iaddrams}}
 \index{iaddrams@{iaddrams}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{iaddrams}{iaddrams}}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ iaddrams\mbox{[}{\bf nlocrams}\mbox{]}}\hypertarget{utils__c_8c_a9a1984a4282124cfb751e4308216392a}{}\label{utils__c_8c_a9a1984a4282124cfb751e4308216392a}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!ramsfile@{ramsfile}}
+\subsubsection[{iaddrams}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ iaddrams\mbox{[}{\bf nlocrams}\mbox{]}}\label{utils__c_8c_a9a1984a4282124cfb751e4308216392a}
+\hypertarget{utils__c_8c_a6fb6b1fe075bb83210bfa93071a61057}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!ramsfile@{ramsfile}}
 \index{ramsfile@{ramsfile}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{ramsfile}{ramsfile}}]{\setlength{\rightskip}{0pt plus 5cm}F\+I\+LE$\ast$ ramsfile}\hypertarget{utils__c_8c_a6fb6b1fe075bb83210bfa93071a61057}{}\label{utils__c_8c_a6fb6b1fe075bb83210bfa93071a61057}
-\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vc@{vc}}
+\subsubsection[{ramsfile}]{\setlength{\rightskip}{0pt plus 5cm}F\+I\+L\+E$\ast$ ramsfile}\label{utils__c_8c_a6fb6b1fe075bb83210bfa93071a61057}
+\hypertarget{utils__c_8c_a361d5b27f9aa65e78fabf63bcd0dcba3}{}\index{utils\+\_\+c.\+c@{utils\+\_\+c.\+c}!vc@{vc}}
 \index{vc@{vc}!utils\+\_\+c.\+c@{utils\+\_\+c.\+c}}
-\subsubsection[{\texorpdfstring{vc}{vc}}]{\setlength{\rightskip}{0pt plus 5cm}char vc\mbox{[}65\mbox{]}}\hypertarget{utils__c_8c_a361d5b27f9aa65e78fabf63bcd0dcba3}{}\label{utils__c_8c_a361d5b27f9aa65e78fabf63bcd0dcba3}
+\subsubsection[{vc}]{\setlength{\rightskip}{0pt plus 5cm}char vc\mbox{[}65\mbox{]}}\label{utils__c_8c_a361d5b27f9aa65e78fabf63bcd0dcba3}
 {\bfseries Initial value\+:}
 \begin{DoxyCode}
 = 

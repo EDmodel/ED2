@@ -153,6 +153,9 @@ module growth_balive
                   !          / ( 1.0  + exp( 0.4 * (278.15 - csite%avg_daily_temp(ipa))))
                   temp_dep = 1.0
                   !------------------------------------------------------------------------!
+                  ! storage resp scheme cambia solo da dove il termine di respiration va   !
+                  ! nel CAS (canopy air space). In case 0 è come era prima cioè tutto dal  !
+                  ! above sap, in case 1 ognuno contribuisce in parte  --------------------!
                   select case(storage_resp_scheme)
                   case(0)
                      cpatch%leaf_storage_resp(ico) = 0.0
@@ -657,82 +660,6 @@ module growth_balive
    end subroutine dbalive_dt_eq_0
    !=======================================================================================!
    !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will transfer some of the stored carbon to balive in order to put  !
-   ! the plant back on allometry.                                                          !
-   !   ----Is this subroutine ever used??? ALS===                                          !
-   !---------------------------------------------------------------------------------------!
-   subroutine transfer_C_from_storage(cpatch,ico,salloc,salloci,nitrogen_uptake            &
-                                     ,N_uptake_pot)
-      use ed_state_vars , only : patchtype
-      use pft_coms      , only : c2n_leaf    & ! intent(in)
-                               , c2n_storage & ! intent(in)
-                               , c2n_stem    & ! intent(in)
-                               , q           & ! intent(in)
-                               , agf_bs      & ! intent(in)
-                               , qsw         ! ! intent(in)
-      use decomp_coms   , only : f_labile    ! ! intent(in)
-      use allometry     , only : size2bl     ! ! function
-      implicit none
-      !----- Arguments. -------------------------------------------------------------------!
-      type(patchtype), target        :: cpatch
-      integer        , intent(in)    :: ico
-      real           , intent(in)    :: salloc
-      real           , intent(in)    :: salloci
-      real           , intent(inout) :: nitrogen_uptake
-      real           , intent(inout) :: N_uptake_pot
-      !----- Local variables. -------------------------------------------------------------!
-      integer                        :: ipft
-      real                           :: off_allometry_cb
-      real                           :: increment
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Only do the transfer if leaves exist.                                          !
-      !------------------------------------------------------------------------------------!
-      if (cpatch%phenology_status(ico) == -2) return
-     
-      !----- Alias for pft type. ----------------------------------------------------------!
-      ipft = cpatch%pft(ico)
-     
-      !----- Determine how much biomass we need to go back to allometry. ------------------!
-      off_allometry_cb = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) * salloc           &
-                       - cpatch%balive(ico)
-
-      !----- If plants have storage, transfer it to balive. -------------------------------!
-      increment            = max(0.0,min(max(0.0, off_allometry_cb),cpatch%bstorage(ico)))
-      cpatch%balive(ico)   = cpatch%balive(ico)   + increment
-      cpatch%bstorage(ico) = cpatch%bstorage(ico) - increment
-
-      !----- Compute sapwood and fine root biomass. ---------------------------------------!
-      cpatch%broot(ico)     = q(ipft) * cpatch%balive(ico) * salloci
-      cpatch%bsapwooda(ico) = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico) * salloci  &
-                            * agf_bs(ipft)
-      cpatch%bsapwoodb(ico) = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico) * salloci  &
-                            * (1.-agf_bs(ipft))
-
-      !------------------------------------------------------------------------------------!
-      !      N uptake is required since c2n_leaf < c2n_storage.  Units are kgN/plant/day.  !
-      !------------------------------------------------------------------------------------!
-      nitrogen_uptake = increment * (        f_labile(ipft)  / c2n_leaf(ipft)              &
-                                    + (1.0 - f_labile(ipft)) / c2n_stem(ipft)              &
-                                    -  1.0 / c2n_storage)
-      N_uptake_pot    = nitrogen_uptake
-
-      return
-   end subroutine transfer_C_from_storage
-   !=======================================================================================!
-   !=======================================================================================!
-
-
 
    !=======================================================================================!
    !=======================================================================================!
@@ -2763,7 +2690,7 @@ module growth_balive
          csite%fsn_in(ipa) = csite%fsn_in(ipa) + plant_litter_f / c2n_leaf(ipft) !labile N in soil
 
          csite%ssc_in(ipa) = csite%ssc_in(ipa) + plant_litter_s ! structural soil C
-         csite%ssl_in(ipa) = csite%ssl_in(ipa) + plant_litter_s * l2n_stem / c2n_stem(ipft) ! structural soil N
+         csite%ssl_in(ipa) = csite%ssl_in(ipa) + plant_litter_s * l2n_stem / c2n_stem(ipft) ! structural soil N l2n=lignin
       end do
       return
    end subroutine litter
@@ -2772,3 +2699,4 @@ module growth_balive
 end module growth_balive
 !==========================================================================================!
 !==========================================================================================!
+

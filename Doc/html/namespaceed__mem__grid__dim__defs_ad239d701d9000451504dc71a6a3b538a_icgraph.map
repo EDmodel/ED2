@@ -1,7 +1,3 @@
 <map id="ed_mem_grid_dim_defs::define_grid_dim_pointer" name="ed_mem_grid_dim_defs::define_grid_dim_pointer">
-<area shape="rect" id="node2" href="$namespaceed__mem__alloc.html#a410d759cf4e13ea20ace04982d91d9bb" title="ed_mem_alloc::ed_memory\l_allocation" alt="" coords="220,23,403,65"/>
-<area shape="rect" id="node3" href="$ed__1st_8_f90.html#aff9532dca03cad04e63992a5628b3a7d" title="ed_1st_node" alt="" coords="683,5,779,32"/>
-<area shape="rect" id="node5" href="$ed__mpass__init_8_f90.html#a92ea90e711dba589f46d6e84f21526c8" title="ed_masterput_worklist_info" alt="" coords="451,56,629,83"/>
-<area shape="rect" id="node4" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="833,31,884,57"/>
-<area shape="rect" id="node6" href="$ed__1st_8_f90.html#a68fd3739f8d8de8d87a9a887e3b30c32" title="ed_1st_master" alt="" coords="677,56,785,83"/>
+<area shape="rect" id="node2" href="$namespaceed__mem__alloc.html#a410d759cf4e13ea20ace04982d91d9bb" title="ed_mem_alloc::ed_memory\l_allocation" alt="" coords="225,5,412,47"/>
 </map>

@@ -27,7 +27,7 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       iata     = poilist$iata[pp]
       wmo      = poilist$wmo [pp]
       pathroot = paste(here,ici,sep="/")
-      pathin   = paste(here,ici,"analy",ici,sep="/")
+      pathin   = paste(here,"analy",ici,sep="/")
       pathrst  = paste(here,ici,"histo",ici,sep="/")
       pathout  = paste(here,ici,"epost",sep="/")
       lon      = poilist$lon[pp]

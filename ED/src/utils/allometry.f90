@@ -31,8 +31,7 @@ module allometry
       if (is_tropical(ipft)) then
           if (is_liana(ipft)) then
               h2dbh = 0.5 * ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )   &
-                          ** ( 0.8 / b2Ht(ipft) )!made up
-!              write(*,*) "h2dbh=", h2dbh
+                  ** ( 0.8 / b2Ht(ipft) )!made up
           else
               select case (iallom)
                   case (0,1)
@@ -90,7 +89,6 @@ module allometry
                   mdbh = min(dbh,dbh_crit(ipft))
                   if (is_liana(ipft)) then
                   dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * 2. * mdbh ** (b2Ht(ipft)/0.8) ) )!made up
-!                  write(*,*) "dbh2h=", dbh2h
                   else
                       select case (iallom)
                           case (0,1)

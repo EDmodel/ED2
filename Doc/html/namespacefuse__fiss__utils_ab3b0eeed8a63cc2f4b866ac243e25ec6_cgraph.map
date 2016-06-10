@@ -1,6 +1,5 @@
 <map id="fuse_fiss_utils::rescale_patches" name="fuse_fiss_utils::rescale_patches">
-<area shape="rect" id="node2" href="$namespaceallometry.html#a45ced9bf9ccd03debe8def35b579f4bd" title="allometry::size2bl" alt="" coords="229,5,353,32"/>
-<area shape="rect" id="node4" href="$update__derived__props_8f90.html#a2f20573c21f9be1d6c291f6c7f2af59e" title="update_cohort_extensive\l_props" alt="" coords="208,57,373,98"/>
-<area shape="rect" id="node5" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="251,123,330,149"/>
-<area shape="rect" id="node3" href="$namespaceallometry.html#a31aa8db06e86ec74efb5e692417399df" title="allometry::h2dbh" alt="" coords="421,5,540,32"/>
+<area shape="rect" id="node2" href="$namespaceallometry.html#a45ced9bf9ccd03debe8def35b579f4bd" title="allometry::size2bl" alt="" coords="232,5,357,32"/>
+<area shape="rect" id="node4" href="$update__derived__props_8f90.html#a2f20573c21f9be1d6c291f6c7f2af59e" title="update_cohort_extensive\l_props" alt="" coords="209,57,380,98"/>
+<area shape="rect" id="node3" href="$namespaceallometry.html#a31aa8db06e86ec74efb5e692417399df" title="allometry::h2dbh" alt="" coords="428,5,548,32"/>
 </map>

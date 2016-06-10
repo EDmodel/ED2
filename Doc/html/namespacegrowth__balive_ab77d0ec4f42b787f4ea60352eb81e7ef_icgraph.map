@@ -1,8 +1,5 @@
 <map id="growth_balive::alloc_plant_c_balance_grass" name="growth_balive::alloc_plant_c_balance_grass">
-<area shape="rect" id="node2" href="$namespacegrowth__balive.html#a7781ae229b2399c90d50858382665ee8" title="Updates living biomass. " alt="" coords="216,31,380,57"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="446,5,589,32"/>
-<area shape="rect" id="node7" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="428,56,607,83"/>
-<area shape="rect" id="node4" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="655,31,733,57"/>
-<area shape="rect" id="node5" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="781,31,855,57"/>
-<area shape="rect" id="node6" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="903,31,953,57"/>
+<area shape="rect" id="node2" href="$namespacegrowth__balive.html#a7781ae229b2399c90d50858382665ee8" title="Updates living biomass. " alt="" coords="220,31,392,57"/>
+<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="459,5,605,32"/>
+<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="440,56,624,83"/>
 </map>

@@ -1,6 +1,3 @@
 <map id="canopy_struct_dynamics::leaf_aerodynamic_conductances" name="canopy_struct_dynamics::leaf_aerodynamic_conductances">
-<area shape="rect" id="node2" href="$namespacecanopy__struct__dynamics.html#ac7eef4d24c3e07ccb461d418e32d466e" title="canopy_struct_dynamics\l::canopy_turbulence" alt="" coords="272,5,439,47"/>
-<area shape="rect" id="node3" href="$ed__init__atm_8_f90.html#a67ae59514caf7fea8936bca72628f5ca" title="ed_init_atm" alt="" coords="487,13,576,39"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="624,13,697,39"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="745,13,796,39"/>
+<area shape="rect" id="node2" href="$namespacecanopy__struct__dynamics.html#ac7eef4d24c3e07ccb461d418e32d466e" title="canopy_struct_dynamics\l::canopy_turbulence" alt="" coords="277,5,447,47"/>
 </map>

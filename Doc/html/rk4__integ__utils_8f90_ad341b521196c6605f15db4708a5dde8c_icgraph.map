@@ -1,8 +1,5 @@
 <map id="initialize_rk4patches" name="initialize_rk4patches">
-<area shape="rect" id="node2" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="703,5,781,32"/>
-<area shape="rect" id="node5" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="193,31,297,57"/>
-<area shape="rect" id="node3" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="829,5,903,32"/>
-<area shape="rect" id="node4" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="951,5,1001,32"/>
-<area shape="rect" id="node6" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="345,31,464,57"/>
-<area shape="rect" id="node7" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="512,31,655,57"/>
+<area shape="rect" id="node2" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="196,5,305,32"/>
+<area shape="rect" id="node3" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="353,5,477,32"/>
+<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="525,5,672,32"/>
 </map>

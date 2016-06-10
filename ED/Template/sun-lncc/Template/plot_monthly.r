@@ -15,17 +15,17 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"     # Current directory.
-there          = "thatpath"     # Directory where analyses/history are 
-srcdir         = "thisrscpath"  # Source  directory.
-outroot        = "thisoutroot"  # Directory for figures
+here           = "/Users/manfredo/Documents/Eclipse_workspace/ED/Template/sun-lncc/Template"     # Current directory.
+there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/lianas"     # Directory where analyses/history are 
+srcdir         = "/Users/manfredo/Documents/Eclipse_workspace/R-utils"  # Source  directory.
+outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/lianas/figures"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
 #----- Time options. ----------------------------------------------------------------------#
-monthbeg       = thismontha   # First month to use
-yearbeg        = thisyeara    # First year to consider
-yearend        = thisyearz    # Maximum year to consider
+monthbeg       = 01   # First month to use
+yearbeg        = 2005    # First year to consider
+yearend        = 2044    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
@@ -36,13 +36,13 @@ n.density      = 256          # Number of density points
 
 
 #----- Name of the simulations. -----------------------------------------------------------#
-myplaces       = c("thispoly")
+myplaces       = c("paracou")
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Plot options. ----------------------------------------------------------------------#
-outform        = thisoutform            # Formats for output file.  Supported formats are:
+outform        = pdf            # Formats for output file.  Supported formats are:
                                         #   - "X11" - for printing on screen
                                         #   - "eps" - for postscript printing
                                         #   - "png" - for PNG printing
@@ -74,22 +74,22 @@ ylnudge         = 0.05                  # Nudging factor for ylimit
 ptype          = "l"                    # Type of plot
 ptyped         = "p"                    # Type of plot
 ptypeb         = "o"                    # Type of plot
-drought.mark   = mydroughtmark          # Put a background to highlight droughts?
-drought.yeara  = mydroughtyeara         # First year that has drought
-drought.yearz  = mydroughtyearz         # Last year that has drought
-months.drought = mymonthsdrought        # Months with drought
-ibackground    = mybackground           # Background settings (check load_everything.r)
+drought.mark   = FALSE          # Put a background to highlight droughts?
+drought.yeara  = 2004         # First year that has drought
+drought.yearz  = 2020         # Last year that has drought
+months.drought = 04        # Months with drought
+ibackground    = FALSE           # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
 slz.min             = -5.0         # The deepest depth that trees access water.
-idbh.type           = myidbhtype   # Type of DBH class
+idbh.type           = 3   # Type of DBH class
                                    # 1 -- Every 10 cm until 100cm; > 100cm
                                    # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                                    # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
-klight              = myklight     # Weighting factor for maximum carbon balance
-corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+klight              = 2     # Weighting factor for maximum carbon balance
+corr.growth.storage = 2 # Correction factor to be applied to growth and
                                    #   storage respiration
 #------------------------------------------------------------------------------------------#
 
@@ -130,8 +130,8 @@ options(locatorBell=FALSE)
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
-load(file=obsrfile)
+#obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
+#load(file=obsrfile)
 #------------------------------------------------------------------------------------------#
 
 

@@ -1,10 +1,8 @@
 <map id="libxml2f90_ll_getch" name="libxml2f90_ll_getch">
-<area shape="rect" id="node2" href="$libxml2f90_8f90__pp_8f90.html#a6197ea91babb017cbc3cec50fe124c03" title="libxml2f90__ll_getch" alt="" coords="189,5,328,32"/>
-<area shape="rect" id="node8" href="$libxml2f90_8f90__pp_8f90.html#ad30886dc2d259aec8eb502721e5347fc" title="libxml2f90__ll_getch_scal" alt="" coords="380,56,551,83"/>
-<area shape="rect" id="node9" href="$libxml2f90_8f90__pp_8f90.html#aa79b29b7afab3cf465e4d7b328007346" title="libxml2f90__ll_getpch" alt="" coords="185,107,332,133"/>
-<area shape="rect" id="node3" href="$ed__xml__config_8f90.html#af0adc799495cd223935aceec004ccb11" title="getconfigstring" alt="" coords="412,5,519,32"/>
-<area shape="rect" id="node4" href="$ed__xml__config_8f90.html#accb60513f4c46e691fcd1f96c1e9df36" title="read_ed_xml_config" alt="" coords="599,31,736,57"/>
-<area shape="rect" id="node5" href="$ed__params_8f90.html#a2c0c887700d85a5be6fbd26b071c8da6" title="overwrite_with_xml\l_config" alt="" coords="784,23,915,65"/>
-<area shape="rect" id="node6" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="963,31,1036,57"/>
-<area shape="rect" id="node7" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="1084,31,1135,57"/>
+<area shape="rect" id="node2" href="$libxml2f90_8f90__pp_8f90.html#a6197ea91babb017cbc3cec50fe124c03" title="libxml2f90__ll_getch" alt="" coords="193,5,336,32"/>
+<area shape="rect" id="node6" href="$libxml2f90_8f90__pp_8f90.html#ad30886dc2d259aec8eb502721e5347fc" title="libxml2f90__ll_getch_scal" alt="" coords="388,56,561,83"/>
+<area shape="rect" id="node7" href="$libxml2f90_8f90__pp_8f90.html#aa79b29b7afab3cf465e4d7b328007346" title="libxml2f90__ll_getpch" alt="" coords="189,107,340,133"/>
+<area shape="rect" id="node3" href="$ed__xml__config_8f90.html#af0adc799495cd223935aceec004ccb11" title="getconfigstring" alt="" coords="420,5,529,32"/>
+<area shape="rect" id="node4" href="$ed__xml__config_8f90.html#accb60513f4c46e691fcd1f96c1e9df36" title="read_ed_xml_config" alt="" coords="609,31,752,57"/>
+<area shape="rect" id="node5" href="$ed__params_8f90.html#a2c0c887700d85a5be6fbd26b071c8da6" title="overwrite_with_xml\l_config" alt="" coords="800,23,936,65"/>
 </map>

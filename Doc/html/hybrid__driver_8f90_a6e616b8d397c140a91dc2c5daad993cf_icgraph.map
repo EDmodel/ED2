@@ -1,6 +1,3 @@
 <map id="copy_bdf2_prev" name="copy_bdf2_prev">
-<area shape="rect" id="node2" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="164,5,279,32"/>
-<area shape="rect" id="node3" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="327,5,405,32"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="453,5,527,32"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="575,5,625,32"/>
+<area shape="rect" id="node2" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="171,5,287,32"/>
 </map>

@@ -151,7 +151,7 @@ subroutine structural_growth(cgrid, month)
                cpatch%monthly_dlnndt(ico) = max( cpatch%monthly_dlnndt (ico)               &
                                                , log( negligible_nplant(ipft)              &
                                                     / cpatch%nplant    (ico) ) )
-               cpatch%nplant(ico)         = cpatch%nplant(ico)                               &
+               cpatch%nplant(ico)         = cpatch%nplant(ico)                             &
                                           * exp(cpatch%monthly_dlnndt(ico))
                !---------------------------------------------------------------------------!
 

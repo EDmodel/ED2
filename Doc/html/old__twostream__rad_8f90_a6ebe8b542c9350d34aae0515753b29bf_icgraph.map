@@ -1,9 +1,6 @@
 <map id="bandec" name="bandec">
-<area shape="rect" id="node2" href="$old__twostream__rad_8f90.html#ac90aec0e7fa711f6b96d200ae35c737a" title="old_sw_two_stream" alt="" coords="117,5,253,32"/>
-<area shape="rect" id="node8" href="$old__twostream__rad_8f90.html#abcc634b5076b1fe8fb168a33555a3fd2" title="old_lw_two_stream" alt="" coords="119,56,251,83"/>
-<area shape="rect" id="node3" href="$radiate__driver_8f90.html#aa7642a6b7c3a9578373f6f05492956ec" title="sfcrad_ed" alt="" coords="301,31,380,57"/>
-<area shape="rect" id="node4" href="$radiate__driver_8f90.html#ab00f8ed30131a8759492cb10c7bdb13a" title="radiate_driver" alt="" coords="428,31,527,57"/>
-<area shape="rect" id="node5" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="575,31,653,57"/>
-<area shape="rect" id="node6" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="701,31,775,57"/>
-<area shape="rect" id="node7" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="823,31,873,57"/>
+<area shape="rect" id="node2" href="$old__twostream__rad_8f90.html#ac90aec0e7fa711f6b96d200ae35c737a" title="old_sw_two_stream" alt="" coords="119,5,259,32"/>
+<area shape="rect" id="node5" href="$old__twostream__rad_8f90.html#abcc634b5076b1fe8fb168a33555a3fd2" title="old_lw_two_stream" alt="" coords="121,56,257,83"/>
+<area shape="rect" id="node3" href="$radiate__driver_8f90.html#aa7642a6b7c3a9578373f6f05492956ec" title="sfcrad_ed" alt="" coords="307,31,387,57"/>
+<area shape="rect" id="node4" href="$radiate__driver_8f90.html#ab00f8ed30131a8759492cb10c7bdb13a" title="radiate_driver" alt="" coords="435,31,539,57"/>
 </map>

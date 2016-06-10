@@ -647,7 +647,7 @@ subroutine init_can_rad_params()
    leaf_emiss_tir(9:11)  = 9.50d-1
    leaf_emiss_tir(12:15) = 9.60d-1
    leaf_emiss_tir(16)    = 9.60d-1
-   leaf_emiss_tir(17)    = 9.70d-1!parameter unchanged
+   leaf_emiss_tir(17)    = 9.50d-1!parameter unchanged
    !----- Branches. -----------------------------------------------------------------------!
    wood_emiss_tir(1)     = 9.60d-1
    wood_emiss_tir(2:4)   = 9.00d-1
@@ -1619,7 +1619,7 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.300000 * ssfact * vmfact_c3
    Vm0(14:15)                = 12.500000 * ssfact * vmfact_c4
    Vm0(16)                   = 18.750000 * ssfact * vmfact_c3
-   Vm0(17)                   = 18.750000 * ssfact * vmfact_c3
+   Vm0(17)                   = 18.750000 * ssfact * vmfact_c3!56.25
    !---------------------------------------------------------------------------------------!
 
 
@@ -1676,6 +1676,7 @@ subroutine init_pft_photo_params()
    case (0,1)
       !------ This should be simply gamma times Vm0. --------------------------------------!
       Rd0         (1:17) = dark_respiration_factor(1:17) * Vm0(1:17)
+      !for lianas it's Rd0 = 0.816
 
    case (2,3)
       !------------------------------------------------------------------------------------!
@@ -1726,7 +1727,7 @@ subroutine init_pft_photo_params()
    cuticular_cond(14)        = bphoto_c4
    cuticular_cond(15)        = bphoto_c4
    cuticular_cond(16)        = bphoto_blc3
-   cuticular_cond(17)        = bphoto_nlc3
+   cuticular_cond(17)        = bphoto_blc3
 
    quantum_efficiency(1)     = alpha_c4
    quantum_efficiency(2)     = alpha_c3
@@ -2565,7 +2566,7 @@ subroutine init_pft_alloc_params()
    SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
    SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
    SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
-   SLA(17) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 17))) * sla_scale
+   SLA(17) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 17))) * sla_scale!16.02
 
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
@@ -3305,7 +3306,7 @@ c2n_leaf(9)      = 1000.0 / ((0.11289 + 0.12947 *      18.25) * SLA(9)    )
 c2n_leaf(10)     = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(10)   )
 c2n_leaf(11)     = 1000.0 / ((0.11289 + 0.12947 *       6.25) * SLA(11)   )
 c2n_leaf(12:15)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(12:15)) * SLA(12:15))
-c2n_leaf(16:17)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(16:17)) * SLA(16:17))
+c2n_leaf(16:17)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(16:17)) * SLA(16:17))!8.56
 
 
 

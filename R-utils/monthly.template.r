@@ -11,7 +11,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    h5first.bz2  = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5.bz2",sep="")
    h5first.gz   = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5.gz" ,sep="")
    if ( file.exists(h5first) ){
-      mymont    = hdf5load(file=h5first,load=FALSE,verbosity=0,tidy=TRUE)
+      mymont    = H5Fopen(h5first) #hdf5load(file=h5first,load=FALSE,verbosity=0,tidy=TRUE)
 
    }else if ( file.exists(h5first.bz2) ){
       temp.file = file.path(tempdir(),basename(h5first))
@@ -55,7 +55,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    ed$slz        = mymont$SLZ
    ed$slxsand    = mymont$SLXSAND
    ed$slxclay    = mymont$SLXCLAY
-   ed$ntext      = mymont$NTEXT.SOIL[ed$nzg]
+   ed$ntext      = mymont$NTEXT_SOIL[ed$nzg]
    #---------------------------------------------------------------------------------------#
 
 
