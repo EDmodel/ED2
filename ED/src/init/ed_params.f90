@@ -2734,22 +2734,28 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
       !     Allometric equation based on the Sustainable Landscapes data.                  !
       !                                                                                    !
-      !    Longo, M. et al. 2016.  Effects of forest degradation and recovery on biomass   !
-      !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     !
-      !       prep.                                                                        !
+      !    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    !
+      !       the Amazon. Biogeosciences, in prep.                                         !
       !                                                                                    !
-      !    Equation was derived from forest inventory measurements carried out at multiple !
+      !    Equation was derived from multiple forest inventories carried out at multiple   !
       ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least        !
       ! squares approach (though results converged to a homoscedastic fit).  This equation !
       ! is very similar to Feldpausch et al (2012) equation for South America.             !
+      !                                                                                    !
+      ! Total number of trees: 17010                                                       !
+      ! hgt_ref = 47.2    (95% CI: [  44.8;   48.8])                                       !
+      ! b1Ht    = 0.0440  (95% CI: [0.0427; 0.0454])                                       !
+      ! b2Ht    = 0.802   (95% CI: [ 0.788;  0.822])                                       !
+      ! R2      = 0.677                                                                    !
+      ! RMSE    = 5.4                                                                      !
       !------------------------------------------------------------------------------------!
       do ipft=1,n_pft
          if (is_tropical(ipft)) then
             !----- b1Ht is their "a1" and b2Ht is their "a2". -----------------------------!
-            b1Ht   (ipft) = 0.044307
-            b2Ht   (ipft) = 0.76866
+            b1Ht   (ipft) = 0.044037
+            b2Ht   (ipft) = 0.80248
             !----- hgt_ref is their "H-Infinity". -----------------------------------------!
-            hgt_ref(ipft) = 50.655
+            hgt_ref(ipft) = 47.173
          end if
       end do
       !------------------------------------------------------------------------------------!
@@ -2794,13 +2800,16 @@ subroutine init_pft_alloc_params()
    hgt_max(15) = 1.50
    hgt_max(16) = 1.50
    hgt_max(17) = 35.0
-   !----- Allow trees to grow up 99% of the allometry size. -------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     In case we are using the new allometry, set maximum height of (sub)tropical trees !
+   ! to 45m (about 95% of the maximum height).                                             !
+   !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (4)
-      hgt_max( 2) = 0.99 * hgt_ref( 2)
-      hgt_max( 3) = 0.99 * hgt_ref( 3)
-      hgt_max( 4) = 0.99 * hgt_ref( 4)
-      hgt_max(17) = 0.99 * hgt_ref(17)
+      hgt_max( 2) = 45.0
+      hgt_max( 3) = 45.0
+      hgt_max( 4) = 45.0
+      hgt_max(17) = 45.0
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -2840,21 +2849,29 @@ subroutine init_pft_alloc_params()
       end do
    case (4)
       !------------------------------------------------------------------------------------!
-      !     Allometric equation based on the Sustainable Landscapes data.                  !
+      !     Allometry using the Sustainable Landscapes data.                               !
+      !------------------------------------------------------------------------------------!
+      !     Replace b1Cr/b2Cr ("Crown Radius") coefficients by those calculated by:        !
       !                                                                                    !
-      !    Longo, M. et al. 2016.  Effects of forest degradation and recovery on biomass   !
-      !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     !
-      !       prep.                                                                        !
+      !    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    !
+      !       the Amazon. Biogeosciences, in prep.                                         !
       !                                                                                    !
       !    Equation was derived from forest inventory measurements carried out at          !
       ! multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic     !
-      ! least squares approach.                                                            !
+      ! least squares approach.  Note that their original equation relates DBH with        !
+      ! crown radius, so we transform radius into area.                                    !
+      !                                                                                    !
+      ! Total number of trees: 17072                                                       !
+      ! b1Cr    = 0.402 (95% CI: [0.394;0.412])                                            !
+      ! b2Cr    = 0.615 (95% CI: [0.607;0.622])                                            !
+      ! R2      = 0.589                                                                    !
+      ! RMSE    = 0.999                                                                    !
       !------------------------------------------------------------------------------------!
       do ipft=1,n_pft
          if (is_tropical(ipft)) then
             !----- b1Ca is their "a1" and b2Ca is their "a2". -----------------------------!
-            b1Ca   (ipft) = pi1 * 0.40309**2
-            b2Ca   (ipft) = 2. * 0.61278
+            b1Ca   (ipft) = pi1 * 0.40223**2
+            b2Ca   (ipft) = 2. * 0.61462
             !------------------------------------------------------------------------------!
          end if
          !---------------------------------------------------------------------------------!
@@ -3126,9 +3143,9 @@ subroutine init_pft_alloc_params()
             !  to include below ground biomass.  The result was fit using a DBH-dependent  !
             !  only model.                                                                 !
             !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.4408322 * rho(ipft)
-            b2Bs_small(ipft) = 2.2334009
-            b2Bs_large(ipft) = 1.9696220
+            b1Bs_small(ipft) = C2B * 0.2358174 * rho(ipft)
+            b2Bs_small(ipft) = 2.3739128
+            b2Bs_large(ipft) = 1.968890
             b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
                              * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
             !------------------------------------------------------------------------------!
@@ -3586,13 +3603,18 @@ subroutine init_pft_leaf_params()
    !    For iallom = 4, we use the allometric equation based on the Sustainable Landscapes !
    ! data set.                                                                             !
    !                                                                                       !
-   !    Longo, M. et al. 2016.  Effects of forest degradation and recovery on biomass      !
-   !       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in        !
-   !       prep.                                                                           !
+   !    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in       !
+   !       the Amazon. Biogeosciences, in prep.                                            !
    !                                                                                       !
    !    Equation was derived from forest inventory measurements carried out at multiple    !
    ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
    ! squares approach.                                                                     !
+   !                                                                                       !
+   ! Total number of trees: 16064                                                          !
+   ! b1Cl    = 0.298 (95% CI: [0.288;0.306])                                               !
+   ! b2Cl    = 1.032 (95% CI: [1.022;1.044])                                               !
+   ! R2      = 0.673                                                                       !
+   ! RMSE    = 2.29                                                                        !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       !----- Check life form. -------------------------------------------------------------!
@@ -3602,8 +3624,8 @@ subroutine init_pft_leaf_params()
       elseif (is_tropical(ipft)) then
          select case (iallom)
          case (4)
-            b1Cl(ipft) = 0.29711
-            b2Cl(ipft) = 1.03260
+            b1Cl(ipft) = 0.29754
+            b2Cl(ipft) = 1.0324
          case default
             b1Cl(ipft) = 0.3106775
             b2Cl(ipft) = 1.098

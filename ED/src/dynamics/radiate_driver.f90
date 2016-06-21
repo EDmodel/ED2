@@ -44,7 +44,7 @@ subroutine init_derived_rad_params()
    leaf_scatter_nir(:) = leaf_reflect_nir(:) + leaf_trans_nir(:)
    wood_scatter_nir(:) = wood_reflect_nir(:) + wood_trans_nir(:)
    !---------------------------------------------------------------------------------------!
-   
+
    !---------------------------------------------------------------------------------------!
    !      Back-scattering coefficients following CLM.                                      !
    !---------------------------------------------------------------------------------------!
@@ -1352,7 +1352,6 @@ subroutine sfcrad_ed(cosaoi,csite,ipa,mzg,mzs,ntext_soil,ncol_soil,tuco,rlong,tw
       !------------------------------------------------------------------------------------!
 
    else
-
 
       !----- This is the case where there is no vegetation. -------------------------------!
       downward_par_below_beam         = par_beam_norm

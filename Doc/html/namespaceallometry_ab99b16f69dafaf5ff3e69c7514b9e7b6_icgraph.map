@@ -1,0 +1,27 @@
+<map id="allometry::ed_biomass" name="allometry::ed_biomass">
+<area shape="rect" id="node2" href="$events_8f90.html#ad9cbf1522be96cc9af2fbf80b1402d5c" title="event_harvest" alt="" coords="419,575,519,602"/>
+<area shape="rect" id="node8" href="$structural__growth_8f90.html#a18746b03d74909fea238e464b0f7f513" title="update_vital_rates" alt="" coords="406,626,533,653"/>
+<area shape="rect" id="node12" href="$update__derived__props_8f90.html#a4ec6edacfccb9d8d6f5a6d6e8f2c30a0" title="update_patch_derived\l_props" alt="" coords="207,365,353,407"/>
+<area shape="rect" id="node3" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="608,390,727,417"/>
+<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="815,390,958,417"/>
+<area shape="rect" id="node5" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="1058,390,1137,417"/>
+<area shape="rect" id="node6" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="1219,165,1292,191"/>
+<area shape="rect" id="node7" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="1340,165,1391,191"/>
+<area shape="rect" id="node9" href="$structural__growth_8f90.html#a7026b36ce655ecfb0b39b37725e7cba0" title="structural_growth" alt="" coords="607,563,728,590"/>
+<area shape="rect" id="node10" href="$structural__growth_8f90.html#ab7a103c1eca3dc4a1e6646ae50385192" title="structural_growth_eq_0" alt="" coords="589,622,745,649"/>
+<area shape="rect" id="node11" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="797,441,976,467"/>
+<area shape="rect" id="node13" href="$namespacedisturbance__utils.html#a29d6db4e94463404643e5c3666c67767" title="disturbance_utils::\lapply_disturbances" alt="" coords="600,492,735,533"/>
+<area shape="rect" id="node14" href="$ed__init__atm_8_f90.html#a67ae59514caf7fea8936bca72628f5ca" title="ed_init_atm" alt="" coords="842,165,931,191"/>
+<area shape="rect" id="node15" href="$euler__driver_8f90.html#a5219f633b6d9b0d321429096e0d3ea66" title="euler_timestep" alt="" coords="833,542,940,569"/>
+<area shape="rect" id="node16" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="417,423,521,450"/>
+<area shape="rect" id="node17" href="$events_8f90.html#a322bdb70cc0c534c9e30db1a3a4b58a0" title="event_fertilize" alt="" coords="419,322,519,349"/>
+<area shape="rect" id="node18" href="$events_8f90.html#a344468d6236c4635f3bd01bc47acde4a" title="event_till" alt="" coords="433,373,505,399"/>
+<area shape="rect" id="node19" href="$namespacefuse__fiss__utils.html#ac265957681eedff0e33bd5c3cdeca31d" title="fuse_fiss_utils::fuse\l_2_patches" alt="" coords="401,205,537,247"/>
+<area shape="rect" id="node21" href="$namespacegrowth__balive.html#a7781ae229b2399c90d50858382665ee8" title="Updates living biomass. " alt="" coords="585,441,749,467"/>
+<area shape="rect" id="node22" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="833,694,940,721"/>
+<area shape="rect" id="node23" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="829,226,944,253"/>
+<area shape="rect" id="node24" href="$reproduction_8f90.html#ab93bbb9a2c0f8aa6853ede0ae86d0a20" title="reproduction" alt="" coords="621,306,714,333"/>
+<area shape="rect" id="node25" href="$namespacerk4__driver.html#abf8bd20405c7ed6a7bab3bdb18d8de87" title="rk4_driver::rk4_timestep" alt="" coords="807,298,967,325"/>
+<area shape="rect" id="node26" href="$update__derived__props_8f90.html#aca71347e6bbc44bc819245407450904d" title="update_derived_props" alt="" coords="1024,30,1171,57"/>
+<area shape="rect" id="node20" href="$namespacefuse__fiss__utils.html#aee30640ff825246fb4c9f5f1f41470be" title="fuse_fiss_utils::fuse\l_patches" alt="" coords="599,223,735,264"/>
+</map>
