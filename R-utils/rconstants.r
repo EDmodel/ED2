@@ -345,7 +345,8 @@ tiny.num  <<- 1.e-19
 #------------------------------------------------------------------------------------------#
 #     Default NA for chron objects.                                                        #
 #------------------------------------------------------------------------------------------#
-NA_dates_ <<- chron(dates=NA)
-NA_times_ <<- chron(times=NA)
-NA_chron_ <<- chron(dates=NA,times=NA)
+NA_dates_   <<- chron(dates=NA)
+NA_times_   <<- chron(times=NA)
+NA_chron_   <<- chron(dates=NA,times=NA)
+NA_logical_ <<- as.logical(NA)
 #------------------------------------------------------------------------------------------#

@@ -240,7 +240,7 @@ cloud.metrics <<- function( x
       #------------------------------------------------------------------------------------#
       #     Keep only the vegetation returns.                                              #
       #------------------------------------------------------------------------------------#
-      selveg = x$pt.class %in% c(3,4,5)
+      selveg = x$pt.class %in% c(0,1,3,4,5)
       #----- Check whether to use the subset or the entire thing (to generate NA). --------#
       if (sum(selveg) >= min.pts){
          zveg   = x$z[selveg]
@@ -253,7 +253,7 @@ cloud.metrics <<- function( x
 
 
 
-      #----- Find the Mac-Arthurn Horn metrics. -------------------------------------------#
+      #----- Find the vegetation metrics. -------------------------------------------------#
       if (summ.only){
          plant = .Int.summary.metrics( z       = zveg
                                      , ptc     = ptcveg
@@ -296,7 +296,7 @@ cloud.metrics <<- function( x
       #------------------------------------------------------------------------------------#
       #     Keep only the first returns that are vegetation.                               #
       #------------------------------------------------------------------------------------#
-      selvfr = (x$pt.class %in% c(3,4,5)) & (x$retn.number %in% min(x$retn.number))
+      selvfr = (x$pt.class %in% c(0,1,3,4,5)) & (x$retn.number %in% min(x$retn.number))
       #----- Check whether to use the subset or the entire thing (to generate NA). --------#
       if (sum(selvfr) >= min.pts){
          zvfr   = x$z[selvfr]
@@ -523,7 +523,7 @@ cloud.metrics <<- function( x
       #------------------------------------------------------------------------------------#
    }else{
       #----- Discard data that are not classified as vegetation. --------------------------#
-      zveg     = ifelse( ptc %in% c(3,4,5),z,NA)
+      zveg     = ifelse( ! ptc %in% 2, z,NA)
       find.can = any(is.finite(zveg))
       #------------------------------------------------------------------------------------#
    }#end if (is.null(ptc))
@@ -538,7 +538,7 @@ cloud.metrics <<- function( x
    if (find.can){
       #----- Use heights to break the return signal in classes. ---------------------------#
       zcut         = cut(x=zveg,breaks=zbreaks,right=FALSE)
-      zprop        = lapply( X   = tapply(X=z,INDEX=zcut,FUN=length,simplify=FALSE)
+      zprop        = lapply( X   = tapply(X=zveg,INDEX=zcut,FUN=length,simplify=FALSE)
                            , FUN = '/'
                            , e2  = nz
                            )#end lapply
@@ -721,7 +721,7 @@ open.fcan <<- function( pt.cloud
       ans = rep(NA,times=length(zabove))
    }else{
       #----- Discard data that are not classified as vegetation. --------------------------#
-      zveg    = ifelse( pt.cloud$pt.class %in% c(3,4,5) & pt.cloud$z %>=% zabove[1]
+      zveg    = ifelse( pt.cloud$pt.class %in% c(0,1,3,4,5) & pt.cloud$z %>=% zabove[1]
                       , pt.cloud$z
                       , NA
                       )#end ifelse

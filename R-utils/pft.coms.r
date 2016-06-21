@@ -431,6 +431,7 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
+   hgt.max.trop = 35.0
 }else if (iallom %in% c(2,3)){
    #---------------------------------------------------------------------------------------#
    #     Use the allometry proposed by:                                                    #
@@ -442,30 +443,31 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = 61.7
    b1Ht.trop    = 0.0352
    b2Ht.trop    = 0.694
+   hgt.max.trop = 35.0
    #---------------------------------------------------------------------------------------#
 }else if (iallom %in% c(4)){
    #---------------------------------------------------------------------------------------#
    #     Allometric equation based on the Sustainable Landscapes data.                     #
    #                                                                                       #
-   #    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass      #
-   #       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in        #
-   #       prep.                                                                           #
+   #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in       #
+   #       the Amazon. Biogeosciences, in prep.                                            #
    #                                                                                       #
    #    Equation was derived from multiple forest inventories carried out at multiple      #
    # locations in the Brazilian Amazon, and fitted using a heteroscedastic least           #
    # squares approach (though results converged to a homoscedastic fit).  This equation    #
    # is very similar to Feldpausch et al (2012) equation for South America.                #
    #                                                                                       #
-   # Total number of trees: 14860                                                          #
-   # hgt_ref = 46.2515 (95% CI: [  45.67;  47.16])                                         #
-   # b1Ht    = 0.04364 (95% CI: [0.04247;0.04467])                                         #
-   # b2Ht    = 0.81644 (95% CI: [0.8019; 0.8271])                                          #
-   # R2      = 0.660                                                                       #
-   # RMSE    = 5.5                                                                         #
+   # Total number of trees: 17010                                                          #
+   # hgt_ref = 47.2    (95% CI: [  44.8;   48.8])                                          #
+   # b1Ht    = 0.0440  (95% CI: [0.0427; 0.0454])                                          #
+   # b2Ht    = 0.802   (95% CI: [ 0.788;  0.822])                                          #
+   # R2      = 0.677                                                                       #
+   # RMSE    = 5.4                                                                         #
    #---------------------------------------------------------------------------------------#
-   hgt.ref.trop = 50.655   # 46.2515
-   b1Ht.trop    = 0.044307 # 0.04364
-   b2Ht.trop    = 0.76866  # 0.81644
+   hgt.ref.trop = 47.173
+   b1Ht.trop    = 0.044037
+   b2Ht.trop    = 0.80248
+   hgt.max.trop = 45.0
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -588,7 +590,7 @@ pft02 = list( name               = "Early tropical"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 16.0 / 3900.
             , agf.bs             = 0.7
@@ -649,7 +651,7 @@ pft03 = list( name               = "Mid tropical"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 11.6 / 3900.
             , agf.bs             = 0.7
@@ -710,7 +712,7 @@ pft04 = list( name               = "Late tropical"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 9.67 / 3900.
             , agf.bs             = 0.7
@@ -1264,7 +1266,7 @@ pft17 = list( name               = "Araucaria"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 10.0 / 3900.
             , agf.bs             = 0.7
@@ -1299,13 +1301,13 @@ for (p in sequence(npft+1)){
 #------------------------------------------------------------------------------------------#
 #      Change maximum height of tropical trees to 99% of the maximum height.               #
 #------------------------------------------------------------------------------------------#
-if (iallom %in% c(4)){
-   for (ipft in sequence(npft)){
-      if (pft$tropical[ipft] && (! pft$grass[ipft])){
-         pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
-      }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
-   }#end for (ipft in sequence(npft))
-}#end if
+#if (iallom %in% c(4)){
+#   for (ipft in sequence(npft)){
+#       if (pft$tropical[ipft] && (! pft$grass[ipft])){
+#          pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
+#       }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
+#    }#end for (ipft in sequence(npft))
+# }#end if
 #------------------------------------------------------------------------------------------#
 
 
@@ -1396,8 +1398,24 @@ for (ipft in sequence(npft)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Ca[ipft] = pi * 0.40309^2
-         pft$b2Ca[ipft] = 2. * 0.61278
+         #     Replace b1Cr/b2Cr ("Crown Radius") coefficients by those calculated by:     #
+         #                                                                                 #
+         #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in #
+         #       the Amazon. Biogeosciences, in prep.                                      #
+         #                                                                                 #
+         #    Equation was derived from forest inventory measurements carried out at       #
+         # multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic  #
+         # least squares approach.  Note that their original equation relates DBH with     #
+         # crown radius, so we transform radius into area.                                 #
+         #                                                                                 #
+         # Total number of trees: 17072                                                    #
+         # b1Cr    = 0.402 (95% CI: [0.394;0.412])                                         #
+         # b2Cr    = 0.615 (95% CI: [0.607;0.622])                                         #
+         # R2      = 0.589                                                                 #
+         # RMSE    = 0.999                                                                 #
+         #---------------------------------------------------------------------------------#
+         pft$b1Ca[ipft] = pi * 0.40223^2
+         pft$b2Ca[ipft] = 2. * 0.61462
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1477,10 +1495,11 @@ for (ipft in sequence(npft)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.3201235 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.2940237
-         pft$b1Bs.large[ipft] = C2B * 2.040761  * pft$rho[ipft]
-         pft$b2Bs.large[ipft] = 1.970171
+         pft$b1Bs.small[ipft] = C2B * 0.2358174 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.3739128
+         pft$b2Bs.large[ipft] = 1.968890
+         pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
+                                ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1489,23 +1508,22 @@ for (ipft in sequence(npft)){
       #------------------------------------------------------------------------------------#
       #     Replace b1Cl/b2Cl coefficients by those calculated by:                         #
       #                                                                                    #
-      #    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   #
-      #       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     #
-      #       prep.                                                                        #
+      #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    #
+      #       the Amazon. Biogeosciences, in prep.                                         #
       #                                                                                    #
       #    Equation was derived from forest inventory measurements carried out at multiple #
       # locations in the Brazilian Amazon, and fitted using a heteroscedastic least        #
       # squares approach.                                                                  #
       #                                                                                    #
-      # Total number of trees: 14731                                                       #
-      # b1Cl    = 0.29711 (95% CI: [0.28833;0.30821])                                      #
-      # b2Cl    = 1.0326  (95% CI: [ 1.0193; 1.0421])                                      #
-      # R2      = 0.677                                                                    #
+      # Total number of trees: 16064                                                       #
+      # b1Cl    = 0.298 (95% CI: [0.288;0.306])                                            #
+      # b2Cl    = 1.032 (95% CI: [1.022;1.044])                                            #
+      # R2      = 0.673                                                                    #
       # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(4) && (! pft$grass[ipft])){
-         pft$b1Cl[ipft] = 0.29711
-         pft$b2Cl[ipft] = 1.0326
+         pft$b1Cl[ipft] = 0.29754
+         pft$b2Cl[ipft] = 1.0324
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1536,7 +1554,7 @@ for (ipft in sequence(npft)){
 
 
 #------------------------------------------------------------------------------------------#
-#    Rooting depth coefficients.                                                                               #
+#    Rooting depth coefficients.                                                           #
 #------------------------------------------------------------------------------------------#
 pft$b1Rd = rep(NA,times=npft+1)
 if (iallom %in% c(0)){

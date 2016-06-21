@@ -838,8 +838,20 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"sas_iage01_pft05"
                                                    ,"sas_iage30_pft02"
                                                    ,"sas_iage30_pft05"
+                                                   ,"ble_age30_pft02"
+                                                   ,"ble_age30_pft05"
+                                                   ,"sas_age01_pft02"
+                                                   ,"sas_age01_pft05"
+                                                   ,"sas_age30_pft02"
+                                                   ,"sas_age30_pft05"
                                                    )#end values
                                        , names  = c("2 PFTs"
+                                                   ,"5 PFTs"
+                                                   ,"Size + 2 PFTs"
+                                                   ,"Size + 5 PFTs"
+                                                   ,"Size + Age + 2 PFTs"
+                                                   ,"Size + Age + 5 PFTs"
+                                                   ,"2 PFTs"
                                                    ,"5 PFTs"
                                                    ,"Size + 2 PFTs"
                                                    ,"Size + 5 PFTs"
@@ -918,26 +930,6 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , numeric = TRUE
                                        , values = c(0,1)
                                        , names  = c("OFF","ON")
-                                       )#end list
-   flagvar[["crcp"  ]]           = list( descr  = "CO2 change"
-                                       , numeric = TRUE
-                                       , values = c(0,26,45,60,85)
-                                       , names  = c( "No change"
-                                                   , "RCP-2.6"
-                                                   , "RCP-4.5"
-                                                   , "RCP-6.0"
-                                                   , "RCP-8.5"
-                                                   )#end c
-                                       )#end list
-   flagvar[["trcp"  ]]           = list( descr  = "Temp. change"
-                                       , numeric = TRUE
-                                       , values = c(0,26,45,60,85)
-                                       , names  = c( "No change"
-                                                   , "RCP-2.6"
-                                                   , "RCP-4.5"
-                                                   , "RCP-6.0"
-                                                   , "RCP-8.5"
-                                                   )#end c
                                        )#end list
    #---------------------------------------------------------------------------------------#
 
@@ -1265,10 +1257,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(          10,               17,             24)
          nz     = c(          11,               18,             26)
       }else if (lenici == 27){
-         nparms = 3
-         param  = c("crcp","trcp","drain")
-         na     = c(    10,    17,     24)
-         nz     = c(    11,    18,     27)
+         nparms = 2
+         param  = c("ivegt.dynamics","ihrzrad")
+         na     = c(             16,        26)
+         nz     = c(             17,        27)
       }else if (lenici == 28){
          nparms = 3
          param  = c("iphen.scheme", "isoil.text","treefall")
@@ -1309,6 +1301,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("yeara","iphen.scheme","isoil.text","treefall")
          na     = c(      9,            18,          27,        36)
          nz     = c(     11,            20,          28,        38)
+      }else if (lenici == 39){
+         nparms = 3
+         param  = c("struct","iphen.scheme","include.fire")
+         na     = c(      10,            30,            38)
+         nz     = c(      24,            32,            39)
       }else if (lenici == 40){
          nparms = 4
          param  = c("grow.resp","vm0","leaf.resp","root.resp")
@@ -1357,6 +1354,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
             n = match(mycharval,flagvar[[mytest]]$values)
          }#end if
          if (is.na(n)){
+            browser()
             stop(paste(" Option ",myval," doesn't exist for",flagvar[[mytest]]$descr,"..."
                       ,sep=""))
          }else{

@@ -3,7 +3,7 @@
 #     This function creates an expression object that has the description and the units    #
 # with sub-scripts, superscripts and stuff.                                                #
 #------------------------------------------------------------------------------------------#
-desc.unit <<- function(desc,unit,bracket=TRUE){
+desc.unit <<- function(desc,unit,bracket=TRUE,dxpr=FALSE){
    if (missing(desc) | missing(unit)){
       cat(" - Missing \"desc\": ",missing(desc),"\n")
       cat(" - Missing \"unit\": ",missing(unit),"\n")
@@ -13,7 +13,11 @@ desc.unit <<- function(desc,unit,bracket=TRUE){
    if (is.null(desc) && is.null(unit)){
       answer = ""
    }else if (is.null(unit)){
-      answer = desc
+      if (dxpr){
+         answer = parse(text=desc)
+      }else{
+         answer = desc
+      }#end if
    }else if (is.null(desc)){
       if (bracket){
          answer = parse(text=paste("paste(\"[\",",unit,",\"]\")",sep=""))
@@ -21,10 +25,18 @@ desc.unit <<- function(desc,unit,bracket=TRUE){
          answer = parse(text=paste("paste(\"\",",unit,",\"\")",sep=""))
       }#end if
    }else{
-      if (bracket){
-         answer = parse(text=paste("paste(\"",desc,"\",\" [\",",unit,",\"]\")",sep=""))
+      if (dxpr){
+         if (bracket){
+            answer = parse(text=paste("paste(",desc,",\" [\",",unit,",\"]\")",sep=""))
+         }else{
+            answer = parse(text=paste("paste(",desc,",\" \",",unit,",\"\")",sep=""))
+         }#end if
       }else{
-         answer = parse(text=paste("paste(\"",desc,"\",\" \",",unit,",\"\")",sep=""))
+         if (bracket){
+            answer = parse(text=paste("paste(\"",desc,"\",\" [\",",unit,",\"]\")",sep=""))
+         }else{
+            answer = parse(text=paste("paste(\"",desc,"\",\" \",",unit,",\"\")",sep=""))
+         }#end if
       }#end if
    }#end if
 

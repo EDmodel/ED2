@@ -104,14 +104,14 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
 
 
    #----- Keep only the points that are within bounds. ------------------------------------#
-   keep     = pt.cloud$z %>=% 0 & pt.cloud$z %<% zh & pt.cloud$pt.class %in% c(2,3,4,5)
+   keep     = pt.cloud$z %>=% 0 & pt.cloud$z %<% zh & pt.cloud$pt.class %in% c(0,1,2,3,4,5)
    pt.cloud = pt.cloud[keep,]
    #---------------------------------------------------------------------------------------#
 
 
    #----- Generate flags for ground and vegetation returns. -------------------------------#
-   veg.cloud = pt.cloud[pt.cloud$pt.class %in% c(3,4,5),]
-   gnd.cloud = pt.cloud[pt.cloud$pt.class %in% c(2)    ,]
+   veg.cloud = pt.cloud[pt.cloud$pt.class %in% c(0,1,3,4,5),]
+   gnd.cloud = pt.cloud[pt.cloud$pt.class %in% c(2)        ,]
    #---------------------------------------------------------------------------------------#
 
 
