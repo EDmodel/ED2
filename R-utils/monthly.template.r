@@ -16,13 +16,13 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    }else if ( file.exists(h5first.bz2) ){
       temp.file = file.path(tempdir(),basename(h5first))
       dummy     = bunzip2(filename=h5first.bz2,destname=temp.file,remove=FALSE)
-      mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+      mymont    = H5Fopen(h5first) #hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
       dummy     = file.remove(temp.file)
 
    }else if ( file.exists(h5first.gz) ){
       temp.file = file.path(tempdir(),basename(h5first))
       dummy     = gunzip(filename=h5first.gz,destname=temp.file,remove=FALSE)
-      mymont    = hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
+      mymont    = H5Fopen(h5first) #hdf5load(file=temp.file,load=FALSE,verbosity=0,tidy=TRUE)
       dummy     = file.remove(temp.file)
 
    }else{

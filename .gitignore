@@ -158,3 +158,5 @@ ED/build/thermal_sums*/*
 Doc/*
 Script*.sh
 src_script.sh
+ED/build/make/*
+R-utils/*

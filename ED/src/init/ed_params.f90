@@ -1619,7 +1619,7 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.300000 * ssfact * vmfact_c3
    Vm0(14:15)                = 12.500000 * ssfact * vmfact_c4
    Vm0(16)                   = 18.750000 * ssfact * vmfact_c3
-   Vm0(17)                   = 18.750000 * ssfact * vmfact_c3!56.25
+   Vm0(17)                   = 9.0970000 * ssfact * vmfact_c3!27.29 coming from nancy data
    !---------------------------------------------------------------------------------------!
 
 
@@ -1980,7 +1980,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
    leaf_turnover_rate(16)         = 2.0
-   leaf_turnover_rate(17)         = 1.0!check
+   leaf_turnover_rate(17)         = 0.54! set by matching SLA withh Sanchez A. 2009
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = leaf_turnover_rate(1)
@@ -2545,7 +2545,7 @@ subroutine init_pft_alloc_params()
    ! sla_inter =  1.6923
    ! sla_slope = -0.3305
    !----- New parameters. -----------------------------------------------------------------!
-   sla_scale =  0.1 * C2B
+   sla_scale =  0.1 * C2B!C2B=2
    sla_inter =  2.4
    sla_slope = -0.46
 
@@ -2725,6 +2725,10 @@ subroutine init_pft_alloc_params()
          end if
       end do
    end select
+
+   !-------------------- Liana allometry made up ------------------------------------------!
+   b1Ht(17) = b1Ht(17) * 0.5
+   b2Ht(17) = b2Ht(17) / 0.8
    !---------------------------------------------------------------------------------------!
 
 
@@ -3100,6 +3104,9 @@ subroutine init_pft_alloc_params()
          end if
       end do
    end select
+
+   !---------------------------- Liana allometry ------------------------------------------!
+   b2Ca = b2Ca * 1.2
    !---------------------------------------------------------------------------------------!
 
 
@@ -3306,7 +3313,7 @@ c2n_leaf(9)      = 1000.0 / ((0.11289 + 0.12947 *      18.25) * SLA(9)    )
 c2n_leaf(10)     = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(10)   )
 c2n_leaf(11)     = 1000.0 / ((0.11289 + 0.12947 *       6.25) * SLA(11)   )
 c2n_leaf(12:15)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(12:15)) * SLA(12:15))
-c2n_leaf(16:17)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(16:17)) * SLA(16:17))!8.56
+c2n_leaf(16:17)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(16:17)) * SLA(16:17))!23.5
 
 
 

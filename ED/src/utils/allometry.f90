@@ -29,20 +29,15 @@ module allometry
       !------------------------------------------------------------------------------------!
       !----- Size- and age-structure (typical ED model). ----------------------------------!
       if (is_tropical(ipft)) then
-          if (is_liana(ipft)) then
-              h2dbh = 0.5 * ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )   &
-                  ** ( 0.8 / b2Ht(ipft) )!made up
-          else
-              select case (iallom)
-                  case (0,1)
-                      !----- Default ED-2.1 allometry. ----------------------------------------------!
-                      h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
-                  case default
-                      !----- Poorter et al. (2006) allometry. ---------------------------------------!
-                      h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
-                          ** ( 1.0 / b2Ht(ipft) )
-              end select
-          end if
+          select case (iallom)
+              case (0,1)
+                  !----- Default ED-2.1 allometry. ----------------------------------------------!
+                  h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
+              case default
+                  !----- Poorter et al. (2006) allometry. ---------------------------------------!
+                  h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
+                      ** ( 1.0 / b2Ht(ipft) )
+          end select
       else ! Temperate
           h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
       end if
@@ -87,18 +82,14 @@ module allometry
               !----- Size- and age-structure (typical ED model). -------------------------------!
               if (is_tropical(ipft)) then
                   mdbh = min(dbh,dbh_crit(ipft))
-                  if (is_liana(ipft)) then
-                  dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * 2. * mdbh ** (b2Ht(ipft)/0.8) ) )!made up
-                  else
-                      select case (iallom)
-                          case (0,1)
-                              !----- Default ED-2.1 allometry. -------------------------------------------!
-                              dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-                          case default
-                              !----- Poorter et al. (2006) allometry. ------------------------------------!
-                              dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * mdbh ** b2Ht(ipft) ) )
-                      end select
-                  end if
+                  select case (iallom)
+                      case (0,1)
+                          !----- Default ED-2.1 allometry. -------------------------------------------!
+                          dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
+                      case default
+                          !----- Poorter et al. (2006) allometry. ------------------------------------!
+                          dbh2h = hgt_ref(ipft) * (1. - exp (-b1Ht(ipft) * mdbh ** b2Ht(ipft) ) )
+                  end select
               else !----- Temperate PFT allometry. ---------------------------------------------!
                   dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
               end if
@@ -415,31 +406,21 @@ module allometry
          dbh2ca = 0.0
       else
 
-         !----- make this function generic to size, not just dbh. -------------------------!
-         loclai = sla * size2bl(dbh,hite,ipft) 
-         select case (iallom)
-             case (0)
-                 !----- No upper bound in the allometry. ---------------------------------------!
-                 if (is_liana(ipft)) then
-                     dbh2ca = b1Ca(ipft) * dbh ** (1.2 * b2Ca(ipft))
-                 else
-                     dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
-                 end if
-!                 write(*,*) "dbh2ca1=", dbh2ca
+          !----- make this function generic to size, not just dbh. -------------------------!
+          loclai = sla * size2bl(dbh,hite,ipft)
+          select case (iallom)
+              case (0)
+                  !----- No upper bound in the allometry. ---------------------------------------!
+                  dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
 
-         case default
-         !----- Impose a maximum crown area. -------------------------------------------!
-         if (is_liana(ipft)) then
-             dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft) ) ** (1.2 * b2Ca(ipft))
-!             write(*,*) "dbh2ca2=", b1Ca(ipft), dbh, dbh_crit(ipft), b2Ca(ipft), dbh2ca
-         else
-             if (is_grass(ipft) .and. igrass==1) then
-                 dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
-             else
-                 dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
-             end if
-         end if
-         end select
+              case default
+                  !----- Impose a maximum crown area. -------------------------------------------!
+                  if (is_grass(ipft) .and. igrass==1) then
+                      dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
+                  else
+                      dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
+                  end if
+          end select
       end if
 
       !----- Local LAI / Crown area should never be less than one. ------------------------!

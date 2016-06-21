@@ -5,6 +5,7 @@
 pretty.log = function(x,base=10,n=5,forcelog=FALSE){
    log.neat  = pretty(x=log(x,base=base),n=n)
    dlog.neat = median(diff(log.neat))
+   if (abs(dlog.neat - 0.1) < 1e-5) dlog.neat = 0.1 
    neat      = base^log.neat
    nact      = length(neat)
 
