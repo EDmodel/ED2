@@ -203,6 +203,7 @@ par.user <<- list( bg       = "transparent"
 loaded.package = list()
 loaded.package[["abind"       ]] = require(abind       )
 loaded.package[["akima"       ]] = require(akima       )
+loaded.package[["beanplot"    ]] = require(beanplot    )
 loaded.package[["boot"        ]] = require(boot        )
 loaded.package[["car"         ]] = require(car         )
 loaded.package[["caTools"     ]] = require(caTools     )
@@ -210,38 +211,40 @@ loaded.package[["chron"       ]] = require(chron       )
 loaded.package[["compiler"    ]] = require(compiler    )
 loaded.package[["fields"      ]] = require(fields      )
 loaded.package[["gbm"         ]] = require(gbm         )
-#loaded.package[["geoR"        ]] = require(geoR        )
-#loaded.package[["glmulti"     ]] = require(glmulti     )
+loaded.package[["gdalUtils"   ]] = require(gdalUtils   )
+loaded.package[["geoR"        ]] = require(geoR        )
+loaded.package[["glmulti"     ]] = require(glmulti     )
+loaded.package[["gpclib"      ]] = require(gpclib      )
 loaded.package[["grDevices"   ]] = require(grDevices   )
-#loaded.package[["gstat"       ]] = require(gstat       )
-loaded.package[["rhdf5"       ]] = require(rhdf5       )
+loaded.package[["gstat"       ]] = require(gstat       )
+loaded.package[["hdf5"        ]] = require(hdf5        )
 loaded.package[["klaR"        ]] = require(klaR        )
-#loaded.package[["kriging"     ]] = require(kriging     )
-#loaded.package[["leaps"       ]] = require(leaps       )
+loaded.package[["kriging"     ]] = require(kriging     )
+loaded.package[["leaps"       ]] = require(leaps       )
 loaded.package[["maps"        ]] = require(maps        )
-#loaded.package[["mapdata "    ]] = require(mapdata     )
+loaded.package[["mapdata "    ]] = require(mapdata     )
 loaded.package[["MASS"        ]] = require(MASS        )
-#loaded.package[["MCMCpack"    ]] = require(MCMCpack    )
-#loaded.package[["ncdf"        ]] = require(ncdf        )
+loaded.package[["MCMCpack"    ]] = require(MCMCpack    )
 loaded.package[["nlme"        ]] = require(nlme        )
 loaded.package[["numDeriv"    ]] = require(numDeriv    )
-#loaded.package[["PBSmapping"  ]] = require(PBSmapping  )
+loaded.package[["PBSmapping"  ]] = require(PBSmapping  )
 loaded.package[["plotrix"     ]] = require(plotrix     )
 loaded.package[["proto"       ]] = require(proto       )
 loaded.package[["randomForest"]] = require(randomForest)
 loaded.package[["raster"      ]] = require(raster      )
 loaded.package[["rgdal"       ]] = require(rgdal       )
-#loaded.package[["rgeos"       ]] = require(rgeos       )
-#loaded.package[["rJava"       ]] = require(rJava       )
+loaded.package[["rgeos"       ]] = require(rgeos       )
+loaded.package[["rJava"       ]] = require(rJava       )
 loaded.package[["robustbase"  ]] = require(robustbase  )
-#loaded.package[["RSEIS"       ]] = require(RSEIS       )
+loaded.package[["RSEIS"       ]] = require(RSEIS       )
 loaded.package[["R.utils"     ]] = require(R.utils     )
-#loaded.package[["shapefiles"  ]] = require(shapefiles  )
-#loaded.package[["splancs"     ]] = require(splancs     )
-#loaded.package[["sn"          ]] = require(sn          )
+loaded.package[["shapefiles"  ]] = require(shapefiles  )
+loaded.package[["splancs"     ]] = require(splancs     )
+loaded.package[["sn"          ]] = require(sn          )
 loaded.package[["sp"          ]] = require(sp          )
 loaded.package[["stats4"      ]] = require(stats4      )
-#loaded.package[["VoxR"        ]] = require(VoxR        )
+loaded.package[["vioplot"     ]] = require(vioplot     )
+loaded.package[["VoxR"        ]] = require(VoxR        )
 loaded.package[["zoo"         ]] = require(zoo         )
 loaded.package = unlist(loaded.package)
 if (! all(loaded.package)){
@@ -347,6 +350,46 @@ for (iscript in sequence(nscripts)){
 }#end for
 options(warn=warn.orig)
 #------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Check for fortran code to be loaded.                                                #
+#------------------------------------------------------------------------------------------#
+all.f90  = sort( c( list.files(path=srcdir,pattern="\\.[Ff]90$")
+                  , list.files(path=srcdir,pattern="\\.[Ff]$")
+                  )#end c
+               )#end sort
+nall.f90 = length(all.f90)
+nmiss    = 0
+for (if90 in sequence(nall.f90)){
+   fnow    = file.path(srcdir,all.f90[if90])
+   flib.so = fnow
+   flib.so = gsub(pattern = "\\.[Ff]90$",replacement=".so",x=flib.so)
+   flib.so = gsub(pattern = "\\.[Ff]$"  ,replacement=".so",x=flib.so)
+   flib.sl = fnow
+   flib.sl = gsub(pattern = "\\.[Ff]90$",replacement=".sl",x=flib.sl)
+   flib.sl = gsub(pattern = "\\.[Ff]$"  ,replacement=".sl",x=flib.sl)
+
+   #----- Check whether dynamic library can be loaded. ------------------------------------#
+   if (file.exists(flib.so)){
+      dummy = try(dyn.load(flib.so))
+      if ("try-error" %in% is(dummy)){
+         cat("   - Fortran library ",basename(flib.so)," must be recompiled here!","\n")
+      }#end if
+   }else if (file.exists(flib.sl)){
+      dyn.load(flib.sl)
+      if ("try-error" %in% is(dummy)){
+         cat("   - Fortran library ",basename(flib.sl)," must be recompiled here!","\n")
+      }#end if
+   }else{
+      cat("   - Fortran file ",basename(fnow)," must be compiled here!","\n")
+      nmiss = nmiss + 1
+   }#end if (! file.exists(flib))
+}#end for
+if (nmiss > 0) stop(" Fix problems with your fortran files.")
+#------------------------------------------------------------------------------------------#
+
 
 
 #------------------------------------------------------------------------------------------#

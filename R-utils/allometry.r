@@ -9,7 +9,7 @@ h2dbh <<- function(h,ipft){
    }#end if
 
    tropo = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn = pft$tropical[zpft] & iallom %in% c(2,3)
+   tropn = pft$tropical[zpft] & iallom %in% c(2,3,4)
    tempe = ! pft$tropical[zpft]
 
    dbh = NA * h
@@ -44,7 +44,7 @@ dbh2h <<- function(ipft,dbh){
    dbhuse[large] = pft$dbh.crit[zpft[large]]
 
    tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
+   tropn         = pft$tropical[zpft] & iallom %in% c(2,3,4)
    tempe         = ! pft$tropical[zpft]
 
    h         = NA * dbh
@@ -129,16 +129,32 @@ dbh2ca <<- function(dbh,ipft){
    }#end if
 
    #----- Find local LAI, the minimum size for a crown area. ------------------------------#
-   bleaf  = dbh2bl(dbh,ipft)
-   loclai = pft$SLA[zpft] * bleaf
-   
-   dbhuse        = dbh
-   large         = is.finite(dbh) & dbh > pft$dbh.crit[zpft]
-   dbhuse[large] = pft$dbh.crit[zpft[large]]
-   crown         = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
+   loclai = pft$SLA[zpft] * dbh2bl(dbh,ipft)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find the effective DBH. ---------------------------------------------------------#
+   dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Decide how to calculate based on allometry.                                       #
+   #---------------------------------------------------------------------------------------#
+   if (iallom %in% c(0,1,2,3)){
+      crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
+   }else if (iallom %in% c(4)){
+      crown = ifelse( dbhuse >= pft$dbh.adult[ipft]
+                    , pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
+                    , loclai
+                    )#end ifelse
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
 
    #----- Local LAI / Crown area should never be less than one. ---------------------------#
    crown = pmin(crown,loclai)
+   #---------------------------------------------------------------------------------------#
 
    return(crown)
 }#end function dbh2ca
@@ -185,7 +201,7 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
       abranch  = pi*kterm*log(dcb.use/dbmin)
       wai      = ( abole + abranch )
       wai      = wai * dbh2ca(dbh=pft$dbh.crit[zpft],ipft=zpft)/max(wai)
-   }else if(! iallom %in% c(3)){
+   }else if(iallom %in% c(0,1,2)){
       wai      = pft$b1WAI[zpft] * dbh.use ^ pft$b2WAI[zpft]
    }else{
       wai      = 0.11 * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
@@ -231,7 +247,7 @@ dbh2rd <<- function(hgt,dbh,ipft){
       #------------------------------------------------------------------------------------#
       vol  = dbh2vol(hgt,dbh,ipft)
       rd   = pft$b1Rd[ipft] * vol ^ pft$b2Rd[ipft]
-   }else if (iallom %in% c(1,2,3)){
+   }else{
        #-----------------------------------------------------------------------------------#
        #    This is just a test allometry, that imposes root depth to be 0.5 m for         #
        # plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.             #
@@ -251,17 +267,29 @@ dbh2rd <<- function(hgt,dbh,ipft){
 
 #==========================================================================================#
 #==========================================================================================#
-#    This function finds the trunk height.  Currently this is based on the following       #
-# reference, which is for a site in Bolivia:                                               #
-#                                                                                          #
-# Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree           #
-#     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.          #
+#    This function finds the trunk height.                                                 #
 #------------------------------------------------------------------------------------------#
 h2crownbh <<- function (height,ipft){
    crown.length = pft$b1Cl[ipft] * height ^ pft$b2Cl[ipft]
    ans          = pmax(0.05,height - crown.length)
    return(ans)
 }#end function h2crownbh
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    This function finds the crown length.                                                 #
+#------------------------------------------------------------------------------------------#
+h2cl <<- function (height,ipft){
+   ans = pft$b1Cl[ipft] * height ^ pft$b2Cl[ipft]
+   return(ans)
+}#end function h2cl
 #==========================================================================================#
 #==========================================================================================#
 
@@ -315,7 +343,7 @@ dbh2bl.alt <<- function (dbh,genus){
       bleaf[large] = 0.0391 / C2B * x[large] ^ 0.5151
 
 
-   }else if(genushere == "hyeronima"){
+   }else if(genushere %in% c("hieronima","hyeronima","hieronyma")){
       h = dbh2h(4,dbh)
       x = dbh^2 * h
       
@@ -538,7 +566,7 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
    #----- Living tree: Chave et al. (2014). -----------------------------------------------#
    agb[tree ] = 0.0673 * (wdens[tree]*dbh[tree]^2*height[tree])^0.976 / C2B
    #----- Palm: Goodman et al. (2013). ----------------------------------------------------#
-   agb[palm ] = exp(-3.448+0.588/2) * dbh[palm]^2.7483 / C2B
+   agb[palm ] = exp(-3.448+0.588^2/2) * dbh[palm]^2.7483 / C2B
    #----- Liana: Schnitzer et al. (2006). -------------------------------------------------#
    agb[liana] = exp(-0.968) * dbh[liana]^2.657 / C2B
    #----- Dead trees: Palace et al. (2007). -----------------------------------------------#
@@ -552,5 +580,28 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
 
    return(agb)
 }#end function agb.SL
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     Volume allometry: this is literally the biomass equation above divided by wood       #
+# density.                                                                                 #
+#                                                                                          #
+# Palace, M., and co-authors, 2007: Necromass in undisturbed ad logged forests in the      #
+#     Brazilian Amazon.  Forest Ecol. Manag., 238, 309-318.                                #
+#     doi:10.1016/j.foreco.2006.10.026                                                     #
+#                                                                                          #
+#------------------------------------------------------------------------------------------#
+vol.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
+
+   vol = 0.002 * agb.SL(dbh,height,wdens,type=type,dead=dead) / wdens
+   return(vol)
+}#end function vol.SL
 #==========================================================================================#
 #==========================================================================================#

@@ -405,7 +405,7 @@ C2B    <<- 2.0
 if ("iallom" %in% ls()){
    iallom <<- iallom
 }else{
-   iallom <<- 2
+   iallom <<- 4
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -431,10 +431,44 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
+   hgt.max.trop = 35.0
 }else if (iallom %in% c(2,3)){
+   #---------------------------------------------------------------------------------------#
+   #     Use the allometry proposed by:                                                    #
+   #                                                                                       #
+   # Poorter, L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree       #
+   #    species: traits, trade-offs, and functional groups.  Ecology, 87, 1289-1301.       #
+   #                                                                                       #
+   #---------------------------------------------------------------------------------------#
    hgt.ref.trop = 61.7
    b1Ht.trop    = 0.0352
-   b2Ht.trop    = 0.694 
+   b2Ht.trop    = 0.694
+   hgt.max.trop = 35.0
+   #---------------------------------------------------------------------------------------#
+}else if (iallom %in% c(4)){
+   #---------------------------------------------------------------------------------------#
+   #     Allometric equation based on the Sustainable Landscapes data.                     #
+   #                                                                                       #
+   #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in       #
+   #       the Amazon. Biogeosciences, in prep.                                            #
+   #                                                                                       #
+   #    Equation was derived from multiple forest inventories carried out at multiple      #
+   # locations in the Brazilian Amazon, and fitted using a heteroscedastic least           #
+   # squares approach (though results converged to a homoscedastic fit).  This equation    #
+   # is very similar to Feldpausch et al (2012) equation for South America.                #
+   #                                                                                       #
+   # Total number of trees: 17010                                                          #
+   # hgt_ref = 47.2    (95% CI: [  44.8;   48.8])                                          #
+   # b1Ht    = 0.0440  (95% CI: [0.0427; 0.0454])                                          #
+   # b2Ht    = 0.802   (95% CI: [ 0.788;  0.822])                                          #
+   # R2      = 0.677                                                                       #
+   # RMSE    = 5.4                                                                         #
+   #---------------------------------------------------------------------------------------#
+   hgt.ref.trop = 47.173
+   b1Ht.trop    = 0.044037
+   b2Ht.trop    = 0.80248
+   hgt.max.trop = 45.0
+   #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -449,6 +483,7 @@ pft01 = list( name               = "C4 grass"
             , key                = "C4G"
             , colour             = "#E5E503"
             , tropical           = TRUE
+            , grass              = TRUE
             , pathway            = 4
             , d0                 = d0.grass
             , vm.hor             = vm.hor
@@ -509,6 +544,7 @@ pft02 = list( name               = "Early tropical"
             , key                = "ETR"
             , colour             = "#9FFF8C"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -554,7 +590,7 @@ pft02 = list( name               = "Early tropical"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 16.0 / 3900.
             , agf.bs             = 0.7
@@ -569,6 +605,7 @@ pft03 = list( name               = "Mid tropical"
             , key                = "MTR"
             , colour             = "#44CC29"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -614,7 +651,7 @@ pft03 = list( name               = "Mid tropical"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 11.6 / 3900.
             , agf.bs             = 0.7
@@ -629,6 +666,7 @@ pft04 = list( name               = "Late tropical"
             , key                = "LTR"
             , colour             = "#137300"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -674,7 +712,7 @@ pft04 = list( name               = "Late tropical"
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 9.67 / 3900.
             , agf.bs             = 0.7
@@ -689,6 +727,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , key                = "TTG"
             , colour             = "#B2B224"
             , tropical           = FALSE
+            , grass              = TRUE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -749,6 +788,7 @@ pft06 = list( name               = "North Pine"
             , key                = "NPN"
             , colour             = "#0066CC"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -809,6 +849,7 @@ pft07 = list( name               = "South Pine"
             , key                = "SPN"
             , colour             = "#99CCFF"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -869,6 +910,7 @@ pft08 = list( name               = "Late conifer"
             , key                = "LCN"
             , colour             = "#00407F"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -929,6 +971,7 @@ pft09 = list( name               = "Early hardwood"
             , key                = "EHW"
             , colour             = "#FF999B"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -989,6 +1032,7 @@ pft10 = list( name               = "Mid hardwood"
             , key                = "MHW"
             , colour             = "#E5171A"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1049,6 +1093,7 @@ pft11 = list( name               = "Late hardwood"
             , key                = "LHW"
             , colour             = "#990003"
             , tropical           = FALSE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1114,6 +1159,7 @@ pft16 = list( name               = "C3 grass"
             , key                = "C3G"
             , colour             = "#F2F291"
             , tropical           = TRUE
+            , grass              = TRUE
             , pathway            = 3
             , d0                 = d0.grass
             , vm.hor             = vm.hor
@@ -1170,10 +1216,11 @@ pft16 = list( name               = "C3 grass"
             , veg.hcap.min       = 3.68093E+00
             )
 
-pft17 = list( name               = "Araucaria"
-            , key                = "ARC"
+pft17 = list( name               = "Lianas"
+            , key                = "Lia"
             , colour             = "#BF60A7"
             , tropical           = TRUE
+            , grass              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1188,19 +1235,19 @@ pft17 = list( name               = "Araucaria"
             , lr.low.temp        = lr.tcold.aa + t00
             , lr.high.temp       = lr.thot.aa  + t00
             , lr.decay.e         = lr.decay.e.aa
-            , vm0                = 15.625  * vmfact.c3 * umol.2.mol
+            , vm0                = 18.75 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.aa
             , alpha              = alpha.c3
             , b                  = b.aa * umol.2.mol
             , gamma.resp         = gamma.aa
-            , effarea.transp     = 2.0
-            , rho                = 0.59
-            , leaf.turnover.rate = 1./6.
-            , root.turnover.rate = 1./6.
-            , SLA                = 10.0
+            , effarea.transp     = 1.0
+            , rho                = 0.46
+            , leaf.turnover.rate = 2.
+            , root.turnover.rate = 2.
+            , SLA                = 22.0
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = b1Ht.trop * 0.5
+            , b2Ht               = b2Ht.trop / 0.8
             , b1Bl.small         = NA
             , b2Bl.small         = NA
             , b1Bl.large         = NA
@@ -1211,17 +1258,17 @@ pft17 = list( name               = "Araucaria"
             , b1Bs.large         = NA
             , b2Bs.large         = NA
             , b1Ca               = 2.490154
-            , b2Ca               = 0.8068806
+            , b2Ca               = 0.8068806 * 1.2
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
-            , b1WAI              = 0.0553 * 0.5
-            , b2WAI              = 1.9769
+            , b1WAI              = 0.0192 * 0.5
+            , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
-            , qsw                = 10.0 / 3900.
+            , qsw                = 22.0 / 3900.
             , agf.bs             = 0.7
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa
@@ -1236,8 +1283,8 @@ pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour="#404040
 
 #----- Build the structure of photosynthesis parameters by PFT. ---------------------------#
 pft = list()
-for (p in 1:(npft+1)){
-  ppp  = substring(100+p,2,3)
+for (p in sequence(npft+1)){
+  ppp  = sprintf("%2.2i",p)
   phph = paste("pft",ppp,sep="")
   if (p == 1){
      pft = get(phph)
@@ -1248,6 +1295,21 @@ for (p in 1:(npft+1)){
      } #end for
   }# end if
 } #end for
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Change maximum height of tropical trees to 99% of the maximum height.               #
+#------------------------------------------------------------------------------------------#
+#if (iallom %in% c(4)){
+#   for (ipft in sequence(npft)){
+#       if (pft$tropical[ipft] && (! pft$grass[ipft])){
+#          pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
+#       }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
+#    }#end for (ipft in sequence(npft))
+# }#end if
+#------------------------------------------------------------------------------------------#
+
 
 
 #----- Minimum and Maximum DBH. -----------------------------------------------------------#
@@ -1259,7 +1321,7 @@ for (ipft in sequence(npft)){
       if (iallom %in% c(0,1)){
          pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit[ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-      }else if (iallom %in% c(2,3)){
+      }else if (iallom %in% c(2,3,4)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
                               / pft$b1Ht[ipft] ) ^ (1.0 / pft$b2Ht[ipft])
@@ -1275,6 +1337,7 @@ for (ipft in sequence(npft)){
    }#end if
    pft$dbh.adult[ipft]   = 10.0
 }#end for
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
@@ -1322,6 +1385,45 @@ d2l   =   0.438
 for (ipft in sequence(npft)){
    if (pft$tropical[ipft]){
       #------------------------------------------------------------------------------------#
+      #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
+      # parameters for crown area.                                                         #
+      #------------------------------------------------------------------------------------#
+      if (iallom %in% c(0,1)){
+         pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
+         pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
+      }else if (iallom %in% c(2,3)){
+         pft$b1Ca[ipft] = exp(ncrown.area[1])
+         pft$b2Ca[ipft] = ncrown.area[2]
+      }else if (iallom %in% c(4)){
+         #---------------------------------------------------------------------------------#
+         #     Allometry using the Sustainable Landscapes data.                            #
+         #---------------------------------------------------------------------------------#
+         #     Replace b1Cr/b2Cr ("Crown Radius") coefficients by those calculated by:     #
+         #                                                                                 #
+         #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in #
+         #       the Amazon. Biogeosciences, in prep.                                      #
+         #                                                                                 #
+         #    Equation was derived from forest inventory measurements carried out at       #
+         # multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic  #
+         # least squares approach.  Note that their original equation relates DBH with     #
+         # crown radius, so we transform radius into area.                                 #
+         #                                                                                 #
+         # Total number of trees: 17072                                                    #
+         # b1Cr    = 0.402 (95% CI: [0.394;0.412])                                         #
+         # b2Cr    = 0.615 (95% CI: [0.607;0.622])                                         #
+         # R2      = 0.589                                                                 #
+         # RMSE    = 0.999                                                                 #
+         #---------------------------------------------------------------------------------#
+         pft$b1Ca[ipft] = pi * 0.40223^2
+         pft$b2Ca[ipft] = 2. * 0.61462
+         #---------------------------------------------------------------------------------#
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
       #      Fill in the leaf biomass parameters.                                          #
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(0,1)){
@@ -1341,18 +1443,20 @@ for (ipft in sequence(npft)){
          pft$b2Bl.large [ipft] = pft$b2Bl.small[ipft]
          pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
                                  * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
-      }else if(iallom %in% c(3)){
+      }else if(iallom %in% c(3,4)){
          #---------------------------------------------------------------------------------#
          #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
-         # mid-successional to be 50gC/plant and interpolate biomass for saplings using a  #
+         # mid-successional to be 20gC/plant and interpolate biomass for saplings using a  #
          # log-linear function.                                                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl.large [ipft] = 0.00873 * pft$SLA[3] / pft$SLA[ipft] # * C2B
+         pft$b1Bl.large [ipft] = 0.00873 * pft$SLA[3] / pft$SLA[ipft]
          pft$b2Bl.large [ipft] = 2.1360
-         
-         bleaf.sapling         = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
+         pft$dbh.adult  [ipft] = ( (pft$b1Bl.large[ipft]*pft$SLA[ipft]/pft$b1Ca[ipft]/C2B)
+                                 ^ (1. / (pft$b2Ca[ipft] - pft$b2Bl.large[ipft]) )
+                                 )#end pft$dbh.adult[ipft]
          pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
                                  * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
+         bleaf.sapling         = 0.02 * C2B * pft$SLA[3] / pft$SLA[ipft]
          pft$b2Bl.small [ipft] = ( log(pft$bleaf.adult[ipft]/bleaf.sapling)
                                  / log(pft$dbh.adult[ipft]/pft$dbh.min[ipft]) )
          pft$b1Bl.small [ipft] = ( pft$bleaf.adult[ipft] * C2B 
@@ -1389,32 +1493,52 @@ for (ipft in sequence(npft)){
          pft$b2Bs.small[ipft] = ndead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
+      }else if (iallom %in% c(4)){
+         #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
+         pft$b1Bs.small[ipft] = C2B * 0.2358174 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.3739128
+         pft$b2Bs.large[ipft] = 1.968890
+         pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
+                                ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if
       #------------------------------------------------------------------------------------#
 
 
 
       #------------------------------------------------------------------------------------#
-      #      Replace the coefficients if we are going to use Poorter et al. (2006)         #
-      # parameters for crown area.                                                         #
+      #     Replace b1Cl/b2Cl coefficients by those calculated by:                         #
+      #                                                                                    #
+      #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    #
+      #       the Amazon. Biogeosciences, in prep.                                         #
+      #                                                                                    #
+      #    Equation was derived from forest inventory measurements carried out at multiple #
+      # locations in the Brazilian Amazon, and fitted using a heteroscedastic least        #
+      # squares approach.                                                                  #
+      #                                                                                    #
+      # Total number of trees: 16064                                                       #
+      # b1Cl    = 0.298 (95% CI: [0.288;0.306])                                            #
+      # b2Cl    = 1.032 (95% CI: [1.022;1.044])                                            #
+      # R2      = 0.673                                                                    #
+      # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(0,1)){
-         pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
-         pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom %in% c(2,3)){
-         pft$b1Ca[ipft] = exp(ncrown.area[1])
-         pft$b2Ca[ipft] = ncrown.area[2]
+      if (iallom %in% c(4) && (! pft$grass[ipft])){
+         pft$b1Cl[ipft] = 0.29754
+         pft$b2Cl[ipft] = 1.0324
       }#end if
       #------------------------------------------------------------------------------------#
 
 
-
       #------------------------------------------------------------------------------------#
-      #     Replace the coefficients for WAI in case iallom is 3.                          #
-      #  These numbers come from fitting Chambers et al. (2001) and Chambers et al. (2004) #
-      #  allometries for stem area index.                                                  #
+      #     Replace the coefficients for WAI in case iallom is 3 or 4.                     #
+      #  These numbers come from fixing WAI to be 11% of the Maximum Leaf Area Index based #
+      #  on observation by                                                                 #
+      #                                                                                    #
+      #  Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,             #
+      #     J. J. O'Brien, and H. Ordonez, 2013: Comparison of direct and indirect methods #
+      #     for assessing leaf area index across a tropical rain forest landscape.         #
+      #     Agric. For. Meteorol., 177, 110--116. doi:10.1016/j.agrformet.2013.04.010.     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(3)){
+      if (iallom %in% c(3,4)){
          pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl.large[ipft]
          pft$b2WAI[ipft] = pft$b2Bl.large[ipft]
       }#end if
@@ -1430,7 +1554,7 @@ for (ipft in sequence(npft)){
 
 
 #------------------------------------------------------------------------------------------#
-#    Rooting depth coefficients.                                                                               #
+#    Rooting depth coefficients.                                                           #
 #------------------------------------------------------------------------------------------#
 pft$b1Rd = rep(NA,times=npft+1)
 if (iallom %in% c(0)){
@@ -1450,7 +1574,7 @@ if (iallom %in% c(0)){
    pft$b2Rd[12:16] = 0.000
    pft$b2Rd[   17] = 0.277
 
-}else if (iallom %in% c(1,2,3)){
+}else{
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
    pft$b1Rd[1:17]  = -1.1140580
    pft$b2Rd[1:17]  =  0.4223014
@@ -1464,19 +1588,6 @@ if (iallom %in% c(0)){
 #------------------------------------------------------------------------------------------#
 pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#     Update colours.                                                                      #
-#------------------------------------------------------------------------------------------#
-#pft$red    = c( 254,   1,  68,   0, 203,  13,   0,  37, 255
-#              , 195, 143, 213, 170, 180, 120, 145, 119,  75 )
-#pft$green  = c( 204, 229, 178,  83, 149, 245, 164, 101,  21
-#              ,  19,  34, 109,  46,  36,   0, 125,  69,  75 )
-#pft$blue   = c(  47,   0,  71,   3,   0, 250, 168, 102,  63
-#              ,  50,  53, 198, 152, 255, 190,  82, 255,  75 )
-#pft$colour = rgb(red=pft$red,green=pft$green,blue=pft$blue,maxColorValue=255)
 #------------------------------------------------------------------------------------------#
 
 

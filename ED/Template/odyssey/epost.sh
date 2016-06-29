@@ -63,6 +63,9 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 #   - read_monthly.r - This reads the monthly mean files (results can then be used for     #
 #                      plot_monthly.r, plot_yearly.r, and others, but it doesn't plot any- #
 #                      thing.)                                                             #
+#   - yearly_ascii.r - This creates three ascii (csv) files with annual averages of        #
+#                      various variables.  It doesn't have all possible variables as it is #
+#                      intended to simplify the output for learning purposes.              #
 #   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
 #   - plot_yearly.r  - This creates plots with year time series.                           #
 #   - plot_ycomp.r   - This creates yearly comparisons based on the monthly mean output.   #
@@ -86,6 +89,7 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
 rscripts="plot_yearly.r"
+#rscripts="yearly_ascii.r"
 #rscripts="plot_monthly.r"
 #rscripts="plot_census.r" 
 #rscripts="plot_ycomp.r"
@@ -280,24 +284,25 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   crown=$(echo   ${oi}      | awk '{print $77}')
-   ltransvis=$(echo ${oi}    | awk '{print $78}')
-   lreflectvis=$(echo ${oi}  | awk '{print $79}')
-   ltransnir=$(echo ${oi}    | awk '{print $80}')
-   lreflectnir=$(echo ${oi}  | awk '{print $81}')
-   orienttree=$(echo ${oi}   | awk '{print $82}')
-   orientgrass=$(echo ${oi}  | awk '{print $83}')
-   clumptree=$(echo ${oi}    | awk '{print $84}')
-   clumpgrass=$(echo ${oi}   | awk '{print $85}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
-   igndvap=$(echo ${oi}      | awk '{print $87}')
-   iphen=$(echo ${oi}        | awk '{print $88}')
-   iallom=$(echo ${oi}       | awk '{print $89}')
-   ibigleaf=$(echo ${oi}     | awk '{print $90}')
-   irepro=$(echo ${oi}       | awk '{print $91}')
-   treefall=$(echo ${oi}     | awk '{print $92}')
-   ianthdisturb=$(echo ${oi} | awk '{print $93}')
-   ianthdataset=$(echo ${oi} | awk '{print $94}')
+   ihrzrad=$(echo ${oi}      | awk '{print $77}')
+   crown=$(echo   ${oi}      | awk '{print $78}')
+   ltransvis=$(echo ${oi}    | awk '{print $79}')
+   lreflectvis=$(echo ${oi}  | awk '{print $80}')
+   ltransnir=$(echo ${oi}    | awk '{print $81}')
+   lreflectnir=$(echo ${oi}  | awk '{print $82}')
+   orienttree=$(echo ${oi}   | awk '{print $83}')
+   orientgrass=$(echo ${oi}  | awk '{print $84}')
+   clumptree=$(echo ${oi}    | awk '{print $85}')
+   clumpgrass=$(echo ${oi}   | awk '{print $86}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
+   igndvap=$(echo ${oi}      | awk '{print $88}')
+   iphen=$(echo ${oi}        | awk '{print $89}')
+   iallom=$(echo ${oi}       | awk '{print $90}')
+   ibigleaf=$(echo ${oi}     | awk '{print $91}')
+   irepro=$(echo ${oi}       | awk '{print $92}')
+   treefall=$(echo ${oi}     | awk '{print $93}')
+   ianthdisturb=$(echo ${oi} | awk '{print $94}')
+   ianthdataset=$(echo ${oi} | awk '{print $95}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -470,7 +475,7 @@ do
       #     Set up the time and output variables according to the script.                  #
       #------------------------------------------------------------------------------------#
       case ${script} in
-      read_monthly.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
+      read_monthly.r|yearly_ascii.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
          #---------------------------------------------------------------------------------#
          #     Scripts that are based on monthly means.  The set up is the same, the only  #
          # difference is in the output names.                                              #
@@ -547,6 +552,12 @@ do
             epostsh="rmon_epost.sh"
             epostlsf="rmon_epost.lsf"
             epostjob="eb-rmon-${polyname}"
+            ;;
+         yearly_ascii.r)
+            epostout="yasc_epost.out"
+            epostsh="yasc_epost.sh"
+            epostlsf="yasc_epost.lsf"
+            epostjob="eb-yasc-${polyname}"
             ;;
          r10_monthly.r)
             epostout="rm10_epost.out"

@@ -9,7 +9,7 @@ joborder="${here}/joborder.txt"         # ! File with the job instructions
 outroot=""
 submit="y"       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod="t"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+useperiod="a"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # "a" -- All period
                  # "t" -- One eddy flux tower met cycle
                  # "u" -- User defined period, defined by the variables below.
@@ -32,10 +32,11 @@ outform="c(\"pdf\")"           # x11 - On screen (deprecated on shell scripts)
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
 #----- DBH classes. -----------------------------------------------------------------------#
-idbhtype=3                     # Type of DBH class
+idbhtype=2                     # Type of DBH class
                                # 1 -- Every 10 cm until 100cm; > 100cm
-                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                               # 2 -- 0-10; 10-20; 20-35; 35-55; 55-80; > 80 (cm)
                                # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+                               # 4 -- 0-10; 10-30; 30-50; 50-80; > 80 (cm)
 #----- Default background colour. ---------------------------------------------------------#
 background=0                   # 0 -- White
                                # 1 -- Pitch black
@@ -62,6 +63,9 @@ initrc="${HOME}/.bashrc"
 #   - read_monthly.r - This reads the monthly mean files (results can then be used for     #
 #                      plot_monthly.r, plot_yearly.r, and others, but it doesn't plot any- #
 #                      thing.)                                                             #
+#   - yearly_ascii.r - This creates three ascii (csv) files with annual averages of        #
+#                      various variables.  It doesn't have all possible variables as it is #
+#                      intended to simplify the output for learning purposes.              #
 #   - plot_monthly.r - This creates several plots based on the monthly mean output.        #
 #   - plot_yearly.r  - This creates plots with year time series.                           #
 #   - plot_ycomp.r   - This creates yearly comparisons based on the monthly mean output.   #
@@ -85,7 +89,8 @@ initrc="${HOME}/.bashrc"
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
 #rscripts="plot_yearly.r"
-rscripts="plot_monthly.r"
+rscripts="yearly_ascii.r"
+#rscripts="plot_monthly.r"
 #rscripts="plot_census.r" 
 #rscripts="plot_ycomp.r"
 #rscripts="plot_eval_ed.r"
@@ -298,24 +303,25 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   crown=$(echo   ${oi}      | awk '{print $77}')
-   ltransvis=$(echo ${oi}    | awk '{print $78}')
-   lreflectvis=$(echo ${oi}  | awk '{print $79}')
-   ltransnir=$(echo ${oi}    | awk '{print $80}')
-   lreflectnir=$(echo ${oi}  | awk '{print $81}')
-   orienttree=$(echo ${oi}   | awk '{print $82}')
-   orientgrass=$(echo ${oi}  | awk '{print $83}')
-   clumptree=$(echo ${oi}    | awk '{print $84}')
-   clumpgrass=$(echo ${oi}   | awk '{print $85}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
-   igndvap=$(echo ${oi}      | awk '{print $87}')
-   iphen=$(echo ${oi}        | awk '{print $88}')
-   iallom=$(echo ${oi}       | awk '{print $89}')
-   ibigleaf=$(echo ${oi}     | awk '{print $90}')
-   irepro=$(echo ${oi}       | awk '{print $91}')
-   treefall=$(echo ${oi}     | awk '{print $92}')
-   ianthdisturb=$(echo ${oi} | awk '{print $93}')
-   ianthdataset=$(echo ${oi} | awk '{print $94}')
+   ihrzrad=$(echo ${oi}      | awk '{print $77}')
+   crown=$(echo   ${oi}      | awk '{print $78}')
+   ltransvis=$(echo ${oi}    | awk '{print $79}')
+   lreflectvis=$(echo ${oi}  | awk '{print $80}')
+   ltransnir=$(echo ${oi}    | awk '{print $81}')
+   lreflectnir=$(echo ${oi}  | awk '{print $82}')
+   orienttree=$(echo ${oi}   | awk '{print $83}')
+   orientgrass=$(echo ${oi}  | awk '{print $84}')
+   clumptree=$(echo ${oi}    | awk '{print $85}')
+   clumpgrass=$(echo ${oi}   | awk '{print $86}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
+   igndvap=$(echo ${oi}      | awk '{print $88}')
+   iphen=$(echo ${oi}        | awk '{print $89}')
+   iallom=$(echo ${oi}       | awk '{print $90}')
+   ibigleaf=$(echo ${oi}     | awk '{print $91}')
+   irepro=$(echo ${oi}       | awk '{print $92}')
+   treefall=$(echo ${oi}     | awk '{print $93}')
+   ianthdisturb=$(echo ${oi} | awk '{print $94}')
+   ianthdataset=$(echo ${oi} | awk '{print $95}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -488,7 +494,7 @@ do
       #     Set up the time and output variables according to the script.                  #
       #------------------------------------------------------------------------------------#
       case ${script} in
-      read_monthly.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
+      read_monthly.r|yearly_ascii.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
          #---------------------------------------------------------------------------------#
          #     Scripts that are based on monthly means.  The set up is the same, the only  #
          # difference is in the output names.                                              #
@@ -565,6 +571,12 @@ do
             epostsh="rmon_epost.sh"
             epostlsf="rmon_epost.lsf"
             epostjob="eb-rmon-${polyname}"
+            ;;
+         yearly_ascii.r)
+            epostout="yasc_epost.out"
+            epostsh="yasc_epost.sh"
+            epostlsf="yasc_epost.lsf"
+            epostjob="eb-yasc-${polyname}"
             ;;
          r10_monthly.r)
             epostout="rm10_epost.out"
@@ -959,8 +971,49 @@ do
       #------------------------------------------------------------------------------------#
       if [ "x${submitnow}" == "xy" ] || [ "x${submitnow}" == "xY" ]
       then
+         #---------------------------------------------------------------------------------#
+         #     Make sure the job won't submit the hard maximum limit.                      #
+         #---------------------------------------------------------------------------------#
+         njobs=$(qstat | wc -l)
+         if [ ${njobs} -ge 130 ]
+         then
+            echo "        + Queue is full... wait until there is room to submit job..."
+            nwait=0
+            while [ ${njobs} -ge 130 ]
+            do
+               let nwait=${nwait}+10
+               echo "        - Waiting before trying again... (${nwait} seconds)..."
+               sleep 10
+               njobs=$(qstat | wc -l)
+            done
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Submit, then check whether it went through.  If not, keep trying until it   #
+         # works (or give up after 10 attempts).                                           #
+         #---------------------------------------------------------------------------------#
          qsub ${epostnow} 1> /dev/null 2> /dev/null
          sleep 3
+         nfail=$(qclean | wc -l)
+         attempt=1
+         while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
+         do
+             let attempt=${attempt}+1
+             echo "        + Failed submission... Trying again (new attempt #${attempt})"
+             qsub ${epostnow} 1> /dev/null 2> /dev/null
+             sleep 3
+             nfail=$(qclean | wc -l)
+             if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
+             then
+                echo "          - Giving up, looks like a more serious problem..."
+             elif [ ${nfail} -eq 0 ]
+             then
+                echo "          - Success!!!"
+             fi
+         done
+         #---------------------------------------------------------------------------------#
       fi
       #------------------------------------------------------------------------------------#
    done
