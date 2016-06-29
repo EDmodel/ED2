@@ -159,4 +159,4 @@ Doc/*
 Script*.sh
 src_script.sh
 ED/build/make/*
-R-utils/*
+Doxyfile
