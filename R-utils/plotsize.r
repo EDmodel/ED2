@@ -103,6 +103,23 @@ plotsize = function( proje                  #  Map projection? [T|F]
    #    Correct the width and height in case this is a map.                                #
    #---------------------------------------------------------------------------------------#
    if (proje){
+      #----- Extend the width in case this will be used for filled.contour. ---------------#
+      if (is.logical(extendfc)){
+         width.fac  = 1.0 + extfactor * as.numeric(extendfc)
+         height.fac = 1.0
+      }else if (tolower(substring(extendfc,1,2)) == "lo"){
+         width.fac  = 1.0 + extfactor
+         height.fac = 1.0
+      }else if (tolower(substring(extendfc,1,2)) == "la"){
+         width.fac  = 1.0
+         height.fac = 1.0 + extfactor
+      }else{
+         width.fac  = 1.0
+         height.fac = 1.0
+      }#end if extendfc
+      #------------------------------------------------------------------------------------#
+
+
       #----- Find the actual ratio using the longitude and latitude. ----------------------#
       interx = max(limlon) - min(limlon)
       intery = max(limlat) - min(limlat)
@@ -119,50 +136,25 @@ plotsize = function( proje                  #  Map projection? [T|F]
       #     Fix the width or height to account for the sought ratio.                       #
       #------------------------------------------------------------------------------------#
       if (ratio >= stdratio){ 
-         height = stdwidth  / ratio
-         width  = stdwidth
+         height = stdwidth * height.fac / ratio
+         width  = width.fac * stdwidth
       }else{
-         height = stdheight
-         width  = stdheight * ratio
+         height = stdheight * height.fac
+         width  = height * ratio * width.fac
       }#end if(actualratio >= stdratio)
       #------------------------------------------------------------------------------------#
 
    }else{
-      #------------------------------------------------------------------------------------#
-      #     Standard height/width, out-of-the-box.                                         #
-      #------------------------------------------------------------------------------------#
-      width  = stdwidth
+
+      #----- Not a map projection.  Use the standard size. --------------------------------#
       height = stdheight
+      width  = stdwidth
+      ratio  = stdratio
       #------------------------------------------------------------------------------------#
+
    }#end if (proje)
    #---------------------------------------------------------------------------------------#
 
-
-
-   #----- Extend the width in case this will be used for filled.contour. ------------------#
-   if (is.logical(extendfc)){
-      width.fac  = 1.0 + extfactor * as.numeric(extendfc)
-      height.fac = 1.0
-   }else if (tolower(substring(extendfc,1,2)) == "lo"){
-      width.fac  = 1.0 + extfactor
-      height.fac = 1.0
-   }else if (tolower(substring(extendfc,1,2)) == "la"){
-      width.fac  = 1.0
-      height.fac = 1.0 + extfactor
-   }else{
-      width.fac  = 1.0
-      height.fac = 1.0
-   }#end if extendfc
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #----- Not a map projection.  Use the standard size. -----------------------------------#
-   height = height * height.fac
-   width  = width  * width.fac
-   ratio  = width  / height
-   #---------------------------------------------------------------------------------------#
 
 
 

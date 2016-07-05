@@ -22,7 +22,7 @@ $ED_NL
    !            initial in the sense that exactly the same information written in the      !
    !            history will be used here.                                                 !
    !---------------------------------------------------------------------------------------!
-   NL%RUNTYPE  = 'INITIAL'
+   NL%RUNTYPE  = 'HISTORY'
    !---------------------------------------------------------------------------------------!
 
 
@@ -386,8 +386,8 @@ $ED_NL
    !              from the same simulation.                                                !
    !---------------------------------------------------------------------------------------!
 
-   NL%SFILIN   = './csspss/s83_default.lat5.000lon-52.000'
-
+   !NL%SFILIN   = './csspss/s83_default.lat5.000lon-52.000'
+   NL%SFILIN   = './histo/paracou'
    !---------------------------------------------------------------------------------------!
 
 
