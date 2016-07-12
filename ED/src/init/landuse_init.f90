@@ -1,3 +1,6 @@
+module landuse_init_module
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This file will read the landuse files and assign the anthropogenic disturbance       !
@@ -541,3 +544,5 @@ subroutine read_plantation_fractions(cpoly,polylon,polylat,igr)
 end subroutine read_plantation_fractions
 !==========================================================================================!
 !==========================================================================================!
+
+end module landuse_init_module

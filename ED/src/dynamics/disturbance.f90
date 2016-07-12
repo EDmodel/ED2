@@ -37,7 +37,7 @@ module disturbance_utils
    ! 3 - primary forest: natural disturbances (treefall or fire).                          !
    !---------------------------------------------------------------------------------------!
    subroutine apply_disturbances(cgrid)
-
+      use update_derived_props_module
       use ed_state_vars, only : edtype                    & ! structure
                               , polygontype               & ! structure
                               , sitetype                  & ! structure

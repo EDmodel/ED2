@@ -1,3 +1,6 @@
+module structural_growth_module
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will control the structural growth of plants.                        !
@@ -1478,3 +1481,5 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
 end subroutine compute_C_and_N_storage
 !==========================================================================================!
 !==========================================================================================!
+
+end module structural_growth_module

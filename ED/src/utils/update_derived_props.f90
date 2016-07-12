@@ -1,3 +1,6 @@
+module update_derived_props_module
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will drive the update of derived properties.                         !
@@ -1383,3 +1386,5 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
 end subroutine update_cohort_extensive_props
 !==========================================================================================!
 !==========================================================================================!
+
+end module update_derived_props_module

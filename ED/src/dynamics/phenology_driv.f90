@@ -1,3 +1,6 @@
+module phenology_driv
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !    This subroutine controls the changes in leaf biomass due to phenology.                !
@@ -1141,3 +1144,5 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height
 end subroutine assign_prescribed_phen
 !==========================================================================================!
 !==========================================================================================!
+
+end module phenology_driv

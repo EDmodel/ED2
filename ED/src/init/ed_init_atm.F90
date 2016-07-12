@@ -4,6 +4,7 @@
 ! conditions plus some soil parameters.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
+   use update_derived_props_module
    use ed_misc_coms          , only : runtype                & ! intent(in)
                                     , ibigleaf               & ! intent(in)
                                     , ied_init_mode          ! ! intent(in)

@@ -9,6 +9,8 @@ subroutine read_ed21_history_file
 #if USE_HDF5
    use hdf5
 #endif
+   use ed_init_full_history
+   use ed_init        , only : soil_default_fill
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
                              , str_len                 ! ! intent(in)
@@ -873,6 +875,7 @@ subroutine read_ed21_history_unstruct
 #if USE_HDF5
    use hdf5
 #endif
+   use ed_init_full_history
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
                              , str_len                 & ! intent(in)
@@ -2096,6 +2099,7 @@ subroutine read_ed21_polyclone
 #if USE_HDF5
    use hdf5    
 #endif
+   use ed_init_full_history
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
                              , str_len                 & ! intent(in)

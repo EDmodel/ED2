@@ -1,9 +1,14 @@
+module hybrid_driver
+  contains
+
 !=============================================================================!
 !=============================================================================!
 !     This subroutine is the main driver for the Forward/Backward (FB)        !
 !     Euler integration scheme.                                               !
 !-----------------------------------------------------------------------------!
 subroutine hybrid_timestep(cgrid)
+  use rk4_misc
+  use update_derived_props_module
   use rk4_coms              , only : integration_vars   & ! structure
                                    , rk4patchtype       & ! structure
                                    , zero_rk4_patch     & ! subroutine
@@ -1984,11 +1989,4 @@ subroutine hybrid_timestep(cgrid)
  end subroutine fb_sanity_check
  
 
- 
-
-
-
-
-
-
-
+end module hybrid_driver

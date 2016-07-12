@@ -6,6 +6,7 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
+   use ed_init
    use grid_coms         , only : ngrids              & ! intent(in)
                                 , time                & ! intent(inout)
                                 , timmax              ! ! intent(inout)

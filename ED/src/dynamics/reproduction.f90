@@ -1,3 +1,6 @@
+module reproduction_module
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !      This subroutine will drive the reproduction, based on its carbon availability and   !
@@ -5,6 +8,7 @@
 ! want it, in which case the seedling biomass will go to the litter pools.                 !
 !------------------------------------------------------------------------------------------!
 subroutine reproduction(cgrid, month)
+   use update_derived_props_module
    use ed_state_vars      , only : edtype                   & ! structure
                                  , polygontype              & ! structure
                                  , sitetype                 & ! structure
@@ -1062,3 +1066,5 @@ subroutine seed_dispersal(cpoly,late_spring)
 end subroutine seed_dispersal
 !==========================================================================================!
 !==========================================================================================!
+
+end module reproduction_module

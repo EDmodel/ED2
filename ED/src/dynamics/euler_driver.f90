@@ -1,8 +1,13 @@
+module euler_driver
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine is the main driver for the Euler integration scheme.                 !
 !------------------------------------------------------------------------------------------!
 subroutine euler_timestep(cgrid)
+   use rk4_misc
+   use update_derived_props_module
    use rk4_coms              , only : integration_vars   & ! structure
                                     , rk4patchtype       & ! structure
                                     , zero_rk4_patch     & ! subroutine
@@ -685,3 +690,4 @@ end subroutine euler_integ
 
 
 
+end module euler_driver

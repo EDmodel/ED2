@@ -1,3 +1,6 @@
+module ed_init_full_history
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will set a full history start for the simulation.  In a full history !
@@ -6311,3 +6314,5 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
 end subroutine hdf_getslab_i
 !==========================================================================================!
 !==========================================================================================!
+
+end module ed_init_full_history

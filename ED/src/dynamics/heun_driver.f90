@@ -1,8 +1,13 @@
+module heun_driver
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine is the main driver for the Heun's (RK2) integration scheme.          !
 !------------------------------------------------------------------------------------------!
 subroutine heun_timestep(cgrid)
+   use rk4_misc
+   use update_derived_props_module
    use rk4_coms              , only : integration_vars   & ! structure
                                     , rk4patchtype       & ! structure
                                     , zero_rk4_patch     & ! subroutine
@@ -858,3 +863,5 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
 end subroutine heun_stepper
 !==========================================================================================!
 !==========================================================================================!
+
+end module heun_driver

@@ -1,3 +1,6 @@
+module soil_respiration_module
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine computes the soil respiration terms (root and heterotrophic).        !
@@ -641,3 +644,5 @@ subroutine update_C_and_N_pools(cgrid)
 end subroutine update_C_and_N_pools
 !==========================================================================================!
 !==========================================================================================!
+
+end module soil_respiration_module

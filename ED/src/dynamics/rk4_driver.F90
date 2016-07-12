@@ -12,6 +12,8 @@ module rk4_driver
    !      for the land surface model.                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid)
+      use rk4_misc
+      use update_derived_props_module
       use rk4_coms               , only : integration_vars     & ! structure
                                         , rk4patchtype         & ! structure
                                         , zero_rk4_patch       & ! subroutine

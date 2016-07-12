@@ -1,10 +1,13 @@
+module init_hydro_sites
+  contains
+
 !!! translate from C to fortran
 ! ===============================================================
 
 subroutine read_site_file(cgrid,igr)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
-  
+   use ed_init, only: soil_default_fill
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
    use ed_misc_coms, only: ied_init_mode,sfilin, vary_elev, vary_rad, vary_hyd
@@ -368,3 +371,6 @@ subroutine calc_flow_routing(cgrid,ipy)
    deallocate(hyrank)
    return
 end subroutine calc_flow_routing
+
+
+end module init_hydro_sites

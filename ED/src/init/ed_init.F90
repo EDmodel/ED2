@@ -1,3 +1,6 @@
+module ed_init
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !    This subroutine will assign the longitude, latitude, and soil class for all non-empty !
@@ -56,6 +59,7 @@ end subroutine set_polygon_coordinates
 ! ied_init_node 3 or 4.                                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine set_site_defprops()
+   use init_hydro_sites, only: calc_flow_routing
    use grid_coms     , only : ngrids               & ! intent(in)
                             , nzg                  ! ! intent(in)
    use ed_work_vars  , only : work_v               ! ! structure
@@ -753,3 +757,5 @@ subroutine print_soil_info(cgrid,ifm)
 end subroutine print_soil_info
 !==========================================================================================!
 !==========================================================================================!
+
+end module ed_init
