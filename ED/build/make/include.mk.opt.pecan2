@@ -45,12 +45,11 @@ BASE=$(ED_ROOT)/build/
 
 USE_HDF5=1
 
-HDF5_HOME=/usr
-HDF5_INCS=-I${HDF5_HOME}/include
-HDF5C_INCS=-I${HDF5_HOME}/include
-HDF5_LIBS=${HDF5_HOME}/lib64/libhdf5_fortran.so \
-        ${HDF5_HOME}/lib64/libhdf5.so \
-        ${HDF5_HOME}/lib64/libhdf5_hl.so -lz
+HDF5_INCS=-I/fs/data2/rykelly/local/include
+HDF5C_INCS=-I/fs/data2/rykelly/local/include
+HDF5_LIBS=-L/fs/data2/rykelly/local/lib/ -lhdf5_fortran \
+        -lhdf5 \
+        -lhdf5_hl -lz
 
 USE_COLLECTIVE_MPIO=0
  
