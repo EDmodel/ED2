@@ -343,11 +343,6 @@ hydrology_constants.o: $(ED_MEMORY)/hydrology_constants.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-init_hydro_sites.o : $(ED_INIT)/init_hydro_sites.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90) 
-
 invmondays.o : $(ED_UTILS)/invmondays.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -458,11 +453,6 @@ radiate_utils.o : $(ED_UTILS)/radiate_utils.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	
-read_site_file.o : $(ED_INIT)/read_site_file.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -497,16 +487,6 @@ rk4_misc.o : $(ED_DYNAMICS)/rk4_misc.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-
-rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
-	
-rk4_rkqs.o : $(ED_DYNAMICS)/rk4_rkqs.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
 
 rsys.o: $(ED_UTILS)/rsys.F90
 	/bin/rm -f $(<F:.F90=.F90)

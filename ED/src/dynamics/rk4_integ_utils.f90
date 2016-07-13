@@ -27,7 +27,6 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
                              , checkbudget            & ! intent(in)
                              , print_detailed         & ! intent(in)
                              , norm_rk4_fluxes        ! ! sub-routine
-   use rk4_rkqs                                       ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)

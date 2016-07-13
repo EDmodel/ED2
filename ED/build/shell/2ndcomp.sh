@@ -68,7 +68,6 @@ rm -fv heun_driver.o              heun_driver.mod
 rm -fv hybrid_driver.o            hybrid_driver.mod 
 rm -fv hydrology_coms.o           hydrology_coms.mod 
 rm -fv hydrology_constants.o      hydrology_constants.mod 
-rm -fv init_hydro_sites.o         init_hydro_sites.mod 
 rm -fv invmondays.o               invmondays.mod 
 rm -fv landuse_init.o             landuse_init.mod 
 rm -fv lapse.o                    lapse.mod 
@@ -90,15 +89,12 @@ rm -fv physiology_coms.o          physiology_coms.mod
 rm -fv pft_coms.o                 pft_coms.mod 
 rm -fv radiate_driver.o           radiate_driver.mod 
 rm -fv radiate_utils.o            radiate_utils.mod
-rm -fv read_site_file.o    read_site_file.mod 
 rm -fv reproduction.o             reproduction.mod 
 rm -fv rk4_coms.o                 rk4_coms.mod 
 rm -fv rk4_derivs.o               rk4_derivs.mod 
 rm -fv rk4_driver.o               rk4_driver.mod 
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod 
 rm -fv rk4_misc.o                 rk4_misc.mod 
-rm -fv rk4_stepper.o              rk4_stepper.mod 
-rm -fv rk4_rkqs.o              rk4_rkqs.mod 
 rm -fv rk4_copy_patch.o              rk4_copy_patch.mod 
 rm -fv rsys.o                     rsys.mod 
 rm -fv soil_coms.o                soil_coms.mod 

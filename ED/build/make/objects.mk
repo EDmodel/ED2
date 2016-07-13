@@ -67,7 +67,7 @@ OBJ_MODEL =                        \
 	forestry.o                 \
 	fusion_fission_coms.o      \
 	fuse_fiss_utils.o          \
-	patch_pft_size_profile_mod.o          \
+	patch_pft_size_profile_mod.o  \
 	great_circle.o             \
 	grid_coms.o                \
 	growth_balive.o            \
@@ -78,7 +78,6 @@ OBJ_MODEL =                        \
 	hybrid_driver.o            \
 	hydrology_coms.o           \
 	hydrology_constants.o      \
-	init_hydro_sites.o         \
 	invmondays.o               \
 	landuse_init.o             \
 	lapse.o                    \
@@ -101,16 +100,13 @@ OBJ_MODEL =                        \
 	pft_coms.o                 \
 	radiate_driver.o           \
 	radiate_utils.o            \
-	read_site_file.o    \
 	reproduction.o             \
 	rk4_coms.o                 \
-  rk4_copy_patch.o                 \
+  rk4_copy_patch.o           \
 	rk4_derivs.o               \
 	rk4_driver.o               \
 	rk4_integ_utils.o          \
 	rk4_misc.o                 \
-	rk4_stepper.o              \
-	rk4_rkqs.o                 \
 	rsys.o                     \
 	soil_coms.o                \
 	soil_respiration.o         \
