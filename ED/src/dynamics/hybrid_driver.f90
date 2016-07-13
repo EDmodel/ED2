@@ -337,6 +337,7 @@ subroutine hybrid_timestep(cgrid)
  !  the fast-scale state variables.                                           !
  !----------------------------------------------------------------------------!
  subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,isi,nsteps)
+   use rk4_copy_patch
    use rk4_integ_utils
    use rk4_misc
    use ed_state_vars  , only : sitetype               & ! structure
@@ -365,8 +366,6 @@ subroutine hybrid_timestep(cgrid)
                              , print_detailed         & ! intent(in)
                              , norm_rk4_fluxes        & ! sub-routine
                              , reset_rk4_fluxes       ! ! sub-routine
-   use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
-                             , print_sanity_check     ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)

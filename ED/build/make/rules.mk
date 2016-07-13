@@ -287,6 +287,11 @@ fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
+	
+patch_pft_size_profile_mod.o : $(ED_UTILS)/patch_pft_size_profile_mod.F90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
 
 great_circle.o : $(ED_UTILS)/great_circle.f90
 	/bin/rm -f $(<F:.f90=.f90) 
@@ -468,6 +473,11 @@ rk4_coms.o : $(ED_MEMORY)/rk4_coms.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+rk4_copy_patch.o : $(ED_DYNAMICS)/rk4_copy_patch.F90
+	/bin/rm -f $(<F:.F90=.F90)
+	/bin/cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+
 rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
@@ -489,6 +499,11 @@ rk4_misc.o : $(ED_DYNAMICS)/rk4_misc.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
 rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90
+	/bin/rm -f $(<F:.F90=.F90)
+	/bin/cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	
+rk4_rkqs.o : $(ED_DYNAMICS)/rk4_rkqs.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)

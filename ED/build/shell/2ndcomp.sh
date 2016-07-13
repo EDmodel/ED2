@@ -57,6 +57,7 @@ rm -fv fire.o                     fire.mod
 rm -fv forestry.o                 forestry.mod 
 rm -fv fusion_fission_coms.o      fusion_fission_coms.mod 
 rm -fv fuse_fiss_utils.o          fuse_fiss_utils.mod 
+rm -fv patch_pft_size_profile_mod.o          patch_pft_size_profile_mod.mod 
 rm -fv great_circle.o             great_circle.mod 
 rm -fv grid_coms.o                grid_coms.mod 
 rm -fv growth_balive.o            growth_balive.mod 
@@ -97,6 +98,8 @@ rm -fv rk4_driver.o               rk4_driver.mod
 rm -fv rk4_integ_utils.o          rk4_integ_utils.mod 
 rm -fv rk4_misc.o                 rk4_misc.mod 
 rm -fv rk4_stepper.o              rk4_stepper.mod 
+rm -fv rk4_rkqs.o              rk4_rkqs.mod 
+rm -fv rk4_copy_patch.o              rk4_copy_patch.mod 
 rm -fv rsys.o                     rsys.mod 
 rm -fv soil_coms.o                soil_coms.mod 
 rm -fv soil_respiration.o         soil_respiration.mod 

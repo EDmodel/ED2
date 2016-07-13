@@ -67,6 +67,7 @@ OBJ_MODEL =                        \
 	forestry.o                 \
 	fusion_fission_coms.o      \
 	fuse_fiss_utils.o          \
+	patch_pft_size_profile_mod.o          \
 	great_circle.o             \
 	grid_coms.o                \
 	growth_balive.o            \
@@ -103,11 +104,13 @@ OBJ_MODEL =                        \
 	read_site_file.o    \
 	reproduction.o             \
 	rk4_coms.o                 \
+  rk4_copy_patch.o                 \
 	rk4_derivs.o               \
 	rk4_driver.o               \
 	rk4_integ_utils.o          \
 	rk4_misc.o                 \
 	rk4_stepper.o              \
+	rk4_rkqs.o                 \
 	rsys.o                     \
 	soil_coms.o                \
 	soil_respiration.o         \

@@ -57,7 +57,7 @@ subroutine update_patch_derived_props(csite,ipa)
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
    use allometry           , only : ed_biomass                 ! ! function
-   use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
+   use patch_pft_size_profile_mod     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
                                   , minimum_canopy_depth       & ! intent(in)
                                   , ez                         & ! intent(in)
