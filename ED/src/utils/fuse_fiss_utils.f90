@@ -311,6 +311,7 @@ module fuse_fiss_utils
    ! the terminate_patches subroutine, except that no patch is removed.                    !
    !---------------------------------------------------------------------------------------!
    subroutine rescale_patches(csite)
+      use update_derived_props_module
       use ed_state_vars, only : polygontype        & ! Structure
                               , sitetype           & ! Structure
                               , patchtype          ! ! Structure
@@ -848,7 +849,7 @@ module fuse_fiss_utils
    ! only necessary when we solve radiation cohort by cohort rather than layer by layer.   !
    !---------------------------------------------------------------------------------------!
    subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
-
+      use update_derived_props_module
       use ed_state_vars        , only : patchtype              & ! structure
                                       , copy_patchtype         ! ! sub-routine
       use pft_coms             , only : q                      & ! intent(in), lookup table

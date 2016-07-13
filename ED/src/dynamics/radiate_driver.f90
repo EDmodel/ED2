@@ -1395,190 +1395,6 @@ end subroutine sfcrad_ed
 
 
 
-!==========================================================================================!
-!==========================================================================================!
-!     This function computes the cosine of the zenith angle.                               !
-!------------------------------------------------------------------------------------------!
-real function ed_zen(plon,plat,when)
-   use ed_misc_coms , only : simtime      ! ! structure
-   use consts_coms  , only : pio1808      & ! intent(in)
-                           , twopi8       & ! intent(in)
-                           , hr_sec8      & ! intent(in)
-                           , tiny_num8    ! ! intent(in)
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   real(kind=4) , intent(in) :: plon
-   real(kind=4) , intent(in) :: plat
-   type(simtime), intent(in) :: when
-   !------ Local variables. ---------------------------------------------------------------!
-   integer                   :: doy     ! Day of year ("Julian" day)
-   real(kind=8)              :: declin  ! Declination
-   real(kind=8)              :: sdec    ! Sine of declination
-   real(kind=8)              :: cdec    ! Cosine of declination
-   real(kind=8)              :: dayhr   ! Hour of day 
-   real(kind=8)              :: radlat  ! Latitude in radians
-   real(kind=8)              :: clat    ! Cosine of latitude 
-   real(kind=8)              :: slat    ! Sine of latitude
-   real(kind=8)              :: dayhrr  ! Hour of day in radians
-   real(kind=8)              :: hrangl  ! Hour angle
-   !----- Local constants. ----------------------------------------------------------------!
-   real(kind=8), parameter   :: capri    = -2.344d1 ! Tropic of Capricornium latitude
-   real(kind=8), parameter   :: ndaysnl  =  3.65d2  ! Number of days of year (no leap years)
-   real(kind=8), parameter   :: ndayslp  =  3.66d2  ! Number of days of year (leap years)
-   integer     , parameter   :: shsummer = -10      ! DoY of Southern Hemisphere summer
-   !----- External functions. -------------------------------------------------------------!
-   integer     , external    :: julday  ! Function to find day of year ("Julian" day)
-   logical     , external    :: isleap  ! Function to determine whether the year is leap
-   real        , external    :: sngloff ! Function to safely convert double to single prec.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find the day of the year. -------------------------------------------------------!
-   doy    = julday(when%month, when%date, when%year)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find the hour angle, then get cosine of zenith angle. ---------------------------!
-   dayhr = dble(when%time) / hr_sec8
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   declin is the solar latitude in degrees (also known as declination).                !
-   !   sdec - sine of declination                                                          !
-   !   cdec - cosine of declination.                                                       !
-   !---------------------------------------------------------------------------------------!
-   if (isleap(when%year)) then
-      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndaysnl) * pio1808
-   else
-      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndayslp) * pio1808
-   end if
-   sdec   = dsin(declin)
-   cdec   = dcos(declin)
-   !---------------------------------------------------------------------------------------!
-
-   !----- Find the latitude in radians. ---------------------------------------------------!
-   radlat = dble(plat) * pio1808
-   clat   = dcos(radlat)
-   slat   = dsin(radlat)
-   !---------------------------------------------------------------------------------------!
-
-   !------ Find the hour angle. -----------------------------------------------------------!
-   dayhrr = dmod(dayhr+dble(plon)/1.5d1+2.4d1,2.4d1)
-   hrangl = 1.5d1 * (dayhrr - 1.2d1) * pio1808
-
-   ed_zen = sngloff(slat * sdec + clat * cdec * dcos(hrangl),tiny_num8)
-
-   return
-end function ed_zen
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This function computes the average secant of the daytime zenith angle.  In case the  !
-! period of integration is that accounts for the zenith angle is 0. or less than one time  !
-! step, then the average is the actual value.  Night-time periods are ignored and if there !
-! is no daytime value, then we set it to 0.                                                !
-!------------------------------------------------------------------------------------------!
-real function mean_daysecz(plon,plat,whena,dt,tmax)
-   use ed_misc_coms         , only : simtime     ! ! structure
-   use canopy_radiation_coms, only : cosz_min    ! ! intent(in)
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   real(kind=4) , intent(in) :: plon
-   real(kind=4) , intent(in) :: plat
-   type(simtime), intent(in) :: whena
-   real(kind=4) , intent(in) :: dt
-   real(kind=4) , intent(in) :: tmax
-   !------ Local variables. ---------------------------------------------------------------!
-   type(simtime)             :: now          ! Current time
-   integer                   :: is           ! Step counter
-   integer                   :: nsteps       ! Number of steps to perform the average
-   real                      :: dtfit        ! Delta-t that nicely fits within tmax
-   real                      :: dtnow        ! Delta-t for this time
-   real                      :: cosz         ! Declination
-   real                      :: daytot       ! Total time that was daytime
-   real                      :: mean_daycosz ! Average cosine of zenith angle
-   !----- External functions. -------------------------------------------------------------!
-   real(kind=4), external    :: ed_zen   ! Function to find day of year ("Julian" day)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Check whether tmax is less than the time step.  In case it is, we only have one   !
-   ! time, so we don't need to do the average.                                             !
-   !---------------------------------------------------------------------------------------!
-   if (dt >= tmax) then
-      !----- Less than one time, no average necessary. ------------------------------------!
-      cosz = ed_zen(plon,plat,whena)
-      if (cosz > cosz_min) then
-         mean_daysecz = 1.0 / cosz
-      else
-         !----- Night-time, set the mean to zero. -----------------------------------------!
-         mean_daysecz = 0.0
-      end if
-
-   else
-      !------------------------------------------------------------------------------------!
-      !     Several times, first find the number of steps, then the delta-t that fits      !
-      ! nicely within the time span.                                                       !
-      !------------------------------------------------------------------------------------!
-      nsteps = ceiling(tmax / dt)
-      dtfit  = tmax / real(nsteps)
-      !------------------------------------------------------------------------------------!
-
-      mean_daycosz = 0.0
-      daytot       = 0.0
-      do is=1,nsteps
-         !----- Get the current time. -----------------------------------------------------!
-         now   = whena
-         dtnow = dtfit * (real(is) - 0.5)
-         call update_model_time_dm(now,dtnow)
-
-         !----- Get the cosine of the zenith angle. ---------------------------------------!
-         cosz = ed_zen(plon,plat,now)
-
-         !----- Add to the integral only if it this value is valid. -----------------------!
-         if (cosz > cosz_min) then
-            mean_daycosz = mean_daycosz + dtfit * cosz 
-            daytot       = daytot       + dtfit
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the normalisation factor.                                                 !
-      !------------------------------------------------------------------------------------!
-      if (daytot > 0.0 .and. mean_daycosz > 0.0) then
-         mean_daycosz = mean_daycosz / daytot
-         mean_daysecz = 1.0 / mean_daycosz
-      else
-         mean_daysecz = 0.0
-      end if
-      !------------------------------------------------------------------------------------!
-   end if
-
-   return
-end function mean_daysecz
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
 
 !==========================================================================================!
 !==========================================================================================!
@@ -1945,3 +1761,191 @@ end subroutine angle_of_incid
 !==========================================================================================!
 
 end module radiate_driver_module
+
+
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function computes the cosine of the zenith angle.                               !
+!------------------------------------------------------------------------------------------!
+real function ed_zen(plon,plat,when)
+   use ed_misc_coms , only : simtime      ! ! structure
+   use consts_coms  , only : pio1808      & ! intent(in)
+                           , twopi8       & ! intent(in)
+                           , hr_sec8      & ! intent(in)
+                           , tiny_num8    ! ! intent(in)
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   real(kind=4) , intent(in) :: plon
+   real(kind=4) , intent(in) :: plat
+   type(simtime), intent(in) :: when
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                   :: doy     ! Day of year ("Julian" day)
+   real(kind=8)              :: declin  ! Declination
+   real(kind=8)              :: sdec    ! Sine of declination
+   real(kind=8)              :: cdec    ! Cosine of declination
+   real(kind=8)              :: dayhr   ! Hour of day 
+   real(kind=8)              :: radlat  ! Latitude in radians
+   real(kind=8)              :: clat    ! Cosine of latitude 
+   real(kind=8)              :: slat    ! Sine of latitude
+   real(kind=8)              :: dayhrr  ! Hour of day in radians
+   real(kind=8)              :: hrangl  ! Hour angle
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8), parameter   :: capri    = -2.344d1 ! Tropic of Capricornium latitude
+   real(kind=8), parameter   :: ndaysnl  =  3.65d2  ! Number of days of year (no leap years)
+   real(kind=8), parameter   :: ndayslp  =  3.66d2  ! Number of days of year (leap years)
+   integer     , parameter   :: shsummer = -10      ! DoY of Southern Hemisphere summer
+   !----- External functions. -------------------------------------------------------------!
+   integer     , external    :: julday  ! Function to find day of year ("Julian" day)
+   logical     , external    :: isleap  ! Function to determine whether the year is leap
+   real        , external    :: sngloff ! Function to safely convert double to single prec.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the day of the year. -------------------------------------------------------!
+   doy    = julday(when%month, when%date, when%year)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the hour angle, then get cosine of zenith angle. ---------------------------!
+   dayhr = dble(when%time) / hr_sec8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !   declin is the solar latitude in degrees (also known as declination).                !
+   !   sdec - sine of declination                                                          !
+   !   cdec - cosine of declination.                                                       !
+   !---------------------------------------------------------------------------------------!
+   if (isleap(when%year)) then
+      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndaysnl) * pio1808
+   else
+      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndayslp) * pio1808
+   end if
+   sdec   = dsin(declin)
+   cdec   = dcos(declin)
+   !---------------------------------------------------------------------------------------!
+
+   !----- Find the latitude in radians. ---------------------------------------------------!
+   radlat = dble(plat) * pio1808
+   clat   = dcos(radlat)
+   slat   = dsin(radlat)
+   !---------------------------------------------------------------------------------------!
+
+   !------ Find the hour angle. -----------------------------------------------------------!
+   dayhrr = dmod(dayhr+dble(plon)/1.5d1+2.4d1,2.4d1)
+   hrangl = 1.5d1 * (dayhrr - 1.2d1) * pio1808
+
+   ed_zen = sngloff(slat * sdec + clat * cdec * dcos(hrangl),tiny_num8)
+
+   return
+end function ed_zen
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function computes the average secant of the daytime zenith angle.  In case the  !
+! period of integration is that accounts for the zenith angle is 0. or less than one time  !
+! step, then the average is the actual value.  Night-time periods are ignored and if there !
+! is no daytime value, then we set it to 0.                                                !
+!------------------------------------------------------------------------------------------!
+real function mean_daysecz(plon,plat,whena,dt,tmax)
+   use update_derived_props_module
+   use ed_misc_coms         , only : simtime     ! ! structure
+   use canopy_radiation_coms, only : cosz_min    ! ! intent(in)
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   real(kind=4) , intent(in) :: plon
+   real(kind=4) , intent(in) :: plat
+   type(simtime), intent(in) :: whena
+   real(kind=4) , intent(in) :: dt
+   real(kind=4) , intent(in) :: tmax
+   !------ Local variables. ---------------------------------------------------------------!
+   type(simtime)             :: now          ! Current time
+   integer                   :: is           ! Step counter
+   integer                   :: nsteps       ! Number of steps to perform the average
+   real                      :: dtfit        ! Delta-t that nicely fits within tmax
+   real                      :: dtnow        ! Delta-t for this time
+   real                      :: cosz         ! Declination
+   real                      :: daytot       ! Total time that was daytime
+   real                      :: mean_daycosz ! Average cosine of zenith angle
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4), external    :: ed_zen   ! Function to find day of year ("Julian" day)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether tmax is less than the time step.  In case it is, we only have one   !
+   ! time, so we don't need to do the average.                                             !
+   !---------------------------------------------------------------------------------------!
+   if (dt >= tmax) then
+      !----- Less than one time, no average necessary. ------------------------------------!
+      cosz = ed_zen(plon,plat,whena)
+      if (cosz > cosz_min) then
+         mean_daysecz = 1.0 / cosz
+      else
+         !----- Night-time, set the mean to zero. -----------------------------------------!
+         mean_daysecz = 0.0
+      end if
+
+   else
+      !------------------------------------------------------------------------------------!
+      !     Several times, first find the number of steps, then the delta-t that fits      !
+      ! nicely within the time span.                                                       !
+      !------------------------------------------------------------------------------------!
+      nsteps = ceiling(tmax / dt)
+      dtfit  = tmax / real(nsteps)
+      !------------------------------------------------------------------------------------!
+
+      mean_daycosz = 0.0
+      daytot       = 0.0
+      do is=1,nsteps
+         !----- Get the current time. -----------------------------------------------------!
+         now   = whena
+         dtnow = dtfit * (real(is) - 0.5)
+         call update_model_time_dm(now,dtnow)
+
+         !----- Get the cosine of the zenith angle. ---------------------------------------!
+         cosz = ed_zen(plon,plat,now)
+
+         !----- Add to the integral only if it this value is valid. -----------------------!
+         if (cosz > cosz_min) then
+            mean_daycosz = mean_daycosz + dtfit * cosz 
+            daytot       = daytot       + dtfit
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the normalisation factor.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (daytot > 0.0 .and. mean_daycosz > 0.0) then
+         mean_daycosz = mean_daycosz / daytot
+         mean_daysecz = 1.0 / mean_daycosz
+      else
+         mean_daysecz = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
+
+   return
+end function mean_daysecz
+!==========================================================================================!
+!==========================================================================================!

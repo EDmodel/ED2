@@ -6,6 +6,9 @@ module euler_driver
 !     This subroutine is the main driver for the Euler integration scheme.                 !
 !------------------------------------------------------------------------------------------!
 subroutine euler_timestep(cgrid)
+   use rk4_integ_utils
+   use soil_respiration_module
+   use photosyn_driv
    use rk4_misc
    use update_derived_props_module
    use rk4_coms              , only : integration_vars   & ! structure
@@ -368,6 +371,8 @@ end subroutine integrate_patch_euler
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nsteps)
+   use rk4_integ_utils
+   use rk4_misc
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype            ! ! structure

@@ -12,6 +12,9 @@ module rk4_driver
    !      for the land surface model.                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine rk4_timestep(cgrid)
+      use rk4_integ_utils
+      use soil_respiration_module
+      use photosyn_driv
       use rk4_misc
       use update_derived_props_module
       use rk4_coms               , only : integration_vars     & ! structure
@@ -304,6 +307,7 @@ module rk4_driver
                                  ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm             &
                                  ,wcurr_loss2drainage,ecurr_loss2drainage                  &
                                  ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+      use rk4_integ_utils
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -396,6 +400,7 @@ module rk4_driver
    subroutine initp2modelp(hdid,initp,csite,ipa,nighttime,wbudget_loss2atm,ebudget_netrad  &
                           ,ebudget_loss2atm,co2budget_loss2atm,wbudget_loss2drainage       &
                           ,ebudget_loss2drainage,wbudget_loss2runoff,ebudget_loss2runoff)
+      use rk4_misc
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)

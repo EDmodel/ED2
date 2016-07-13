@@ -9,7 +9,7 @@ module rk4_integ_utils
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine odeint(h1,csite,ipa,isi,nsteps)
-
+   use rk4_misc
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype

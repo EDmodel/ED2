@@ -7,6 +7,9 @@ module hybrid_driver
 !     Euler integration scheme.                                               !
 !-----------------------------------------------------------------------------!
 subroutine hybrid_timestep(cgrid)
+  use rk4_integ_utils
+  use soil_respiration_module
+  use photosyn_driv
   use rk4_misc
   use update_derived_props_module
   use rk4_coms              , only : integration_vars   & ! structure
@@ -334,7 +337,8 @@ subroutine hybrid_timestep(cgrid)
  !  the fast-scale state variables.                                           !
  !----------------------------------------------------------------------------!
  subroutine hybrid_integ(h1,csite,yprev,initp,dinitp,ytemp,ipa,isi,nsteps)
-   
+   use rk4_integ_utils
+   use rk4_misc
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype                ! structure
    use rk4_coms       , only : integration_vars       & ! structure

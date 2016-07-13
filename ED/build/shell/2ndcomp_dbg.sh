@@ -89,6 +89,7 @@ rm -fv physiology_coms.?90           physiology_coms.o          physiology_coms.
 rm -fv pft_coms.?90                  pft_coms.o                 pft_coms.mod 
 rm -fv radiate_driver.?90            radiate_driver.o           radiate_driver.mod 
 rm -fv radiate_utils.?90             radiate_utils.o            radiate_utils.mod 
+rm -fv read_site_file.?90     read_site_file.o    read_site_file.mod 
 rm -fv reproduction.?90              reproduction.o             reproduction.mod 
 rm -fv rk4_coms.?90                  rk4_coms.o                 rk4_coms.mod 
 rm -fv rk4_derivs.?90                rk4_derivs.o               rk4_derivs.mod 

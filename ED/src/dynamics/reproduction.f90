@@ -8,6 +8,8 @@ module reproduction_module
 ! want it, in which case the seedling biomass will go to the litter pools.                 !
 !------------------------------------------------------------------------------------------!
 subroutine reproduction(cgrid, month)
+   use stable_cohorts
+   use stable_cohorts
    use update_derived_props_module
    use ed_state_vars      , only : edtype                   & ! structure
                                  , polygontype              & ! structure

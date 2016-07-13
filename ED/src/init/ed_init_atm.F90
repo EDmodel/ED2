@@ -4,6 +4,7 @@
 ! conditions plus some soil parameters.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
+   use stable_cohorts
    use update_derived_props_module
    use ed_misc_coms          , only : runtype                & ! intent(in)
                                     , ibigleaf               & ! intent(in)

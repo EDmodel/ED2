@@ -452,6 +452,11 @@ radiate_utils.o : $(ED_UTILS)/radiate_utils.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
+	
+read_site_file.o : $(ED_INIT)/read_site_file.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
 
 reproduction.o : $(ED_DYNAMICS)/reproduction.f90
 	/bin/rm -f $(<F:.f90=.f90)

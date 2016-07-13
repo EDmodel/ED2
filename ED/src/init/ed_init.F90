@@ -59,7 +59,8 @@ end subroutine set_polygon_coordinates
 ! ied_init_node 3 or 4.                                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine set_site_defprops()
-   use init_hydro_sites, only: calc_flow_routing
+!    use init_hydro_sites, only: calc_flow_routing
+   use init_hydro_sites
    use grid_coms     , only : ngrids               & ! intent(in)
                             , nzg                  ! ! intent(in)
    use ed_work_vars  , only : work_v               ! ! structure
@@ -309,6 +310,9 @@ end subroutine soil_default_fill
 ! bottleneck here. If the run is serial mynum=nnodetot, so I don't need to wait.           !
 !------------------------------------------------------------------------------------------!
 subroutine load_ecosystem_state()
+   use landuse_init_module
+   use ed_nbg_init
+   use read_site_file_module
    use phenology_coms    , only : iphen_scheme    ! ! intent(in)
    use ed_misc_coms      , only : ied_init_mode   & ! intent(in)
                                 , ibigleaf        ! ! intent(in)

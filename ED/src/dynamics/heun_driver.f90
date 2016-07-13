@@ -6,6 +6,9 @@ module heun_driver
 !     This subroutine is the main driver for the Heun's (RK2) integration scheme.          !
 !------------------------------------------------------------------------------------------!
 subroutine heun_timestep(cgrid)
+   use rk4_integ_utils
+   use soil_respiration_module
+   use photosyn_driv
    use rk4_misc
    use update_derived_props_module
    use rk4_coms              , only : integration_vars   & ! structure
@@ -348,6 +351,8 @@ end subroutine integrate_patch_heun
 ! state variables using the Heun's method (a 2nd order Runge-Kutta).                       !
 !------------------------------------------------------------------------------------------!
 subroutine heun_integ(h1,csite,ipa,isi,nsteps)
+   use rk4_integ_utils
+   use rk4_misc
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype            ! ! structure
@@ -737,7 +742,8 @@ end subroutine heun_integ
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
-
+   use rk4_misc
+   use rk4_integ_utils
    use rk4_coms      , only : integration_buff    & ! structure
                             , integration_vars    & ! structure
                             , zero_rk4_patch      & ! subroutine

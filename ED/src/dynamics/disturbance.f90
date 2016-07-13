@@ -37,6 +37,7 @@ module disturbance_utils
    ! 3 - primary forest: natural disturbances (treefall or fire).                          !
    !---------------------------------------------------------------------------------------!
    subroutine apply_disturbances(cgrid)
+      use forestry
       use update_derived_props_module
       use ed_state_vars, only : edtype                    & ! structure
                               , polygontype               & ! structure
@@ -2835,7 +2836,7 @@ module disturbance_utils
    ! disturbed but did not go extinct.                                                     !
    !---------------------------------------------------------------------------------------!
    subroutine insert_survivors(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest)
-
+      use update_derived_props_module
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
       use ed_misc_coms , only : idoutput     & ! intent(in)
@@ -3083,6 +3084,7 @@ module disturbance_utils
    !---------------------------------------------------------------------------------------!
    subroutine plant_patch(csite,np,mzg,pft,density,ntext_soil,green_leaf_factor            &
                          ,height_factor,lsl)
+      use stable_cohorts
       use ed_state_vars , only  : sitetype                 & ! structure
                                 , patchtype                ! ! structure
       use pft_coms       , only : q                        & ! intent(in)

@@ -550,32 +550,6 @@ end subroutine copy_patch_init_carbon
 
 !==========================================================================================!
 !==========================================================================================!
-!    This function simply checks whether the relative error is large or not.               !
-!------------------------------------------------------------------------------------------!
-logical function large_error(err,scal)
-   use rk4_coms , only : rk4eps ! intent(in)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   real(kind=8), intent(in) :: err  ! Absolute error
-   real(kind=8), intent(in) :: scal ! Characteristic scale
-   !---------------------------------------------------------------------------------------!
-   if(scal > 0.d0) then
-      large_error = abs(err/scal)/rk4eps > 1.d0
-   else
-      large_error = .false.
-   end if
-   return
-end function large_error
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 !     This subroutine is called before the sanity check, and updates the diagnostic vari-  !
 ! ables, namely the temperature and liquid fraction of leaf water, soil layers and         !
 ! temporary snow/pond layers.                                                                      !
@@ -4524,3 +4498,31 @@ end subroutine sanity_check_veg_energy
 !==========================================================================================!
 
 end module rk4_misc
+
+
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function simply checks whether the relative error is large or not.               !
+!------------------------------------------------------------------------------------------!
+logical function large_error(err,scal)
+   use rk4_coms , only : rk4eps ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   real(kind=8), intent(in) :: err  ! Absolute error
+   real(kind=8), intent(in) :: scal ! Characteristic scale
+   !---------------------------------------------------------------------------------------!
+   if(scal > 0.d0) then
+      large_error = abs(err/scal)/rk4eps > 1.d0
+   else
+      large_error = .false.
+   end if
+   return
+end function large_error
+!==========================================================================================!
+!==========================================================================================!

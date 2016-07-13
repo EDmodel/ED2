@@ -6,6 +6,10 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
+   use update_derived_props_module
+   use ism_hyd
+   use ed_met_driver
+   use ed_init_full_history
    use ed_init
    use grid_coms         , only : ngrids              & ! intent(in)
                                 , time                & ! intent(inout)

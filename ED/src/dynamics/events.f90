@@ -283,6 +283,7 @@ end subroutine prescribed_event
 
 
 subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
+  use stable_cohorts
   use update_derived_props_module
   use grid_coms, only : ngrids,nzg
   use ed_state_vars,only: edgrid_g, &
@@ -452,6 +453,7 @@ end subroutine event_harvest
 
 
 subroutine event_planting(pft,density8)
+  use rk4_integ_utils
   use update_derived_props_module
   use grid_coms, only : ngrids,nzg,nzs
   use ed_state_vars,only: edgrid_g, &

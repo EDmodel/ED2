@@ -9,6 +9,7 @@ module structural_growth_module
 !            doing.  Changing the order can affect the C/N budgets.                        !
 !------------------------------------------------------------------------------------------!
 subroutine structural_growth(cgrid, month)
+   use stable_cohorts
    use ed_state_vars  , only : edtype                 & ! structure
                              , polygontype            & ! structure
                              , sitetype               & ! structure
@@ -493,6 +494,7 @@ end subroutine structural_growth
 !            doing.  Changing the order can affect the C/N budgets.                        !
 !------------------------------------------------------------------------------------------!
 subroutine structural_growth_eq_0(cgrid, month)
+   use stable_cohorts
    use ed_state_vars  , only : edtype                 & ! structure
                              , polygontype            & ! structure
                              , sitetype               & ! structure

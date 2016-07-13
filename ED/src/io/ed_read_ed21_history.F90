@@ -2099,6 +2099,7 @@ subroutine read_ed21_polyclone
 #if USE_HDF5
    use hdf5    
 #endif
+   use ed_init
    use ed_init_full_history
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
