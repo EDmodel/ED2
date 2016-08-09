@@ -400,8 +400,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) cbr_severe_stress(myPFT) = real(rval)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
            if(texist) seedling_mortality(myPFT) = real(rval)
-
-           call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
+	   
+	   call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
@@ -1423,11 +1423,11 @@ subroutine write_ed_xml_config
         call putConfigREAL("cbr_severe_stress",cbr_severe_stress(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
 
-        call putConfigREAL("treefall_s_gt",treefall_s_gtht(i))
-        call putConfigREAL("treefall_s_lt",treefall_s_ltht(i))
+        call putConfigREAL("treefall_s_gtht",treefall_s_gtht(i))
+        call putConfigREAL("treefall_s_ltht",treefall_s_ltht(i))
 
-        call putConfigREAL("fire_s_gt",fire_s_gtht(i))
-        call putConfigREAL("fire_s_lt",fire_s_ltht(i))
+        call putConfigREAL("fire_s_gtht",fire_s_gtht(i))
+        call putConfigREAL("fire_s_ltht",fire_s_ltht(i))
 
         call putConfigREAL("plant_min_temp",plant_min_temp(i))
 
