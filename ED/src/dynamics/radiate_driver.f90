@@ -323,71 +323,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real(kind=8)    , parameter                   :: tiny_offset = 1.d-20
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
-   ! description by by Sellers (1985) and the CLM technical manual, which includes the     !
-   ! leaf orientation factor in the backscattering.  This DOES NOT reduce to ED-2.1 case   !
-   ! when the leaf orientation is random.                                                  !
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Forward scattering.                                                               !
-   !---------------------------------------------------------------------------------------!
-   !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_scatter_vis(:) = leaf_reflect_vis(:) + leaf_trans_vis(:)
-   wood_scatter_vis(:) = wood_reflect_vis(:) + wood_trans_vis(:)
-   !----- Near infrared (NIR). ------------------------------------------------------------!
-   leaf_scatter_nir(:) = leaf_reflect_nir(:) + leaf_trans_nir(:)
-   wood_scatter_nir(:) = wood_reflect_nir(:) + wood_trans_nir(:)
-   !---------------------------------------------------------------------------------------!
    
-   !---------------------------------------------------------------------------------------!
-   !      Back-scattering coefficients following CLM.                                      !
-   !---------------------------------------------------------------------------------------!
-   !----- Visible (PAR). ------------------------------------------------------------------!
-   leaf_backscatter_vis = ( leaf_scatter_vis                                               &
-                          + 2.5d-1 * ( leaf_reflect_vis - leaf_trans_vis   )               &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * leaf_scatter_vis )
-   wood_backscatter_vis = ( wood_scatter_vis                                               &
-                          + 2.5d-1                                                         &
-                          * ( wood_reflect_vis - wood_trans_vis   )                        &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * wood_scatter_vis )
-   !----- Near infrared (NIR). ------------------------------------------------------------!
-   leaf_backscatter_nir = ( leaf_scatter_nir                                               &
-                          + 2.5d-1                                                         &
-                          * ( leaf_reflect_nir - leaf_trans_nir   )                        &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * leaf_scatter_nir )
-   wood_backscatter_nir = ( wood_scatter_nir                                               &
-                          + 2.5d-1                                                         &
-                          * ( wood_reflect_nir - wood_trans_nir   )                        &
-                          * ( 1.d0 + orient_factor) ** 2 )                                 &
-                          / ( 2.d0 * wood_scatter_nir )
-
-   !---------------------------------------------------------------------------------------!
-   !     Light extinction coefficients.   These are found following CLM technical manual,  !
-   ! and the values fall back to ED-2.0 defaults when orient_factor is zero.               !
-   !---------------------------------------------------------------------------------------!
-   phi1 = 5.d-1 - orient_factor * ( 6.33d-1 + 3.3d-1 * orient_factor )
-   phi2 = 8.77d-1 * (1.d0 - 2.d0 * phi1)
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the average inverse diffuse optical depth per unit leaf and stem area.       !
-   ! We follow CLM technical manual, equation 3.4 only when the orientation factor is      !
-   ! non-zero.   Otherwise, we make it 1.d0, which is the limit of that equation when      !
-   ! phi2 approaches zero.                                                                 !
-   !---------------------------------------------------------------------------------------!
-   do ipft = 1, n_pft
-      if (orient_factor(ipft) == 0.d0) then
-         mu_bar(ipft) = 1.d0
-      else
-         mu_bar(ipft) = ( 1.d0                                                             &
-                        - phi1(ipft) * log(1.d0 + phi2(ipft) / phi1(ipft)) / phi2(ipft) )  &
-                        / phi2(ipft)
-      end if
-   end do
    !---------------------------------------------------------------------------------------!
 
 

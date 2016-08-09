@@ -219,6 +219,9 @@ subroutine ed_model()
       end select
    end if
 
+   !! FINALLY, write out copy of settings
+         call write_ed_xml_config()
+   
    if (writing_year ) call h5_output('YEAR')
 
    !----- Start the timesteps. ------------------------------------------------------------!
