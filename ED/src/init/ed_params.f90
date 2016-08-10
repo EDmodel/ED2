@@ -2229,7 +2229,7 @@ subroutine init_pft_mort_params()
    mort1(16) = 2.0 ! 10.0
    mort1(17) = 2.0 ! 10.0
 
-   mort2(1:17) = 15.0 ! 20.0
+   mort2(1)    = 15.0 ! 20.0
    mort2(2)    = 15.0 ! 20.0
    mort2(3)    = 15.0 ! 20.0
    mort2(4)    = 15.0 ! 20.0
