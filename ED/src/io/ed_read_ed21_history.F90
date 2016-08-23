@@ -595,25 +595,25 @@ subroutine read_ed21_history_file
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
                               ! is set to zero and that biomass is discarded               !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                               cpatch%bdead(ico) = 0.0
                               
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                            else 
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
 
 
                            cpatch%bleaf(ico)  = size2bl(cpatch%dbh(ico),cpatch%hite(ico)   &
-                                                        ,cpatch%pft(ico))
+                                                        ,cpatch%pft(ico),cpatch)
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
@@ -772,7 +772,7 @@ subroutine read_ed21_history_file
                                             ,cpatch%dbh(ico), cpatch%hite(ico)             &
                                             ,cpatch%pft(ico), SLA(cpatch%pft(ico))         &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -1815,25 +1815,25 @@ subroutine read_ed21_history_unstruct
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
                               ! is set to zero and the mass is discarded                   !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                               cpatch%bdead(ico) = 0.0
                               
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                            else 
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
 
                            cpatch%bleaf(ico)  = size2bl( cpatch%dbh (ico)                  &
                                                        , cpatch%hite(ico)                  &
-                                                       , ipft )
+                                                       , ipft,cpatch )
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
@@ -1986,7 +1986,7 @@ subroutine read_ed21_history_unstruct
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -3018,25 +3018,25 @@ subroutine read_ed21_polyclone
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
                               ! is set to zero and that biomass is discarded               !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                               cpatch%bdead(ico) = 0.0
                               
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                            else 
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
-                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
+                              cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico), cpatch)
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
 
                            cpatch%bleaf(ico)  = size2bl( cpatch%dbh (ico)                  &
                                                        , cpatch%hite(ico)                  &
-                                                       , ipft )
+                                                       , ipft,cpatch )
 
                            !----- Find the other pools. -----------------------------------!
                            salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
@@ -3189,7 +3189,7 @@ subroutine read_ed21_polyclone
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
 
 
                            !----- Update the derived patch-level variables. ---------------!

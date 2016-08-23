@@ -160,3 +160,6 @@ Script*.sh
 src_script.sh
 ED/build/make/*
 Doxyfile
+RAPP/run/*
+RAPP/build/bin/include.mk.odyssey
+RAPP/*

@@ -327,7 +327,7 @@ module growth_balive
                                    ,cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico)   &
                                    ,cpatch%hite(ico) ,cpatch%pft(ico),cpatch%sla(ico)      &
                                    ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico) &
-                                   ,cpatch%bsapwooda(ico))
+                                   ,cpatch%bsapwooda(ico),cpatch)
                   !------------------------------------------------------------------------!
 
 
@@ -1053,7 +1053,7 @@ module growth_balive
       !     Maximum bleaf that the allometric relationship would allow.  If the plant is   !
       ! drought stressed (elongf < 1), we don't allow it to get back to full allometry.    !
       !------------------------------------------------------------------------------------!
-      bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+      bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
       bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
       broot_aim      = bleaf_aim * q(ipft)
       bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
@@ -1691,7 +1691,7 @@ module growth_balive
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
             ! to full allometry.   green_leaf_factor e elongf misurano il grado di stress  !
             !------------------------------------------------------------------------------!
-            bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
             bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
             broot_aim      = bleaf_aim * q(ipft)
             bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
@@ -2081,8 +2081,7 @@ module growth_balive
                                , c2n_stem     ! ! intent(in)
       use decomp_coms   , only : f_labile     ! ! intent(in)
       use allometry     , only : bl2h         & ! function
-                               , h2dbh        & ! function
-                               , dbh2h        ! ! function
+                               , h2dbh        ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype) , target        :: csite
@@ -2173,7 +2172,7 @@ module growth_balive
             cpatch%today_nppdaily   (ico) = carbon_balance    * cpatch%nplant(ico)
 
             !----- update height for grasses to match new leaf mass -----------------------!
-            cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft))  !limit by maximum height
+            cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft, cpatch))
             cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft) !--effective_dbh value for grasses
                 
             
@@ -2386,7 +2385,7 @@ module growth_balive
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
             ! to full allometry.                                                           !
             !------------------------------------------------------------------------------!
-            bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
             bleaf_aim     = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
             broot_aim     = bleaf_max * q(ipft)   * cpatch%elongf(ico)
             bsapwooda_aim = bleaf_max * qsw(ipft) * cpatch%hite(ico) * cpatch%elongf(ico)  &
@@ -2612,7 +2611,7 @@ module growth_balive
 
       elseif (cpatch%phenology_status(ico) == 1) then
          ! this calculation of bl_max is wrong for grass, but they should not have phenology_status=1 yet
-         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)                           &
+         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)                           &
                 * green_leaf_factor * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + carbon_balance_pot
 

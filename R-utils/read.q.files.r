@@ -155,7 +155,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
 
       #fabio Add a variable for storage respiration
-      mymont$MMEAN_STORAGE_RESP_PY = 0
+      #mymont$MMEAN_STORAGE_RESP_PY = 0
 
       #------------------------------------------------------------------------------------#
       #      Fix units for some variables.                                                 #

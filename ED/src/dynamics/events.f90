@@ -390,11 +390,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
                     if(is_grass(cpatch%pft(ico)) .and. igrass==1) then 
-                       cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft))
+                       cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft, cpatch))
                        cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
                     else
                        cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
-                       cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
+                       cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico), cpatch)
                     end if
                  else
                     cpatch%dbh(ico)  = 0.0
@@ -406,7 +406,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
                                   ,cpatch%wai(ico), cpatch%crown_area(ico)                 &
-                                  ,cpatch%bsapwooda(ico))
+                                  ,cpatch%bsapwooda(ico),cpatch)
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            

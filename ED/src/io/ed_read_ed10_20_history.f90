@@ -765,7 +765,7 @@ subroutine read_ed10_ed20_history_file
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
                            cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(ipft(ic)))
-                           cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
+                           cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic),cpatch)
                            cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
 
                         case default
@@ -779,10 +779,10 @@ subroutine read_ed10_ed20_history_file
                            if (bdead(ic) > 0.0) then
                               cpatch%bdead(ic2) = max(bdead(ic),min_bdead(ipft(ic)))
                               cpatch%dbh(ic2)   = bd2dbh(ipft(ic),bdead(ic))
-                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
+                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic), cpatch)
                            else
                               cpatch%dbh(ic2)   = dbh(ic)
-                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
+                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic), cpatch)
                               cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
                            end if
                         end select
@@ -794,7 +794,7 @@ subroutine read_ed10_ed20_history_file
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2)     = size2bl(dbh(ic), hite(ic),ipft(ic))
+                        cpatch%bleaf(ic2)     = size2bl(dbh(ic), hite(ic),ipft(ic),cpatch)
                         cpatch%balive(ic2)    = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))     &
                                               + qsw(ipft(ic)) * cpatch%hite(ic2))
                         cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &
@@ -826,7 +826,7 @@ subroutine read_ed10_ed20_history_file
                                          ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
                                          ,cpatch%lai(ic2), cpatch%wai(ic2)                 &
-                                         ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
+                                         ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2),cpatch)
 
                         !------------------------------------------------------------------!
                         !     Initialise the carbon balance.  We ignore the carbon balance !

@@ -2443,7 +2443,7 @@ subroutine init_pft_alloc_params()
                            , sapwood_ratio         ! ! intent(out)
    use allometry    , only : h2dbh                 & ! function
                            , dbh2bd                & ! function
-                           , size2bl               ! ! function
+                           , size2bl_old           ! ! function
    use consts_coms  , only : onethird              & ! intent(in)
                            , twothirds             & ! intent(in)
                            , huge_num              & ! intent(in)
@@ -3238,7 +3238,7 @@ subroutine init_pft_alloc_params()
       !----- Big leaf. 1st we set the maximum initial LAI for each PFT. -------------------!
       init_laimax(1:17)   = 0.1
       do ipft=1,n_pft
-         init_bleaf = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
+         init_bleaf = size2bl_old(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
          init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
       end do
       !------------------------------------------------------------------------------------!
@@ -3609,8 +3609,8 @@ subroutine init_pft_derived_params()
    use phenology_coms       , only : elongf_min           & ! intent(in)
                                    , elongf_flush         ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
-                                   , dbh2h                & ! function
-                                   , size2bl              & ! function
+                                   , dbh2h_simple         & ! function
+                                   , size2bl_old          & ! function
                                    , dbh2bd               ! ! function
    use ed_therm_lib         , only : calc_veg_hcap        ! ! function
    implicit none
@@ -3676,7 +3676,7 @@ subroutine init_pft_derived_params()
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
       dbh          = h2dbh(hgt_min(ipft),ipft)
-      bleaf_min    = size2bl(dbh,hgt_min(ipft),ipft) 
+      bleaf_min    = size2bl_old(dbh,hgt_min(ipft),ipft)
       broot_min    = bleaf_min * q(ipft)
       bsapwood_min = bleaf_min * qsw(ipft) * hgt_min(ipft)
       balive_min   = bleaf_min + broot_min + bsapwood_min
@@ -3690,8 +3690,8 @@ subroutine init_pft_derived_params()
       ! very high.                                                                         !
       !------------------------------------------------------------------------------------!
       huge_dbh     = 3. * dbh_crit(ipft)
-      huge_height  = dbh2h(ipft, dbh_crit(ipft))
-      bleaf_max    = size2bl(huge_dbh,huge_height,ipft)
+      huge_height  = dbh2h_simple(ipft, dbh_crit(ipft))
+      bleaf_max    = size2bl_old(huge_dbh,huge_height,ipft)
       broot_max    = bleaf_max * q(ipft)
       bsapwood_max = bleaf_max * qsw(ipft) * huge_height
       balive_max   = bleaf_max + broot_max + bsapwood_max
@@ -3702,7 +3702,7 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       !    Biomass of one individual plant at recruitment.                                 !
       !------------------------------------------------------------------------------------!
-      bleaf_bl          = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),ipft) 
+      bleaf_bl          = size2bl_old(dbh_bigleaf(ipft),hgt_min(ipft),ipft)
       broot_bl          = bleaf_bl * q(ipft)
       bsapwood_bl       = bleaf_bl * qsw(ipft) * hgt_max(ipft)
       balive_bl         = bleaf_bl + broot_bl + bsapwood_bl

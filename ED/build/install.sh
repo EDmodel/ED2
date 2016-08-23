@@ -24,6 +24,11 @@
 #           no code problem, and you want results asap. This will not check for any        #
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
+#                                                                                          #
+#                                                                                          #
+# usage example:                                                                           #
+#                                                                                          #
+# install.sh --kind A --platform intel                                                     #
 #------------------------------------------------------------------------------------------#
 
 #----- Define the number of arguments. ----------------------------------------------------#

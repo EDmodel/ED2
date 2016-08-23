@@ -3210,7 +3210,7 @@ module disturbance_utils
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
                        ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc),cpatch%crown_area(nc) &
-                       ,cpatch%bsapwooda(nc))
+                       ,cpatch%bsapwooda(nc),cpatch)
       !------------------------------------------------------------------------------------!
 
 

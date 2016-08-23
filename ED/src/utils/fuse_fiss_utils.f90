@@ -444,7 +444,7 @@ module fuse_fiss_utils
          do ico = 1,cpatch%ncohorts
             ipft              = cpatch%pft(ico)
             laimax            = cpatch%nplant(ico) * cpatch%sla(ico)                       &
-                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
             patch_laimax(ipa) = patch_laimax(ipa) + laimax * csite%area(ipa)
          end do
 
@@ -696,10 +696,10 @@ module fuse_fiss_utils
                       !--use dbh for trees
                       lai_max = ( cpatch%nplant(recc)                                      &
                                 * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
-                                         ,cpatch%pft(recc))                                &
+                                         ,cpatch%pft(recc),cpatch)                                &
                                 + cpatch%nplant(donc)                                      &
                                 * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
-                                         ,cpatch%pft(donc)))                               &
+                                         ,cpatch%pft(donc),cpatch))                               &
                                 * cpatch%sla(recc)
                   end if
 
@@ -965,20 +965,20 @@ module fuse_fiss_utils
                    !-- use bleaf for grass
                    cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
                    cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
-                   cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico))
+                   cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico),cpatch)
 
                    cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
                    cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
-                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))               
+                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew), cpatch)
                else
                    !-- use bdead for trees
                    cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
                    cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-                   cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+                   cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico), cpatch)
 
                    cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
                    cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-                   cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+                   cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew), cpatch)
                end if
                !---------------------------------------------------------------------------!
 
@@ -1123,13 +1123,13 @@ module fuse_fiss_utils
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
           cpatch%bleaf(recc) = cpatch%bleaf(recc) * rnplant + cpatch%bleaf(donc) * dnplant
           cpatch%dbh(recc)   = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
-          cpatch%hite(recc)  = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+          cpatch%hite(recc)  = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc), cpatch)
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
           cpatch%bdead(recc) = cpatch%bdead(recc) * rnplant + cpatch%bdead(donc) * dnplant
           cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
-          cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+          cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc), cpatch)
           !--------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -6101,7 +6101,7 @@ module fuse_fiss_utils
          else
              !--use dbh for trees
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
-                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
          end if
          !---------------------------------------------------------------------------------!
 

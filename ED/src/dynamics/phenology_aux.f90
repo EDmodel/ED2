@@ -413,7 +413,7 @@ module phenology_aux
                                    ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)    &
                                    ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)        &
                                    ,cpatch%wai(ico),cpatch%crown_area(ico)                 &
-                                   ,cpatch%bsapwooda(ico))  
+                                   ,cpatch%bsapwooda(ico),cpatch)
                   !------------------------------------------------------------------------!
 
 
@@ -476,7 +476,7 @@ module phenology_aux
                                , qsw                 & ! intent(in)
                                , agf_bs              ! ! intent(in)
       use ed_max_dims   , only : n_pft               ! ! intent(in)
-      use allometry     , only : size2bl             & ! function
+      use allometry     , only : size2bl_old         & ! function
                                , h2crownbh           ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -572,7 +572,7 @@ module phenology_aux
       !----- Compute the biomass of living tissues. ---------------------------------------!
       salloc     = 1.0 + q(ipft) + qsw(ipft) * height
       salloci    = 1.0 / salloc
-      bleaf_max  = size2bl(dbh,height,ipft)
+      bleaf_max  = size2bl_old(dbh,height,ipft)
       balive_max = bleaf_max * salloc
       bleaf      = bleaf_max * elongf
       broot      = balive_max * q(ipft)   * salloci

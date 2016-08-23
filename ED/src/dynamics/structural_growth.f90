@@ -1132,11 +1132,11 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    if (is_grass(ipft) .and. igrass == 1) then 
        !---- New grasses get dbh_effective and height from bleaf. -------------------------!
        cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
-       cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
+       cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft, cpatch)
    else 
        !---- Trees and old grasses get dbh from bdead. ------------------------------------!
        cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
-       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
+       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico), cpatch)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1167,7 +1167,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    if ((.not. is_grass(ipft)) .or. igrass /= 1) then
       select case (cpatch%phenology_status(ico))
       case (0)
-         bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
+         bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch)
          if (cpatch%bleaf(ico) < bleaf_max) cpatch%phenology_status(ico) = 1
       end select
    end if
@@ -1177,7 +1177,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
               ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &
               ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico)      &
-              ,cpatch%bsapwooda(ico))
+              ,cpatch%bsapwooda(ico),cpatch)
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
    cpatch%basarea(ico)= pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                

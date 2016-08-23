@@ -12,16 +12,16 @@
 ! data, one directory per variable.  Please check the DATASET_README.1ST file for specific !
 ! information on which variables you must have.                                            !
 !------------------------------------------------------------------------------------------!
-   NL%INPATH = '/n/data/moorcroft_lab/mlongo/NCEP_MET/netcdf'
+   NL%INPATH = '/Users/manfredo/Documents/Eclipse_workspace/RAPP/run'
 
 !----- Prefix for output files, including path. -------------------------------------------!
-   NL%OUTPREF='/n/data/moorcroft_lab/mlongo/NCEP_MET/hdf5/SOUTHAM'
+   NL%OUTPREF='/Users/manfredo/Documents/Eclipse_workspace/RAPP/run/bci/bci'
 
 !------------------------------------------------------------------------------------------!
 !     Time                                                                                 !
 !------------------------------------------------------------------------------------------!
-   NL%IYEARA = 1948    ! First year to process
-   NL%IYEARZ = 2008    ! Last year to process
+   NL%IYEARA = 2000    ! First year to process
+   NL%IYEARZ = 2014    ! Last year to process
 
    NL%INPFRQ = 21600.  ! Frequency for input variable frequency (in seconds)
    NL%RADFRQ = 2700.   ! Frequency for radiation flux output (interpolation will be done
@@ -40,10 +40,10 @@
 ! will be the closest to the given point.  Also, if the actual dataset covers a smaller    !
 ! area than the one defined by these variables, everything will be included.               !
 !------------------------------------------------------------------------------------------!
-   NL%LONW = -130.    ! Westermost   longitude allowed to be included;
-   NL%LONE =  -15.    ! Easternmost  longitude allowed to be included;
-   NL%LATS =  -70.    ! Southernmost latitude  allowed to be included;
-   NL%LATN =   35.    ! Northernmost latitude  allowed to be included;
+   NL%LONW =   -90    ! Westermost   longitude allowed to be included;
+   NL%LONE =   -70   ! Easternmost  longitude allowed to be included;
+   NL%LATS =   -10    ! Southernmost latitude  allowed to be included;
+   NL%LATN =    16    ! Northernmost latitude  allowed to be included;
 
 !------------------------------------------------------------------------------------------!
 !    Offset in the edges.  This will make the output smaller than the actual domain,       !
@@ -79,17 +79,33 @@
 !    then second, third, ... block of hours for January, then repeat the same thing for    !
 !    February, March, ..., December).                                                      !
 !------------------------------------------------------------------------------------------!
-   NL%NDOWNSCAL = 0
-   NL%FRAC_U    = 0.1234, 0.1384, 0.1428, 0.1248,
-                  0.1234, 0.1384, 0.1428, 0.1248,
-                  0.1234, 0.1384, 0.1428, 0.1248,
-                  0.1234, 0.1384, 0.1428, 0.1248,
-                  0.0538, 0.0541, 0.0681, 0.0692,
-                  0.0538, 0.0541, 0.0681, 0.0692,
-                  0.0538, 0.0541, 0.0681, 0.0692,
-                  0.0538, 0.0541, 0.0681, 0.0692,
-                  0.0402, 0.0403, 0.0543, 0.0637,
-                  0.0402, 0.0403, 0.0543, 0.0637,
-                  0.0402, 0.0403, 0.0543, 0.0637,
-                  0.0402, 0.0403, 0.0543, 0.0637
+  NL%NDOWNSCAL = 1
+    
+  NL%FRAC_U =  0.0956, 0.1178, 0.1241, 0.0599, 
+       0.0956, 0.1178, 0.1241, 0.0599, 
+       0.0956, 0.1178, 0.1241, 0.0599, 
+       0.0510, 0.0661, 0.0995, 0.0672, 
+       0.0510, 0.0661, 0.0995, 0.0672, 
+       0.0510, 0.0661, 0.0995, 0.0672, 
+       0.0510, 0.0661, 0.0995, 0.0672, 
+       0.0125, 0.0204, 0.0269, 0.0322, 
+       0.0125, 0.0204, 0.0269, 0.0322, 
+       0.0125, 0.0204, 0.0269, 0.0322, 
+       0.0125, 0.0204, 0.0269, 0.0322, 
+       0.0956, 0.1178, 0.1241, 0.0599
+
+       !NL%FRAC_U    = 0.1234, 0.1384, 0.1428, 0.1248,
+       !           0.1234, 0.1384, 0.1428, 0.1248,
+        !          0.1234, 0.1384, 0.1428, 0.1248,
+         !         0.1234, 0.1384, 0.1428, 0.1248,
+          !        0.0538, 0.0541, 0.0681, 0.0692,
+           !       0.0538, 0.0541, 0.0681, 0.0692,
+            !      0.0538, 0.0541, 0.0681, 0.0692,
+             !     0.0538, 0.0541, 0.0681, 0.0692,
+              !    0.0402, 0.0403, 0.0543, 0.0637,
+               !   0.0402, 0.0403, 0.0543, 0.0637,
+                !  0.0402, 0.0403, 0.0543, 0.0637,
+                 ! 0.0402, 0.0403, 0.0543, 0.0637
+   
+
 / ! End of RAPP_OPTIONS namelist

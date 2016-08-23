@@ -793,7 +793,7 @@ module canopy_struct_dynamics
                else
                   !---- Use dbh for trees and old grasses. --------------------------------!
                   waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                     &
-                         * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                         * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
                end if
                !---------------------------------------------------------------------------!
 
@@ -865,7 +865,7 @@ module canopy_struct_dynamics
                   !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
-                  tai_drygrass = elongf_min * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                  tai_drygrass = elongf_min * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else
@@ -2074,7 +2074,7 @@ module canopy_struct_dynamics
                else
                    !--use dbh for trees
                    waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
-                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch))
                end if
                !---------------------------------------------------------------------------!
 
@@ -2147,7 +2147,7 @@ module canopy_struct_dynamics
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
                   tai_drygrass = dble( elongf_min                                          &
-                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) )
+                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch) )
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else
@@ -2712,11 +2712,11 @@ module canopy_struct_dynamics
       real(kind=4), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
       real(kind=4), intent(in)  :: enthalpy_atm ! Above can. air spec. enthalpy [ J/kg_air]
       real(kind=4), intent(in)  :: shv_atm      ! Above can. vapour spec. hum.  [kg/kg_air]
-      real(kind=4), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ µmol/mol]
+      real(kind=4), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ ï¿½mol/mol]
       real(kind=4), intent(in)  :: theta_can    ! Canopy air pot. temperature   [        K]
       real(kind=4), intent(in)  :: enthalpy_can ! Canopy air specific enthalpy  [ J/kg_air]
       real(kind=4), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.  [kg/kg_air]
-      real(kind=4), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
+      real(kind=4), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ ï¿½mol/mol]
       real(kind=4), intent(in)  :: zref         ! Height at reference point     [        m]
       real(kind=4), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
       real(kind=4), intent(in)  :: atm_ustar    ! prescribed u*                 [      m/s]
@@ -2726,7 +2726,7 @@ module canopy_struct_dynamics
       real(kind=4), intent(out) :: qstar        ! Specific humidity turb. scale [kg/kg_air]
       real(kind=4), intent(out) :: tstar        ! Temperature turbulence scale  [        K]
       real(kind=4), intent(out) :: estar        ! Spec. enthalpy turb. scale    [ J/kg_air]
-      real(kind=4), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ µmol/mol]
+      real(kind=4), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ ï¿½mol/mol]
       real(kind=4), intent(out) :: zeta         ! z/(Obukhov length).           [    -----]
       real(kind=4), intent(out) :: rib          ! Bulk richardson number.       [    -----]
       real(kind=4), intent(out) :: ggbare       ! Ground conductance            [      m/s]
@@ -3072,11 +3072,11 @@ module canopy_struct_dynamics
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
       real(kind=8), intent(in)  :: enthalpy_atm ! Above can. air spec. enthalpy [ J/kg_air]
       real(kind=8), intent(in)  :: shv_atm      ! Above can. vapour spec. hum.  [kg/kg_air]
-      real(kind=8), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ µmol/mol]
+      real(kind=8), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ ï¿½mol/mol]
       real(kind=8), intent(in)  :: theta_can    ! Canopy air pot. temperature   [        K]
       real(kind=8), intent(in)  :: enthalpy_can ! Canopy air specific enthalpy  [ J/kg_air]
       real(kind=8), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.  [kg/kg_air]
-      real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
+      real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ ï¿½mol/mol]
       real(kind=8), intent(in)  :: zref         ! Height at reference point     [        m]
       real(kind=8), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
       real(kind=8), intent(in)  :: atm_ustar    ! Prescribed u*                 [      m/s]
@@ -3086,7 +3086,7 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: qstar        ! Specific humidity turb. scale [kg/kg_air]
       real(kind=8), intent(out) :: tstar        ! Temperature turbulence scale  [        K]
       real(kind=8), intent(out) :: estar        ! Spec. enthalpy turb. scale    [ J/kg_air]
-      real(kind=8), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ µmol/mol]
+      real(kind=8), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ ï¿½mol/mol]
       real(kind=8), intent(out) :: zeta         ! z/(Obukhov length).           [    -----]
       real(kind=8), intent(out) :: rib          ! Bulk richardson number.       [    -----]
       real(kind=8), intent(out) :: ggbare       ! Ground conductance            [      m/s]
@@ -3835,16 +3835,16 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: leaf_temp       ! Leaf temperature        [        K]
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
-      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/mï¿½]
       real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
-      real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
+      real(kind=4)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/mï¿½/s]
+      real(kind=4)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/mï¿½/s]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)                 :: lwidth          ! Leaf width              [        m]
-      real(kind=4)                 :: kin_visc        ! Kinematic viscosity     [     m²/s]
-      real(kind=4)                 :: th_diff         ! Kinematic viscosity     [     m²/s]
+      real(kind=4)                 :: kin_visc        ! Kinematic viscosity     [     mï¿½/s]
+      real(kind=4)                 :: th_diff         ! Kinematic viscosity     [     mï¿½/s]
       real(kind=4)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_visc² [   1/K/m³]
+      real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_viscï¿½ [   1/K/mï¿½]
       real(kind=4)                 :: grashof         ! Grashof number          [      ---]
       real(kind=4)                 :: reynolds        ! Reynolds number         [      ---]
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
@@ -3877,7 +3877,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( can_temp - t00 ) )
       th_diff  = th_diff0  * ( 1.0 + dth_diff  * ( can_temp - t00 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu²) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nuï¿½) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -3921,7 +3921,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
+      ! entropy and water fluxes [J/K/mï¿½/s and kg/mï¿½/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
       leaf_gbh =             gbh_mos * can_rhos * can_cp
@@ -3980,20 +3980,20 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: leaf_temp       ! Leaf temperature        [        K]
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
-      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/mï¿½]
       real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/m²/s]
-      real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/m²/s]
+      real(kind=8)   , intent(out) :: leaf_gbh        ! Heat  conductance       [ J/K/mï¿½/s]
+      real(kind=8)   , intent(out) :: leaf_gbw        ! Water conductance       [  kg/mï¿½/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
       real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
       real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                 :: lwidth          ! Leaf width              [        m]
-      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m²/s]
-      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m²/s]
+      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     mï¿½/s]
+      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     mï¿½/s]
       real(kind=8)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc² [   1/K/m³]
+      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_viscï¿½ [   1/K/mï¿½]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
@@ -4022,7 +4022,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( can_temp - t008 ) )
       th_diff  = th_diff08  * ( 1.d0 + dth_diff8  * ( can_temp - t008 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu²) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nuï¿½) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav8  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -4065,7 +4065,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
+      ! entropy and water fluxes [J/K/mï¿½/s and kg/mï¿½/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
       leaf_gbh =              gbh_mos * can_rhos * can_cp
@@ -4127,16 +4127,16 @@ module canopy_struct_dynamics
       real(kind=4)   , intent(in)  :: wood_temp       ! Wood temperature        [        K]
       real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
-      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/mï¿½]
       real(kind=4)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=4)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
-      real(kind=4)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
+      real(kind=4)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/mï¿½/s]
+      real(kind=4)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/mï¿½/s]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)                 :: w_diam          ! Wood "diameter"         [        m]
-      real(kind=4)                 :: kin_visc        ! Kinematic viscosity     [     m²/s]
-      real(kind=4)                 :: th_diff         ! Kinematic viscosity     [     m²/s]
+      real(kind=4)                 :: kin_visc        ! Kinematic viscosity     [     mï¿½/s]
+      real(kind=4)                 :: th_diff         ! Kinematic viscosity     [     mï¿½/s]
       real(kind=4)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_visc² [   1/K/m³]
+      real(kind=4)                 :: gr_coeff        ! grav*th_expan/kin_viscï¿½ [   1/K/mï¿½]
       real(kind=4)                 :: grashof         ! Grashof number          [      ---]
       real(kind=4)                 :: reynolds        ! Reynolds number         [      ---]
       real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
@@ -4175,7 +4175,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( can_temp - t00 ) )
       th_diff  = th_diff0  * ( 1.0 + dth_diff  * ( can_temp - t00 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu²) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nuï¿½) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -4219,7 +4219,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
+      ! entropy and water fluxes [J/K/mï¿½/s and kg/mï¿½/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
       wood_gbh =             gbh_mos * can_rhos * can_cp
@@ -4282,20 +4282,20 @@ module canopy_struct_dynamics
       real(kind=8)   , intent(in)  :: wood_temp       ! Wood temperature        [        K]
       real(kind=8)   , intent(in)  :: can_temp        ! Canopy air temperature  [        K]
       real(kind=8)   , intent(in)  :: can_shv         ! Canopy air spec. hum.   [    kg/kg]
-      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/m³]
+      real(kind=8)   , intent(in)  :: can_rhos        ! Canopy air density      [    kg/mï¿½]
       real(kind=8)   , intent(in)  :: can_cp          ! Canopy air spec. heat   [   J/kg/K]
-      real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/m²/s]
-      real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/m²/s]
+      real(kind=8)   , intent(out) :: wood_gbh        ! Heat  conductance       [ J/K/mï¿½/s]
+      real(kind=8)   , intent(out) :: wood_gbw        ! Water conductance       [  kg/mï¿½/s]
       real(kind=8)   , intent(out) :: grashof         ! Grashof number          [      ---]
       real(kind=8)   , intent(out) :: reynolds        ! Reynolds number         [      ---]
       real(kind=8)   , intent(out) :: nusselt_free    ! Nusselt number (free)   [      ---]
       real(kind=8)   , intent(out) :: nusselt_forced  ! Nusselt number (forced) [      ---]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                 :: w_diam          ! Wood "diameter"         [        m]
-      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     m²/s]
-      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     m²/s]
+      real(kind=8)                 :: kin_visc        ! Kinematic viscosity     [     mï¿½/s]
+      real(kind=8)                 :: th_diff         ! Kinematic viscosity     [     mï¿½/s]
       real(kind=8)                 :: th_expan        ! Thermal expansion       [      1/K]
-      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_visc² [   1/K/m³]
+      real(kind=8)                 :: gr_coeff        ! grav*th_expan/kin_viscï¿½ [   1/K/mï¿½]
       real(kind=8)                 :: nusselt_lami    ! Nusselt number (laminar)[      ---]
       real(kind=8)                 :: nusselt_turb    ! Nusselt number (turb.)  [      ---]
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
@@ -4331,7 +4331,7 @@ module canopy_struct_dynamics
       kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( can_temp - t008 ) )
       th_diff  = th_diff08  * ( 1.d0 + dth_diff8  * ( can_temp - t008 ) )
       !------------------------------------------------------------------------------------!
-      !    Grashof coefficient (a*g/nu²) in MU08's equation 10.8.                          !
+      !    Grashof coefficient (a*g/nuï¿½) in MU08's equation 10.8.                          !
       !------------------------------------------------------------------------------------!
       gr_coeff = th_expan * grav8  / ( kin_visc * kin_visc )
       !------------------------------------------------------------------------------------!
@@ -4374,7 +4374,7 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
+      ! entropy and water fluxes [J/K/mï¿½/s and kg/mï¿½/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos  = max(gbhmos_min8, free_gbh_mos + forced_gbh_mos)
       wood_gbh =              gbh_mos * can_rhos * can_cp

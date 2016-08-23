@@ -216,7 +216,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%phenology_status(ico) = 0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
+         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft, cpatch)
          cpatch%sla(ico)              = sla(ipft)
 
 
@@ -238,7 +238,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
@@ -357,7 +357,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+         cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft, cpatch)
          cpatch%sla(ico)              = sla(ipft)
 
 
@@ -378,7 +378,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
@@ -538,7 +538,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                cpatch%phenology_status(ico) = 0
                cpatch%bstorage(ico)         = 0.0
                cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
-               cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+               cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft, cpatch)
                cpatch%sla(ico)              = sla(ipft)
 
                salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
@@ -556,7 +556,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                 ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
                                 ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
                                 ,cpatch%wai(ico),cpatch%crown_area(ico)                    &
-                                ,cpatch%bsapwooda(ico))
+                                ,cpatch%bsapwooda(ico),cpatch)
 
                !----- Find the above-ground biomass and basal area. -----------------------!
                cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)            &
