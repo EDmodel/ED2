@@ -142,3 +142,6 @@ ED/build/bin/configure
 ED/build/rad_param.data
 ED/slurmdbg
 R-utils/read.q.temporary.r
+ED/ed develop.sublime-project
+ED/ed develop.sublime-workspace
+ED/src/init/ed_params before mod pft 2,3,4.f90

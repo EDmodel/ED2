@@ -601,6 +601,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) negligible_nplant(myPFT) = real(rval)
            call getConfigREAL  ('veg_hcap_min','pft',i,rval,texist)
            if(texist) veg_hcap_min(myPFT) = real(rval)
+           call getConfigREAL  ('effarea_transp','pft',i,rval,texist)
+           if(texist) effarea_transp(myPFT) = real(rval)
 
         else
            print*,"INVALID PFT READ FROM CONFIG FILE ::", myPFT
@@ -1345,7 +1347,7 @@ subroutine write_ed_xml_config
      
 !! CANOPY RADIATION
         call putConfigREAL8("clumping_factor",clumping_factor(i))
-        call putConfigREAL("orient_factor",orient_factor(i))
+        call putConfigREAL8("orient_factor",orient_factor(i))
         call putConfigREAL8("leaf_emiss_tir",leaf_emiss_tir(i))
         call putConfigREAL8("wood_emiss_tir",wood_emiss_tir(i))
 
@@ -1493,13 +1495,13 @@ subroutine write_ed_xml_config
 
      !! LEAF DEPENDENT
         call putConfigINT("phenology",         phenology(i))
-        call putConfigINT("c_grn_leaf_dry",    c_grn_leaf_dry(i))
-        call putConfigINT("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
-        call putConfigINT("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
-        call putConfigINT("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
-        call putConfigINT("delta_c",           delta_c(i))
-        call putConfigINT("b1Cl",              b1Cl(i))
-        call putConfigINT("b2Cl",              b2Cl(i))
+        call putConfigREAL("c_grn_leaf_dry",    c_grn_leaf_dry(i))
+        call putConfigREAL("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
+        call putConfigREAL("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
+        call putConfigREAL("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
+        call putConfigREAL("delta_c",           delta_c(i))
+        call putConfigREAL("b1Cl",              b1Cl(i))
+        call putConfigREAL("b2Cl",              b2Cl(i))
 
      !! REPRODUCTION
         call putConfigREAL("r_fract", r_fract(i))
@@ -1514,6 +1516,8 @@ subroutine write_ed_xml_config
         call putConfigREAL("seed_rain",        seed_rain(i))
         call putConfigREAL("negligible_nplant",negligible_nplant(i))
         call putConfigREAL("veg_hcap_min",     veg_hcap_min(i))
+        call putConfigREAL("effarea_transp",   effarea_transp(i))
+
 
         call libxml2f90_ll_closetag("pft")
      endif
