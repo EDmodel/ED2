@@ -3298,7 +3298,7 @@ subroutine init_pft_alloc_params()
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
                                      ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
-                                     ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
+                                     ,'  b2Bs_Small','  b1Bs_Large','  b2Bs_Large'         &
                                      ,'        b1Ca','        b2Ca','     Hgt_min'         &
                                      ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
                                      ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
