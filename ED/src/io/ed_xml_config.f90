@@ -74,7 +74,7 @@ recursive subroutine read_ed_xml_config(filename)
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
   use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
-  use rk4_coms, only : rk4min_veg_temp
+  use rk4_coms, only : rk4min_veg_temp, effarea_transp
   implicit none
   integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival = 0
   logical(4) :: texist = .false.
@@ -765,14 +765,6 @@ recursive subroutine read_ed_xml_config(filename)
 !        call getConfigREAL  ('visible_fraction_dif','radiation',i,rval,texist)
 !        if(texist) visible_fraction_dif = real(rval)
         
-        ! these are already read previously
-        ! call getConfigREAL  ('leaf_scatter_nir','radiation',i,rval,texist)
-        ! if(texist) leaf_scatter_nir = real(rval)
-        ! call getConfigREAL  ('leaf_reflect_nir','radiation',i,rval,texist)
-        ! if(texist) leaf_reflect_nir = real(rval)
-        ! call getConfigREAL  ('leaf_trans_nir','radiation',i,rval,texist)
-        ! if(texist) leaf_trans_nir = real(rval)
-
         ! these are here for backward compatibility?
         call getConfigREAL  ('diffuse_backscatter_vis','radiation',i,rval,texist)
         if(texist) leaf_backscatter_vis = real(rval)
@@ -1260,7 +1252,7 @@ subroutine write_ed_xml_config
   use soil_coms    !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
   use ed_misc_coms !, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
-  use rk4_coms     !, only : rk4min_veg_temp
+  use rk4_coms     !, only : rk4min_veg_temp, effarea_transp
 
   implicit none
 !  integer :: ival
@@ -1516,7 +1508,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("seed_rain",        seed_rain(i))
         call putConfigREAL("negligible_nplant",negligible_nplant(i))
         call putConfigREAL("veg_hcap_min",     veg_hcap_min(i))
-        call putConfigREAL("effarea_transp",   effarea_transp(i))
+        call putConfigREAL8("effarea_transp",   effarea_transp(i))
 
 
         call libxml2f90_ll_closetag("pft")
