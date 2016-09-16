@@ -16,9 +16,7 @@ subroutine load_ed_ecosystem_params()
                           , is_grass            & ! intent(out)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
-                          , include_pft_fp      & ! intent(out)
-                          , C2B                 & ! intent(out)
-                          , frost_mort          ! ! intent(out)
+                          , include_pft_fp      ! ! intent(out)
    use disturb_coms, only : ianth_disturb       ! ! intent(in)
 
    implicit none

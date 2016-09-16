@@ -598,7 +598,6 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    integer          , intent(in) :: ipaz
    integer          , intent(in) :: lsl
    !----- Local variables. ----------------------------------------------------------------!
-   integer                       :: ipft
    integer                       :: ncohorts
    integer                       :: ipa
    !---------------------------------------------------------------------------------------!

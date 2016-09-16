@@ -418,10 +418,10 @@ subroutine read_ed21_history_file
                                  , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%aspect     (is:is), 'ASPECT '                     &
                                  , dsetrank, iparallel, .true.,foundvar)
-               call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        &
+               call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        !&
                                  , dsetrank, iparallel, .true.,foundvar)
-               call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
-                                 , dsetrank, iparallel, .true.,foundvar)
+               ! call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
+               !                   , dsetrank, iparallel, .true.,foundvar)
 
                !----- Load 2D dataset. ----------------------------------------------------!
                dsetrank     = 2_8
@@ -967,7 +967,7 @@ subroutine read_ed21_history_unstruct
    real                  , dimension(  :)         , allocatable :: tpoly_slope
    real                  , dimension(  :)         , allocatable :: tpoly_aspect
    real                  , dimension(  :)         , allocatable :: tpoly_TCI
-   integer               , dimension(  :)         , allocatable :: tpoly_patch_count
+   !integer               , dimension(  :)         , allocatable :: tpoly_patch_count
    integer               , dimension(  :)         , allocatable :: tpoly_lsl
    integer               , dimension(:,:)         , allocatable :: tpoly_ntext_soil
    integer                                                      :: year
@@ -1466,7 +1466,7 @@ subroutine read_ed21_history_unstruct
             allocate (tpoly_slope       (         nsites_inp))
             allocate (tpoly_aspect      (         nsites_inp))
             allocate (tpoly_TCI         (         nsites_inp))
-            allocate (tpoly_patch_count (         nsites_inp))
+            !allocate (tpoly_patch_count (         nsites_inp))
             allocate (tpoly_lsl         (         nsites_inp))
             allocate (tpoly_ntext_soil  (     nzg,nsites_inp))
             !------------------------------------------------------------------------------!
@@ -1519,8 +1519,8 @@ subroutine read_ed21_history_unstruct
                                     , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_r( tpoly_TCI        (is:is)     , 'TCI '                &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
-                                    , dsetrank, iparallel, .true.,foundvar)
+                  ! call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
+                  !                   , dsetrank, iparallel, .true.,foundvar)
                   call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL '                 &
                                     , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
@@ -1620,7 +1620,7 @@ subroutine read_ed21_history_unstruct
                cpoly%slope       (isi) = tpoly_slope       (is_best)
                cpoly%aspect      (isi) = tpoly_aspect      (is_best)
                cpoly%TCI         (isi) = tpoly_TCI         (is_best)
-               cpoly%patch_count (isi) = tpoly_patch_count (is_best)
+               !cpoly%patch_count (isi) = tpoly_patch_count (is_best)
                !---------------------------------------------------------------------------!
 
 
@@ -2030,7 +2030,7 @@ subroutine read_ed21_history_unstruct
             deallocate (tpoly_slope       )
             deallocate (tpoly_aspect      )
             deallocate (tpoly_TCI         )
-            deallocate (tpoly_patch_count )
+            !deallocate (tpoly_patch_count )
             deallocate (tpoly_lsl         )
             deallocate (tpoly_ntext_soil  )
             deallocate (islakesite        )
@@ -2704,7 +2704,7 @@ subroutine read_ed21_polyclone
                   memsize(1)  = int(1,8)
                   memoffs(1)  = 0_8
 
-                  call hdf_getslab_i(cpoly%patch_count(is:is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
+                  !call hdf_getslab_i(cpoly%patch_count(is:is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
                   call hdf_getslab_i(cpoly%sitenum(is:is),'SITENUM ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_i(cpoly%lsl(is:is),'LSL ',dsetrank,iparallel,.true.,foundvar)   
                   call hdf_getslab_i(cpoly%ncol_soil(is:is),'NCOL_SOIL ',dsetrank,iparallel,.false.,foundvar)
@@ -2722,7 +2722,7 @@ subroutine read_ed21_polyclone
                   
 
                   call hdf_getslab_r(cpoly%area(is:is),'AREA_SI ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%patch_area(is:is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
+                  !call hdf_getslab_r(cpoly%patch_area(is:is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%elevation(is:is),'ELEVATION ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%slope(is:is),'SLOPE ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%aspect(is:is),'ASPECT ',dsetrank,iparallel,.true.,foundvar)

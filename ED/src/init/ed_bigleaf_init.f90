@@ -444,7 +444,7 @@ subroutine ed_bigleaf_init(cgrid)
          poly_ssc  = poly_ssc  + site_ssc  * cpoly%area(isi)
          poly_stsc = poly_stsc + site_stsc * cpoly%area(isi)
 
-         cpoly%patch_count(isi) = nsitepat
+         !cpoly%patch_count(isi) = nsitepat
 
 
          write (unit=*,fmt='(4(i12,1x),7(f12.3,1x))') ipy,cpoly%nsites,nsitepat,ncohorts   &

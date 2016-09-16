@@ -195,7 +195,7 @@ $ED_NL
    ! IYOUTPUT -- Annual output.                                                            !
    ! ITOUTPUT -- Instantaneous fluxes, mostly polygon-level variables, one file per year.  !
    ! ISOUTPUT -- restart file, for HISTORY runs.  The time interval between files is       !
-   !             determined by FRQHIS                                                      !
+   !             determined by                                                       !
    !---------------------------------------------------------------------------------------!
    NL%IFOUTPUT  =  0
    NL%IDOUTPUT  =  0

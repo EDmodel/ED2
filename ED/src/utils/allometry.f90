@@ -262,8 +262,7 @@ module allometry
    ! DBH has no real meaning for grasses with the new allometry.                           !
    !---------------------------------------------------------------------------------------!
    real function bl2dbh(bleaf,ipft)
-      use pft_coms,     only : is_tropical & ! intent(in), lookup table
-                             , rho         & ! intent(in), lookup table
+      use pft_coms,     only : rho         & ! intent(in), lookup table
                              , dbh_crit    & ! intent(in), lookup table
                              , hgt_max     & ! intent(in), lookup table
                              , is_grass    & ! intent(in)
@@ -348,7 +347,6 @@ module allometry
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use pft_coms    , only : dbh_crit    & ! intent(in)
                              , hgt_max     & ! intent(in)
-                             , is_tropical & ! intent(in)
                              , is_grass    & ! intent(in)
                              , b1Ca        & ! intent(in)
                              , b2Ca        ! ! intent(in)
@@ -567,8 +565,7 @@ module allometry
    !---------------------------------------------------------------------------------------!
    subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
                           ,bsapwooda)
-      use pft_coms    , only : is_tropical     & ! intent(in)
-                             , is_grass        & ! intent(in)
+      use pft_coms    , only : is_grass        & ! intent(in)
                              , agf_bs          & ! intent(in)
                              , rho             & ! intent(in)
                              , C2B             & ! intent(in)

@@ -674,34 +674,14 @@ subroutine fill_history_grid_p11(cgrid,ipy,py_index)
                      ,'CBUDGET_NEP '              ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%nbudget_initialstorage  (ipy:ipy)                              &
                      ,'NBUDGET_INITIALSTORAGE '   ,dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cgrid%Cleaf_grow              (ipy:ipy)                              &
-                     ,'CLEAF_GROW '               ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Croot_grow              (ipy:ipy)                              &
-                     ,'CROOT_GROW '               ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Cdead_grow              (ipy:ipy)                              &
-                     ,'CDEAD_GROW '               ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Cstore_grow             (ipy:ipy)                              &
-                     ,'CSTORE_GROW '              ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%Cleaf_litter_flux       (ipy:ipy)                              &
                      ,'CLEAF_LITTER_FLUX '        ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%Croot_litter_flux       (ipy:ipy)                              &
                      ,'CROOT_LITTER_FLUX '        ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Ccwd_flux               (ipy:ipy)                              &
-                     ,'CCWD_FLUX '                ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Nleaf_grow              (ipy:ipy)                              &
-                     ,'NLEAF_GROW '               ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Ndead_grow              (ipy:ipy)                              &
-                     ,'NDEAD_GROW '               ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Nroot_grow              (ipy:ipy)                              &
-                     ,'NROOT_GROW '               ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Nstore_grow             (ipy:ipy)                              &
-                     ,'NSTORE_GROW '              ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%Nleaf_litter_flux       (ipy:ipy)                              &
                      ,'NLEAF_LITTER_FLUX '        ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%Nroot_litter_flux       (ipy:ipy)                              &
                      ,'NROOT_LITTER_FLUX '        ,dsetrank,iparallel,.false.,foundvar)
-   call hdf_getslab_r(cgrid%Ncwd_flux               (ipy:ipy)                              &
-                     ,'NCWD_FLUX '                ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%Nbiomass_uptake         (ipy:ipy)                              &
                      ,'NBIOMASS_UPTAKE '          ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%Ngross_min              (ipy:ipy)                              &
@@ -3012,8 +2992,8 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
    memdims (1) = int(cpoly%nsites  ,8)
    memsize (1) = int(cpoly%nsites  ,8)
    memoffs (1) = 0_8
-   call hdf_getslab_i(cpoly%patch_count                                                    &
-                     ,'PATCH_COUNT             ',dsetrank,iparallel,.true. ,foundvar)
+   !call hdf_getslab_i(cpoly%patch_count                                                    &
+   !                  ,'PATCH_COUNT             ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%sitenum                                                        &
                      ,'SITENUM                 ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%num_landuse_years                                              &
@@ -3085,8 +3065,8 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
    memoffs (1) = 0_8
    call hdf_getslab_r(cpoly%area                                                           &
                       ,'AREA_SI                    ' ,dsetrank,iparallel,.true. ,foundvar)
-   call hdf_getslab_r(cpoly%patch_area                                                     &
-                      ,'PATCH_AREA                 ' ,dsetrank,iparallel,.true. ,foundvar)
+   ! call hdf_getslab_r(cpoly%patch_area                                                     &
+   !                    ,'PATCH_AREA                 ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%elevation                                                      &
                       ,'ELEVATION                  ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%slope                                                          &

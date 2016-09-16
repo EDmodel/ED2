@@ -1643,7 +1643,7 @@ module ed_state_vars
       ! The number of patches in each site
       integer,pointer,dimension(:) :: sipa_n
 
-      integer,pointer,dimension(:) :: patch_count    ! number of patches per site
+      !integer,pointer,dimension(:) :: patch_count    ! number of patches per site
 
       integer,pointer,dimension(:) :: sitenum
 
@@ -1661,7 +1661,7 @@ module ed_state_vars
       ! BASIC INFO
       !------------------------------------------------------------------------------------!
       real,pointer,dimension(:) :: area       ! Relative area occupied by the site
-      real,pointer,dimension(:) :: patch_area ! Un-normalized sum of patch areas
+      !real,pointer,dimension(:) :: patch_area ! Un-normalized sum of patch areas
       real,pointer,dimension(:) :: elevation  ! mean site elevation (meters)
       real,pointer,dimension(:) :: slope      ! mean site slope (degrees)
       real,pointer,dimension(:) :: aspect     ! mean site aspect (degrees)
@@ -2165,20 +2165,10 @@ module ed_state_vars
 
       !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
       ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
-      real,pointer,dimension(:) :: Cleaf_grow
-      real,pointer,dimension(:) :: Croot_grow
-      real,pointer,dimension(:) :: Cdead_grow
-      real,pointer,dimension(:) :: Cstore_grow
       real,pointer,dimension(:) :: Cleaf_litter_flux
       real,pointer,dimension(:) :: Croot_litter_flux
-      real,pointer,dimension(:) :: Ccwd_flux
-      real,pointer,dimension(:) :: Nleaf_grow
-      real,pointer,dimension(:) :: Ndead_grow
-      real,pointer,dimension(:) :: Nroot_grow
-      real,pointer,dimension(:) :: Nstore_grow
       real,pointer,dimension(:) :: Nleaf_litter_flux
       real,pointer,dimension(:) :: Nroot_litter_flux
-      real,pointer,dimension(:) :: Ncwd_flux
       real,pointer,dimension(:) :: Nbiomass_uptake
       real,pointer,dimension(:) :: Ngross_min
       real,pointer,dimension(:) :: Nnet_min
@@ -3099,20 +3089,10 @@ module ed_state_vars
       allocate(cgrid%fast_soil_n                (                    npolygons))
       allocate(cgrid%mineral_soil_n             (                    npolygons))
       allocate(cgrid%cwd_n                      (                    npolygons))
-      allocate(cgrid%Cleaf_grow                 (                    npolygons))
-      allocate(cgrid%Croot_grow                 (                    npolygons))
-      allocate(cgrid%Cdead_grow                 (                    npolygons))
-      allocate(cgrid%Cstore_grow                (                    npolygons))
       allocate(cgrid%Cleaf_litter_flux          (                    npolygons))
       allocate(cgrid%Croot_litter_flux          (                    npolygons))
-      allocate(cgrid%Ccwd_flux                  (                    npolygons))
-      allocate(cgrid%Nleaf_grow                 (                    npolygons))
-      allocate(cgrid%Ndead_grow                 (                    npolygons))
-      allocate(cgrid%Nroot_grow                 (                    npolygons))
-      allocate(cgrid%Nstore_grow                (                    npolygons))
       allocate(cgrid%Nleaf_litter_flux          (                    npolygons))
       allocate(cgrid%Nroot_litter_flux          (                    npolygons))
-      allocate(cgrid%Ncwd_flux                  (                    npolygons))
       allocate(cgrid%Nbiomass_uptake            (                    npolygons))
       allocate(cgrid%Ngross_min                 (                    npolygons))
       allocate(cgrid%Nnet_min                   (                    npolygons))
@@ -3809,11 +3789,11 @@ module ed_state_vars
       allocate(cpoly%sipa_id                       (                          nsites))
       allocate(cpoly%sipa_n                        (                          nsites))
 
-      allocate(cpoly%patch_count                   (                          nsites))
+      !allocate(cpoly%patch_count                   (                          nsites))
       allocate(cpoly%sitenum                       (                          nsites))
       allocate(cpoly%met                           (                          nsites))
       allocate(cpoly%area                          (                          nsites))
-      allocate(cpoly%patch_area                    (                          nsites))
+      !allocate(cpoly%patch_area                    (                          nsites))
       allocate(cpoly%elevation                     (                          nsites))
       allocate(cpoly%slope                         (                          nsites))
       allocate(cpoly%aspect                        (                          nsites))
@@ -5027,20 +5007,10 @@ module ed_state_vars
       nullify(cgrid%fast_soil_n             )
       nullify(cgrid%mineral_soil_n          )
       nullify(cgrid%cwd_n                   )
-      nullify(cgrid%Cleaf_grow              )
-      nullify(cgrid%Croot_grow              )
-      nullify(cgrid%Cdead_grow              )
-      nullify(cgrid%Cstore_grow             )
       nullify(cgrid%Cleaf_litter_flux       )
       nullify(cgrid%Croot_litter_flux       )
-      nullify(cgrid%Ccwd_flux               )
-      nullify(cgrid%Nleaf_grow              )
-      nullify(cgrid%Ndead_grow              )
-      nullify(cgrid%Nroot_grow              )
-      nullify(cgrid%Nstore_grow             )
       nullify(cgrid%Nleaf_litter_flux       )
       nullify(cgrid%Nroot_litter_flux       )
-      nullify(cgrid%Ncwd_flux               )
       nullify(cgrid%Nbiomass_uptake         )
       nullify(cgrid%Ngross_min              )
       nullify(cgrid%Nnet_min                )
@@ -5681,11 +5651,11 @@ module ed_state_vars
 
       nullify(cpoly%sipa_id                    )
       nullify(cpoly%sipa_n                     )
-      nullify(cpoly%patch_count                )
+      !nullify(cpoly%patch_count                )
       nullify(cpoly%sitenum                    )
       nullify(cpoly%met                        )
       nullify(cpoly%area                       )
-      nullify(cpoly%patch_area                 )
+      !nullify(cpoly%patch_area                 )
       nullify(cpoly%elevation                  )
       nullify(cpoly%slope                      )
       nullify(cpoly%aspect                     )
@@ -6823,20 +6793,10 @@ module ed_state_vars
       if(associated(cgrid%fast_soil_n           )) deallocate(cgrid%fast_soil_n           )
       if(associated(cgrid%mineral_soil_n        )) deallocate(cgrid%mineral_soil_n        )
       if(associated(cgrid%cwd_n                 )) deallocate(cgrid%cwd_n                 )
-      if(associated(cgrid%Cleaf_grow            )) deallocate(cgrid%Cleaf_grow            )
-      if(associated(cgrid%Croot_grow            )) deallocate(cgrid%Croot_grow            )
-      if(associated(cgrid%Cdead_grow            )) deallocate(cgrid%Cdead_grow            )
-      if(associated(cgrid%Cstore_grow           )) deallocate(cgrid%Cstore_grow           )
       if(associated(cgrid%Cleaf_litter_flux     )) deallocate(cgrid%Cleaf_litter_flux     )
       if(associated(cgrid%Croot_litter_flux     )) deallocate(cgrid%Croot_litter_flux     )
-      if(associated(cgrid%Ccwd_flux             )) deallocate(cgrid%Ccwd_flux             )
-      if(associated(cgrid%Nleaf_grow            )) deallocate(cgrid%Nleaf_grow            )
-      if(associated(cgrid%Ndead_grow            )) deallocate(cgrid%Ndead_grow            )
-      if(associated(cgrid%Nroot_grow            )) deallocate(cgrid%Nroot_grow            )
-      if(associated(cgrid%Nstore_grow           )) deallocate(cgrid%Nstore_grow           )
       if(associated(cgrid%Nleaf_litter_flux     )) deallocate(cgrid%Nleaf_litter_flux     )
       if(associated(cgrid%Nroot_litter_flux     )) deallocate(cgrid%Nroot_litter_flux     )
-      if(associated(cgrid%Ncwd_flux             )) deallocate(cgrid%Ncwd_flux             )
       if(associated(cgrid%Nbiomass_uptake       )) deallocate(cgrid%Nbiomass_uptake       )
       if(associated(cgrid%Ngross_min            )) deallocate(cgrid%Ngross_min            )
       if(associated(cgrid%Nnet_min              )) deallocate(cgrid%Nnet_min              )
@@ -7488,11 +7448,11 @@ module ed_state_vars
 
       if(associated(cpoly%sipa_id               )) deallocate(cpoly%sipa_id               )
       if(associated(cpoly%sipa_n                )) deallocate(cpoly%sipa_n                )
-      if(associated(cpoly%patch_count           )) deallocate(cpoly%patch_count           )
+      !if(associated(cpoly%patch_count           )) deallocate(cpoly%patch_count           )
       if(associated(cpoly%sitenum               )) deallocate(cpoly%sitenum               )
       if(associated(cpoly%met                   )) deallocate(cpoly%met                   )
       if(associated(cpoly%area                  )) deallocate(cpoly%area                  )
-      if(associated(cpoly%patch_area            )) deallocate(cpoly%patch_area            )
+      !if(associated(cpoly%patch_area            )) deallocate(cpoly%patch_area            )
       if(associated(cpoly%elevation             )) deallocate(cpoly%elevation             )
       if(associated(cpoly%slope                 )) deallocate(cpoly%slope                 )
       if(associated(cpoly%aspect                )) deallocate(cpoly%aspect                )
@@ -12196,30 +12156,6 @@ module ed_state_vars
 
        !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
        ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
-      if (associated(cgrid%Cleaf_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Cleaf_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CLEAF_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Leaf Carbon Growth','?','ipoly') 
-      end if
-      if (associated(cgrid%Croot_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Croot_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CROOT_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Fine Root Carbon Growth','?','ipoly') 
-      end if
-      if (associated(cgrid%Cdead_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Cdead_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CDEAD_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Wood Carbon Growth','?','ipoly') 
-      end if
-      if (associated(cgrid%Cstore_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Cstore_Grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CSTORE_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Storage Carbon growth','?','ipoly') 
-      end if
       if (associated(cgrid%Cleaf_litter_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Cleaf_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
@@ -12232,36 +12168,6 @@ module ed_state_vars
               var_len,var_len_global,max_ptrs,'CROOT_LITTER_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. Fine Root Litter Carbon Flux','?','ipoly') 
       end if
-      if (associated(cgrid%Ccwd_flux)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Ccwd_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'CCWD_FLUX :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Coarse Woody Debris Carbon FLUX','?','ipoly') 
-      end if
-      if (associated(cgrid%Nleaf_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Nleaf_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NLEAF_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Leaf Nitrogen growth','?','ipoly') 
-      end if
-      if (associated(cgrid%Nroot_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Nroot_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NROOT_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Fine Root Nitrogen Growth','?','ipoly') 
-      end if
-      if (associated(cgrid%Ndead_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Ndead_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NDEAD_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Wood Nitrogen growth','?','ipoly') 
-      end if
-      if (associated(cgrid%Nstore_grow)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Nstore_grow,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NSTORE_GROW :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. Storage Nitrogen Growth','?','ipoly') 
-      end if
       if (associated(cgrid%Nleaf_litter_flux)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%Nleaf_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
@@ -12273,12 +12179,6 @@ module ed_state_vars
          call vtable_edio_r(npts,cgrid%Nroot_litter_flux,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'NROOT_LITTER_FLUX :11:hist:anal:dail') 
          call metadata_edio(nvar,igr,'Poly Avg. fine root litter Nitrogen flux','?','ipoly') 
-      end if
-      if (associated(cgrid%Ncwd_flux)) then
-         nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%Ncwd_flux,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'NCWD_FLUX :11:hist:anal:dail') 
-         call metadata_edio(nvar,igr,'Poly Avg. CWD Nitrogen flux','?','ipoly') 
       end if
       if (associated(cgrid%Nbiomass_uptake)) then
          nvar=nvar+1
@@ -18700,13 +18600,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Number of patches per site','[--]','(isite)') 
       end if
       
-      if (associated(cpoly%patch_count)) then
-         nvar=nvar+1
-         call vtable_edio_i(npts,cpoly%patch_count                                         &
-                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'PATCH_COUNT :20:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'Patch count for each site','[--]','(isite)') 
-      end if
+      ! if (associated(cpoly%patch_count)) then
+      !    nvar=nvar+1
+      !    call vtable_edio_i(npts,cpoly%patch_count                                         &
+      !                      ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+      !                      ,'PATCH_COUNT :20:hist:anal:dail:mont:dcyc:year') 
+      !    call metadata_edio(nvar,igr,'Patch count for each site','[--]','(isite)') 
+      ! end if
       
       if (associated(cpoly%sitenum)) then
          nvar=nvar+1
@@ -18831,12 +18731,12 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(cpoly%patch_area)) then
-         nvar=nvar+1
-           call vtable_edio_r(npts,cpoly%patch_area,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'PATCH_AREA:21:hist:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
+      ! if (associated(cpoly%patch_area)) then
+      !    nvar=nvar+1
+      !      call vtable_edio_r(npts,cpoly%patch_area,nvar,igr,init,cpoly%siglob_id, &
+      !      var_len,var_len_global,max_ptrs,'PATCH_AREA:21:hist:year') 
+      !    call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      ! end if
 
       if (associated(cpoly%elevation)) then
          nvar=nvar+1

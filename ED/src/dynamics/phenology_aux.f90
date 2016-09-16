@@ -194,8 +194,7 @@ module phenology_aux
       use ed_state_vars  , only : polygontype        & ! structure
                                 , sitetype           & ! structure
                                 , patchtype          ! ! structure
-      use pft_coms       , only : is_tropical        & ! intent(in)
-                                , phenology          & ! intent(in)
+      use pft_coms       , only : phenology          & ! intent(in)
                                 , SLA                & ! intent(in)
                                 , sla_scale          & ! intent(in)
                                 , sla_inter          & ! intent(in)

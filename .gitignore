@@ -146,3 +146,5 @@ ED/ed develop.sublime-project
 ED/ed develop.sublime-workspace
 ED/src/init/ed_params before mod pft 2,3,4.f90
 ED/ed_params fabio mod.f90
+ED/print write format statement.f90
+ED/ed_paramsfabio.f90
