@@ -418,7 +418,7 @@ subroutine read_ed21_history_file
                                  , dsetrank, iparallel, .true.,foundvar)
                call hdf_getslab_r( cpoly%aspect     (is:is), 'ASPECT '                     &
                                  , dsetrank, iparallel, .true.,foundvar)
-               call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        !&
+               call hdf_getslab_r( cpoly%TCI        (is:is), 'TCI '                        &
                                  , dsetrank, iparallel, .true.,foundvar)
                ! call hdf_getslab_i( cpoly%patch_count(is:is), 'PATCH_COUNT '                &
                !                   , dsetrank, iparallel, .true.,foundvar)
