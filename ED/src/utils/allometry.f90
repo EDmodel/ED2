@@ -564,6 +564,57 @@ real function size2bl_old(dbh,hite,ipft)
 
       return
    end function dbh2ca
+
+
+
+      real function dbh2ca_old(dbh,hite,sla,ipft)
+      use ed_misc_coms, only : iallom      ! ! intent(in)
+      use pft_coms    , only : dbh_crit    & ! intent(in)
+                             , hgt_max     & ! intent(in)
+                             , is_tropical & ! intent(in)
+                             , is_liana    & ! intent(in)
+                             , is_grass    & ! intent(in)
+                             , b1Ca        & ! intent(in)
+                             , b2Ca        ! ! intent(in)
+      use ed_misc_coms, only : igrass      ! ! intent(in)
+      use ed_state_vars, only: patchtype  ! ! structure
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real   , intent(in) :: dbh
+      real   , intent(in) :: hite
+      real   , intent(in) :: sla
+      integer, intent(in) :: ipft
+      !----- Internal variables -----------------------------------------------------------!
+      real                :: loclai ! The maximum local LAI for a given DBH
+      real                :: dmbh   ! The maximum
+      !------------------------------------------------------------------------------------!
+      if (dbh < tiny(1.0)) then
+         loclai = 0.0
+         dbh2ca_old = 0.0
+      else
+
+          !----- make this function generic to size, not just dbh. -------------------------!
+          loclai = sla * size2bl_old(dbh,hite,ipft)
+          select case (iallom)
+              case (0)
+                  !----- No upper bound in the allometry. ---------------------------------------!
+                  dbh2ca_old = b1Ca(ipft) * dbh ** b2Ca(ipft)
+
+              case default
+                  !----- Impose a maximum crown area. -------------------------------------------!
+                  if (is_grass(ipft) .and. igrass==1) then
+                      dbh2ca_old = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
+                  else
+                      dbh2ca_old = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
+                  end if
+          end select
+      end if
+
+      !----- Local LAI / Crown area should never be less than one. ------------------------!
+      dbh2ca_old = min (loclai, dbh2ca_old)
+
+      return
+   end function dbh2ca_old
    !=======================================================================================!
    !=======================================================================================!
 
@@ -847,6 +898,89 @@ real function size2bl_old(dbh,hite,ipft)
 
       return
    end subroutine area_indices
+
+
+
+      subroutine area_indices_old(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
+                          ,bsapwooda)
+            use pft_coms    , only : is_tropical     & ! intent(in)
+                             , is_grass        & ! intent(in)
+                             , agf_bs          & ! intent(in)
+                             , rho             & ! intent(in)
+                             , C2B             & ! intent(in)
+                             , dbh_crit        & ! intent(in)
+                             , b1WAI           & ! intent(in)
+                             , b2WAI           ! ! intent(in)
+      use consts_coms , only : onethird        & ! intent(in)
+                             , pi1             ! ! intent(in)
+      use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
+      use ed_misc_coms, only : igrass          & ! intent(in)
+                             , iallom          ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer , intent(in)  :: pft        ! Plant functional type            [         ---]
+      real    , intent(in)  :: nplant     ! Number of plants                 [    plant/m²]
+      real    , intent(in)  :: bleaf      ! Specific leaf biomass            [   kgC/plant]
+      real    , intent(in)  :: bdead      ! Specific structural              [   kgC/plant]
+      real    , intent(in)  :: balive     ! Specific live tissue biomass     [   kgC/plant]
+      real    , intent(in)  :: bsapwooda  ! Specific sapwood biomass above grnd[   kgC/plant]
+      real    , intent(in)  :: dbh        ! Diameter at breast height        [          cm]
+      real    , intent(in)  :: hite       ! Plant height                     [           m]
+      real    , intent(in)  :: sla        ! Specific leaf area               [m²leaf/plant]
+      real    , intent(out) :: lai        ! Leaf area index                  [   m²leaf/m²]
+      real    , intent(out) :: wai        ! Wood area index                  [   m²wood/m²]
+      real    , intent(out) :: crown_area ! Crown area                       [  m²crown/m²]
+      !----- Local variables --------------------------------------------------------------!
+      real                  :: bwood      ! Wood biomass                     [   kgC/plant]
+      real                  :: swa        ! Specific wood area               [    m²/plant]
+      real                  :: bdiamet    ! Diameter of current branch       [           m]
+      real                  :: blength    ! Length of each branch            [           m]
+      real                  :: nbranch    ! Number of branches               [        ----]
+      real                  :: bdmin      ! Minimum diameter                 [           m]
+      !----- External functions -----------------------------------------------------------!
+      real    , external    :: errorfun ! Error function.
+      !------------------------------------------------------------------------------------!
+
+      !----- First, we compute the LAI ----------------------------------------------------!
+      lai = bleaf * nplant * sla
+
+      !----- Find the crown area. ---------------------------------------------------------!
+      crown_area = min(1.0, nplant * dbh2ca_old(dbh,hite,sla,pft))
+
+      !------------------------------------------------------------------------------------!
+      !     Here we check whether we need to compute the branch, stem, and effective       !
+      ! branch area indices.  These are only needed when branch thermodynamics is used,    !
+      ! otherwise, simply assign zeroes to them.                                           !
+      !------------------------------------------------------------------------------------!
+      select case (ibranch_thermo)
+      case (0)
+         !----- Ignore branches and trunk. ------------------------------------------------!
+         wai  = 0.
+         !---------------------------------------------------------------------------------!
+
+      case (1,2)
+         !---------------------------------------------------------------------------------!
+         !     Decide the WAI according to the allometry.                                  !
+         !---------------------------------------------------------------------------------!
+         select case (iallom)
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
+            ! always 11% of the potential LAI.                                             !
+            !------------------------------------------------------------------------------!
+            wai = 0.11 * nplant * sla * size2bl_old(dbh,hite,pft)
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Solve branches using the equations from Hormann et al. (2003) ----------!
+            wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine area_indices_old
    !=======================================================================================!
    !=======================================================================================!
 end module allometry

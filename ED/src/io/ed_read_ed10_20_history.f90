@@ -44,10 +44,13 @@ subroutine read_ed10_ed20_history_file
    use grid_coms      , only : ngrids              ! ! intent(in)
    use allometry      , only : bd2dbh              & ! function
                              , dbh2h               & ! function
+                             , dbh2h_simple        & ! function
                              , dbh2bd              & ! function
                              , size2bl             & ! function
+                             , size2bl_old         & ! function
                              , ed_biomass          & ! function
-                             , area_indices        ! ! subroutine
+                             , area_indices        & ! subroutine
+                             , area_indices_old    ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
                              , sort_patches        ! ! subroutine
    use disturb_coms   , only : ianth_disturb       ! ! intent(in)
@@ -765,7 +768,7 @@ subroutine read_ed10_ed20_history_file
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
                            cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(ipft(ic)))
-                           cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic),cpatch)
+                           cpatch%hite(ic2)  = dbh2h_simple(ipft(ic),dbh(ic))
                            cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
 
                         case default
@@ -779,10 +782,10 @@ subroutine read_ed10_ed20_history_file
                            if (bdead(ic) > 0.0) then
                               cpatch%bdead(ic2) = max(bdead(ic),min_bdead(ipft(ic)))
                               cpatch%dbh(ic2)   = bd2dbh(ipft(ic),bdead(ic))
-                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic), cpatch)
+                              cpatch%hite(ic2)  = dbh2h_simple(ipft(ic),dbh(ic))
                            else
                               cpatch%dbh(ic2)   = dbh(ic)
-                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic), cpatch)
+                              cpatch%hite(ic2)  = dbh2h_simple(ipft(ic),dbh(ic))
                               cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
                            end if
                         end select
@@ -794,7 +797,7 @@ subroutine read_ed10_ed20_history_file
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2)     = size2bl(dbh(ic), hite(ic),ipft(ic),cpatch)
+                        cpatch%bleaf(ic2)     = size2bl_old(dbh(ic), hite(ic),ipft(ic))
                         cpatch%balive(ic2)    = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))     &
                                               + qsw(ipft(ic)) * cpatch%hite(ic2))
                         cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &
@@ -821,12 +824,12 @@ subroutine read_ed10_ed20_history_file
 
 
                         !----- Assign LAI, WAI, and CAI -----------------------------------!
-                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)             &
+                        call area_indices_old(cpatch%nplant(ic2),cpatch%bleaf(ic2)         &
                                          ,cpatch%bdead(ic2),cpatch%balive(ic2)             &
                                          ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
                                          ,cpatch%lai(ic2), cpatch%wai(ic2)                 &
-                                         ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2),cpatch)
+                                         ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
 
                         !------------------------------------------------------------------!
                         !     Initialise the carbon balance.  We ignore the carbon balance !
