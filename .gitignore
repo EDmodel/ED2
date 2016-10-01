@@ -164,4 +164,4 @@ Doxyfile
 RAPP/run/*
 RAPP/build/bin/include.mk.odyssey
 RAPP/*
-*include*.mk*
+*include.mk*
