@@ -1,6 +1,0 @@
-<map id="main" name="main">
-<area shape="rect" id="node2" href="$convert__ascii_8f90.html#a4c40e1c4ea890a51cd138db74efd2c6c" title="make_the_month" alt="" coords="104,56,227,83"/>
-<area shape="rect" id="node3" href="$namespacehdf5__utils.html#ab621eee22271edfd3bf37b44d5b657e6" title="hdf5_utils::shdf5_open_f" alt="" coords="276,5,437,32"/>
-<area shape="rect" id="node4" href="$namespacehdf5__utils.html#a891a04f6033e6bcf3a91697ca1ab207b" title="hdf5_utils::shdf5_orec_f" alt="" coords="277,56,436,83"/>
-<area shape="rect" id="node5" href="$namespacehdf5__utils.html#aced9a0b34d2b1e59a1867be622a7c8a4" title="hdf5_utils::shdf5_close_f" alt="" coords="275,107,439,133"/>
-</map>

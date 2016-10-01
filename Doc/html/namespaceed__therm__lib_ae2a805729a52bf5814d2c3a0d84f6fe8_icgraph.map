@@ -1,5 +1,0 @@
-<map id="ed_therm_lib::update_veg_energy_cweh" name="ed_therm_lib::update_veg_energy_cweh">
-<area shape="rect" id="node2" href="$events_8f90.html#ad9cbf1522be96cc9af2fbf80b1402d5c" title="event_harvest" alt="" coords="200,13,305,39"/>
-<area shape="rect" id="node3" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="353,13,477,39"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="525,13,672,39"/>
-</map>

@@ -1,6 +1,0 @@
-<map id="canopy_radiation_coms::alloc_radscratch" name="canopy_radiation_coms::alloc_radscratch">
-<area shape="rect" id="node2" href="$rk4__integ__utils_8f90.html#ad341b521196c6605f15db4708a5dde8c" title="initialize_rk4patches" alt="" coords="216,13,359,39"/>
-<area shape="rect" id="node3" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="407,13,516,39"/>
-<area shape="rect" id="node4" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="564,13,688,39"/>
-<area shape="rect" id="node5" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="736,13,883,39"/>
-</map>

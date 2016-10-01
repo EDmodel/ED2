@@ -1,6 +1,0 @@
-<map id="lastmonthdate" name="lastmonthdate">
-<area shape="rect" id="node2" href="$fire_8f90.html#aea4e862c5ebe7ca6ea0fb7003325d1c0" title="fire_frequency" alt="" coords="167,5,274,32"/>
-<area shape="rect" id="node5" href="$update__derived__props_8f90.html#a26e0b3f2eb056299270873a3a87f17c7" title="update_workload" alt="" coords="159,56,283,83"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="349,5,496,32"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="331,56,515,83"/>
-</map>

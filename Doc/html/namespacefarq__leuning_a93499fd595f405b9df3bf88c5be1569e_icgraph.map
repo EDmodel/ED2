@@ -1,6 +1,0 @@
-<map id="farq_leuning::lphysiol_full" name="farq_leuning::lphysiol_full">
-<area shape="rect" id="node2" href="$photosyn__driv_8f90.html#a47b3eb47a3b63c8b9a400606fd46a86b" title="canopy_photosynthesis" alt="" coords="225,56,387,83"/>
-<area shape="rect" id="node3" href="$euler__driver_8f90.html#a5219f633b6d9b0d321429096e0d3ea66" title="euler_timestep" alt="" coords="438,5,547,32"/>
-<area shape="rect" id="node4" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="438,56,547,83"/>
-<area shape="rect" id="node5" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="435,107,551,133"/>
-</map>

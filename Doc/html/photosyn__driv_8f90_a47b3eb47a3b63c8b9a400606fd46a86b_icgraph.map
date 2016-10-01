@@ -1,5 +1,0 @@
-<map id="canopy_photosynthesis" name="canopy_photosynthesis">
-<area shape="rect" id="node2" href="$euler__driver_8f90.html#a5219f633b6d9b0d321429096e0d3ea66" title="euler_timestep" alt="" coords="218,5,327,32"/>
-<area shape="rect" id="node3" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="218,56,327,83"/>
-<area shape="rect" id="node4" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="215,107,331,133"/>
-</map>

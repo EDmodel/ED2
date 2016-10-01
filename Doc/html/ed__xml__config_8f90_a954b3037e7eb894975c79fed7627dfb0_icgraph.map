@@ -1,6 +1,0 @@
-<map id="getconfigreal" name="getconfigreal">
-<area shape="rect" id="node2" href="$ed__xml__config_8f90.html#accb60513f4c46e691fcd1f96c1e9df36" title="read_ed_xml_config" alt="" coords="152,15,295,42"/>
-<area shape="rect" id="node4" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="161,67,285,94"/>
-<area shape="rect" id="node3" href="$ed__params_8f90.html#a2c0c887700d85a5be6fbd26b071c8da6" title="overwrite_with_xml\l_config" alt="" coords="348,5,484,47"/>
-<area shape="rect" id="node5" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="343,71,489,98"/>
-</map>

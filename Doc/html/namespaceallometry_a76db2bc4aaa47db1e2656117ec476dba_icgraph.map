@@ -1,5 +1,0 @@
-<map id="allometry::dbh2bd" name="allometry::dbh2bd">
-<area shape="rect" id="node2" href="$ed__nbg__init_8f90.html#ae233eb5a6f6ba6ec38dc130b00231ba7" title="near_bare_ground_big\l_leaf_init" alt="" coords="181,5,339,47"/>
-<area shape="rect" id="node3" href="$reproduction_8f90.html#ab93bbb9a2c0f8aa6853ede0ae86d0a20" title="reproduction" alt="" coords="212,71,308,98"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="387,71,533,98"/>
-</map>

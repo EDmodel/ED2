@@ -1,5 +1,0 @@
-<map id="get_errmax" name="get_errmax">
-<area shape="rect" id="node2" href="$heun__driver_8f90.html#a45802ff14cf406c16fcd7cda4e7f9974" title="heun_integ" alt="" coords="143,5,231,32"/>
-<area shape="rect" id="node3" href="$heun__driver_8f90.html#a2020e0df05ff5e04a48f6a7adc08f39a" title="integrate_patch_heun" alt="" coords="279,5,429,32"/>
-<area shape="rect" id="node4" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="477,5,587,32"/>
-</map>

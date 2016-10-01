@@ -1,9 +1,0 @@
-<map id="therm_lib::dewfrostpoint" name="therm_lib::dewfrostpoint">
-<area shape="rect" id="node2" href="$namespacetherm__lib.html#a7448671da269afe05b39189c581f790b" title="therm_lib::tslif" alt="" coords="217,46,321,73"/>
-<area shape="rect" id="node3" href="$namespacetherm__lib.html#a45fb7d736264472e118c794a243911fe" title="therm_lib::tsif" alt="" coords="369,21,471,48"/>
-<area shape="rect" id="node6" href="$namespacetherm__lib.html#af4ba481a98f65fb3f1e2ff6fb30ace23" title="therm_lib::tslf" alt="" coords="369,72,471,98"/>
-<area shape="rect" id="node4" href="$namespacetherm__lib.html#a109004866b1542dfcfa1da1e5130d3c9" title="therm_lib::esif" alt="" coords="679,9,784,36"/>
-<area shape="rect" id="node5" href="$namespacetherm__lib.html#a4c1f51941fe39db465e2fba15c887667" title="therm_lib::esifp" alt="" coords="519,21,631,48"/>
-<area shape="rect" id="node7" href="$namespacetherm__lib.html#a82ae02323247d6435153002a309552fb" title="therm_lib::eslf" alt="" coords="679,85,784,112"/>
-<area shape="rect" id="node8" href="$namespacetherm__lib.html#a4339cfce3e15e3410bcc7ba6a7d6ba06" title="therm_lib::eslfp" alt="" coords="519,122,631,149"/>
-</map>

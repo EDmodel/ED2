@@ -1,5 +1,0 @@
-<map id="canopy_air_coms::psim" name="canopy_air_coms::psim">
-<area shape="rect" id="node2" href="$namespacecanopy__air__coms.html#a6062471b3381c283205ea8b27383a5e0" title="canopy_air_coms::zoobukhov" alt="" coords="216,5,415,32"/>
-<area shape="rect" id="node3" href="$ed__params_8f90.html#a029548f8d070ed57f9c9b1e1a0a8fc3c" title="init_can_air_params" alt="" coords="244,56,387,83"/>
-<area shape="rect" id="node4" href="$ed__params_8f90.html#af74bdb1b6959fc9b59288f80e8832f14" title="load_ed_ecosystem_params" alt="" coords="463,56,655,83"/>
-</map>
