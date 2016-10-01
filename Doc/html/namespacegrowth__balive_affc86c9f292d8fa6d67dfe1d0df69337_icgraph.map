@@ -1,5 +1,0 @@
-<map id="growth_balive::litter" name="growth_balive::litter">
-<area shape="rect" id="node2" href="$namespacegrowth__balive.html#a7781ae229b2399c90d50858382665ee8" title="Updates living biomass. " alt="" coords="191,31,363,57"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="429,5,576,32"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="411,56,595,83"/>
-</map>

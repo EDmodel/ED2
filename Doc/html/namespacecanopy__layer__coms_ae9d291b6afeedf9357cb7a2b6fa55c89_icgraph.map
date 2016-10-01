@@ -1,6 +1,0 @@
-<map id="canopy_layer_coms::alloc_canopy_layer_mbs" name="canopy_layer_coms::alloc_canopy_layer_mbs">
-<area shape="rect" id="node2" href="$rk4__integ__utils_8f90.html#ad341b521196c6605f15db4708a5dde8c" title="initialize_rk4patches" alt="" coords="223,13,365,39"/>
-<area shape="rect" id="node3" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="413,13,523,39"/>
-<area shape="rect" id="node4" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="571,13,695,39"/>
-<area shape="rect" id="node5" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="743,13,889,39"/>
-</map>

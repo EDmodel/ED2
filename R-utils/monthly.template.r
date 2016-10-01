@@ -5,7 +5,7 @@
 create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
 
    #----- Read the first HDF5 to grab some simulation-dependent dimensions. ---------------#
-   cyear        = sprintf("%4.4i",yeara )
+   cyear        = sprintf("%4.4i", yeara)
    cmonth       = sprintf("%2.2i",montha)
    h5first      = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5"    ,sep="")
    h5first.bz2  = paste(inpref,"-Q-",cyear,"-",cmonth,"-00-000000-g01.h5.bz2",sep="")
@@ -83,7 +83,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    #---------------------------------------------------------------------------------------#
    #     Find all time information.                                                        #
    #---------------------------------------------------------------------------------------#
-   runmonths         = montha + sequence(ntimes) - 1
+   runmonths        = montha + sequence(ntimes) - 1
    ed$month         = 1 + (runmonths-1) %% 12
    ed$year          = yeara - 1 + ceiling(runmonths/12)
    ed$when          = chron(paste(ed$month,1,ed$year,sep="/"))

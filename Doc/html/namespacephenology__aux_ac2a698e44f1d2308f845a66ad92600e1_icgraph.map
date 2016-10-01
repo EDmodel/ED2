@@ -1,8 +1,0 @@
-<map id="phenology_aux::prescribed_leaf_state" name="phenology_aux::prescribed_leaf_state">
-<area shape="rect" id="node2" href="$phenology__driv_8f90.html#aebe550e627508a275e8a1000e3bc9c13" title="phenology_driver" alt="" coords="267,5,391,32"/>
-<area shape="rect" id="node4" href="$phenology__driv_8f90.html#ab9a0459d8cb63117c39488527da2a451" title="phenology_driver_eq_0" alt="" coords="249,56,410,83"/>
-<area shape="rect" id="node6" href="$namespacephenology__startup.html#aa83586e75a022d6fcb5816972361282d" title="phenology_startup::\lread_prescribed_phenology" alt="" coords="236,107,423,149"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="489,5,636,32"/>
-<area shape="rect" id="node5" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="471,56,655,83"/>
-<area shape="rect" id="node7" href="$namespacephenology__startup.html#abebba7585ef5aec3dd00f7cfa0b56067" title="phenology_startup::\lphenology_init" alt="" coords="493,107,632,149"/>
-</map>

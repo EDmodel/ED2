@@ -1,9 +1,0 @@
-<map id="soil_default_fill" name="soil_default_fill">
-<area shape="rect" id="node2" href="$ed__init_8_f90.html#aa8aefc7a137c607d14cdfc6c52e6afd8" title="set_site_defprops" alt="" coords="173,5,297,32"/>
-<area shape="rect" id="node6" href="$ed__read__ed21__history_8_f90.html#ab0faf0a20947c74801841975108b59ba" title="read_ed21_history_file" alt="" coords="160,56,311,83"/>
-<area shape="rect" id="node7" href="$ed__read__ed21__history_8_f90.html#a1e9d28328ec655a6bcac03ee1618759a" title="read_ed21_polyclone" alt="" coords="163,107,307,133"/>
-<area shape="rect" id="node8" href="$init__hydro__sites_8f90.html#adec6b424b7baa5cdf4d4ad5ddaa63020" title="read_site_file" alt="" coords="186,157,285,184"/>
-<area shape="rect" id="node3" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="359,81,512,108"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="560,81,633,108"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="681,81,732,108"/>
-</map>

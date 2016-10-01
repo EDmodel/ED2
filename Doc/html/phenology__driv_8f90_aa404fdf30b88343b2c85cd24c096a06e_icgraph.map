@@ -1,8 +1,0 @@
-<map id="phenology_thresholds" name="phenology_thresholds">
-<area shape="rect" id="node2" href="$phenology__driv_8f90.html#a133c291d6ae8cda0fb270023203ff229" title="update_phenology" alt="" coords="224,5,356,32"/>
-<area shape="rect" id="node5" href="$phenology__driv_8f90.html#aad3dbb3ae553616293acf71ccc09158a" title="update_phenology_eq_0" alt="" coords="205,56,375,83"/>
-<area shape="rect" id="node3" href="$phenology__driv_8f90.html#aebe550e627508a275e8a1000e3bc9c13" title="phenology_driver" alt="" coords="441,5,565,32"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="651,5,797,32"/>
-<area shape="rect" id="node6" href="$phenology__driv_8f90.html#ab9a0459d8cb63117c39488527da2a451" title="phenology_driver_eq_0" alt="" coords="423,56,584,83"/>
-<area shape="rect" id="node7" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="632,56,816,83"/>
-</map>

@@ -414,16 +414,16 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       # by PFT and DBH class.                                                              #
       #------------------------------------------------------------------------------------#
       ## fabio warnings number of items to replace is not a multiple of replacement
-      emean$mco             [m] = apply( X      = ( mymont$MMEAN_LEAF_MAINTENANCE_PY
-                                                  + mymont$MMEAN_ROOT_MAINTENANCE_PY
-                                                  ) * yr.day
-                                       , MARGIN = 1
-                                       , FUN    = sum
-                                       )#end if
-      emean$ldrop           [m] = apply( X      = mymont$MMEAN_LEAF_DROP_PY * yr.day
-                                       , MARGIN = 1
-                                       , FUN    = sum
-                                       )#end if
+      #emean$mco             [m] = apply( X      = ( mymont$MMEAN_LEAF_MAINTENANCE_PY
+       #                                           + mymont$MMEAN_ROOT_MAINTENANCE_PY
+        #                                          ) * yr.day
+         #                              , MARGIN = 1
+          #                             , FUN    = sum
+           #                            )#end if
+      #emean$ldrop           [m] = apply( X      = mymont$MMEAN_LEAF_DROP_PY * yr.day
+       #                                , MARGIN = 1
+        #                               , FUN    = sum
+         #                              )#end if
       #------------------------------------------------------------------------------------#
 
 

@@ -344,6 +344,8 @@ for (iscript in sequence(nscripts)){
       source(full)
       stop("Source code problem")
    }#end if
+   else{cat(" Script", script.now, "sourced", "\n")
+     }
 }#end for
 options(warn=warn.orig)
 #------------------------------------------------------------------------------------------#

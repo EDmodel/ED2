@@ -1,9 +1,0 @@
-<map id="disturbance_utils::plant_patch" name="disturbance_utils::plant_patch">
-<area shape="rect" id="node2" href="$namespacedisturbance__utils.html#a29d6db4e94463404643e5c3666c67767" title="disturbance_utils::\lapply_disturbances" alt="" coords="183,5,320,47"/>
-<area shape="rect" id="node5" href="$events_8f90.html#ad9cbf1522be96cc9af2fbf80b1402d5c" title="event_harvest" alt="" coords="199,71,304,98"/>
-<area shape="rect" id="node7" href="$events_8f90.html#a3fcb64b4de4ae9408c3e365f6cbd1be6" title="event_planting" alt="" coords="197,122,306,149"/>
-<area shape="rect" id="node8" href="$events_8f90.html#a322bdb70cc0c534c9e30db1a3a4b58a0" title="event_fertilize" alt="" coords="199,173,303,199"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="600,63,747,90"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="368,63,552,90"/>
-<area shape="rect" id="node6" href="$events_8f90.html#ad9f17e2da07d80a0734f81d8b2e27d25" title="prescribed_event" alt="" coords="398,118,522,145"/>
-</map>

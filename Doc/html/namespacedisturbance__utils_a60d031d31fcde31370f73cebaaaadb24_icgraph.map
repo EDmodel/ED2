@@ -1,5 +1,0 @@
-<map id="disturbance_utils::increment_patch_vars" name="disturbance_utils::increment_patch_vars">
-<area shape="rect" id="node2" href="$namespacedisturbance__utils.html#a29d6db4e94463404643e5c3666c67767" title="disturbance_utils::\lapply_disturbances" alt="" coords="207,23,344,65"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="411,5,557,32"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="392,56,576,83"/>
-</map>

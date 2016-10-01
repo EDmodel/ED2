@@ -1,7 +1,0 @@
-<map id="farq_leuning::comp_photo_tempfun" name="farq_leuning::comp_photo_tempfun">
-<area shape="rect" id="node2" href="$namespacefarq__leuning.html#a93499fd595f405b9df3bf88c5be1569e" title="farq_leuning::lphysiol_full" alt="" coords="189,56,361,83"/>
-<area shape="rect" id="node3" href="$photosyn__driv_8f90.html#a47b3eb47a3b63c8b9a400606fd46a86b" title="canopy_photosynthesis" alt="" coords="409,56,571,83"/>
-<area shape="rect" id="node4" href="$euler__driver_8f90.html#a5219f633b6d9b0d321429096e0d3ea66" title="euler_timestep" alt="" coords="622,5,731,32"/>
-<area shape="rect" id="node5" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="622,56,731,83"/>
-<area shape="rect" id="node6" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="619,107,735,133"/>
-</map>

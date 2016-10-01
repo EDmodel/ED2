@@ -1,6 +1,0 @@
-<map id="resp_rh" name="resp_rh">
-<area shape="rect" id="node2" href="$soil__respiration_8f90.html#a152e99b8491f789994d299f367ece59c" title="soil_respiration" alt="" coords="120,56,232,83"/>
-<area shape="rect" id="node3" href="$euler__driver_8f90.html#a5219f633b6d9b0d321429096e0d3ea66" title="euler_timestep" alt="" coords="283,5,393,32"/>
-<area shape="rect" id="node4" href="$heun__driver_8f90.html#a067e150fd769a8ee5ef7a3c93c096e8c" title="heun_timestep" alt="" coords="283,56,393,83"/>
-<area shape="rect" id="node5" href="$hybrid__driver_8f90.html#a9df1061f35d458ad00001665377c1680" title="hybrid_timestep" alt="" coords="280,107,396,133"/>
-</map>

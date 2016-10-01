@@ -901,7 +901,7 @@ real function size2bl_old(dbh,hite,ipft)
 
 
 
-      subroutine area_indices_old(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
+   subroutine area_indices_old(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
                           ,bsapwooda)
             use pft_coms    , only : is_tropical     & ! intent(in)
                              , is_grass        & ! intent(in)

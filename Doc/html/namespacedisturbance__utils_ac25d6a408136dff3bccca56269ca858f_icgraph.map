@@ -1,5 +1,0 @@
-<map id="disturbance_utils::insert_survivors" name="disturbance_utils::insert_survivors">
-<area shape="rect" id="node2" href="$namespacedisturbance__utils.html#a29d6db4e94463404643e5c3666c67767" title="disturbance_utils::\lapply_disturbances" alt="" coords="183,23,320,65"/>
-<area shape="rect" id="node3" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="387,5,533,32"/>
-<area shape="rect" id="node4" href="$vegetation__dynamics_8f90.html#a275be9a740f6c74b8bf5e0a499cb6c49" title="vegetation_dynamics_eq_0" alt="" coords="368,56,552,83"/>
-</map>
