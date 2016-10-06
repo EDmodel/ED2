@@ -148,9 +148,12 @@ subroutine structural_growth(cgrid, month)
                cpatch%monthly_dndt  (ico) = max( cpatch%monthly_dndt   (ico)               &
                                                , negligible_nplant     (ipft)              &
                                                - cpatch%nplant         (ico) )
-               cpatch%monthly_dlnndt(ico) = max( cpatch%monthly_dlnndt (ico)               &
-                                               , log( negligible_nplant(ipft)              &
-                                                    / cpatch%nplant    (ico) ) )
+               ! Avoid arithmetic overflow if negligible_nplant == 0 (Author: Alexey Shiklomanov)
+               if ( negligible_nplant(ipft) > tiny(negligible_nplant(ipft)) ) then
+                    cpatch%monthly_dlnndt(ico) = max( cpatch%monthly_dlnndt (ico)          &
+                                                    , log( negligible_nplant(ipft)         &
+                                                            / cpatch%nplant    (ico) ) )
+               end if
                cpatch%nplant(ico)         = cpatch%nplant(ico)                               &
                                           * exp(cpatch%monthly_dlnndt(ico))
                !---------------------------------------------------------------------------!
