@@ -716,6 +716,8 @@ real function size2bl_old(dbh,hite,ipft)
    !                                                                                       !
    ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
    !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
+   !                                                                                       !
+   ! Crown length is defined as the height of the tree minus the height of the first leaf  !
    !---------------------------------------------------------------------------------------!
    real function h2crownbh(height,ipft)
       use pft_coms, only : b1Cl & ! intent(in)
