@@ -5,16 +5,15 @@
 !------------------------------------------------------------------------------------------!
 module allometry
 
-   contains
+contains
    !=======================================================================================!
    !=======================================================================================!
    real function h2dbh(h,ipft)
 
       use pft_coms    , only : is_tropical & ! intent(in)
-                             , is_liana    & ! intent(in)
-                             , b1Ht        & ! intent(in), lookup table
-                             , b2Ht        & ! intent(in), lookup table
-                             , hgt_ref     ! ! intent(in)
+         , b1Ht        & ! intent(in), lookup table
+         , b2Ht        & ! intent(in), lookup table
+         , hgt_ref     ! ! intent(in)
       use ed_misc_coms, only : iallom      ! ! intent(in)
 
       implicit none
@@ -29,22 +28,22 @@ module allometry
       !------------------------------------------------------------------------------------!
       !----- Size- and age-structure (typical ED model). ----------------------------------!
       if (is_tropical(ipft)) then
-          select case (iallom)
-              case (0,1)
-                  !----- Default ED-2.1 allometry. ----------------------------------------------!
-                  h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
-              case default
-                  !----- Poorter et al. (2006) allometry. ---------------------------------------!
-                  h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
-                      ** ( 1.0 / b2Ht(ipft) )
-          end select
+         select case (iallom)
+            case (0,1)
+               !----- Default ED-2.1 allometry. ----------------------------------------------!
+               h2dbh = exp((log(h)-b1Ht(ipft))/b2Ht(ipft))
+            case default
+               !----- Poorter et al. (2006) allometry. ---------------------------------------!
+               h2dbh =  ( log(hgt_ref(ipft) / ( hgt_ref(ipft) - h ) ) / b1Ht(ipft) )          &
+                  ** ( 1.0 / b2Ht(ipft) )
+         end select
       else ! Temperate
-          h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
+         h2dbh = log(1.0-(h-hgt_ref(ipft))/b1Ht(ipft))/b2Ht(ipft)
       end if
       !------------------------------------------------------------------------------------!
 
       return
-  end function h2dbh
+   end function h2dbh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -57,14 +56,14 @@ module allometry
    !=======================================================================================!
    real function dbh2h(ipft, dbh, cpatch)
       use pft_coms    , only : is_tropical & ! intent(in)
-                             , is_liana    & ! intent(in)
-                             , dbh_crit    & ! intent(in)
-                             , b1Ht        & ! intent(in)
-                             , b2Ht        & ! intent(in)
-                             , hgt_ref     & ! intent(in)
-                             , hgt_max     ! ! intent(in)
+         , is_liana    & ! intent(in)
+         , dbh_crit    & ! intent(in)
+         , b1Ht        & ! intent(in)
+         , b2Ht        & ! intent(in)
+         , hgt_ref     & ! intent(in)
+         , hgt_max     ! ! intent(in)
       use ed_misc_coms, only : iallom      & ! intent(in)
-                             , ibigleaf    ! ! intent(in)
+         , ibigleaf    ! ! intent(in)
       use ed_state_vars, only:  patchtype  ! ! structure
 
       implicit none
@@ -78,7 +77,7 @@ module allometry
 
 
       if (is_liana(ipft)) then
-        dbh_crit(ipft) = dbh_crit_dep(cpatch)
+         dbh_crit(ipft) = dbh_crit_dep(cpatch)
       end if
 
 
@@ -86,29 +85,29 @@ module allometry
       !      Select which type of model we are running.                                    !
       !------------------------------------------------------------------------------------!
       select case (ibigleaf)
-          case (0)
-              !----- Size- and age-structure (typical ED model). -------------------------------!
-              if (is_tropical(ipft)) then
-                  mdbh = min(dbh,dbh_crit(ipft))
-                  select case (iallom)
-                      case (0,1)
-                          !----- Default ED-2.1 allometry. -------------------------------------------!
-                          dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-                      case default
-                          !----- Poorter et al. (2006) allometry. ------------------------------------!
-                          dbh2h = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
-                  end select
-              else !----- Temperate PFT allometry. ---------------------------------------------!
-                  dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
-              end if
+         case (0)
+            !----- Size- and age-structure (typical ED model). -------------------------------!
+            if (is_tropical(ipft)) then
+               mdbh = min(dbh,dbh_crit(ipft))
+               select case (iallom)
+                  case (0,1)
+                     !----- Default ED-2.1 allometry. -------------------------------------------!
+                     dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
+                  case default
+                     !----- Poorter et al. (2006) allometry. ------------------------------------!
+                     dbh2h = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
+               end select
+            else !----- Temperate PFT allometry. ---------------------------------------------!
+               dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
+            end if
 
-      case (1)
-         !---------------------------------------------------------------------------------!
-         !     Big-leaf version of ED. DBH is not really meaningful, but in the big-leaf   !
-         ! model the typical allometry doesn't really make sense so we impose maximum      !
-         ! height.                                                                         !
-         !---------------------------------------------------------------------------------!
-         dbh2h = hgt_max(ipft)
+         case (1)
+            !---------------------------------------------------------------------------------!
+            !     Big-leaf version of ED. DBH is not really meaningful, but in the big-leaf   !
+            ! model the typical allometry doesn't really make sense so we impose maximum      !
+            ! height.                                                                         !
+            !---------------------------------------------------------------------------------!
+            dbh2h = hgt_max(ipft)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -119,18 +118,17 @@ module allometry
    !=======================================================================================!
 
 
-!=======================================================================================!
+   !=======================================================================================!
    !=======================================================================================!
    real function dbh2h_simple(ipft, dbh)
       use pft_coms    , only : is_tropical & ! intent(in)
-                             , is_liana    & ! intent(in)
-                             , dbh_crit    & ! intent(in)
-                             , b1Ht        & ! intent(in)
-                             , b2Ht        & ! intent(in)
-                             , hgt_ref     & ! intent(in)
-                             , hgt_max     ! ! intent(in)
+         , dbh_crit    & ! intent(in)
+         , b1Ht        & ! intent(in)
+         , b2Ht        & ! intent(in)
+         , hgt_ref     & ! intent(in)
+         , hgt_max     ! ! intent(in)
       use ed_misc_coms, only : iallom      & ! intent(in)
-                             , ibigleaf    ! ! intent(in)
+         , ibigleaf    ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -144,29 +142,29 @@ module allometry
       !      Select which type of model we are running.                                    !
       !------------------------------------------------------------------------------------!
       select case (ibigleaf)
-          case (0)
-              !----- Size- and age-structure (typical ED model). -------------------------------!
-              if (is_tropical(ipft)) then
-                  mdbh = min(dbh,dbh_crit(ipft))
-                  select case (iallom)
-                      case (0,1)
-                          !----- Default ED-2.1 allometry. -------------------------------------------!
-                          dbh2h_simple = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
-                      case default
-                          !----- Poorter et al. (2006) allometry. ------------------------------------!
-                          dbh2h_simple = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
-                  end select
-              else !----- Temperate PFT allometry. ---------------------------------------------!
-                  dbh2h_simple = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
-              end if
+         case (0)
+            !----- Size- and age-structure (typical ED model). -------------------------------!
+            if (is_tropical(ipft)) then
+               mdbh = min(dbh,dbh_crit(ipft))
+               select case (iallom)
+                  case (0,1)
+                     !----- Default ED-2.1 allometry. -------------------------------------------!
+                     dbh2h_simple = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
+                  case default
+                     !----- Poorter et al. (2006) allometry. ------------------------------------!
+                     dbh2h_simple = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
+               end select
+            else !----- Temperate PFT allometry. ---------------------------------------------!
+               dbh2h_simple = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
+            end if
 
-      case (1)
-         !---------------------------------------------------------------------------------!
-         !     Big-leaf version of ED. DBH is not really meaningful, but in the big-leaf   !
-         ! model the typical allometry doesn't really make sense so we impose maximum      !
-         ! height.                                                                         !
-         !---------------------------------------------------------------------------------!
-         dbh2h_simple = hgt_max(ipft)
+         case (1)
+            !---------------------------------------------------------------------------------!
+            !     Big-leaf version of ED. DBH is not really meaningful, but in the big-leaf   !
+            ! model the typical allometry doesn't really make sense so we impose maximum      !
+            ! height.                                                                         !
+            !---------------------------------------------------------------------------------!
+            dbh2h_simple = hgt_max(ipft)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -185,13 +183,13 @@ module allometry
    real function dbh2bd(dbh,ipft)
 
       use pft_coms    , only : C2B         & ! intent(in)
-                             , b1Bs_small  & ! intent(in), lookup table
-                             , b2Bs_small  & ! intent(in), lookup table
-                             , b1Bs_large  & ! intent(in), lookup table
-                             , b2Bs_large  & ! intent(in), lookup table
-                             , is_grass    & ! intent(in)
-                             , is_liana    & ! intent(in)
-                             , dbh_crit    ! ! intent(in), lookup table
+         , b1Bs_small  & ! intent(in), lookup table
+         , b2Bs_small  & ! intent(in), lookup table
+         , b1Bs_large  & ! intent(in), lookup table
+         , b2Bs_large  & ! intent(in), lookup table
+         , is_grass    & ! intent(in)
+!         , is_liana    & ! intent(in)
+         , dbh_crit    ! ! intent(in), lookup table
       use ed_misc_coms, only : igrass      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -199,21 +197,21 @@ module allometry
       integer, intent(in) :: ipft
             !------------------------------------------------------------------------------------!
 
-      if (is_liana(ipft)) then
-      !dbh2bd = 0.182 * log(dbh) ** 2.16 !@liana stuff
-      !dbh2bd = 10. ** 0.12 * (0.785 * dbh * dbh) ** 0.91 !@ putz biotropica
-      dbh2bd = exp(-1.484 + 2.657 * log(dbh)) !@ schnitzer biotropica (2006)
+      !if (is_liana(ipft)) then
+         !dbh2bd = 0.182 * log(dbh) ** 2.16 !@liana stuff
+         !dbh2bd = 10. ** 0.12 * (0.785 * dbh * dbh) ** 0.91 !@ putz biotropica
+         !dbh2bd = exp(-1.484 + 2.657 * log(dbh)) !@ schnitzer biotropica (2006)
 
-      else
+      !else
 
-          if (is_grass(ipft) .and. igrass==1) then
-              dbh2bd = 0.0
-          else if (dbh <= dbh_crit(ipft)) then
-              dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
-          else
-              dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
-          end if
-      end if
+         if (is_grass(ipft) .and. igrass==1) then
+            dbh2bd = 0.0
+         else if (dbh <= dbh_crit(ipft)) then
+            dbh2bd = b1Bs_small(ipft) / C2B * dbh ** b2Bs_small(ipft)
+         else
+            dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
+         end if
+      !end if
       return
    end function dbh2bd
    !=======================================================================================!
@@ -234,12 +232,12 @@ module allometry
    !---------------------------------------------------------------------------------------!
    real function bd2dbh(ipft, bdead)
       use pft_coms    , only : b1Bs_small  & ! intent(in), lookup table
-                             , b2Bs_small  & ! intent(in), lookup table
-                             , b1Bs_large  & ! intent(in), lookup table
-                             , b2Bs_large  & ! intent(in), lookup table
-                             , bdead_crit  & ! intent(in), lookup table
-                             , is_liana    & ! intent(in)
-                             , C2B         ! ! intent(in)
+         , b2Bs_small  & ! intent(in), lookup table
+         , b1Bs_large  & ! intent(in), lookup table
+         , b2Bs_large  & ! intent(in), lookup table
+         , bdead_crit  & ! intent(in), lookup table
+!         , is_liana    & ! intent(in)
+         , C2B         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in) :: ipft      ! PFT type                            [         ---]
@@ -251,18 +249,18 @@ module allometry
       !------------------------------------------------------------------------------------!
       !    Decide which coefficients to use based on the critical bdead.                   !
       !------------------------------------------------------------------------------------!
-      if (is_liana(ipft)) then
-          !bd2dbh = (bdead / 0.182 ) ** (1 / 2.16) !@ liana
-          !bd2dbh = sqrt((bdead * 10 ** -0.12) ** (1 / 0.91) * 1.27) !@ putz biotropica
-          bd2dbh = exp((log(bdead) + 1.484) / 2.657) !@ schnitzer biotropica (2006)
-!          write(*,*) "bd2dbh=", bd2dbh
-      else
-          if (bdead <= bdead_crit(ipft)) then
-              bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
-          else
-              bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
-          end if
-      end if
+      !if (is_liana(ipft)) then
+         !bd2dbh = (bdead / 0.182 ) ** (1 / 2.16) !@ liana
+         !bd2dbh = sqrt((bdead * 10 ** -0.12) ** (1 / 0.91) * 1.27) !@ putz biotropica
+         !bd2dbh = exp((log(bdead) + 1.484) / 2.657) !@ schnitzer biotropica (2006)
+      !          write(*,*) "bd2dbh=", bd2dbh
+      !else
+         if (bdead <= bdead_crit(ipft)) then
+            bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
+         else
+            bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
+         end if
+      !end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -284,15 +282,15 @@ module allometry
    !---------------------------------------------------------------------------------------!
    real function size2bl(dbh,hite,ipft, cpatch)
       use pft_coms    , only : dbh_adult   & ! intent(in), lookup table
-                             , dbh_crit    & ! intent(in), lookup table
-                             , C2B         & ! intent(in), lookup table
-                             , b1Bl_small  & ! intent(in), lookup table
-                             , b2Bl_small  & ! intent(in), lookup table
-                             , b1Bl_large  & ! intent(in), lookup table
-                             , b2Bl_large  & ! intent(in), lookup table
-                             , hgt_max     & ! intent(in), lookup table
-                             , is_liana    & ! intent(in)
-                             , is_grass    ! ! intent(in)
+         , dbh_crit    & ! intent(in), lookup table
+         , C2B         & ! intent(in), lookup table
+         , b1Bl_small  & ! intent(in), lookup table
+         , b2Bl_small  & ! intent(in), lookup table
+         , b1Bl_large  & ! intent(in), lookup table
+         , b2Bl_large  & ! intent(in), lookup table
+         , hgt_max     & ! intent(in), lookup table
+         , is_liana    & ! intent(in)
+         , is_grass    ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
       use ed_state_vars, only: patchtype  ! ! structure
 
@@ -309,18 +307,18 @@ module allometry
       !------------------------------------------------------------------------------------!
 
       if (is_liana(ipft)) then
-      dbh_crit(ipft) = dbh_crit_dep(cpatch)
+         dbh_crit(ipft) = dbh_crit_dep(cpatch)
       end if
       !------------------------------------------------------------------------------------!
       !     Get the DBH, or potential DBH in case of grasses.                              !
       !------------------------------------------------------------------------------------!
 
       if (is_grass(ipft) .and. igrass == 1) then 
-          !---- Use height for new grasses. ------------------------------------------------!
-          mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
+         !---- Use height for new grasses. ------------------------------------------------!
+         mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
       else
-          !---- Use dbh for trees. ---------------------------------------------------------!
-          mdbh   = min(dbh,dbh_crit(ipft))
+         !---- Use dbh for trees. ---------------------------------------------------------!
+         mdbh   = min(dbh,dbh_crit(ipft))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -330,36 +328,36 @@ module allometry
       !     Find leaf biomass depending on the tree size.                                  !
       !------------------------------------------------------------------------------------!
       if (is_liana(ipft)) then
-          !size2bl = 0.81 * log(dbh) - 0.57 !@ liana gerwing
-		  my_temp_var = 0.0856 * dbh * dbh - 0.376 !@liana putz
-          size2bl = merge (my_temp_var, 0.1, my_temp_var > 0.1)
-!          write(*,*) "size2bl=", size2bl
+                   !size2bl = 0.81 * log(dbh) - 0.57 !@ liana gerwing
+         my_temp_var = 0.0856 * dbh * dbh - 0.376 !@liana putz
+         size2bl = merge (my_temp_var, 0.1, my_temp_var > 0.1)
+      !          write(*,*) "size2bl=", size2bl
       else
-          if (mdbh < dbh_adult(ipft)) then
-              size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
-          else
-              size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
-          end if
+         if (mdbh < dbh_adult(ipft)) then
+            size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
+         else
+            size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+         end if
       end if
       !------------------------------------------------------------------------------------!
 
 
       return
    end function size2bl
-   !=======================================================================================!
-   !=======================================================================================!
+      !=======================================================================================!
+      !=======================================================================================!
 
-real function size2bl_old(dbh,hite,ipft)
+   real function size2bl_old(dbh,hite,ipft)
       use pft_coms    , only : dbh_adult   & ! intent(in), lookup table
-                             , dbh_crit    & ! intent(in), lookup table
-                             , C2B         & ! intent(in), lookup table
-                             , b1Bl_small  & ! intent(in), lookup table
-                             , b2Bl_small  & ! intent(in), lookup table
-                             , b1Bl_large  & ! intent(in), lookup table
-                             , b2Bl_large  & ! intent(in), lookup table
-                             , hgt_max     & ! intent(in), lookup table
-                             , is_liana    & ! intent(in)
-                             , is_grass    ! ! intent(in)
+         , dbh_crit    & ! intent(in), lookup table
+         , C2B         & ! intent(in), lookup table
+         , b1Bl_small  & ! intent(in), lookup table
+         , b2Bl_small  & ! intent(in), lookup table
+         , b1Bl_large  & ! intent(in), lookup table
+         , b2Bl_large  & ! intent(in), lookup table
+         , hgt_max     & ! intent(in), lookup table
+         , is_liana    & ! intent(in)
+         , is_grass    ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
 
 
@@ -378,11 +376,11 @@ real function size2bl_old(dbh,hite,ipft)
       !------------------------------------------------------------------------------------!
 
       if (is_grass(ipft) .and. igrass == 1) then
-          !---- Use height for new grasses. ------------------------------------------------!
-          mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
+         !---- Use height for new grasses. ------------------------------------------------!
+         mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
       else
-          !---- Use dbh for trees. ---------------------------------------------------------!
-          mdbh   = min(dbh,dbh_crit(ipft))
+         !---- Use dbh for trees. ---------------------------------------------------------!
+         mdbh   = min(dbh,dbh_crit(ipft))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -392,16 +390,16 @@ real function size2bl_old(dbh,hite,ipft)
       !     Find leaf biomass depending on the tree size.                                  !
       !------------------------------------------------------------------------------------!
       if (is_liana(ipft)) then
-          !size2bl = 0.81 * log(dbh) - 0.57 !@ liana gerwing
-          my_temp_var = 0.0856 * dbh * dbh - 0.376 !@liana putz
-          size2bl_old = merge (my_temp_var, 0.1, my_temp_var > 0.1)
-!          write(*,*) "size2bl=", size2bl
+         !size2bl = 0.81 * log(dbh) - 0.57 !@ liana gerwing
+         my_temp_var = 0.0856 * dbh * dbh - 0.376 !@liana putz
+         size2bl_old = merge (my_temp_var, 0.1, my_temp_var > 0.1)
+      !          write(*,*) "size2bl=", size2bl
       else
-          if (mdbh < dbh_adult(ipft)) then
-              size2bl_old = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
-          else
-              size2bl_old = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
-          end if
+         if (mdbh < dbh_adult(ipft)) then
+            size2bl_old = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
+         else
+            size2bl_old = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+         end if
       end if
       !------------------------------------------------------------------------------------!
 
@@ -423,17 +421,17 @@ real function size2bl_old(dbh,hite,ipft)
    !---------------------------------------------------------------------------------------!
    real function bl2dbh(bleaf,ipft)
       use pft_coms,     only : is_tropical & ! intent(in), lookup table
-                             , is_liana    & ! intent(in)
-                             , rho         & ! intent(in), lookup table
-                             , dbh_crit    & ! intent(in), lookup table
-                             , hgt_max     & ! intent(in), lookup table
-                             , is_grass    & ! intent(in)
-                             , C2B         & ! intent(in)
-                             , b1Bl_small  & ! intent(in), lookup table
-                             , b2Bl_small  & ! intent(in), lookup table
-                             , b1Bl_large  & ! intent(in), lookup table
-                             , b2Bl_large  & ! intent(in), lookup table
-                             , bleaf_adult ! ! intent(in), lookup table
+         , is_liana    & ! intent(in)
+         , rho         & ! intent(in), lookup table
+         , dbh_crit    & ! intent(in), lookup table
+         , hgt_max     & ! intent(in), lookup table
+         , is_grass    & ! intent(in)
+         , C2B         & ! intent(in)
+         , b1Bl_small  & ! intent(in), lookup table
+         , b2Bl_small  & ! intent(in), lookup table
+         , b1Bl_large  & ! intent(in), lookup table
+         , b2Bl_large  & ! intent(in), lookup table
+         , bleaf_adult ! ! intent(in), lookup table
       use ed_misc_coms, only : igrass      ! ! intent(in)
 
       implicit none
@@ -448,32 +446,32 @@ real function size2bl_old(dbh,hite,ipft)
 
       !----- Find out whether this is an adult tree or a sapling/grass. -------------------!
       if (is_liana(ipft)) then
-          bl2dbh = sqrt((bleaf + 0.376) / 0.0856) !@ liana: inversion of preceding equation
-!          write(*,*) "bl2dbh=", bl2dbh
+         bl2dbh = sqrt((bleaf + 0.376) / 0.0856) !@ liana: inversion of preceding equation
+      !          write(*,*) "bl2dbh=", bl2dbh
       else
 
-          if (bleaf < bleaf_adult(ipft)) then
-              mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
-          else
-              mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
-          end if
-          !------------------------------------------------------------------------------------!
+         if (bleaf < bleaf_adult(ipft)) then
+            mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
+         else
+            mdbh = (bleaf * C2B / b1Bl_large(ipft) ) ** (1./b2Bl_large(ipft))
+         end if
+         !------------------------------------------------------------------------------------!
 
 
-          !------------------------------------------------------------------------------------!
-          !     For grasses, limit maximum effective dbh by maximum height.                    !
-          !------------------------------------------------------------------------------------!
-          if (is_grass(ipft) .and. igrass == 1) then
-              bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft)) !@quite non sense
-          else
-              bl2dbh = min(mdbh, dbh_crit(ipft))
-          end if
+         !------------------------------------------------------------------------------------!
+         !     For grasses, limit maximum effective dbh by maximum height.                    !
+         !------------------------------------------------------------------------------------!
+         if (is_grass(ipft) .and. igrass == 1) then
+            bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft)) !@quite non sense
+         else
+            bl2dbh = min(mdbh, dbh_crit(ipft))
+         end if
       end if
       !------------------------------------------------------------------------------------!
 
 
       return
-    end function bl2dbh
+   end function bl2dbh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -487,8 +485,7 @@ real function size2bl_old(dbh,hite,ipft)
    !      This function determines the height for grasses given their leaf biomass.        !
    !---------------------------------------------------------------------------------------!
    real function bl2h(bleaf,ipft, cpatch)
-      use pft_coms,      only:  hgt_max  &   ! ! intent(in), lookup table
-                             ,  is_liana
+      use pft_coms,      only:  hgt_max    ! ! intent(in), lookup table
       use ed_state_vars, only:  patchtype  ! ! structure
       
       implicit none
@@ -518,12 +515,11 @@ real function size2bl_old(dbh,hite,ipft)
    real function dbh2ca(dbh,hite,sla,ipft,cpatch)
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use pft_coms    , only : dbh_crit    & ! intent(in)
-                             , hgt_max     & ! intent(in)
-                             , is_tropical & ! intent(in)
-                             , is_liana    & ! intent(in)
-                             , is_grass    & ! intent(in)
-                             , b1Ca        & ! intent(in)
-                             , b2Ca        ! ! intent(in)
+         , hgt_max     & ! intent(in)
+         , is_tropical & ! intent(in)
+         , is_grass    & ! intent(in)
+         , b1Ca        & ! intent(in)
+         , b2Ca        ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
       use ed_state_vars, only: patchtype  ! ! structure
       implicit none
@@ -542,21 +538,21 @@ real function size2bl_old(dbh,hite,ipft)
          dbh2ca = 0.0
       else
 
-          !----- make this function generic to size, not just dbh. -------------------------!
-          loclai = sla * size2bl(dbh,hite,ipft, cpatch)
-          select case (iallom)
-              case (0)
-                  !----- No upper bound in the allometry. ---------------------------------------!
-                  dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
+         !----- make this function generic to size, not just dbh. -------------------------!
+         loclai = sla * size2bl(dbh,hite,ipft, cpatch)
+         select case (iallom)
+            case (0)
+               !----- No upper bound in the allometry. ---------------------------------------!
+               dbh2ca = b1Ca(ipft) * dbh ** b2Ca(ipft)
 
-              case default
-                  !----- Impose a maximum crown area. -------------------------------------------!
-                  if (is_grass(ipft) .and. igrass==1) then
-                      dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
-                  else
-                      dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
-                  end if
-          end select
+            case default
+               !----- Impose a maximum crown area. -------------------------------------------!
+               if (is_grass(ipft) .and. igrass==1) then
+                  dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
+               else
+                  dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
+               end if
+         end select
       end if
 
       !----- Local LAI / Crown area should never be less than one. ------------------------!
@@ -567,15 +563,14 @@ real function size2bl_old(dbh,hite,ipft)
 
 
 
-      real function dbh2ca_old(dbh,hite,sla,ipft)
+   real function dbh2ca_old(dbh,hite,sla,ipft)
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use pft_coms    , only : dbh_crit    & ! intent(in)
-                             , hgt_max     & ! intent(in)
-                             , is_tropical & ! intent(in)
-                             , is_liana    & ! intent(in)
-                             , is_grass    & ! intent(in)
-                             , b1Ca        & ! intent(in)
-                             , b2Ca        ! ! intent(in)
+         , hgt_max     & ! intent(in)
+         , is_tropical & ! intent(in)
+         , is_grass    & ! intent(in)
+         , b1Ca        & ! intent(in)
+         , b2Ca        ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
       use ed_state_vars, only: patchtype  ! ! structure
       implicit none
@@ -593,21 +588,21 @@ real function size2bl_old(dbh,hite,ipft)
          dbh2ca_old = 0.0
       else
 
-          !----- make this function generic to size, not just dbh. -------------------------!
-          loclai = sla * size2bl_old(dbh,hite,ipft)
-          select case (iallom)
-              case (0)
-                  !----- No upper bound in the allometry. ---------------------------------------!
-                  dbh2ca_old = b1Ca(ipft) * dbh ** b2Ca(ipft)
+         !----- make this function generic to size, not just dbh. -------------------------!
+         loclai = sla * size2bl_old(dbh,hite,ipft)
+         select case (iallom)
+            case (0)
+               !----- No upper bound in the allometry. ---------------------------------------!
+               dbh2ca_old = b1Ca(ipft) * dbh ** b2Ca(ipft)
 
-              case default
-                  !----- Impose a maximum crown area. -------------------------------------------!
-                  if (is_grass(ipft) .and. igrass==1) then
-                      dbh2ca_old = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
-                  else
-                      dbh2ca_old = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
-                  end if
-          end select
+            case default
+               !----- Impose a maximum crown area. -------------------------------------------!
+               if (is_grass(ipft) .and. igrass==1) then
+                  dbh2ca_old = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
+               else
+                  dbh2ca_old = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
+               end if
+         end select
       end if
 
       !----- Local LAI / Crown area should never be less than one. ------------------------!
@@ -629,7 +624,7 @@ real function size2bl_old(dbh,hite,ipft)
    !---------------------------------------------------------------------------------------!
    real function dbh2vol(hgt,dbh,ipft)
       use pft_coms    , only : b1Vol    & ! intent(in)
-                             , b2Vol    ! ! intent(in)
+         , b2Vol    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: hgt
@@ -657,7 +652,7 @@ real function size2bl_old(dbh,hite,ipft)
       use grid_coms   , only : nzg      ! ! intent(in)
       use soil_coms   , only : slz      ! ! intent(in)
       use pft_coms    , only : b1Rd     & ! intent(in)
-                             , b2Rd     ! ! intent(in)
+         , b2Rd     ! ! intent(in)
       implicit none 
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: hite
@@ -673,19 +668,19 @@ real function size2bl_old(dbh,hite,ipft)
 
       !----- Grasses get a fixed rooting depth of 70 cm. ----------------------------------!
       select case (iallom)
-      case (0)
-         !---------------------------------------------------------------------------------!
-         !    Original ED-2.1 (I don't know the source for this equation, though).         !
-         !---------------------------------------------------------------------------------!
-         volume     = dbh2vol(hite,dbh,ipft) 
-         root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
+         case (0)
+            !---------------------------------------------------------------------------------!
+            !    Original ED-2.1 (I don't know the source for this equation, though).         !
+            !---------------------------------------------------------------------------------!
+            volume     = dbh2vol(hite,dbh,ipft)
+            root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
 
-      case default
-         !---------------------------------------------------------------------------------!
-         !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
-         ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
-         !---------------------------------------------------------------------------------!
-         root_depth = b1Rd(ipft) * hite ** b2Rd(ipft)
+         case default
+            !---------------------------------------------------------------------------------!
+            !    This is just a test allometry, that imposes root depth to be 0.5 m for       !
+            ! plants that are 0.15-m tall, and 5.0 m for plants that are 35-m tall.           !
+            !---------------------------------------------------------------------------------!
+            root_depth = b1Rd(ipft) * hite ** b2Rd(ipft)
       end select
 
 
@@ -721,7 +716,7 @@ real function size2bl_old(dbh,hite,ipft)
    !---------------------------------------------------------------------------------------!
    real function h2crownbh(height,ipft)
       use pft_coms, only : b1Cl & ! intent(in)
-                         , b2Cl ! ! intent(in)
+         , b2Cl ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: height
@@ -785,13 +780,13 @@ real function size2bl_old(dbh,hite,ipft)
       real                :: hgt_max
       !------------------------------------------------------------------------------------!
 
-        hgt_max = 0
-        cohortloop: do ico = 1,cpatch%ncohorts
-            if (.not. is_liana(cpatch%pft(ico))) then
-                hgt_max    = max(hgt_max, cpatch%hite(ico))
-            end if
-        end do cohortloop
-        dbh_crit_dep    = h2dbh(hgt_max, 17)
+      hgt_max = 0
+      cohortloop: do ico = 1,cpatch%ncohorts
+         if (.not. is_liana(cpatch%pft(ico))) then
+            hgt_max    = max(hgt_max, cpatch%hite(ico))
+         end if
+      end do cohortloop
+      dbh_crit_dep    = h2dbh(hgt_max, 17)
 
 
       return
@@ -818,20 +813,20 @@ real function size2bl_old(dbh,hite,ipft)
    !    110--116, 2013.                                                                    !
    !---------------------------------------------------------------------------------------!
    subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
-                          ,bsapwooda,cpatch)
+      ,bsapwooda,cpatch)
       use pft_coms    , only : is_tropical     & ! intent(in)
-                             , is_grass        & ! intent(in)
-                             , agf_bs          & ! intent(in)
-                             , rho             & ! intent(in)
-                             , C2B             & ! intent(in)
-                             , dbh_crit        & ! intent(in)
-                             , b1WAI           & ! intent(in)
-                             , b2WAI           ! ! intent(in)
+         , is_grass        & ! intent(in)
+         , agf_bs          & ! intent(in)
+         , rho             & ! intent(in)
+         , C2B             & ! intent(in)
+         , dbh_crit        & ! intent(in)
+         , b1WAI           & ! intent(in)
+         , b2WAI           ! ! intent(in)
       use consts_coms , only : onethird        & ! intent(in)
-                             , pi1             ! ! intent(in)
+         , pi1             ! ! intent(in)
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
       use ed_misc_coms, only : igrass          & ! intent(in)
-                             , iallom          ! ! intent(in)
+         , iallom          ! ! intent(in)
       use ed_state_vars, only: patchtype  ! ! structure
 
       implicit none
@@ -872,28 +867,28 @@ real function size2bl_old(dbh,hite,ipft)
       ! otherwise, simply assign zeroes to them.                                           !
       !------------------------------------------------------------------------------------!
       select case (ibranch_thermo)
-      case (0) 
-         !----- Ignore branches and trunk. ------------------------------------------------!
-         wai  = 0.
-         !---------------------------------------------------------------------------------!
+         case (0)
+            !----- Ignore branches and trunk. ------------------------------------------------!
+            wai  = 0.
+            !---------------------------------------------------------------------------------!
 
-      case (1,2)
-         !---------------------------------------------------------------------------------!
-         !     Decide the WAI according to the allometry.                                  !
-         !---------------------------------------------------------------------------------!
-         select case (iallom)
-         case (3)
-            !------------------------------------------------------------------------------!
-            !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
-            ! always 11% of the potential LAI.                                             !
-            !------------------------------------------------------------------------------!
-            wai = 0.11 * nplant * sla * size2bl(dbh,hite,pft,cpatch)
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Solve branches using the equations from Hormann et al. (2003) ----------!
-            wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
-            !------------------------------------------------------------------------------!
-         end select
+         case (1,2)
+            !---------------------------------------------------------------------------------!
+            !     Decide the WAI according to the allometry.                                  !
+            !---------------------------------------------------------------------------------!
+            select case (iallom)
+               case (3)
+                  !------------------------------------------------------------------------------!
+                  !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
+                  ! always 11% of the potential LAI.                                             !
+                  !------------------------------------------------------------------------------!
+                  wai = 0.11 * nplant * sla * size2bl(dbh,hite,pft,cpatch)
+                  !------------------------------------------------------------------------------!
+               case default
+                  !----- Solve branches using the equations from Hormann et al. (2003) ----------!
+                  wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
+               !------------------------------------------------------------------------------!
+            end select
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -904,20 +899,20 @@ real function size2bl_old(dbh,hite,ipft)
 
 
    subroutine area_indices_old(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
-                          ,bsapwooda)
-            use pft_coms    , only : is_tropical     & ! intent(in)
-                             , is_grass        & ! intent(in)
-                             , agf_bs          & ! intent(in)
-                             , rho             & ! intent(in)
-                             , C2B             & ! intent(in)
-                             , dbh_crit        & ! intent(in)
-                             , b1WAI           & ! intent(in)
-                             , b2WAI           ! ! intent(in)
+      ,bsapwooda)
+      use pft_coms    , only : is_tropical     & ! intent(in)
+         , is_grass        & ! intent(in)
+         , agf_bs          & ! intent(in)
+         , rho             & ! intent(in)
+         , C2B             & ! intent(in)
+         , dbh_crit        & ! intent(in)
+         , b1WAI           & ! intent(in)
+         , b2WAI           ! ! intent(in)
       use consts_coms , only : onethird        & ! intent(in)
-                             , pi1             ! ! intent(in)
+         , pi1             ! ! intent(in)
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
       use ed_misc_coms, only : igrass          & ! intent(in)
-                             , iallom          ! ! intent(in)
+         , iallom          ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer , intent(in)  :: pft        ! Plant functional type            [         ---]
@@ -955,28 +950,28 @@ real function size2bl_old(dbh,hite,ipft)
       ! otherwise, simply assign zeroes to them.                                           !
       !------------------------------------------------------------------------------------!
       select case (ibranch_thermo)
-      case (0)
-         !----- Ignore branches and trunk. ------------------------------------------------!
-         wai  = 0.
-         !---------------------------------------------------------------------------------!
+         case (0)
+            !----- Ignore branches and trunk. ------------------------------------------------!
+            wai  = 0.
+            !---------------------------------------------------------------------------------!
 
-      case (1,2)
-         !---------------------------------------------------------------------------------!
-         !     Decide the WAI according to the allometry.                                  !
-         !---------------------------------------------------------------------------------!
-         select case (iallom)
-         case (3)
-            !------------------------------------------------------------------------------!
-            !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
-            ! always 11% of the potential LAI.                                             !
-            !------------------------------------------------------------------------------!
-            wai = 0.11 * nplant * sla * size2bl_old(dbh,hite,pft)
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Solve branches using the equations from Hormann et al. (2003) ----------!
-            wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
-            !------------------------------------------------------------------------------!
-         end select
+         case (1,2)
+            !---------------------------------------------------------------------------------!
+            !     Decide the WAI according to the allometry.                                  !
+            !---------------------------------------------------------------------------------!
+            select case (iallom)
+               case (3)
+                  !------------------------------------------------------------------------------!
+                  !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
+                  ! always 11% of the potential LAI.                                             !
+                  !------------------------------------------------------------------------------!
+                  wai = 0.11 * nplant * sla * size2bl_old(dbh,hite,pft)
+                  !------------------------------------------------------------------------------!
+               case default
+                  !----- Solve branches using the equations from Hormann et al. (2003) ----------!
+                  wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
+               !------------------------------------------------------------------------------!
+            end select
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
