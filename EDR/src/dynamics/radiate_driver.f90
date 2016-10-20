@@ -151,7 +151,6 @@ subroutine radiate_driver(cgrid)
             end do
             !------------------------------------------------------------------------------!
 
-
             !----- Get unnormalized radiative transfer information. -----------------------!
             call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,nzg,nzs                 &
                           ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi),maxcohort,tuco     &
@@ -236,7 +235,9 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    , lnexp_max            ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , n_radprof            ! ! intent(in)
-   use allometry            , only : h2crownbh            ! ! intent(in)
+   use allometry            , only : h2crownbh            & ! intent(in)
+                                   , size2bl              & ! function
+                                   , area_indices         ! ! function 
    use ed_misc_coms         , only : ibigleaf             & ! intent(in)
                                    , radfrq               & ! intent(in)
                                    , current_time         ! ! intent(in)
@@ -464,7 +465,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       csite%par_l_max        (ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
-
       !------------------------------------------------------------------------------------!
       !     Transfer information from linked lists to arrays.  Here we must check          !
       ! whether is running as a true size-and-age structure model, or as big leaf.         !
@@ -510,6 +510,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                cohort_count                          = cohort_count + 1
                radscr(ibuff)%pft_array(cohort_count) = cpatch%pft(ico)
 
+               cpatch%bleaf(ico) = size2bl(cpatch%dbh(ico),cpatch%hite(ico), cpatch%pft(ico))
+
+               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+
                !---------------------------------------------------------------------------!
                !     Here we only tell the true LAI if the leaf is resolvable, and the     !
                ! true WAI if the wood is resolvable.  Also, for photosynthesis, we must    !
@@ -552,12 +556,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                !      Decide whether to assume infinite crown, or the crown area allometry !
                ! method as in Dietze and Clark (2008).                                     !
                !---------------------------------------------------------------------------!
-               select case (crown_mod)
-               case (0)
-                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
-               case (1)
+!               select case (crown_mod)
+!               case (0)
+!                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
+!               case (1)
                   radscr(ibuff)%CA_array(cohort_count) = dble(cpatch%crown_area(ico))
-               end select
+!               end select
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -1076,6 +1080,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
                ! enough.                                                                      !
                !------------------------------------------------------------------------------!
+
                if (tuco_leaf /= 0) then
                   ipft      = radscr(ibuff)%pft_array(tuco_leaf)
                   wleaf_vis = sngloff( clumping_factor(ipft)                                  &
