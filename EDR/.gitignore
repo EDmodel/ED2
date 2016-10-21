@@ -1,0 +1,4 @@
+*.mod
+*.o
+dependency.mk
+build/ed_2.1*

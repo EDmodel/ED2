@@ -3,6 +3,15 @@
 !    This file contains the main driver for ED2.                                           !
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
+   use ed_met_driver
+   use heun_driver
+   use euler_driver
+   use update_derived_props_module
+   use ism_hyd
+   use stable_cohorts
+   use rk4_integ_utils
+   use radiate_driver_module
+   use hybrid_driver
   
    use ed_misc_coms  , only : ivegt_dynamics              & ! intent(in)
                             , integration_scheme          & ! intent(in)

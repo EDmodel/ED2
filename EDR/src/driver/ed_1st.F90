@@ -15,7 +15,7 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
-
+   use ed_met_driver
    use ed_para_coms , only : iparallel          & ! intent(inout)
                            , machsize           ! ! intent(in)
    use ed_misc_coms , only : runtype            & ! intent(inout)
