@@ -233,6 +233,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    , radscr
    use soil_coms            , only : soil                 & ! intent(in)
                                    , soilcol              ! ! intent(in)
+   use pft_coms             , only : SLA                    ! intent(in)
    use consts_coms          , only : stefan               & ! intent(in)
                                    , lnexp_max            ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
@@ -514,7 +515,22 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
                cpatch%bleaf(ico) = size2bl(cpatch%dbh(ico),cpatch%hite(ico), cpatch%pft(ico))
 
-               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+               ! HACK (ashiklom):
+               ! Need to use the current SLA value, not the one
+               ! defined by default
+               cpatch%sla(ico) = SLA(cpatch%pft(ico))
+
+               ! Print statements for debugging
+               !print *, "Before area_indices LAI: ", cpatch%lai(ico)
+
+               call area_indices(cpatch%nplant(ico), cpatch%bleaf(ico), &
+                  cpatch%bdead(ico), cpatch%balive(ico), &
+                  cpatch%dbh(ico), cpatch%hite(ico), &
+                  cpatch%pft(ico),  cpatch%sla(ico), &
+                  cpatch%lai(ico), cpatch%wai(ico), &
+                  cpatch%crown_area(ico), cpatch%bsapwooda(ico))
+
+               !print *, "After area_indices LAI: ", cpatch%lai(ico)
 
                !---------------------------------------------------------------------------!
                !     Here we only tell the true LAI if the leaf is resolvable, and the     !
