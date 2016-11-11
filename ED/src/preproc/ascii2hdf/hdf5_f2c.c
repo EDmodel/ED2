@@ -39,7 +39,7 @@
 
 #include "utils_sub_names.h"
 
-#include "/n/Moorcroft_Lab/Users/dmm2/HDF5/hdf5-1.6.5/hdf5/include/hdf5.h"
+#include "/usr/local/hdf5/include/hdf5.h"
 
 hid_t fileid, dsetid, dspcid, mspcid, propid;
 
