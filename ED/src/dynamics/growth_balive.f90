@@ -2172,7 +2172,7 @@ module growth_balive
             cpatch%today_nppdaily   (ico) = carbon_balance    * cpatch%nplant(ico)
 
             !----- update height for grasses to match new leaf mass -----------------------!
-            cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft, cpatch))
+            cpatch%hite(ico) = min(hgt_max(ipft), bl2h(cpatch%bleaf(ico), ipft))
             cpatch%dbh(ico)  = h2dbh(cpatch%hite(ico), ipft) !--effective_dbh value for grasses
                 
             

@@ -1293,3 +1293,65 @@ ed_2.1-opt-lianas  0000000100C59FBA  Unknown               Unknown  Unknown
 ed_2.1-opt-lianas  0000000100C64625  Unknown               Unknown  Unknown
 
 Stack trace terminated abnormally.
+Git found, it will be used to tag things.
+To disable revision tagging, use --gitoff or -g.
+make gendep
+
+./generate_deps.sh ../..
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: mpif.h
+Can't find file: stdio.h
+Can't find file: math.h
+Can't find file: stdlib.h
+Can't find file: malloc/malloc.h
+Can't find file: malloc.h
+Can't find file: sched.h
+Can't find file: syscall.h
+Can't find file: stdlib.h
+Can't find file: errno.h
+Can't find file: string.h
+Can't find file: ctype.h
+Can't find file: dirent.h
+Can't find file: string.h
+=== Finished dependencies ===
+make ../../build//ed_2.1-dbg
+/bin/rm -f consts_coms.F90
+/bin/cp -f ../../src/memory/consts_coms.F90 consts_coms.F90
+ifort -c -DUSE_INTERF=0 -DUSENC= -DMAC_OS_X -DUSE_HDF5=1 -DUSE_COLLECTIVE_MPIO=0 -DUSE_MPIWTIME= -FR -CB -O0 -check all -g -debug extended -debug-parameters used -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces  -I../../src/include -I/usr/local/hdf5_mio/include -I/usr/include/malloc    consts_coms.F90
+
+Error: A license for FCompM could not be obtained
+Your license has expired.
+
+License file(s) used were (in this order):
+    1.  Trusted Storage
+**  2.  /usr/bin/ifort-14.0-base/Licenses
+**  3.  /Users/manfredo/intel/licenses
+**  4.  /opt/intel/licenses
+**  5.  /Users/Shared/Library/Application Support/Intel/Licenses/NCOM___CPP_2NVT-WBSWF4NX_1.lic
+**  6.  /Users/Shared/Library/Application Support/Intel/Licenses/NCOM___FOR_28RB-JRPTLFGD_1.lic
+**  7.  /usr/bin/ifort-14.0-base/bin/intel64/*.lic
+
+Please visit http://software.intel.com/sites/support/ to obtain license renewal information.
+
+ifort: error #10052: could not checkout FLEXlm license
+make[1]: *** [consts_coms.o] Error 1
+make: *** [all] Error 2

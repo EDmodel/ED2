@@ -15,17 +15,17 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"     # Current directory.
-there          = "thatpath"     # Directory where analyses/history are 
-srcdir         = "thisrscpath"  # Source  directory.
-outroot        = "thisoutroot"  # Directory for figures
+here           = "/Users/manfredo/Documents/Eclipse_workspace/ED/Template/odyssey/Template/"     # Current directory.
+there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/inventory_lianas/"     # Directory where analyses/history are
+srcdir         = "/Users/manfredo/Documents/Eclipse_workspace/R-utils"  # Source  directory.
+outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/inventory_lianas/figures"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
 #----- Time options. ----------------------------------------------------------------------#
-monthbeg       = thismontha   # First month to use
-yearbeg        = thisyeara    # First year to consider
-yearend        = thisyearz    # Maximum year to consider
+monthbeg       = 01   # First month to use
+yearbeg        = 2005    # First year to consider
+yearend        = 2015    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
@@ -36,13 +36,13 @@ n.density      = 256          # Number of density points
 
 
 #----- Name of the simulations. -----------------------------------------------------------#
-myplaces       = c("thispoly")
+myplaces       = c("paracou")
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Plot options. ----------------------------------------------------------------------#
-outform        = thisoutform            # Formats for output file.  Supported formats are:
+outform        = "pdf"          # Formats for output file.  Supported formats are:
                                         #   - "X11"    - for printing on screen
                                         #   - "quartz" - for printing on Mac OS screen
                                         #   - "eps"    - for postscript printing
@@ -53,7 +53,7 @@ depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
 ptsz           = 17                     # Font size.
 lwidth         = 2.5                    # Line width
-plotgrid       = TRUE                   # Should I plot the grid in the background? 
+plotgrid       = TRUE                   # Should I plot the grid in the background?
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
                                         #    plots? (FALSE will set a suitable scale for
                                         #    each plot)
@@ -86,14 +86,14 @@ ibackground    = mybackground           # Background settings (check load_everyt
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
 slz.min             = -5.0         # The deepest depth that trees access water.
-idbh.type           = myidbhtype   # Type of DBH class
+idbh.type           = 3   # Type of DBH class
                                    # 1 -- Every 10 cm until 100cm; > 100cm
                                    # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                                    # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
-klight              = myklight     # Weighting factor for maximum carbon balance
-corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+klight              = 0.8     # Weighting factor for maximum carbon balance
+corr.growth.storage = 1 # Correction factor to be applied to growth and
                                    #   storage respiration
-iallom              = myallom      # Allometry to use
+iallom              = 3      # Allometry to use
 #------------------------------------------------------------------------------------------#
 
 
@@ -154,8 +154,8 @@ if (! file.exists(outroot)) dir.create(outroot)
 #------------------------------------------------------------------------------------------#
 #     Big place loop starts here...                                                        #
 #------------------------------------------------------------------------------------------#
-for (place in myplaces){
-
+#for (place in myplaces){
+place = myplaces
    #----- Retrieve default information about this place and set up some variables. --------#
    thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                       ,monthbeg=monthbeg)
@@ -209,7 +209,7 @@ for (place in myplaces){
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = paste(here,place,"rdata_month",sep="/")
+   path.data  = paste(here,"rdata_month",sep="/")
    if (! file.exists(path.data)) dir.create(path.data)
    ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
    ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
@@ -218,7 +218,7 @@ for (place in myplaces){
       cat("   - Loading previous session...","\n")
       load(ed22.rdata)
       tresume = datum$ntimes + 1
-      datum   = update.monthly( new.ntimes = ntimes 
+      datum   = update.monthly( new.ntimes = ntimes
                               , old.datum  = datum
                               , montha     = monthbeg
                               , yeara      = yeara
@@ -251,7 +251,7 @@ for (place in myplaces){
    overyear = months.drought[1] > months.drought[ndrought]
    for (year in seq(from=drought.yeara,to=drought.yearz-as.integer(overyear),by=1)){
       n             = n + 1
-      
+
       #----- Define the beginning and the end of the drought. -----------------------------#
       month.start   = months.drought[1]
       month.end     = 1 + (months.drought[ndrought] %% 12)
@@ -582,7 +582,7 @@ for (place in myplaces){
       mdfun$z[bye] = NA
       #------------------------------------------------------------------------------------#
       patchpdf[[vname]] = list(edensity=edfun,mdensity=mdfun)
-   }#end for 
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 
@@ -594,7 +594,7 @@ for (place in myplaces){
                   , FUN    = mean
                   , na.rm  = TRUE
                   )#end apply
-   luave   = apply( X      = lu$agb 
+   luave   = apply( X      = lu$agb
                   , MARGIN = 2
                   , FUN    = mean
                   , na.rm  = TRUE
@@ -623,337 +623,337 @@ for (place in myplaces){
 
 
 
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Time series by PFT.                                                              #
-   #---------------------------------------------------------------------------------------#
-   for (v in 1:ntspftdbh){
-      thistspft   = tspftdbh[[v]]
-      vnam        = thistspft$vnam
-      description = thistspft$desc
-      unit        = thistspft$e.unit
-      plog        = thistspft$plog
-      plotit      = thistspft$pft
-
-      #----- Check whether the user wants to have this variable plotted. ------------------#
-      if (plotit && any(selpft)){
-
-         #---------------------------------------------------------------------------------#
-         #    Check whether the time series directory exists.  If not, create it.          #
-         #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"tspft",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",description," time series for all PFTs...","\n")
-
-         #----- Load variable -------------------------------------------------------------#
-         thisvar = szpft[[vnam]][,ndbh+1,]
-         if (plog){
-            #----- Eliminate non-positive values in case it is a log plot. ----------------#
-            thisvar[thisvar <= 0] = NA
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Loop over output formats. -------------------------------------------------#
-         for (o in 1:nout){
-            #----- Open file. -------------------------------------------------------------#
-            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] %in% "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] %in% "quartz"){
-               quartz(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent")
-            }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
-                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-            }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE
-                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-            }#end if
-            #------------------------------------------------------------------------------#
-
-
-            #------------------------------------------------------------------------------#
-            #     Find the limit, make some room for the legend, and in case the field is  #
-            # a constant, nudge the limits so the plot command will not complain.          #
-            #------------------------------------------------------------------------------#
-            xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
-            ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
-            if (plog){
-               xylog    = "y"
-               ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-                           , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
-                           )#end c
-            }else{
-               xylog    = ""
-               ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
-            }#end if
-            #------------------------------------------------------------------------------#
-
-
-            #----- Plot settings. ---------------------------------------------------------#
-            letitre       = paste(description,lieu,sep=" - ")
-            ley           = desc.unit(desc=description,unit=unit)
-            cols          = pft$colour[selpft]
-            legs          = pft$name  [selpft]
-            #------------------------------------------------------------------------------#
-
-
-            #------------------------------------------------------------------------------#
-            #     Split the plot into two windows.                                         #
-            #------------------------------------------------------------------------------#
-            par(par.user)
-            layout(mat=rbind(2,1),heights=c(5,1))
-            #------------------------------------------------------------------------------#
-
-
-
-            #------------------------------------------------------------------------------#
-            #      First plot: legend.                                                     #
-            #------------------------------------------------------------------------------#
-            par(mar=c(0.1,4.6,0.1,2.1))
-            plot.new()
-            plot.window(xlim=c(0,1),ylim=c(0,1))
-            legend( x      = "bottom"
-                  , inset  = 0.0
-                  , legend = legs
-                  , col    = cols
-                  , lwd    = lwidth
-                  , ncol   = min(pretty.box(n.selpft)$ncol,3)
-                  , title  = expression(bold("Plant Functional Type"))
-                  )#end legend
-            #------------------------------------------------------------------------------#
-
-
-
-
-            #------------------------------------------------------------------------------#
-            #      Main plot.                                                              #
-            #------------------------------------------------------------------------------#
-            par(mar=c(4.1,4.6,4.1,2.1))
-            plot.new()
-            plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
-            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-            axis(side=2,las=1)
-            box()
-            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
-            if (drought.mark){
-               for (n in 1:ndrought){
-                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
-                      ,xright = drought[[n]][2],ytop    = ydrought[2]
-                      ,col    = grid.colour,border=NA)
-               }#end for
-            }#end if
-            #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
-               abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
-            }#end if
-            #----- Plot lines. ------------------------------------------------------------#
-            for (n in 1:(npft+1)){
-               if (selpft[n]){
-                  lines(datum$tomonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
-               }#end if
-            }#end for
-            #------------------------------------------------------------------------------#
-
-
-            #----- Close the device. ------------------------------------------------------#
-            if (outform[o] %in% c("x11","quartz")){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-            dummy=clean.tmp()
-            #------------------------------------------------------------------------------#
-         } #end for outform
-      }#end if (tseragbpft)
-   } #end for tseries
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #      Time series by DBH, by PFT.                                                      #
-   #---------------------------------------------------------------------------------------#
-   #----- Find the PFTs to plot. ----------------------------------------------------------#
-   pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
-   pftuse  = pftuse[pftuse != (npft+1)]
-   for (v in 1:ntspftdbh){
-      thistspftdbh   = tspftdbh[[v]]
-      vnam           = thistspftdbh$vnam
-      description    = thistspftdbh$desc
-      unit           = thistspftdbh$e.unit
-      plog           = thistspftdbh$plog
-      plotit         = thistspftdbh$pftdbh
-      
-      #----- Load variable ----------------------------------------------------------------#
-      thisvar = szpft[[vnam]]
-      if (plog){
-         xylog="y"
-         badlog = is.finite(thisvar) & thisvar <= 0
-         thisvar[badlog] = NA
-      }else{
-         xylog=""
-      }#end if
-      #----- Check whether the user wants to have this variable plotted. ------------------#
-      if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
-
-         #---------------------------------------------------------------------------------#
-         #    Check whether the time series directory exists.  If not, create it.          #
-         #---------------------------------------------------------------------------------#
-         outdir = paste(outpref,"tsdbh",sep="/")
-         if (! file.exists(outdir)) dir.create(outdir)
-         outvar = paste(outdir,vnam,sep="/")
-         if (! file.exists(outvar)) dir.create(outvar)
-         #---------------------------------------------------------------------------------#
-
-         cat("      + ",description," time series for DBH class...","\n")
-
-
-         #---------------------------------------------------------------------------------#
-         #     Find the limit, make some room for the legend, and in case the field is a   #
-         # constant, nudge the limits so the plot command will not complain.               #
-         #---------------------------------------------------------------------------------#
-         xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
-         ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
-         if (plog){
-            xylog    = "y"
-            ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-                        , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
-                        )#end c
-         }else{
-            xylog    = ""
-            ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
-         }#end if
-         #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #       Loop over plant functional types.                                         #
-         #---------------------------------------------------------------------------------#
-         for (p in pftuse){
-            pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
-
-            cat("        - ",pft$name[p],"\n")
-
-
-            #----- Loop over output formats. ----------------------------------------------#
-            for (o in 1:nout){
-               #----- Open file. ----------------------------------------------------------#
-               fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
-               if(outform[o] %in% "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] %in% "quartz"){
-                  quartz(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] %in% "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth,bg="transparent")
-               }else if(outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
-                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-               }else if(outform[o] %in% "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-               }#end if
-               #---------------------------------------------------------------------------#
-
-
-
-               #-----  Plot annotation. ---------------------------------------------------#
-               letitre = paste(description,pft$name[p],lieu,sep=" - ")
-               ley     = desc.unit(desc=description,unit=unit)
-               #---------------------------------------------------------------------------#
-
-
-               #---------------------------------------------------------------------------#
-               #     Split the plot into two windows.                                      #
-               #---------------------------------------------------------------------------#
-               par(par.user)
-               layout(mat=rbind(2,1),heights=c(5,1))
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #      First plot: legend.                                                  #
-               #---------------------------------------------------------------------------#
-               par(mar=c(0.1,4.6,0.1,2.1))
-               plot.new()
-               plot.window(xlim=c(0,1),ylim=c(0,1))
-               legend( x      = "bottom"
-                     , inset  = 0.0
-                     , bg     = background
-                     , legend = dbhnames
-                     , col    = dbhcols
-                     , ncol   = min(pretty.box(ndbh+1)$ncol,3)
-                     , title  = expression(bold("DBH class"))
-                     , lwd    = lwidth
-                     )#end legend
-               #---------------------------------------------------------------------------#
-
-
-
-               #---------------------------------------------------------------------------#
-               #      Main plot.                                                           #
-               #---------------------------------------------------------------------------#
-               par(mar=c(4.1,4.6,4.1,2.1))
-               plot.new()
-               plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
-               axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-               axis(side=2,las=1)
-               box()
-               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
-               if (drought.mark){
-                  for (n in 1:ndrought){
-                     rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
-                         ,xright = drought[[n]][2],ytop    = ydrought[2]
-                         ,col    = grid.colour,border=NA)
-                  }#end for
-               }#end if
-               #----- Plot grid. ----------------------------------------------------------#
-               if (plotgrid){ 
-                  abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
-               }#end if
-               #----- Plot lines. ---------------------------------------------------------#
-               for (d in seq(from=1,to=ndbh+1,by=1)){
-                  lines(datum$tomonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
-               }#end for
-               #---------------------------------------------------------------------------#
-
-
-               #----- Close the device. ---------------------------------------------------#
-               if (outform[o] %in% c("x11","quartz")){
-                  locator(n=1)
-                  dev.off()
-               }else{
-                  dev.off()
-               }#end if
-               dummy=clean.tmp()
-               #---------------------------------------------------------------------------#
-            }#end for outform
-            #------------------------------------------------------------------------------#
-         }#end for (p in pftuse)
-         #---------------------------------------------------------------------------------#
-      }#end if (tseragbpft)
-      #------------------------------------------------------------------------------------#
-   } #end for tseries
-   #---------------------------------------------------------------------------------------#
-
-
+#
+#
+#    #---------------------------------------------------------------------------------------#
+#    #      Time series by PFT.                                                              #
+#    #---------------------------------------------------------------------------------------#
+#    for (v in 1:ntspftdbh){
+#       thistspft   = tspftdbh[[v]]
+#       vnam        = thistspft$vnam
+#       description = thistspft$desc
+#       unit        = thistspft$e.unit
+#       plog        = thistspft$plog
+#       plotit      = thistspft$pft
+#
+#       #----- Check whether the user wants to have this variable plotted. ------------------#
+#       if (plotit && any(selpft)){
+#
+#          #---------------------------------------------------------------------------------#
+#          #    Check whether the time series directory exists.  If not, create it.          #
+#          #---------------------------------------------------------------------------------#
+#          outdir = paste(outpref,"tspft",sep="/")
+#          if (! file.exists(outdir)) dir.create(outdir)
+#          cat("      + ",description," time series for all PFTs...","\n")
+#
+#          #----- Load variable -------------------------------------------------------------#
+#          thisvar = szpft[[vnam]][,ndbh+1,]
+#          if (plog){
+#             #----- Eliminate non-positive values in case it is a log plot. ----------------#
+#             thisvar[thisvar <= 0] = NA
+#          }#end if
+#          #---------------------------------------------------------------------------------#
+#
+#
+#
+#          #----- Loop over output formats. -------------------------------------------------#
+#          for (o in 1:nout){
+#             #----- Open file. -------------------------------------------------------------#
+#             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
+#             if(outform[o] %in% "x11"){
+#                X11(width=size$width,height=size$height,pointsize=ptsz)
+#             }else if(outform[o] %in% "quartz"){
+#                quartz(width=size$width,height=size$height,pointsize=ptsz)
+#             }else if(outform[o] %in% "png"){
+#                png(filename=fichier,width=size$width*depth,height=size$height*depth
+#                   ,pointsize=ptsz,res=depth,bg="transparent")
+#             }else if(outform[o] %in% "tif"){
+#                tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+#                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+#             }else if(outform[o] %in% "eps"){
+#                postscript(file=fichier,width=size$width,height=size$height
+#                          ,pointsize=ptsz,paper=size$paper)
+#             }else if(outform[o] %in% "pdf"){
+#                pdf(file=fichier,onefile=FALSE
+#                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+#             }#end if
+#             #------------------------------------------------------------------------------#
+#
+#
+#             #------------------------------------------------------------------------------#
+#             #     Find the limit, make some room for the legend, and in case the field is  #
+#             # a constant, nudge the limits so the plot command will not complain.          #
+#             #------------------------------------------------------------------------------#
+#             xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+#             ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
+#             if (plog){
+#                xylog    = "y"
+#                ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
+#                            , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+#                            )#end c
+#             }else{
+#                xylog    = ""
+#                ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
+#             }#end if
+#             #------------------------------------------------------------------------------#
+#
+#
+#             #----- Plot settings. ---------------------------------------------------------#
+#             letitre       = paste(description,lieu,sep=" - ")
+#             ley           = desc.unit(desc=description,unit=unit)
+#             cols          = pft$colour[selpft]
+#             legs          = pft$name  [selpft]
+#             #------------------------------------------------------------------------------#
+#
+#
+#             #------------------------------------------------------------------------------#
+#             #     Split the plot into two windows.                                         #
+#             #------------------------------------------------------------------------------#
+#             par(par.user)
+#             layout(mat=rbind(2,1),heights=c(5,1))
+#             #------------------------------------------------------------------------------#
+#
+#
+#
+#             #------------------------------------------------------------------------------#
+#             #      First plot: legend.                                                     #
+#             #------------------------------------------------------------------------------#
+#             par(mar=c(0.1,4.6,0.1,2.1))
+#             plot.new()
+#             plot.window(xlim=c(0,1),ylim=c(0,1))
+#             legend( x      = "bottom"
+#                   , inset  = 0.0
+#                   , legend = legs
+#                   , col    = cols
+#                   , lwd    = lwidth
+#                   , ncol   = min(pretty.box(n.selpft)$ncol,3)
+#                   , title  = expression(bold("Plant Functional Type"))
+#                   )#end legend
+#             #------------------------------------------------------------------------------#
+#
+#
+#
+#
+#             #------------------------------------------------------------------------------#
+#             #      Main plot.                                                              #
+#             #------------------------------------------------------------------------------#
+#             par(mar=c(4.1,4.6,4.1,2.1))
+#             plot.new()
+#             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+#             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+#             axis(side=2,las=1)
+#             box()
+#             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
+#             if (drought.mark){
+#                for (n in 1:ndrought){
+#                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+#                       ,xright = drought[[n]][2],ytop    = ydrought[2]
+#                       ,col    = grid.colour,border=NA)
+#                }#end for
+#             }#end if
+#             #----- Plot grid. -------------------------------------------------------------#
+#             if (plotgrid){
+#                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
+#             }#end if
+#             #----- Plot lines. ------------------------------------------------------------#
+#             for (n in 1:(npft+1)){
+#                if (selpft[n]){
+#                   lines(datum$tomonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
+#                }#end if
+#             }#end for
+#             #------------------------------------------------------------------------------#
+#
+#
+#             #----- Close the device. ------------------------------------------------------#
+#             if (outform[o] %in% c("x11","quartz")){
+#                locator(n=1)
+#                dev.off()
+#             }else{
+#                dev.off()
+#             }#end if
+#             dummy=clean.tmp()
+#             #------------------------------------------------------------------------------#
+#          } #end for outform
+#       }#end if (tseragbpft)
+#    } #end for tseries
+#    #---------------------------------------------------------------------------------------#
+#
+#
+#
+#
+#    #---------------------------------------------------------------------------------------#
+#    #      Time series by DBH, by PFT.                                                      #
+#    #---------------------------------------------------------------------------------------#
+#    #----- Find the PFTs to plot. ----------------------------------------------------------#
+#    pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
+#    pftuse  = pftuse[pftuse != (npft+1)]
+#    for (v in 1:ntspftdbh){
+#       thistspftdbh   = tspftdbh[[v]]
+#       vnam           = thistspftdbh$vnam
+#       description    = thistspftdbh$desc
+#       unit           = thistspftdbh$e.unit
+#       plog           = thistspftdbh$plog
+#       plotit         = thistspftdbh$pftdbh
+#
+#       #----- Load variable ----------------------------------------------------------------#
+#       thisvar = szpft[[vnam]]
+#       if (plog){
+#          xylog="y"
+#          badlog = is.finite(thisvar) & thisvar <= 0
+#          thisvar[badlog] = NA
+#       }else{
+#          xylog=""
+#       }#end if
+#       #----- Check whether the user wants to have this variable plotted. ------------------#
+#       if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
+#
+#          #---------------------------------------------------------------------------------#
+#          #    Check whether the time series directory exists.  If not, create it.          #
+#          #---------------------------------------------------------------------------------#
+#          outdir = paste(outpref,"tsdbh",sep="/")
+#          if (! file.exists(outdir)) dir.create(outdir)
+#          outvar = paste(outdir,vnam,sep="/")
+#          if (! file.exists(outvar)) dir.create(outvar)
+#          #---------------------------------------------------------------------------------#
+#
+#          cat("      + ",description," time series for DBH class...","\n")
+#
+#
+#          #---------------------------------------------------------------------------------#
+#          #     Find the limit, make some room for the legend, and in case the field is a   #
+#          # constant, nudge the limits so the plot command will not complain.               #
+#          #---------------------------------------------------------------------------------#
+#          xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+#          ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
+#          if (plog){
+#             xylog    = "y"
+#             ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
+#                         , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+#                         )#end c
+#          }else{
+#             xylog    = ""
+#             ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
+#          }#end if
+#          #---------------------------------------------------------------------------------#
+#
+#
+#
+#
+#          #---------------------------------------------------------------------------------#
+#          #       Loop over plant functional types.                                         #
+#          #---------------------------------------------------------------------------------#
+#          for (p in pftuse){
+#             pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
+#
+#             cat("        - ",pft$name[p],"\n")
+#
+#
+#             #----- Loop over output formats. ----------------------------------------------#
+#             for (o in 1:nout){
+#                #----- Open file. ----------------------------------------------------------#
+#                fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
+#                if(outform[o] %in% "x11"){
+#                   X11(width=size$width,height=size$height,pointsize=ptsz)
+#                }else if(outform[o] %in% "quartz"){
+#                   quartz(width=size$width,height=size$height,pointsize=ptsz)
+#                }else if(outform[o] %in% "png"){
+#                   png(filename=fichier,width=size$width*depth,height=size$height*depth
+#                      ,pointsize=ptsz,res=depth,bg="transparent")
+#                }else if(outform[o] %in% "tif"){
+#                   tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+#                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+#                }else if(outform[o] %in% "eps"){
+#                   postscript(file=fichier,width=size$width,height=size$height
+#                             ,pointsize=ptsz,paper=size$paper)
+#                }else if(outform[o] %in% "pdf"){
+#                   pdf(file=fichier,onefile=FALSE
+#                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+#                }#end if
+#                #---------------------------------------------------------------------------#
+#
+#
+#
+#                #-----  Plot annotation. ---------------------------------------------------#
+#                letitre = paste(description,pft$name[p],lieu,sep=" - ")
+#                ley     = desc.unit(desc=description,unit=unit)
+#                #---------------------------------------------------------------------------#
+#
+#
+#                #---------------------------------------------------------------------------#
+#                #     Split the plot into two windows.                                      #
+#                #---------------------------------------------------------------------------#
+#                par(par.user)
+#                layout(mat=rbind(2,1),heights=c(5,1))
+#                #---------------------------------------------------------------------------#
+#
+#
+#
+#                #---------------------------------------------------------------------------#
+#                #      First plot: legend.                                                  #
+#                #---------------------------------------------------------------------------#
+#                par(mar=c(0.1,4.6,0.1,2.1))
+#                plot.new()
+#                plot.window(xlim=c(0,1),ylim=c(0,1))
+#                legend( x      = "bottom"
+#                      , inset  = 0.0
+#                      , bg     = background
+#                      , legend = dbhnames
+#                      , col    = dbhcols
+#                      , ncol   = min(pretty.box(ndbh+1)$ncol,3)
+#                      , title  = expression(bold("DBH class"))
+#                      , lwd    = lwidth
+#                      )#end legend
+#                #---------------------------------------------------------------------------#
+#
+#
+#
+#                #---------------------------------------------------------------------------#
+#                #      Main plot.                                                           #
+#                #---------------------------------------------------------------------------#
+#                par(mar=c(4.1,4.6,4.1,2.1))
+#                plot.new()
+#                plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+#                axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+#                axis(side=2,las=1)
+#                box()
+#                title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
+#                if (drought.mark){
+#                   for (n in 1:ndrought){
+#                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+#                          ,xright = drought[[n]][2],ytop    = ydrought[2]
+#                          ,col    = grid.colour,border=NA)
+#                   }#end for
+#                }#end if
+#                #----- Plot grid. ----------------------------------------------------------#
+#                if (plotgrid){
+#                   abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
+#                }#end if
+#                #----- Plot lines. ---------------------------------------------------------#
+#                for (d in seq(from=1,to=ndbh+1,by=1)){
+#                   lines(datum$tomonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
+#                }#end for
+#                #---------------------------------------------------------------------------#
+#
+#
+#                #----- Close the device. ---------------------------------------------------#
+#                if (outform[o] %in% c("x11","quartz")){
+#                   locator(n=1)
+#                   dev.off()
+#                }else{
+#                   dev.off()
+#                }#end if
+#                dummy=clean.tmp()
+#                #---------------------------------------------------------------------------#
+#             }#end for outform
+#             #------------------------------------------------------------------------------#
+#          }#end for (p in pftuse)
+#          #---------------------------------------------------------------------------------#
+#       }#end if (tseragbpft)
+#       #------------------------------------------------------------------------------------#
+#    } #end for tseries
+#    #---------------------------------------------------------------------------------------#
+#
+#
 
 
    #---------------------------------------------------------------------------------------#
@@ -964,9 +964,9 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
+      vname        = compnow$vnam
+      description  = compnow$desc
+      unit         = compnow$unit
       lcolours     = compnow$colour
       llwd         = compnow$lwd
       llwd         = compnow$lwd
@@ -1033,7 +1033,7 @@ for (place in myplaces){
          #----- Define the number of layers. ----------------------------------------------#
          thiswhen  = datum$tomonth [sel]
          thismean  = emean[[vname]][sel]
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
 
 
 
@@ -1141,9 +1141,9 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
+      vname        = compnow$vnam
+      description  = compnow$desc
+      unit         = compnow$unit
       plotsd       = compnow$plotsd
       lcolours     = compnow$colour
       errcolours   = compnow$errcol
@@ -1223,10 +1223,10 @@ for (place in myplaces){
 
 
 
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          #    Define the number of layers.  Some variables have no standard deviation in   #
          # the model, so Make them 0 if this is the case.                                  #
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          thismean = mmean[[vname]]
          thissdev = msdev[[vname]]
          if (length(msdev[[vname]]) == 0){
@@ -1236,8 +1236,8 @@ for (place in myplaces){
          }#end if
          mod.x     = montmont
          mod.ylow  = thismean - thissdev
-         mod.yhigh = thismean + thissdev 
-         #---------------------------------------------------------------------------------# 
+         mod.yhigh = thismean + thissdev
+         #---------------------------------------------------------------------------------#
 
 
 
@@ -1310,7 +1310,7 @@ for (place in myplaces){
             par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             if (plotsd){
@@ -1369,9 +1369,9 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
+      vname        = compnow$vnam
+      description  = compnow$desc
+      unit         = compnow$unit
       plotsd       = compnow$plotsd
       lcolours     = compnow$colour
       errcolours   = compnow$errcol
@@ -1443,11 +1443,11 @@ for (place in myplaces){
 
 
 
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          #    Define the number of layers.  Some variables have no standard deviation in   #
          # the model, so Make them 0 if this is the case.  We also append the last hour    #
          # before the first one so 00 UTC appears in the left.                             #
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          thismean  = umean[[vname]]
          thismean  = cbind(thismean[,ndcycle],thismean)
          if (length(usdev[[vname]]) == 0){
@@ -1457,8 +1457,8 @@ for (place in myplaces){
             thissdev  = cbind(thissdev[,ndcycle],thissdev)
          }#end if
          mod.ylow  = thismean - thissdev
-         mod.yhigh = thismean + thissdev 
-         #---------------------------------------------------------------------------------# 
+         mod.yhigh = thismean + thissdev
+         #---------------------------------------------------------------------------------#
 
 
          #----- Find the plot range. ------------------------------------------------------#
@@ -1543,7 +1543,7 @@ for (place in myplaces){
                par(mar=c(4.1,4.6,4.1,2.1))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-               if (plotgrid){ 
+               if (plotgrid){
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                if (plotsd){
@@ -1739,7 +1739,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -1877,7 +1877,7 @@ for (place in myplaces){
             }#end for
          }#end if
          #----- Plot grid. ----------------------------------------------------------------#
-         if (plotgrid){ 
+         if (plotgrid){
             abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
          }#end if
          #----- Plot lines. ---------------------------------------------------------------#
@@ -1919,23 +1919,23 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
-      vnames       = themenow$vnam  
-      description  = themenow$desc  
+      vnames       = themenow$vnam
+      description  = themenow$desc
       lcolours     = themenow$colour
       llwd         = themenow$lwd
       if (emean.line){
          ltype        = "l"
       }else{
-         ltype        = themenow$type 
+         ltype        = themenow$type
       }#end if
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title
-      unit         = themenow$unit  
+      unit         = themenow$unit
       legpos       = themenow$legpos
       plotit       = themenow$emean
       ylimit.fix   = themenow$emean.lim
-   
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2057,7 +2057,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -2096,19 +2096,19 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
-      vnames       = themenow$vnam  
-      description  = themenow$desc  
+      vnames       = themenow$vnam
+      description  = themenow$desc
       lcolours     = themenow$colour
       llwd         = themenow$lwd
       ltype        = themenow$type
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title
-      unit         = themenow$unit  
+      unit         = themenow$unit
       legpos       = themenow$legpos
       plotit       = themenow$mmean
       ylimit.fix   = themenow$mmean.lim
-   
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2232,7 +2232,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -2271,18 +2271,18 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
-      vnames       = themenow$vnam  
-      description  = themenow$desc  
+      vnames       = themenow$vnam
+      description  = themenow$desc
       lcolours     = themenow$colour
       llwd         = themenow$lwd
       ltype        = themenow$type
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title
-      unit         = themenow$unit  
+      unit         = themenow$unit
       legpos       = themenow$legpos
-      plotit       = themenow$qmean 
-      if (plog){ 
+      plotit       = themenow$qmean
+      if (plog){
          xylog = "y"
       }else{
          xylog = ""
@@ -2399,7 +2399,7 @@ for (place in myplaces){
                   }#end for
                }#end if
                #----- Plot grid. ----------------------------------------------------------#
-               if (plotgrid){ 
+               if (plotgrid){
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                #----- Plot lines. ---------------------------------------------------------#
@@ -2994,7 +2994,7 @@ for (place in myplaces){
 
       this        = patchpdf[[vnam]]$edensity
       plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
-                             && any(is.finite(this$y),na.rm=TRUE) 
+                             && any(is.finite(this$y),na.rm=TRUE)
                              && any(is.finite(this$z),na.rm=TRUE) )
 
       #------------------------------------------------------------------------------------#
@@ -3055,7 +3055,7 @@ for (place in myplaces){
                      , colour.palette = get(vcscheme)
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
-                     , key.log        = plog 
+                     , key.log        = plog
                      , useRaster      = TRUE
                      , plot.axes      = {  axis( side   = 1
                                                , at     = whenplot8$levels
@@ -3118,7 +3118,7 @@ for (place in myplaces){
 
       this        = patchpdf[[vnam]]$mdensity
       plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
-                             && any(is.finite(this$y),na.rm=TRUE) 
+                             && any(is.finite(this$y),na.rm=TRUE)
                              && any(is.finite(this$z),na.rm=TRUE) )
 
       if (plotit){
@@ -3174,7 +3174,7 @@ for (place in myplaces){
                      , colour.palette = get(vcscheme)
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
-                     , key.log        = plog 
+                     , key.log        = plog
                      , useRaster      = TRUE
                      , plot.axes      = {  axis( side   = 1
                                                , at     = monat
@@ -3250,7 +3250,7 @@ for (place in myplaces){
 
 
       #------------------------------------------------------------------------------------#
-      #      Check whether to plot this 
+      #      Check whether to plot this
       #------------------------------------------------------------------------------------#
       if (plotit){
          cat("      - ",description,"...","\n")
@@ -3262,11 +3262,11 @@ for (place in myplaces){
          thisvnam                  = szpft[[vnam]][monbplot,,]
          thisvnam                  = thisvnam [,,pftuse]
          thisvnam                  = thisvnam [,-(ndbh+1),]
-         
+
          thisvnam[is.na(thisvnam)] = 0.
          thiswhen                  = datum$tomonth[monbplot]
          #---------------------------------------------------------------------------------#
-       
+
 
          #---------------------------------------------------------------------------------#
          #      Find the limits for the plots.  We use the same axis so it is easier to    #
@@ -3657,6 +3657,6 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
    }#end for npsas
    #---------------------------------------------------------------------------------------#
-}#end for places
+#}#end for places
 #==========================================================================================#
 #==========================================================================================#

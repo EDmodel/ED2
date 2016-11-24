@@ -77,7 +77,7 @@ contains
 
 
       if (is_liana(ipft)) then
-         dbh_crit(ipft) = dbh_crit_dep(cpatch)
+         dbh_crit(ipft) = h2dbh(cpatch%hite(1), 17)
       end if
 
 
@@ -86,18 +86,18 @@ contains
       !------------------------------------------------------------------------------------!
       select case (ibigleaf)
          case (0)
-            !----- Size- and age-structure (typical ED model). -------------------------------!
+            !----- Size- and age-structure (typical ED model). ----------------------------!
             if (is_tropical(ipft)) then
                mdbh = min(dbh,dbh_crit(ipft))
                select case (iallom)
                   case (0,1)
-                     !----- Default ED-2.1 allometry. -------------------------------------------!
+                     !----- Default ED-2.1 allometry. -------------------------------------!
                      dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
                   case default
-                     !----- Poorter et al. (2006) allometry. ------------------------------------!
+                     !----- Poorter et al. (2006) allometry. ------------------------------!
                      dbh2h = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
                end select
-            else !----- Temperate PFT allometry. ---------------------------------------------!
+            else !----- Temperate PFT allometry. ------------------------------------------!
                dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
             end if
 
@@ -148,10 +148,10 @@ contains
                mdbh = min(dbh,dbh_crit(ipft))
                select case (iallom)
                   case (0,1)
-                     !----- Default ED-2.1 allometry. -------------------------------------------!
+                     !----- Default ED-2.1 allometry. ----------------------------------------!
                      dbh2h_simple = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
                   case default
-                     !----- Poorter et al. (2006) allometry. ------------------------------------!
+                     !----- Poorter et al. (2006) allometry. ---------------------------------!
                      dbh2h_simple = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
                end select
             else !----- Temperate PFT allometry. ---------------------------------------------!
@@ -188,21 +188,31 @@ contains
          , b1Bs_large  & ! intent(in), lookup table
          , b2Bs_large  & ! intent(in), lookup table
          , is_grass    & ! intent(in)
-!         , is_liana    & ! intent(in)
+         , is_liana    & ! intent(in)
          , dbh_crit    ! ! intent(in), lookup table
       use ed_misc_coms, only : igrass      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
-            !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
-      !if (is_liana(ipft)) then
+      ! This is an experimental value for dead biomass. The Schnitzer article provide an
+      ! allometric equation to relate AGB to DBH. Since here we are dealing with DB instead
+      ! of AGB I also subtracted the leaf biomass from AGB. Bl dbh allometry is the same
+      ! used in size2bl from Putz. I have dropped the intercept though. This is because
+      ! otherwise one would have DB != when plant has DBH = 0. At this point one would have
+      ! dbh2bd = (exp(-1.484 + 2.657 * log(dbh)) - 0.0856 * dbh * dbh) / C2B
+      ! I fitted this equation dbh2bd with a form dbh2bd = a*(dbh)**b because otherwise the
+      ! formula is not invertible (we need bd2dbh). I got a pretty good fit with for
+      ! a= and b=
+
+      if (is_liana(ipft)) then
          !dbh2bd = 0.182 * log(dbh) ** 2.16 !@liana stuff
          !dbh2bd = 10. ** 0.12 * (0.785 * dbh * dbh) ** 0.91 !@ putz biotropica
-         !dbh2bd = exp(-1.484 + 2.657 * log(dbh)) !@ schnitzer biotropica (2006)
+         dbh2bd = 0.0962147 * dbh ** 2.69373!@ schnitzer biotropica (2006)
 
-      !else
+      else
 
          if (is_grass(ipft) .and. igrass==1) then
             dbh2bd = 0.0
@@ -211,7 +221,7 @@ contains
          else
             dbh2bd = b1Bs_large(ipft) / C2B * dbh ** b2Bs_large(ipft)
          end if
-      !end if
+      end if
       return
    end function dbh2bd
    !=======================================================================================!
@@ -236,7 +246,7 @@ contains
          , b1Bs_large  & ! intent(in), lookup table
          , b2Bs_large  & ! intent(in), lookup table
          , bdead_crit  & ! intent(in), lookup table
-!         , is_liana    & ! intent(in)
+         , is_liana    & ! intent(in)
          , C2B         ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -249,18 +259,18 @@ contains
       !------------------------------------------------------------------------------------!
       !    Decide which coefficients to use based on the critical bdead.                   !
       !------------------------------------------------------------------------------------!
-      !if (is_liana(ipft)) then
+      if (is_liana(ipft)) then
          !bd2dbh = (bdead / 0.182 ) ** (1 / 2.16) !@ liana
          !bd2dbh = sqrt((bdead * 10 ** -0.12) ** (1 / 0.91) * 1.27) !@ putz biotropica
-         !bd2dbh = exp((log(bdead) + 1.484) / 2.657) !@ schnitzer biotropica (2006)
+         bd2dbh = (bdead / 0.0962147) ** (1. / 2.69373) !@ schnitzer biotropica (2006)
       !          write(*,*) "bd2dbh=", bd2dbh
-      !else
+      else
          if (bdead <= bdead_crit(ipft)) then
             bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
          else
             bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
          end if
-      !end if
+      end if
       !------------------------------------------------------------------------------------!
 
       return
@@ -307,7 +317,7 @@ contains
       !------------------------------------------------------------------------------------!
 
       if (is_liana(ipft)) then
-         dbh_crit(ipft) = dbh_crit_dep(cpatch)
+         dbh_crit(ipft) = h2dbh(cpatch%hite(1), 17)
       end if
       !------------------------------------------------------------------------------------!
       !     Get the DBH, or potential DBH in case of grasses.                              !
@@ -329,8 +339,8 @@ contains
       !------------------------------------------------------------------------------------!
       if (is_liana(ipft)) then
                    !size2bl = 0.81 * log(dbh) - 0.57 !@ liana gerwing
-         my_temp_var = 0.0856 * dbh * dbh - 0.376 !@liana putz
-         size2bl = merge (my_temp_var, 0.1, my_temp_var > 0.1)
+         my_temp_var = 0.0856 / C2B * dbh * dbh - 0.376 !@liana putz
+         size2bl = merge (my_temp_var, 0.01, my_temp_var > 0.01)
       !          write(*,*) "size2bl=", size2bl
       else
          if (mdbh < dbh_adult(ipft)) then
@@ -484,7 +494,7 @@ contains
    !=======================================================================================!
    !      This function determines the height for grasses given their leaf biomass.        !
    !---------------------------------------------------------------------------------------!
-   real function bl2h(bleaf,ipft, cpatch)
+   real function bl2h(bleaf,ipft)
       use pft_coms,      only:  hgt_max    ! ! intent(in), lookup table
       use ed_state_vars, only:  patchtype  ! ! structure
       
@@ -496,16 +506,12 @@ contains
       !------------------------------------------------------------------------------------!
 
       !----- Use existing allometric equations to convert leaves to height. ---------------!
-      bl2h = min(hgt_max(ipft),dbh2h(ipft,bl2dbh(bleaf,ipft), cpatch))
+      bl2h = min(hgt_max(ipft),dbh2h_simple(ipft,bl2dbh(bleaf,ipft)))
 
       return
    end function bl2h
    !=======================================================================================!
    !=======================================================================================!
-
-
-
-
 
 
    !=======================================================================================!
@@ -757,40 +763,9 @@ contains
 
       bwood      = bsapwooda + (bdead * agf_bs(ipft))
       ed_biomass = bleaf + bwood
-      !if (is_liana(ipft)) then
-      !write (*,*) "ipft=" , ipft , "bsapwooda=" , bsapwooda, "bdead=" , bdead , "bleaf=" , &
-      !bleaf , "ed_biomass=", ed_biomass
-      !else
-      !write (*,*) "no"
-      !end if
 
       return
    end function ed_biomass
-   !=======================================================================================!
-   !=======================================================================================!
-
-   real function dbh_crit_dep(cpatch)
-      use ed_state_vars, only:  patchtype  ! ! structure
-      use pft_coms    , only : is_liana    ! ! intent(in)
-
-      implicit none
-      type(patchtype) , target :: cpatch
-      !----- Local variables --------------------------------------------------------------!
-      integer             :: ico
-      real                :: hgt_max
-      !------------------------------------------------------------------------------------!
-
-      hgt_max = 0
-      cohortloop: do ico = 1,cpatch%ncohorts
-         if (.not. is_liana(cpatch%pft(ico))) then
-            hgt_max    = max(hgt_max, cpatch%hite(ico))
-         end if
-      end do cohortloop
-      dbh_crit_dep    = h2dbh(hgt_max, 17)
-
-
-      return
-   end function dbh_crit_dep
 
 
    !=======================================================================================!

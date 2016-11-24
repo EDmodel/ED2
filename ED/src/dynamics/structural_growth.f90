@@ -1132,7 +1132,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    if (is_grass(ipft) .and. igrass == 1) then 
        !---- New grasses get dbh_effective and height from bleaf. -------------------------!
        cpatch%dbh(ico)  = bl2dbh(cpatch%bleaf(ico), ipft)
-       cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft, cpatch)
+       cpatch%hite(ico) = bl2h  (cpatch%bleaf(ico), ipft)
    else 
        !---- Trees and old grasses get dbh from bdead. ------------------------------------!
        cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
