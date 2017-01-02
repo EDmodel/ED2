@@ -231,6 +231,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    , radscr
    use soil_coms            , only : soil                 & ! intent(in)
                                    , soilcol              ! ! intent(in)
+   use pft_coms             , only : SLA                  ! ! intent(in)
    use consts_coms          , only : stefan               & ! intent(in)
                                    , lnexp_max            ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
@@ -320,8 +321,13 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    integer                                       :: ibuff
 
    integer                                       :: wlr, lvis, lnir
-   real    ,allocatable ,dimension(:)            :: ltv,lrv, alp
-   real    ,allocatable, dimension(:)            :: ltn,lrn, aln
+   integer                                       :: lpft, ii
+   integer ,allocatable ,dimension(:)            :: npft
+   real    ,allocatable ,dimension(:,:)          :: ltv,lrv
+   real    ,allocatable, dimension(:,:)          :: ltn,lrn
+   real    ,allocatable, dimension(:)            :: alp, aln
+   real    ,allocatable ,dimension(:)            :: wrv, srv
+   real    ,allocatable ,dimension(:)            :: wrn, srn
    !----- External function. --------------------------------------------------------------!
    real            , external                    :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
@@ -330,36 +336,75 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
    open(20,file='lengths.dat')
    read(20,*) lvis, lnir
+   read(20,*) lpft
+   allocate(npft(lpft))
+   
+   do ii = 1, lpft
+      read(20,*) npft(ii)
+   end do
    close(20)
 
-   allocate(ltv(lvis))
-   allocate(lrv(lvis))
+   allocate(ltv(lvis,lpft))
+   allocate(lrv(lvis,lpft))
    allocate(alp(lvis))
+   allocate(wrv(lvis))
+   allocate(srv(lvis))
 
-   allocate(ltn(lnir))
-   allocate(lrn(lnir))
+   allocate(ltn(lnir,lpft))
+   allocate(lrn(lnir,lpft))
    allocate(aln(lnir))
+   allocate(wrn(lnir))
+   allocate(srn(lnir))
 
    ltv = 0.
    ltn = 0.
    lrv = 0.
    lrn = 0.
+   wrv = 0.
+   wrn = 0.
+   srv = 0.
+   srn = 0.
 
    open(21,file='trans_par.dat')
-   read(21,*), ltv
+   do ii = 1, lpft
+      read(21,*), ltv(:,ii)
+   end do
    close(21)
 
    open(22,file='reflect_par.dat')
-   read(22,*), lrv
+   do ii = 1, lpft
+      read(22,*), lrv(:,ii)
+   end do
    close(22)
 
    open(23,file='trans_nir.dat')
-   read(23,*), ltn
+   do ii = 1, lpft
+      read(23,*), ltn(:,ii)
+   end do
    close(23)
 
    open(24,file='reflect_nir.dat')
-   read(24,*), lrn
+   do ii = 1, lpft
+      read(24,*), lrn(:,ii)
+   end do
    close(24)
+
+   open(25,file='wood_reflect_par.dat')
+   read(25,*), wrv
+   close(25)
+
+!   open(26,file='wood_reflect_nir.dat')
+!   read(26,*), wrn
+!   close(26)
+
+   open(27,file='soil_reflect_par.dat')
+   read(27,*), srv
+   close(27)
+
+!   open(28,file='soil_reflect_nir.dat')
+!   read(28,*), srn
+!   close(28)
+
 
    !---------------------------------------------------------------------------------------!
    !     Light extinction coefficients.   These are found following CLM technical manual,  !
@@ -511,6 +556,8 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                radscr(ibuff)%pft_array(cohort_count) = cpatch%pft(ico)
 
                cpatch%bleaf(ico) = size2bl(cpatch%dbh(ico),cpatch%hite(ico), cpatch%pft(ico))
+
+               cpatch%sla(ico) = SLA(cpatch%pft(ico))
 
                call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
@@ -927,8 +974,16 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
             do wlr = 1, size(lrv)
 
-               leaf_reflect_vis = lrv(wlr)
-               leaf_trans_vis = ltv(wlr)
+               do ii = 1, lpft
+                  leaf_reflect_vis(npft(ii)) = lrv(wlr,ii)
+                  leaf_trans_vis(npft(ii)) = ltv(wlr,ii)
+               end do
+
+               wood_reflect_vis = wrv(wlr)
+               wood_trans_vis = 0.               
+
+               albedo_ground_par = srv(wlr)
+
 
                !---------------------------------------------------------------------------------------!
                !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
@@ -1128,8 +1183,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
             do wlr = 1, size(lrn)
 
-               leaf_reflect_nir = lrn(wlr)
-               leaf_trans_nir = ltn(wlr)
+               do ii = 1, lpft
+                  leaf_reflect_nir(npft(ii)) = lrn(wlr,ii)
+                  leaf_trans_nir(npft(ii)) = ltn(wlr,ii)
+               end do
 
                !---------------------------------------------------------------------------------------!
                !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
