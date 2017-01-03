@@ -298,6 +298,18 @@ if (is.null(lonlat)){
 
 
    #---------------------------------------------------------------------------------------#
+   #    Fix the initial year in case it was a negative number.                             #
+   #---------------------------------------------------------------------------------------#
+   if ("yeara" %in% names(joborder)){
+      joborder$yeara = ifelse( test = joborder$yeara > 0
+                             , yes  = joborder$yeara
+                             , no   = poitout$yeara + 5 + joborder$yeara
+                             )#end ifelse
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
    #     Replace other POI-specific variables as long as they are not to be specified by   #
    # the user settings.                                                                    #
    #---------------------------------------------------------------------------------------#
@@ -307,9 +319,9 @@ if (is.null(lonlat)){
              )#end keep
    poidata = poitout[,keep]
    npois   = ncol(poidata)
-   if (npois > 0){
-      for (p in 1:npois) joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
-   }#end if
+   for (p in sequence(npois)){
+      joborder[[names(poidata)[p]]] = poidata[[names(poidata)[p]]]
+   }#end for (p in sequence(npois))
    #---------------------------------------------------------------------------------------#
 
 
