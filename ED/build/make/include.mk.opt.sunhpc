@@ -24,9 +24,10 @@ BASE=$(ED_ROOT)/build/
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
-HDF5_PATH=/prj/prjidfca/marcosl/Util/hdf5-1.8.14/intel
+ZLIB_PATH=/prj/prjidfca/marcosl/Util/zlib-1.2.8/intel
+HDF5_PATH=/prj/prjidfca/marcosl/Util/hdf5-1.8.17/intel
 HDF5_INCS=-I$(HDF5_PATH)/include
-HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_LIBS=-lm -L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
 
 
@@ -118,10 +119,10 @@ ifeq ($(KIND_COMP),C)
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -check all-fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check  \
+   F_OPTS= -FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check \
            -implicitnone -assume byterecl -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive -check all-fpe0 -no-ftz -traceback -ftrapuv              \
+   LOADER_OPTS=-FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv             \
                -fp-stack-check -implicitnone -assume byterecl
    #---------------------------------------------------------------------------------------#
 endif

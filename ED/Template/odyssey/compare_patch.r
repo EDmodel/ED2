@@ -13,9 +13,9 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
-here    = getwd()                               #   Current directory
-srcdir  = "/n/home00/mlongo/util/Rsc"           #   Script directory
-ibackground    = 0                              # Make figures compatible to background
+here        = getwd()                           #   Current directory
+srcdir      = "/n/home00/mlongo/util/Rsc"       #   Script directory
+ibackground = 0                                 # Make figures compatible to background
                                                 # 0 -- white
                                                 # 1 -- black
                                                 # 2 -- dark grey
@@ -35,8 +35,10 @@ rdata.suffix = "patches_ed22.RData"
 
 
 #----- Default settings. ------------------------------------------------------------------#
-emean.yeara = 2002  # First year
-emean.yearz = 2005  # Last year
+emean.yeara = 2008  # First year
+emean.yearz = 2010  # Last year
+eshow.yeara = 2009  # First year to show
+eshow.yearz = 2009  # First year to show
 #------------------------------------------------------------------------------------------#
 
 
@@ -253,8 +255,8 @@ compvar[[ n]] = list( vnam     = "phap.sms"
 # verbose -- long description (for titles)                                                 #
 # colour  -- colour to represent this simulation                                           #
 #------------------------------------------------------------------------------------------#
-sim.suffix  = "irad01_lfabs0910_iunder01"
-sim.struct  = c(ctrl = "ihrz00", test = "ihrz02")
+sim.suffix  = "imetrad05"
+sim.struct  = c(ctrl = "ihrzrad00", test = "ihrzrad02")
 #------------------------------------------------------------------------------------------#
 
 
@@ -382,12 +384,25 @@ tratio.fun     = function(tp,w) ifelse(test =  w %!=% 0., yes = tp/w, no = NA)
 #------------------------------------------------------------------------------------------#
 #      Create all output directories, separated by format.                                 #
 #------------------------------------------------------------------------------------------#
-outymean = file.path(outroot,"tseries_ymean")
-outemean = file.path(outroot,"tseries_emean")
+outsimul = file.path(outroot,sim.suffix)
+outymean = file.path(outsimul,"tseries_ymean")
+outemean = file.path(outsimul,"tseries_emean")
 if (! file.exists(outroot )) dir.create(outroot )
+if (! file.exists(outsimul)) dir.create(outsimul)
 if (! file.exists(outymean)) dir.create(outymean)
 if (! file.exists(outemean)) dir.create(outemean)
 #------------------------------------------------------------------------------------------#
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Find limits for final display.                                                      #
+#------------------------------------------------------------------------------------------#
+when.show = chron(paste(c(1,12),c(1,1),c(eshow.yeara,eshow.yearz),sep="/"))
+#------------------------------------------------------------------------------------------#
+
+
 
 
 
@@ -756,19 +771,21 @@ for (s in sequence(nsites)){
 
       #------------------------------------------------------------------------------------#
       #     Find plot limits for time.                                                     #
-      #------------------------------------------------------------------------------------#
-      em.xlimit = pretty.xylim(u=model$tomonth)
-      ym.xlimit = pretty.xylim(u=model$toyear)
+      #------------------------------------------------------------------------------------#      
+      wshow     = model$tomonth %in% when.show
+      em.xlimit = pretty.xylim(u=model$tomonth[wshow])
+      ym.xlimit = pretty.xylim(u=model$toyear [wshow])
       em.pretty = pretty.time (when=em.xlimit,n=5)
       #------------------------------------------------------------------------------------#
-
 
 
       #------------------------------------------------------------------------------------#
       #     Find range for each patch.                                                     #
       #------------------------------------------------------------------------------------#
-      em.yrange = apply(X=emean,MARGIN=2,FUN=range,finite=TRUE)
-      ym.yrange = apply(X=ymean,MARGIN=2,FUN=range,finite=TRUE)
+      eshow     = chron(dimnames(emean)[[1]])      %wr% when.show
+      yshow     = as.numeric(dimnames(ymean)[[1]]) %wr% numyears(when.show)
+      em.yrange = apply(X=emean[eshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
+      ym.yrange = apply(X=ymean[yshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
       #------------------------------------------------------------------------------------#
 
 
@@ -899,7 +916,12 @@ for (s in sequence(nsites)){
             title(main=le.emean,ylab=ley,cex.main=1.0)
             for (l in sequence(nlight)){
                #----- Load variables. -----------------------------------------------------#
-               lines(x=tomonth,y=emean[,p,l],col=light.col[l],lwd=1.5,type="l")
+               lines( x    = tomonth[eshow]
+                    , y    = emean  [eshow,p,l]
+                    , col  = light.col[l]
+                    , lwd  = 1.5
+                    , type = "l"
+                    )#end lines
                #---------------------------------------------------------------------------#
             }#end for (s in sequence(nsimul))
             box()
@@ -1003,7 +1025,12 @@ for (s in sequence(nsites)){
             axis(side=2,las=1)
             title(main=le.ymean,ylab=ley,cex.main=1.0)
             for (l in sequence(nlight)){
-               lines(x=toyear,y=ymean[,p,l],col=light.col[l],lwd=1.5,type="l")
+               lines( x    = toyear[yshow]
+                    , y    = ymean[yshow,p,l]
+                    , col  = light.col[l]
+                    , lwd  = 1.5
+                    , type = "l"
+                    )#end lines
             }#end for (s in sequence(nsimul))
             box()
             #------------------------------------------------------------------------------#

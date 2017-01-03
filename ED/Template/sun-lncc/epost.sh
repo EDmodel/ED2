@@ -7,7 +7,9 @@ thisqueue="linux.q"                   # ! Queue where jobs should be submitted
 joborder="${here}/joborder.txt"         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
 outroot=""
-submit="y"       # y = Submit the script; n = Copy the script
+submit="l"       # y -- Submit the script to the queue
+                 # l -- Run the script locally
+                 # n -- Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
 useperiod="a"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # "a" -- All period
@@ -32,7 +34,7 @@ outform="c(\"pdf\")"           # x11 - On screen (deprecated on shell scripts)
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
 #----- DBH classes. -----------------------------------------------------------------------#
-idbhtype=2                     # Type of DBH class
+idbhtype=4                     # Type of DBH class
                                # 1 -- Every 10 cm until 100cm; > 100cm
                                # 2 -- 0-10; 10-20; 20-35; 35-55; 55-80; > 80 (cm)
                                # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
@@ -54,6 +56,9 @@ oldgrowth="FALSE"
 rscpath="${HOME}/EDBRAMS/R-utils"
 #----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
 initrc="${HOME}/.bashrc"
+#----- Maximum number of jobs . -----------------------------------------------------------#
+nmaxjob=40
+resources="mem=2Gb"
 #------------------------------------------------------------------------------------------#
 
 
@@ -88,8 +93,8 @@ initrc="${HOME}/.bashrc"
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-#rscripts="plot_yearly.r"
-rscripts="yearly_ascii.r"
+rscripts="plot_yearly.r"
+#rscripts="yearly_ascii.r"
 #rscripts="plot_monthly.r"
 #rscripts="plot_census.r" 
 #rscripts="plot_ycomp.r"
@@ -483,6 +488,9 @@ do
       elif [ "x${submit}" == "xy" ] || [ "x${submit}" == "xY" ]
       then
          echo "${ffout} - Submitting script ${script} for polygon: ${polyname}..."
+      elif [ "x${submit}" == "xl" ] || [ "x${submit}" == "xL" ]
+      then
+         echo "${ffout} - Running script ${script} for polygon: ${polyname}..."
       else
          echo "${ffout} - Copying script ${script} to polygon: ${polyname}..."
       fi
@@ -923,16 +931,18 @@ do
       #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
       # Run it several times until it is complete.                                         #
       #------------------------------------------------------------------------------------#
-      sbatchout="${here}/${polyname}/${epostlsf}"
+      sbatchout="${here}/${polyname}"
       epostnow="${here}/${polyname}/${epostsh}"
       complete="${here}/${polyname}/eval_load_complete.txt"
       rm -f ${epostnow}
-      echo "#$ -S /bin/bash"                > ${epostnow}
-      echo "#$ -q ${thisqueue}"            >> ${epostnow}
-      echo "#$ -o ${sbatchout}"            >> ${epostnow}
-      echo "#$ -N ${epostjob}"             >> ${epostnow}
-      echo "#$ -j y"                       >> ${epostnow}
-      echo "#$ -r n"                       >> ${epostnow}
+      echo "#!/bin/bash"                    > ${epostnow}
+      echo "#PBS -S /bin/bash"             >> ${epostnow}
+      echo "#PBS -q ${thisqueue}"          >> ${epostnow}
+      echo "#PBS -o ${sbatchout}"          >> ${epostnow}
+      echo "#PBS -N ${epostjob}"           >> ${epostnow}
+      echo "#PBS -j oe"                    >> ${epostnow}
+      echo "#PBS -r n"                     >> ${epostnow}
+      echo "#PBS -l ${resources}"          >> ${epostnow}
       echo " "                             >> ${epostnow}
       echo ". ${initrc}"                   >> ${epostnow}
 
@@ -974,17 +984,17 @@ do
          #---------------------------------------------------------------------------------#
          #     Make sure the job won't submit the hard maximum limit.                      #
          #---------------------------------------------------------------------------------#
-         njobs=$(qstat | wc -l)
-         if [ ${njobs} -ge 130 ]
+         njobs=$(qjobs -n | wc -l)
+         if [ ${njobs} -ge ${nmaxjob} ]
          then
             echo "        + Queue is full... wait until there is room to submit job..."
             nwait=0
-            while [ ${njobs} -ge 130 ]
+            while [ ${njobs} -ge ${nmaxjob} ]
             do
                let nwait=${nwait}+10
                echo "        - Waiting before trying again... (${nwait} seconds)..."
                sleep 10
-               njobs=$(qstat | wc -l)
+               njobs=$(qjobs -n | wc -l)
             done
          fi
          #---------------------------------------------------------------------------------#
@@ -1014,6 +1024,9 @@ do
              fi
          done
          #---------------------------------------------------------------------------------#
+      elif [ "x${submitnow}" == "xl" ] || [ "x${submitnow}" == "xL" ]
+      then
+         ${comm}
       fi
       #------------------------------------------------------------------------------------#
    done

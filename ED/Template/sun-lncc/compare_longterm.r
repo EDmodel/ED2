@@ -13,14 +13,14 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
-here        = getwd()                           #   Current directory
-srcdir      = "/prj/prjidfca/marcosl/Util/Rsc"  #   Script directory
-ibackground = 0                                 # Make figures compatible to background
+here    = getwd()                               #   Current directory
+srcdir  = "/prj/prjidfca/marcosl/Util/Rsc"      #   Script directory
+ibackground    = 0                              # Make figures compatible to background
                                                 # 0 -- white
                                                 # 1 -- black
                                                 # 2 -- dark grey
 #----- Output directory -------------------------------------------------------------------#
-outroot = file.path(here,paste0("longterm_comp_ibg",sprintf("%2.2i",ibackground)))
+outroot = file.path(here,"longterm_comp")
 #------------------------------------------------------------------------------------------#
 
 
@@ -35,8 +35,8 @@ rdata.suffix = "longterm_ed22.RData"
 
 
 #----- Default settings. ------------------------------------------------------------------#
-emean.yeara = 2002  # First year
-emean.yearz = 2005  # Last year
+emean.yeara = 2009  # First year
+emean.yearz = 2009  # Last year
 #------------------------------------------------------------------------------------------#
 
 
@@ -53,7 +53,7 @@ pdens.log   = c(FALSE,TRUE)[1] # Plot density function as logarithm?
 #    2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)                                      #
 #    3 -- 0-10; 10-35; 35-55; > 55 (cm)                                                    #
 #------------------------------------------------------------------------------------------#
-idbh.type = 3
+idbh.type = 2
 #------------------------------------------------------------------------------------------#
 
 
@@ -85,91 +85,12 @@ eort  = "t"
 n     = 0
 sites = list()
 n          = n + 1
-sites[[n]] = list( iata = "gyf"
-                 , desc = "Paracou"
-                 , pch  = 2
-                 , col  = "#3B24B3"
-                 , fg   = "#160959"
-                 , drya = "08/31"
-                 , dryz = "11/05"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "s67"
-                 , desc = "Santarem km 67"
-                 , pch  =  5
-                 , col  = "#A3CC52"
-                 , fg   = "#4B6614"
-                 , drya = "07/13"
-                 , dryz = "11/21"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "pdg"
-                 , desc = "Pe-de-Gigante"
-                 , pch  = 13
-                 , col  = "#990F0F"
-                 , fg   = "#4D0404"
-                 , drya = "04/17"
-                 , dryz = "09/26"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "rja"
-                 , desc = "Rebio Jaru"
-                 , pch  =  1
-                 , col  = "#306614"
-                 , fg   = "#143305"
-                 , drya = "05/13"
-                 , dryz = "09/09"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "m34"
-                 , desc = "Manaus K34"
-                 , pch  =  6
-                 , col  = "#2996CC"
-                 , fg   = "#0A4766"
-                 , drya = "07/04"
-                 , dryz = "10/01"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "pnz"
-                 , desc = "Petrolina"
-                 , pch  =  4
-                 , col  = "#B49ED2"
-                 , fg   = "#7D6E93"
-                 , drya = "03/18"
-                 , dryz = "01/16"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "ban"
-                 , desc = "Bananal"
-                 , pch  =  8
-                 , col  = "#F5C858"
-                 , fg   = "#AB8C3D"
-                 , drya = "05/10"
-                 , dryz = "09/29"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "bsb"
-                 , desc = "Brasilia"
-                 , pch  =  9
-                 , col  = "#E65C17"
-                 , fg   = "#732A06"
-                 , drya = "04/19"
-                 , dryz = "10/02"
-                 )#end list
-n          = n + 1
-sites[[n]] = list( iata = "nat"
-                 , desc = "Natal"
-                 , pch  =  0
-                 , col  = "#00F3FB"
-                 , fg   = "#00AAAF"
-                 , drya = "08/19"
-                 , dryz = "02/07"
-                 )#end list
-n          = n + 1
 sites[[n]] = list( iata = "tnf"
                  , desc = "Tapajos National Forest"
                  , pch  =  5
                  , col  = "#A3CC52"
+                 , lty  = "solid"
+                 , lwd  = 2.0
                  , fg   = "#4B6614"
                  , drya = "07/13"
                  , dryz = "11/21"
@@ -185,23 +106,45 @@ use.sites  = "tnf"
 # name -- the suffix of the simulations (list all combinations.                            #
 # desc -- description (for legends)                                                        #
 # verbose -- long description (for titles)                                                 #
-# colour  -- colour to represent this simulation                                           #
+# colour  -- colour to represent each simulation.                                          #
+# ltype   -- line type to represent each simulation.                                       #
+# lwidth  -- line width to represent each simulation.                                      #
 #------------------------------------------------------------------------------------------#
-sim.struct  = list( name        = c("ihrz00_irad01_ccislp010"
-                                   ,"ihrz02_irad01_ccislp010"
-                                   ,"ihrz02_irad01_ccislp030"
+sim.struct  = list( name        = c("ihrzrad00_imetrad03"
+                                   ,"ihrzrad02_imetrad03"
+                                   ,"ihrzrad00_imetrad04"
+                                   ,"ihrzrad02_imetrad04"
+                                   ,"ihrzrad00_imetrad02"
+                                   ,"ihrzrad02_imetrad02"
+                                   ,"ihrzrad00_imetrad05"
+                                   ,"ihrzrad02_imetrad05"
                                    )#end c
-                  , desc        = c("Horizontal OFF"
-                                   ,"Original CCI correction"
-                                   ,"Enhanced CCI correction"
+                  , desc        = c("Horiz. OFF; diffuse"
+                                   ,"Horiz. ON ; diffuse"
+                                   ,"Horiz. OFF; direct"
+                                   ,"Horiz. ON ; direct"
+                                   ,"Horiz. OFF; WN1985"
+                                   ,"Horiz. ON ; WN1985"
+                                   ,"Horiz. OFF; B2008"
+                                   ,"Horiz. ON ; B2008"
                                    )#end c
-                  , verbose     = c("Horizontal OFF"
-                                   ,"Original CCI correction"
-                                   ,"Enhanced CCI correction"
+                  , verbose     = c("Horizontal OFF; 100% diffuse"
+                                   ,"Horizontal ON ; 100% diffuse"
+                                   ,"Horizontal OFF; 100% direct"
+                                   ,"Horizontal ON ; 100% direct"
+                                   ,"Horizontal OFF; Weiss & Norman (1985)"
+                                   ,"Horizontal ON ; Weiss & Norman (1985)"
+                                   ,"Horizontal OFF; Boland et al. (2008)"
+                                   ,"Horizontal ON ; Boland et al. (2008)"
                                    )#end c
-                  , colour     = c("#3B24B3","#2996CC","#E65C17")
-                  , fgcol      = c("#160959","#0A4766","#732A06")
-                  , age.interp = c(     TRUE,     TRUE,     TRUE)
+                  , colour     = c("#3B24B3","#3B24B3","#990F0F","#990F0F"
+                                  ,"#2996CC","#2996CC","#A3CC52","#A3CC52"
+                                  )#end c
+                  , ltype      = c("solid","twodash","solid","twodash"
+                                  ,"solid","twodash","solid","twodash"
+                                  )#end c
+                  , lwidth     = rep(2.0 ,timed=8)
+                  , age.interp = rep(TRUE,times=8)
                   )#end list
 #----- List the default simulation. -------------------------------------------------------#
 sim.default = 1
@@ -962,8 +905,8 @@ simul.key   = sim.struct$name
 simleg.key  = sim.struct$desc
 #---- Create the colours and line type for legend. ----------------------------------------#
 simcol.key  = sim.struct$colour
-simfgc.key  = sim.struct$fgcol
-simlty.key  = rep("solid",times=n.sim)
+simlty.key  = sim.struct$ltype
+simlwd.key  = sim.struct$lwidth
 simcex.key  = rep(2.0    ,times=n.sim)
 simain.key  = sim.struct$age.interp
 #------------------------------------------------------------------------------------------#
@@ -976,8 +919,8 @@ simain.key  = sim.struct$age.interp
 simul       = data.frame( name             = simul.key
                         , desc             = simleg.key
                         , colour           = simcol.key
-                        , fgcol            = simfgc.key
                         , lty              = simlty.key
+                        , lwd              = simlwd.key
                         , cex              = simcex.key
                         , age.interp       = simain.key
                         , stringsAsFactors = FALSE
@@ -1064,7 +1007,7 @@ height0 = size0$height
 width0  = size0$width
 xsize   = plotsize(proje=FALSE,paper=paper,extendfc="lat",extfactor=f.ext)
 #----- Scale for monthly and annual means. ------------------------------------------------#
-eywidth  = width0  * n.sim
+eywidth  = width0  * nsimul
 eyheight = height0
 eysize   = plotsize( proje     = FALSE
                    , stdheight = eyheight
@@ -2197,21 +2140,21 @@ if (plot.ts.emean){
                                , paste0("ts_emean-",this.vnam,"-",iata,".",outform[o])
                                )#end file.path
             if (outform[o] %in% "x11"){
-               X11(width=ssize$width,height=ssize$height,pointsize=col.use)
+               X11(width=xsize$width,height=xsize$height,pointsize=col.use)
             }else if (outform[o] %in% "quartz"){
-               quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+               quartz(width=xsize$width,height=xsize$height,pointsize=col.use)
             }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+               png(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent")
             }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+               tiff(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=ssize$width,height=ssize$height
-                         ,pointsize=ptsz,paper=ssize$paper)
+               postscript(file=fichier,width=xsize$width,height=xsize$height
+                         ,pointsize=ptsz,paper=xsize$paper)
             }else if(outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
-                  ,pointsize=ptsz,paper=ssize$paper)
+               pdf(file=fichier,onefile=FALSE,width=xsize$width,height=xsize$height
+                  ,pointsize=ptsz,paper=xsize$paper)
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -2229,9 +2172,11 @@ if (plot.ts.emean){
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x       = "center"
                   , inset   = 0.0
-                  , legend  = simleg.key
-                  , fill    = simcol.key
-                  , border  = simcol.key
+                  , legend  = simul$desc
+                  , col     = simul$colour
+                  , lty     = simul$lty
+                  , lwd     = simul$lwd
+                  , ncol    = min(4,pretty.box(n=length(nsimul))$ncol)
                   , xpd     = TRUE
                   , bty     = "n"
                   , cex     = 0.7
@@ -2254,7 +2199,13 @@ if (plot.ts.emean){
                model    = res[[iata]][[sname]]
                tomonth  = model$tomonth
                emean    = model[[this.vnam]]$emean
-               lines(x=tomonth,y=emean,col=simcol.key[s],lwd=1.5,type="l")
+               lines( x    = tomonth
+                    , y    = emean
+                    , col  = simul$colour[s]
+                    , lty  = simul$lty   [s]
+                    , lwd  = simul$lwd   [s]
+                    , type = "l"
+                    )#end lines
                #---------------------------------------------------------------------------#
             }#end for (s in sequence(nsimul))
             box()
@@ -2395,21 +2346,21 @@ if (plot.ts.ymean){
                                , paste0("ts_ymean-",this.vnam,"-",iata,".",outform[o])
                                )#end file.path
             if (outform[o] %in% "x11"){
-               X11(width=ssize$width,height=ssize$height,pointsize=col.use)
+               X11(width=xsize$width,height=xsize$height,pointsize=col.use)
             }else if (outform[o] %in% "quartz"){
-               quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
+               quartz(width=xsize$width,height=xsize$height,pointsize=col.use)
             }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+               png(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent")
             }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
+               tiff(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=ssize$width,height=ssize$height
-                         ,pointsize=ptsz,paper=ssize$paper)
+               postscript(file=fichier,width=xsize$width,height=xsize$height
+                         ,pointsize=ptsz,paper=xsize$paper)
             }else if(outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
-                  ,pointsize=ptsz,paper=ssize$paper)
+               pdf(file=fichier,onefile=FALSE,width=xsize$width,height=xsize$height
+                  ,pointsize=ptsz,paper=xsize$paper)
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -2427,9 +2378,11 @@ if (plot.ts.ymean){
             plot.window(xlim=c(0,1),ylim=c(0,1))
             legend( x       = "center"
                   , inset   = 0.0
-                  , legend  = simleg.key
-                  , fill    = simcol.key
-                  , border  = simcol.key
+                  , legend  = simul$desc
+                  , col     = simul$colour
+                  , lty     = simul$lty
+                  , lwd     = simul$lwd
+                  , ncol    = min(4,pretty.box(n=length(nsites))$ncol)
                   , xpd     = TRUE
                   , bty     = "n"
                   , cex     = 0.7
@@ -2452,7 +2405,13 @@ if (plot.ts.ymean){
                model    = res[[iata]][[sname]]
                toyear   = model$toyear
                ymean    = model[[this.vnam]]$ymean
-               lines(x=toyear,y=ymean,col=simcol.key[s],lwd=1.5,type="l")
+               lines( x    = toyear
+                    , y    = ymean
+                    , col  = simul$colour[s]
+                    , lwd  = simul$lwd   [s]
+                    , lty  = simul$lty   [s]
+                    , type = "l"
+                    )#end lines
                #---------------------------------------------------------------------------#
             }#end for (s in sequence(nsimul))
             box()
@@ -2637,13 +2596,14 @@ if (plot.ts.pft){
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x       = "center"
                      , inset   = 0.0
-                     , legend  = simleg.key
-                     , fill    = simcol.key
-                     , border  = simcol.key
-                     , ncol    = min(3,pretty.box(n=n.sim)$ncol)
+                     , legend  = simul$desc
+                     , col     = simul$col
+                     , lty     = simul$lty
+                     , lwd     = simul$lwd
+                     , ncol    = min(4,pretty.box(n=nsimul)$ncol)
                      , title   = expression(bold("Simulation"))
                      , xpd     = TRUE
-                     , bty     = "o"
+                     , bty     = "n"
                      , cex     = 0.8
                      )#end legend
                #---------------------------------------------------------------------------#
@@ -2672,8 +2632,9 @@ if (plot.ts.pft){
 
                      lines( x    = toyear
                           , y    = ym.szpft[,nsize,f]
-                          , col  = simcol.key[s]
-                          , lwd  = 2.0
+                          , col  = simul$colour[s]
+                          , lwd  = simul$lwd   [s]
+                          , lty  = simul$lty   [s]
                           , type = "l"
                           )#end lines
                   }#end for (s in sequence(nsimul))
@@ -2783,10 +2744,10 @@ if (plot.ts.pft){
                   , legend  = sites$iata
                   , fill    = sites$col
                   , border  = sites$col
-                  , ncol    = min(3,pretty.box(n=nsites)$ncol)
+                  , ncol    = min(4,pretty.box(n=nsites)$ncol)
                   , title   = expression(bold("Sites"))
                   , xpd     = TRUE
-                  , bty     = "o"
+                  , bty     = "n"
                   , cex     = 0.8
                   )#end legend
             #------------------------------------------------------------------------------#
@@ -3029,13 +2990,14 @@ if (plot.ts.dbh){
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x       = "center"
                      , inset   = 0.0
-                     , legend  = simleg.key
-                     , fill    = simcol.key
-                     , border  = simcol.key
-                     , ncol    = min(3,pretty.box(n=n.sim)$ncol)
+                     , legend  = simul$desc
+                     , col     = simul$colour
+                     , lwd     = simul$lwd
+                     , lty     = simul$lty
+                     , ncol    = min(4,pretty.box(n=nsimul)$ncol)
                      , title   = expression(bold("Simulation"))
                      , xpd     = TRUE
-                     , bty     = "o"
+                     , bty     = "n"
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -3063,8 +3025,9 @@ if (plot.ts.dbh){
 
                      lines( x    = toyear
                           , y    = ym.szpft[,f,nsize]
-                          , col  = simcol.key[s]
-                          , lwd  = 2.0
+                          , col  = simul$colour[s]
+                          , lwd  = simul$lwd   [s]
+                          , lty  = simul$lty   [s]
                           , type = "l"
                           )#end lines
                   }#end for (s in sequence(nsimul))
@@ -3177,10 +3140,10 @@ if (plot.ts.dbh){
                   , legend  = sites$iata
                   , fill    = sites$col
                   , border  = sites$col
-                  , ncol    = min(3,pretty.box(n=nsites)$ncol)
+                  , ncol    = min(4,pretty.box(n=nsites)$ncol)
                   , title   = expression(bold("Sites"))
                   , xpd     = TRUE
-                  , bty     = "o"
+                  , bty     = "n"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -3426,13 +3389,14 @@ if (plot.mm.pft){
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x       = "center"
                      , inset   = 0.0
-                     , legend  = simleg.key
-                     , fill    = simcol.key
-                     , border  = simcol.key
-                     , ncol    = min(3,pretty.box(n=n.sim)$ncol)
+                     , legend  = simul$desc
+                     , col     = simul$colour
+                     , lty     = simul$lty
+                     , lwd     = simul$lwd
+                     , ncol    = min(4,pretty.box(n=nsimul)$ncol)
                      , title   = expression(bold("Simulation"))
                      , xpd     = TRUE
-                     , bty     = "o"
+                     , bty     = "n"
                      , cex     = 0.8
                      )#end legend
                #---------------------------------------------------------------------------#
@@ -3460,8 +3424,9 @@ if (plot.mm.pft){
 
                      lines( x    = xat
                           , y    = mm.szpft[,nsize,f]
-                          , col  = simcol.key[s]
-                          , lwd  = 2.0
+                          , col  = simul$colour[s]
+                          , lwd  = simul$lwd   [s]
+                          , lty  = simul$lty   [s]
                           , type = "l"
                           )#end lines
                   }#end for (s in sequence(nsimul))
@@ -3567,12 +3532,13 @@ if (plot.mm.pft){
             legend( x       = "center"
                   , inset   = 0.0
                   , legend  = sites$iata
-                  , fill    = sites$col
-                  , border  = sites$col
-                  , ncol    = min(3,pretty.box(n=nsites)$ncol)
+                  , col     = sites$col
+                  , lty     = sites$lty
+                  , lwd     = sites$lwd
+                  , ncol    = min(4,pretty.box(n=nsites)$ncol)
                   , title   = expression(bold("Sites"))
                   , xpd     = TRUE
-                  , bty     = "o"
+                  , bty     = "n"
                   , cex     = 0.8
                   )#end legend
             #------------------------------------------------------------------------------#
@@ -3606,7 +3572,8 @@ if (plot.mm.pft){
                   lines( x    = xat
                        , y    = mm.szpft[,nsize,f]
                        , col  = sites$col[p]
-                       , lwd  = 2.0
+                       , lty  = sites$lty[p]
+                       , lwd  = sites$lwd[p]
                        , type = "l"
                        )#end lines
                }#end for (s in sequence(nsimul))
@@ -3819,13 +3786,14 @@ if (plot.mm.dbh){
                plot.window(xlim=c(0,1),ylim=c(0,1))
                legend( x       = "center"
                      , inset   = 0.0
-                     , legend  = simleg.key
-                     , fill    = simcol.key
-                     , border  = simcol.key
-                     , ncol    = min(3,pretty.box(n=n.sim)$ncol)
+                     , legend  = simul$desc
+                     , col     = simul$colour
+                     , lty     = simul$lty
+                     , lwd     = simul$lwd
+                     , ncol    = min(4,pretty.box(n=nsimul)$ncol)
                      , title   = expression(bold("Simulation"))
                      , xpd     = TRUE
-                     , bty     = "o"
+                     , bty     = "n"
                      , cex     = 0.8
                      )#end legend
                #---------------------------------------------------------------------------#
@@ -3852,8 +3820,9 @@ if (plot.mm.dbh){
 
                      lines( x    = xat
                           , y    = mm.szpft[,f,nsize]
-                          , col  = simcol.key[s]
-                          , lwd  = 2.0
+                          , col  = simul$colour[s]
+                          , lwd  = simul$lwd   [s]
+                          , lty  = simul$lty   [s]
                           , type = "l"
                           )#end lines
                   }#end for (s in sequence(nsimul))
@@ -3959,12 +3928,13 @@ if (plot.mm.dbh){
             legend( x       = "center"
                   , inset   = 0.0
                   , legend  = sites$iata
-                  , fill    = sites$col
-                  , border  = sites$col
-                  , ncol    = min(3,pretty.box(n=length(nsites))$ncol)
+                  , col     = sites$col
+                  , lty     = sites$lty
+                  , lwd     = sites$lwd
+                  , ncol    = min(4,pretty.box(n=length(nsites))$ncol)
                   , title   = expression(bold("Sites"))
                   , xpd     = TRUE
-                  , bty     = "o"
+                  , bty     = "n"
                   , cex     = 0.8
                   )#end legend
             #------------------------------------------------------------------------------#
@@ -3998,7 +3968,8 @@ if (plot.mm.dbh){
                   lines( x    = xat
                        , y    = mm.szpft[,f,nsize]
                        , col  = sites$col[p]
-                       , lwd  = 2.0
+                       , lwd  = sites$lwd[p]
+                       , lty  = sites$lty[p]
                        , type = "l"
                        )#end lines
                }#end for (s in sequence(nsimul))
@@ -4286,8 +4257,10 @@ if (plot.ym.patch){
                legend( x       = "center"
                      , inset   = 0.0
                      , legend  = simul$desc
-                     , fill    = simul$colour
-                     , border  = simul$colour
+                     , col     = simul$colour
+                     , lty     = simul$lty
+                     , lwd     = simul$lwd
+                     , ncol    = min(4,pretty.box(n=length(nsimul))$ncol)
                      , cex     = 0.75
                      , xpd     = TRUE
                      , bty     = "n"
@@ -4304,7 +4277,12 @@ if (plot.ym.patch){
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                for (s in sequence(nsimul)){
-                  lines(x=xdat[[s]],y=ydat[[s]],lwd=1.5,col=simul$colour[s])
+                  lines( x   = xdat[[s]]
+                       , y   = ydat[[s]]
+                       , lwd = simul$lwd   [s]
+                       , col = simul$colour[s]
+                       , lty = simul$lty   [s]
+                       )#end lines
                }#end for
                box()
                axis(side=1,at=x.at,labels=x.labels)
@@ -4448,9 +4426,10 @@ if (plot.ym.patch){
             legend( x       = "bottom"
                   , inset   = 0.0
                   , legend  = paste0(sites$desc," (",toupper(sites$iata),")")
-                  , fill    = sites$col
-                  , border  = sites$col
-                  , ncol    = min(3,pretty.box(nsites)$ncol)
+                  , col     = sites$col
+                  , lty     = sites$lty
+                  , lwd     = sites$lwd
+                  , ncol    = min(4,pretty.box(nsites)$ncol)
                   , cex     = 0.75
                   , xpd     = TRUE
                   , bty     = "n"
@@ -4468,7 +4447,12 @@ if (plot.ym.patch){
             plot.window(xlim=xlimit,ylim=ylimit,log=plog)
             abline(v=x.at,h=y.at,col=grid.colour,lty="dotted")
             for (p in sequence(nsites)){
-               lines(x=xdat[[p]],y=ydat[[p]],lwd=1.5,col=sites$col[p])
+               lines( x    = xdat[[p]]
+                    , y    = ydat[[p]]
+                    , lwd  = sites$lwd[p]
+                    , col  = sites$col[p]
+                    , lty  = sites$lty[p]
+                    )#end lines
             }#end for
             box()
             axis(side=1,at=x.at,labels=x.labels)
@@ -4716,13 +4700,14 @@ if (plot.zm.patch){
                legend( x       = "center"
                      , inset   = 0.0
                      , legend  = simul$desc
-                     , fill    = simul$colour
-                     , border  = simul$colour
-                     , ncol    = min(3,pretty.box(n=n.sim)$ncol)
+                     , col     = simul$colour
+                     , lty     = simul$lty
+                     , lwd     = simul$lwd
+                     , ncol    = min(4,pretty.box(n=nsimul)$ncol)
                      , title   = expression(bold("Simulation"))
                      , cex     = 0.75
                      , xpd     = TRUE
-                     , bty     = "o"
+                     , bty     = "n"
                      )#end legend
                #---------------------------------------------------------------------------#
 
@@ -4748,7 +4733,12 @@ if (plot.zm.patch){
                   plot.new()
                   plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                   for (s in sequence(nsimul)){
-                     lines(x=xdat[[s]],y=ydat[[s]][z,],lwd=1.5,col=simul$colour[s])
+                     lines( x   = xdat[[s]]
+                          , y   = ydat[[s]][z,]
+                          , lwd = simul$lwd   [s]
+                          , col = simul$colour[s]
+                          , lty = simul$lty   [s]
+                          )#end lines
                   }#end for
                   box()
                   axis(side=1,at=x.at,labels=x.labels)
@@ -4898,13 +4888,14 @@ if (plot.zm.patch){
             legend( x       = "bottom"
                   , inset   = 0.0
                   , legend  = paste0(sites$desc," (",toupper(sites$iata),")")
-                  , fill    = sites$col
-                  , border  = sites$col
-                  , ncol    = min(3,pretty.box(nsites)$ncol)
+                  , col     = sites$col
+                  , lty     = sites$lty
+                  , lwd     = sites$lwd
+                  , ncol    = min(4,pretty.box(nsites)$ncol)
                   , title   = expression(bold("Sites"))
                   , cex     = 0.75
                   , xpd     = TRUE
-                  , bty     = "o"
+                  , bty     = "n"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -4930,7 +4921,12 @@ if (plot.zm.patch){
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=plog)
                for (p in sequence(nsites)){
-                  lines(x=xdat[[p]],y=ydat[[p]][z,],lwd=1.5,col=sites$col[p])
+                  lines( x   = xdat[[p]]
+                       , y   = ydat[[p]][z,]
+                       , lwd = sites$lwd[p]
+                       , col = sites$col[p]
+                       , lty = sites$lty[p]
+                       )#end lines
                }#end for
                box()
                axis(side=1,at=x.at,labels=x.labels)
@@ -5619,21 +5615,21 @@ if (plot.pdf.patch){
                                   , paste0("pdf_patch-",this.vnam,"-",iata,".",outform[o])
                                   )#end file.path
                if (outform[o] %in% "x11"){
-                  X11(width=eysize$width,height=eysize$height,pointsize=col.use)
+                  X11(width=ssize$width,height=ssize$height,pointsize=col.use)
                }else if (outform[o] %in% "quartz"){
-                  quartz(width=eysize$width,height=eysize$height,pointsize=col.use)
+                  quartz(width=ssize$width,height=ssize$height,pointsize=col.use)
                }else if(outform[o] %in% "png"){
-                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
+                  png(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
                      ,pointsize=ptsz,res=depth,bg="transparent")
                }else if(outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
+                  tiff(filename=fichier,width=ssize$width*depth,height=ssize$height*depth
                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if(outform[o] %in% "eps"){
-                  postscript(file=fichier,width=eysize$width,height=eysize$height
-                            ,pointsize=ptsz,paper=eysize$paper)
+                  postscript(file=fichier,width=ssize$width,height=ssize$height
+                            ,pointsize=ptsz,paper=ssize$paper)
                }else if(outform[o] %in% "pdf"){
-                  pdf(file=fichier,onefile=FALSE,width=eysize$width,height=eysize$height
-                     ,pointsize=ptsz,paper=eysize$paper)
+                  pdf(file=fichier,onefile=FALSE,width=ssize$width,height=ssize$height
+                     ,pointsize=ptsz,paper=ssize$paper)
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -5670,7 +5666,7 @@ if (plot.pdf.patch){
                          , plot.after      = plot.after
                          , f.key           = f.leg
                          , smidgen         = 0.04
-                         , lo.panel        = pretty.box(n=c(1,n.sim))
+                         , lo.panel        = lo.simul
                          )#end image.map
                #---------------------------------------------------------------------------#
 
@@ -6023,7 +6019,7 @@ if (plot.ym.theme){
                                     , min(4,pretty.box(n=ntheme.vnam)$ncol)
                                     )#end ifelse
                   , xpd     = TRUE
-                  , bty     = "o"
+                  , bty     = "n"
                   )#end legend
             #------------------------------------------------------------------------------#
 
@@ -6175,7 +6171,7 @@ if (plot.ym.theme){
                                  , min(4,pretty.box(n=ntheme.vnam)$ncol)
                                  )#end ifelse
                , xpd     = TRUE
-               , bty     = "o"
+               , bty     = "n"
                )#end legend
          #---------------------------------------------------------------------------------#
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 here=$(pwd)
 moi=$(whoami)
 diskthere=""
@@ -11,9 +11,6 @@ execname="ed_2.1-opt"
 execsrc="${HOME}/EDBRAMS/ED/build"
 #------------------------------------------------------------------------------------------#
 
-
-#------------------------------------------------------------------------------------------#
-#    If diskthere is empty, assume 
 
 #----- Find the output path (both local and remote paths will be cleaned). ----------------#
 basehere=$(basename ${here})
@@ -62,11 +59,14 @@ else
    echo "Are you sure you want to stop all jobs, and remove all files? [y/N]"
 fi
 read proceed
+#------------------------------------------------------------------------------------------#
 
+#----- Quit in case the user is not sure about. -------------------------------------------#
 if [ "x${proceed}" != "xy" ] && [ "x${proceed}" != "xY" ]
 then
    exit
 fi
+#------------------------------------------------------------------------------------------#
 
 echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -83,7 +83,7 @@ then
    exit
 fi
 
-echo "Okay then, but if you regret later don't say that I did not warn you..."
+echo "Alright then, but in case you regret later don't say that I didn't warn you..."
 echo "I'm giving you a few seconds to kill this script in case you change your mind..."
 delfun=11
 while [ ${delfun} -gt 1 ]
@@ -207,7 +207,13 @@ do
    ianthdataset=$(echo ${oi} | awk '{print $95}')
    #---------------------------------------------------------------------------------------#
 
-   qdel ${desc}-${polyname}
+
+
+   #------- Delete jobs. ------------------------------------------------------------------#
+   jobname="${desc}-${polyname}"
+   jobid=$(qjobs -j ${jobname} -n | awk '{print $1}')
+   qdel ${jobid}
+   #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#
 

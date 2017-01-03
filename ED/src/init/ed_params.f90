@@ -1589,7 +1589,7 @@ subroutine init_pft_photo_params()
    !    Vm_decay_a and Vm_decay_b are the correction terms when running the Collatz et al. !
    ! (1991).  When running Collatz, this is used for both C3 and C4 photosynthesis.        !
    !---------------------------------------------------------------------------------------!
-   Vm_decay_e(1:17)          = 0.4     !                                          [    ---]
+   Vm_decay_e(1:17)          = 0.8 ! 0.4     !                                          [    ---]
    Vm_decay_a(1:17)          = 220000. !                                          [  J/mol]
    Vm_decay_b(1:17)          = 690.    !                                          [J/mol/K]
    !---------------------------------------------------------------------------------------!
@@ -1599,6 +1599,7 @@ subroutine init_pft_photo_params()
    !---------------------------------------------------------------------------------------!
    !     Vm0 is the maximum photosynthesis capacity in µmol/m2/s.  Notice that depending   !
    ! on the size structure (SAS or Big Leaf), there is an addition factor multiplied.      !
+   ! MLO -- Updated tropical tree, using traits for tropical forest species.               !
    !---------------------------------------------------------------------------------------!
    !----- Find the additional factor to multiply Vm0. -------------------------------------!
    select case (ibigleaf)
@@ -1614,21 +1615,21 @@ subroutine init_pft_photo_params()
       end select
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
-   Vm0(1)                    = 12.500000 * ssfact * vmfact_c4
-   Vm0(2)                    = 18.750000 * ssfact * vmfact_c3
-   Vm0(3)                    = 12.500000 * ssfact * vmfact_c3
-   Vm0(4)                    =  6.250000 * ssfact * vmfact_c3
-   Vm0(5)                    = 18.300000 * ssfact * vmfact_c3
-   Vm0(6)                    = 11.350000 * ssfact * vmfact_c3
-   Vm0(7)                    = 11.350000 * ssfact * vmfact_c3
-   Vm0(8)                    =  4.540000 * ssfact * vmfact_c3
-   Vm0(9)                    = 20.387075 * ssfact * vmfact_c3
-   Vm0(10)                   = 17.454687 * ssfact * vmfact_c3
-   Vm0(11)                   =  6.981875 * ssfact * vmfact_c3
-   Vm0(12:13)                = 18.300000 * ssfact * vmfact_c3
-   Vm0(14:15)                = 12.500000 * ssfact * vmfact_c4
-   Vm0(16)                   = 18.750000 * ssfact * vmfact_c3
-   Vm0(17)                   = 15.625000 * ssfact * vmfact_c3
+   Vm0(1)     = 12.500000 * ssfact * vmfact_c4
+   Vm0(2)     = 21.500000 * ssfact * vmfact_c3 ! 18.750000
+   Vm0(3)     = 12.500000 * ssfact * vmfact_c3 ! 12.500000
+   Vm0(4)     =  7.500000 * ssfact * vmfact_c3 !  6.250000
+   Vm0(5)     = 18.300000 * ssfact * vmfact_c3
+   Vm0(6)     = 11.350000 * ssfact * vmfact_c3
+   Vm0(7)     = 11.350000 * ssfact * vmfact_c3
+   Vm0(8)     =  4.540000 * ssfact * vmfact_c3
+   Vm0(9)     = 20.387075 * ssfact * vmfact_c3
+   Vm0(10)    = 17.454687 * ssfact * vmfact_c3
+   Vm0(11)    =  6.981875 * ssfact * vmfact_c3
+   Vm0(12:13) = 18.300000 * ssfact * vmfact_c3
+   Vm0(14:15) = 12.500000 * ssfact * vmfact_c4
+   Vm0(16)    = 35.000000 * ssfact * vmfact_c3 ! 18.750000
+   Vm0(17)    = 15.625000 * ssfact * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1970,10 +1971,13 @@ subroutine init_pft_resp_params()
    growth_resp_factor(16)         = growthresp
    growth_resp_factor(17)         = 0.4503
 
-   leaf_turnover_rate(1)          = 2.0
-   leaf_turnover_rate(2)          = 1.0
-   leaf_turnover_rate(3)          = 0.5
-   leaf_turnover_rate(4)          = onethird
+   !---------------------------------------------------------------------------------------!
+   !    MLO -- Tropical PFT numbers updated using trait data base.                         !
+   !---------------------------------------------------------------------------------------!
+   leaf_turnover_rate(1)          = 2.5   ! 2.0
+   leaf_turnover_rate(2)          = 1.25  ! 1.0
+   leaf_turnover_rate(3)          = 0.575 ! 0.5
+   leaf_turnover_rate(4)          = 0.25  ! onethird
    leaf_turnover_rate(5)          = 2.0
    leaf_turnover_rate(6)          = onethird
    leaf_turnover_rate(7)          = onethird
@@ -1985,8 +1989,10 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 2.0
+   leaf_turnover_rate(16)         = 2.5 ! 2.0
    leaf_turnover_rate(17)         = onesixth
+   !---------------------------------------------------------------------------------------!
+
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = leaf_turnover_rate(1)
@@ -2554,11 +2560,18 @@ subroutine init_pft_alloc_params()
    sla_inter =  2.4
    sla_slope = -0.46
 
-   !----- [KIM] - new tropical parameters. ------------------------------------------------!
-   SLA( 1) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
-   SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
-   SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
-   SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
+   !---------------------------------------------------------------------------------------!
+   !  KIM - new tropical parameters.                                                       !
+   !  MLO - updated tropical parameters based on SMA using leaf turnover and wood density. !
+   !---------------------------------------------------------------------------------------!
+   !SLA( 1) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
+   !SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
+   !SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
+   !SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
+   SLA( 1) = 30.0
+   SLA( 2) = 23.0
+   SLA( 3) = 15.0
+   SLA( 4) =  9.0
    SLA( 5) = 22.0
    SLA( 6) =  6.0
    SLA( 7) =  9.0
@@ -2570,7 +2583,8 @@ subroutine init_pft_alloc_params()
    SLA(13) = 22.0
    SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
    SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
-   SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
+   !SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
+   SLA(16) = 30.0
    SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
