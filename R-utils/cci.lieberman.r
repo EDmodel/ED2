@@ -8,11 +8,60 @@
 # the distribution of tropical forest tree species at La Selva, Costa Rica.  J. Trop.      #
 # Ecol., 11 (2), 161--177.                                                                 #
 #------------------------------------------------------------------------------------------#
-cci.lieberman <<- function( xyz, radius  = 10, closure = TRUE){
+cci.lieberman <<- function( xyz, dxy = 1, radius  = 10, undef = -9999., closure = TRUE){
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Load Fortran.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   dyn.load(file.path(srcdir,"cci_lieberman.so"))
+   #---------------------------------------------------------------------------------------#
+
+
+
+
    #---------------------------------------------------------------------------------------#
    #     Check whether the data are good to go.                                            #
    #---------------------------------------------------------------------------------------#
-   if (! is.data.frame(xyz)){
+   if (is.matrix(xyz) || is.array(xyz)){
+      #----- Array or matrix, look for dimensions. ----------------------------------------#
+      ndims = length(dim(xyz))
+      if (ndims != 2){
+         stop("Cannot find CCI for arrays with more or less than 2 dimensions.")
+      }else{
+         nx     = nrow(xyz)
+         ny     = ncol(xyz)
+      }#end if (ndims != 2)
+      #------------------------------------------------------------------------------------#
+
+      #------------------------------------------------------------------------------------#
+      #       Replace non-finite values by the flag.                                       #
+      #------------------------------------------------------------------------------------#
+      xyz   = matrix( data     = ifelse(is.finite(xyz),xyz,undef)
+                    , nrow     = nx
+                    , ncol     = ny
+                    , dimnames = dimnames(xyz)
+                    )#end matrix
+
+      #------ Run Fortran. ----------------------------------------------------------------#
+      i.cci = matrix(data=0,nrow=nx,ncol=ny)
+      i.cci = .Fortran( "cci_lieberman_mat"
+                      , nx      = as.integer(nx)
+                      , ny      = as.integer(ny)
+                      , z       = as.double(as.matrix(xyz))
+                      , dxy     = as.double(dxy)
+                      , radius  = as.double(radius)
+                      , undef   = as.double(undef)
+                      , closure = as.logical(closure)
+                      , cci     = as.double(i.cci)
+                      )#end .Fortran
+      i.cci = matrix( data      = i.cci$cci
+                    , nrow      = nx
+                    , ncol      = ny
+                    , dimnames  = dimnames(xyz)
+                    )#end matrix
+      #------------------------------------------------------------------------------------#
+   }else if (! is.data.frame(xyz)){
       if (is.list(xyz)){
          xyz = try(list.2.data.frame(xyz),silent=TRUE)
          if ("try-error" %in% is(xyz)){
@@ -30,55 +79,54 @@ cci.lieberman <<- function( xyz, radius  = 10, closure = TRUE){
          browser()
          stop ("xyz must be a data frame, or an object that can be coerced to data frame")
       }#end if (is.list(xyz))
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Make up the names if they aren't provided.                                     #
+      #------------------------------------------------------------------------------------#
+      if (! all(c("x","y","z") %in% names(xyz))){
+         #---------------------------------------------------------------------------------#
+         #    Check that we can make up x, y, and z                                        #
+         #---------------------------------------------------------------------------------#
+         if (length(xyz) < 3){
+            stop("xyz must have at least three variables")
+         }else{
+            if (! "x" %in% names(xyz)) names(xyz)[which(! names(xyz) %in% "xyz")[1]] = "x"
+            if (! "y" %in% names(xyz)) names(xyz)[which(! names(xyz) %in% "xyz")[1]] = "y"
+            if (! "z" %in% names(xyz)) names(xyz)[which(! names(xyz) %in% "xyz")[1]] = "z"
+         }#end if (length(xyz) < 3)
+         #---------------------------------------------------------------------------------#
+      }#end if (! all(c("x","y","z") %in% names(xyz)))
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Keep only the columns of interest before we send it to Fortran.                #
+      #------------------------------------------------------------------------------------#
+      xyz  = xyz[,c("x","y","z"),drop=FALSE]
+      nxyz = nrow(xyz)
+      i.cci = rep(0,times=nrow(xyz))
+      i.cci = .Fortran( "cci_lieberman"
+                      , nxyz    = as.integer(nxyz)
+                      , xyz     = as.double(as.matrix(xyz))
+                      , radius  = as.double(radius)
+                      , closure = as.logical(closure)
+                      , cci     = as.double(i.cci)
+                      )#end .Fortran
+      i.cci = i.cci$cci
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Remove names from i.cci. -----------------------------------------------------#
+      names(i.cci) = NULL
+      #------------------------------------------------------------------------------------#
    }#end if (! is.data.frame(xyz))
    #---------------------------------------------------------------------------------------#
 
 
-
-   #---------------------------------------------------------------------------------------#
-   #     Make up the names if they aren't provided.                                        #
-   #---------------------------------------------------------------------------------------#
-   if (! all(c("x","y","z") %in% names(xyz))){
-      #------------------------------------------------------------------------------------#
-      #    Check that we can make up x, y, and z                                           #
-      #------------------------------------------------------------------------------------#
-      if (length(xyz) < 3){
-         stop("xyz must have at least three variables")
-      }else{
-         if (! "x" %in% names(xyz)) names(xyz)[which(! names(xyz) %in% "xyz")[1]] = "x"
-         if (! "y" %in% names(xyz)) names(xyz)[which(! names(xyz) %in% "xyz")[1]] = "y"
-         if (! "z" %in% names(xyz)) names(xyz)[which(! names(xyz) %in% "xyz")[1]] = "z"
-      }#end if (length(xyz) < 3)
-      #------------------------------------------------------------------------------------#
-   }#end if (! all(c("x","y","z") %in% names(xyz)))
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #    Load Fortran.                                                                      #
-   #---------------------------------------------------------------------------------------#
-   dyn.load(file.path(srcdir,"cci_lieberman.so"))
-   #---------------------------------------------------------------------------------------#
-
-   #---------------------------------------------------------------------------------------#
-   #     Keep only the columns of interest before we send it to Fortran.                   #
-   #---------------------------------------------------------------------------------------#
-   xyz  = xyz[,c("x","y","z"),drop=FALSE]
-   nxyz = nrow(xyz)
-   i.cci = rep(0,times=nrow(xyz))
-   i.cci = .Fortran( "cci_lieberman"
-                   , nxyz    = as.integer(nxyz)
-                   , xyz     = as.double(as.matrix(xyz))
-                   , radius  = as.double(radius)
-                   , closure = as.logical(closure)
-                   , cci     = as.double(i.cci)
-                   )#end .Fortran
-   i.cci = i.cci$cci
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Remove names from i.cci and return answer. --------------------------------------#
-   names(i.cci) = NULL
+   #----- Return answer. ------------------------------------------------------------------#
    return(i.cci)
    #---------------------------------------------------------------------------------------#
 }#end cci.lieberman

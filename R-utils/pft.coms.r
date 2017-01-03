@@ -324,6 +324,66 @@ if (! "lwidth.nltree" %in% ls()){
 }else{
    lwidth.nltree     <<-   lwidth.nltree
 }#end if
+if (! "vm.tcold.c3temp" %in% ls()){
+   vm.tcold.c3temp   <<- 4.7137
+}else{
+   vm.tcold.c3temp   <<- vm.tcold.c3temp
+}#end if
+if (! "vm.tcold.c3trop" %in% ls()){
+   vm.tcold.c3trop   <<- 8.0
+}else{
+   vm.tcold.c3trop   <<- vm.tcold.c3trop
+}#end if
+if (! "vm.tcold.aa" %in% ls()){
+   vm.tcold.aa       <<- 4.7137
+}else{
+   vm.tcold.aa       <<- vm.tcold.aa
+}#end if
+if (! "vm.tcold.c4" %in% ls()){
+   vm.tcold.c4       <<- 8.0
+}else{
+   vm.tcold.c4       <<- vm.tcold.aa
+}#end if
+if (! "vm.thot.c3temp" %in% ls()){
+   vm.thot.c3temp       <<- 45.0
+}else{
+   vm.thot.c3temp       <<- vm.thot.c3temp
+}#end if
+if (! "vm.thot.c3trop" %in% ls()){
+   vm.thot.c3trop       <<- 45.0
+}else{
+   vm.thot.c3trop       <<- vm.thot.c3trop
+}#end if
+if (! "vm.thot.aa" %in% ls()){
+   vm.thot.aa           <<- 45.0
+}else{
+   vm.thot.aa           <<- vm.thot.aa
+}#end if
+if (! "vm.thot.c4" %in% ls()){
+   vm.thot.c4           <<- 45.0
+}else{
+   vm.thot.c4           <<- vm.thot.c4
+}#end if
+if (! "vm.decay.ecold.c3" %in% ls()){
+   vm.decay.ecold.c3    <<- 0.4
+}else{
+   vm.decay.ecold.c3    <<- vm.decay.ecold.c3
+}#end if
+if (! "vm.decay.ecold.c4" %in% ls()){
+   vm.decay.ecold.c4    <<- 0.4
+}else{
+   vm.decay.ecold.c4    <<- vm.decay.ecold.c4
+}#end if
+if (! "vm.decay.ehot.c3" %in% ls()){
+   vm.decay.ehot.c3    <<- 0.4
+}else{
+   vm.decay.ehot.c3    <<- vm.decay.ehot.c3
+}#end if
+if (! "vm.decay.ehot.c4" %in% ls()){
+   vm.decay.ehot.c4    <<- 0.4
+}else{
+   vm.decay.ehot.c4    <<- vm.decay.ehot.c4
+}#end if
 #------------------------------------------------------------------------------------------#
 
 
@@ -343,41 +403,30 @@ klowco2      <<- klowin * mmco2 /mmdry  # Coefficient for low CO2      [ mol/mol
 # physiology method (Foley or Collatz), some of them will be used, and some of them will   #
 # not.                                                                                     #
 #------------------------------------------------------------------------------------------#
-vm.hor          <<- 3000.      # Ref. exp. coeff. for carboxylase fctn.          [       K]
-vm.base.c3      <<- base.c3    # Base Vm for C3 - Collatz et al. (1991)          [mol/m2/s]
-vm.base.c4      <<- base.c4    # Base Vm for C4 - Collatz et al. (1992)          [mol/m2/s]
-vm.decay.a      <<- 220000.    # Decay function for warm temperatures -- A       [   J/mol]
-vm.decay.b      <<- 695.       # Decay function for warm temperatures -- B       [ J/mol/K]
+vm.hor            <<- 3000.    # Ref. exp. coeff. for carboxylase fctn.          [       K]
+vm.base.c3        <<- base.c3  # Base Vm for C3 - Collatz et al. (1991)          [mol/m2/s]
+vm.base.c4        <<- base.c4  # Base Vm for C4 - Collatz et al. (1992)          [mol/m2/s]
+vm.decay.a        <<- 220000.  # Decay function for warm temperatures -- A       [   J/mol]
+vm.decay.b        <<- 695.     # Decay function for warm temperatures -- B       [ J/mol/K]
 
-vm.tcold.c3temp <<- 4.7137
-vm.tcold.c3trop <<- 8.0
-vm.tcold.aa     <<- 4.7137
-vm.tcold.c4     <<- 8.0
+lr.hor            <<- 3000.      # Ref. exp. coeff. for carboxylase fctn.        [       K]
+lr.base.c3        <<- base.c3
+lr.base.c4        <<- base.c4
 
-vm.thot.c3      <<- 45.0
-vm.thot.aa      <<- 45.0
-vm.thot.c4      <<- 45.0
+lr.tcold.c3temp   <<- vm.tcold.c3temp
+lr.tcold.c3trop   <<- vm.tcold.c3trop
+lr.tcold.aa       <<- vm.tcold.aa
+lr.tcold.c4       <<- vm.tcold.c4
 
-vm.decay.e.c3   <<- 0.4
-vm.decay.e.aa   <<- 0.4
-vm.decay.e.c4   <<- 0.4
+lr.thot.c3temp    <<- vm.thot.c3temp
+lr.thot.c3trop    <<- vm.thot.c3trop
+lr.thot.aa        <<- vm.thot.aa
+lr.thot.c4        <<- vm.thot.c4
 
-lr.hor          <<- 3000.      # Ref. exp. coeff. for carboxylase fctn.          [       K]
-lr.base.c3      <<- base.c3
-lr.base.c4      <<- base.c4
-
-lr.tcold.c3temp <<- vm.tcold.c3temp
-lr.tcold.c3trop <<- vm.tcold.c3trop
-lr.tcold.aa     <<- vm.tcold.aa
-lr.tcold.c4     <<- vm.tcold.c4
-
-lr.thot.c3      <<- vm.thot.c3
-lr.thot.aa      <<- vm.thot.aa
-lr.thot.c4      <<- vm.thot.c3
-
-lr.decay.e.c3   <<- 0.4
-lr.decay.e.aa   <<- 0.4
-lr.decay.e.c4   <<- 0.4
+lr.decay.ecold.c3 <<- vm.decay.ecold.c3
+lr.decay.ecold.c4 <<- vm.decay.ecold.c4
+lr.decay.ehot.c3  <<- vm.decay.ehot.c3 
+lr.decay.ehot.c4  <<- vm.decay.ehot.c4 
 
 #------------------------------------------------------------------------------------------#
 
@@ -431,6 +480,7 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = NA
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
+   hgt.max.trop = 35.0
 }else if (iallom %in% c(2,3)){
    #---------------------------------------------------------------------------------------#
    #     Use the allometry proposed by:                                                    #
@@ -442,35 +492,48 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = 61.7
    b1Ht.trop    = 0.0352
    b2Ht.trop    = 0.694
+   hgt.max.trop = 35.0
    #---------------------------------------------------------------------------------------#
 }else if (iallom %in% c(4)){
    #---------------------------------------------------------------------------------------#
    #     Allometric equation based on the Sustainable Landscapes data.                     #
    #                                                                                       #
-   #    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass      #
-   #       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in        #
-   #       prep.                                                                           #
+   #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in       #
+   #       the Amazon. Biogeosciences, in prep.                                            #
    #                                                                                       #
    #    Equation was derived from multiple forest inventories carried out at multiple      #
    # locations in the Brazilian Amazon, and fitted using a heteroscedastic least           #
    # squares approach (though results converged to a homoscedastic fit).  This equation    #
    # is very similar to Feldpausch et al (2012) equation for South America.                #
    #                                                                                       #
-   # Total number of trees: 14860                                                          #
-   # hgt_ref = 46.2515 (95% CI: [  45.67;  47.16])                                         #
-   # b1Ht    = 0.04364 (95% CI: [0.04247;0.04467])                                         #
-   # b2Ht    = 0.81644 (95% CI: [0.8019; 0.8271])                                          #
-   # R2      = 0.660                                                                       #
-   # RMSE    = 5.5                                                                         #
+   # Total number of trees: 17010                                                          #
+   # hgt_ref = 47.2    (95% CI: [  44.8;   48.8])                                          #
+   # b1Ht    = 0.0440  (95% CI: [0.0427; 0.0454])                                          #
+   # b2Ht    = 0.802   (95% CI: [ 0.788;  0.822])                                          #
+   # R2      = 0.677                                                                       #
+   # RMSE    = 5.4                                                                         #
    #---------------------------------------------------------------------------------------#
-   hgt.ref.trop = 46.2515
-   b1Ht.trop    = 0.04364
-   b2Ht.trop    = 0.81644
+   hgt.ref.trop = 47.173
+   b1Ht.trop    = 0.044037
+   b2Ht.trop    = 0.80248
+   hgt.max.trop = 45.0
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
 
 
+
+
+#------------------------------------------------------------------------------------------#
+#   Coefficients for DBH -> Bleaf allometry (iallom = 4).  Source:                         #
+#                                                                                          #
+#   Lescure, H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau. La phytomasse     #
+#      epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen., 4(3),          #
+#      237--251, 1983. http://www.documentation.ird.fr/hor/fdi:010005089                   #
+#------------------------------------------------------------------------------------------#
+l83.l1 = 0.00873
+l83.l2 = 2.1360
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
@@ -490,12 +553,14 @@ pft01 = list( name               = "C4 grass"
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c4   + t00
             , vm.high.temp       = vm.thot.c4    + t00
-            , vm.decay.e         = vm.decay.e.c4
+            , vm.decay.e.low     = vm.decay.ecold.c4
+            , vm.decay.e.high    = vm.decay.ehot.c4
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c4
             , lr.low.temp        = lr.tcold.c4   + t00
             , lr.high.temp       = lr.thot.c4    + t00
-            , lr.decay.e         = lr.decay.e.c4
+            , lr.decay.e.low     = lr.decay.ecold.c4
+            , lr.decay.e.high    = lr.decay.ehot.c4
             , vm0                = 12.5 * vmfact.c4 * umol.2.mol
             , m                  = mphoto.c4
             , alpha              = alpha.c4
@@ -522,6 +587,7 @@ pft01 = list( name               = "C4 grass"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.99
             , b2Cl               = 1.00
+            , b1Mh               = 0.495
             , b1WAI              = 0.00
             , b2WAI              = 1.00
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -550,13 +616,15 @@ pft02 = list( name               = "Early tropical"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3trop + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3trop  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3trop + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3trop  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 18.75 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
@@ -583,12 +651,13 @@ pft02 = list( name               = "Early tropical"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0192 * 0.5
             , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 16.0 / 3900.
             , agf.bs             = 0.7
@@ -611,13 +680,15 @@ pft03 = list( name               = "Mid tropical"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3trop + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3trop  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3trop + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3trop  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 12.5 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
@@ -644,12 +715,13 @@ pft03 = list( name               = "Mid tropical"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0192 * 0.5
             , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 11.6 / 3900.
             , agf.bs             = 0.7
@@ -672,13 +744,15 @@ pft04 = list( name               = "Late tropical"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3trop + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3trop  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3trop + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3trop  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 6.25 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
@@ -705,12 +779,13 @@ pft04 = list( name               = "Late tropical"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0192 * 0.5
             , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 9.67 / 3900.
             , agf.bs             = 0.7
@@ -733,13 +808,15 @@ pft05 = list( name               = "Temperate C3 Grass"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 18.3   * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
@@ -766,6 +843,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.99
             , b2Cl               = 1.0
+            , b1Mh               = 0.495
             , b1WAI              = 0.0
             , b2WAI              = 1.0
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -794,13 +872,15 @@ pft06 = list( name               = "North Pine"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 15.625 * 0.7264 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
@@ -827,6 +907,7 @@ pft06 = list( name               = "North Pine"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0553 * 0.5
             , b2WAI              = 1.9769
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -855,13 +936,15 @@ pft07 = list( name               = "South Pine"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 15.625 * 0.7264 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
@@ -888,6 +971,7 @@ pft07 = list( name               = "South Pine"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0553 * 0.5
             , b2WAI              = 1.9769
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -916,13 +1000,15 @@ pft08 = list( name               = "Late conifer"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 6.25 * 0.7264 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
@@ -949,6 +1035,7 @@ pft08 = list( name               = "Late conifer"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0553 * 0.5
             , b2WAI              = 1.9769
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -977,13 +1064,15 @@ pft09 = list( name               = "Early hardwood"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 18.25  * 1.1171 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
@@ -1010,6 +1099,7 @@ pft09 = list( name               = "Early hardwood"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0192 * 0.5
             , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -1038,13 +1128,15 @@ pft10 = list( name               = "Mid hardwood"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 15.625  * 1.1171 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
@@ -1071,6 +1163,7 @@ pft10 = list( name               = "Mid hardwood"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0192 * 0.5
             , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -1099,13 +1192,15 @@ pft11 = list( name               = "Late hardwood"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3temp + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3temp  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3temp + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3temp  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 6.25  * 1.1171 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
@@ -1132,6 +1227,7 @@ pft11 = list( name               = "Late hardwood"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0192 * 0.5
             , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -1165,13 +1261,15 @@ pft16 = list( name               = "C3 grass"
             , vm.decay.a         = vm.decay.a
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.c3trop + t00
-            , vm.high.temp       = vm.thot.c3      + t00
-            , vm.decay.e         = vm.decay.e.c3
+            , vm.high.temp       = vm.thot.c3trop  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.c3trop + t00
-            , lr.high.temp       = lr.thot.c3      + t00
-            , lr.decay.e         = lr.decay.e.c3
+            , lr.high.temp       = lr.thot.c3trop  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 20.833333333 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
@@ -1198,6 +1296,7 @@ pft16 = list( name               = "C3 grass"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.99
             , b2Cl               = 1.00
+            , b1Mh               = 0.495
             , b1WAI              = 0.0
             , b2WAI              = 1.0
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
@@ -1227,12 +1326,14 @@ pft17 = list( name               = "Araucaria"
             , vm.decay.b         = vm.decay.b
             , vm.low.temp        = vm.tcold.aa + t00
             , vm.high.temp       = vm.thot.aa  + t00
-            , vm.decay.e         = vm.decay.e.aa
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
             , lr.hor             = lr.hor
             , lr.base            = lr.base.c3
             , lr.low.temp        = lr.tcold.aa + t00
             , lr.high.temp       = lr.thot.aa  + t00
-            , lr.decay.e         = lr.decay.e.aa
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
             , vm0                = 15.625  * vmfact.c3 * umol.2.mol
             , m                  = mphoto.aa
             , alpha              = alpha.c3
@@ -1259,12 +1360,13 @@ pft17 = list( name               = "Araucaria"
             , b2Ca               = 0.8068806
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
             , b1WAI              = 0.0553 * 0.5
             , b2WAI              = 1.9769
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
-            , hgt.max            = 35.0
+            , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = 10.0 / 3900.
             , agf.bs             = 0.7
@@ -1299,13 +1401,13 @@ for (p in sequence(npft+1)){
 #------------------------------------------------------------------------------------------#
 #      Change maximum height of tropical trees to 99% of the maximum height.               #
 #------------------------------------------------------------------------------------------#
-if (iallom %in% c(4)){
-   for (ipft in sequence(npft)){
-      if (pft$tropical[ipft] && (! pft$grass[ipft])){
-         pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
-      }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
-   }#end for (ipft in sequence(npft))
-}#end if
+#if (iallom %in% c(4)){
+#   for (ipft in sequence(npft)){
+#       if (pft$tropical[ipft] && (! pft$grass[ipft])){
+#          pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
+#       }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
+#    }#end for (ipft in sequence(npft))
+# }#end if
 #------------------------------------------------------------------------------------------#
 
 
@@ -1396,8 +1498,24 @@ for (ipft in sequence(npft)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Ca[ipft] = pi * 0.40309^2
-         pft$b2Ca[ipft] = 2. * 0.61278
+         #     Replace b1Cr/b2Cr ("Crown Radius") coefficients by those calculated by:     #
+         #                                                                                 #
+         #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in #
+         #       the Amazon. Biogeosciences, in prep.                                      #
+         #                                                                                 #
+         #    Equation was derived from forest inventory measurements carried out at       #
+         # multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic  #
+         # least squares approach.  Note that their original equation relates DBH with     #
+         # crown radius, so we transform radius into area.                                 #
+         #                                                                                 #
+         # Total number of trees: 17072                                                    #
+         # b1Cr    = 0.402 (95% CI: [0.394;0.412])                                         #
+         # b2Cr    = 0.615 (95% CI: [0.607;0.622])                                         #
+         # R2      = 0.589                                                                 #
+         # RMSE    = 0.999                                                                 #
+         #---------------------------------------------------------------------------------#
+         pft$b1Ca[ipft] = pi * 0.40223^2
+         pft$b2Ca[ipft] = 2. * 0.61462
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1431,8 +1549,8 @@ for (ipft in sequence(npft)){
          # mid-successional to be 20gC/plant and interpolate biomass for saplings using a  #
          # log-linear function.                                                            #
          #---------------------------------------------------------------------------------#
-         pft$b1Bl.large [ipft] = 0.00873 * pft$SLA[3] / pft$SLA[ipft]
-         pft$b2Bl.large [ipft] = 2.1360
+         pft$b1Bl.large [ipft] = l83.l1 * pft$SLA[3] / pft$SLA[ipft]
+         pft$b2Bl.large [ipft] = l83.l2
          pft$dbh.adult  [ipft] = ( (pft$b1Bl.large[ipft]*pft$SLA[ipft]/pft$b1Ca[ipft]/C2B)
                                  ^ (1. / (pft$b2Ca[ipft] - pft$b2Bl.large[ipft]) )
                                  )#end pft$dbh.adult[ipft]
@@ -1477,10 +1595,11 @@ for (ipft in sequence(npft)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.3201235 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.2940237
-         pft$b1Bs.large[ipft] = C2B * 2.040761  * pft$rho[ipft]
-         pft$b2Bs.large[ipft] = 1.970171
+         pft$b1Bs.small[ipft] = C2B * 0.2358174 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.3739128
+         pft$b2Bs.large[ipft] = 1.968890
+         pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
+                                ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1489,23 +1608,22 @@ for (ipft in sequence(npft)){
       #------------------------------------------------------------------------------------#
       #     Replace b1Cl/b2Cl coefficients by those calculated by:                         #
       #                                                                                    #
-      #    Longo, M. et al. 2015.  Effects of forest degradation and recovery on biomass   #
-      #       and landscape heterogeneity in the Amazon.  Glob. Biogeochem. Cycles, in     #
-      #       prep.                                                                        #
+      #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    #
+      #       the Amazon. Biogeosciences, in prep.                                         #
       #                                                                                    #
       #    Equation was derived from forest inventory measurements carried out at multiple #
       # locations in the Brazilian Amazon, and fitted using a heteroscedastic least        #
       # squares approach.                                                                  #
       #                                                                                    #
-      # Total number of trees: 14731                                                       #
-      # b1Cl    = 0.29711 (95% CI: [0.28833;0.30821])                                      #
-      # b2Cl    = 1.0326  (95% CI: [ 1.0193; 1.0421])                                      #
-      # R2      = 0.677                                                                    #
+      # Total number of trees: 16064                                                       #
+      # b1Cl    = 0.298 (95% CI: [0.288;0.306])                                            #
+      # b2Cl    = 1.032 (95% CI: [1.022;1.044])                                            #
+      # R2      = 0.673                                                                    #
       # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
       if (iallom %in% c(4) && (! pft$grass[ipft])){
-         pft$b1Cl[ipft] = 0.29711
-         pft$b2Cl[ipft] = 1.0326
+         pft$b1Cl[ipft] = 0.29754
+         pft$b2Cl[ipft] = 1.0324
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -1536,7 +1654,7 @@ for (ipft in sequence(npft)){
 
 
 #------------------------------------------------------------------------------------------#
-#    Rooting depth coefficients.                                                                               #
+#    Rooting depth coefficients.                                                           #
 #------------------------------------------------------------------------------------------#
 pft$b1Rd = rep(NA,times=npft+1)
 if (iallom %in% c(0)){
@@ -1572,6 +1690,10 @@ pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
 #------------------------------------------------------------------------------------------#
 
+
+#----- Reference leaf respiration. --------------------------------------------------------#
+pft$lr0 = pft$gamma * pft$vm0
+#------------------------------------------------------------------------------------------#
 
 
 #----- Make it global. --------------------------------------------------------------------#

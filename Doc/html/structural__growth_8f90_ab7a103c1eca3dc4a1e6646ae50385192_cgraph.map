@@ -1,0 +1,9 @@
+<map id="structural_growth_eq_0" name="structural_growth_eq_0">
+<area shape="rect" id="node2" href="$namespaceed__therm__lib.html#a882f2cd5f4a75f8c01d2167f45afebb7" title="ed_therm_lib::calc\l_veg_hcap" alt="" coords="232,5,360,47"/>
+<area shape="rect" id="node3" href="$structural__growth_8f90.html#aeb0b1265e38d3c5ca8e55da40e42dae2" title="plant_structural_allocation" alt="" coords="209,71,383,98"/>
+<area shape="rect" id="node4" href="$structural__growth_8f90.html#a536c2986535dd42c3f2fd77510acf2f3" title="update_derived_cohort\l_props" alt="" coords="221,123,371,164"/>
+<area shape="rect" id="node6" href="$structural__growth_8f90.html#a18746b03d74909fea238e464b0f7f513" title="update_vital_rates" alt="" coords="233,189,359,215"/>
+<area shape="rect" id="node8" href="$stable__cohorts_8f90.html#ab5ac37217798e11401f727d8bcbb2b70" title="is_resolvable" alt="" coords="248,239,344,266"/>
+<area shape="rect" id="node5" href="$namespaceallometry.html#a50fedbee3a14eb5569a62abb4a36198f" title="allometry::bd2dbh" alt="" coords="445,130,570,157"/>
+<area shape="rect" id="node7" href="$namespaceallometry.html#ab99b16f69dafaf5ff3e69c7514b9e7b6" title="allometry::ed_biomass" alt="" coords="431,189,584,215"/>
+</map>

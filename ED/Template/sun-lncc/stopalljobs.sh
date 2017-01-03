@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 here=$(pwd)
 lonlat="${here}/joborder.txt"
 desc=$(basename ${here})
 
-#----- Determine the number of polygons to run. -------------------------------------------#
+#----- Determine the number of polygons to stop. ------------------------------------------#
 let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
 
 echo "Are you sure that you want to stop all jobs? [y/N]"
@@ -28,7 +28,7 @@ then
    exit
 fi
 
-echo "Okay then, but if you regret later do not say that I did not warn you..."
+echo "Alright then, but in case you regret later don't say that I didn't warn you..."
 echo "I am giving you a few seconds to kill this script in case you change your mind..."
 delfun=11
 while [ ${delfun} -gt 1 ]
@@ -151,7 +151,12 @@ do
    ianthdataset=$(echo ${oi} | awk '{print $95}')
    #---------------------------------------------------------------------------------------#
 
-   qdel ${desc}-${polyname}
+
+   #------- Delete jobs. ------------------------------------------------------------------#
+   jobname="${desc}-${polyname}"
+   jobid=$(qjobs -j ${jobname} -n | awk '{print $1}')
+   qdel ${jobid}
+   #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#
 

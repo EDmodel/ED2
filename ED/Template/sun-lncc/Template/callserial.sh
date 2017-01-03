@@ -1,9 +1,12 @@
-#$ -S /bin/bash
-#$ -q thisqueue
-#$ -o pathhere/thispoly
-#$ -N thisdesc-thispoly
-#$ -j y
-#$ -r n
+#!/bin/bash
+#PBS -S /bin/bash
+#PBS -q thisqueue
+#PBS -e pathhere/thispoly
+#PBS -o pathhere/thispoly
+#PBS -N thisdesc-thispoly
+#PBS -j n
+#PBS -r n
+#PBS -l mem=2Gb
 #---------------------------------- Change settings here ----------------------------------#
 root="thisroot"                           # Main directory
 moi="myname"                              # User's account
@@ -23,7 +26,7 @@ naptime=zzzzzzzz                          # Nap time
 
 
 #----- Source script. ---------------------------------------------------------------------#
-. ${initrc} -i
+. ${initrc}
 #------------------------------------------------------------------------------------------#
 
 

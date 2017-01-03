@@ -503,7 +503,16 @@ agb2dbh.baker <<- function(agb,wdens,allom="baker.chave"){
 #     doi:10.1111/j.1744-7429.2006.00187.x                                                 #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
+agb.SL <<- function( dbh
+                   , height
+                   , wdens
+                   , type      = NULL
+                   , dead      = NULL
+                   , me.dbh    = NULL
+                   , me.height = NULL
+                   , me.wdens  = NULL
+                   , out.err   = FALSE
+                   ){
    #---------------------------------------------------------------------------------------#
    #     "type" and "dead" may not be present, in which case we use dummy values.          #
    #---------------------------------------------------------------------------------------#
@@ -518,14 +527,14 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
    #---------------------------------------------------------------------------------------#
    lens = unique(c(length(dbh),length(height),length(wdens),length(type),length(dead)))
    if ( length(lens) != 1 ){
-      cat("-----------------------------------------------------------","\n",sep="")
-      cat("   Variables don't have the same length."                   ,"\n",sep="")
-      cat("   DBH    = ",length(dbh)                                   ,"\n",sep="")
-      cat("   HEIGHT = ",length(height)                                ,"\n",sep="")
-      cat("   WDENS  = ",length(wdens)                                 ,"\n",sep="")
-      cat("   TYPE   = ",length(type)                                  ,"\n",sep="")
-      cat("   DEAD   = ",length(dead)                                  ,"\n",sep="")
-      cat("-----------------------------------------------------------","\n",sep="")
+      cat0("-----------------------------------------------------------")
+      cat0("   Variables don't have the same length."                   )
+      cat0("   DBH    = ",length(dbh)                                   )
+      cat0("   HEIGHT = ",length(height)                                )
+      cat0("   WDENS  = ",length(wdens)                                 )
+      cat0("   TYPE   = ",length(type)                                  )
+      cat0("   DEAD   = ",length(dead)                                  )
+      cat0("-----------------------------------------------------------")
       stop(" Incorrect input data.")
    }else{
       fine.dbh    = is.numeric  (dbh)    || all(is.na(dbh   ))
@@ -534,14 +543,14 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
       fine.type   = is.character(type)   || all(is.na(type  ))
       fine.dead   = is.logical  (dead)   || all(is.na(dead  ))
       if (! all(c(fine.dbh,fine.height,fine.wdens,fine.type,fine.dead))){
-         cat("-----------------------------------------------------------","\n",sep="")
-         cat("   Not all variables have the correct type."                ,"\n",sep="")
-         cat("   DBH    (numeric)   = ",fine.dbh                          ,"\n",sep="")
-         cat("   HEIGHT (numeric)   = ",fine.height                       ,"\n",sep="")
-         cat("   WDENS  (numeric)   = ",fine.wdens                        ,"\n",sep="")
-         cat("   TYPE   (character) = ",fine.type                         ,"\n",sep="")
-         cat("   DEAD   (logical)   = ",fine.dead                         ,"\n",sep="")
-         cat("-----------------------------------------------------------","\n",sep="")
+         cat0("-----------------------------------------------------------")
+         cat0("   Not all variables have the correct type."                )
+         cat0("   DBH    (numeric)   = ",fine.dbh                          )
+         cat0("   HEIGHT (numeric)   = ",fine.height                       )
+         cat0("   WDENS  (numeric)   = ",fine.wdens                        )
+         cat0("   TYPE   (character) = ",fine.type                         )
+         cat0("   DEAD   (logical)   = ",fine.dead                         )
+         cat0("-----------------------------------------------------------")
          stop(" Incorrect data types.")
       }#end if (! all(c(fine.dbh,fine.height,fine.wdens,fine.type,fine.dead)))
    }#end if ( length(lens) != 1)
@@ -570,15 +579,96 @@ agb.SL <<- function(dbh,height,wdens,type=NULL,dead=NULL){
    #----- Liana: Schnitzer et al. (2006). -------------------------------------------------#
    agb[liana] = exp(-0.968) * dbh[liana]^2.657 / C2B
    #----- Dead trees: Palace et al. (2007). -----------------------------------------------#
-   v1 = 0.091
-   v0 = 0.01 / (1.3^-v1)
-   a0 = 0.25 * pi * v0^2 / (1. - 2*v1)
-   a1 = 1 - 2*v1
-   agb[dead] = 1000. * wdens[dead] * a0 * dbh[dead]^2 * height[dead]^a1 / C2B
+   v1         = 0.091
+   v0         = 0.01 / (1.3^-v1)
+   a0         = 0.25 * pi * v0^2 / (1. - 2*v1)
+   a1         = 1 - 2*v1
+   agb[dead ] = 1000. * wdens[dead] * a0 * dbh[dead]^2 * height[dead]^a1 / C2B
    #---------------------------------------------------------------------------------------#
 
 
-   return(agb)
+   #---------------------------------------------------------------------------------------#
+   #      Check whether to estimate associated errors (measurement and allometry),         #
+   # following:                                                                            #
+   #                                                                                       #
+   #   Chave, J., and co-authors, 2004: Error propagation and scaling for tropical forest  #
+   #      biomass estimates. Phil. Trans. R. Soc. Lond. B., 359, 409-420.                  #
+   #      doi:10.1098/rstb.2003.1425                                                       #
+   #---------------------------------------------------------------------------------------#
+   if (out.err){
+      #------------------------------------------------------------------------------------#
+      #       Find error associated with allometry.                                        #
+      #------------------------------------------------------------------------------------#
+      ae.agb        = NA * agb
+      #----- Living tree: Chave et al. (2014). --------------------------------------------#
+      ae.agb[tree ] = sqrt(exp(0.357^2)-1)*agb[tree ]
+      #----- Palm: Goodman et al. (2013). -------------------------------------------------#
+      ae.agb[palm ] = sqrt(exp(0.588^2)-1)*agb[palm ]
+      #----- Liana: Schnitzer et al. (2006). ----------------------------------------------#
+      ae.agb[liana] = sqrt(exp(1.016^2)-1)*agb[liana]
+      #----- Standing dead: assumed the same as living trees. -----------------------------#
+      ae.agb[dead ] = sqrt(exp(0.357^2)-1)*agb[dead ]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #       Find error associated with measurements.                                     #
+      #------------------------------------------------------------------------------------#
+      me.agb        = NA * agb
+      me.dh         = cor(x=dbh[tree|dead],y=height[tree|dead],use="pair")
+      #----- Living tree: Chave et al. (2014). --------------------------------------------#
+      me.agb[tree ] = agb[tree ] * sqrt( ( 2.0 * 0.976 * me.dbh    / dbh   [tree] )^2
+                                       + (       0.976 * me.height / height[tree] )^2
+                                       + (       0.976 * me.wdens  / wdens [tree] )^2
+                                       + 4.0 * 0.976^2 * me.dh^2 / dbh[tree] / height[tree]
+                                       )#end sqrt
+      #----- Palm: Goodman et al. (2013). -------------------------------------------------#
+      me.agb[palm ] = agb[palm ] * 2.7483 * me.dbh / dbh[palm ] 
+      #----- Liana: Schnitzer et al. (2006). ----------------------------------------------#
+      me.agb[liana] = agb[liana] * 2.657  * me.dbh / dbh[liana]
+      #----- Standing dead: assumed the same as living trees. -----------------------------#
+      me.agb[dead ] = agb[dead ] * sqrt( ( 2.0 * me.dbh    / dbh   [dead] )^2
+                                       + ( a1  * me.height / height[dead] )^2
+                                       + (       me.wdens  / wdens [dead] )^2
+                                       + 4.0 * a1 * me.dh^2 / dbh[dead] / height[dead]
+                                       )#end sqrt
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Save the standard error of the log scale: it will be useful for error analysis #
+      #------------------------------------------------------------------------------------#
+      sd.lnagb        = NA * agb
+      #----- Living tree: Chave et al. (2014). --------------------------------------------#
+      sd.lnagb[tree ] = 0.357
+      #----- Palm: Goodman et al. (2013). -------------------------------------------------#
+      sd.lnagb[palm ] = 0.588
+      #----- Liana: Schnitzer et al. (2006). ----------------------------------------------#
+      sd.lnagb[liana] = 1.016
+      #----- Standing dead: unavailable, assume the same as living trees. -----------------#
+      sd.lnagb[dead ] = 0.357
+      #------------------------------------------------------------------------------------#
+
+      #------------------------------------------------------------------------------------#
+      #      Combine estimates and errors in a data frame.                                 #
+      #------------------------------------------------------------------------------------#
+      ans = data.frame( agb      = agb
+                      , ae.agb   = ae.agb
+                      , me.agb   = me.agb
+                      , lnagb    = log(agb) - 0.5 * sd.lnagb^2
+                      , sd.lnagb = sd.lnagb
+                      )#end data.frame
+      #------------------------------------------------------------------------------------#
+
+   }else{
+      #----- No error needed.  Return estimate only. --------------------------------------#
+      ans = agb
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
 }#end function agb.SL
 #==========================================================================================#
 #==========================================================================================#

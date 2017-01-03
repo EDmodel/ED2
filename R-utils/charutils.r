@@ -173,9 +173,18 @@ adjust.right <<- function(x,width){
 # pattern.                                                                                 #
 #------------------------------------------------------------------------------------------#
 nregexpr <<- function(pattern,text,...){
-   #---- Use gregexpr to identifiy the number of occurrences. -----------------------------#
-   ans = gregexpr(pattern=pattern,text=text,...)[[1]]
-   ans = length(ans[ans %>% 0])
+   if (length(text) > 1){
+      ans = mapply(FUN=nregexpr,text=text,MoreArgs=list(pattern=pattern),SIMPLIFY=TRUE)
+   }else{
+      #---- Use gregexpr to identifiy the number of occurrences. --------------------------#
+      ans = gregexpr(pattern=pattern,text=text,...)[[1]]
+      ans = length(ans[ans %>% 0])
+      #------------------------------------------------------------------------------------#
+   }#end if (length(text) > 1)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Answer. -------------------------------------------------------------------------#
+   names(ans) = names(text)
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end function nregexpr

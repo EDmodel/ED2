@@ -1,6 +1,12 @@
-
 !==========================================================================================!
 !==========================================================================================!
+! MODULE: GROWTH_BALIVE
+!
+!> \brief   Various routines handling plant C and N use given size and allometry.
+!> \details Essentially, this file contains dbalive_dt[_eq0] and their libraries of fns.
+!> \author  Translated from ED1 by Ryan Knox and Marcos Longo
+!> \author  31 Aug 2015 - Big refactoring in commit b8fb585, Daniel Scott
+!------------------------------------------------------------------------------------------!
 module growth_balive
    !=======================================================================================!
    !=======================================================================================!
@@ -12,11 +18,16 @@ module growth_balive
 
    !=======================================================================================!
    !=======================================================================================!
-
-   !     This subroutine will update the alive biomass, and compute the respiration terms  !
-   ! other than leaf respiration.                                                          !
-   ! IMPORTANT: The order of the operations here affect the C/N budgets, so don't change   !
-   !            the order of the operations unless you really know what you are doing.     !
+   !  SUBROUTINE: DBALIVE_DT
+   !
+   !> \brief   Updates living biomass.
+   !> \details Calls a variety of subroutines controlling plant carbon balances, C and N 
+   !>          xfers among plant pools, updating of storage and growth respiration,
+   !>          leaf maintenance,and update mortality rates.
+   !> \author  Translated from ED1 by Ryan Knox and Marcos Longo
+   !> \author  31 Aug 2015 - Big refactoring in commit b8fb585, Daniel Scott
+   !> \warning The order of the operations here affect the C/N budgets, so don't
+   !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
    subroutine dbalive_dt(cgrid, tfact)
       use ed_state_vars   , only : edtype                 & ! structure
@@ -48,8 +59,8 @@ module growth_balive
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(edtype)     , target     :: cgrid
-      real             , intent(in) :: tfact
+      type(edtype)     , target     :: cgrid !< the ed grid
+      real             , intent(in) :: tfact !< "time factor" i.e. call frequency
       !----- Local variables. -------------------------------------------------------------!
       type(polygontype), pointer    :: cpoly
       type(sitetype)   , pointer    :: csite
@@ -241,7 +252,7 @@ module growth_balive
                      !---------------------------------------------------------------------!
                      !     Update the phenology status.                                    !
                      !---------------------------------------------------------------------!
-                     on_allometry = (balive_aim - cpatch%balive(ico))/balive_aim < 0.000001
+                     on_allometry = balive_aim - cpatch%balive(ico) <= 0.000001*balive_aim
                      if (flushing .and. cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                         cpatch%phenology_status(ico) = 0
                      elseif(cpatch%bleaf(ico) < tiny_num .and.                             &
@@ -1004,33 +1015,41 @@ module growth_balive
    
    !=======================================================================================!
    !=======================================================================================!
+   !  SUBROUTINE: GET_C_XFERS
+   !
+   !> \brief   Calculates plant-internal C transfers for growth and maintainance.
+   !> \details Uses phenology, allometry, carbon balance, and current C pool sizes to
+   !>          determine (signed) transfers to leaf, root, sapwooda, sapwoodb, and storage.
+   !> \warning The order of the operations here affect the C/N budgets, so don't
+   !>          change it unless you really know what you are doing.
+   !---------------------------------------------------------------------------------------!
    subroutine get_c_xfers(csite,ipa,ico,carbon_balance,green_leaf_factor,tr_bleaf,tr_broot &
                          ,tr_bsapwooda,tr_bsapwoodb,tr_bstorage,carbon_debt,flushing       &
                          ,balive_aim)
-      use ed_state_vars , only : sitetype                 & ! structure
-                               , patchtype                ! ! structure
-      use pft_coms      , only : phenology                ! ! intent(in)
+      use ed_state_vars , only : sitetype     & ! structure
+                               , patchtype    ! ! structure
+      use pft_coms      , only : phenology    ! ! intent(in)
       use pft_coms      , only : q            & ! intent(in)
                                , qsw          & ! intent(in)
                                , agf_bs       ! ! intent(in)
-      use allometry     , only : size2bl                  ! ! function
+      use allometry     , only : size2bl      ! ! function
       use decomp_coms   , only : f_labile     ! ! intent(in)
       use consts_coms   , only : tiny_num     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype) , target        :: csite
-      integer        , intent(in)    :: ipa
-      integer        , intent(in)    :: ico
-      real           , intent(in)    :: carbon_balance
-      real           , intent(in)    :: green_leaf_factor
-      real           , intent(out)   :: tr_bleaf
-      real           , intent(out)   :: tr_broot
-      real           , intent(out)   :: tr_bsapwooda
-      real           , intent(out)   :: tr_bsapwoodb
-      real           , intent(out)   :: tr_bstorage
-      real           , intent(out)   :: carbon_debt
-      logical        , intent(out)   :: flushing
-      real           , intent(out)   :: balive_aim
+      type(sitetype) , target        :: csite               !< Current Site
+      integer        , intent(in)    :: ipa                 !< Loop-Current Patch
+      integer        , intent(in)    :: ico                 !< Loop-Current Cohort
+      real           , intent(in)    :: carbon_balance      !< Plant net carbon uptake
+      real           , intent(in)    :: green_leaf_factor   !< Cohort leaf-age param.
+      real           , intent(out)   :: tr_bleaf            !< Transfer to leaf C pool
+      real           , intent(out)   :: tr_broot            !< Transfer to root C pool
+      real           , intent(out)   :: tr_bsapwooda        !< Transfer to sapwooda C pool
+      real           , intent(out)   :: tr_bsapwoodb        !< Transfer to sapwoodb C pool
+      real           , intent(out)   :: tr_bstorage         !< Transfer to storage C pool
+      real           , intent(out)   :: carbon_debt         !< Net cohort carbon uptake
+      logical        , intent(out)   :: flushing            !< Flag for leaf flush
+      real           , intent(out)   :: balive_aim          !< Desired cohort balive value
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype), pointer       :: cpatch
       integer                        :: ipft
@@ -1102,6 +1121,17 @@ module growth_balive
                          ( available_carbon > 0.0 .and. cpatch%phenology_status(ico) == 1 )
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------!
+      !     Maximum bleaf that the allometric relationship would allow.  If the plant is   !
+      ! drought stressed (elongf < 1), we don't allow it to get back to full allometry.    !
+      !------------------------------------------------------------------------------------!
+      bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+      bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
+      broot_aim      = bleaf_aim * q(ipft)
+      bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
+      bsapwoodb_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * (1. - agf_bs(ipft))
+      balive_aim     = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -1118,17 +1148,6 @@ module growth_balive
             ! pools, and put any excess in storage.                                        !
             !------------------------------------------------------------------------------!
 
-            !------------------------------------------------------------------------------!
-            !     Maximum bleaf that the allometric relationship would allow.  If the      !
-            ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
-            ! to full allometry.                                                           !
-            !------------------------------------------------------------------------------!
-            bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
-            bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
-            broot_aim      = bleaf_aim * q(ipft)
-            bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
-            bsapwoodb_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * (1. - agf_bs(ipft))
-            balive_aim     = bleaf_aim + broot_aim + bsapwooda_aim + bsapwoodb_aim
             !---- Amount that bleaf, broot, and bsapwood are off allometry. ---------------!
             delta_bleaf     = max (0.0, bleaf_aim     - cpatch%bleaf    (ico))
             delta_broot     = max (0.0, broot_aim     - cpatch%broot    (ico))
@@ -1217,7 +1236,7 @@ module growth_balive
                ! tissues.                                                                  !
                !---------------------------------------------------------------------------!
                carbon_debt = carbon_debt - cpatch%bstorage(ico)
-               tr_bstorage = cpatch%bstorage(ico)
+               tr_bstorage = -1.0*cpatch%bstorage(ico)
 
                !---------------------------------------------------------------------------!
                !     Find total biomass that can be lost.  We take an amount proportional  !
@@ -1240,8 +1259,8 @@ module growth_balive
                   ! cohort is going to fertilizer business.                                !
                   !------------------------------------------------------------------------!
                   carbon_debt = bloss_max
-                  tr_bleaf = cpatch%bleaf(ico);
-                  tr_broot = cpatch%broot(ico);
+                  tr_bleaf = -1.0*cpatch%bleaf(ico);
+                  tr_broot = -1.0*cpatch%broot(ico);
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1267,8 +1286,8 @@ module growth_balive
                !     Not enough biomass, remove everything.                                !
                !---------------------------------------------------------------------------!
                carbon_debt = carbon_debt - bloss_max
-               tr_bleaf = cpatch%bleaf(ico);
-               tr_broot = cpatch%broot(ico);
+               tr_bleaf = -1.0*cpatch%bleaf(ico);
+               tr_broot = -1.0*cpatch%broot(ico);
                !---------------------------------------------------------------------------!
                
                !---------------------------------------------------------------------------!
@@ -1287,7 +1306,7 @@ module growth_balive
                   ! can't afford.  It is with profound sadness that we announce that this  !
                   ! cohort is going to fertilizer business.                                !
                   !------------------------------------------------------------------------!
-                  tr_bstorage = cpatch%bstorage(ico)
+                  tr_bstorage = -1.0*cpatch%bstorage(ico)
                   !------------------------------------------------------------------------!
                end if
             end if
@@ -1890,7 +1909,7 @@ module growth_balive
             !------------------------------------------------------------------------------!
             !     Check whether we are on allometry or not.                                !
             !------------------------------------------------------------------------------!
-            on_allometry = (balive_aim - cpatch%balive(ico))/balive_aim < 0.000001
+            on_allometry = (balive_aim - cpatch%balive(ico)) <= 0.000001*balive_aim
             if (cpatch%elongf(ico) == 1.0 .and. on_allometry) then
                !---------------------------------------------------------------------------!
                !     We're back to allometry, change phenology_status.                     !

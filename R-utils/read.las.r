@@ -37,6 +37,7 @@ read.las <<- function( lasfile
                      , nrows         = NULL
                      , return.sp     = FALSE
                      , return.header = FALSE
+                     , int.nbits     = 12L # number of bits for intensity (sensor-specific)
                      ){ 
 
 
@@ -197,6 +198,7 @@ read.las <<- function( lasfile
                         , y                = empty
                         , z                = empty
                         , intensity        = empty
+                        , pulse.number     = empty
                         , retn.number      = empty
                         , number.retn.gp   = empty
                         , scan.dir.flag    = empty
@@ -265,6 +267,7 @@ read.las <<- function( lasfile
                              , signed = FALSE
                              , endian = "little"
                              )#end readBin
+      ans$intensity = ans$intensity * 2^(16L-int.nbits)
       #------------------------------------------------------------------------------------#
 
 
@@ -389,6 +392,11 @@ read.las <<- function( lasfile
       #------------------------------------------------------------------------------------#
 
 
+
+      #---- Estimate the pulse number. ----------------------------------------------------#
+      retn.before      = c(Inf,ans$retn.number[-nrow(ans)])
+      ans$pulse.number = cumsum(ans$retn.number == 1 | ans$retn.number <= retn.before)
+      #------------------------------------------------------------------------------------#
 
 
       #------------------------------------------------------------------------------------#

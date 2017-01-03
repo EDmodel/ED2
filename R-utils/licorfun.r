@@ -52,68 +52,68 @@
 #      This function finds the assimilation rate parameters for a given plant functional   #
 # type, meteorological conditions, and limitation.                                         #
 #------------------------------------------------------------------------------------------#
-assim.params <<- function(ipft,met,limit){
+assim.params <<- function(ipft,env,limit){
    aparms=list()
-   if (limit == "CLOSED"){
+   if (limit %in% "CLOSED"){
       #----- Closed stomata case, or night time.  These are the same for C3 and C4. -------#
       aparms$rho   = 0.0
       aparms$sigma = 0.0
       aparms$xi    = 0.0
       aparms$tau   = 1.0
-      aparms$nu    = - met$leaf.resp
+      aparms$nu    = - env$leaf.resp
       #---------------------------------------------------------------------------------------#
       #     Open stomata case, so now we distinguish between C3 and C4 as their functional    #
       # forms are different.                                                                  #
       #---------------------------------------------------------------------------------------#
-   }else if (pft$pathway[ipft] == 3){
+   }else if (pft$pathway[ipft] %in% 3){
       #------------------------------------------------------------------------------------#
       #     C3 case.  Decide whether this is the light- or RuBP-saturated case.            #
       #------------------------------------------------------------------------------------#
-      if (limit == "LIGHT"){
+      if (limit %in% "LIGHT"){
          #---- Light-limited case. --------------------------------------------------------#
-         aparms$rho   =  met$alpha * met$par
-         aparms$sigma = -met$alpha * met$par * met$compp
+         aparms$rho   =  env$alpha * env$par
+         aparms$sigma = -env$alpha * env$par * env$compp
          aparms$xi    = 1.0
-         aparms$tau   = 2.0 * met$compp
-         aparms$nu    = - met$leaf.resp
+         aparms$tau   = 2.0 * env$compp
+         aparms$nu    = - env$leaf.resp
 
-      }else if (limit == "RUBP" || limit == "CO2"){
+      }else if (limit %in% "RUBP" || limit %in% "CO2"){
          #----- RuBP-saturated rate of photosynthesis case. -------------------------------#
-         aparms$rho   =  met$vm
-         aparms$sigma = -met$vm * met$compp
+         aparms$rho   =  env$vm
+         aparms$sigma = -env$vm * env$compp
          aparms$xi    = 1.0
-         aparms$tau   = met$kco2 * (1.0 + met$o2 / met$ko2)
-         aparms$nu    = - met$leaf.resp
+         aparms$tau   = env$kco2 * (1.0 + env$o2 / env$ko2)
+         aparms$nu    = - env$leaf.resp
       }#end if limit
       #------------------------------------------------------------------------------------#
-   }else if (pft$pathway[ipft] == 4){
+   }else if (pft$pathway[ipft] %in% 4){
       #------------------------------------------------------------------------------------#
       #     C4 case.  There are three possibilities, the light-limited, the RuBP-          #
       # saturated, and the CO2-limited cases.                                              #
       #------------------------------------------------------------------------------------#
-      if (limit == "LIGHT"){
+      if (limit %in% "LIGHT"){
          #----- Light-limited case. -------------------------------------------------------#
          aparms$rho   = 0.0
-         aparms$sigma = met$alpha * met$par
+         aparms$sigma = env$alpha * env$par
          aparms$xi    = 0.0
          aparms$tau   = 1.0
-         aparms$nu    = - met$leaf.resp
+         aparms$nu    = - env$leaf.resp
 
-      }else if (limit == "RUBP"){
+      }else if (limit %in% "RUBP"){
          #----- RuBP-saturated rate of photosynthesis case. -------------------------------#
          aparms$rho   = 0.0
-         aparms$sigma = met$vm
+         aparms$sigma = env$vm
          aparms$xi    = 0.0
          aparms$tau   = 1.0
-         aparms$nu    = - met$leaf.resp
+         aparms$nu    = - env$leaf.resp
 
-      }else if (limit == "CO2"){
+      }else if (limit %in% "CO2"){
          #----- CO2-limited for low CO2 concentration case. -------------------------------#
-         aparms$rho   = klowco2 * met$vm
+         aparms$rho   = klowco2 * env$vm
          aparms$sigma = 0.0
          aparms$xi    = 0.0
          aparms$tau   = 1.0
-         aparms$nu    = - met$leaf.resp
+         aparms$nu    = - env$leaf.resp
 
       }#end if limit
       #------------------------------------------------------------------------------------#
@@ -123,10 +123,10 @@ assim.params <<- function(ipft,met,limit){
 
 
    #----- Find the minimum radiation that makes Ao = 0. (light compensation point) --------#
-   aparms$par.min  = ( ( met$leaf.resp * (met$co2 + 2. * met$compp) )
-                     / ( met$alpha     * (met$co2 -      met$compp) ) ) 
+   aparms$par.min  = ( ( env$leaf.resp * (env$co2 + 2. * env$compp) )
+                     / ( env$alpha     * (env$co2 -      env$compp) ) ) 
 
-   aparms$success  = (limit == "CLOSED") || (met$par > aparms$par.min)
+   aparms$success  = (limit %in% "CLOSED") || (env$par > aparms$par.min)
    aparms$cimin    = c34smin.lint.co2
    aparms$cimax    = c34smax.lint.co2
    aparms$ci.gsw   = c34smax.lint.co2
@@ -186,9 +186,9 @@ assim.rate.prime <<- function(ci,assim,aparms){
 #      This function finds the assimilation rate parameters given the parameters and the   #
 # intercellular CO2.                                                                       #
 #------------------------------------------------------------------------------------------#
-stom.cond <<- function(ci,assim,met){
+stom.cond <<- function(ci,assim,env){
    #------ Find the assimilation rate. ----------------------------------------------------#
-   gsw = ( met$gbc * assim ) / ( gsw.2.gsc * ( (met$co2 - ci) * met$gbc - assim ) )
+   gsw = ( env$gbc * assim ) / ( gsw.2.gsc * ( (env$co2 - ci) * env$gbc - assim ) )
    return(gsw)
    #---------------------------------------------------------------------------------------#
 }#end function
@@ -206,11 +206,11 @@ stom.cond <<- function(ci,assim,met){
 # intercellular CO2 concentration, the water stomatal conductance, and the CO2 demand      #
 # and its derivative.                                                                      #
 #------------------------------------------------------------------------------------------#
-stom.cond.prime <<- function(ci,gsw,assim,assim.prime,met){
+stom.cond.prime <<- function(ci,gsw,assim,assim.prime,env){
 
    gsw.prime = ( gsw * ( assim.prime / assim
-                       + (met$gbc + assim.prime)
-                       / (gsw.2.gsc * ( (met$co2 - ci) * met$gbc - assim) ) ) )
+                       + (env$gbc + assim.prime)
+                       / (gsw.2.gsc * ( (env$co2 - ci) * env$gbc - assim) ) ) )
 
    return(gsw.prime)
 }#end function stom.cond.prime
@@ -226,7 +226,7 @@ stom.cond.prime <<- function(ci,gsw,assim,assim.prime,met){
 #==========================================================================================#
 #     Function whose root gives Ci.                                                        #
 #------------------------------------------------------------------------------------------#
-cibounds = function(met,ipft,aparms){
+cibounds <<- function(env,ipft,aparms){
    #---------------------------------------------------------------------------------------#
    # First case: This check will find when Aopen goes to 0., which causes a singularity    #
    # in the function of which we are looking for a root.                                   #
@@ -242,10 +242,10 @@ cibounds = function(met,ipft,aparms){
    # be 0.   This will cause a singularity in the gsw function.                            #
    #---------------------------------------------------------------------------------------#
    #----- 1. Define the coefficients for the quadratic equation. --------------------------#
-   aquad = met$gbc * aparms$xi
-   bquad = ( aparms$xi * (aparms$nu - met$gbc * met$co2 )
-           + met$gbc * aparms$tau + aparms$rho )
-   cquad = aparms$tau * (aparms$nu - met$gbc * met$co2 ) + aparms$sigma
+   aquad = env$gbc * aparms$xi
+   bquad = ( aparms$xi * (aparms$nu - env$gbc * env$co2 )
+           + env$gbc * aparms$tau + aparms$rho )
+   cquad = aparms$tau * (aparms$nu - env$gbc * env$co2 ) + aparms$sigma
    #----- 2. Decide whether this is a true quadratic case or not. -------------------------#
    if (aquad != 0.0){
       #------------------------------------------------------------------------------------#
@@ -296,9 +296,9 @@ cibounds = function(met,ipft,aparms){
    #---------------------------------------------------------------------------------------#
    epsil = gsc.2.gsw - gbc.2.gbw
    #----- Define the coefficients for the quadratic equation. -----------------------------#
-   aquad = met$gbw * aparms$xi
+   aquad = env$gbw * aparms$xi
    bquad = - ( epsil * ( aparms$rho + aparms$nu * aparms$xi)
-             + met$gbw * aparms$xi * met$co2 )
+             + env$gbw * aparms$xi * env$co2 )
    cquad = - epsil * ( aparms$sigma + aparms$tau * aparms$nu )
    #----- 3. Decide whether this is a true quadratic case or not. -------------------------#
    if (aquad != 0.0){
@@ -347,7 +347,7 @@ cibounds = function(met,ipft,aparms){
    # air CO2.                                                                              #
    #---------------------------------------------------------------------------------------#
    ciroot1 = max(c34smin.lint.co2,ciAo)
-   ciroot2 = min(ciQ,cigsw,met$co2)
+   ciroot2 = min(ciQ,cigsw,env$co2)
    #---------------------------------------------------------------------------------------#
 
 
@@ -408,10 +408,10 @@ cibounds = function(met,ipft,aparms){
 #==========================================================================================#
 #     Function that finds Ci.                                                              #
 #------------------------------------------------------------------------------------------#
-cisolver = function(met,ipft,aparms){
+cisolver <<- function(env,ipft,aparms){
 
 
-   #----- Set up the anwer with the defaul (failure). -------------------------------------#
+   #----- Set up the anwer with the default (failure). ------------------------------------#
    ans = list( ci       =  discard
              , cs       =  discard
              , assim    =  discard
@@ -439,7 +439,7 @@ cisolver = function(met,ipft,aparms){
    }else if (aparms$iterative){
       #----- Find the boundaries for ci. --------------------------------------------------#
       if (ans$success){
-         cilim        = cibounds(met,ipft,aparms)
+         cilim        = cibounds(env,ipft,aparms)
          ans$cimin    = cilim$cimin
          ans$cimax    = cilim$cimax
          ans$ci.shv   = cilim$ci.shv
@@ -465,7 +465,7 @@ cisolver = function(met,ipft,aparms){
       #------------------------------------------------------------------------------------#
       #------------------------------------------------------------------------------------#
       cia   = sqrt(cilim$cimin*cilim$cimax)
-      ita   = cifun.eval(cia,met,ipft,aparms)
+      ita   = cifun.eval(cia,env,ipft,aparms)
       #------------------------------------------------------------------------------------#
 
 
@@ -542,7 +542,7 @@ cisolver = function(met,ipft,aparms){
                   again = FALSE
                }else{
                   #----- Not there yet, update the function evaluation and the derivative. #
-                  it = cifun.eval(ciz,met,ipft,aparms)
+                  it = cifun.eval(ciz,env,ipft,aparms)
                   if (it$fun == 0.0){ 
                      #----- We have actually hit the jackpot, the answer is ciz. ----------#
                      ci        = ciz
@@ -573,7 +573,7 @@ cisolver = function(met,ipft,aparms){
          if (ciz < cilim$cimin || ciz > cilim$cimax){
             #----- The guess is outside the range, discard it and start over. -------------#
             cia   = sqrt(cilim$cimin*cilim$cimax)
-            ita   = cifun.eval(cia,met,ipft,aparms)
+            ita   = cifun.eval(cia,env,ipft,aparms)
             zside = FALSE
          }else if (ita$fun * it$fun < 0.0){
             itz   = it
@@ -659,7 +659,7 @@ cisolver = function(met,ipft,aparms){
                #---------------------------------------------------------------------------#
                #     Compute the function evaluate and check signs.                        #
                #---------------------------------------------------------------------------#
-               itz   = cifun.eval(ciz,met,ipft,aparms)
+               itz   = cifun.eval(ciz,env,ipft,aparms)
                zside = ita$fun * itz$fun < 0.0
                #---------------------------------------------------------------------------#
             }# end while (! zside)
@@ -701,7 +701,7 @@ cisolver = function(met,ipft,aparms){
 
 
                #----- Find the new function evaluation. -----------------------------------#
-               it = cifun.eval(ci,met,ipft,aparms)
+               it = cifun.eval(ci,env,ipft,aparms)
                #---------------------------------------------------------------------------#
 
 
@@ -739,11 +739,11 @@ cisolver = function(met,ipft,aparms){
       #------------------------------------------------------------------------------------#
       if (converged){
          assim       = assim.rate(ci,aparms)
-         gsw         = stom.cond(ci,assim,met)
+         gsw         = stom.cond(ci,assim,env)
          gsc         = gsw.2.gsc * gsw
-         transp      = met$gbw * gsw * ( met$wi - met$h2o) / (met$gbw + gsw)
-         cs          = met$co2 - assim  / met$gbc 
-         ws          = met$h2o + transp / met$gbw
+         transp      = env$gbw * gsw * ( env$wi - env$h2o) / (env$gbw + gsw)
+         cs          = env$co2 - assim  / env$gbc 
+         ws          = env$h2o + transp / env$gbw
          ans$success = TRUE
       }else{
          ans$success = FALSE
@@ -765,13 +765,13 @@ cisolver = function(met,ipft,aparms){
       #      Since the carbon demand doesn't depend on the intercellular CO2, compute it   #
       # using the first guess.                                                             #
       #------------------------------------------------------------------------------------#
-      assim = assim.rate(met$co2,aparms)
+      assim = assim.rate(env$co2,aparms)
       #------------------------------------------------------------------------------------#
 
 
 
       #----- Compute the leaf surface CO2. ------------------------------------------------#
-      cs    = met$co2 - assim / met$gbc
+      cs    = env$co2 - assim / env$gbc
       #------------------------------------------------------------------------------------#
 
 
@@ -792,13 +792,13 @@ cisolver = function(met,ipft,aparms){
          #     Carbon demand is positive, look for a solution.                             #
          #---------------------------------------------------------------------------------#
          #----- Find auxiliary coefficients to compute the quadratic terms. ---------------#
-         qterm1 = (met$co2 - met$compp) * met$gbc - assim
-         qterm2 = (pft$d0[ipft] + met$wi - met$h2o) * met$gbw
-         qterm3 = pft$m[ipft] * assim * pft$d0[ipft] * met$gbc
+         qterm1 = (env$co2 - env$compp) * env$gbc - assim
+         qterm2 = (pft$d0[ipft] + env$wi - env$h2o) * env$gbw
+         qterm3 = pft$m[ipft] * assim * pft$d0[ipft] * env$gbc
          #----- Find the coefficients for the quadratic equation. -------------------------#
          aquad = qterm1 * pft$d0[ipft]
          bquad = qterm1 * qterm2 - aquad * pft$b[ipft] - qterm3
-         cquad = - qterm1 * qterm2 * pft$b[ipft] - qterm3 * met$gbw
+         cquad = - qterm1 * qterm2 * pft$b[ipft] - qterm3 * env$gbw
          #----- Solve the quadratic equation for gsw. -------------------------------------#
          if (aquad == 0.0){
             #----- Not really a quadratic equation. ---------------------------------------#
@@ -840,9 +840,9 @@ cisolver = function(met,ipft,aparms){
             ciroot2 = cs - assim / (gsw.2.gsc * gswroot2)
 
             bounded1 = (  ciroot1 >= c34smin.lint.co2
-                       && ciroot1 <= min(c34smax.lint.co2,met$co2) )
+                       && ciroot1 <= min(c34smax.lint.co2,env$co2) )
             bounded2 = (  ciroot2 >= c34smin.lint.co28
-                       && ciroot2 <= min(c34smax.lint.co2,met$co2) )
+                       && ciroot2 <= min(c34smax.lint.co2,env$co2) )
              
             if (bounded1 && bounded2){
                #----- Both intercellular CO2 work, pick the highest and warn the user. ----#
@@ -891,12 +891,14 @@ cisolver = function(met,ipft,aparms){
       #------------------------------------------------------------------------------------#
       #   Find the surface water specific humidity and the transpiration.                  #
       #------------------------------------------------------------------------------------#
-      ws          = ( gsw * met$wi + met$gbw * met$h2o) / (met$gbw + gsw )
-      transp      = met$gbw * ( ws - met$h2o )
+      ws          = ( gsw * env$wi + env$gbw * env$h2o) / (env$gbw + gsw )
+      transp      = env$gbw * ( ws - env$h2o )
       ans$success = TRUE
       #------------------------------------------------------------------------------------#
    }#end if
    #---------------------------------------------------------------------------------------#
+
+
 
    #---------------------------------------------------------------------------------------#
    #     If we have hit this point, then we found an actual answer.                        #
@@ -922,147 +924,50 @@ cisolver = function(met,ipft,aparms){
 #  - kco2      : Michaelis-Mentel constant for CO2                                         #
 #  - ko2       : Michaelis-Mentel constant for O2                                          #
 #------------------------------------------------------------------------------------------#
-photo.params = function(met,ipft,iphoto){
-
+photo.params <<- function(env,ipft,iphoto){
    #---------------------------------------------------------------------------------------#
-   #     Decide which method to apply.  Currently we only solve differently if we are      #
-   # using Collatz, otherwise we use the same Vm.                                          #
+   #     Use the Collatz et al. scheme to find Vm without temperature correction, then     #
+   # apply the correction.                                                                 #
    #---------------------------------------------------------------------------------------#
-   if (iphoto %in% 0:1){
-      #------------------------------------------------------------------------------------#
-      #     Use ED approach.  First we copy the parameters that will be used for scratch   #
-      # local variables, then apply the same functional form.                              #
-      #------------------------------------------------------------------------------------#
-      if (iphoto == 0){
-         #----- Foley et al. (1996) as is. ------------------------------------------------#
-         kco2.ref  = kco2.ref.ibis
-         kco2.hor  = kco2.hor.ibis
-         ko2.ref   = ko2.ref.ibis
-         ko2.hor   = ko2.hor.ibis
-         compp.ref = compp.ref.ibis
-         compp.hor = compp.hor.ibis
-
-      }else if (iphoto == 1){
-         #----- Foley et al. (1996) for KCO2 and KO2, find Gamma* like in CLM. ------------#
-         kco2.ref  = kco2.ref.ibis
-         kco2.hor  = kco2.hor.ibis
-         ko2.ref   = ko2.ref.ibis
-         ko2.hor   = ko2.hor.ibis
-
-         compp.ref = kookc * met$o2 * kco2.ref / ko2.ref
-         compp.hor = kco2.hor - ko2.hor
-
-      }#end if
-
-      lnexplow  = pft$vm.decay.e[ipft] * (pft$vm.low.temp[ipft]  - met$temp)
-      tlow.fun  = 1.0 +  exp(lnexplow)
-      lnexphigh = pft$vm.decay.e[ipft] * (met$temp - pft$vm.high.temp[ipft])
-      thigh.fun = 1.0 + exp(lnexphigh)
-      vm        = ( arrhenius(met$temp,pft$vm0[ipft],pft$vm.hor[ipft]) 
-                  / (tlow.fun * thigh.fun) )
-
-      lnexplow  = pft$lr.decay.e[ipft] * (pft$lr.low.temp[ipft]  - met$temp)
-      tlow.fun  = 1.0 +  exp(lnexplow)
-      lnexphigh = pft$lr.decay.e[ipft] * (met$temp - pft$lr.high.temp[ipft])
-      thigh.fun = 1.0 + exp(lnexphigh)
-      leaf.resp = ( arrhenius(met$temp,pft$gamma[ipft]*pft$vm0[ipft],pft$lr.hor[ipft]) 
-                  / (tlow.fun * thigh.fun) )
-
-      compp     = arrhenius(met$temp,compp.ref,compp.hor)
-      kco2      = arrhenius(met$temp,kco2.ref,kco2.hor)
-      ko2       = arrhenius(met$temp,ko2.ref,ko2.hor)
-
-   }else if(iphoto %in% 2:3){
-      #------------------------------------------------------------------------------------#
-      #     Use the Collatz et al. scheme.  Here the only difference is that in option 5   #
-      # we use the compensation point as defined in one of the Collatz papers, whereas in  #
-      # option 6 we use the CLM approach, which is derived from Farquhar et al. (1980)     #
-      # assuming that the ratio between the tunover for oxylase and carboxylase is         #
-      # constant with temperature.                                                         #
-      #------------------------------------------------------------------------------------#
-      if (iphoto == 2){
-         kco2.ref   = kco2.ref.coll
-         kco2.base  = kco2.base.coll
-         ko2.ref    = ko2.ref.coll
-         ko2.base   = ko2.base.coll
-         vm.ref     = pft$vm0[ipft]
-         vm.base    = pft$vm.base[ipft]
-         compp.ref  = compp.ref.coll
-         compp.base = compp.base.coll
-         lr.ref     = pft$gamma[ipft] * pft$vm0[ipft]
-         lr.base    = pft$lr.base[ipft]
-      }else if (iphoto == 3){
-         kco2.ref   = kco2.ref.coll
-         kco2.base  = kco2.base.coll
-         ko2.ref    = ko2.ref.coll
-         ko2.base   = ko2.base.coll
-         compp.ref  = kookc * met$o2 * kco2.ref / (2.0 * ko2.ref)
-         compp.base = kco2.base / ko2.base
-         vm.ref     = pft$vm0[ipft]
-         vm.base    = pft$vm.base[ipft]
-         lr.ref     = pft$gamma[ipft] * pft$vm0[ipft]
-         lr.base    = pft$lr.base[ipft]
-      }#end if
-
-      vm.nocorr  = collatz(met$temp,vm.ref,vm.base)
-      lr.nocorr  = collatz(met$temp,lr.ref,lr.base)
-
-      #------------------------------------------------------------------------------------#
-      #      Apply the low/high temperature corrections for both Vm and Leaf respiration.  #
-      # Here we must check whether we are solving C3 or C4, because the correction has a   #
-      # different functional form for Vm.                                                  #
-      #------------------------------------------------------------------------------------#
-      if (c91vmcorr){
-         lnexplow  = pft$vm.decay.e[ipft] * (pft$vm.low.temp[ipft]  - met$temp)
-         tlow.fun  = 1.0 +  exp(lnexplow)
-         thigh.fun = 1. + exp( (-pft$vm.decay.a[ipft] + pft$vm.decay.b[ipft] * met$temp)
-                                  / (rmol * met$temp) )
-         vm        = vm.nocorr / (tlow.fun * thigh.fun)
-
-      }else{
-         lnexplow  = pft$vm.decay.e[ipft] * (pft$vm.low.temp[ipft]  - met$temp)
-         tlow.fun  = 1.0 +  exp(lnexplow)
-         lnexphigh = pft$vm.decay.e[ipft] * (met$temp - pft$vm.high.temp[ipft])
-         thigh.fun = 1.0 + exp(lnexphigh)
-         vm        = vm.nocorr / (tlow.fun * thigh.fun)
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #    Leaf respiration.  The correction is the same for both C3 and C4.               #
-      #------------------------------------------------------------------------------------#
-      lnexplow  = pft$lr.decay.e[ipft] * (pft$lr.low.temp[ipft]  - met$temp)
-      tlow.fun  = 1.0 +  exp(lnexplow)
-      lnexphigh = pft$lr.decay.e[ipft] * (met$temp - pft$lr.high.temp[ipft])
-      thigh.fun = 1.0 + exp(lnexphigh)
-      leaf.resp = lr.nocorr / (tlow.fun * thigh.fun)
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Find the compensation point and the Michaelis constants. ---------------------#
-      compp     = collatz(met$temp,compp.ref,compp.base)
-      kco2      = collatz(met$temp,kco2.ref,kco2.base)
-      ko2       = collatz(met$temp,ko2.ref,ko2.base)
-      #------------------------------------------------------------------------------------#
-
-   }#end if
+   vm.nocorr    = collatz(env$temp,pft$vm0[ipft],pft$vm.base[ipft])
+   vm.lnexplow  = pft$vm.decay.e.low [ipft] * (pft$vm.low.temp[ipft]  - env$temp)
+   vm.tlow.fun  = 1.0 + exp(vm.lnexplow )
+   vm.lnexphigh = pft$vm.decay.e.high[ipft] * (env$temp - pft$vm.high.temp[ipft])
+   vm.thigh.fun = 1.0 + exp(vm.lnexphigh)
+   vm           = vm.nocorr / (vm.tlow.fun * vm.thigh.fun)
    #---------------------------------------------------------------------------------------#
 
 
 
    #---------------------------------------------------------------------------------------#
-   #     Before we leave, just make sure to set the CO2 compensation point and the         #
-   # Michaelis constant of CO2 zero in case this is a C4 plant.                            #
+   #     Use the Collatz et al. scheme to find Lr without temperature correction, then     #
+   # apply the correction.                                                                 #
    #---------------------------------------------------------------------------------------#
-   if (pft$pathway[ipft] == 4){
-      compp = 0. * compp
-      kco2  = 0. * kco2
-   }#end if
+   lr.nocorr    = collatz(env$temp,pft$lr0[ipft],pft$lr.base[ipft])
+   lr.lnexplow  = pft$lr.decay.e.low [ipft] * (pft$lr.low.temp[ipft]  - env$temp)
+   lr.tlow.fun  = 1.0 + exp(lr.lnexplow )
+   lr.lnexphigh = pft$lr.decay.e.high[ipft] * (env$temp - pft$lr.high.temp[ipft])
+   lr.thigh.fun = 1.0 + exp(lr.lnexphigh)
+   lr           = lr.nocorr / (lr.tlow.fun * lr.thigh.fun)
    #---------------------------------------------------------------------------------------#
 
 
-   photo = list (vm = vm, leaf.resp=leaf.resp,compp=compp,kco2=kco2,ko2=ko2)
+   #---------------------------------------------------------------------------------------#
+   #     Find the compensation point and the Michaelis constants.  Make sure to set the    #
+   # CO2 compensation point and the Michaelis constant of CO2 zero in case this is a C4    #
+   # plant.                                                                                #
+   #---------------------------------------------------------------------------------------#
+   compp = ifelse( test = pft$pathway[ipft] == 4
+                 , yes  = 0.
+                 , no   = collatz(env$temp,compp.ref.coll,compp.base.coll)
+                 )#end ifelse
+   kco2  = ifelse( test = pft$pathway[ipft] == 4
+                 , yes  = 0.
+                 , no   = collatz(env$temp,kco2.ref.coll,kco2.base.coll)
+                 )#end ifelse
+   ko2   = collatz(env$temp,ko2.ref.coll,ko2.base.coll)
+   #---------------------------------------------------------------------------------------#
+   photo = list (vm = vm,leaf.resp=lr,compp=compp,kco2=kco2,ko2=ko2)
    return(photo)
 }#end function
 #==========================================================================================#
@@ -1085,12 +990,12 @@ photo.params = function(met,ipft,iphoto){
 #  The logical variable is used to decide whether to compute the derivatives or not.       #
 # They are necessary only when it is a Newton's method call.                               #
 #------------------------------------------------------------------------------------------#
-cifun.eval <<- function(ci,met,ipft,aparms,out.deriv=TRUE){
+cifun.eval <<- function(ci,env,ipft,aparms,out.deriv=TRUE){
 
    #----- Find the CO2 demand. ------------------------------------------------------------#
    assim = assim.rate(ci,aparms)
    #----- Find the stomatal conductance of water. -----------------------------------------#
-   gsw   = stom.cond(ci,assim,met)
+   gsw   = stom.cond(ci,assim,env)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1099,8 +1004,8 @@ cifun.eval <<- function(ci,met,ipft,aparms,out.deriv=TRUE){
    #     Find the function components, then the function evaluation.                       #
    #---------------------------------------------------------------------------------------#
    efun1 = (gsw - pft$b[ipft]) / (pft$m[ipft] * assim)
-   efun2 = (met$co2 - met$compp - assim/ met$gbc)
-   efun3 = 1.0 + ( met$gbw * (met$wi - met$h2o) / (pft$d0[ipft] * (met$gbw + gsw)))
+   efun2 = (env$co2 - env$compp - assim/ env$gbc)
+   efun3 = 1.0 + ( env$gbw * (env$wi - env$h2o) / (pft$d0[ipft] * (env$gbw + gsw)))
    fun   = efun1 * efun2 * efun3 - 1.0
    #---------------------------------------------------------------------------------------#
 
@@ -1112,12 +1017,12 @@ cifun.eval <<- function(ci,met,ipft,aparms,out.deriv=TRUE){
    #----- CO2 demand. ---------------------------------------------------------------------#
    assim.prime = assim.rate.prime(ci,assim,aparms)
    #----- stomatal conductance of water. --------------------------------------------------#
-   gsw.prime   = stom.cond.prime(ci,gsw,assim,assim.prime,met)
+   gsw.prime   = stom.cond.prime(ci,gsw,assim,assim.prime,env)
    #----- Function components. ------------------------------------------------------------#
    eprime1 = ( ( gsw.prime * assim - assim.prime * (gsw - pft$b[ipft]) )
              / ( pft$m[ipft] * assim * assim) )
-   eprime2 = - assim.prime / met$gbc
-   eprime3 = - (efun3 - 1.0) *  gsw.prime / ( met$gbw + gsw )
+   eprime2 = - assim.prime / env$gbc
+   eprime3 = - (efun3 - 1.0) *  gsw.prime / ( env$gbw + gsw )
    dfundci = eprime1 * efun2 * efun3 + efun1 * eprime2 * efun3 + efun1 * efun2 * eprime3
    #---------------------------------------------------------------------------------------#
 

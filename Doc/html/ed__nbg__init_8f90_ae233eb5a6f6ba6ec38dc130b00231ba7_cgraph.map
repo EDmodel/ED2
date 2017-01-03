@@ -1,0 +1,10 @@
+<map id="near_bare_ground_big_leaf_init" name="near_bare_ground_big_leaf_init">
+<area shape="rect" id="node2" href="$namespaceallometry.html#a76db2bc4aaa47db1e2656117ec476dba" title="allometry::dbh2bd" alt="" coords="207,5,332,32"/>
+<area shape="rect" id="node3" href="$ed__type__init_8f90.html#af7c8e0a520dfca016f7eb7cf1c08b6ca" title="init_ed_cohort_vars" alt="" coords="203,56,336,83"/>
+<area shape="rect" id="node6" href="$ed__type__init_8f90.html#ad4cd2d9291dc969b63d1592d0f2a3164" title="init_ed_patch_vars" alt="" coords="205,107,334,133"/>
+<area shape="rect" id="node7" href="$ed__type__init_8f90.html#ab95c7280a3c8ff39333ac7145d0ccecf" title="init_ed_site_vars" alt="" coords="210,157,329,184"/>
+<area shape="rect" id="node8" href="$ed__type__init_8f90.html#a67afe21be4346c13ced583c229e2bb4c" title="init_ed_poly_vars" alt="" coords="209,208,330,235"/>
+<area shape="rect" id="node4" href="$namespaceallometry.html#ac1523ea0e0ef8d2dd6a429f61a013c1c" title="allometry::dbh2krdepth" alt="" coords="396,56,551,83"/>
+<area shape="rect" id="node5" href="$namespaceallometry.html#aab2b2cee61cac31529246b043121c7de" title="allometry::dbh2vol" alt="" coords="611,56,737,83"/>
+<area shape="rect" id="node9" href="$structural__growth_8f90.html#a5e03a88fee4cb247574e235c96e27716" title="compute_c_and_n_storage" alt="" coords="384,208,563,235"/>
+</map>

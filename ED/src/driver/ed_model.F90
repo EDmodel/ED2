@@ -2,6 +2,13 @@
 !==========================================================================================!
 !    This file contains the main driver for ED2.                                           !
 !------------------------------------------------------------------------------------------!
+! SUBROUTINE: ED_MODEL
+!
+!> \brief   Begins, updates, and outputs results from ecosystem simulation.
+!> \details Coordinates meteorological forcing data, time-stepping, radiation, vegetation
+!>          dynamics, hydraulogy, and the HDF5 output subsystem.
+!> \author  Translated from ED1 by Ryan Knox and Marcos Longo
+!------------------------------------------------------------------------------------------!
 subroutine ed_model()
   
    use ed_misc_coms  , only : ivegt_dynamics              & ! intent(in)
@@ -430,6 +437,17 @@ subroutine ed_model()
          end if
       end if
       !------------------------------------------------------------------------------------!
+      
+
+      !------------------------------------------------------------------------------------!
+      !      Update the yearly variables.                                                  !
+      !------------------------------------------------------------------------------------!
+      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
+         do ifm = 1,ngrids
+            call update_ed_yearly_vars(edgrid_g(ifm))
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -473,11 +491,11 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       !      Update the yearly variables.                                                  !
       !------------------------------------------------------------------------------------!
-      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
-         do ifm = 1,ngrids
-            call update_ed_yearly_vars(edgrid_g(ifm))
-         end do
-      end if
+      !if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
+      !   do ifm = 1,ngrids
+      !      call update_ed_yearly_vars(edgrid_g(ifm))
+      !   end do
+      !end if
       !------------------------------------------------------------------------------------!
 
 

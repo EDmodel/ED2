@@ -32,7 +32,9 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
                            , normalize_ed_mmean_vars & ! sub-routine
                            , normalize_ed_qmean_vars & ! sub-routine
                            , zero_ed_mmean_vars      & ! sub-routine
-                           , zero_ed_qmean_vars      ! ! sub-routine
+                           , zero_ed_qmean_vars      & ! sub-routine
+                           , zero_ed_qmean_vars      & ! sub-routine
+                           , zero_ed_yearly_vars     ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical, intent(in)  :: the_end
@@ -150,6 +152,9 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
    !----- Yearly analysis output. ---------------------------------------------------------!
    if (annual_time) then
       call h5_output('YEAR')
+      do ifm=1,ngrids
+         call zero_ed_yearly_vars(edgrid_g(ifm))
+      end do
    end if
    !---------------------------------------------------------------------------------------!
 

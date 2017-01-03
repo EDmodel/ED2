@@ -256,62 +256,56 @@ if (idbh.type == 1){
    classdbh   <<- seq(from=0,to=(ndbh-1)*ddbh,by=ddbh)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
    dbhlabel   <<- "11_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
    dbhcols    <<- c(         "purple3",   "mediumpurple1",      "royalblue4"
-                   ,      "steelblue3",     "deepskyblue",         "#004E00"
-                   ,     "chartreuse3",      "olivedrab3", "lightgoldenrod3"
-                   ,         "yellow3",     "darkorange1",       "firebrick"
-                   ,        all.colour
+                   ,      "steelblue3",     "deepskyblue",     "chartreuse3"
+                   , "lightgoldenrod3",         "yellow3",     "darkorange1"
+                   ,       "firebrick",        all.colour
                    )#end c
-
+   dbhltys    <<- c("twodash","dashed","longdash"
+                   ,"dotdash","twodash","dashed"
+                   ,"longdash","dotdash","twodash"
+                   ,"dashed","solid")
 }else if (idbh.type == 2){
-   ndbh       <<-  5
-   classdbh   <<- c(0,10,20,35,55)
+   ndbh       <<-  6
+   classdbh   <<- c(0,10,20,35,55,80)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "05_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(      "royalblue3",     "chartreuse3" ,         "yellow3"
-                   ,     "darkorange1",       "firebrick" ,        all.colour
-                   )#end c
+   dbhlabel   <<- "06_szclss"
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#306614","#3B24B3","#2996CC","#A3CC52","#E65C17","#990F0F",all.colour)
+   dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","longdash","solid")
 }else if (idbh.type == 3){
    ndbh       <<-  4
    classdbh   <<- c(0,10,35,55)
    dbhlabel   <<- "04_szclss"
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(         "#3B24B3",     "#2996CC"
-                   ,         "#FF9466",     "#990F0F",         all.colour
-                   )#end c
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#3B24B3","#2996CC","#FF9466","#990F0F",all.colour)
+   dbhltys    <<- c("twodash","dashed","longdash","dotdash","solid")
 }else if (idbh.type == 4){
-   ndbh       <<-  6
-   classdbh   <<- c(0,2,10,20,45,70)
+   ndbh       <<-  5
+   classdbh   <<- c(0,10,30,50,80)
    breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-   dbhlabel   <<- "06_szclss"
-   dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-   dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                       , c(classdbh[-1],classdbh[ndbh]),"cm"
-                       , sep=""
-                       )#end paste
-   dbhcols    <<- c(         "purple3",       "royalblue3",     "chartreuse3"
-                   ,         "yellow3",      "darkorange1",       "firebrick"
-                   ,        all.colour
-                   )#end c
+   dbhlabel   <<- "05_szclss"
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#3B24B3","#306614","#A3CC52","#E65C17","#990F0F",all.colour)
+   dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","solid")
 }else{
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")
-   stop(" Invalid IDBH.TYPE, it must be between 1 and 5 (feel free to add more options.")
+   stop(" Invalid IDBH.TYPE, it must be between 1 and 4 (feel free to add more options.")
 }#end if
 #==========================================================================================#
 #==========================================================================================#
@@ -346,7 +340,7 @@ if (ihgt.type == 1){
                    )#end c
 }else if (ihgt.type == 2){
    nhgt       <<-  13
-   classhgt   <<- c(0,1,4,7,10,13,16,19,22,25,28,31,34)
+   classhgt   <<- c(0,2,4,7,10,14,18,22,26,30,34,38,42)
    hgtlabel   <<- "13_szclss"
    breakhgt   <<- c(-Inf,classhgt[-1],Inf)
    hgtkeys    <<- paste(classhgt,"-",c(classhgt[-1],Inf),sep="")
@@ -360,10 +354,26 @@ if (ihgt.type == 1){
                    ,         "yellow3",     "darkorange1",            "red3"
                    ,      "firebrick4",        all.colour
                    )#end c
+}else if (ihgt.type == 3){
+   nhgt       <<-  12
+   classhgt   <<- c(0,5,10,15,20,24,28,31,34,36,38,40)
+   hgtlabel   <<- "12_szclss"
+   breakhgt   <<- c(-Inf,classhgt[-1],Inf)
+   hgtkeys    <<- paste(classhgt,"-",c(classhgt[-1],Inf),sep="")
+   hgtnames   <<- paste( c("<",paste(classhgt[-c(1,nhgt)],"-",sep=""),">")
+                       , c(classhgt[-1],classhgt[nhgt]),"cm"
+                       , sep=""
+                       )#end paste
+   hgtcols    <<- c(         "purple3",   "mediumpurple1",      "royalblue4"
+                   ,      "steelblue3",     "deepskyblue",     "chartreuse3"
+                   ,      "olivedrab3", "lightgoldenrod3",         "yellow3"
+                   ,     "darkorange1",            "red3",      "firebrick4"
+                   ,        all.colour
+                   )#end c
 }else{
    cat(" In globdims.r:","\n")
    cat(" IHGT.TYPE = ",ihgt.type,"\n")
-   stop(" Invalid IHGT.TYPE, it must be between 1 and 2 (feel free to add more options.")
+   stop(" Invalid IHGT.TYPE, it must be between 1 and 3 (feel free to add more options.")
 }#end if
 #==========================================================================================#
 #==========================================================================================#

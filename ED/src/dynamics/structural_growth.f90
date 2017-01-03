@@ -25,7 +25,8 @@ subroutine structural_growth(cgrid, month)
    use decomp_coms    , only : f_labile               ! ! intent(in)
    use ed_max_dims    , only : n_pft                  & ! intent(in)
                              , n_dbh                  ! ! intent(in)
-   use ed_misc_coms   , only : ibigleaf               ! ! intent(in)
+   use ed_misc_coms   , only : ibigleaf               & ! intent(in)
+                             , current_time           ! ! intent(in)
    use ed_therm_lib   , only : calc_veg_hcap          & ! function
                              , update_veg_energy_cweh ! ! function
    use ed_misc_coms   , only : igrass                 ! ! intent(in)
@@ -58,6 +59,8 @@ subroutine structural_growth(cgrid, month)
    real                          :: bstorage_in
    real                          :: agb_in
    real                          :: ba_in
+   real                          :: bag_in
+   real                          :: bam_in
    real                          :: cb_act
    real                          :: cb_lightmax
    real                          :: cb_moistmax
@@ -76,7 +79,32 @@ subroutine structural_growth(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: old_leaf_hcap
    real                          :: old_wood_hcap
+   logical          , parameter  :: printout  = .false.
+   character(len=17), parameter  :: fracfile  = 'struct_growth.txt'
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical          , save       :: first_time = .true.
    !---------------------------------------------------------------------------------------!
+   
+
+   !----- First time, and the user wants to print the output.  Make a header. -------------!
+   if (first_time) then
+
+      !----- Make the header. -------------------------------------------------------------!
+      if (printout) then
+         open (unit=66,file=fracfile,status='replace',action='write')
+         write (unit=66,fmt='(20(a,1x))')                                                  &
+           ,      '  YEAR',     '  MONTH',      '   DAY',      '   PFT',      '   ICO'     &
+           ,'       BA_IN','      BAG_IN','      BAM_IN','      DBH_IN','   NPLANT_IN'     &
+           ,'      BA_OUT','     BAG_OUT','     BAM_OUT','     DBH_OUT','  NPLANT_OUT'     &
+           ,' TOTAL_BA_PY','TOTAL_BAG_PY','TOTAL_BAM_PY','TOTAL_BAR_PY','FIRST_CENSUS'
+         close (unit=66,status='keep')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      first_time = .false.
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -108,6 +136,8 @@ subroutine structural_growth(cgrid, month)
                bstorage_in = cpatch%bstorage(ico)
                agb_in      = cpatch%agb     (ico)
                ba_in       = cpatch%basarea (ico)
+               bag_in      = sum(cpoly%basal_area_growth(ipft,:,isi))
+               bam_in      = sum(cpoly%basal_area_mort(ipft,:,isi))
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
@@ -407,6 +437,26 @@ subroutine structural_growth(cgrid, month)
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
                call is_resolvable(csite,ipa,ico)
+               !---------------------------------------------------------------------------!
+   
+
+               !---------------------------------------------------------------------------!
+               if (printout) then
+                  open (unit=66,file=fracfile,status='old',position='append',action='write')
+                  write (unit=66,fmt='(5(i6,1x),14(f12.6,1x),1(11x,l1,1x))')               &
+                     current_time%year,current_time%month,current_time%date,ipft,ico       &
+                     ,ba_in,bag_in,bam_in,dbh_in,nplant_in                                 &
+                     ,cpatch%basarea(ico)                                                  &
+                     ,sum(cpoly%basal_area_growth(ipft,:,isi))                             &
+                     ,sum(cpoly%basal_area_mort(ipft,:,isi))                               &
+                     ,cpatch%dbh(ico),cpatch%nplant(ico)                                   &
+                     ,cgrid%total_basal_area(ipy)                                          &
+                     ,cgrid%total_basal_area_growth(ipy)                                   &
+                     ,cgrid%total_basal_area_mort(ipy)                                     &
+                     ,cgrid%total_basal_area_recruit(ipy)                                  &
+                     ,cpatch%first_census(ico)
+                  close (unit=66,status='keep')
+               end if
                !---------------------------------------------------------------------------!
 
             end do cohortloop
@@ -1162,7 +1212,8 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
    use consts_coms   , only : pio4         ! ! intent(in)
    use pft_coms      , only : agf_bs       & ! intent(in)
                             , q            & ! intent(in)
-                            , qsw          ! ! intent(in)
+                            , qsw          & ! intent(in)
+                            , is_grass     ! ! function
    use allometry     , only : ed_biomass   ! ! function
    implicit none
 
@@ -1220,6 +1271,7 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
    !     These are polygon-level variable, so they are done in kgC/m2.  Update the current !
    ! basal area and above-ground biomass.                                                  !
    !---------------------------------------------------------------------------------------!
+   if (is_grass(ipft)) return
    basal_area(ipft, idbh) = basal_area(ipft, idbh)                                         &
                           + area * cpatch%nplant(ico) * cpatch%basarea(ico)
    agb(ipft, idbh)        = agb(ipft, idbh)                                                &
@@ -1230,30 +1282,28 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
    ! first census.                                                                         !
    !---------------------------------------------------------------------------------------!
    if (cpatch%first_census(ico) /= 1) return
-
+   
    !---------------------------------------------------------------------------------------!
    !   Computed for plants alive both at past census and current census.  These will be    !
    ! given in cm2/m2/yr and kgC/m2/yr, respectively.                                       !
    !---------------------------------------------------------------------------------------!
    basal_area_growth(ipft,idbh) = basal_area_growth(ipft,idbh)                             &
                                 + area * cpatch%nplant(ico) * pio4                         &
-                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)    &
-                                * 12.0
+                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)
    agb_growth(ipft,idbh)        = agb_growth(ipft,idbh)                                    &
                                 + area * cpatch%nplant(ico)                                &
-                                * (cpatch%agb(ico) - agb_in)                               &
-                                * 12.0 
+                                * (cpatch%agb(ico) - agb_in)
 
    !---------------------------------------------------------------------------------------!
    !    Computed for plants alive at past census but dead at current census.  These        !
    ! variables are also given in cm2/m2/yr and kgC/m2/yr, respectively.                    !
    !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
-                              + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
+                              + area * (nplant_in - cpatch%nplant(ico)) * ba_in
 
    !----- Calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]. -------!
    agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
-                              + area * (nplant_in - cpatch%nplant(ico)) * agb_in * 12.0
+                              + area * (nplant_in - cpatch%nplant(ico)) * agb_in
 
    return
 end subroutine update_vital_rates

@@ -202,7 +202,7 @@ do
    if [ -s ${stdout} ]
    then
       #----- Check whether the simulation is running, and when in model time it is. -------#
-      running=$(qstat -j ${jobname} -s r 2> /dev/null | wc -l)
+      running=$(qjobs -j ${jobname} -s R -n 2> /dev/null | wc -l)
       simline=$(grep "Simulating: "   ${stdout} | tail -1)
       runtime=$(echo ${simline} | awk '{print $3}')
       #------------------------------------------------------------------------------------#

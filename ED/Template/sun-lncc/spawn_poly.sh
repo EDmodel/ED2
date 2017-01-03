@@ -12,8 +12,10 @@ moi=$(whoami)
 desc=$(basename ${here})
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit='/prj/prjidfca/marcosl/Data/ed2_data/site_bio_data'
-biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
+alsinit='/prj/prjidfca/marcosl/Data/ed2_data/lidar_bio_data'
+biotype=2      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
+               # 2 -- lidar initialisation. isizepft is the disturbance history key.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart='/prj/prjidfca/marcosl/Data/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
@@ -484,6 +486,11 @@ do
          ;;
       esac
       ;;
+   *)
+      pfts="1,2,3,4,16"
+      crop=16
+      plantation=3
+      ;;
    esac
    #---------------------------------------------------------------------------------------#
 
@@ -627,7 +634,7 @@ do
    Paracou)
       metdriverdb="${fullscen}/Paracou/Paracou_HEADER"
       metcyc1=2004
-      metcycf=2012
+      metcycf=2014
       imetavg=1
       ;;
    Pe-de-Gigante)
@@ -1199,6 +1206,13 @@ do
          esac
          #---------------------------------------------------------------------------------#
          ;;
+      2)
+         #---------------------------------------------------------------------------------#
+         #     ALS initialisation. ISIZEPFT has disturbance history information.           #
+         #---------------------------------------------------------------------------------#
+         thissfilin="${alsinit}/${polyiata}_${isizepft}."
+         #---------------------------------------------------------------------------------#
+         ;;
       esac
       #------------------------------------------------------------------------------------#
    else
@@ -1358,7 +1372,7 @@ do
       #     Check whether the job is still running
       #------------------------------------------------------------------------------------#
       jobname="${desc}-${polyname}"
-      running=$(qstat -j ${jobname} 2> /dev/null | wc -l)
+      running=$(qjobs -j ${jobname} -n 2> /dev/null | wc -l)
       #------------------------------------------------------------------------------------#
 
 

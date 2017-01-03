@@ -36,11 +36,13 @@ plot.ptcloud <<- function( pt.cloud
                          , expand           = 0.5
                          , ticktype         = "detailed"
                          , shade            = 0.125
-                         , ltheta           = -210.
+                         , ltheta           = theta
+                         , lphi             = 90-phi
                          , pch              = 16
                          , cex              = if(cex.intensity){c(0.1,0.8)}else{0.5}
                          , floor.col        = "grey94"
                          , plot.density     = TRUE
+                         , plot.metrics     = TRUE
                          , zzdens           = NULL
                          , mhdens           = NULL
                          , n.dens           = 512
@@ -57,6 +59,14 @@ plot.ptcloud <<- function( pt.cloud
                          , lwd.peaks        = c(2,2)
                          , col.peaks        = c("midnightblue","deepskyblue")
                          , draw.box         = FALSE
+                         , quant.metrics    = c(0.10,0.25,0.50,0.75,0.90,0.95)
+                         , abline.metrics   = FALSE
+                         , cex.metrics      = 1.5
+                         , col.metrics      = c("midnightblue","deepskyblue")
+                         , lty.metrics      = c("dotted")
+                         , mar.key          = NULL
+                         , mar.ptcloud      = NULL
+                         , mar.density      = NULL
                          , ...
                          ){
 
@@ -305,9 +315,11 @@ plot.ptcloud <<- function( pt.cloud
 
    #=======================================================================================#
    #=======================================================================================#
-   #      Firs plot: the key scale.                                                        #
+   #      First plot: the key scale.                                                       #
    #---------------------------------------------------------------------------------------#
-      if (key.vertical){
+      if (! is.null(mar.key)){
+         par(mar = mar.key)
+      }else if (key.vertical){
          par(mar = c(5.1,0.6,4.1,4.1))
       }else{
          par(mar = c(2.1,4.6,1.6,2.1))
@@ -444,7 +456,11 @@ plot.ptcloud <<- function( pt.cloud
    #=======================================================================================#
    #     Plot the 3-D plot.                                                                #
    #---------------------------------------------------------------------------------------#
-   if (plot.density){
+   if (! is.null(mar.ptcloud)){
+      par(mar=mar.ptcloud)
+   }else if (plot.density && all(c(xaxt,yaxt,zaxt) %in% "n")){
+      par(mar=c(0.1,0.1,4.1,0.1))
+   }else if (plot.density){
       par(mar=c(1.1,3.1,4.1,1.1))
    }else{
       par(mar=c(1.1,1.1,4.1,1.1))
@@ -464,6 +480,7 @@ plot.ptcloud <<- function( pt.cloud
                 , border    = NA
                 , shade     = shade
                 , ltheta    = ltheta
+                , lphi      = lphi
                 , cex.main  = 0.8*cex.ptsz
                 , axes      = FALSE
                 )#end perspx
@@ -588,11 +605,12 @@ plot.ptcloud <<- function( pt.cloud
    #---------------------------------------------------------------------------------------#
    if (plot.density){
       #----- Make sure plot parameters have length 2. -------------------------------------#
-      if (length(col.dens ) == 1) col.dens  = rep(x=col.dens ,times=2)
-      if (length(lwd.dens ) == 1) lwd.dens  = rep(x=lwd.dens ,times=2)
-      if (length(pch.peaks) == 1) pch.peaks = rep(x=pch.peaks,times=2)
-      if (length(lwd.peaks) == 1) lwd.peaks = rep(x=lwd.peaks,times=2)
-      if (length(col.peaks) == 1) col.peaks = rep(x=col.peaks,times=2)
+      if (length(col.dens   ) == 1) col.dens    = rep(x=col.dens   ,times=2)
+      if (length(lwd.dens   ) == 1) lwd.dens    = rep(x=lwd.dens   ,times=2)
+      if (length(pch.peaks  ) == 1) pch.peaks   = rep(x=pch.peaks  ,times=2)
+      if (length(lwd.peaks  ) == 1) lwd.peaks   = rep(x=lwd.peaks  ,times=2)
+      if (length(col.peaks  ) == 1) col.peaks   = rep(x=col.peaks  ,times=2)
+      if (length(col.metrics) == 1) col.metrics = rep(x=col.metrics,times=2)
       #------------------------------------------------------------------------------------#
 
 
@@ -622,6 +640,7 @@ plot.ptcloud <<- function( pt.cloud
          ydens  = zzdens$x
       }#end if
       #------------------------------------------------------------------------------------#
+
 
 
 
@@ -696,11 +715,34 @@ plot.ptcloud <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
 
 
+
       #----- Open the plotting area.  Note that y is the height and x is the density. -----#
-      par(mar = c(5.1,4.1,4.1,2.1))
+      if (! is.null(mar.density)){
+         par(mar = mar.density)
+      }else{
+         par(mar = c(5.1,4.1,4.1,1.1))
+      }#end if (! is.null(mar.density))
       plot.new()
       plot.window(xlim=xdlim,ylim=ydlim,log=if(zlog){"y"}else{""})
       if (grid.dens) abline(h=ydat,v=xdat,col=grid.colour,lty="dotted",lwd=0.75)
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Plot metrics. ----------------------------------------------------------------#
+      if (plot.metrics){
+        z.quant = quantile(x=z,probs=quant.metrics,na.rm=TRUE)
+        z.idx   = mapply(FUN=which.closest,x=z.quant,MoreArgs=list(A=ydens))
+        text( x      = xdens[z.idx]
+            , y      = ydens[z.idx]
+            , labels = round(100*quant.metrics,1)
+            , col    = col.metrics[2]
+            , font   = 2
+            , cex    = 1.1
+            )#end text
+        
+#        abline(h=z.quant,col=col.metrics[2],lty=lty.metrics,lwd=2)
+      }#end if
       #------------------------------------------------------------------------------------#
 
 
@@ -745,17 +787,39 @@ plot.ptcloud <<- function( pt.cloud
 
 
 
+      #----- Plot metrics. ----------------------------------------------------------------#
+      if (plot.metrics){
+        z.mean = mean(x=z,na.rm=TRUE)
+        z.sdev = sd  (x=z,na.rm=TRUE)
+        error.bar( x    = mean(xdlim)
+                 , y    = z.mean
+                 , yerr = z.sdev
+                 , col  = col.metrics[2]
+                 , pch  = 15
+                 , cex  = 2
+                 , add  = TRUE
+                 )#end error.bar
+        text     ( x      = xdlim[1] + c(0.4,0.5,0.5)*diff(xdlim)
+                 , y      = c(z.mean,z.mean+c(-0.5,0.5)*z.sdev)
+                 , labels = parse(text=c("mu[z]","sigma[z]"))
+                 , col    = col.metrics[1]
+                 )#end text
+      }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
       #----- Plot legend. -----------------------------------------------------------------#
       if (plot.zmah){
          legend( x       = "topright"
-               , inset   = 0.01
+               , inset   = 0.001
                , legend  = c("Raw","MacArthur-Horn")
                , col     = col.dens
                , lty     = lty.dens
                , lwd     = lwd.dens
                , bg      = background
-               , box.col = foreground
                , cex     = 0.6
+               , bty     = "n"
                )#end legend
       }#end if (plot.zmah)
       #------------------------------------------------------------------------------------#

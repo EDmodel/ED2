@@ -402,32 +402,44 @@ coord.to.norm <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
 
 
    #---------------------------------------------------------------------------------------#
-   #    Find coefficients for quadratic formula.                                           #
+   #    First, find out whether this equation is quadratic or not.                         #
    #---------------------------------------------------------------------------------------#
-   aa = ( e3 * n2 - e2 * n3)
-   bb = ( e4 * n2 - e2 * n4 + et * n3 - e3 * nt ) / aa
-   cc = ( et * n4 - e4 * nt ) / aa
-   #---------------------------------------------------------------------------------------#
+   aa         = (e3 * n2 - e2 * n3)
+   if (aa == 0.){
+      #----- Not quadratic. ---------------------------------------------------------------#
+      yy = - ( et * n4 - e4 * nt ) / ( e4 * n2 - e2 * n4 + et * n3 - e3 * nt )
+      xx = (et - yy * e2) / (e4 + yy * e3)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Quadratic, search for the two solutions. -------------------------------------#
+      bb         = ( e4 * n2 - e2 * n4 + et * n3 - e3 * nt ) / aa
+      cc         = ( et * n4 - e4 * nt ) / aa
+      #------------------------------------------------------------------------------------#
 
 
-   #---------------------------------------------------------------------------------------#
-   #     Find the two possible y coordinates and the associated x coordinates.             #
-   #---------------------------------------------------------------------------------------#
-   dd = bb * bb - 4 * cc
-   y1 = 0.5 * ( - bb - sqrt(dd) )
-   y2 = 0.5 * ( - bb + sqrt(dd) )
-   x1 = (et - y1 * e2) / (e4 + y1 * e3)
-   x2 = (et - y2 * e2) / (e4 + y2 * e3)
-   #---------------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
+      #     Find the two possible y coordinates and the associated x coordinates (in case  #
+      # this solution is quadratic).                                                       #
+      #------------------------------------------------------------------------------------#
+      dd = bb * bb - 4 * cc
+      y1 = 0.5 * ( - bb - sqrt(dd) )
+      y2 = 0.5 * ( - bb + sqrt(dd) )
+      x1 = (et - y1 * e2) / (e4 + y1 * e3)
+      x2 = (et - y2 * e2) / (e4 + y2 * e3)
+      #------------------------------------------------------------------------------------#
 
-   #---------------------------------------------------------------------------------------#
-   #     Pick the one that makes the most sense.                                           #
-   #---------------------------------------------------------------------------------------#
-   one   = (x1 %wr% c(0.0,1.0)) & (y1 %wr% c(0.0,1.0))
-   two   = (x2 %wr% c(0.0,1.0)) & (y2 %wr% c(0.0,1.0))
-   three = (x1^2+y1^2) < (x2^2+y2^2)
-   xx  = ifelse(one,x1,ifelse(two,x2,ifelse(three,x1,x2)))
-   yy  = ifelse(one,y1,ifelse(two,y2,ifelse(three,y1,y2)))
+
+
+      #------------------------------------------------------------------------------------#
+      #     Pick the one that makes the most sense.                                        #
+      #------------------------------------------------------------------------------------#
+      one   = (x1 %wr% c(0.0,1.0)) & (y1 %wr% c(0.0,1.0))
+      two   = (x2 %wr% c(0.0,1.0)) & (y2 %wr% c(0.0,1.0))
+      three = (x1^2+y1^2) < (x2^2+y2^2)
+      xx  = ifelse(one,x1,ifelse(two,x2,ifelse(three,x1,x2)))
+      yy  = ifelse(one,y1,ifelse(two,y2,ifelse(three,y1,y2)))
+      #------------------------------------------------------------------------------------#
+   }#end if (aa == 0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -441,3 +453,66 @@ coord.to.norm <<- function(x,y=NULL,vertex,xscl=1,yscl=1){
 }#end coord.to.norm
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      This function converts decimal degrees to degrees,minutes,seconds.                  #
+#------------------------------------------------------------------------------------------#
+dec2dms <<- function(lon=NULL,lat=NULL){
+
+   #----- Transform longitude into degrees, minutes, seconds. -----------------------------#
+   if (! is.null(lon)){
+      lon    = (lon + 180.) %% 360 - 180.
+      degree = sprintf("%3i"  ,floor(abs(lon))                      )
+      minute = sprintf("%2.2i",floor(abs(lon) %% 1 * 60)            )
+      second = sprintf("%2.2i",floor((abs(lon) %% 1 * 60) %% 1 * 60))
+      hemisf = ifelse(lon %>=% 0,"E","W")
+      olon   = paste0(degree,"-",minute,"\'",second,"\"",hemisf)
+      olon   = ifelse(is.finite(lon),olon,NA_character_)
+   }else{
+      olon = NULL
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Transform latitude into degrees, minutes, seconds. ------------------------------#
+   if (! is.null(lat)){
+      degree = sprintf("%2i"  ,floor(abs(lat))                      )
+      minute = sprintf("%2.2i",floor(abs(lat) %% 1 * 60)            )
+      second = sprintf("%2.2i",floor((abs(lat) %% 1 * 60) %% 1 * 60))
+      hemisf = ifelse(lat %>=% 0,"N","S")
+      olat   = paste0(degree,"-",minute,"\'",second,"\"",hemisf)
+      olat   = ifelse(is.finite(lat),olat,NA_character_)
+   }else{
+      olat = NULL
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Return result.  We must check whether lon or lat have been provided.              #
+   #---------------------------------------------------------------------------------------#
+   if (is.null(lon) && is.null(lat)){
+      ans           = NULL
+   }else if (is.null(lon)){
+      ans           = olat
+      names(ans)    = names(lat)
+   }else if (is.null(lat)){
+      ans           = olon
+      names(ans)    = names(lon)
+   }else{
+      ans           = data.frame(lon=olon,lat=olat,stringsAsFactors=FALSE)
+      rownames(ans) = names(lon)
+   }#end if (is.null(lon) && is.null(lat))
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end dec2dms
+#------------------------------------------------------------------------------------------#
+

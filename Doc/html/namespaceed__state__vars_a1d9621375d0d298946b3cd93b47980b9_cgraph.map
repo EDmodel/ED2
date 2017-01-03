@@ -1,0 +1,5 @@
+<map id="ed_state_vars::deallocate_edtype" name="ed_state_vars::deallocate_edtype">
+<area shape="rect" id="node2" href="$namespaceed__state__vars.html#abea5ee3b5bbe881d86ca62b4de939db3" title="ed_state_vars::deallocate\l_polygontype" alt="" coords="223,5,392,47"/>
+<area shape="rect" id="node3" href="$namespaceed__state__vars.html#a29881891f67226b191026267f094beb9" title="ed_state_vars::deallocate\l_sitetype" alt="" coords="440,5,609,47"/>
+<area shape="rect" id="node4" href="$namespaceed__state__vars.html#a2845fb7d7264ed3c00651e9e46a16ed8" title="ed_state_vars::deallocate\l_patchtype" alt="" coords="657,5,827,47"/>
+</map>

@@ -21,7 +21,7 @@
 #                 insensitive and only the first letter is checked.  "p" means PAR, "n"    #
 #                 means NIR, and any other letter will be assumed shortwave.               #
 #------------------------------------------------------------------------------------------#
-rshort.bdown = function(rad.in,atm.prss,cosz,rad.type="rshort"){
+rshort.bdown <<- function(rad.in,atm.prss,cosz,rad.type="rshort"){
 
    if (length(atm.prss) == 1) atm.prss = rep(atm.prss,times=length(rad.in))
 

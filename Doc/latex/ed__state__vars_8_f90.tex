@@ -1,0 +1,218 @@
+\hypertarget{ed__state__vars_8_f90}{}\section{ed\+\_\+state\+\_\+vars.\+F90 File Reference}
+\label{ed__state__vars_8_f90}\index{ed\+\_\+state\+\_\+vars.\+F90@{ed\+\_\+state\+\_\+vars.\+F90}}
+\subsection*{Data Types}
+\begin{DoxyCompactItemize}
+\item 
+type \hyperlink{structed__state__vars_1_1patchtype}{ed\+\_\+state\+\_\+vars\+::patchtype}
+\item 
+type \hyperlink{structed__state__vars_1_1sitetype}{ed\+\_\+state\+\_\+vars\+::sitetype}
+\item 
+type \hyperlink{structed__state__vars_1_1polygontype}{ed\+\_\+state\+\_\+vars\+::polygontype}
+\item 
+type \hyperlink{structed__state__vars_1_1edtype}{ed\+\_\+state\+\_\+vars\+::edtype}
+\end{DoxyCompactItemize}
+\subsection*{Modules}
+\begin{DoxyCompactItemize}
+\item 
+module \hyperlink{namespaceed__state__vars}{ed\+\_\+state\+\_\+vars}
+\end{DoxyCompactItemize}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a01c02fd632892eb11eaac0daacc106d2}{ed\+\_\+state\+\_\+vars\+::allocate\+\_\+edglobals} (ngrids)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aa47dd5e1964efcbfa0844f75d1763ce5}{ed\+\_\+state\+\_\+vars\+::allocate\+\_\+edtype} (cgrid, npolygons)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ad14e882e6c902118f0e369dd846eeedf}{ed\+\_\+state\+\_\+vars\+::allocate\+\_\+polygontype} (cpoly, nsites)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ac3b987ebbdc7c8cd956eb2634010edb9}{ed\+\_\+state\+\_\+vars\+::allocate\+\_\+sitetype} (csite, npatches)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a4837fc010e19721a127c9a8b04874594}{ed\+\_\+state\+\_\+vars\+::allocate\+\_\+patchtype} (cpatch, ncohorts)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a0df5f674bdb76d915f34b1c6987f6815}{ed\+\_\+state\+\_\+vars\+::nullify\+\_\+edtype} (cgrid)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ade6f2776a02bd9a26ee31fe75cda6170}{ed\+\_\+state\+\_\+vars\+::nullify\+\_\+polygontype} (cpoly)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aa13b6faa5a0031bd5df50581ac0db0ff}{ed\+\_\+state\+\_\+vars\+::nullify\+\_\+sitetype} (csite)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_af1a07724c13a8dceb6ba2d3dab21b899}{ed\+\_\+state\+\_\+vars\+::nullify\+\_\+patchtype} (cpatch)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a1d9621375d0d298946b3cd93b47980b9}{ed\+\_\+state\+\_\+vars\+::deallocate\+\_\+edtype} (cgrid)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_abea5ee3b5bbe881d86ca62b4de939db3}{ed\+\_\+state\+\_\+vars\+::deallocate\+\_\+polygontype} (cpoly)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a29881891f67226b191026267f094beb9}{ed\+\_\+state\+\_\+vars\+::deallocate\+\_\+sitetype} (csite)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a2845fb7d7264ed3c00651e9e46a16ed8}{ed\+\_\+state\+\_\+vars\+::deallocate\+\_\+patchtype} (cpatch)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a3bf78091394d79aec34dd97e18ff16db}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype} (isite, osite, ipaa, ipaz, opaa, opaz)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_abd0a1c636db86530367e9d24e386ec22}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype\+\_\+mask} (isite, osite, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a1df5eb7cbed41bfe98b1c6ac5686b8cb}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype\+\_\+mask\+\_\+inst} (isite, osite, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aa441ba026af189af30a9464c62ad25d3}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype\+\_\+mask\+\_\+fmean} (isite, osite, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a1589be18b91e5861e128f61854e408a6}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype\+\_\+mask\+\_\+dmean} (isite, osite, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a37a6591c81160dba788b7db2a66003d1}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype\+\_\+mask\+\_\+mmean} (isite, osite, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a3cf450bc1662a96c51b849a2b95f4d97}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+sitetype\+\_\+mask\+\_\+qmean} (isite, osite, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_accd794e0e8d71ba375c3669097ae5c8d}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype} (ipatch, opatch, icoa, icoz, ocoa, ocoz)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a8d1f42b1112652da9f1e05929cdb29a1}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype\+\_\+mask} (ipatch, opatch, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aa9c50f14b3b7cdf0b27019486921c8dd}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype\+\_\+mask\+\_\+inst} (ipatch, opatch, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a1b0d514260b90af76ca01eb35453722a}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype\+\_\+mask\+\_\+fmean} (ipatch, opatch, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_afdb52860e9dff4bb1917d54009d84d68}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype\+\_\+mask\+\_\+dmean} (ipatch, opatch, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a35a0142a5bd5bfb026012c1e9c38dbf5}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype\+\_\+mask\+\_\+mmean} (ipatch, opatch, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a4fb10d3b10b1c5d40c2c36d89c8121ee}{ed\+\_\+state\+\_\+vars\+::copy\+\_\+patchtype\+\_\+mask\+\_\+qmean} (ipatch, opatch, z, lmask, isize, osize)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_afdc01451213108f52d4c3ac14a804f74}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+alltypes}
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ac479c3704655d44e4b6b87b703c488a1}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+globtype} (igr)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a31b9d7889efe4b92ff8dc064eb655d4e}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype} (igr, init)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_abb260c56b27f849e311a4ff12439a2d6}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p10} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a256581db31438ac1eab6658d8eed7e6d}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p11inst} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a6d7159b5099487f658877739e29f3f40}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p11fmean} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a7ed69aec83eaa248927d38ddd7a67daa}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p11dmean} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a714397c35a6eb326065670c98745d2ee}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p11mmean} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ab9eaf06f12f8739d511341e99dad51eb}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+m11} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a78f2d3db9b379cbde2178f6366ebdd06}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p12} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a4834dc1fa685230019880cc6c9cf4ed0}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+m12} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a6265fcb655ce420fb53d9d9a70a676c7}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p19} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a973191c14021cf533e4643205c6623d8}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p146} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a241cb06b937cbad37050f035e6305788}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+edtype\+\_\+p199} (cgrid, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a5059d40682c2653017de524077b8dae5}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype} (igr, ipy, init)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a246e5298a265c587bd0f78db320e29c5}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p20} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a64d47c7d852aa23bca56c7de34683c9d}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p21inst} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                       ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_af19ecf7678627fccba6adcca82feb553}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p21fmean} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ade2d35b3ad1ba1f23c8f0a694824064a}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p21dmean} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a9c13af78d563782f9b8d4427488f73b8}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p21mmean} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a7d921b75e21a0601c4dac488c4d1aa01}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p220} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_afabb5f55cd27b2d47fc19be14314ee61}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p24} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ada572b0a43655456a132bf574b33ed7f}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+m21} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a63083121712f3f902667c53218987e46}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p29} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a767e7b3c2632bb5bae2c57b3d5671780}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p246} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_af1a7d7f50a0d28613072bb4a1832c3e3}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+polygontype\+\_\+p255} (cpoly, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_adfda51c18d9eb4eab6a5f2d479eccd29}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype} (igr, ipy, isi, init)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a556ff3dcf4b87ae8fe4e3319e1196d27}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p30} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a8bc8b68929a7a916f6b7935bb29a633a}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p31inst} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a195c33fe08578b92692e488eb565861d}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p31fmean} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ab7a9ec8185269ed2dda4bf9538a21416}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p31dmean} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a89840a7049b8ec0e90010deda231bcdc}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p31mmean} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aeda801ceb00e5700d0dc3175a0937d16}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+m31} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a42452cec3810c62dd8c72e2d58476bcd}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p32} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a6f5ed492902141d24d2bd008dd7b68c1}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+m32} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ae53d37359e4395c526fd65a95f76c428}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p33} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_acf64db19aff9106beb2c20eecbe6afa9}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p34} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ad66c156887d39c17d4cb4b0895e5fe24}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+sitetype\+\_\+p346} (csite, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ac37a860383b752e5263aa945c99824a9}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype} (igr, ipy, isi, ipa, init)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a83c0921d462c47a37c8d6f97dbdb9d72}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p40} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aaabc9ebf2bd84a36b30887405edca948}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p41inst} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a308bf007a232ca65383f36dd6fbd0084}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p41fmean} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a951f992e438684b78a72bd758f70730e}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p41dmean} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aac151ba29df61cb8a458cb9601ba74a3}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p41mmean} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs                                                                                                                                                                   ,nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a326b7df2068b9faa5fc1ea535c86efe2}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+m41} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_a5d63e58eeaff5d95d688b551f909aff4}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p48} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_aacba61eceab235a0ea8a293671b4d340}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p49} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_afa3fe02474e668980d731221824ae0ab}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+p411} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+subroutine \hyperlink{namespaceed__state__vars_ad37021d612198bd02a104790ed58446c}{ed\+\_\+state\+\_\+vars\+::filltab\+\_\+patchtype\+\_\+m411} (cpatch, igr, init, var\+\_\+len, var\+\_\+len\+\_\+global, max\+\_\+ptrs, nvar)
+\item 
+integer function \hyperlink{namespaceed__state__vars_a71180ecf4c468babd534e14d280a688b}{ed\+\_\+state\+\_\+vars\+::get\+\_\+nsites} (cgrid)
+\item 
+integer function \hyperlink{namespaceed__state__vars_a87bcc335f1f8acbb6c87d33101c60e61}{ed\+\_\+state\+\_\+vars\+::get\+\_\+npatches} (cgrid)
+\item 
+integer function \hyperlink{namespaceed__state__vars_a3bec61b0abda2eb04c29f131b1130f37}{ed\+\_\+state\+\_\+vars\+::get\+\_\+ncohorts} (cgrid)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_aac712f975ee36c66ad91c4b4687cdf71}{ed\+\_\+state\+\_\+vars\+::gdpy}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_a77208cdb17b6a08bcdd07c476d5c6139}{ed\+\_\+state\+\_\+vars\+::gdsi}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_ad2a53bb636997523d8bdacfaa6f1b9b9}{ed\+\_\+state\+\_\+vars\+::gdpa}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_a4fc7c00baa15ee35e1703f12faa7fae2}{ed\+\_\+state\+\_\+vars\+::gdco}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_a7ebd94319455148e1487107c339113ca}{ed\+\_\+state\+\_\+vars\+::py\+\_\+off}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_a40e5ef082020264b3ac022cbf41351e1}{ed\+\_\+state\+\_\+vars\+::si\+\_\+off}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_a5d1fee7506efe5c3d326478d44f97e42}{ed\+\_\+state\+\_\+vars\+::pa\+\_\+off}
+\item 
+integer, dimension(maxmach, maxgrds) \hyperlink{namespaceed__state__vars_abb0498b9e5f1a7195d6260a97973b89f}{ed\+\_\+state\+\_\+vars\+::co\+\_\+off}
+\item 
+type(edtype), dimension(\+:), pointer \hyperlink{namespaceed__state__vars_a1ad47f9c446f02cad8b7a7a2bce06c8a}{ed\+\_\+state\+\_\+vars\+::edgrid\+\_\+g}
+\item 
+type(edtype) \hyperlink{namespaceed__state__vars_a42ec67e3b97c2e4abb244b7ec1e7f4c2}{ed\+\_\+state\+\_\+vars\+::edswap\+\_\+g}
+\item 
+type(polygontype) \hyperlink{namespaceed__state__vars_ae193a761d3f04f8bb0bf11c6e624f7b7}{ed\+\_\+state\+\_\+vars\+::polyswap\+\_\+g}
+\item 
+type(sitetype) \hyperlink{namespaceed__state__vars_ae55643d7022454835dc2a4b11c4a2b04}{ed\+\_\+state\+\_\+vars\+::siteswap\+\_\+g}
+\item 
+type(patchtype) \hyperlink{namespaceed__state__vars_ad11390031b4401ce635598920fc0523a}{ed\+\_\+state\+\_\+vars\+::patchswap\+\_\+g}
+\item 
+integer \hyperlink{namespaceed__state__vars_ad27fcaec6a546cf46df5c40ddbf1bde1}{ed\+\_\+state\+\_\+vars\+::nioglobal}
+\item 
+integer \hyperlink{namespaceed__state__vars_ad3c5095a2e6e68fda8c698372a614a6e}{ed\+\_\+state\+\_\+vars\+::niogrid}
+\item 
+integer \hyperlink{namespaceed__state__vars_acc17e1323f7365a8a43c74ceb839eb10}{ed\+\_\+state\+\_\+vars\+::niopoly}
+\item 
+integer \hyperlink{namespaceed__state__vars_ad692c1e699708ecf209c08544c730efd}{ed\+\_\+state\+\_\+vars\+::niosite}
+\item 
+logical \hyperlink{namespaceed__state__vars_a5f3e4a557e76387c621a3dddd988ff01}{ed\+\_\+state\+\_\+vars\+::filltables}
+\end{DoxyCompactItemize}

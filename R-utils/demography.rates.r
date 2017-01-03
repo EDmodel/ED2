@@ -11,7 +11,15 @@
 #    in Sarawak. J. Trop. Ecol., 16, 355-367.                                              #
 #                                                                                          #
 #------------------------------------------------------------------------------------------#
-recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime,R=1000){
+recruitment.rate <<- function( property
+                             , count
+                             , global        = count
+                             , p.use
+                             , p.established
+                             , taxon
+                             , dtime
+                             , R             = 1000
+                             ){
 
 
    #---------------------------------------------------------------------------------------#
@@ -45,10 +53,10 @@ recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime,R=1
    #---------------------------------------------------------------------------------------#
    #     Find the total rates for community and taxon.                                     #
    #---------------------------------------------------------------------------------------#
-   N.tx = tapply(X = count * p.use                , INDEX = taxon, FUN = sum, na.rm = TRUE )
-   E.tx = tapply(X = count * p.use * p.established, INDEX = taxon, FUN = sum, na.rm = TRUE )
-   N.gb = sum   (x = count * p.use                                          , na.rm = TRUE )
-   E.gb = sum   (x = count * p.use * p.established                          , na.rm = TRUE )
+   N.tx = tapply(X = count  * p.use                , INDEX = taxon, FUN = sum, na.rm = TRUE)
+   E.tx = tapply(X = count  * p.use * p.established, INDEX = taxon, FUN = sum, na.rm = TRUE)
+   N.gb = sum   (x = global * p.use                                          , na.rm = TRUE)
+   E.gb = sum   (x = global * p.use * p.established                          , na.rm = TRUE)
    #---------------------------------------------------------------------------------------#
 
 
@@ -191,7 +199,15 @@ recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime,R=1
 # Sheil, D.; May, R. M., 1996: Motality and recruitment rate evaluations in heterogeneous  #
 #     tropical forests.  J. Ecology, 84, 91-100.                                           #
 #------------------------------------------------------------------------------------------#
-mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=1000){
+mortality.rate <<- function( property
+                           , count
+                           , global     = count
+                           , p.use
+                           , p.survivor
+                           , taxon
+                           , dtime
+                           , R          = 1000
+                           ){
 
 
    #---------------------------------------------------------------------------------------#
@@ -225,10 +241,10 @@ mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=1000){
    #---------------------------------------------------------------------------------------#
    #     Find the total rates for community and taxon.                                     #
    #---------------------------------------------------------------------------------------#
-   N.tx = tapply(X = count * p.use             , INDEX = taxon, FUN = sum, na.rm = TRUE )
-   S.tx = tapply(X = count * p.use * p.survivor, INDEX = taxon, FUN = sum, na.rm = TRUE )
-   N.gb = sum   (x = count * p.use                                       , na.rm = TRUE )
-   S.gb = sum   (x = count * p.use * p.survivor                          , na.rm = TRUE )
+   N.tx = tapply(X = count  * p.use             , INDEX = taxon, FUN = sum, na.rm = TRUE )
+   S.tx = tapply(X = count  * p.use * p.survivor, INDEX = taxon, FUN = sum, na.rm = TRUE )
+   N.gb = sum   (x = global * p.use                                       , na.rm = TRUE )
+   S.gb = sum   (x = global * p.use * p.survivor                          , na.rm = TRUE )
    #---------------------------------------------------------------------------------------#
 
 
@@ -451,12 +467,25 @@ growth.rate <<- function(growth,count,taxon,R=1000){
 }#end function growth.rate
 #==========================================================================================#
 #==========================================================================================#
+
+
+
+
+
 #==========================================================================================#
 #==========================================================================================#
 #      This function computes the accumulated recruitment rates of each group, the         #
 # confidence interval, and the community-wide rate along with the confidence interval.     #
 #------------------------------------------------------------------------------------------#
-acc.recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime,R=1000){
+acc.recruitment.rate <<- function( property
+                                 , count
+                                 , global        = count
+                                 , p.use
+                                 , p.established
+                                 , taxon
+                                 , dtime
+                                 , R             = 1000
+                                 ){
 
 
    #---------------------------------------------------------------------------------------#
@@ -490,11 +519,12 @@ acc.recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime
    #---------------------------------------------------------------------------------------#
    #     Find the total rates for community and taxon.                                     #
    #---------------------------------------------------------------------------------------#
-   N.tx = tapply(X = count * p.use                , INDEX = taxon, FUN = sum, na.rm = TRUE )
-   E.tx = tapply(X = count * p.use * p.established, INDEX = taxon, FUN = sum, na.rm = TRUE )
-   N.gb = sum   (x = count * p.use                                          , na.rm = TRUE )
-   E.gb = sum   (x = count * p.use * p.established                          , na.rm = TRUE )
+   N.tx = tapply(X = count  * p.use                , INDEX = taxon, FUN = sum, na.rm = TRUE)
+   E.tx = tapply(X = count  * p.use * p.established, INDEX = taxon, FUN = sum, na.rm = TRUE)
+   N.gb = sum   (x = global * p.use                                          , na.rm = TRUE)
+   E.gb = sum   (x = global * p.use * p.established                          , na.rm = TRUE)
    #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -503,10 +533,10 @@ acc.recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime
    # median size and assume that one was recruited and the other was not, so bootstrap     #
    # can do something.                                                                     #
    #---------------------------------------------------------------------------------------#
-   property.tx            = split (x = property     , f = taxon)
-   p.use.tx               = split (x = p.use        , f = taxon)
-   p.established.tx       = split (x = p.established, f = taxon)
-   median.tx              = sapply(X = property.tx, FUN = median, na.rm = TRUE)
+   property.tx            = split (x = count * property, f = taxon)
+   p.use.tx               = split (x = p.use           , f = taxon)
+   p.established.tx       = split (x = p.established   , f = taxon)
+   median.tx              = sapply(X = property.tx     , FUN = median, na.rm = TRUE)
    zero.append            = N.tx == 0
    median.tx[zero.append] = 1.
    dont.append            = N.tx > 0 & ( N.tx != E.tx & E.tx != 0 )
@@ -564,11 +594,11 @@ acc.recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime
    # probability (no recruits or all trees are recruits), add two trees, one that          #
    # recruited and another that did not, both with the median value of the property.       #
    #---------------------------------------------------------------------------------------#
-   property.gb         = property
+   property.gb         = global * property
    p.established.gb    = p.established
    p.use.gb            = p.use
    if ( N.gb > 0 && ( N.gb == E.gb || E.gb == 0 ) ){
-      median.gb        = median(x = property, na.rm = TRUE)
+      median.gb        = median(x = property.gb, na.rm = TRUE)
       property.gb      = c(property.gb     ,median.gb,median.gb)
       p.established.gb = c(p.established.gb,       1.,       0.)
       p.use.gb         = c(p.use.gb        ,       1.,       1.)
@@ -628,7 +658,15 @@ acc.recruitment.rate <<- function(property,count,p.use,p.established,taxon,dtime
 #      This function computes the accumulated mortality rates of each group, the confi-    #
 # dence interval, and the community-wide rate along with the confidence interval.          #
 #------------------------------------------------------------------------------------------#
-acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=1000){
+acc.mortality.rate <<- function( property
+                               , count
+                               , global     = count
+                               , p.use
+                               , p.survivor
+                               , taxon
+                               , dtime
+                               , R          = 1000
+                               ){
 
 
    #---------------------------------------------------------------------------------------#
@@ -662,10 +700,10 @@ acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=10
    #---------------------------------------------------------------------------------------#
    #     Find the total rates for community and taxon.                                     #
    #---------------------------------------------------------------------------------------#
-   N.tx = tapply(X = count * p.use             , INDEX = taxon, FUN = sum, na.rm = TRUE )
-   S.tx = tapply(X = count * p.use * p.survivor, INDEX = taxon, FUN = sum, na.rm = TRUE )
-   N.gb = sum   (x = count * p.use                                       , na.rm = TRUE )
-   S.gb = sum   (x = count * p.use * p.survivor                          , na.rm = TRUE )
+   N.tx = tapply(X = count  * p.use             , INDEX = taxon, FUN = sum, na.rm = TRUE )
+   S.tx = tapply(X = count  * p.use * p.survivor, INDEX = taxon, FUN = sum, na.rm = TRUE )
+   N.gb = sum   (x = global * p.use                                       , na.rm = TRUE )
+   S.gb = sum   (x = global * p.use * p.survivor                          , na.rm = TRUE )
    #---------------------------------------------------------------------------------------#
 
 
@@ -677,10 +715,10 @@ acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=10
    # extreme cases are likely to happen when the sample size is very small, so this should #
    # make the error bars large.                                                            #      
    #---------------------------------------------------------------------------------------#
-   property.tx            = split (x = property  , f = taxon)
-   p.survivor.tx          = split (x = p.survivor, f = taxon)
-   p.use.tx               = split (x = p.use     , f = taxon)
-   median.tx              = sapply(X = property.tx, FUN = median, na.rm = TRUE)
+   property.tx            = split (x = count*property, f = taxon)
+   p.survivor.tx          = split (x = p.survivor    , f = taxon)
+   p.use.tx               = split (x = p.use         , f = taxon)
+   median.tx              = sapply(X = property.tx   , FUN = median, na.rm = TRUE)
    zero.append            = N.tx == 0
    median.tx[zero.append] = 1.
    dont.append            = N.tx > 0 & ( N.tx != S.tx & S.tx != 0)
@@ -752,11 +790,11 @@ acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=10
    # (no survivors or all trees survived), add two trees, one that survived and another    #
    # that did not, both with the median value of the property.                             #
    #---------------------------------------------------------------------------------------#
-   property.gb   = property
+   property.gb   = global * property
    p.survivor.gb = p.survivor
    p.use.gb      = p.use
    if ( N.gb > 0 && ( N.gb == S.gb || S.gb == 0 ) ){
-      median.gb      = median(x = property, na.rm = TRUE)
+      median.gb      = median(x = property * global, na.rm = TRUE)
       property.gb    = c(property.gb  ,median.gb,median.gb)
       p.survivor.gb  = c(p.survivor.gb,       1.,       0.)
       p.use.gb       = c(p.use.gb     ,       1.,       1.)
@@ -819,7 +857,7 @@ acc.mortality.rate <<- function(property,count,p.use,p.survivor,taxon,dtime,R=10
 #      This function computes the expected accumulated growth rate and the confidence      #
 # interval, using bootstrap so we do not need to assume any distribution.                  #
 #------------------------------------------------------------------------------------------#
-acc.growth.rate = function(nok,lok,pop,dtime,taxon,R=1000){
+acc.growth.rate <<- function(nok,lok,pop,gpop=pop,dtime,taxon,R=1000){
 
    #------ Split the data according to the class. -----------------------------------------#
    nok.tx    = split(x = nok   , f = taxon)
@@ -860,7 +898,7 @@ acc.growth.rate = function(nok,lok,pop,dtime,taxon,R=1000){
    #---------------------------------------------------------------------------------------#
    datum.gb = data.frame( nok              = nok
                         , lok              = lok
-                        , pop              = pop
+                        , pop              = gpop
                         , dtime            = dtime
                         , stringsAsFactors = FALSE)
    #---------------------------------------------------------------------------------------#
