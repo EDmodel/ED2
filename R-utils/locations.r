@@ -931,6 +931,23 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        , values = c(0,1)
                                        , names  = c("OFF","ON")
                                        )#end list
+   flagvar[["dhist" ]]           = list( descr  = "LCLU history"
+                                       , numeric = FALSE
+                                       , values = c("int","ril","cl1","cl2","bn1","bn2"
+                                                   ,"bn3","lb1","blb","sec","sb2")
+                                       , names  = c("Intact"
+                                                   ,"Reduced-Impact Logging"
+                                                   ,"Conventional Logging"
+                                                   ,"Logged twice"
+                                                   ,"Burned once"
+                                                   ,"Burned twice"
+                                                   ,"Burned three times"
+                                                   ,"Logged and burned once"
+                                                   ,"Burned, logged, burned"
+                                                   ,"Secondary growth"
+                                                   ,"Secondary and burned twice"
+                                                   )#end c
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1203,9 +1220,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(        15)
       }else if (lenici == 16){
          nparms = 2
-         param  = c("igrass","icanturb")
-         na     = c(       7,        15)
-         nz     = c(       8,        16)
+         param  = c("dhist","include.fire")
+         na     = c(      6,            15)
+         nz     = c(      8,            16)
       }else if (lenici == 17){
          nparms = 2
          param  = c("met.forcing","isoil.text")
@@ -1237,15 +1254,15 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(             11,        21)
          nz     = c(             12,        22)
       }else if (lenici == 23){
-         nparms = 3
-         param  = c("rcp","teff","drain")
-         na     = c(    9,    16,     20)
-         nz     = c(   10,    17,     23)
+         nparms = 2
+         param  = c("ihrzrad","h2o.plant.limit")
+         na     = c(       13,               22)
+         nz     = c(       14,               23)
       }else if (lenici == 24){
-         nparms = 3
-         param  = c("leaf.absorb.vis","imetrad")
-         na     = c(               12,       23)
-         nz     = c(               14,       24)
+         nparms = 2
+         param  = c("ihrzrad","imetrad")
+         na     = c(       13,       23)
+         nz     = c(       14,       24)
       }else if (lenici == 25){
          nparms = 3
          param  = c("iphen.scheme","d0","include.fire")
@@ -1292,15 +1309,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(            11,             19,             22,          35)
          nz     = c(            12,             20,             28,          36)
       }else if (lenici == 37){
-         nparms = 2
-         param  = c("ihrzrad","imetrad","leaf.absorb.vis","iunder")
-         na     = c(       10,       17,               25,      36)
-         nz     = c(       11,       18,               28,      37)
-      }else if (lenici == 38){
          nparms = 4
          param  = c("yeara","iphen.scheme","isoil.text","treefall")
-         na     = c(      9,            18,          27,        36)
-         nz     = c(     11,            20,          28,        38)
+         na     = c(      9,            18,          27,        35)
+         nz     = c(     11,            20,          28,        37)
       }else if (lenici == 39){
          nparms = 3
          param  = c("struct","iphen.scheme","include.fire")
@@ -1454,9 +1466,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "andiroba"    
                   , longname        = "Fazenda Andiroba, PA"
                   , iata            = "and"
-                  , lon             = -46.832
-                  , lat             = -2.551
-                  , alt             = 105.
+                  , lon             = -47.517   # -46.832
+                  , lat             =  -3.315   # -2.551
+                  , alt             = 122       # 105.
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
@@ -2042,9 +2054,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "cauaxi"
                   , longname        = "Fazenda Cauaxi, PA"
                   , iata            = "cau"
-                  , lon             = -48.483
-                  , lat             =  -3.748
-                  , alt             = 140
+                  , lon             = -47.517 # -48.483
+                  , lat             =  -3.315 #  -3.748
+                  , alt             = 122     # 140
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
@@ -3652,12 +3664,12 @@ poitmp[[u]] = list( short           = "paracou"
                   , scolour         = 14
                   , met.driver      = "Paracou"
                   , yeara           = 1999
-                  , yearz           = 2013
+                  , yearz           = 2015
                   , iphen           = -1
                   )#end list
 u           = u + 1
-poitmp[[u]] = list( short           = "paragominas"
-                  , longname        = "Fazenda Neonita, PA"
+poitmp[[u]] = list( short           = "neonita"
+                  , longname        = "Neonita, PA"
                   , iata            = "par"
                   , lon             = -47.517
                   , lat             =  -3.315
@@ -3680,9 +3692,9 @@ u           = u + 1
 poitmp[[u]] = list( short           = "paragominas"
                   , longname        = "Paragominas, PA"
                   , iata            = "prg"
-                  , lon             = -47.349
-                  , lat             =  -2.986
-                  , alt             = 122
+                  , lon             = -47.340
+                  , lat             =  -3.010
+                  , alt             = 84
                   , wmo             = NA
                   , isoilflg        = 1
                   , ntext           = 1
@@ -3692,9 +3704,9 @@ poitmp[[u]] = list( short           = "paragominas"
                   , isoilbc         = 1
                   , sldrain         = 90.
                   , scolour         = 14
-                  , met.driver      = "Sheffield"
-                  , yeara           = 1964
-                  , yearz           = 2009
+                  , met.driver      = "Paragominas"
+                  , yeara           = 2004
+                  , yearz           = 2015
                   , iphen           = +2
                   )#end list
 u           = u + 1

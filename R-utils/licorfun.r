@@ -226,7 +226,7 @@ stom.cond.prime <<- function(ci,gsw,assim,assim.prime,env){
 #==========================================================================================#
 #     Function whose root gives Ci.                                                        #
 #------------------------------------------------------------------------------------------#
-cibounds = function(env,ipft,aparms){
+cibounds <<- function(env,ipft,aparms){
    #---------------------------------------------------------------------------------------#
    # First case: This check will find when Aopen goes to 0., which causes a singularity    #
    # in the function of which we are looking for a root.                                   #
@@ -408,7 +408,7 @@ cibounds = function(env,ipft,aparms){
 #==========================================================================================#
 #     Function that finds Ci.                                                              #
 #------------------------------------------------------------------------------------------#
-cisolver = function(env,ipft,aparms){
+cisolver <<- function(env,ipft,aparms){
 
 
    #----- Set up the anwer with the default (failure). ------------------------------------#
@@ -924,15 +924,15 @@ cisolver = function(env,ipft,aparms){
 #  - kco2      : Michaelis-Mentel constant for CO2                                         #
 #  - ko2       : Michaelis-Mentel constant for O2                                          #
 #------------------------------------------------------------------------------------------#
-photo.params = function(env,ipft,iphoto){
+photo.params <<- function(env,ipft,iphoto){
    #---------------------------------------------------------------------------------------#
    #     Use the Collatz et al. scheme to find Vm without temperature correction, then     #
    # apply the correction.                                                                 #
    #---------------------------------------------------------------------------------------#
-   vm.nocorr    = collatz(env$temp,pft$vm0[ipft],pft$vm.q10[ipft])
-   vm.lnexplow  = pft$vm.decay.e[ipft] * (pft$vm.low.temp[ipft]  - env$temp)
-   vm.tlow.fun  = 1.0 +  exp(vm.lnexplow)
-   vm.lnexphigh = pft$vm.decay.e[ipft] * (env$temp - pft$vm.high.temp[ipft])
+   vm.nocorr    = collatz(env$temp,pft$vm0[ipft],pft$vm.base[ipft])
+   vm.lnexplow  = pft$vm.decay.e.low [ipft] * (pft$vm.low.temp[ipft]  - env$temp)
+   vm.tlow.fun  = 1.0 + exp(vm.lnexplow )
+   vm.lnexphigh = pft$vm.decay.e.high[ipft] * (env$temp - pft$vm.high.temp[ipft])
    vm.thigh.fun = 1.0 + exp(vm.lnexphigh)
    vm           = vm.nocorr / (vm.tlow.fun * vm.thigh.fun)
    #---------------------------------------------------------------------------------------#
@@ -940,17 +940,16 @@ photo.params = function(env,ipft,iphoto){
 
 
    #---------------------------------------------------------------------------------------#
-   #     Use the Collatz et al. scheme to find Rd without temperature correction, then     #
+   #     Use the Collatz et al. scheme to find Lr without temperature correction, then     #
    # apply the correction.                                                                 #
    #---------------------------------------------------------------------------------------#
-   rd.nocorr    = collatz(env$temp,pft$rd0[ipft],pft$rd.q10[ipft])
-   rd.lnexplow  = pft$vm.decay.e[ipft] * (pft$rd.low.temp[ipft]  - env$temp)
-   rd.tlow.fun  = 1.0 +  exp(rd.lnexplow)
-   rd.lnexphigh = pft$rd.decay.e[ipft] * (env$temp - pft$rd.high.temp[ipft])
-   rd.thigh.fun = 1.0 + exp(rd.lnexphigh)
-   rd           = rd.nocorr / (rd.tlow.fun * rd.thigh.fun)
+   lr.nocorr    = collatz(env$temp,pft$lr0[ipft],pft$lr.base[ipft])
+   lr.lnexplow  = pft$lr.decay.e.low [ipft] * (pft$lr.low.temp[ipft]  - env$temp)
+   lr.tlow.fun  = 1.0 + exp(lr.lnexplow )
+   lr.lnexphigh = pft$lr.decay.e.high[ipft] * (env$temp - pft$lr.high.temp[ipft])
+   lr.thigh.fun = 1.0 + exp(lr.lnexphigh)
+   lr           = lr.nocorr / (lr.tlow.fun * lr.thigh.fun)
    #---------------------------------------------------------------------------------------#
-
 
 
    #---------------------------------------------------------------------------------------#
@@ -960,16 +959,15 @@ photo.params = function(env,ipft,iphoto){
    #---------------------------------------------------------------------------------------#
    compp = ifelse( test = pft$pathway[ipft] == 4
                  , yes  = 0.
-                 , no   = collatz(env$temp,compp.ref,compp.q10)
+                 , no   = collatz(env$temp,compp.ref.coll,compp.base.coll)
                  )#end ifelse
    kco2  = ifelse( test = pft$pathway[ipft] == 4
                  , yes  = 0.
-                 , no   = collatz(env$temp,kco2.ref,kco2.q10)
+                 , no   = collatz(env$temp,kco2.ref.coll,kco2.base.coll)
                  )#end ifelse
-   ko2   = collatz(env$temp,ko2.ref,ko2.q10)
+   ko2   = collatz(env$temp,ko2.ref.coll,ko2.base.coll)
    #---------------------------------------------------------------------------------------#
-
-   photo = list (vm = vm, leaf.resp=leaf.resp,compp=compp,kco2=kco2,ko2=ko2)
+   photo = list (vm = vm,leaf.resp=lr,compp=compp,kco2=kco2,ko2=ko2)
    return(photo)
 }#end function
 #==========================================================================================#

@@ -39,9 +39,22 @@ dbh.min.toler <<- 0.5    # Tolerance for minimum DBH (so we are not too strict)
 # The last time a recruited stop reporting data is saved as 'year.goodbye', and that can   #
 # be also used as death year if you want to assume permanently missing trees are also dead #
 #------------------------------------------------------------------------------------------#
-death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
+death.proofer <<- function( datum                # Forest inventory data set
+                          , year4                # Inventory years
+                          , use.flags  = FALSE   # Use dead flags? (TRUE|FALSE)
+                          , use.notes  = TRUE    # Use notes? (TRUE|FALSE)
+                          , dbh.stdead = FALSE   # Standing dead may have DBH? (TRUE|FALSE)
+                          , dead.pref  = "dead"  # Prefix of dead flag variables
+                          , dbh.pref   = "dbh"   # Prefix of DBH variables
+                          , notes.pref = "notes" # Prefix of note variables
+                          , vsep       = "."     # Separator between prefixes and year
+                          ){
+
+   #----- Find data and years. ------------------------------------------------------------#
    n.years = length(year4)
    n.datum = nrow(datum)
+   next.year = c(year4[-1],Inf)
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
@@ -52,20 +65,50 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
 
 
    #---------------------------------------------------------------------------------------#
+   #     Initialise notes in case the column does not exist.                               #
+   #---------------------------------------------------------------------------------------#
+   for (y in sequence(n.years)){
+      this.notes = paste(notes.pref,year4[y],sep=vsep)
+      if (! (this.notes %in% names(datum))){
+         datum[[this.notes]] = rep(NA_character_,times=n.datum)
+      }#end if (! (this.notes %in% names(datum))){
+      #------------------------------------------------------------------------------------#
+   }#end for (y in sequence(n.years))
+   #---------------------------------------------------------------------------------------#
+
+   
+   #---------------------------------------------------------------------------------------#
    #     If the user wants to use the flags, loop over them and check for dead trees.      #
    #---------------------------------------------------------------------------------------#
    if (use.flags){
       for (y in sequence(n.years)){
-         this.dead = paste("dead",year4[y],sep=".")
-         this.dbh  = paste("dbh" ,year4[y],sep=".")
+         this.dead             = paste(dead.pref,year4[y],sep=vsep)
          if (this.dead %in% names(datum)){
-            sel = datum[[this.dead]] %==% 1
+            sel                   = as.numeric(datum[[this.dead]]) %==% 1
             datum$year.death[sel] = pmin(datum$year.death[sel],year4[y])
-         }#end if
-         alive                   = is.finite(datum[[this.dbh]])
-         datum$year.death[alive] = Inf
-      }#end for
-   }#end if
+         }#end if (this.dead %in% names(datum))
+         #---------------------------------------------------------------------------------#
+      }#end for (y in sequence(n.years))
+      #------------------------------------------------------------------------------------#
+   }#end if (use.flags)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     In case standing dead were not supposed to have DBH measurements, shift death     #
+   # year of dead trees with DBH measurements to the following survey.                     #
+   #---------------------------------------------------------------------------------------#
+   if (! dbh.stdead){
+      for (y in sequence(n.years)){
+         this.dbh                = paste(dbh.pref ,year4[y],sep=vsep)
+         alive                   = ( is.finite(datum[[this.dbh]]) 
+                                   & datum$year.death %<=% year4[y]
+                                   )#end alive
+         datum$year.death[alive] = next.year[y]
+         #---------------------------------------------------------------------------------#
+      }#end for (y in sequence(n.years))
+      #------------------------------------------------------------------------------------#
+   }#end if (use.flags)
    #---------------------------------------------------------------------------------------#
 
 
@@ -78,7 +121,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    #---------------------------------------------------------------------------------------#
    if (use.notes){
       for (y in sequence(n.years)){
-         this.notes = paste("notes",year4[y],sep=".")
+         this.notes = paste(notes.pref,year4[y],sep=vsep)
          x          = datum[[this.notes]]
 
          #----- Standardise life and death comments. --------------------------------------#
@@ -243,7 +286,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
       # year.                                                                              #
       #------------------------------------------------------------------------------------#
       for (y in sequence(n.years)){
-         this.notes = paste("notes",year4[y],sep=".")
+         this.notes = paste(notes.pref,year4[y],sep=vsep)
          x          = datum[[this.notes]]
 
          #----- Look for trees that were alive but died this year. ------------------------#
@@ -286,15 +329,16 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    #     Now we loop over all trees, correct the death flags, and move the DBH of dead     #
    # trees to the notes.                                                                   #
    #---------------------------------------------------------------------------------------#
-   for (y in sequence(n.years)[-1]){
+   for (y in sequence(n.years)){
       #------------------------------------------------------------------------------------#
       #      Retrieve information from 
       #------------------------------------------------------------------------------------#
-      this.dbh                          = paste("dbh"  ,year4[y],sep=".")
-      this.notes                        = paste("notes",year4[y],sep=".")
-      message                           = paste("dbh.",year4[y],"=",datum[[this.dbh]]
-                                               ,sep="")
-      message[is.na(datum[[this.dbh]])] = NA_character_
+      this.dbh   = paste(dbh.pref,year4[y],sep=vsep)
+      this.notes = paste(notes.pref,year4[y],sep=vsep)
+      message    = ifelse( test = is.na(datum[[this.dbh]])
+                         , yes  = NA_character_
+                         , no   = paste0(dbh.pref,vsep,year4[y],"=",datum[[this.dbh]])
+                         )#end ifelse
       #------------------------------------------------------------------------------------#
 
 
@@ -309,7 +353,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
       #------------------------------------------------------------------------------------#
       #     Update the death flag and notes for trees that have recently died.             #
       #------------------------------------------------------------------------------------#
-      if (length(dead.new) > 0){
+      if (length(dead.new) > 0 && (! dbh.stdead)){
          datum[[this.notes]][dead.new] = concatenate.message(datum[[this.notes]][dead.new]
                                                             ,message            [dead.new]
                                                             )#end concatenate.message
@@ -323,7 +367,7 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
       #     Update the death flag and notes for trees that have died before but may still  #
       # have DBH data.                                                                     #
       #------------------------------------------------------------------------------------#
-      if (length(dead.old) > 0){
+      if (length(dead.old) > 0 && (! dbh.stdead)){
          datum[[this.notes]][dead.old] = concatenate.message(datum[[this.notes]][dead.old]
                                                             ,message            [dead.old]
                                                             )#end concatenate.message
@@ -339,14 +383,15 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
    #---------------------------------------------------------------------------------------#
    #      Update the first and last year information.                                      #
    #---------------------------------------------------------------------------------------#
-   datum$year.1st  = rep(NA,times=n.datum)
-   datum$year.last = rep(NA,times=n.datum)
-   
+   datum$year.1st  = rep(-Inf,times=n.datum)
+   datum$year.last = rep(-Inf,times=n.datum)
    for (y in sequence(n.years)){
       yr                       = year4[y]
-      dbh.now                  = datum[[paste("dbh",yr,sep=".")]]
+      dbh.now                  = datum[[paste(dbh.pref,yr,sep=vsep)]]
       sel.dbh                  = is.finite(dbh.now)
-      sel.1st                  = sel.dbh & is.na(datum$year.1st)
+      sel.living               = datum$year.death > yr
+      sel.1st                  = sel.dbh & sel.living & (! is.finite(datum$year.1st))
+      sel.last                 = sel.dbh & sel.living
       datum$year.1st [sel.1st] = yr
       datum$year.last[sel.dbh] = yr
    }#end for
@@ -357,12 +402,13 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
 
    #---------------------------------------------------------------------------------------#
    #      Set up the "goodbye" year (first year in which plant DBH is never reported       #
-   # again.                                                                                #
+   # again.  In case DBH is reported for standing dead trees, we make sure that            #
+   # year.goodbye is never after year.death.                                               #
    #---------------------------------------------------------------------------------------#
    datum$year.goodbye = rep(Inf,times=n.datum)
    for (y in sequence(n.years)){
       yr                             = year4[y]
-      dbh.now                        = datum[[paste("dbh",yr,sep=".")]]
+      dbh.now                        = datum[[paste(dbh.pref,yr,sep=vsep)]]
       sel.dbh                        = is.finite(dbh.now)
       sel.bye                        = datum$year.1st < yr & is.na(dbh.now)
       datum$year.goodbye[sel.dbh]    = Inf
@@ -370,10 +416,14 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
       if (any(sel.bye)){
          datum$year.goodbye[sel.bye] = pmin(datum$year.goodbye[sel.bye],yr)
       }#end if
+      #------------------------------------------------------------------------------------#
    }#end for
+   datum$year.goodbye = pmin(datum$year.goodbye,datum$year.death)
    #---------------------------------------------------------------------------------------#
+
+   
    return(datum)
-}#end function
+}#end function death.proofer
 #==========================================================================================#
 #==========================================================================================#
 
@@ -389,7 +439,14 @@ death.proofer <<- function(datum,year4,use.flags=FALSE,use.notes = TRUE){
 # and the growth history for that tree.  If both are weird, we move the datum to the notes #
 # and temporarily replace by the negative number (to make it easier for recruitment).      #
 #------------------------------------------------------------------------------------------#
-growth.proofer <<- function(datum,month2,year4){
+growth.proofer <<- function( datum                  # Forest inventory data set
+                           , month2                 # Months
+                           , year4                  # Years
+                           , miss.pref  = "missing" # Prefix of dead flag variables
+                           , dbh.pref   = "dbh"     # Prefix of DBH variables
+                           , notes.pref = "notes"   # Prefix of note variables
+                           , vsep       = "."       # Separator between prefixes and year
+                           ){
 
 
    #----- Define some auxiliary variables. ------------------------------------------------#
@@ -419,22 +476,22 @@ growth.proofer <<- function(datum,month2,year4){
    #---------------------------------------------------------------------------------------#
    #      Loop over years and fill in the DBH table.                                       # 
    #---------------------------------------------------------------------------------------#
-   for (y in 1:n.years){
-      this.dbh         = paste("dbh"    ,year4[y],sep=".")
-      this.missing     = paste("missing",year4[y],sep=".")
-      this.notes       = paste("notes"  ,year4[y],sep=".")
+   for (y in sequence(n.years)){
+      this.dbh         = paste(dbh.pref  ,year4[y],sep=vsep)
+      this.missing     = paste(miss.pref ,year4[y],sep=vsep)
+      this.notes       = paste(notes.pref,year4[y],sep=vsep)
       dbh.table   [,y] = datum[[this.dbh]]
       if (this.missing %in% names(datum)){
-         del              = datum[[this.missing]] == 1
+         del              = as.numeric(datum[[this.missing]]) == 1
          dbh.table[del,y] = NA
-         message          = paste("dbh.",year4[y],"=",datum[[this.dbh]]
-                                 ," was gap filled thus removed",sep="")
+         message          = paste0(this.dbh,"=",datum[[this.dbh]]
+                                  ," was gap filled thus removed")
          datum[[this.notes]][del] = concatenate.message(datum[[this.notes]][del]
                                                        ,message[del])
          datum[[this.dbh  ]][del] = NA
-      }#end if
+      }#end if (this.missing %in% names(datum))
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (y in sequence(n.years))
    #---------------------------------------------------------------------------------------#
 
 
@@ -443,14 +500,14 @@ growth.proofer <<- function(datum,month2,year4){
    #     Find the growth rates between surveys and previous one with valid data, and       #
    # organise them by quantiles.                                                           #
    #---------------------------------------------------------------------------------------#
-   for (y in 2:n.years){
+   for (y in sequence(n.years)[-1]){
       dbh.bef  = rep(NA,times=n.datum)
       when.bef = rep(NA,times=n.datum)
       for (b in seq(from=1,y-1,+1)){
          sel           = is.finite(dbh.table[,b])
          dbh.bef [sel] = dbh.table [sel,b]
          when.bef[sel] = when          [b]
-      }#end for
+      }#end for (b in seq(from=1,y-1,+1))
       #------------------------------------------------------------------------------------#
 
 
@@ -464,9 +521,9 @@ growth.proofer <<- function(datum,month2,year4){
       if (any(is.finite(lngrowth.bef[,y]))){
          efun             = try(ecdf(lngrowth.bef[,y]))
          quantile.bef[,y] = efun(lngrowth.bef[,y])
-      }#end if
+      }#end if (any(is.finite(lngrowth.bef[,y])))
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (y in sequence(n.years)[-1])
    #---------------------------------------------------------------------------------------#
 
 
@@ -475,14 +532,14 @@ growth.proofer <<- function(datum,month2,year4){
    #     Find the growth rates between surveys and following one with valid data, and      #
    # organise them by quantiles.                                                           #
    #---------------------------------------------------------------------------------------#
-   for (y in 1:(n.years-1)){
+   for (y in sequence(n.years-1)){
       dbh.aft  = rep(NA,times=n.datum)
       when.aft = rep(NA,times=n.datum)
       for (b in seq(from=n.years,y+1,-1)){
          sel           = is.finite(dbh.table[,b])
          dbh.aft [sel] = dbh.table [sel,b]
          when.aft[sel] = when          [b]
-      }#end for
+      }#end for (b in seq(from=n.years,y+1,-1))
       #------------------------------------------------------------------------------------#
 
 
@@ -496,9 +553,9 @@ growth.proofer <<- function(datum,month2,year4){
       if (any(is.finite(lngrowth.aft[,y]))){
          efun             = ecdf(lngrowth.aft[,y])
          quantile.aft[,y] = efun(lngrowth.aft[,y])
-      }#end if
+      }#end if (any(is.finite(lngrowth.aft[,y])))
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (y in sequence(n.years-1))
    #---------------------------------------------------------------------------------------#
 
 
@@ -510,13 +567,13 @@ growth.proofer <<- function(datum,month2,year4){
    growth.leap   = ( (growth.bef/dtime.bef + growth.aft/dtime.aft )
                    * (dtime.bef + dtime.aft) )
    quantile.leap = NA * lngrowth.leap
-   for (y in 2:(n.years-1)){
+   for (y in sequence(n.years-1)[-1]){
       if (any(is.finite(lngrowth.leap[,y]))){
          efun              = ecdf(lngrowth.leap[,y])
          quantile.leap[,y] = efun(lngrowth.leap[,y])
       }#end if (any(lngrowth.leap[,y]))
       #------------------------------------------------------------------------------------#
-   }#end for (y in 2:(n.years-1))
+   }#end for (y in sequence(n.years-1)[-1])
    #---------------------------------------------------------------------------------------#
 
 
@@ -525,7 +582,7 @@ growth.proofer <<- function(datum,month2,year4){
    # what arbitrary, but they can be easily adjusted.  We first look at the middle ones,   #
    # then we search at the edges.                                                          #
    #---------------------------------------------------------------------------------------#
-   for (y in seq(from=2,to=n.years,by=1)){
+   for (y in sequence(n.years)[-1]){
 
       #------------------------------------------------------------------------------------#
       #     Detect data that "shrunk" too much.  Then we decide which data point was bad,  #
@@ -572,7 +629,7 @@ growth.proofer <<- function(datum,month2,year4){
       remove.data   [kink   ,  y] = TRUE
       remove.data   [plateau,y-1] = TRUE
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (y in sequence(n.years)[-1])
    #---------------------------------------------------------------------------------------#
 
 
@@ -582,7 +639,7 @@ growth.proofer <<- function(datum,month2,year4){
    #     Similar to the first loop, but we look at the after derivatives so we can flag    #
    # the last census in case it is strange.                                                #
    #---------------------------------------------------------------------------------------#
-   for (y in seq(from=n.years-1,to=1,by=-1)){
+   for (y in rev(sequence(n.years-1))){
 
       #------------------------------------------------------------------------------------#
       #     Detect data that "shrunk" too much.  Then we decide which data point was bad,  #
@@ -629,7 +686,7 @@ growth.proofer <<- function(datum,month2,year4){
       remove.data   [kink   ,  y] = TRUE
       remove.data   [plateau,y+1] = TRUE
       #------------------------------------------------------------------------------------#
-   }#end for
+   }#end for (y in rev(sequence(n.years-1)))
    #---------------------------------------------------------------------------------------#
 
 
@@ -638,12 +695,13 @@ growth.proofer <<- function(datum,month2,year4){
    #      Loop over all years, discard the flagged data, and send the measurement to the   #
    # notes.                                                                                #
    #---------------------------------------------------------------------------------------#
-   for (y in 1:n.years){
-      this.dbh   = paste("dbh"  ,year4[y],sep=".")
-      this.notes = paste("notes",year4[y],sep=".") 
-      message    = paste("dbh.",year4[y],"=",datum[[this.dbh]]
-                        ," looks suspicious thus removed",sep="")
-      
+   for (y in sequence(n.years)){
+      this.dbh   = paste (dbh.pref  ,year4[y],sep=vsep)
+      this.notes = paste (notes.pref,year4[y],sep=vsep)
+      message    = paste0(this.dbh,"=",datum[[this.dbh]]
+                         ," looks suspicious thus removed"
+                         )#end paste0
+
       sel        = remove.data[,y]
       datum[[this.notes]][sel] = concatenate.message(datum[[this.notes]][sel],message[sel])
 
@@ -653,11 +711,11 @@ growth.proofer <<- function(datum,month2,year4){
       #------------------------------------------------------------------------------------#
       datum[[this.dbh]][sel] = -datum[[this.dbh]][sel]
       dbh.table[sel,y]       = -dbh.table[sel,y]
-   }#end for
+   }#end for (y in sequence(n.years))
    #---------------------------------------------------------------------------------------#
 
    return(datum)
-}#end function
+}#end function growth.proofer
 #==========================================================================================#
 #==========================================================================================#
 
@@ -683,12 +741,30 @@ dbh.gap.filler <<- function( datum
                            , abs.y.sub     = Inf
                            , gf.individual = FALSE
                            , dbh.brks      = c(10,20,35,55,Inf)
+                           , dbh.pref      = "dbh"
+                           , gf.dbh.pref   = "gf.dbh"
+                           , notes.pref    = "notes"
+                           , vsep          = "."
+                           , dbhmin.small  = dbh.min.sub
+                           , dbhmin.large  = dbh.min.trans
                            ){
 
    #----- Define some auxiliary variables. ------------------------------------------------#
    n.years      = length(year4)
    n.datum      = nrow(datum)
    when         = year4 + (month2-0.5)/12
+   #---------------------------------------------------------------------------------------#
+ 
+   #---------------------------------------------------------------------------------------#
+   #     Loop over years and fill in the DBH table.                                        #
+   #---------------------------------------------------------------------------------------#
+   for (y in sequence(n.years)){
+      this.gf.dbh      = paste(gf.dbh.pref,year4[y],sep=vsep)
+      if (! this.gf.dbh %in% names(datum)){
+         datum[[this.gf.dbh]] = rep(0,times=n.datum)
+      }#end if (! this.gf.dbh %in% names(datum))
+      #------------------------------------------------------------------------------------#
+   }#end for (y in sequence(n.years))
    #---------------------------------------------------------------------------------------#
 
 
@@ -698,8 +774,10 @@ dbh.gap.filler <<- function( datum
    dbh.table               = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    lngrowth                = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
    dtime                   = matrix(NA   ,ncol=n.years,nrow=n.datum,dimnames=mat.names)
-   dbh.min                 = ( dbh.min.sub   * (abs(datum$y) <= abs.y.sub) 
-                             + dbh.min.trans * (abs(datum$y) >  abs.y.sub) )
+   if (! ("subplot" %in% names(datum))){
+      datum$subplot = (abs(datum$y) <= abs.y.sub)
+   }#end if (! ("subsample" %in% names(datum)))
+   dbh.min = ifelse(test = datum$subplot, yes=dbhmin.small,no=dbhmin.large)
    #---------------------------------------------------------------------------------------#
 
 
@@ -710,17 +788,17 @@ dbh.gap.filler <<- function( datum
    y.1st   = rep(NA,times=n.datum)
    dbh.1st = rep(NA,times=n.datum)
    for (y in sequence(n.years)){
-      this.dbh         = paste("dbh",year4[y],sep=".")
-      dbh.ok           = is.finite(datum[[this.dbh]])
+      this.dbh         = paste(dbh.pref,year4[y],sep=vsep)
+      dbh.ok           = is.finite(datum[[this.dbh]]) & datum$year.goodbye > year4[y]
 
       #------------------------------------------------------------------------------------#
       #     Some trees don't have coordinates, fill in the minimum DBH based on the first  #
       # instance.                                                                          #
       #------------------------------------------------------------------------------------#
-      fill.min          = is.na(dbh.min) & dbh.ok & datum[[this.dbh]] > dbh.min.sub
-      dbh.min[fill.min] = dbh.min.sub
-      fill.min          = is.na(dbh.min) & dbh.ok & datum[[this.dbh]] > dbh.min.trans
-      dbh.min[fill.min] = dbh.min.trans
+      fill.min          = is.na(dbh.min) & dbh.ok & datum[[this.dbh]] >= dbhmin.small
+      dbh.min[fill.min] = dbhmin.small
+      fill.min          = is.na(dbh.min) & dbh.ok & datum[[this.dbh]] >= dbhmin.large
+      dbh.min[fill.min] = dbhmin.large
       #------------------------------------------------------------------------------------#
 
 
@@ -751,14 +829,6 @@ dbh.gap.filler <<- function( datum
    dbh.mean = rowMeans(dbh.table,na.rm=TRUE)
    dbh.size = as.integer(cut(x=dbh.mean,breaks=dbh.brks,right=FALSE))
    dbh.size = ifelse(is.finite(dbh.size),dbh.size,max(dbh.size,na.rm=TRUE)+1)
-   #---------------------------------------------------------------------------------------#
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Save the subplot flag.                                                            #
-   #---------------------------------------------------------------------------------------#
-   datum$subplot = as.numeric(dbh.min == dbh.min.sub)
    #---------------------------------------------------------------------------------------#
 
 
@@ -849,12 +919,12 @@ dbh.gap.filler <<- function( datum
    #     We loop again and detect the years that shall be filled due to bad measurements   #
    # or tumbleweed effect.                                                                 #
    #---------------------------------------------------------------------------------------#
-   datum$year.recruit = rep(Inf, times=n.datum)
+   datum$year.recruit = rep(Inf  , times=n.datum)
    removed            = rep(FALSE,times=n.datum)
    for (y in sequence(n.years)){
-      dbh.label    = paste("dbh"   ,year4[y],sep=".")
-      gf.dbh.label = paste("gf.dbh",year4[y],sep=".")
-      notes.label  = paste("notes" ,year4[y],sep=".")
+      dbh.label    = paste(dbh.pref   ,year4[y],sep=vsep)
+      gf.dbh.label = paste(gf.dbh.pref,year4[y],sep=vsep)
+      notes.label  = paste(notes.pref ,year4[y],sep=vsep)
 
 
 
@@ -868,9 +938,9 @@ dbh.gap.filler <<- function( datum
 
 
       #----- Find out whether to fill the data. -------------------------------------------#
-      dbh.miss      = is.na(datum[[dbh.label]]) | datum[[dbh.label]] < 0
+      dbh.miss      = is.na(datum[[dbh.label]]) | datum[[dbh.label]] %<% 0
       if (any(is.na(dbh.miss))){
-         cat(" dbh.miss has NA!","\n")
+         cat0(" dbh.miss has NA!")
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -882,8 +952,8 @@ dbh.gap.filler <<- function( datum
       # pre-recruitment points may appear.                                                 #
       #------------------------------------------------------------------------------------#
       bye     = datum[[dbh.label]] %>% 0 & is.na(dbh.table[,y])
-      message = paste("dbh.",year4[y],"=",abs(datum[[dbh.label]])
-                     ," is pre-recruitment thus removed",sep="")
+      message = paste0(dbh.label,"=",abs(datum[[dbh.label]])
+                      ," is pre-recruitment thus removed",sep="")
       datum[[notes.label]][bye] = concatenate.message(datum[[notes.label]][bye]
                                                      ,message[bye])
       datum[[dbh.label  ]][bye] = NA
@@ -970,6 +1040,6 @@ dbh.gap.filler <<- function( datum
 
    datum$year.recruit[datum$year.recruit == year4[1]] = -Inf
    return(datum)
-}#end function
+}#end function dbh.gap.filler
 #==========================================================================================#
 #==========================================================================================#

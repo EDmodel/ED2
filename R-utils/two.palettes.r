@@ -99,7 +99,7 @@ two.palettes <<- function(x,n=20,white=1,low="blue",high="orangered",zero=NULL){
 #------------------------------------------------------------------------------------------#
 #----- Blue. ------------------------------------------------------------------------------#
 hue.blue <<- function(n){
-   nodes     = c("skyblue","deepskyblue","dodgerblue","royalblue3","midnightblue")
+   nodes     = c("#D1DCFF","#B4E6FF","#46B4FF","#0082C8","#003264")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y
@@ -111,7 +111,7 @@ hue.blue <<- function(n){
 }#end hue.blue
 #----- Orange-Red. ------------------------------------------------------------------------#
 hue.orangered <<- function(n){
-   nodes     = c("gold","goldenrod","darkorange1","orangered","#7E0000")
+   nodes     = c("#FEEEB8","#FDCE87","#FFB43C","#C85A0A","#960000")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y
@@ -160,6 +160,18 @@ hue.grey <<- function(n){
 #----- Purple. ----------------------------------------------------------------------------#
 hue.purple <<- function(n){
    nodes     = c("#DEDEFF","#B7AFE3","#AA80FF","#8C41D8","#5A009A")
+   nodes     = data.frame(t(col2rgb(nodes)))
+   pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
+   rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y
+   rgb.out   = lapply(X=rgb.out,FUN=as.integer)
+   rgb.out   = lapply(X=rgb.out,FUN=pmax,  0)
+   rgb.out   = lapply(X=rgb.out,FUN=pmin,255)
+   rgb.out   = rgb(r=rgb.out$red,g=rgb.out$green,b=rgb.out$blue,maxColorValue=255)
+   return(rgb.out)
+}#end hue.orangered
+#----- Green, colour-blind friendly. ------------------------------------------------------#
+hue.green.cbf <<- function(n){
+   nodes     = c("#D2EAE9","#B0F3F2","#50DFDC","#31A29F","#185957")
    nodes     = data.frame(t(col2rgb(nodes)))
    pivot     = round(seq(from=1,to=n,length.out=nrow(nodes)),digits=0)
    rgb.out   = data.frame(t(mapply(FUN=spline,y=nodes,MoreArgs=list(x=pivot,n=n))))$y

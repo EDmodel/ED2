@@ -3,21 +3,21 @@
 #    This function that defines the size of the figure to be plotted in case of maps.      #
 # In case the plot is a map, it correct sizes so the map doesn't look distorted.           #
 #------------------------------------------------------------------------------------------#
-plotsize = function( proje                  #  Map projection? [T|F]
-                   , limlon     = NULL      #  Longitude range, if proje = TRUE
-                   , limlat     = NULL      #  Latitude range, if proje = TRUE
-                   , deg        = TRUE      #  Are longitude and latitude in degrees?
-                   , stdheight  = NULL      #  Standard height
-                   , stdwidth   = NULL      #  Standard 
-                   , extendfc   = FALSE     #  Extend width for filled.contour [T|F]
-                                            #  TRUE/FALSE  -- True means yes for longitude
-                                            #  "lon","lat" -- will extend the specific
-                                            #   dimension
-                   , extfactor  = 1/6       #  Factor to extend width or height
-                   , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
-                   , landscape  = TRUE      #  Landscape? (if not swap width and height)
-                   , scale.fac  = 0.8       #  Scaling factor to adjust sizes
-                   ){
+plotsize <<- function( proje                  #  Map projection? [T|F]
+                     , limlon     = NULL      #  Longitude range, if proje = TRUE
+                     , limlat     = NULL      #  Latitude range, if proje = TRUE
+                     , deg        = TRUE      #  Are longitude and latitude in degrees?
+                     , stdheight  = NULL      #  Standard height
+                     , stdwidth   = NULL      #  Standard
+                     , extendfc   = FALSE     #  Extend width for filled.contour [T|F]
+                                              #  TRUE/FALSE  -- True = yes for longitude
+                                              #  "lon","lat" -- will extend the specific
+                                              #   dimension
+                     , extfactor  = 1/6       #  Factor to extend width or height
+                     , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
+                     , landscape  = TRUE      #  Landscape? (if not swap width and height)
+                     , scale.fac  = 0.8       #  Scaling factor to adjust sizes
+                     ){
 
 
    null.std = is.null(stdheight) | is.null(stdwidth)

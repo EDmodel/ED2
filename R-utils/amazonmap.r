@@ -2,11 +2,12 @@
 #------------------------------------------------------------------------------------------#
 #  This function plots the map for the Amazon forest.                                      #
 #------------------------------------------------------------------------------------------#
-amazonmap = function(mapdir=NULL,...){
-  if (is.null(mapdir)){
-     fichier = file.path(srcdir,"amzmap","amazon.forest.txt")
-  }else{
+amazonmap = function(mapdir=NULL,legal=FALSE,...){
+  if (is.null(mapdir)) mapdir = file.path(srcdir,"amzmap")
+  if (legal){
      fichier = file.path(mapdir,"amazon.forest.txt")
+  }else{
+     fichier = file.path(mapdir,"amazon.ecoregion.txt")
   }#end if
   the.amazon = read.table(fichier,na.string="NA")
   names(the.amazon) = c("x","y")
@@ -22,11 +23,12 @@ amazonmap = function(mapdir=NULL,...){
 #     This function plots the map for the Amazon forest.  This is useful for when running  #
 # lattice package.                                                                         #
 #------------------------------------------------------------------------------------------#
-panel.amazonmap = function(mapdir=NULL,...){
-  if (is.null(mapdir)){
-     fichier = file.path(srcdir,"amzmap","amazon.forest.txt")
-  }else{
+panel.amazonmap = function(mapdir=NULL,legal=FALSE,...){
+  if (is.null(mapdir)) mapdir = file.path(srcdir,"amzmap")
+  if (legal){
      fichier = file.path(mapdir,"amazon.forest.txt")
+  }else{
+     fichier = file.path(mapdir,"amazon.ecoregion.txt")
   }#end if
   the.amazon = read.table(fichier,na.string="NA")
   names(the.amazon) = c("x","y")
@@ -42,12 +44,13 @@ panel.amazonmap = function(mapdir=NULL,...){
 #------------------------------------------------------------------------------------------#
 #  This function plots the map for the Amazon forest in 3D maps.                           #
 #------------------------------------------------------------------------------------------#
-amazonmap3d = function(height=0,pmat,xlim=NULL,ylim=NULL,mapdir=NULL,...){
+amazonmap3d = function(height=0,pmat,xlim=NULL,ylim=NULL,mapdir=NULL,legal=FALSE,...){
 
-  if (is.null(mapdir)){
-     fichier = file.path(srcdir,"amzmap","amazon.forest.txt")
-  }else{
+  if (is.null(mapdir)) mapdir = file.path(srcdir,"amzmap")
+  if (legal){
      fichier = file.path(mapdir,"amazon.forest.txt")
+  }else{
+     fichier = file.path(mapdir,"amazon.ecoregion.txt")
   }#end if
   the.amazon = read.table(fichier,na.string="NA")
   names(the.amazon) = c("x","y")

@@ -36,7 +36,8 @@ plot.ptcloud <<- function( pt.cloud
                          , expand           = 0.5
                          , ticktype         = "detailed"
                          , shade            = 0.125
-                         , ltheta           = -210.
+                         , ltheta           = theta
+                         , lphi             = 90-phi
                          , pch              = 16
                          , cex              = if(cex.intensity){c(0.1,0.8)}else{0.5}
                          , floor.col        = "grey94"
@@ -63,6 +64,9 @@ plot.ptcloud <<- function( pt.cloud
                          , cex.metrics      = 1.5
                          , col.metrics      = c("midnightblue","deepskyblue")
                          , lty.metrics      = c("dotted")
+                         , mar.key          = NULL
+                         , mar.ptcloud      = NULL
+                         , mar.density      = NULL
                          , ...
                          ){
 
@@ -311,9 +315,11 @@ plot.ptcloud <<- function( pt.cloud
 
    #=======================================================================================#
    #=======================================================================================#
-   #      Firs plot: the key scale.                                                        #
+   #      First plot: the key scale.                                                       #
    #---------------------------------------------------------------------------------------#
-      if (key.vertical){
+      if (! is.null(mar.key)){
+         par(mar = mar.key)
+      }else if (key.vertical){
          par(mar = c(5.1,0.6,4.1,4.1))
       }else{
          par(mar = c(2.1,4.6,1.6,2.1))
@@ -450,7 +456,9 @@ plot.ptcloud <<- function( pt.cloud
    #=======================================================================================#
    #     Plot the 3-D plot.                                                                #
    #---------------------------------------------------------------------------------------#
-   if (plot.density && all(c(xaxt,yaxt,zaxt) %in% "n")){
+   if (! is.null(mar.ptcloud)){
+      par(mar=mar.ptcloud)
+   }else if (plot.density && all(c(xaxt,yaxt,zaxt) %in% "n")){
       par(mar=c(0.1,0.1,4.1,0.1))
    }else if (plot.density){
       par(mar=c(1.1,3.1,4.1,1.1))
@@ -472,6 +480,7 @@ plot.ptcloud <<- function( pt.cloud
                 , border    = NA
                 , shade     = shade
                 , ltheta    = ltheta
+                , lphi      = lphi
                 , cex.main  = 0.8*cex.ptsz
                 , axes      = FALSE
                 )#end perspx
@@ -708,7 +717,11 @@ plot.ptcloud <<- function( pt.cloud
 
 
       #----- Open the plotting area.  Note that y is the height and x is the density. -----#
-      par(mar = c(5.1,4.1,4.1,1.1))
+      if (! is.null(mar.density)){
+         par(mar = mar.density)
+      }else{
+         par(mar = c(5.1,4.1,4.1,1.1))
+      }#end if (! is.null(mar.density))
       plot.new()
       plot.window(xlim=xdlim,ylim=ydlim,log=if(zlog){"y"}else{""})
       if (grid.dens) abline(h=ydat,v=xdat,col=grid.colour,lty="dotted",lwd=0.75)

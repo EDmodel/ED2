@@ -145,6 +145,86 @@ qu.mean <<- function(x,p,na.rm=FALSE,lower=TRUE){
 
 #==========================================================================================#
 #==========================================================================================#
+#     This function is a quick integrator.  For more elegant ways to integrate a function, #
+# check function quadrature.                                                               #
+#------------------------------------------------------------------------------------------#
+weighted.sum <<- function(x,w,na.rm=FALSE) sum(x*w,na.rm=na.rm)
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the weighted fraction for each element of data.frame x, using    #
+# weight w.  In case x is not a data frame, we will try to coerce it to a data frame,      #
+# if it doesn't work then we crash it.  It will correct the final answer to provide        #
+# weights that add up to one, and it will create a vector of equal chances in case weights #
+# are all zeroes.                                                                          #
+#------------------------------------------------------------------------------------------#
+weighted.frac <<- function(x,w,na.rm=TRUE){
+   #----- Make sure "x" is a data frame. --------------------------------------------------#
+   if (! is.data.frame(x)){
+      x = try(as.data.frame(x),silent=TRUE)
+      #----- Give the bad news in case it doesn't coerce to a data frame. -----------------#
+      if ("try-error" %in% is(x)){
+         stop(" 'x' must be an object that can be coerced into a data frame!")
+      }#end if ("try-error" %in% is(x))
+      #------------------------------------------------------------------------------------#
+   }#end if (! is.data.frame(x))
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Stop in case the dimensions of x and w don't match.                               #
+   #---------------------------------------------------------------------------------------#
+   w = c(unlist(w))
+   if (length(w) != nrow(x)){
+      stop(" 'x' and 'w' must have compatible dimensions (length(x) = nrow(x))!")
+   }#end if (length(w) != nrow(x))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #------ In case all weights are zero, make them equal. ---------------------------------#
+   if (na.rm){
+      keep = rowSums(! is.finite(as.matrix(x))) == 0 & is.finite(w)
+      x    = x[keep,,drop=FALSE]
+      w    = w[keep]
+   }else if (any(! is.finite(w))){
+      #----- Return NA in case w has non-finite elements and na.rm = FALSE. ---------------#
+      ans        = rep(NA,times=length(x))
+      names(ans) = names(x)
+      return(ans)
+      #------------------------------------------------------------------------------------#
+   }else if (all(w %==% 0.)){
+      #----- Give equal chances in case all weights were zero. ----------------------------#
+      w = rep(x=1.,times=nrow(x))
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Find the weighted mean of each element of x.                                     #
+   #---------------------------------------------------------------------------------------#
+   ans = sapply(X=x,FUN=weighted.mean,w=w)
+   ans = ans / sum(ans)
+   names(ans) = names(x)
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end weighted.frac
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     This function estimates the quantile for a table of observations x, each of which    #
 # having a weight w.  This is done by finding the median of a pseudo dataset built using   #
 # sample.  If the size of the resampling is not provided, then the number of samples is    #
@@ -935,6 +1015,7 @@ sum2           <<- function(x,...)   sqrt(x = sum          (x=x^2               
 mean2          <<- function(x,...)   sqrt(x = mean         (x=x^2               ,...))
 meanlog        <<- function(x,...)   exp (x = mean         (x=log(x)            ,...))
 weighted.mean2 <<- function(x,w,...) sqrt(x = weighted.mean(x=x^2,w=(w/sum(w))^2,...))
+mean.se        <<- function(x,...)   sqrt(x = mean(x=x^2,...) / length(x[is.finite(x)]))
 #==========================================================================================#
 #==========================================================================================#
 
@@ -1244,6 +1325,143 @@ thirteen.num <<- function(x){
 #==========================================================================================#
 
 
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#      Thirteen-number error assessment:                                                   #
+#                                                                                          #
+#  Input:                                                                                  #
+#    x       -- Input variable                                                             #
+#    e       -- Error (same units as x)                                                    #
+#    min.ok  -- Minimum acceptable value                                                   #
+#    max.ok  -- Maximum acceptable value                                                   #
+#    nr      -- Number of replicates                                                       #
+#    szmax   -- Maximum memory size to be allocated (so large vectors don't exhaust the    #
+#               computer).                                                                 #
+#    fun     -- Function to apply to the data set.                                         #
+#    verbose -- Should the run be verbose?                                                 #
+#                                                                                          #
+#  Output:                                                                                 #
+#    emean  -- expected mean (no replications)                                             #
+#    rmean  -- average of all replications.                                                #
+#    rsdev  -- standard deviation of the replicates (standard error of the mean)           #
+#    rqmin  -- minimum average from replications                                           #
+#    rq025  -- 2.5 percentile                                                              #
+#    rq250  -- first quartile                                                              #
+#    rq500  -- median                                                                      #
+#    rq750  -- third quartile                                                              #
+#    rq975  -- 97.5 percentile                                                             #
+#    rqmax  -- maximum                                                                     #
+#    ntot   -- total number                                                                #
+#    nval   -- total number of valid (i.e. finite) entries)                                #
+#    nrep   -- number of replicates (same as input)                                        #
+#------------------------------------------------------------------------------------------#
+thirteen.err <<- function( x
+                         , e
+                         , min.ok  = -Inf
+                         , max.ok  = +Inf
+                         , nr      = 10000
+                         , szmax   = 100000
+                         , fun     = "mean"
+                         , verbose = FALSE
+                         , ...
+                         ){
+   #----- Find the function. --------------------------------------------------------------#
+   fun = match.fun(fun)
+   #---------------------------------------------------------------------------------------#
+
+   #----- Count total number and number of valid entries. ---------------------------------#
+   ntot  = length(x)
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #    Select only those entries with actual error evaluation.                            #
+   #---------------------------------------------------------------------------------------#
+   fine  = is.finite(x) & is.finite(e)
+   nval  = sum(fine)
+   xfine = x[fine]
+   efine = e[fine]
+   #---------------------------------------------------------------------------------------#
+
+   
+   #---------------------------------------------------------------------------------------#
+   #     Create vector with outcomes of each realisation.                                  #
+   #---------------------------------------------------------------------------------------#
+   xr = rep(NA,times=nr)
+   #---------------------------------------------------------------------------------------#
+
+   
+   #---------------------------------------------------------------------------------------#
+   #     Find the maximum block size.                                                      #
+   #---------------------------------------------------------------------------------------#
+   block.size = max(1,floor(szmax/nval))
+   ia.full    = seq(from=1,to=nr,by=block.size)
+   iz.full    = c(ia.full[-1]-1,nr)
+   nblocks    = length(ia.full)
+   if (verbose){
+      cat("    -> 13.err.  Vector size: ",nval,".","\n",sep="")
+      cat("    -> 13.err.  Total number of blocks: ",nblocks,".","\n",sep="")
+   }#end if (verbose)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Populate outcome vector by blocks, so we run it efficiently but don't run out of  #
+   # memory.                                                                               #
+   #---------------------------------------------------------------------------------------#
+   ishow = round(sequence(10)*nblocks/10)
+   lshow = 10*sequence(10)
+   for (b in sequence(nblocks)){
+      if (verbose && b %in% ishow){
+         lshow.now = lshow[match(b,ishow)]
+         cat("       .. 13.err.  ",lshow[match(b,ishow)],"% completed...","\n",sep="")
+      }#end if (verbose && b %in% ishow)
+      #----- Prepare selection. -----------------------------------------------------------#
+      idx  = seq(from=ia.full[b],to=iz.full[b],by=1)
+      nidx = length(idx)
+      #------------------------------------------------------------------------------------#
+
+      #----- Discard bad entries. ---------------------------------------------------------#
+      X = matrix(data=rep(x=xfine,times=nidx),nrow=nval,ncol=nidx)
+      E = matrix(data=rep(x=efine,times=nidx),nrow=nval,ncol=nidx)
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Create vector with random error. ---------------------------------------------#
+      XR      = 0.*X + pmax(min.ok,pmin(max.ok,rnorm(n=nval*nidx,mean=X,sd=E)))
+      xr[idx] = apply(X=XR,MARGIN=2,FUN=fun,...)
+      rm(X,E,XR)
+      #------------------------------------------------------------------------------------#
+   }#end for (b in sequence(nblocks))
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find mean, sd, skewness and kurtosis. -------------------------------------------#
+   three = c(expct = fun(xfine,...), rmean = mean(xr), rsdev = sd  (xr))
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find quantiles. -----------------------------------------------------------------#
+   quant = quantile(x=xr,probs=c(0,0.025,0.25,0.50,0.75,0.975,1.000))
+   names(quant) = c("rqmin","rq025","rq250","rq500","rq750","rq975","rq100")
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Append all results, and standardise weird values to NA. -------------------------#
+   ans   = c(three,quant,ntot=ntot,nval=nval,nrep=nr)
+   ans[! is.finite(ans)] = NA
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end thirteen.err
+#==========================================================================================#
+#==========================================================================================#
+
+
 #==========================================================================================#
 #==========================================================================================#
 #     Function to calculate the eddy covariance.                                           # 
@@ -1397,5 +1615,73 @@ aggr.fmin <<- function(x,fun=mean,fmin=0.5,...){
 
    return(ans)
 }#end aggr.fmin
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function aggregates standard error assuming Gaussian distribution and           #
+# independent errors.  It will return a finite result provided that the number of valid    #
+# entries is greater than or equal to fmin * total number of entries.  This is normally    #
+# used by rasterize, hence the dots, but na.rm will not be used.                           #
+#                                                                                          #
+# INPUT:                                                                                   #
+# x    - the vector with standard error to be aggregated                                   #
+# fmin - minimum number of finite entries relative to the original size.                   #
+#        This must be between 0 and 1.  fmin = 1 is equivalent to na.rm =FALSE, and        #
+#        fmin = 0 is equivalent to na.rm = TRUE.                                           #
+# ...  - additional arguments to be passed to function fun.  Note that na.rm will not      #
+#        matter because non-finite numbers will be excluded prior to calling the function. #
+#------------------------------------------------------------------------------------------#
+aggr.se <<- function(x,fmin=0.5,...){
+   #----- Check that fmin makes sense. ----------------------------------------------------#
+   if (! (fmin %>=% 0.0 & fmin %<=% 1.0)){
+      stop (paste0("fmin must be between 0 and 1!  Yours is set to ",fmin,"..."))
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the minimum number of entries to actually calculate the answer. ------------#
+   keep  = is.finite(x)
+   nkeep = sum(keep)
+   ntot  = length(x)
+   nmin  = max(1,min(ntot,ceiling(fmin * ntot)))
+   #---------------------------------------------------------------------------------------#
+
+   #----- Check whether to calculate function or return NA. -------------------------------#
+   if (nkeep >= nmin){
+      #----- Use only valid points. -------------------------------------------------------#
+      xuse         = x[is.finite(x)]
+      nuse         = length(xuse)
+      ans          = sqrt(mean(xuse^2)/nuse)
+      discard      = ! is.finite(ans)
+      ans[discard] = NA
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Return NA. -------------------------------------------------------------------#
+      ans  = NA
+      #------------------------------------------------------------------------------------#
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   return(ans)
+}#end aggr.se
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#     This function finds the maximum absolute elementwise difference of two vectors.      #
+#------------------------------------------------------------------------------------------#
+max.abs.diff <<- function(x,y,na.rm=TRUE) max(abs(x-y),na.rm=na.rm) 
 #==========================================================================================#
 #==========================================================================================#

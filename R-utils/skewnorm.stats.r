@@ -255,12 +255,37 @@ skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
    for (n in sequence(nidx)){
       sel          = is.finite(x) & idx == unique.idx[n]
       stats.ok     = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
-      if (any(sel) && stats.ok && R.major <= 2){
-         cdf.skew[sel] = psn(x[sel],location=location[n],scale=scale[n],shape=shape[n])
-      }else if (any(sel) && stats.ok){
-         cdf.skew[sel] = psn(x[sel],xi=location[n],omega=scale[n],alpha=shape[n])
-      }#end if
-   }#end for
+      if (any(sel) && stats.ok){
+         #---------------------------------------------------------------------------------#
+         #   Find normalised quantile.  Check for sn version as parameters have changed.   #
+         #---------------------------------------------------------------------------------#
+         if (sn.version == 0){
+            #------------------------------------------------------------------------------#
+            #    Old method.  This is slated to disappear.                                 #
+            #------------------------------------------------------------------------------#
+            cdf.skew[sel] = psn( x        = x[sel]
+                               , location = location[n]
+                               , scale    = scale   [n]
+                               , shape    = shape   [n]
+                               )#end psn
+            #------------------------------------------------------------------------------#
+         }else{
+            #------------------------------------------------------------------------------#
+            #    New method.  We are only using the true SN distribution, so we set the    #
+            # engine to "T.Owen" to avoid crashes.                                         #
+            #------------------------------------------------------------------------------#
+            cdf.skew[sel] = psn( x        = x[sel]
+                               , xi       = location[n]
+                               , omega    = scale   [n]
+                               , alpha    = shape   [n]
+                               , engine   = "T.Owen"
+                               )#end psn 
+            #------------------------------------------------------------------------------#
+         }#end if (sn.version == 0)
+         #---------------------------------------------------------------------------------#
+      }#end if (any(sel) && stats.ok)
+      #------------------------------------------------------------------------------------#
+   }#end for (n in sequence(nidx))
    #---------------------------------------------------------------------------------------#
 
 
@@ -306,8 +331,8 @@ normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm
 
    #----- Stop if number of shapes . ------------------------------------------------------#
    if ((length(location) != nidx) | (length(scale) != nidx) | (length(shape) != nidx)){
-      stop(paste(" Length of statistics must match the number of unique indices: (",nidx
-                ," in this case.",sep=""))
+      stop(paste0(" Length of statistics must match the number of unique indices: (",nidx
+                ," in this case."))
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -315,14 +340,42 @@ normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm
    #----- Find the cumulative distribution function of the normalised quantiles. ----------#
    cdf.skew = pnorm(q=xnorm,mean=0,sd=1)
    x        = NA * cdf.skew
-   for (n in 1:nidx){
+   for (n in sequence(nidx)){
       sel      = is.finite(cdf.skew) & idx == unique.idx[n]
       stats.ok = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
-      if (any(sel) && stats.ok && R.major <= 2){
-         x[sel] = qsn(p=cdf.skew[sel],location=location[n],scale=scale[n],shape=shape[n])
-      }else if (any(sel) && stats.ok){
-         x[sel] = qsn(p=cdf.skew[sel],xi=location[n],omega=scale[n],alpha=shape[n])
-      }#end if
+      if (any(sel) && stats.ok){
+         #---------------------------------------------------------------------------------#
+         #     Back-transform data to original scale.                                      #
+         #---------------------------------------------------------------------------------#
+         #----- Find absolute value. ------------------------------------------------------#
+         if (sn.version == 0){
+            #------------------------------------------------------------------------------#
+            #    Old method.  This is slated to disappear.                                 #
+            #------------------------------------------------------------------------------#
+            x[sel] = qsn( p        = cdf.skew[sel]
+                        , location = location[n]
+                        , scale    = scale   [n]
+                        , shape    = shape   [n]
+                        )#end qsn
+            #------------------------------------------------------------------------------#
+         }else{
+            #------------------------------------------------------------------------------#
+            #    New method.  The default solver is not as stable as RFB, so we always use #
+            # RFB, even though it is slower.  Also, we are only using the true SN          #
+            # distribution, so we set the engine to "T.Owen" to avoid crashes.             #
+            #------------------------------------------------------------------------------#
+            x[sel] = qsn( p        = cdf.skew[sel]
+                        , xi       = location[n]
+                        , omega    = scale   [n]
+                        , alpha    = shape   [n]
+                        , engine   = "T.Owen"
+                        , solver   = "RFB"
+                        )#end qsn
+            #------------------------------------------------------------------------------#
+         }#end if (sn.version == 0)
+         #---------------------------------------------------------------------------------#
+      }#end if (any(sel) && stats.ok)
+      #------------------------------------------------------------------------------------#
    }#end for
    #---------------------------------------------------------------------------------------#
 

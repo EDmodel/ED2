@@ -5,39 +5,52 @@
 #                                                                                          #
 # Reference: MacArthur, R. A. and H. S. Horn, 1969: Foliage profile by vertical            #
 #               measurements, Ecology, 50(5), 802--804.                                    #
+#                                                                                          #
 #------------------------------------------------------------------------------------------#
-macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
+macarthur.horn <<- function( pt.cloud
+                           , zh            = max(pt.cloud$z,na.rm=TRUE)
+                           , zo            = 0.
+                           , nz            = 512
+                           , rvorg         = NA
+                           , Gmu           = 0.5
+                           , tall.at.zh    = FALSE
+                           , use.intensity = FALSE
+                           ){
 
-   #----- Make sure the settings make sense. ----------------------------------------------#
-   if (! ( zl  %>=% 0  &&
-           zh  %>%  zl &&
-           nz  %>%  0  &&
-           zh  %>%  zo &&
-           zo  %>=% zl &&
-           ( is.na(rvorg) || rvorg %>% 0 ) && 
+   #---------------------------------------------------------------------------------------#
+   #      Make sure the settings make sense.                                               #
+   #---------------------------------------------------------------------------------------#
+   #----- Check additional values. --------------------------------------------------------#
+   if (! ( zh  %>%  0                      &&
+           nz  %>%  0                      &&
+           zh  %>%  zo                     &&
+           zo  %>=% 0                      &&
+           ( is.na(rvorg) || rvorg %>% 0 ) &&
+           ( is.logical(tall.at.zh)      ) && 
            Gmu %>%0
          ) ){
-      cat("------------------------------------------------------------------","\n",sep="")
-      cat(" MacArthur and Horn won't run due to problems with your settings:" ,"\n",sep="")
-      cat(" "                                                                 ,"\n",sep="")
-      cat(" ZL    = ",zl                                                      ,"\n",sep="")
-      cat(" ZO    = ",zo                                                      ,"\n",sep="")
-      cat(" ZH    = ",zh                                                      ,"\n",sep="")
-      cat(" NZ    = ",nz                                                      ,"\n",sep="")
-      cat(" RVORG = ",rvorg                                                   ,"\n",sep="")
-      cat(" Gmu   = ",Gmu                                                     ,"\n",sep="")
-      cat(" "                                                                 ,"\n",sep="")
-      cat(" Please check the following:"                                      ,"\n",sep="")
-      cat(" ZL must be greater than or equal to zero and less than ZH."       ,"\n",sep="")
-      cat(" ZO must be greater than or equal to ZL and less than ZH."         ,"\n",sep="")
-      cat(" NZ must be positive."                                             ,"\n",sep="")
-      cat(" RVORG must be positive or NA."                                    ,"\n",sep="")
-      cat(" Gmu must be positive."                                            ,"\n",sep="")
-      cat(" "                                                                 ,"\n",sep="")
-      cat("------------------------------------------------------------------","\n",sep="")
+      cat0("------------------------------------------------------------------")
+      cat0(" MacArthur and Horn won't run due to problems with your settings:" )
+      cat0(" "                                                                 )
+      cat0(" ZO         = ",zo                                                 )
+      cat0(" ZH         = ",zh                                                 )
+      cat0(" NZ         = ",nz                                                 )
+      cat0(" RVORG      = ",rvorg                                              )
+      cat0(" TALL.AT.ZH = ",tall.at.zh                                         )
+      cat0(" Gmu        = ",Gmu                                                )
+      cat0(" "                                                                 )
+      cat0(" Please check the following:"                                      )
+      cat0(" ZO must be greater than or equal to 0 and less than ZH."          )
+      cat0(" NZ must be positive."                                             )
+      cat0(" RVORG must be positive or NA."                                    )
+      cat0(" TALL.AT.ZH must be logical."                                      )
+      cat0(" Gmu must be positive."                                            )
+      cat0(" "                                                                 )
+      cat0("------------------------------------------------------------------")
       stop("Invalid height settings.")
    }#end if
    #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -97,15 +110,43 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
 
 
    #----- Find the height breaks in case none has been given. -----------------------------#
-   zbreaks = sort(unique(c(0,seq(from=zl,to=zh,length.out=nz))))
-   zmid    = mid.points(zbreaks)
+   zmid    = seq(from=0,to=zh,length.out=nz)
+   dzbar   = mean(diff(zmid))
+   zbreaks = seq(from=0-0.5*dzbar,to=zh+0.5*dzbar,length.out=nz+1)
    deltaz  = diff(zbreaks)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     In case tall.at.zh is set to TRUE, change height.                                 #
+   #---------------------------------------------------------------------------------------#
+   if (tall.at.zh){
+      zprune     = zo + (1.-sqrt(.Machine$double.eps))*(zh-zo)
+      pt.cloud$z = pmin(pt.cloud$z,zprune)
+   }#end if
    #---------------------------------------------------------------------------------------#
 
 
    #----- Keep only the points that are within bounds. ------------------------------------#
    keep     = pt.cloud$z %>=% 0 & pt.cloud$z %<% zh & pt.cloud$pt.class %in% c(0,1,2,3,4,5)
-   pt.cloud = pt.cloud[keep,]
+   pt.cloud = pt.cloud[keep,,drop=FALSE]
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      In case intensity is not to be used, keep only first returns, and set            #
+   # intensities to 1.                                                                     #
+   #---------------------------------------------------------------------------------------#
+   if (! use.intensity){
+      first              = unlist( tapply( X     = pt.cloud$retn.number
+                                         , INDEX = pt.cloud$pulse.number
+                                         , FUN   = function(x) x %==% min(x)
+                                         )#end tapply
+                                 )#end unlist
+      pt.cloud           = pt.cloud[first,,drop=FALSE]
+      pt.cloud$intensity = 0. * pt.cloud$intensity + 1
+   }#end if (use.intensity)
    #---------------------------------------------------------------------------------------#
 
 
@@ -113,7 +154,6 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
    veg.cloud = pt.cloud[pt.cloud$pt.class %in% c(0,1,3,4,5),]
    gnd.cloud = pt.cloud[pt.cloud$pt.class %in% c(2)        ,]
    #---------------------------------------------------------------------------------------#
-
 
 
 
@@ -127,8 +167,8 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
       gnd.cloud$x              = mean(veg.cloud$x)
       gnd.cloud$y              = mean(veg.cloud$y)
       gnd.cloud$z              = 0.01
-      gnd.cloud$intensity      = ceiling(min(veg.cloud$intensity)/2)
-      gnd.cloud$retn.number    = max(veg.cloud$retn.number)
+      gnd.cloud$intensity      = min(veg.cloud$intensity)
+      gnd.cloud$retn.number    = min(veg.cloud$retn.number)
       gnd.cloud$number.retn.gp = commonest(veg.cloud$number.retn.gp)
       gnd.cloud$pt.class       = 2
       gnd.cloud$gpstime        = max(veg.cloud$gpstime)
@@ -138,27 +178,28 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
 
 
    #----- Find the total energy returned from each layer. ---------------------------------#
-   zcut    = cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE)
-   zcut    = match(zcut,levels(zcut))
-   Rv      = rep(0,times=nz)
-   aux     = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
-   idx     = as.numeric(names(aux))
-   Rv[idx] = aux
+   zcut       = cut(x=veg.cloud$z,breaks=zbreaks,right=FALSE)
+   zcut       = match(zcut,levels(zcut))
+   Rvlyr      = rep(0,times=nz)
+   aux        = tapply(X=veg.cloud$intensity,INDEX=zcut,FUN=sum)
+   idx        = as.numeric(names(aux))
+   Rvlyr[idx] = aux
    #---------------------------------------------------------------------------------------#
 
 
    #----- Find the total intensity returned and flagged as vegetation and as ground. ------#
-   Rv  = rev(cumsum(rev(Rv)))
+   Rv  = rev(cumsum(rev(Rvlyr)))
    Rv0 = sum(veg.cloud$intensity)
    Rg  = sum(gnd.cloud$intensity)
    #---------------------------------------------------------------------------------------#
+
 
 
    #---------------------------------------------------------------------------------------#
    #     Assume fraction between backscatterings in case none is provided.                 #
    #---------------------------------------------------------------------------------------#
    if (is.na(rvorg)){
-     kuse = 1
+     kuse = 0.825 # Mean value by Antonarakis et al. (2014).
    }else{
      kuse = rvorg
    }#end if
@@ -166,11 +207,13 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
 
 
 
+
    #---------------------------------------------------------------------------------------#
    #     Find the gap fraction.                                                            #
    #---------------------------------------------------------------------------------------#
-   extinct.bot = 1. - Rv / ( Rv0 * (1 + kuse * Rg / Rv0 ) )
-   extinct.top = c(extinct.bot[-1],1)
+   gap.bot     = 1. - Rv / ( Rv0 + kuse * Rg)
+   gap.top     = c(gap.bot[-1],1)
+   gap.mid     = sqrt(gap.bot*gap.top)
    #---------------------------------------------------------------------------------------#
 
 
@@ -178,31 +221,27 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
    #      Find the unscaled values for LAD.  The log ratio is from bottom to top because   #
    # we use top-down integration.                                                          #
    #---------------------------------------------------------------------------------------#
-   lad    = - 2 * log(extinct.bot / extinct.top) / deltaz
-   #---------------------------------------------------------------------------------------#
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Remove points below zo.                                                           #
-   #---------------------------------------------------------------------------------------#
-   keep     = zmid >= zo
-   zmid     = zmid  [keep]
-   lad      = lad   [keep]
-   deltaz   = deltaz[keep]
+   lad    = log(gap.top / gap.bot) / (Gmu * deltaz)
    #---------------------------------------------------------------------------------------#
 
 
 
    #---------------------------------------------------------------------------------------#
-   #     Smooth the curve by generating a density function.  This density function becomes #
-   # the output.                                                                           #
+   #     Create a pseudo point cloud using the correction by MacArthur and Horn.           #
    #---------------------------------------------------------------------------------------#
    dzbar = mean(diff(zmid))
    if (! all(is.finite(lad))) browser()
-   zmah  = jitter( x      = sample(x=zmid,size=Rv0,replace=TRUE,prob=lad)
-                 , amount = 0.5*dzbar
-                 )#end jitter
-   ans   = density.safe(zmah,from=zl,to=zh,n=nz)
+   nzmah = ceiling(3.*Rv0/min(veg.cloud$intensity[veg.cloud$intensity %>% 0]))
+   zmah  = jitter(x= sample(x=zmid,size=nzmah,replace=TRUE,prob=lad),amount=0.5*dzbar)
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Smooth the curve by generating a density function.  This density function         #
+   # becomes the output.                                                                   #
+   #---------------------------------------------------------------------------------------#
+   lpdf   = density.safe(zmah,from=0,to=zh,n=nz)
    #---------------------------------------------------------------------------------------#
 
 
@@ -211,10 +250,58 @@ macarthur.horn <<- function(pt.cloud,zl,zh,zo=zl,nz,rvorg=NA,Gmu=0.5){
    #     In case rvorg hasn't been provided, scale lad to unity.                           #
    #---------------------------------------------------------------------------------------#
    if (! is.na(rvorg)){
-      LAI   = sum(lad * dzbar)
-      ans$y = ans$y * LAI
+      LAI    = sum(lad * deltaz)
+      lad    = lad / LAI
    }#end if
    #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Find the total LAI given rvorg.  If rvorg hasn't been provided, then the          #
+   # total LAI will be used as a normalisation factor.                                     #
+   #---------------------------------------------------------------------------------------#
+   pdfsum = sum(lpdf$y * deltaz)
+   lcdf   = rev(cumsum(rev(lpdf$y*deltaz))) / pdfsum
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Remove points below zo.                                                           #
+   #---------------------------------------------------------------------------------------#
+   keep    = zmid >= zo
+   zmid    = zmid   [keep]
+   lad     = lad    [keep]
+   deltaz  = deltaz [keep]
+   Rvlyr   = Rvlyr  [keep]
+   Rv      = Rv     [keep]
+   gap.top = gap.top[keep]
+   gap.bot = gap.bot[keep]
+   gap.mid = gap.mid[keep]
+   lpdf    = data.frame(x=lpdf$x[keep],y=lpdf$y[keep])
+   lcdf    = lcdf   [keep] / max(lcdf[keep])
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Build data frame with full structure. -------------------------------------------#
+   ans    = try( data.frame( x     = lpdf$x
+                           , y     = lpdf$y
+                           , z     = zmid
+                           , dz    = deltaz
+                           , pdf   = lpdf$y
+                           , cdf   = lcdf
+                           , lad   = lad
+                           , Rvlyr = Rvlyr
+                           , Rv    = Rv
+                           , gap   = gap.mid
+                           )#end data.frame
+               , silent = TRUE
+               )#end try
+   if ("try-error" %in% is(ans)) browser()
+   #---------------------------------------------------------------------------------------#
+
 
    return(ans)
    #---------------------------------------------------------------------------------------#
