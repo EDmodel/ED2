@@ -1565,10 +1565,10 @@ subroutine init_pft_photo_params()
    Vm_low_temp(16)           =  4.7137          ! subtropical C3 grass
    Vm_low_temp(17)           =  4.7137          ! Araucaria
 
-   Vm_high_temp(1)           =  45.0 ! C4
-   Vm_high_temp(2)           =  45.0 ! C3
-   Vm_high_temp(3)           =  45.0 ! C3
-   Vm_high_temp(4)           =  45.0 ! C3
+   Vm_high_temp(1)           =  50.0 ! C4
+   Vm_high_temp(2)           =  50.0 ! C3
+   Vm_high_temp(3)           =  50.0 ! C3
+   Vm_high_temp(4)           =  50.0 ! C3
    Vm_high_temp(5)           =  45.0 ! C3
    Vm_high_temp(6)           =  45.0 ! C3
    Vm_high_temp(7)           =  45.0 ! C3
@@ -1580,7 +1580,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(13)          =  45.0 ! C3
    Vm_high_temp(14)          =  45.0 ! C4
    Vm_high_temp(15)          =  45.0 ! C4
-   Vm_high_temp(16)          =  45.0 ! C3
+   Vm_high_temp(16)          =  50.0 ! C3
    Vm_high_temp(17)          =  45.0 ! C3
 
    !---------------------------------------------------------------------------------------!
@@ -1589,7 +1589,10 @@ subroutine init_pft_photo_params()
    !    Vm_decay_a and Vm_decay_b are the correction terms when running the Collatz et al. !
    ! (1991).  When running Collatz, this is used for both C3 and C4 photosynthesis.        !
    !---------------------------------------------------------------------------------------!
-   Vm_decay_e(1:17)          = 0.8 ! 0.4     !                                          [    ---]
+   Vm_decay_e(1:4)           = 0.8     !                                          [    ---]
+   Vm_decay_e(5:11)          = 0.4     !                                          [    ---]
+   Vm_decay_e(12:16)         = 0.8     !                                          [    ---]
+   Vm_decay_e(17)            = 0.4     !                                          [    ---]
    Vm_decay_a(1:17)          = 220000. !                                          [  J/mol]
    Vm_decay_b(1:17)          = 690.    !                                          [J/mol/K]
    !---------------------------------------------------------------------------------------!
@@ -2625,20 +2628,46 @@ subroutine init_pft_alloc_params()
    q(16)    = 1.0
    q(17)    = 1.0
 
-   sapwood_ratio(1:17) = 3900.0
+   !---------------------------------------------------------------------------------------!
+   !   KIM: ED1/ED2 codes and Moorcroft et al. had the incorrect ratio.                    !
+   !   MLO: Updated sapwood_ratio based on Calvo-Alvarado et al. (2008). Fix sapwood ratio !
+   !        only for tropical PFTs when iallom is 4, because bdead allometry is consistent !
+   !        with this ratio and the native AGB allometry.                                  !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (4)
+      do ipft=1,n_pft
+         if (is_tropical(ipft)) then
+            !------------------------------------------------------------------------------!
+            !   Average ratio based on:                                                    !
+            !   Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring.  Tree Physiol.,   !
+            !      28, 11, 1601-1608, 2008.                                                !
+            !------------------------------------------------------------------------------!
+            sapwood_ratio(ipft) = 350. / rho(ipft)
+            !------------------------------------------------------------------------------!
+         else
+            !------------------------------------------------------------------------------!
+            !      Default ED-1 ratio.  Mind that this number may be off by two orders of  !
+            ! magnitude off                                                                !
+            !------------------------------------------------------------------------------!
+            sapwood_ratio(ipft) = 3900.0
+            !------------------------------------------------------------------------------!
+         end if
+      end do
+   case default
+      !------------------------------------------------------------------------------------!
+      !      Default ED-1 ratio.  Mind that this number may be off by two orders of        !
+      ! magnitude off                                                                      !
+      !------------------------------------------------------------------------------------!
+      sapwood_ratio(1:17) = 3900.0
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !    Finding the ratio between sapwood and leaves [kg_sapwood/kg_leaves]                !
-   !                                                                                       !
-   !    KIM: ED1/ED2 codes and Moorcroft et al. had the incorrect ratio.  Since the mid-   !
-   ! latitude parameters have been optimized using the wrong SLA, we keep the bug until    !
-   ! it is updated...                                                                      !
+   !    SLA-dependent ratio between sapwood and leaves [kg_sapwood/kg_leaves]              !
    !---------------------------------------------------------------------------------------!
-   qsw(1:4)    = SLA(1:4)   / sapwood_ratio(1:4)    !new is SLA(1:4)/(3900.0*2.0/1000.0)
-   qsw(5:13)   = SLA(5:13)  / sapwood_ratio(5:13)
-   qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
-   qsw(16)     = SLA(16)    / sapwood_ratio(16)
-   qsw(17)     = SLA(17)    / sapwood_ratio(17)
+   qsw(1:17)    = SLA(1:17) / sapwood_ratio(1:17)
    !---------------------------------------------------------------------------------------!
 
 
@@ -3157,9 +3186,9 @@ subroutine init_pft_alloc_params()
             !  to include below ground biomass.  The result was fit using a DBH-dependent  !
             !  only model.                                                                 !
             !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.2358174 * rho(ipft)
-            b2Bs_small(ipft) = 2.3739128
-            b2Bs_large(ipft) = 1.968890
+            b1Bs_small(ipft) = C2B * 0.2313194 * rho(ipft)
+            b2Bs_small(ipft) = 2.3554124
+            b2Bs_large(ipft) = 2.1291482
             b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
                              * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
             !------------------------------------------------------------------------------!

@@ -66,13 +66,13 @@ key="$1"
    shift # past argument or value
 done
 
-if [ "${PLATFORM}" == "" ]
+if [ "x${PLATFORM}" == "x" ]
 then
    echo "No platform specified, defaulting to gfortran."
    PLATFORM="gfortran"
 fi
 
-if [ "${KIND}" == "" ]
+if [ "x${KIND}" == "x" ]
 then  
    echo "No optimization level specified, defaulting to E."
    KIND="E"
@@ -94,21 +94,21 @@ case ${KIND} in
 esac
 
 # Tag executables with a git version and branch name if possible.
-GIT_EXIST=`git rev-parse --is-inside-work-tree`
-if [ ${GIT_EXIST} == "true" -a ${USE_GIT} ]
+GIT_EXIST=$(git rev-parse --is-inside-work-tree)
+if [ "x${GIT_EXIST}" == "xtrue" ] && ${USE_GIT}
 then
-   GIT_TAG=`git branch -v | awk '/\*/ {print "-" $2 "-" $3}'`
-   GIT_TAG=`echo ${GIT_TAG} | tr -d '()/[]'`
+   GIT_TAG=$(git branch -v | awk '/\*/ {print "-" $2 "-" $3}')
+   GIT_TAG=$(echo ${GIT_TAG} | tr -d '()/[]')
    echo "Git found, it will be used to tag things."
    echo "To disable revision tagging, use --gitoff or -g."
 else
-   GIT_TAG=''
+   GIT_TAG=""
 fi
 
 BIN=bin-${OPT}-${KIND}${GIT_TAG}
 
 # Move to the binary directory
-if [ ! -d "$BIN" ]; then
+if [ ! -d "${BIN}" ]; then
    mkdir ${BIN}
 fi
 cd ${BIN}

@@ -158,8 +158,8 @@ default = list( run           = "unnamed"
               , bphoto.c4     = 10000.
               , kw.grass      = 900.
               , kw.tree       = 600.
-              , gamma.c3      = 0.0145
-              , gamma.c4      = 0.035
+              , gamma.c3      = 0.020
+              , gamma.c4      = 0.040
               , d0.grass      = 0.016
               , d0.tree       = 0.016
               , alpha.c3      = 0.080
@@ -167,7 +167,7 @@ default = list( run           = "unnamed"
               , klowco2       = 4000.
               , decomp.scheme = 2
               , rrffact       = 1.000
-              , growthresp    = 0.333
+              , growthresp    = 0.400
               , lwidth.grass  = 0.05
               , lwidth.bltree = 0.10
               , lwidth.nltree = 0.05
@@ -186,9 +186,9 @@ default = list( run           = "unnamed"
               , gamh          = 13.0
               , tprandtl      = 0.74
               , ribmax        = 0.50
-              , atmco2        = 378.
+              , atmco2        = 400.
               , thcrit        = -1.20
-              , sm.fire       = 0.45
+              , sm.fire       = -1.45
               , ifire         = 0
               , fire.parm     = 0.5
               , ipercol       = 0
