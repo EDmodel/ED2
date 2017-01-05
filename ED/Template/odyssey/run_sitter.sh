@@ -17,8 +17,8 @@
 
 
 #----- Main path, you must actually type the path in case you add to chron. ---------------#
-here="xxxxxxxxxxxxxxxxxxxxx"
-if [ ${here} == "xxxxxxxxxxxxxxxxxxxxx" ]
+here=""
+if [ "x${here}" == "x" ]
 then
    echo " You must set up variable here before using run_sitter.sh!!!"
    exit 99
@@ -37,9 +37,10 @@ situtils="${here}/sit_utils"
 
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
-bioinit="/n/home00/mlongo/data/ed2_data/site_bio_data"
+bioinit="${HOME}/data/ed2_data/site_bio_data"
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
+               # 2 -- lidar initialisation. isizepft is the disturbance history key.
 #------------------------------------------------------------------------------------------#
 
 
@@ -80,8 +81,8 @@ moi=$(whoami)
 #    packdatasrc  -- Source path from where to copy to scratch.                            #
 #------------------------------------------------------------------------------------------#
 copy2scratch="y"
-metmaindef="/n/home00/mlongo/data/ed2_data"
-packdatasrc="/n/home00/mlongo/data/2scratch"
+metmaindef="${HOME}/data/ed2_data"
+packdatasrc="${HOME}/data/2scratch"
 #------------------------------------------------------------------------------------------#
 
 
@@ -96,13 +97,13 @@ lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
 #    Main actions.                                                                         #
 #    printevery -- when looping through jobs, print something on screen every printevery   #
 #                  polygons                                                                #
-#    bigloop    -- Go through the big loop (0 - no, 1 - yes)                               #
-#    fixqueue   -- 0: perform the full queue management)                                   #
-#                  1: simply fix the queues on joborder.                                   #
+#    frqpost    -- How often to run post-processing and last_histo (in number of           #
+#                  iterations)? If zero, they will never be run.                           #
+#    wait_minutes -- How long until moving to the following iteration?                     #
 #------------------------------------------------------------------------------------------#
 printevery=1
-bigloop=1
-fixqueue=0
+frqpost=4
+wait_minutes=60
 #------------------------------------------------------------------------------------------#
 
 
@@ -112,7 +113,7 @@ fixqueue=0
 #  potveg  -- Path where to look for initialisation files in case waitpot = "y".           #
 #------------------------------------------------------------------------------------------#
 waitpot="n"
-potveg="/n/home00/mlongo/data/ed2_data/restarts_sci_006/potveg"
+potveg="${HOME}/data/ed2_data/restarts_sci_006/potveg"
 #------------------------------------------------------------------------------------------#
 
 
@@ -121,7 +122,7 @@ potveg="/n/home00/mlongo/data/ed2_data/restarts_sci_006/potveg"
 # restart     -- Path to where to copy restart files in case copyrestart = "y".            #
 #------------------------------------------------------------------------------------------#
 copyrestart="n"
-restart="/n/home00/mlongo/data/ed2_data/restarts_XXX"
+restart="${HOME}/data/ed2_data/restarts_XXX"
 #------------------------------------------------------------------------------------------#
 
 
@@ -147,11 +148,10 @@ ccc="${HOME}/util/calc.sh"  # Calculator
 #------------------------------------------------------------------------------------------#
 #    Maximum number of jobs in the queue that I am allowed to run in each queue.           #
 #------------------------------------------------------------------------------------------#
-#------ Queue: moorcroft_6100. ------------------------------------------------------------#
-m61max=60   # moorcroft_6100
-amdmax=60   # moorcroft_amd
-wsymax=60   # wofsy
-uremax=60   # unrestricted
+wsymax=99   # wofsy
+bigmax=99   # bigmem
+uremax=99   # unrestricted
+amdmax=99   # moorcroft_amd
 #------------------------------------------------------------------------------------------#
 
 
@@ -165,9 +165,8 @@ partform="%.200j %.25P"
 
 
 #----- Requested memory and time. ---------------------------------------------------------#
-memory=2048                 # Requested memory per cpu
-runtime_own="30-00:00:00"   # Runtime for lab owned nodes
-runtime_gen="7-00:00:00"    # Runtime for general nodes
+memory=8192             # Requested memory per cpu
+runtime="30-00:00:00"   # Maximum runtime
 #------------------------------------------------------------------------------------------#
 
 
@@ -192,8 +191,8 @@ runtime_gen="7-00:00:00"    # Runtime for general nodes
 #    email1day    -- Reminder so the script knows whether an e-mail has been sent or not.  #
 #------------------------------------------------------------------------------------------#
 email1day=1
-recipient="xxxxxx@xxxx.com"
-mailprog="/n/home00/mlongo/util/mutt"
+recipient=""
+mailprog="${HOME}/util/mutt"
 plotstatus=1
 Rscript_plot="${situtils}/plot.status.r"
 R_figlist="${situtils}/stt_t+000.png
@@ -211,18 +210,17 @@ queuefile="${situtils}/queue.txt"
 tablefile="${situtils}/table_queue.txt"
 pendfile="${here}/pending.txt"
 emailday="${here}/emailday.txt"
-if [ ${recipient} == "xxxxxx@xxxx.com" ]
+if [ "x${recipient}" == "x" ]
 then
    echo "You must specify the e-mail (variable recipient)"
-   stop 92
+   exit 92
 fi
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Executable name. -------------------------------------------------------------------#
-execname_def="ed_2.1-opt"
-execname_m61="ed_2.1-opt"
+execname="ed_2.1-opt"
 initrc="${HOME}/.bashrc"
 #------------------------------------------------------------------------------------------#
 
@@ -262,15 +260,9 @@ initrc="${HOME}/.bashrc"
 #   Check whether the executable is copied.  If not, let the user know and stop the        #
 # script.                                                                                  #
 #------------------------------------------------------------------------------------------#
-if [ ! -s ${here}/executable/${execname_def} ]
+if [ ! -s ${here}/executable/${execname} ]
 then
-   echo "Executable file : ${execname_def} is not in the executable directory"
-   echo "Copy the executable to the file before running this script!"
-   exit 99
-fi
-if [ ${m61max} -gt 0 ] && [ ! -s ${here}/executable/${execname_m61} ]
-then
-   echo "Executable file : ${execname_m61} is not in the executable directory"
+   echo "Executable file : ${execname} is not in the executable directory"
    echo "Copy the executable to the file before running this script!"
    exit 99
 fi
@@ -293,7 +285,7 @@ fi
 #----- Set the main path for the site, pseudo past and Sheffield met drivers. -------------#
 if [ ${copy2scratch} == "y" -o ${copy2scratch} == "Y" ]
 then
-   metmain="/scratch/mlongo"
+   metmain="/scratch/${moi}"
 else
    metmain=${metmaindef}
 fi
@@ -302,8 +294,8 @@ fi
 
 
 #----- Determine the number of polygons to check. -----------------------------------------#
-let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
-echo "Number of polygons: ${npolys}..."
+let n_polygon=$(wc -l ${joborder} | awk '{print $1 }')-3
+echo "Number of polygons: ${n_polygon}..."
 #------------------------------------------------------------------------------------------#
 
 
@@ -312,7 +304,6 @@ echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 #     Reset most counters.                                                                 #
 #------------------------------------------------------------------------------------------#
-ff=0           # Polygon counter.
 nstart=0       # Number of new polygons that initialised
 nmetmiss=0     # Number of new polygons that crashed due to missing met driver
 nbad_met=0     # Number of new polygons that crashed due to bad met driver
@@ -324,13 +315,28 @@ newunknown=0   # Number of new polygons whose status is unknown
 newststate=0   # Number of new polygons at steady state
 newextinct=0   # Number of new extinct polygons
 nresubmit=0    # Number of moorcroft2c polygons that were submitted again.
+n_the_end=0    # Number of polygons that reached the end.
 deathrow=""    # List of polygons to be killed (they went extinct or reached steady state)
 #------------------------------------------------------------------------------------------#
 
 
+iter=0
+while [ ${n_the_end} -lt ${n_polygon} ]
+do
+   let iter=${iter}+1
 
-if [ ${bigloop} -ne 0 ]
-then
+
+   #---------------------------------------------------------------------------------------#
+   #       Print report.                                                                   #
+   #---------------------------------------------------------------------------------------#
+   echo "==================================================================="
+   echo "==================================================================="
+   echo " Iteration: ${iter}."
+   echo " Current time: $(date +'%a %d-%b-%Y %H:%M:%S %Z')"
+   echo " Total number of simulations: ${n_polygon}"
+   echo " "
+   #---------------------------------------------------------------------------------------#
+
    #---------------------------------------------------------------------------------------#
    #     Eliminate the latest check, and move the most recent check to the latest check,   #
    # and start the new check.                                                              #
@@ -342,11 +348,11 @@ then
    touch ${situation}
    #---------------------------------------------------------------------------------------#
 
-
    #---------------------------------------------------------------------------------------#
    #     Loop over all polygons.                                                           #
    #---------------------------------------------------------------------------------------#
-   while [ ${ff} -lt ${npolys} ]
+   ff=0           # Polygon counter.
+   while [ ${ff} -lt ${n_polygon} ]
    do
       let ff=${ff}+1
       let line=${ff}+3
@@ -355,15 +361,15 @@ then
       #------------------------------------------------------------------------------------#
       #    Format count.                                                                   #
       #------------------------------------------------------------------------------------#
-      if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
+      if   [ ${n_polygon} -ge 10   ] && [ ${n_polygon} -lt 100   ]
       then
          ffout=$(printf '%2.2i' ${ff})
-      elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
+      elif [ ${n_polygon} -ge 100  ] && [ ${n_polygon} -lt 1000  ]
       then
-         ffout=$(printf '%2.2i' ${ff})
-      elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
+         ffout=$(printf '%3.3i' ${ff})
+      elif [ ${n_polygon} -ge 100  ] && [ ${n_polygon} -lt 10000 ]
       then
-         ffout=$(printf '%2.2i' ${ff})
+         ffout=$(printf '%4.4i' ${ff})
       else
          ffout=${ff}
       fi
@@ -376,7 +382,7 @@ then
       # ing this, but this works.  Here we obtain the polygon name, and its longitude and  #
       # latitude.                                                                          #
       #------------------------------------------------------------------------------------#
-      oi=$(head -${line} ${lonlat} | tail -1)
+      oi=$(head -${line} ${joborder} | tail -1)
       polyname=$(echo ${oi}     | awk '{print $1 }')
       polyiata=$(echo ${oi}     | awk '{print $2 }')
       polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -479,7 +485,7 @@ then
       #----- Check whether the directories exist or not. ----------------------------------#
       if [ ! -s ${here}/${polyname} ]
       then
-         echo "Order: ${ff}, creating directory for polygon ${polyname}..."
+         echo "     + Order: ${ff}, create directory for polygon ${polyname}."
          #----- Copy the Template directory to a unique polygon directory. -------------------#
          oldtol=""
          cp -r ${here}/Template ${here}/${polyname}
@@ -1038,6 +1044,13 @@ then
          esac
          #---------------------------------------------------------------------------------#
          ;;
+      2)
+         #---------------------------------------------------------------------------------#
+         #     ALS initialisation. ISIZEPFT has disturbance history information.           #
+         #---------------------------------------------------------------------------------#
+         thissfilin="${alsinit}/${polyiata}_${isizepft}."
+         #---------------------------------------------------------------------------------#
+         ;;
       *)
          echo " Invalid biotype:  ${biotype}"
          exit 58
@@ -1346,14 +1359,14 @@ then
       case ${jobstat} in
       SUSPENDED)
          #----- Kill the job to resubmit it. ----------------------------------------------#
-         echo "${ffout}: ${polyname} HAS BEEN SUSPENDED... <========="
+         echo "     + ${ffout}: ${polyname} HAS BEEN SUSPENDED. <========="
          deathrow="${deathrow} ${jobname}"
          let newsuspend=${newsuspend}+1
          ;;
          #---------------------------------------------------------------------------------#
       UNKNOWN)
          #----- Kill the job to resubmit it. ----------------------------------------------#
-         echo "${ffout}: ${polyname} status is UNKNOWN..."
+         echo "     + ${ffout}: ${polyname} status is UNKNOWN."
          deathrow="${deathrow} ${jobname}"
          let newunknown=${newunknown}+1
          ;;
@@ -1389,7 +1402,7 @@ then
 
                if [ ${runt} == "CRASHED" ]
                then
-                  echo "${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
+                  echo "     + ${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM). <========="
                   let ncrashed=${ncrashed}+1
                   #----- Make the tolerance 10 times smaller. -----------------------------#
                   toler=$(${ccc} ${toler}/10)
@@ -1399,19 +1412,19 @@ then
                elif [ ${runt} == "SIGSEGV" ]
                then
                   let nsigsegv=${nsigsegv}+1
-                  echo "${ffout}: ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+                  echo "     + ${ffout}: ${polyname} HAD SEGMENTATION VIOLATION. <========"
                   /bin/mv ${serial_out} ${here}/${polyname}/sigsegv_out.out
                   /bin/mv ${serial_err} ${here}/${polyname}/sigsegv_out.err
                elif [ ${runt} == "METMISS" ]
                then
                   let nmetmiss=${nmetmiss}+1
-                  echo "${ffout}: ${polyname} DID NOT FIND MET DRIVERS... <==========="
+                  echo "     + ${ffout}: ${polyname} DID NOT FIND MET DRIVERS. <=========="
                   /bin/mv ${serial_out} ${here}/${polyname}/metmiss_out.out
                   /bin/mv ${serial_err} ${here}/${polyname}/metmiss_out.err
                elif [ ${runt} == "BAD_MET" ]
                then
                   let nbad_met=${nbad_met}+1
-                  echo "${ffout}: ${polyname} HAS BAD MET DRIVERS... <==========="
+                  echo "     + ${ffout}: ${polyname} HAS BAD MET DRIVERS. <============="
                   /bin/mv ${serial_out} ${here}/${polyname}/bad_met_out.out
                   /bin/mv ${serial_err} ${here}/${polyname}/bad_met_out.err
                   #----- Delete files as they are the met driver is bad. ------------------#
@@ -1420,7 +1433,7 @@ then
                elif [ ${runt} == "STOPPED" ]
                then
                   let nstopped=${nstopped}+1
-                  echo "${ffout}: ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+                  echo "     + ${ffout}: ${polyname} STOPPED (UNKNOWN REASON). <========="
                   /bin/mv ${serial_out} ${here}/${polyname}/stopped_out.out
                   /bin/mv ${serial_err} ${here}/${polyname}/stopped_out.err
                fi
@@ -1601,7 +1614,7 @@ then
 
 
                   #------------------------------------------------------------------------#
-                  #      A crashed polygon will inevitably go to the general queue.        #
+                  #      A crashed polygon will inevitably go to the moorcroft_6100 queue. #
                   # Re-write the srun.sh file.                                             #
                   #------------------------------------------------------------------------#
                   srun="${here}/${polyname}/srun.sh"
@@ -1623,10 +1636,8 @@ then
                   #------------------------------------------------------------------------#
 
 
-                  #----- The new queue is by default the general. -------------------------#
-                  newqueue="general"
-                  runtime=${runtime_gen}
-                  execname=${execname_def}
+                  #----- The new queue is by default moorcroft_6100. ----------------------#
+                  newqueue="moorcroft_6100"
                   #------------------------------------------------------------------------#
 
 
@@ -1680,7 +1691,7 @@ then
 
                else
                   #----- Give up on this node. --------------------------------------------#
-                  echo "${ff}  :-{ Tolerance is tiny and it still crashes.  I gave up..."
+                  echo "     + ${ffout}:  Crashing with tiny tolerance. Giving up."
                   #----- Delete files as they are the simulation can't run. ---------------#
                   /bin/rm -fvr ${here}/${polyname}/analy/*
                   /bin/rm -fvr ${here}/${polyname}/histo/*
@@ -1693,24 +1704,24 @@ then
                #---------------------------------------------------------------------------#
                if [ ${runt} == "CRASHED" ]
                then
-                  echo "${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
+                  echo "     + ${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM). <========="
                   let ncrashed=${ncrashed}+1
                elif [ ${runt} == "SIGSEGV" ]
                then
                   let nsigsegv=${nsigsegv}+1
-                  echo "${ffout}: ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+                  echo "     + ${ffout}: ${polyname} HAD SEGMENTATION VIOLATION. <========"
                elif [ ${runt} == "METMISS" ]
                then
                   let nmetmiss=${nmetmiss}+1
-                  echo "${ffout}: ${polyname} DID NOT FIND MET DRIVERS... <==========="
+                  echo "     + ${ffout}: ${polyname} DID NOT FIND MET DRIVERS. <=========="
                elif [ ${runt} == "BAD_MET" ]
                then
                   let nbad_met=${nbad_met}+1
-                  echo "${ffout}: ${polyname} HAS BAD MET DRIVERS... <==========="
+                  echo "     + ${ffout}: ${polyname} HAS BAD MET DRIVERS. <============="
                elif [ ${runt} == "STOPPED" ]
                then
                   let nstopped=${nstopped}+1
-                  echo "${ffout}: ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+                  echo "     + ${ffout}: ${polyname} STOPPED (UNKNOWN REASON). <=========="
                fi
                #---------------------------------------------------------------------------#
             fi # [ -s ${serial_out} ]
@@ -1718,7 +1729,7 @@ then
 
          elif [ ${runt} == "THE_END" ]
          then 
-            echo "${ffout}: ${polyname} has finished o/\o"
+            echo "     + ${ffout}: ${polyname} has finished o/\o."
 
          elif [ ${runt} == "EXTINCT" -o ${runt} == "STSTATE" ] 
          then
@@ -1729,11 +1740,11 @@ then
                if [ ${runt} == "EXTINCT" ]
                then
                   let newextinct=${newextinct}+1
-                  echo "${ffout}: ${polyname} has become a desert..."
+                  echo "     + ${ffout}: ${polyname} has become a desert."
                elif [ ${runt} == "STSTATE" ]
                then
                   let newststate=${newststate}+1
-                  echo "${ffout}: ${polyname} has reached steady state..."
+                  echo "     + ${ffout}: ${polyname} has reached steady state."
                fi
             fi
          elif [ -s ${serial_out} ]
@@ -1741,19 +1752,17 @@ then
             #----- Check whether the simulation is running, and when in model time it is. -#
             stdout="${here}/${polyname}/serial_out.out"
             simline=$(grep "Simulating: "   ${stdout} | tail -1)
-            runtime=$(echo ${simline} | awk '{print $3}')
-            simline=$(grep "Simulating: "   ${stdout} | tail -1)
-            runtime=$(echo ${simline} | awk '{print $3}')
-            echo "${ffout}: ${polyname} is running (${runtime})..."
+            runwhen=$(echo ${simline} | awk '{print $3}')
+            echo "     + ${ffout}: ${polyname} is running (${runwhen})."
             #------------------------------------------------------------------------------#
          elif [ ${runt} == "HISTORY" ] 
          then
-            echo "${ffout}: ${polyname} is pending again ..."
+            echo "     + ${ffout}: ${polyname} is pending again ."
          elif [ ${runt} == "INITIAL" ]
          then
-            echo "${ffout}: ${polyname} is pending (never started)..."
+            echo "     + ${ffout}: ${polyname} is pending (never started)."
          else
-            echo "${ffout}: ${polyname} status is unclear..."
+            echo "     + ${ffout}: ${polyname} status is unclear."
          fi # [ ${runt} == "CRASHED" ]...
          #---------------------------------------------------------------------------------#
          ;;
@@ -1773,7 +1782,7 @@ then
 
          if [ ${running} -eq 0 ]
          then
-            echo "${polyname} is missing.  Re-submitting..." >> ${situation}
+            echo "     + ${polyname} is missing.  Re-submit it." >> ${situation}
 
             let nresubmit=${nresubmit}+1
 
@@ -2004,10 +2013,8 @@ then
 
 
 
-            #----- The new queue is by default the general. -------------------------------#
-            newqueue="general"
-            runtime=${runtime_gen}
-            execname=${execname_def}
+            #----- The new queue is by default moorcroft_6100. ----------------------------#
+            newqueue="moorcroft_6100"
             #------------------------------------------------------------------------------#
 
 
@@ -2055,10 +2062,10 @@ then
             scb="NA"
             npa="NA"
          else
-            echo "${polyname} is running/pending..." >> ${situation}
+            echo "     + ${polyname} is running/pending." >> ${situation}
          fi # [ "x${running}" != "xRUNNING" ]
       else
-         echo "${polyname} status is ${runt}.  No need to resubmit." >> ${situation}
+         echo "     + ${polyname} status is ${runt}.  No need to resubmit." >> ${situation}
       fi # [ ${runt} == "HISTORY" -a ${queue} == "moorcroft2c" ]
       #------------------------------------------------------------------------------------#
 
@@ -2085,14 +2092,14 @@ then
          if [ ${running} -eq 0 ] && [ ${readytostart} -eq 1 ]
          then
             let nstart=${nstart}+1
-            echo " >>> Initial submission of polygon ${polyname}!!!!"
+            echo "       >>> Initial submission of polygon ${polyname}!"
 
             #----- Re-submit the job to moorcroft2c queue. --------------------------------#
             "${here}/${polyname}/srun.sh"
 
          elif [ ${readytostart} -gt 1 ]
          then
-            echo "  Ouch!  Something strange with the restart for polygon ${polyname}..."
+            echo "     + Something strange with the restart for polygon ${polyname}."
          fi
          #---------------------------------------------------------------------------------#
       fi
@@ -2119,14 +2126,14 @@ then
          then
             #----- "Normal" job, with regular name. ---------------------------------------#
             newqueue=${polyqueue}
-            success="TRUE"
+            success=true
          else
             #------------------------------------------------------------------------------#
             #    Job was interrupted.  We resubmit the job in moorcroft2c.                 #
             #------------------------------------------------------------------------------#
-            success="FALSE"
+            success=false
          fi
-         if [ ${success} == "TRUE" ] 
+         if ${success}
          then
             oldline=${oi}
             newline=$(echo ${oldline} | sed s@${queue}@${newqueue}@g)
@@ -2134,7 +2141,7 @@ then
          fi
       elif [ ! -s ${here}/${polyname} ]
       then
-         newqueue="general"
+         newqueue="moorcroft_6100"
          oldline=${oi}
          newline=$(echo ${oldline} | sed s@${queue}@${newqueue}@g)
          sed -i s@"${oldline}"@"${newline}"@g ${joborder}
@@ -2156,9 +2163,9 @@ then
                lastht=$(/bin/ls -1 ${here}/${polyname}/histo/*-S-*h5 2> /dev/null | tail -1)
                baseht=$(basename ${lastht})
                destht="${restart}/${baseht}"
-               echo " - Copying file ${baseht} to the restart directory..."
-               echo " - LASTHISTO = ${lastht}"
-               echo " - DESTHISTO = ${destht}"
+               echo "      - Copy file ${baseht} to the restart directory."
+               echo "      - LASTHISTO = ${lastht}"
+               echo "      - DESTHISTO = ${destht}"
                /bin/cp -uv ${lastht} ${destht}
             fi
             #------------------------------------------------------------------------------#
@@ -2168,32 +2175,218 @@ then
       #------------------------------------------------------------------------------------#
    done
    #---------------------------------------------------------------------------------------#
-fi # end if
-#------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#     Check whether to fix the queues in joborder.                                         #
-#------------------------------------------------------------------------------------------#
-if [ ${fixqueue} -eq 1 ]
-then
-   while [ ${ff} -lt ${npolys} ]
+
+   #----- Run R to make the status check. -------------------------------------------------#
+   if [ ${plotstatus} -eq 1 ]
+   then
+      echo "     + Run the status check."
+      Rscript_out="$(dirname ${Rscript_plot})/$(basename ${Rscript_plot} .r).txt"
+      R CMD BATCH --no-save --no-restore ${Rscript_plot} ${Rscript_out}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Kill all jobs that can be killed. -----------------------------------------------#
+   if [ "x${deathrow}" != "x" ]
+   then
+      echo "     + Kill some polygons (suspended, extinct, steady state)."
+      for killme in ${deathrow}
+      do
+         scancel -u ${moi} -n ${killme}
+      done # killme in ${deathrow}
+   fi # [ "x${deathrow}" != "x" ]
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Give a three minute break. ------------------------------------------------------#
+   echo "     + Take a 1-minute break before counting jobs."
+   sleep 1m
+
+   #----- Check how many jobs are left on our preferred queues. ---------------------------#
+   echo "     + Count the number of polygons on queues."
+   #----- Moorcroft_amd. ------------------------------------------------------------------#
+   amdrun=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   amdidl=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   amdoth=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   amdtot=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   amdmoi=$(scount   -p moorcroft_amd  -u ${moi} )
+   #----- unrestricted. -------------------------------------------------------------------#
+   urerun=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   ureidl=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   ureoth=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   uretot=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   uremoi=$(scount   -p unrestricted   -u ${moi} )
+   #----- Wofsy. --------------------------------------------------------------------------#
+   wsyrun=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   wsyidl=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   wsyoth=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   wsytot=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   wsymoi=$(scount   -p wofsy          -u ${moi} )
+   #----- Bigmem. -------------------------------------------------------------------------#
+   bigrun=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   bigidl=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   bigoth=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   bigtot=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   bigmoi=$(scount   -p bigmem         -u ${moi} )
+   #----- Create a file with the pending jobs. --------------------------------------------#
+   echo "     + Count the number of polygons in queue \"moorcroft_6100\"."
+   m61pen=$(scount -g "${desc}-" -p moorcroft_6100 -t PENDING)
+   m61run=$(scount -g "${desc}-" -p moorcroft_6100 -t RUNNING)
+   /bin/rm -f ${pendfile}
+   ${squeue} -t PENDING -p "moorcroft_6100" -o "%.j %.N %.P" | grep ${desc} > ${pendfile}
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Find the available space on available queues. -----------------------------------#
+   echo "     + Look for empty cores on the queues."
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Check the amount of room left for each queue.  Make sure that we don't exceed the #
+   # maximum availability or the maximum use allowed.                                      #
+   #---------------------------------------------------------------------------------------#
+   /bin/rm -f ${tablefile}
+   touch ${tablefile}
+   #------ wofsy. -------------------------------------------------------------------------#
+   let wsypot=${wsymax}-${wsymoi}
+   if [ ${wsypot} -lt 0 ] || [ ${wsyidl} -lt 0 ]
+   then
+      wsyavl=0
+   elif [ ${wsypot} -lt ${wsyidl} ]
+   then
+      wsyavl=${wsypot}
+   else
+      wsyavl=${wsyidl}
+   fi
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo "   wofsy"                                                     >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   echo "   TOTAL     = ${wsytot}"                                     >> ${tablefile}
+   echo "   RUNNING   = ${wsyrun}"                                     >> ${tablefile}
+   echo "   PENDING   = ${wsypen}"                                     >> ${tablefile}
+   echo "   User max  = ${wsymax}"                                     >> ${tablefile}
+   echo "   MY RUNS   = ${wsymoi}"                                     >> ${tablefile}
+   echo "   POTENTIAL = ${wsypot}"                                     >> ${tablefile}
+   echo "   AVAILABLE = ${wsyavl}"                                     >> ${tablefile}
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   #------ moorcroft_amd. -----------------------------------------------------------------#
+   let amdpot=${amdmax}-${amdmoi}
+   if [ ${amdpot} -lt 0 ] || [ ${amdidl} -lt 0 ]
+   then
+      amdavl=0
+   elif [ ${amdpot} -lt ${amdidl} ]
+   then
+      amdavl=${amdpot}
+   else
+      amdavl=${amdidl}
+   fi
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo "   moorcroft_amd"                                             >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   echo "   TOTAL     = ${amdtot}"                                     >> ${tablefile}
+   echo "   RUNNING   = ${amdrun}"                                     >> ${tablefile}
+   echo "   PENDING   = ${amdpen}"                                     >> ${tablefile}
+   echo "   User max  = ${amdmax}"                                     >> ${tablefile}
+   echo "   MY RUNS   = ${amdmoi}"                                     >> ${tablefile}
+   echo "   POTENTIAL = ${amdpot}"                                     >> ${tablefile}
+   echo "   AVAILABLE = ${amdavl}"                                     >> ${tablefile}
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   #------ bigmem. ------------------------------------------------------------------------#
+   let bigpot=${bigmax}-${bigmoi}
+   if [ ${bigpot} -lt 0 ] || [ ${bigidl} -lt 0 ]
+   then
+      bigavl=0
+   elif [ ${bigpot} -lt ${bigidl} ]
+   then
+      bigavl=${bigpot}
+   else
+      bigavl=${bigidl}
+   fi
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo "   bigmem"                                                    >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   echo "   TOTAL     = ${bigtot}"                                     >> ${tablefile}
+   echo "   RUNNING   = ${bigrun}"                                     >> ${tablefile}
+   echo "   PENDING   = ${bigpen}"                                     >> ${tablefile}
+   echo "   User max  = ${bigmax}"                                     >> ${tablefile}
+   echo "   MY RUNS   = ${bigmoi}"                                     >> ${tablefile}
+   echo "   POTENTIAL = ${bigpot}"                                     >> ${tablefile}
+   echo "   AVAILABLE = ${bigavl}"                                     >> ${tablefile}
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   #------ unrestricted. ------------------------------------------------------------------#
+   let urepot=${uremax}-${uremoi}
+   if [ ${urepot} -lt 0 ] || [ ${ureidl} -lt 0 ]
+   then
+      ureavl=0
+   elif [ ${urepot} -lt ${ureidl} ]
+   then
+      ureavl=${urepot}
+   else
+      ureavl=${ureidl}
+   fi
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo "   unrestricted"                                              >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   echo "   TOTAL     = ${uretot}"                                     >> ${tablefile}
+   echo "   RUNNING   = ${urerun}"                                     >> ${tablefile}
+   echo "   PENDING   = ${urepen}"                                     >> ${tablefile}
+   echo "   User max  = ${uremax}"                                     >> ${tablefile}
+   echo "   MY RUNS   = ${uremoi}"                                     >> ${tablefile}
+   echo "   POTENTIAL = ${urepot}"                                     >> ${tablefile}
+   echo "   AVAILABLE = ${ureavl}"                                     >> ${tablefile}
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Count the total free room.                                                       #
+   #---------------------------------------------------------------------------------------#
+   let totavl=${wsyavl}+${amdavl}+${bigavl}+${ureavl}
+   let wsypamd=${wsyavl}+${amdavl}
+   let wsypamdpbig=${wsyavl}+${amdavl}+${bigavl}
+   echo "       - Available (Wofsy)         - ${wsyavl}."
+   echo "       - Available (Moorcroft_AMD) - ${amdavl}."
+   echo "       - Available (BigMem)        - ${bigavl}."
+   echo "       - Available (Unrestricted)  - ${ureavl}."
+   echo "       - Available (Total)         - ${totavl}."
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find out how many cores can be moved. -------------------------------------------#
+   if [ ${m61pen} -le ${totavl} ]
+   then
+      nfill=${m61pen}
+   else
+      nfill=${totavl}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- This loop is where the job's queue switching happens. ---------------------------#
+   echo "     + Switch queues for ${nfill} jobs."
+   ff=0
+   ll=0
+   while [ ${ff} -lt ${nfill} ]
    do
-      let ff=${ff}+1
-      let line=${ff}+3
-      let rem=${ff}%${printevery}
-      
-      if [ ${rem} -eq 0 -o ${ff} -eq ${npolys} ]
-      then
-         echo " - Fixed queues for ${ff} polygons so far..."
-      fi
+      let ll=${ll}+1
+      let line=${ll}+3
 
       #------------------------------------------------------------------------------------#
       #      Read the lineth line of the polygon list.  There must be smarter ways of do-  #
       # ing this, but this works.  Here we obtain the polygon name, and its longitude and  #
       # latitude.                                                                          #
       #------------------------------------------------------------------------------------#
-      oi=$(head -${line} ${lonlat} | tail -1)
+      oi=$(head -${line} ${joborder} | tail -1)
       polyname=$(echo ${oi}     | awk '{print $1 }')
       polyiata=$(echo ${oi}     | awk '{print $2 }')
       polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -2292,621 +2485,372 @@ then
       #------------------------------------------------------------------------------------#
 
 
+      #----- Find the job name (or the alternative job name). -----------------------------#
       jobname="${desc}-${polyname}"
-      jobqueue=$(${squeue} -o "${partform}" | grep ${jobname} | awk '{print $2}')
-
-      #----- Update the queue in joborder.txt. --------------------------------------------#
-      if [ "x${jobqueue}" != "x" ]
-      then
-         newqueue=${jobqueue}
-      else
-         newqueue=${queue}
-      fi
-      oldline=${oi}
-      newline=$(echo ${oldline} | sed s@${queue}@${newqueue}@g)
-      sed -i s@"${oldline}"@"${newline}"@g ${joborder}
       #------------------------------------------------------------------------------------#
-   done
-   #---------------------------------------------------------------------------------------#
-   /bin/rm -f ${here}/run_sitter.lock
-   exit
-   #---------------------------------------------------------------------------------------#
-fi
-#------------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #       If the job is pending, switch the queue.                                     #
+      #------------------------------------------------------------------------------------#
+      jobpending=$(grep ${jobname} ${pendfile} | wc -l)
+      if [ ${jobpending} -gt 0 ]
+      then
+         let ff=${ff}+1
+
+         #----- Decide the new queue. -----------------------------------------------------#
+         if [ ${ff} -le ${wsyavl} ]
+         then
+            newqueue="wofsy"
+         elif [ ${ff} -le ${wsypamd} ]
+         then
+            newqueue="moorcroft_amd"
+         elif [ ${ff} -le ${wsypamdpbig} ]
+         then
+            newqueue="bigmem"
+         else
+            newqueue="unrestricted"
+         fi # [ ${ff} -le ${m2croom} ]
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Kill the job. -------------------------------------------------------------#
+         scancel -u ${moi} -n ${jobname}
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Update the queue in joborder.txt. -----------------------------------------#
+         oldline=${oi}
+         newline=$(echo ${oldline} | sed s@${queue}@${newqueue}@g)
+         sed -i s@"${oldline}"@"${newline}"@g ${joborder}
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Re-write srun.sh and callserial.sh to update queue and runtime information.#
+         #---------------------------------------------------------------------------------#
+         srun="${here}/${polyname}/srun.sh"
+         callserial="${here}/${polyname}/callserial.sh"
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Set random waiting time. --------------------------------------------------#
+         let wtime=${ff}%8
+         let wtime=${wtime}*20
+         nudge=$(date +%S)
+         if [ ${nudge} -lt 10 ]
+         then 
+            nudge=$(echo ${nudge} | awk '{print substr($1,2,1)}')
+         fi
+         let nudge=${nudge}%15
+         let wtime=${wtime}+${nudge}
+         let wtime=${wtime}+2
+         #---------------------------------------------------------------------------------#
 
 
 
-#----- Run R to make the status check. ----------------------------------------------------#
-if [ ${plotstatus} -eq 1 ]
-then
-   echo "Running the status check..."
-   Rscript_out="$(dirname ${Rscript_plot})/$(basename ${Rscript_plot} .r).txt"
-   R CMD BATCH --no-save --no-restore ${Rscript_plot} ${Rscript_out}
-fi
-#------------------------------------------------------------------------------------------#
+
+         #----- Reset srun.sh and callserial.sh. ------------------------------------------#
+         /bin/rm -f ${srun}
+         /bin/rm -f ${callserial}
+         cp ${here}/Template/srun.sh       ${srun}
+         cp ${here}/Template/callserial.sh ${callserial}
+         #---------------------------------------------------------------------------------#
 
 
 
-#----- Kill all jobs that can be killed. --------------------------------------------------#
-echo "Killing polygons that have been suspended, went extinct, or reached steady state..."
-if [ "x${deathrow}" != "x" ]
-then
-   for killme in ${deathrow}
-   do
-      scancel -u ${moi} -n ${killme}
-   done # killme in ${deathrow}
-fi # [ "x${deathrow}" != "x" ]
-#------------------------------------------------------------------------------------------#
+         #----- Change some settings in srun.sh. ------------------------------------------#
+         sed -i s@pathhere@${here}@g      ${srun}
+         sed -i s@paththere@${here}@g     ${srun}
+         sed -i s@thispoly@${polyname}@g  ${srun}
+         sed -i s@thisqueue@${newqueue}@g ${srun}
+         sed -i s@thisdesc@${desc}@g      ${srun}
+         sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+         sed -i s@myorder@${ff}@g         ${srun}
+         sed -i s@myinitrc@${initrc}@g    ${srun}
+         sed -i s@thismemory@${memory}@g  ${srun}
+         sed -i s@thistime@${runtime}@g   ${srun}
+         #---------------------------------------------------------------------------------#
 
 
 
-#----- Give a three minute break. ---------------------------------------------------------#
-echo "Taking a nap before counting jobs..."
-sleep 180
 
-#----- Check how many jobs are left on our preferred queues. ------------------------------#
-echo "Counting the number of polygons on queues"
-#----- Moorcroft_6100. --------------------------------------------------------------------#
-m61run=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
-m61idl=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
-m61oth=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
-m61tot=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
-m61moi=$(scount   -p moorcroft_6100 -u ${moi} )
-#----- Moorcroft_amd. ---------------------------------------------------------------------#
-amdrun=$(sinfo -h -p moorcroft_amd -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
-amdidl=$(sinfo -h -p moorcroft_amd -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
-amdoth=$(sinfo -h -p moorcroft_amd -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
-amdtot=$(sinfo -h -p moorcroft_amd -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
-amdmoi=$(scount   -p moorcroft_amd -u ${moi} )
-#----- Moorcroft_amd. ---------------------------------------------------------------------#
-urerun=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
-ureidl=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
-ureoth=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
-uretot=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
-uremoi=$(scount   -p unrestricted -u ${moi} )
-#----- Moorcroft_amd. ---------------------------------------------------------------------#
-urerun=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
-ureidl=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
-ureoth=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
-uretot=$(sinfo -h -p unrestricted -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
-uremoi=$(scount   -p unrestricted -u ${moi} )
-#----- Create a file with the pending jobs. -----------------------------------------------#
-echo "Counting the number of polygons in queue on general..."
-genpen=$(scount -g "${desc}-" -p general -t PENDING)
-genrun=$(scount -g "${desc}-" -p general -t RUNNING)
-/bin/rm -f ${pendfile}
-${squeue} -t PENDING -p general -o "%.j %.N %.P" | grep ${desc} > ${pendfile}
-#------------------------------------------------------------------------------------------#
+         #----- Change the callserial.sh file. --------------------------------------------#
+         sed -i s@thisroot@${here}@g          ${callserial}
+         sed -i s@thispoly@${polyname}@g      ${callserial}
+         sed -i s@myexec@${execname}@g        ${callserial}
+         sed -i s@myname@${moi}@g             ${callserial}
+         sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+         sed -i s@myscenario@${iscenario}@g   ${callserial}
+         sed -i s@myscenmain@${scentype}@g    ${callserial}
+         sed -i s@myinitrc@${initrc}@g        ${callserial}
+         #---------------------------------------------------------------------------------#
 
 
-
-#----- Find the available space on available queues. --------------------------------------#
-echo "Looking for empty cores on the queues..."
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#     Check the amount of room left for each queue.  Make sure that we don't exceed the    #
-# maximum availability or the maximum use allowed.                                         #
-#------------------------------------------------------------------------------------------#
-/bin/rm -f ${tablefile}
-touch ${tablefile}
-#------ moorcroft_6100. -------------------------------------------------------------------#
-let m61pot=${m61max}-${m61moi}
-if [ ${m61pot} -lt 0 ] || [ ${m61idl} -lt 0 ]
-then
-   m61avl=0
-elif [ ${m61pot} -lt ${m61idl} ]
-then
-   m61avl=${m61pot}
-else
-   m61avl=${m61idl}
-fi
-echo " -----------------------------------------------------------" >> ${tablefile}
-echo "   moorcroft_6100"                                            >> ${tablefile}
-echo " "                                                            >> ${tablefile}
-echo "   TOTAL     = ${m61tot}"                                     >> ${tablefile}
-echo "   RUNNING   = ${m61run}"                                     >> ${tablefile}
-echo "   PENDING   = ${m61pen}"                                     >> ${tablefile}
-echo "   User max  = ${m61max}"                                     >> ${tablefile}
-echo "   MY RUNS   = ${m61moi}"                                     >> ${tablefile}
-echo "   POTENTIAL = ${m61pot}"                                     >> ${tablefile}
-echo "   AVAILABLE = ${m61avl}"                                     >> ${tablefile}
-echo " -----------------------------------------------------------" >> ${tablefile}
-echo " "                                                            >> ${tablefile}
-#------ moorcroft_amd. --------------------------------------------------------------------#
-let amdpot=${amdmax}-${amdmoi}
-if [ ${amdpot} -lt 0 ] || [ ${amdidl} -lt 0 ]
-then
-   amdavl=0
-elif [ ${amdpot} -lt ${amdidl} ]
-then
-   amdavl=${amdpot}
-else
-   amdavl=${amdidl}
-fi
-echo " -----------------------------------------------------------" >> ${tablefile}
-echo "   moorcroft_amd"                                             >> ${tablefile}
-echo " "                                                            >> ${tablefile}
-echo "   TOTAL     = ${amdtot}"                                     >> ${tablefile}
-echo "   RUNNING   = ${amdrun}"                                     >> ${tablefile}
-echo "   PENDING   = ${amdpen}"                                     >> ${tablefile}
-echo "   User max  = ${amdmax}"                                     >> ${tablefile}
-echo "   MY RUNS   = ${amdmoi}"                                     >> ${tablefile}
-echo "   POTENTIAL = ${amdpot}"                                     >> ${tablefile}
-echo "   AVAILABLE = ${amdavl}"                                     >> ${tablefile}
-echo " -----------------------------------------------------------" >> ${tablefile}
-echo " "                                                            >> ${tablefile}
-#------ unrestricted. ---------------------------------------------------------------------#
-let urepot=${uremax}-${uremoi}
-if [ ${urepot} -lt 0 ] || [ ${ureidl} -lt 0 ]
-then
-   ureavl=0
-elif [ ${urepot} -lt ${ureidl} ]
-then
-   ureavl=${urepot}
-else
-   ureavl=${ureidl}
-fi
-echo " -----------------------------------------------------------" >> ${tablefile}
-echo "   unrestricted"                                              >> ${tablefile}
-echo " "                                                            >> ${tablefile}
-echo "   TOTAL     = ${uretot}"                                     >> ${tablefile}
-echo "   RUNNING   = ${urerun}"                                     >> ${tablefile}
-echo "   PENDING   = ${urepen}"                                     >> ${tablefile}
-echo "   User max  = ${uremax}"                                     >> ${tablefile}
-echo "   MY RUNS   = ${uremoi}"                                     >> ${tablefile}
-echo "   POTENTIAL = ${urepot}"                                     >> ${tablefile}
-echo "   AVAILABLE = ${ureavl}"                                     >> ${tablefile}
-echo " -----------------------------------------------------------" >> ${tablefile}
-echo " "                                                            >> ${tablefile}
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#      Count the total free room.                                                          #
-#------------------------------------------------------------------------------------------#
-let totavl=${m61avl}+${amdavl}+${ureavl}
-let m61pamd=${m61avl}+${amdavl}
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Find out how many cores can be moved. ----------------------------------------------#
-if [ ${genpen} -le ${totavl} ]
-then
-   nfill=${genpen}
-else
-   nfill=${totavl}
-fi
-#------------------------------------------------------------------------------------------#
-
-
-#----- This loop is where the job's queue switching happens. ------------------------------#
-echo "Switching queues for ${nfill} jobs..."
-ff=0
-ll=0
-while [ ${ff} -lt ${nfill} ]
-do
-   let ll=${ll}+1
-   let line=${ll}+3
-
-   #---------------------------------------------------------------------------------------#
-   #      Read the lineth line of the polygon list.  There must be smarter ways of doing   #
-   # this, but this works.  Here we obtain the polygon name, and its longitude and         #
-   # latitude.                                                                             #
-   #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${lonlat} | tail -1)
-   polyname=$(echo ${oi}     | awk '{print $1 }')
-   polyiata=$(echo ${oi}     | awk '{print $2 }')
-   polylon=$(echo ${oi}      | awk '{print $3 }')
-   polylat=$(echo ${oi}      | awk '{print $4 }')
-   yeara=$(echo ${oi}        | awk '{print $5 }')
-   montha=$(echo ${oi}       | awk '{print $6 }')
-   datea=$(echo ${oi}        | awk '{print $7 }')
-   timea=$(echo ${oi}        | awk '{print $8 }')
-   yearz=$(echo ${oi}        | awk '{print $9 }')
-   monthz=$(echo ${oi}       | awk '{print $10}')
-   datez=$(echo ${oi}        | awk '{print $11}')
-   timez=$(echo ${oi}        | awk '{print $12}')
-   initmode=$(echo ${oi}     | awk '{print $13}')
-   iscenario=$(echo ${oi}    | awk '{print $14}')
-   isizepft=$(echo ${oi}     | awk '{print $15}')
-   iage=$(echo ${oi}         | awk '{print $16}')
-   polyisoil=$(echo ${oi}    | awk '{print $17}')
-   polyntext=$(echo ${oi}    | awk '{print $18}')
-   polysand=$(echo ${oi}     | awk '{print $19}')
-   polyclay=$(echo ${oi}     | awk '{print $20}')
-   polydepth=$(echo ${oi}    | awk '{print $21}')
-   polysoilbc=$(echo ${oi}   | awk '{print $22}')
-   polysldrain=$(echo ${oi}  | awk '{print $23}')
-   polycol=$(echo ${oi}      | awk '{print $24}')
-   slzres=$(echo ${oi}       | awk '{print $25}')
-   queue=$(echo ${oi}        | awk '{print $26}')
-   metdriver=$(echo ${oi}    | awk '{print $27}')
-   dtlsm=$(echo ${oi}        | awk '{print $28}')
-   vmfactc3=$(echo ${oi}     | awk '{print $29}')
-   vmfactc4=$(echo ${oi}     | awk '{print $30}')
-   mphototrc3=$(echo ${oi}   | awk '{print $31}')
-   mphototec3=$(echo ${oi}   | awk '{print $32}')
-   mphotoc4=$(echo ${oi}     | awk '{print $33}')
-   bphotoblc3=$(echo ${oi}   | awk '{print $34}')
-   bphotonlc3=$(echo ${oi}   | awk '{print $35}')
-   bphotoc4=$(echo ${oi}     | awk '{print $36}')
-   kwgrass=$(echo ${oi}      | awk '{print $37}')
-   kwtree=$(echo ${oi}       | awk '{print $38}')
-   gammac3=$(echo ${oi}      | awk '{print $39}')
-   gammac4=$(echo ${oi}      | awk '{print $40}')
-   d0grass=$(echo ${oi}      | awk '{print $41}')
-   d0tree=$(echo ${oi}       | awk '{print $42}')
-   alphac3=$(echo ${oi}      | awk '{print $43}')
-   alphac4=$(echo ${oi}      | awk '{print $44}')
-   klowco2=$(echo ${oi}      | awk '{print $45}')
-   decomp=$(echo ${oi}       | awk '{print $46}')
-   rrffact=$(echo ${oi}      | awk '{print $47}')
-   growthresp=$(echo ${oi}   | awk '{print $48}')
-   lwidthgrass=$(echo ${oi}  | awk '{print $49}')
-   lwidthbltree=$(echo ${oi} | awk '{print $50}')
-   lwidthnltree=$(echo ${oi} | awk '{print $51}')
-   q10c3=$(echo ${oi}        | awk '{print $52}')
-   q10c4=$(echo ${oi}        | awk '{print $53}')
-   h2olimit=$(echo ${oi}     | awk '{print $54}')
-   imortscheme=$(echo ${oi}  | awk '{print $55}')
-   ddmortconst=$(echo ${oi}  | awk '{print $56}')
-   cbrscheme=$(echo ${oi}    | awk '{print $57}')
-   isfclyrm=$(echo ${oi}     | awk '{print $58}')
-   icanturb=$(echo ${oi}     | awk '{print $59}')
-   ubmin=$(echo ${oi}        | awk '{print $60}')
-   ugbmin=$(echo ${oi}       | awk '{print $61}')
-   ustmin=$(echo ${oi}       | awk '{print $62}')
-   gamm=$(echo ${oi}         | awk '{print $63}')
-   gamh=$(echo ${oi}         | awk '{print $64}')
-   tprandtl=$(echo ${oi}     | awk '{print $65}')
-   ribmax=$(echo ${oi}       | awk '{print $66}')
-   atmco2=$(echo ${oi}       | awk '{print $67}')
-   thcrit=$(echo ${oi}       | awk '{print $68}')
-   smfire=$(echo ${oi}       | awk '{print $69}')
-   ifire=$(echo ${oi}        | awk '{print $70}')
-   fireparm=$(echo ${oi}     | awk '{print $71}')
-   ipercol=$(echo ${oi}      | awk '{print $72}')
-   runoff=$(echo ${oi}       | awk '{print $73}')
-   imetrad=$(echo ${oi}      | awk '{print $74}')
-   ibranch=$(echo ${oi}      | awk '{print $75}')
-   icanrad=$(echo ${oi}      | awk '{print $76}')
-   ihrzrad=$(echo ${oi}      | awk '{print $77}')
-   crown=$(echo   ${oi}      | awk '{print $78}')
-   ltransvis=$(echo ${oi}    | awk '{print $79}')
-   lreflectvis=$(echo ${oi}  | awk '{print $80}')
-   ltransnir=$(echo ${oi}    | awk '{print $81}')
-   lreflectnir=$(echo ${oi}  | awk '{print $82}')
-   orienttree=$(echo ${oi}   | awk '{print $83}')
-   orientgrass=$(echo ${oi}  | awk '{print $84}')
-   clumptree=$(echo ${oi}    | awk '{print $85}')
-   clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+         #----- Re-submit the job to new queue. -------------------------------------------#
+         ${srun}
+         #---------------------------------------------------------------------------------#
+      fi # [ ${ispending} -gt 0 ]
+      #------------------------------------------------------------------------------------#
+   done # [ ${ff} -lt ${nfill} ]
    #---------------------------------------------------------------------------------------#
 
 
-   #----- Find the job name (or the alternative job name). --------------------------------#
-   jobname="${desc}-${polyname}"
+   #----- Get rid of the temporary file. --------------------------------------------------#
+   /bin/rm -f ${pendfile}
    #---------------------------------------------------------------------------------------#
 
 
+
+   #----- Sleep 5 more minutes. -----------------------------------------------------------#
+   echo "     + Take another break before checking the queues again..."
+   sleep 300
    #---------------------------------------------------------------------------------------#
-   #       If the job is pending, switch the queue.                                        #
+
+
+
+   #----- Quick check the status of the queues. -------------------------------------------#
+   /bin/rm -f ${recefile}
+   touch ${recefile}
+   echo "------- Polygon recent activity status. -------------------------" >> ${recefile}
+   echo "Number of polygons that were re-submitted:    ${nresubmit}"        >> ${recefile}
+   echo "Number of polygons that switched queues:      ${nfill}"            >> ${recefile}
+   echo "Number of polygons that have been suspended:  ${newsuspend}"       >> ${recefile}
+   echo "Number of polygons that were unknown:         ${newunknown}"       >> ${recefile}
+   echo "Number of polygons that went extinct:         ${newextinct}"       >> ${recefile}
+   echo "Number of polygons that reached steady state: ${newststate}"       >> ${recefile}
+   echo "-----------------------------------------------------------------" >> ${recefile}
    #---------------------------------------------------------------------------------------#
-   jobpending=$(grep ${jobname} ${pendfile} | wc -l)
-   if [ ${jobpending} -gt 0 ]
+
+
+
+
+   #----- Check the queue status. ---------------------------------------------------------#
+   echo "     + Count running and pending jobs."
+   m61run=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_6100 -t RUNNING)
+   wsyrun=$(scount  -u ${moi} -g "${desc}-" -p wofsy          -t RUNNING)
+   amdrun=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_amd  -t RUNNING)
+   bigrun=$(scount  -u ${moi} -g "${desc}-" -p bigmem         -t RUNNING)
+   urerun=$(scount  -u ${moi} -g "${desc}-" -p unrestricted   -t RUNNING)
+   m61pen=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_6100 -t PENDING)
+   wsypen=$(scount  -u ${moi} -g "${desc}-" -p wofsy          -t PENDING)
+   amdpen=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_amd  -t PENDING)
+   bigpen=$(scount  -u ${moi} -g "${desc}-" -p bigmem         -t PENDING)
+   urepen=$(scount  -u ${moi} -g "${desc}-" -p unrestricted   -t PENDING)
+   m61rtot=$(scount -u ${moi}               -p moorcroft_6100 -t RUNNING)
+   wsyrtot=$(scount -u ${moi}               -p wofsy          -t RUNNING)
+   amdrtot=$(scount -u ${moi}               -p moorcroft_amd  -t RUNNING)
+   bigrtot=$(scount -u ${moi}               -p bigmem         -t RUNNING)
+   urertot=$(scount -u ${moi}               -p unrestricted   -t RUNNING)
+   m61ptot=$(scount -u ${moi}               -p moorcroft_6100 -t PENDING)
+   wsyptot=$(scount -u ${moi}               -p wofsy          -t PENDING)
+   amdptot=$(scount -u ${moi}               -p moorcroft_amd  -t PENDING)
+   bigptot=$(scount -u ${moi}               -p bigmem         -t PENDING)
+   ureptot=$(scount -u ${moi}               -p unrestricted   -t PENDING)
+   let m61tot=${m61rtot}+${m61ptot}
+   let wsytot=${wsyrtot}+${wsyptot}
+   let amdtot=${amdrtot}+${amdptot}
+   let bigtot=${bigrtot}+${bigptot}
+   let uretot=${urertot}+${ureptot}
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Make the table with the queue statuses.                                           #
+   #---------------------------------------------------------------------------------------#
+   /bin/rm -f ${queuefile}
+   touch ${queuefile}
+   echo "------- Queue status. -----------------------------------------" >> ${queuefile}
+   echo "Moorcroft_6100      RUN=${m61run}  PEN=${m61pen}  TOT=${m61tot}" >> ${queuefile}
+   echo "Wofsy               RUN=${wsyrun}  PEN=${wsypen}  TOT=${wsytot}" >> ${queuefile}
+   echo "Moorcroft_AMD       RUN=${amdrun}  PEN=${amdpen}  TOT=${amdtot}" >> ${queuefile}
+   echo "BigMem              RUN=${bigrun}  PEN=${bigpen}  TOT=${bigtot}" >> ${queuefile}
+   echo "Unrestricted        RUN=${urerun}  PEN=${urepen}  TOT=${uretot}" >> ${queuefile}
+   echo "---------------------------------------------------------------" >> ${queuefile}
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Current simulation status. ------------------------------------------------------#
+   n_initial=$(grep INITIAL ${outcheck} | wc -l)
+   n_history=$(grep HISTORY ${outcheck} | wc -l)
+   n_metmiss=$(grep METMISS ${outcheck} | wc -l)
+   n_bad_met=$(grep BAD_MET ${outcheck} | wc -l)
+   n_crashed=$(grep CRASHED ${outcheck} | wc -l)
+   n_stopped=$(grep STOPPED ${outcheck} | wc -l)
+   n_extinct=$(grep EXTINCT ${outcheck} | wc -l)
+   n_ststate=$(grep STSTATE ${outcheck} | wc -l)
+   n_the_end=$(grep THE_END ${outcheck} | wc -l)
+   let n_ongoing=${n_polygon}-${n_the_end}-${n_extinct}-${n_ststate}
+   /bin/rm -f ${statfile}
+   touch ${statfile}
+   echo "------- Simulation status. --------------------------------------" >> ${statfile}
+   echo " Number of polygons that have never started        : ${n_initial}" >> ${statfile}
+   echo " Number of polygons that have partially run        : ${n_history}" >> ${statfile}
+   echo " Number of polygons that haven't found met drivers : ${n_metmiss}" >> ${statfile}
+   echo " Number of polygons that have bad met drivers      : ${n_bad_met}" >> ${statfile}
+   echo " Number of polygons that have crashed              : ${n_crashed}" >> ${statfile}
+   echo " Number of polygons that have mysteriously stopped : ${n_stopped}" >> ${statfile}
+   echo " Number of polygons that became desert             : ${n_extinct}" >> ${statfile}
+   echo " Number of polygons that have reached steady state : ${n_ststate}" >> ${statfile}
+   echo " Number of polygons that have reached the end      : ${n_the_end}" >> ${statfile}
+   echo "-----------------------------------------------------------------" >> ${statfile}
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Build the e-mail body.                                                            #
+   #---------------------------------------------------------------------------------------#
+   echo "     + Build e-mail..."
+   /bin/rm -f ${emailbody}
+   touch ${emailbody}
+   cat ${headfile}  >> ${emailbody}
+   echo " "         >> ${emailbody}
+   cat ${statfile}  >> ${emailbody}
+   echo " "         >> ${emailbody}
+   cat ${recefile}  >> ${emailbody}
+   echo " "         >> ${emailbody}
+   cat ${queuefile} >> ${emailbody}
+   echo " "         >> ${emailbody}
+   cat ${tailfile}  >> ${emailbody}
+   echo " "         >> ${emailbody}
+   #----- Check whether to append some plots. ---------------------------------------------#
+   if [ ${plotstatus} -eq 1 ]
    then
-      let ff=${ff}+1
-
-      #----- Decide the new queue. --------------------------------------------------------#
-      if [ ${ff} -le ${m61avl} ]
-      then
-         newqueue="moorcroft_6100"
-      elif [ ${ff} -le ${m61pamd} ]
-      then
-         newqueue="moorcroft_amd"
-      else
-         newqueue="unrestricted"
-      fi # [ ${ff} -le ${m2croom} ]
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Moving to a queue without time restrictions, use longer runtime. -------------#
-      runtime=${runtime_own}
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Kill the job. ----------------------------------------------------------------#
-      scancel -u ${moi} -n ${jobname}
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #     Decide the executable name based on queue.                                     #
-      #------------------------------------------------------------------------------------#
-      if [ "x${newqueue}" == "xmoorcroft_6100" ]
-      then
-         execname=${execname_m61}
-      else
-         execname=${execname_def}
-      fi
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Update the queue in joborder.txt. --------------------------------------------#
-      oldline=${oi}
-      newline=$(echo ${oldline} | sed s@${queue}@${newqueue}@g)
-      sed -i s@"${oldline}"@"${newline}"@g ${joborder}
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #      Re-write srun.sh and callserial.sh to update queue and runtime information.   #
-      #------------------------------------------------------------------------------------#
-      srun="${here}/${polyname}/srun.sh"
-      callserial="${here}/${polyname}/callserial.sh"
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Set random waiting time. -----------------------------------------------------#
-      let wtime=${ff}%8
-      let wtime=${wtime}*20
-      nudge=$(date +%S)
-      if [ ${nudge} -lt 10 ]
-      then 
-         nudge=$(echo ${nudge} | awk '{print substr($1,2,1)}')
-      fi
-      let nudge=${nudge}%15
-      let wtime=${wtime}+${nudge}
-      let wtime=${wtime}+2
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #----- Reset srun.sh and callserial.sh. ---------------------------------------------#
-      /bin/rm -f ${srun}
-      /bin/rm -f ${callserial}
-      cp ${here}/Template/srun.sh       ${srun}
-      cp ${here}/Template/callserial.sh ${callserial}
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Change some settings in srun.sh. ---------------------------------------------#
-      sed -i s@pathhere@${here}@g      ${srun}
-      sed -i s@paththere@${here}@g     ${srun}
-      sed -i s@thispoly@${polyname}@g  ${srun}
-      sed -i s@thisqueue@${newqueue}@g ${srun}
-      sed -i s@thisdesc@${desc}@g      ${srun}
-      sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-      sed -i s@myorder@${ff}@g         ${srun}
-      sed -i s@myinitrc@${initrc}@g    ${srun}
-      sed -i s@thismemory@${memory}@g  ${srun}
-      sed -i s@thistime@${runtime}@g   ${srun}
-      #------------------------------------------------------------------------------------#
-
-
-
-
-      #----- Change the callserial.sh file. -----------------------------------------------#
-      sed -i s@thisroot@${here}@g          ${callserial}
-      sed -i s@thispoly@${polyname}@g      ${callserial}
-      sed -i s@myexec@${execname}@g        ${callserial}
-      sed -i s@myname@${moi}@g             ${callserial}
-      sed -i s@mypackdata@${packdatasrc}@g ${callserial}
-      sed -i s@myscenario@${iscenario}@g   ${callserial}
-      sed -i s@myscenmain@${scentype}@g    ${callserial}
-      sed -i s@myinitrc@${initrc}@g        ${callserial}
-      #------------------------------------------------------------------------------------#
-
-
-      #----- Re-submit the job to new queue. ----------------------------------------------#
-      ${srun}
-      #------------------------------------------------------------------------------------#
-   fi # [ ${ispending} -gt 0 ]
+      attach=""
+      for fichier in ${R_figlist}
+      do
+         if [ -s ${fichier} ]
+         then
+            attach="${attach} -a ${fichier}"
+         fi
+      done
+   else
+      attach=""
+   fi
    #---------------------------------------------------------------------------------------#
-done # [ ${ff} -lt ${nfill} ]
-#------------------------------------------------------------------------------------------#
 
 
-#----- Get rid of the temporary file. -----------------------------------------------------#
-/bin/rm -f ${pendfile}
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Sleep 5 more minutes. --------------------------------------------------------------#
-echo "Taking another nap before checking the queues again..."
-sleep 300
-#------------------------------------------------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   #     Create the subject for the e-mail.                                                #
+   #---------------------------------------------------------------------------------------#
+   when=$(date +'%d %B %Y - %R %Z')
+   today=$(date +'%Y-%m-%d')
+   subject="${runtitle} run status as of ${when}"
+   #---------------------------------------------------------------------------------------#
 
 
 
-#----- Quick check the status of the queues. ----------------------------------------------#
-/bin/rm -f ${recefile}
-touch ${recefile}
-echo "------- Polygon recent activity status. ----------------------------" >> ${recefile}
-echo "Number of polygons that were re-submitted:    ${nresubmit}"           >> ${recefile}
-echo "Number of polygons that switched queues:      ${nfill}"               >> ${recefile}
-echo "Number of polygons that have been suspended:  ${newsuspend}"          >> ${recefile}
-echo "Number of polygons that were unknown:         ${newunknown}"          >> ${recefile}
-echo "Number of polygons that went extinct:         ${newextinct}"          >> ${recefile}
-echo "Number of polygons that reached steady state: ${newststate}"          >> ${recefile}
-echo "--------------------------------------------------------------------" >> ${recefile}
-#------------------------------------------------------------------------------------------#
-
-
-
-
-#----- Check the queue status. ------------------------------------------------------------#
-echo "Counting the jobs..."
-m61run=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_6100 -t RUNNING)
-amdrun=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_amd  -t RUNNING)
-urerun=$(scount  -u ${moi} -g "${desc}-" -p unrestricted   -t RUNNING)
-genrun=$(scount  -u ${moi} -g "${desc}-" -p general        -t RUNNING)
-m61pen=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_6100 -t PENDING)
-amdpen=$(scount  -u ${moi} -g "${desc}-" -p moorcroft_amd  -t PENDING)
-urepen=$(scount  -u ${moi} -g "${desc}-" -p unrestricted   -t PENDING)
-genpen=$(scount  -u ${moi} -g "${desc}-" -p general        -t PENDING)
-m61rtot=$(scount -u ${moi}               -p moorcroft_6100 -t RUNNING)
-amdrtot=$(scount -u ${moi}               -p moorcroft_amd  -t RUNNING)
-urertot=$(scount -u ${moi}               -p unrestricted   -t RUNNING)
-genrtot=$(scount -u ${moi}               -p general        -t RUNNING)
-m61ptot=$(scount -u ${moi}               -p moorcroft_6100 -t PENDING)
-amdptot=$(scount -u ${moi}               -p moorcroft_amd  -t PENDING)
-ureptot=$(scount -u ${moi}               -p unrestricted   -t PENDING)
-genptot=$(scount -u ${moi}               -p general        -t PENDING)
-let m61tot=${m61rtot}+${m61ptot}
-let amdtot=${amdrtot}+${amdptot}
-let uretot=${urertot}+${ureptot}
-let gentot=${genrtot}+${genptot}
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Make the table with the queue statuses.                                              #
-#------------------------------------------------------------------------------------------#
-/bin/rm -f ${queuefile}
-touch ${queuefile}
-echo "------- Queue status. --------------------------------------------" >> ${queuefile}
-echo "Moorcroft_6100         RUN=${m61run}  PEN=${m61pen}  TOT=${m61tot}" >> ${queuefile}
-echo "Moorcroft_AMD          RUN=${amdrun}  PEN=${amdpen}  TOT=${amdtot}" >> ${queuefile}
-echo "Unrestricted           RUN=${urerun}  PEN=${urepen}  TOT=${uretot}" >> ${queuefile}
-echo "General                RUN=${genrun}  PEN=${genpen}  TOT=${gentot}" >> ${queuefile}
-echo "------------------------------------------------------------------" >> ${queuefile}
-#------------------------------------------------------------------------------------------#
-
-
-
-#----- Current simulation status. ---------------------------------------------------------#
-n_initial=$(grep INITIAL ${outcheck} | wc -l)
-n_history=$(grep HISTORY ${outcheck} | wc -l)
-n_metmiss=$(grep METMISS ${outcheck} | wc -l)
-n_bad_met=$(grep BAD_MET ${outcheck} | wc -l)
-n_crashed=$(grep CRASHED ${outcheck} | wc -l)
-n_stopped=$(grep STOPPED ${outcheck} | wc -l)
-n_extinct=$(grep EXTINCT ${outcheck} | wc -l)
-n_ststate=$(grep STSTATE ${outcheck} | wc -l)
-n_the_end=$(grep THE_END ${outcheck} | wc -l)
-/bin/rm -f ${statfile}
-touch ${statfile}
-echo "------- Simulation status. -----------------------------------------" >> ${statfile}
-echo " Number of polygons that have never started           : ${n_initial}" >> ${statfile}
-echo " Number of polygons that have partially run           : ${n_history}" >> ${statfile}
-echo " Number of polygons that haven't found met drivers    : ${n_metmiss}" >> ${statfile}
-echo " Number of polygons that have bad met drivers         : ${n_bad_met}" >> ${statfile}
-echo " Number of polygons that have crashed                 : ${n_crashed}" >> ${statfile}
-echo " Number of polygons that have mysteriously stopped    : ${n_stopped}" >> ${statfile}
-echo " Number of polygons that became desert                : ${n_extinct}" >> ${statfile}
-echo " Number of polygons that have reached steady state    : ${n_ststate}" >> ${statfile}
-echo " Number of polygons that have reached the end         : ${n_the_end}" >> ${statfile}
-echo "--------------------------------------------------------------------" >> ${statfile}
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Build the e-mail body.                                                               #
-#------------------------------------------------------------------------------------------#
-echo "Building the e-mail..."
-/bin/rm -f ${emailbody}
-touch ${emailbody}
-cat ${headfile}  >> ${emailbody}
-echo " "         >> ${emailbody}
-cat ${statfile}  >> ${emailbody}
-echo " "         >> ${emailbody}
-cat ${recefile}  >> ${emailbody}
-echo " "         >> ${emailbody}
-cat ${queuefile} >> ${emailbody}
-echo " "         >> ${emailbody}
-cat ${tailfile}  >> ${emailbody}
-echo " "         >> ${emailbody}
-#----- Check whether to append some plots. ------------------------------------------------#
-if [ ${plotstatus} -eq 1 ]
-then
-   attach=""
-   for fichier in ${R_figlist}
-   do
-      if [ -s ${fichier} ]
-      then
-         attach="${attach} -a ${fichier}"
-      fi
-   done
-else
-   attach=""
-fi
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#     Create the subject for the e-mail.                                                   #
-#------------------------------------------------------------------------------------------#
-when=$(date +'%d %B %Y - %R %Z')
-today=$(date +'%Y-%m-%d')
-subject="${runtitle} run status as of ${when}"
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#     Check whether to send the e-mail or not.                                             #
-#------------------------------------------------------------------------------------------#
-if [ ${email1day} -eq 0 ]
-then
-  #----- Always send e-mail. --------------------------------------------------------------#
-  sendemail="y"
-  #----------------------------------------------------------------------------------------#
-elif [ -s ${emailday} ]
-then
-   #----- E-mail has been sent.  Check whether it is time to send again. ------------------#
-   lastemail=$(cat ${emailday})
-   if [ ${today} != ${lastemail} ]
+   #---------------------------------------------------------------------------------------#
+   #     Check whether to send the e-mail or not.                                          #
+   #---------------------------------------------------------------------------------------#
+   if [ ${email1day} -eq 0 ]
    then
-      #----- Time to send another e-mail. -------------------------------------------------#
-      sendemail="y"
+     #----- Always send e-mail. -----------------------------------------------------------#
+     sendemail=true
+     #-------------------------------------------------------------------------------------#
+   elif [ -s ${emailday} ]
+   then
+      #----- E-mail has been sent.  Check whether it is time to send again. ---------------#
+      lastemail=$(cat ${emailday})
+      if [ ${today} != ${lastemail} ]
+      then
+         #----- Time to send another e-mail. ----------------------------------------------#
+         sendemail=true
+         #---------------------------------------------------------------------------------#
+      else
+         #----- E-mail has been sent recently.  Don't send another one now. ---------------#
+         sendemail=false
+         #---------------------------------------------------------------------------------#
+      fi
       #------------------------------------------------------------------------------------#
    else
-      #----- E-mail has been sent recently.  Don't send another one now. ------------------#
-      sendemail="n"
+      #----- E-mail has not been sent yet.  Send it. --------------------------------------#
+      sendemail=true
       #------------------------------------------------------------------------------------#
    fi
    #---------------------------------------------------------------------------------------#
-else
-   #----- E-mail has not been sent yet.  Send it. -----------------------------------------#
-   sendemail="y"
+
+
    #---------------------------------------------------------------------------------------#
-fi
-#------------------------------------------------------------------------------------------#
+   #      Send/skip the e-mail.                                                            #
+   #---------------------------------------------------------------------------------------#
+   if ${sendemail}
+   then
+      echo ${today} > ${emailday}
+      echo "     + Send e-mail."
+      ${mailprog} -s "${subject}" ${attach} ${recipient} < ${emailbody}
+   else
+      echo "     + Skip e-mail."
+   fi
+   #---------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#      Send/skip the e-mail.                                                               #
-#------------------------------------------------------------------------------------------#
-if [ ${sendemail} == "y" ]
-then
-   echo ${today} > ${emailday}
-   echo "Sending e-mail..."
-   ${mailprog} -s "${subject}" ${attach} ${recipient} < ${emailbody}
-else
-   echo "Skipping e-mail..."
-fi
+
+   #---------------------------------------------------------------------------------------#
+   #      Run the post processing.                                                         #
+   #---------------------------------------------------------------------------------------#
+   if [ ${frqpost} -gt 0 ]
+   then
+      let xpost=${iter}%${frqpost}
+      if [ -s "${here}/epost.sh" ] && [ ${xpost} -eq 0 -o ${n_ongoing} -eq 0 ]
+      then
+         echo " Run post-processing."
+         ${here}/epost.sh
+
+
+         echo " Compress/clean files."
+         ${here}/last_histo.sh
+      fi
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #       In case any simulation is still on the works, take a break before checking      #
+   #   again.                                                                              #
+   #---------------------------------------------------------------------------------------#
+   if [ ${n_ongoing} -gt 0 ]
+   then
+      echo "     + Take a break before checking again."
+      let nsl=${wait_minutes}+1
+      while [ ${nsl} -gt 1 ]
+      do
+         let nsl=${nsl}-1
+         case ${nsl} in
+         1)
+            echo "       - ${nsl} minute before next iteration."
+            ;;
+         *)
+            echo "       - ${nsl} minutes before next iteration."
+            ;;
+         esac
+         sleep 1m
+      done
+
+      echo ""
+   else
+      echo "     + All simulations have finished."
+   fi
+   echo "==================================================================="
+   echo "==================================================================="
+   echo ""
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Clean-up stuff. -----------------------------------------------------------------#
+   echo "     + Delete some temporary files..."
+   /bin/rm -f ${queuefile} ${recefile}
+   #---------------------------------------------------------------------------------------#
+
+done # while [ ${n_the_end} -lt ${n_polygon} ]
 #------------------------------------------------------------------------------------------#
 
 #----- Clean-up stuff. --------------------------------------------------------------------#
-echo "Deleting some temporary files..."
-/bin/rm -f ${queuefile} ${recefile}
+echo " Unlock run_sitter.sh..."
 /bin/rm -f ${here}/run_sitter.lock
 echo "==== run_sitter.sh execution ends. ===="
+#------------------------------------------------------------------------------------------#

@@ -460,6 +460,16 @@ if ("iallom" %in% ls()){
 
 
 
+#------------------------------------------------------------------------------------------#
+#     Factors for leaf:sapwood biomass ratio.  The original ED-1 number is incorrect, and  #
+# we keep it incorrect unless the PFT is tropical and allometry is set to 4, in which case #
+# we combine the pipe model with the data from Calvo-Alvarado et al. (2008) to derive the  #
+# ratio.                                                                                   #
+#------------------------------------------------------------------------------------------#
+sapwood.ratio.orig <<- 3900.
+sapwood.factor.ca08 <<- 35.0
+#------------------------------------------------------------------------------------------#
+
 
 #------------------------------------------------------------------------------------------#
 #     These constants will help defining the allometric parameters for IALLOM 1 and 2.     #
@@ -568,9 +578,9 @@ pft01 = list( name               = "C4 grass"
             , gamma.resp         = gamma.c4
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.0
-            , root.turnover.rate = 2.0
-            , SLA                = 22.7
+            , leaf.turnover.rate = 2.5
+            , root.turnover.rate = 2.5
+            , SLA                = 30.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -595,7 +605,7 @@ pft01 = list( name               = "C4 grass"
             , hgt.min            = 0.5
             , hgt.max            = 1.5
             , qroot              = 1.0
-            , qsw                = 22.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
@@ -625,16 +635,16 @@ pft02 = list( name               = "Early tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 18.75 * vmfact.c3 * umol.2.mol
+            , vm0                = 21.50 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.53
-            , leaf.turnover.rate = 1.0
-            , root.turnover.rate = 1.0
-            , SLA                = NA
+            , leaf.turnover.rate = 1.25
+            , root.turnover.rate = 1.25
+            , SLA                = 23.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -659,7 +669,7 @@ pft02 = list( name               = "Early tropical"
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
-            , qsw                = 16.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
@@ -696,9 +706,9 @@ pft03 = list( name               = "Mid tropical"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.71
-            , leaf.turnover.rate = 0.50
-            , root.turnover.rate = 0.50
-            , SLA                = NA
+            , leaf.turnover.rate = 0.575
+            , root.turnover.rate = 0.575
+            , SLA                = 15.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -723,7 +733,7 @@ pft03 = list( name               = "Mid tropical"
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
-            , qsw                = 11.6 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
@@ -753,16 +763,16 @@ pft04 = list( name               = "Late tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 6.25 * vmfact.c3 * umol.2.mol
+            , vm0                = 7.50 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.90
-            , leaf.turnover.rate = 1./3.
-            , root.turnover.rate = 1./3.
-            , SLA                = NA
+            , leaf.turnover.rate = 0.25
+            , root.turnover.rate = 0.25
+            , SLA                = 9.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -787,7 +797,7 @@ pft04 = list( name               = "Late tropical"
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
-            , qsw                = 9.67 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
@@ -851,7 +861,7 @@ pft05 = list( name               = "Temperate C3 Grass"
             , hgt.min            = 0.15
             , hgt.max            = 0.95 * 0.4778
             , qroot              = 1.0
-            , qsw                = 22.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = -0.30
             , clumping.factor    =  1.00
@@ -915,7 +925,7 @@ pft06 = list( name               = "North Pine"
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 27.14
             , qroot              = 0.3463
-            , qsw                = 6.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
@@ -979,7 +989,7 @@ pft07 = list( name               = "South Pine"
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 27.14
             , qroot              = 0.3463
-            , qsw                = 9.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
@@ -1043,7 +1053,7 @@ pft08 = list( name               = "Late conifer"
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 22.79
             , qroot              = 0.3463
-            , qsw                = 10.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
@@ -1107,7 +1117,7 @@ pft09 = list( name               = "Early hardwood"
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 22.6799
             , qroot              = 1.1274
-            , qsw                = 30.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
@@ -1171,7 +1181,7 @@ pft10 = list( name               = "Mid hardwood"
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 25.18
             , qroot              = 1.1274
-            , qsw                = 24.2 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
@@ -1235,7 +1245,7 @@ pft11 = list( name               = "Late hardwood"
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 23.3874
             , qroot              = 1.1274
-            , qsw                = 60.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
@@ -1270,15 +1280,15 @@ pft16 = list( name               = "C3 grass"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 20.833333333 * vmfact.c3 * umol.2.mol
+            , vm0                = 35.0 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.0
-            , root.turnover.rate = 2.0
+            , leaf.turnover.rate = 2.5
+            , root.turnover.rate = 2.5
             , SLA                = 22.7
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
@@ -1304,7 +1314,7 @@ pft16 = list( name               = "C3 grass"
             , hgt.min            = 0.5
             , hgt.max            = 1.5
             , qroot              = 1.0
-            , qsw                = 22.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
@@ -1368,7 +1378,7 @@ pft17 = list( name               = "Araucaria"
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
-            , qsw                = 10.0 / 3900.
+            , qsw                = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa
@@ -1397,6 +1407,19 @@ for (p in sequence(npft+1)){
 } #end for
 #------------------------------------------------------------------------------------------#
 
+#------------------------------------------------------------------------------------------#
+#     Set qsw according to the allometry and the PFT.                                      #
+#------------------------------------------------------------------------------------------#
+for (ipft in sequence(npft)){
+   #---- Check PFT and allometry. ---------------------------------------------------------#
+   if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4){
+      pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor.ca08
+   }else{
+      pft$qsw[ipft] = pft$SLA[ipft] / sapwood.ratio.orig
+   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4)
+   #---------------------------------------------------------------------------------------#
+}#end for (ipft in sequence(npft))
+#------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #      Change maximum height of tropical trees to 99% of the maximum height.               #
@@ -1595,9 +1618,9 @@ for (ipft in sequence(npft)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.2358174 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.3739128
-         pft$b2Bs.large[ipft] = 1.968890
+         pft$b1Bs.small[ipft] = C2B * 0.2313194 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.3554124
+         pft$b2Bs.large[ipft] = 2.1291482
          pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
                                 ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if

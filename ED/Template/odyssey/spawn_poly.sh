@@ -16,6 +16,7 @@ outform="%.200j %.8T"
 bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
+               # 2 -- lidar initialisation. isizepft is the disturbance history key.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart='/n/home00/mlongo/data/ed2_data/restarts_XXX'
 #----- File containing the list of jobs and their settings: -------------------------------#
@@ -32,9 +33,9 @@ packdatasrc="/n/home00/mlongo/data/2scratch"
 #----- Path with land use scenarios. ------------------------------------------------------#
 lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
-copy2scratch="n"
+copy2scratch="y"
 #----- Requested memory and time. ---------------------------------------------------------#
-memory=4196                 # Requested memory per cpu
+memory=8192                 # Requested memory per cpu
 runtime_own="30-00:00:00"   # Runtime for lab owned nodes
 runtime_gen="7-00:00:00"    # Runtime for general nodes
 #----- Force submit? Or just submit those that would normally be submitted?. --------------#
@@ -58,8 +59,7 @@ timeh="0000"  # Hour
 #----- Default tolerance. -----------------------------------------------------------------#
 toldef="0.01"
 #----- Executable names. ------------------------------------------------------------------#
-execname_def="ed_2.1-opt" # Default executable, for most queues
-execname_m61="ed_2.1-m61" # Executable for moorcroft_6100 queues
+execname="ed_2.1-opt" # Executable name
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #------------------------------------------------------------------------------------------#
@@ -337,16 +337,7 @@ do
    #---------------------------------------------------------------------------------------#
 
 
-   #---------------------------------------------------------------------------------------#
-   #     Decide the executable name based on queue.                                        #
-   #---------------------------------------------------------------------------------------#
-   if [ "x${queue}" == "xmoorcroft_6100" ]
-   then
-      execname=${execname_m61}
-   else
-      execname=${execname_def}
-   fi
-   #---------------------------------------------------------------------------------------#
+
 
    #---------------------------------------------------------------------------------------#
    #   Check whether the executable is copied.  If not, let the user know and stop the     #
@@ -1253,6 +1244,13 @@ do
             exit 59
             ;;
          esac
+         #---------------------------------------------------------------------------------#
+         ;;
+      2)
+         #---------------------------------------------------------------------------------#
+         #     ALS initialisation. ISIZEPFT has disturbance history information.           #
+         #---------------------------------------------------------------------------------#
+         thissfilin="${alsinit}/${polyiata}_${isizepft}."
          #---------------------------------------------------------------------------------#
          ;;
       esac

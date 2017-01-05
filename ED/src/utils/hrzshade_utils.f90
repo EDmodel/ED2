@@ -323,8 +323,8 @@ module hrzshade_utils
       real(kind=4)                              :: at_bright   ! Minimum value for bright
       real(kind=4)                              :: at_dark     ! Maximum value for dark
       !----- Local constants. -------------------------------------------------------------!
-      logical                     , parameter   :: print_debug   = .true.
-      logical                     , parameter   :: verbose       = .true.
+      logical                     , parameter   :: print_debug   = .false.
+      logical                     , parameter   :: verbose       = .false.
       !----- External functions. ----------------------------------------------------------!
       real                        , external    :: fquant
       !------------------------------------------------------------------------------------!
@@ -345,6 +345,11 @@ module hrzshade_utils
                'pix_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
             write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
                'pix_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         case (3)
+            write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
+               'dum_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+            write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
+               'dum_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
          end select
       end if
       !------------------------------------------------------------------------------------!
@@ -816,6 +821,18 @@ module hrzshade_utils
          end do
          close(unit=72,status='keep')
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Overwrite fbeam_ipa when ihrzrad is set to 3.                                  !
+      !------------------------------------------------------------------------------------!
+      select case (ihrzrad)
+      case (3)
+         if (verbose) write(unit=*,fmt='(a)') '    -> Make illumination homogeneous...'
+         fbeam_ipa(:,:) = 1.0
+      end select
       !------------------------------------------------------------------------------------!
 
 

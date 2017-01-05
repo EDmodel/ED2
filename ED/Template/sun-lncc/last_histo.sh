@@ -6,7 +6,7 @@
 #     This script keeps only the latest few history files (in case it needs to resume the  #
 # simulation), and compresses analysis files.                                              #
 #------------------------------------------------------------------------------------------#
-here="/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" # Main path
+here=""                                        # Main path
 diskthere=""                                   # Disk where the output files are
 joborder="${here}/joborder.txt"                # File with the job instructions
 bzip2="/bin/gzip -9"                           # Program to compress files (with options)
@@ -48,7 +48,7 @@ daymax=(0 31 28 31 30 31 30 31 31 30 31 30 31)
 
 
 #----- This script is normally ran with crontab.  Make sure the main path is set. ---------#
-if [ ${here} == "/x/xxxxxxxxxxxx/xxxxxx/xxxxxxx/xxxxxxxx" ]
+if [ "x${here}" == "x" ]
 then
    echo " here = ${here} "
    echo " Set up variable here before running email_reset.sh"
@@ -223,22 +223,25 @@ do
    minuz=$(echo ${timez}  | awk '{print substr($1,3,2)}')
    #---------------------------------------------------------------------------------------#
 
+   #----- Define the main path for this polygon. ------------------------------------------#
+   pypath="${there}/${polyname}"
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #    If the directory exists, delete all history files but the last.                    #
    #---------------------------------------------------------------------------------------#
-   if [ -s ${here}/${polyname} ]
+   if [ -s ${pypath} ]
    then
-      echo "${ff} - Deleting history files for polygon ${polyname}:"
+      echo "${ff} - Delete history files for polygon ${polyname}:"
 
       #---- First we delete all -Z- files. ------------------------------------------------#
-      nzed=$(/bin/ls -1 ${there}/${polyname}/histo/${polyname}-Z-*h5 2> /dev/null | wc -l)
+      nzed=$(/bin/ls -1 ${pypath}/histo/${polyname}-Z-*h5 2> /dev/null | wc -l)
       if [ ${nzed} -gt 0 ]
       then
-         zeds=$(/bin/ls -1 ${there}/${polyname}/histo/${polyname}-Z-*h5 2> /dev/null)
+         zeds=$(/bin/ls -1 ${pypath}/histo/${polyname}-Z-*h5 2> /dev/null)
          for zed in ${zeds}
          do
-            echo -n "    - Deleting: $(basename ${zed})..."
+            echo -n "    - Delete: $(basename ${zed})..."
             /bin/nice /bin/rm -f ${zed}
             echo " Gone!"
          done
@@ -248,16 +251,50 @@ do
 
 
       #---- Now we delete all -S- files except the last ${retain} ones. -------------------#
-      ness=$(/bin/ls -1 ${there}/${polyname}/histo/${polyname}-S-*h5 2> /dev/null | wc -l)
+      ness=$(/bin/ls -1 ${pypath}/histo/${polyname}-S-*h5 2> /dev/null | wc -l)
       if [ ${ness} -gt ${retain} ]
       then
          let head=${ness}-${retain}
-         esses=$(/bin/ls -1 ${there}/${polyname}/histo/${polyname}-S-*h5 | head -${head})
+         esses=$(/bin/ls -1 ${pypath}/histo/${polyname}-S-*h5 | head -${head})
          for ess in ${esses}
          do
-            echo -n "    - Deleting: $(basename ${ess})..."
+            echo -n "    - Delete: $(basename ${ess})..."
             /bin/nice /bin/rm -f ${ess}
             echo " Gone!"
+         done
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+      #---- Now we compress all raster files except for the last one. ---------------------#
+      nrst=$(/bin/ls -1 ${pypath}/???_raster_isi001_????-01.txt 2> /dev/null | wc -l)
+      if [ ${nrst} -gt 1 ]
+      then
+         let head=${nrst}-1
+         rasters=$(/bin/ls -1 ${pypath}/???_raster_isi001_????-01.txt | head -${head})
+         for rst in ${rasters}
+         do
+            echo -n "    - Compress: $(basename ${rst})..."
+            ${bzip2} ${rst}
+            echo " Compressed!"
+         done
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+      #---- Now we compress all ptable files except for the last one. ---------------------#
+      nptb=$(/bin/ls -1 ${pypath}/???_ptable_isi001_????-01.txt 2> /dev/null | wc -l)
+      if [ ${nptb} -gt 1 ]
+      then
+         let head=${nptb}-1
+         ptables=$(/bin/ls -1 ${pypath}/???_ptable_isi001_????-01.txt | head -${head})
+         for ptb in ${ptables}
+         do
+            echo -n "    - Compress: $(basename ${ptb})..."
+            ${bzip2} ${ptb}
+            echo " Compressed!"
          done
       fi
       #------------------------------------------------------------------------------------#
@@ -267,8 +304,8 @@ do
       #------------------------------------------------------------------------------------#
       #      Decide whether to check the status before compressing files.                  #
       #------------------------------------------------------------------------------------#
-      analy="${there}/${polyname}/analy"
-      status="${there}/${polyname}/rdata_month/status_${polyname}.txt"
+      analy="${pypath}/analy"
+      status="${pypath}/rdata_month/status_${polyname}.txt"
 
       #----- Check the status before compressing?. ----------------------------------------#
       if [ "x${checkstatus}" == "xy" ]
