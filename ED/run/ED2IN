@@ -871,6 +871,10 @@ $ED_NL
    !                 2.  Similar to option 1, except that when the correction factor is    !
    !                     aggregated for each gap, option 2 uses the maximum value instead  !
    !                     of the mean.  This allows somewhat more variability               !
+   !                 3.  Dummy horizontal canopy radiation.  This applies the same method  !
+   !                     as 1 and 2 to split patches, but it does not change radiation     !
+   !                     reaching the top of the canopy.  This is only useful to isolate   !
+   !                     the effect of heterogeneous illumination from the patch count.    !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !

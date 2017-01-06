@@ -451,8 +451,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- ihrzrad is the horizontal shading model. ----------------------------------------#
    flagvar[["ihrzrad"]]         = list( descr   = "Horizontal shading"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=3,by=1)
-                                      , names   = c("OFF","GAP","PIXEL","DUMMY")
+                                      , values  = seq(from=0,to=2,by=1)
+                                      , names   = c("OFF","GAP","PIXEL")
                                       )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"
@@ -1250,9 +1250,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(     8,    15,          21)
       }else if (lenici == 22){
          nparms = 2
-         param  = c("ivegt.dynamics","ihrzrad")
-         na     = c(             11,        21)
-         nz     = c(             12,        22)
+         param  = c("ihrzrad","include.fire")
+         na     = c(       13,            21)
+         nz     = c(       14,            22)
       }else if (lenici == 23){
          nparms = 2
          param  = c("ihrzrad","h2o.plant.limit")

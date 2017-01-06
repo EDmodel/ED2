@@ -158,6 +158,36 @@ weighted.sum <<- function(x,w,na.rm=FALSE) sum(x*w,na.rm=na.rm)
 
 #==========================================================================================#
 #==========================================================================================#
+#     These functions find weighted averages by applying the same weighting factor for     #
+# each column (weighted.rowMeans) or rows (weighted.colMeans).                             #
+#------------------------------------------------------------------------------------------#
+weighted.rowMeans <<- function(X,wc,na.rm=FALSE){
+   ans = apply( X      = X
+              , MARGIN = 1
+              , FUN    = weighted.mean
+              , w      = wc
+              , na.rm  = na.rm
+              )#end apply
+   return(ans)
+}#end weighted.rowMeans
+weighted.colMeans <<- function(X,wr,na.rm=FALSE){
+   ans = apply( X      = X
+              , MARGIN = 2
+              , FUN    = weighted.mean
+              , w      = wr
+              , na.rm  = na.rm
+              )#end apply
+   return(ans)
+}#end weighted.colMeans
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #     This function finds the weighted fraction for each element of data.frame x, using    #
 # weight w.  In case x is not a data frame, we will try to coerce it to a data frame,      #
 # if it doesn't work then we crash it.  It will correct the final answer to provide        #

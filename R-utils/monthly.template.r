@@ -829,6 +829,65 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
 
 
 
+   #---------------------------------------------------------------------------------------#
+   #  QPATCH -- patch level variables, we save as lists because the dimensions vary.       #
+   #---------------------------------------------------------------------------------------#
+   qpatch               = list()
+   qpatch$nep           = list()
+   qpatch$het.resp      = list()
+   qpatch$can.temp      = list()
+   qpatch$gnd.temp      = list()
+   qpatch$can.shv       = list()
+   qpatch$gnd.shv       = list()
+   qpatch$can.vpd       = list()
+   qpatch$can.co2       = list()
+   qpatch$can.prss      = list()
+   qpatch$cflxca        = list()
+   qpatch$cflxst        = list()
+   qpatch$nee           = list()
+   qpatch$hflxca        = list()
+   qpatch$hflxgc        = list()
+   qpatch$qwflxca       = list()
+   qpatch$wflxca        = list()
+   qpatch$wflxgc        = list()
+   qpatch$ustar         = list()
+   qpatch$albedo        = list()
+   qpatch$rshortup      = list()
+   qpatch$rlongup       = list()
+   qpatch$parup         = list()
+   qpatch$rshort.gnd    = list()
+   qpatch$par.gnd       = list()
+   qpatch$rnet          = list()
+   qpatch$sm.stress     = list()
+   qpatch$leaf.temp     = list()
+   qpatch$leaf.water    = list()
+   qpatch$leaf.vpd      = list()
+   qpatch$wood.temp     = list()
+   qpatch$par.leaf      = list()
+   qpatch$par.leaf.beam = list()
+   qpatch$par.leaf.diff = list()
+   qpatch$leaf.gpp      = list()
+   qpatch$leaf.gsw      = list()
+   qpatch$leaf.par      = list()
+   qpatch$leaf.par.beam = list()
+   qpatch$leaf.par.diff = list()
+   qpatch$assim.light   = list()
+   qpatch$assim.rubp    = list()
+   qpatch$assim.co2     = list()
+   qpatch$gpp           = list()
+   qpatch$npp           = list()
+   qpatch$plant.resp    = list()
+   qpatch$hflxlc        = list()
+   qpatch$hflxwc        = list()
+   qpatch$wflxlc        = list()
+   qpatch$wflxwc        = list()
+   qpatch$transp        = list()
+   qpatch$soil.resp     = list()
+   #---------------------------------------------------------------------------------------#
+
+
+
+
    #----- Cohort level, we save as lists because the dimensions vary. ---------------------#
    cohort                = list()
    cohort$ipa            = list()
@@ -1628,6 +1687,64 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$fast.soil.c   = old.datum$patch$fast.soil.c
    new.datum$patch$slow.soil.c   = old.datum$patch$slow.soil.c
    new.datum$patch$struct.soil.c = old.datum$patch$struct.soil.c
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #  QPATCH -- patch level variables, we save as lists because the dimensions vary.       #
+   #---------------------------------------------------------------------------------------#
+   new.datum$qpatch$nep           = old.datum$qpatch$nep
+   new.datum$qpatch$het.resp      = old.datum$qpatch$het.resp
+   new.datum$qpatch$can.temp      = old.datum$qpatch$can.temp
+   new.datum$qpatch$gnd.temp      = old.datum$qpatch$gnd.temp
+   new.datum$qpatch$can.shv       = old.datum$qpatch$can.shv
+   new.datum$qpatch$gnd.shv       = old.datum$qpatch$gnd.shv
+   new.datum$qpatch$can.vpd       = old.datum$qpatch$can.vpd
+   new.datum$qpatch$can.co2       = old.datum$qpatch$can.co2
+   new.datum$qpatch$can.prss      = old.datum$qpatch$can.prss
+   new.datum$qpatch$cflxca        = old.datum$qpatch$cflxca
+   new.datum$qpatch$cflxst        = old.datum$qpatch$cflxst
+   new.datum$qpatch$nee           = old.datum$qpatch$nee
+   new.datum$qpatch$hflxca        = old.datum$qpatch$hflxca
+   new.datum$qpatch$hflxgc        = old.datum$qpatch$hflxgc
+   new.datum$qpatch$qwflxca       = old.datum$qpatch$qwflxca
+   new.datum$qpatch$wflxca        = old.datum$qpatch$wflxca
+   new.datum$qpatch$wflxgc        = old.datum$qpatch$wflxgc
+   new.datum$qpatch$ustar         = old.datum$qpatch$ustar
+   new.datum$qpatch$albedo        = old.datum$qpatch$albedo
+   new.datum$qpatch$rshortup      = old.datum$qpatch$rshortup
+   new.datum$qpatch$rlongup       = old.datum$qpatch$rlongup
+   new.datum$qpatch$parup         = old.datum$qpatch$parup
+   new.datum$qpatch$rshort.gnd    = old.datum$qpatch$rshort.gnd
+   new.datum$qpatch$par.gnd       = old.datum$qpatch$par.gnd
+   new.datum$qpatch$rnet          = old.datum$qpatch$rnet
+   new.datum$qpatch$sm.stress     = old.datum$qpatch$sm.stress
+   new.datum$qpatch$leaf.temp     = old.datum$qpatch$leaf.temp
+   new.datum$qpatch$leaf.water    = old.datum$qpatch$leaf.water
+   new.datum$qpatch$leaf.vpd      = old.datum$qpatch$leaf.vpd
+   new.datum$qpatch$wood.temp     = old.datum$qpatch$wood.temp
+   new.datum$qpatch$par.leaf      = old.datum$qpatch$par.leaf
+   new.datum$qpatch$par.leaf.beam = old.datum$qpatch$par.leaf.beam
+   new.datum$qpatch$par.leaf.diff = old.datum$qpatch$par.leaf.diff
+   new.datum$qpatch$leaf.gpp      = old.datum$qpatch$leaf.gpp
+   new.datum$qpatch$leaf.gsw      = old.datum$qpatch$leaf.gsw
+   new.datum$qpatch$leaf.par      = old.datum$qpatch$leaf.par
+   new.datum$qpatch$leaf.par.beam = old.datum$qpatch$leaf.par.beam
+   new.datum$qpatch$leaf.par.diff = old.datum$qpatch$leaf.par.diff
+   new.datum$qpatch$assim.light   = old.datum$qpatch$assim.light
+   new.datum$qpatch$assim.rubp    = old.datum$qpatch$assim.rubp
+   new.datum$qpatch$assim.co2     = old.datum$qpatch$assim.co2
+   new.datum$qpatch$gpp           = old.datum$qpatch$gpp
+   new.datum$qpatch$npp           = old.datum$qpatch$npp
+   new.datum$qpatch$plant.resp    = old.datum$qpatch$plant.resp
+   new.datum$qpatch$hflxlc        = old.datum$qpatch$hflxlc
+   new.datum$qpatch$hflxwc        = old.datum$qpatch$hflxwc
+   new.datum$qpatch$wflxlc        = old.datum$qpatch$wflxlc
+   new.datum$qpatch$wflxwc        = old.datum$qpatch$wflxwc
+   new.datum$qpatch$transp        = old.datum$qpatch$transp
+   new.datum$qpatch$soil.resp     = old.datum$qpatch$soil.resp
    #---------------------------------------------------------------------------------------#
 
 
