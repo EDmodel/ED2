@@ -35,7 +35,9 @@ lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch="y"
 #----- Requested memory and time. ---------------------------------------------------------#
-memory=8192                 # Requested memory per cpu
+memory_big=65536            # Requested memory per cpu
+memory_def=32768            # Requested memory per cpu
+memory_m61=8192             # Requested memory per cpu
 runtime_own="30-00:00:00"   # Runtime for lab owned nodes
 runtime_gen="7-00:00:00"    # Runtime for general nodes
 #----- Force submit? Or just submit those that would normally be submitted?. --------------#
@@ -1425,14 +1427,27 @@ do
       if [ ${queued} -eq 0 ]
       then
 
-         #---- Decide which runtime to request. -------------------------------------------#
-         if [ "x${queue}" == "xgeneral" ]
-         then
+         #---- Decide which runtime and memory to request. --------------------------------#
+         case ${queue} in
+         general)
             runtime=${runtime_gen}
-         else
+            memory=${memory_def}
+            ;;
+         bigmem)
+            runtime=${runtime_gen}
+            memory=${memory_big}
+            ;;
+         moorcroft_6100)
             runtime=${runtime_own}
-         fi
+            memory=${memory_m61}
+            ;;
+         *)
+            runtime=${runtime_own}
+            memory=${memory_def}
+            ;;
+         esac
          #---------------------------------------------------------------------------------#
+
 
 
          #---------------------------------------------------------------------------------#

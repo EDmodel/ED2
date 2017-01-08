@@ -5184,19 +5184,24 @@ subroutine init_ff_coms
    fusetol_h         = 0.5
    lai_fuse_tol      = 0.8
    lai_tol           = 1.0
-   ff_nhgt           = 8
+   ff_nhgt           = 13
    coh_tolerance_max = 10.0    ! Original 2.0
 
    !----- Define the number of height classes. --------------------------------------------!
    allocate (hgt_class(ff_nhgt))
    hgt_class( 1) =  0.0
-   hgt_class( 2) =  2.5
-   hgt_class( 3) =  7.5
-   hgt_class( 4) = 12.5
-   hgt_class( 5) = 17.5
-   hgt_class( 6) = 22.5
-   hgt_class( 7) = 27.5
-   hgt_class( 8) = 32.5
+   hgt_class( 2) =  2.0
+   hgt_class( 3) =  5.0
+   hgt_class( 4) =  8.0
+   hgt_class( 5) = 11.0
+   hgt_class( 6) = 14.0
+   hgt_class( 7) = 18.0
+   hgt_class( 8) = 22.0
+   hgt_class( 9) = 26.0
+   hgt_class(10) = 30.0
+   hgt_class(11) = 34.0
+   hgt_class(12) = 38.0
+   hgt_class(13) = 42.0
 
    niter_patfus       = 100
    exp_patfus         = 1. / real(niter_patfus-1)

@@ -103,7 +103,7 @@ lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
 #------------------------------------------------------------------------------------------#
 printevery=1
 frqpost=4
-wait_minutes=60
+wait_minutes=30
 #------------------------------------------------------------------------------------------#
 
 
@@ -151,6 +151,7 @@ ccc="${HOME}/util/calc.sh"  # Calculator
 wsymax=99   # wofsy
 bigmax=99   # bigmem
 uremax=99   # unrestricted
+m61max=20   # moorcroft_6100
 amdmax=99   # moorcroft_amd
 #------------------------------------------------------------------------------------------#
 
@@ -165,8 +166,11 @@ partform="%.200j %.25P"
 
 
 #----- Requested memory and time. ---------------------------------------------------------#
-memory=8192             # Requested memory per cpu
-runtime="30-00:00:00"   # Maximum runtime
+memory_big=65536            # Requested memory per cpu
+memory_def=32768            # Requested memory per cpu
+memory_m61=8192             # Requested memory per cpu
+runtime_own="30-00:00:00"   # Runtime for lab owned nodes
+runtime_gen="7-00:00:00"    # Runtime for general nodes
 #------------------------------------------------------------------------------------------#
 
 
@@ -1614,7 +1618,7 @@ do
 
 
                   #------------------------------------------------------------------------#
-                  #      A crashed polygon will inevitably go to the moorcroft_6100 queue. #
+                  #      A crashed polygon will inevitably go to the general queue.        #
                   # Re-write the srun.sh file.                                             #
                   #------------------------------------------------------------------------#
                   srun="${here}/${polyname}/srun.sh"
@@ -1637,7 +1641,30 @@ do
 
 
                   #----- The new queue is by default moorcroft_6100. ----------------------#
-                  newqueue="moorcroft_6100"
+                  newqueue="general"
+                  #------------------------------------------------------------------------#
+
+
+
+                  #---- Decide which runtime and memory to request. -----------------------#
+                  case ${newqueue} in
+                  general)
+                     runtime=${runtime_gen}
+                     memory=${memory_def}
+                     ;;
+                  bigmem)
+                     runtime=${runtime_gen}
+                     memory=${memory_big}
+                     ;;
+                  moorcroft_6100)
+                     runtime=${runtime_own}
+                     memory=${memory_m61}
+                     ;;
+                  *)
+                     runtime=${runtime_own}
+                     memory=${memory_def}
+                     ;;
+                  esac
                   #------------------------------------------------------------------------#
 
 
@@ -2013,8 +2040,31 @@ do
 
 
 
-            #----- The new queue is by default moorcroft_6100. ----------------------------#
-            newqueue="moorcroft_6100"
+            #----- The new queue is by default general. -----------------------------------#
+            newqueue="general"
+            #------------------------------------------------------------------------------#
+
+
+
+            #---- Decide which runtime and memory to request. -----------------------------#
+            case ${newqueue} in
+            general)
+               runtime=${runtime_gen}
+               memory=${memory_def}
+               ;;
+            bigmem)
+               runtime=${runtime_gen}
+               memory=${memory_big}
+               ;;
+            moorcroft_6100)
+               runtime=${runtime_own}
+               memory=${memory_m61}
+               ;;
+            *)
+               runtime=${runtime_own}
+               memory=${memory_def}
+               ;;
+            esac
             #------------------------------------------------------------------------------#
 
 
@@ -2208,24 +2258,30 @@ do
 
    #----- Check how many jobs are left on our preferred queues. ---------------------------#
    echo "     + Count the number of polygons on queues."
-   #----- Moorcroft_amd. ------------------------------------------------------------------#
-   amdrun=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
-   amdidl=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
-   amdoth=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
-   amdtot=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
-   amdmoi=$(scount   -p moorcroft_amd  -u ${moi} )
-   #----- unrestricted. -------------------------------------------------------------------#
-   urerun=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
-   ureidl=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
-   ureoth=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
-   uretot=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
-   uremoi=$(scount   -p unrestricted   -u ${moi} )
    #----- Wofsy. --------------------------------------------------------------------------#
    wsyrun=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
    wsyidl=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
    wsyoth=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
    wsytot=$(sinfo -h -p wofsy          -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
    wsymoi=$(scount   -p wofsy          -u ${moi} )
+   #----- Moorcroft_amd. ------------------------------------------------------------------#
+   amdrun=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   amdidl=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   amdoth=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   amdtot=$(sinfo -h -p moorcroft_amd  -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   amdmoi=$(scount   -p moorcroft_amd  -u ${moi} )
+   #----- Moorcroft_6100. -----------------------------------------------------------------#
+   m61run=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   m61idl=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   m61oth=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   m61tot=$(sinfo -h -p moorcroft_6100 -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   m61moi=$(scount   -p moorcroft_6100 -u ${moi} )
+   #----- unrestricted. -------------------------------------------------------------------#
+   urerun=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
+   ureidl=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
+   ureoth=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $3}')
+   uretot=$(sinfo -h -p unrestricted   -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
+   uremoi=$(scount   -p unrestricted   -u ${moi} )
    #----- Bigmem. -------------------------------------------------------------------------#
    bigrun=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $1}')
    bigidl=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $2}')
@@ -2233,11 +2289,11 @@ do
    bigtot=$(sinfo -h -p bigmem         -o "%C" | sed s@"/"@" "@g | awk '{print $4}')
    bigmoi=$(scount   -p bigmem         -u ${moi} )
    #----- Create a file with the pending jobs. --------------------------------------------#
-   echo "     + Count the number of polygons in queue \"moorcroft_6100\"."
-   m61pen=$(scount -g "${desc}-" -p moorcroft_6100 -t PENDING)
-   m61run=$(scount -g "${desc}-" -p moorcroft_6100 -t RUNNING)
+   echo "     + Count the number of polygons in queue \"general\"."
+   genpen=$(scount -g "${desc}-" -p general -t PENDING)
+   genrun=$(scount -g "${desc}-" -p general -t RUNNING)
    /bin/rm -f ${pendfile}
-   ${squeue} -t PENDING -p "moorcroft_6100" -o "%.j %.N %.P" | grep ${desc} > ${pendfile}
+   ${squeue} -t PENDING -p "general" -o "%.j %.N %.P" | grep ${desc} > ${pendfile}
    #---------------------------------------------------------------------------------------#
 
 
@@ -2273,6 +2329,29 @@ do
    echo "   MY RUNS   = ${wsymoi}"                                     >> ${tablefile}
    echo "   POTENTIAL = ${wsypot}"                                     >> ${tablefile}
    echo "   AVAILABLE = ${wsyavl}"                                     >> ${tablefile}
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   #------ moorcroft_6100. ----------------------------------------------------------------#
+   let m61pot=${m61max}-${m61moi}
+   if [ ${m61pot} -lt 0 ] || [ ${m61idl} -lt 0 ]
+   then
+      m61avl=0
+   elif [ ${m61pot} -lt ${m61idl} ]
+   then
+      m61avl=${m61pot}
+   else
+      m61avl=${m61idl}
+   fi
+   echo " -----------------------------------------------------------" >> ${tablefile}
+   echo "   moorcroft_6100"                                            >> ${tablefile}
+   echo " "                                                            >> ${tablefile}
+   echo "   TOTAL     = ${m61tot}"                                     >> ${tablefile}
+   echo "   RUNNING   = ${m61run}"                                     >> ${tablefile}
+   echo "   PENDING   = ${m61pen}"                                     >> ${tablefile}
+   echo "   User max  = ${m61max}"                                     >> ${tablefile}
+   echo "   MY RUNS   = ${m61moi}"                                     >> ${tablefile}
+   echo "   POTENTIAL = ${m61pot}"                                     >> ${tablefile}
+   echo "   AVAILABLE = ${m61avl}"                                     >> ${tablefile}
    echo " -----------------------------------------------------------" >> ${tablefile}
    echo " "                                                            >> ${tablefile}
    #------ moorcroft_amd. -----------------------------------------------------------------#
@@ -2352,20 +2431,22 @@ do
    #---------------------------------------------------------------------------------------#
    let totavl=${wsyavl}+${amdavl}+${bigavl}+${ureavl}
    let wsypamd=${wsyavl}+${amdavl}
-   let wsypamdpbig=${wsyavl}+${amdavl}+${bigavl}
-   echo "       - Available (Wofsy)         - ${wsyavl}."
-   echo "       - Available (Moorcroft_AMD) - ${amdavl}."
-   echo "       - Available (BigMem)        - ${bigavl}."
-   echo "       - Available (Unrestricted)  - ${ureavl}."
-   echo "       - Available (Total)         - ${totavl}."
+   let wsypamdpm61=${wsyavl}+${amdavl}+${m61avl}
+   let wsypamdpm61pbig=${wsyavl}+${amdavl}+${m61avl}+${bigavl}
+   echo "       - Available (Wofsy)          - ${wsyavl}."
+   echo "       - Available (Moorcroft_AMD)  - ${amdavl}."
+   echo "       - Available (Moorcroft_6100) - ${m61avl}."
+   echo "       - Available (BigMem)         - ${bigavl}."
+   echo "       - Available (Unrestricted)   - ${ureavl}."
+   echo "       - Available (Total)          - ${totavl}."
    #---------------------------------------------------------------------------------------#
 
 
 
    #----- Find out how many cores can be moved. -------------------------------------------#
-   if [ ${m61pen} -le ${totavl} ]
+   if [ ${genpen} -le ${totavl} ]
    then
-      nfill=${m61pen}
+      nfill=${genpen}
    else
       nfill=${totavl}
    fi
@@ -2505,7 +2586,10 @@ do
          elif [ ${ff} -le ${wsypamd} ]
          then
             newqueue="moorcroft_amd"
-         elif [ ${ff} -le ${wsypamdpbig} ]
+         elif [ ${ff} -le ${wsypamdpm61} ]
+         then
+            newqueue="moorcroft_6100"
+         elif [ ${ff} -le ${wsypamdpm61pbig} ]
          then
             newqueue="bigmem"
          else
@@ -2523,6 +2607,29 @@ do
          oldline=${oi}
          newline=$(echo ${oldline} | sed s@${queue}@${newqueue}@g)
          sed -i s@"${oldline}"@"${newline}"@g ${joborder}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---- Decide which runtime and memory to request. --------------------------------#
+         case ${newqueue} in
+         general)
+            runtime=${runtime_gen}
+            memory=${memory_def}
+            ;;
+         bigmem)
+            runtime=${runtime_gen}
+            memory=${memory_big}
+            ;;
+         moorcroft_6100)
+            runtime=${runtime_own}
+            memory=${memory_m61}
+            ;;
+         *)
+            runtime=${runtime_own}
+            memory=${memory_def}
+            ;;
+         esac
          #---------------------------------------------------------------------------------#
 
 
