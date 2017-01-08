@@ -1299,10 +1299,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(      12,       22,            30)
          nz     = c(      13,       23,            31)
       }else if (lenici == 32){
-         nparms = 4
-         param  = c("isoil.text","include.fire","fire.parameter","sm.fire")
-         na     = c(         10,             17,              24,       29)
-         nz     = c(         11,             18,              25,       32)
+         nparms = 3
+         param  = c("iage","ihrzrad","imetrad")
+         na     = c(    10,       21,       31)
+         nz     = c(    12,       22,       32)
       }else if (lenici == 36){
          nparms = 4
          param  = c("include.fire","ianth.disturb","ianth.dataset","isoil.text")
