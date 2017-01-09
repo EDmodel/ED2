@@ -430,10 +430,14 @@ do
 
 
    #---------------------------------------------------------------------------------------#
-   #     Determine which PFTs to use based on the "iata" code and isizepft.                #
+   #     Determine which PFTs to use based on the "iata" code, isizepft, and biotype.      #
    #---------------------------------------------------------------------------------------#
-   case ${isizepft} in
-   0|1|5)
+   case ${biotype} in
+   2)
+      #------------------------------------------------------------------------------------#
+      #     Airborne lidar.  isizepft is not controlling isizepft, but disturbance         #
+      # history. Initialise PFTs using the default settings.                               #
+      #------------------------------------------------------------------------------------#
       case ${polyiata} in
       tzi|zmh|nqn)
          pfts="6,7,9,10,11,16,17"
@@ -467,30 +471,70 @@ do
          ;;
       esac
       ;;
-   2)
-      case ${polyiata} in
-      tzi|zmh|nqn|hvd|wch|tqh)
-         pfts="10,16"
-         crop=16
-         plantation=17
+      #------------------------------------------------------------------------------------#
+   *)
+      case ${isizepft} in
+      0|1|5)
+         case ${polyiata} in
+         tzi|zmh|nqn)
+            pfts="6,7,9,10,11,16,17"
+            crop=16
+            plantation=17
+            ;;
+         hvd|wch|tqh)
+            pfts="6,8,9,10,11,16,17"
+            crop=16
+            plantation=17
+            ;;
+         asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
+            pfts="1,2,3,4,16,17"
+            crop=16
+            plantation=17
+            ;;
+         fns*)
+            pfts="1,16"
+            crop=1
+            plantation=17
+            ;;
+         s77*)
+            pfts="1,16"
+            crop=16
+            plantation=17
+            ;;
+         *)
+            pfts="1,2,3,4,16"
+            crop=1
+            plantation=3
+            ;;
+         esac
          ;;
-      fns*|s77*)
-         pfts="1"
-         crop=1
-         plantation=17
+      2)
+         case ${polyiata} in
+         tzi|zmh|nqn|hvd|wch|tqh)
+            pfts="10,16"
+            crop=16
+            plantation=17
+            ;;
+         fns*|s77*)
+            pfts="1"
+            crop=1
+            plantation=17
+            ;;
+         *)
+            pfts="1,3"
+            crop=1
+            plantation=3
+            ;;
+         esac
          ;;
       *)
-         pfts="1,3"
-         crop=1
+         pfts="1,2,3,4,16"
+         crop=16
          plantation=3
          ;;
       esac
       ;;
-   *)
-      pfts="1,2,3,4,16"
-      crop=16
-      plantation=3
-      ;;
+      #------------------------------------------------------------------------------------#
    esac
    #---------------------------------------------------------------------------------------#
 

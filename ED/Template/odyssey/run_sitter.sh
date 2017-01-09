@@ -38,6 +38,7 @@ situtils="${here}/sit_utils"
 
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="${HOME}/data/ed2_data/site_bio_data"
+alsinit="${HOME}/data/ed2_data/lidar_bio_data"
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
                # 2 -- lidar initialisation. isizepft is the disturbance history key.
@@ -873,10 +874,14 @@ do
 
 
       #------------------------------------------------------------------------------------#
-      #     Determine which PFTs to use based on the "iata" code and isizepft.             #
+      #     Determine which PFTs to use based on the "iata" code, isizepft, and biotype.   #
       #------------------------------------------------------------------------------------#
-      case ${isizepft} in
-      0|1|5)
+      case ${biotype} in
+      2)
+         #---------------------------------------------------------------------------------#
+         #     Airborne lidar.  isizepft is not controlling isizepft, but disturbance      #
+         # history. Initialise PFTs using the default settings.                            #
+         #---------------------------------------------------------------------------------#
          case ${polyiata} in
          tzi|zmh|nqn)
             pfts="6,7,9,10,11,16,17"
@@ -910,25 +915,70 @@ do
             ;;
          esac
          ;;
-      2)
-         case ${polyiata} in
-         tzi|zmh|nqn|hvd|wch|tqh)
-            pfts="10,16"
-            crop=16
-            plantation=17
+         #---------------------------------------------------------------------------------#
+      *)
+         case ${isizepft} in
+         0|1|5)
+            case ${polyiata} in
+            tzi|zmh|nqn)
+               pfts="6,7,9,10,11,16,17"
+               crop=16
+               plantation=17
+               ;;
+            hvd|wch|tqh)
+               pfts="6,8,9,10,11,16,17"
+               crop=16
+               plantation=17
+               ;;
+            asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
+               pfts="1,2,3,4,16,17"
+               crop=16
+               plantation=17
+               ;;
+            fns*)
+               pfts="1,16"
+               crop=1
+               plantation=17
+               ;;
+            s77*)
+               pfts="1,16"
+               crop=16
+               plantation=17
+               ;;
+            *)
+               pfts="1,2,3,4,16"
+               crop=1
+               plantation=3
+               ;;
+            esac
             ;;
-         fns*|s77*)
-            pfts="1"
-            crop=1
-            plantation=17
+         2)
+            case ${polyiata} in
+            tzi|zmh|nqn|hvd|wch|tqh)
+               pfts="10,16"
+               crop=16
+               plantation=17
+               ;;
+            fns*|s77*)
+               pfts="1"
+               crop=1
+               plantation=17
+               ;;
+            *)
+               pfts="1,3"
+               crop=1
+               plantation=3
+               ;;
+            esac
             ;;
          *)
-            pfts="1,3"
-            crop=1
+            pfts="1,2,3,4,16"
+            crop=16
             plantation=3
             ;;
          esac
          ;;
+         #---------------------------------------------------------------------------------#
       esac
       #------------------------------------------------------------------------------------#
 
@@ -1358,6 +1408,13 @@ do
 
 
       #------------------------------------------------------------------------------------#
+      #    Reset flag that prevents the job to be submitted twice.                         #
+      #------------------------------------------------------------------------------------#
+      srun_flag=true
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
       #    In case the polygon has crashed, we may need to re-submit...                    #
       #------------------------------------------------------------------------------------#
       case ${jobstat} in
@@ -1443,6 +1500,12 @@ do
                fi
                #---------------------------------------------------------------------------#
 
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Check whether to submit the job again.                               #
+               #---------------------------------------------------------------------------#
                if [ ${toler} != ".0000100" ] && [ ${toler} != ".0000010" ] && 
                   [ ${toler} != ".0000001" ] && [ ${toler} != "0" ]        && 
                   [ ${runt} != "BAD_MET" ]
@@ -1700,6 +1763,7 @@ do
 
                   #----- Re-submit the job to moorcroft2c queue. --------------------------#
                   ${srun}
+                  srun_flag=false
                   #------------------------------------------------------------------------#
 
 
@@ -1803,7 +1867,7 @@ do
       # but it should, update the ED2IN with the latest history and re-submit the job.     #
       #------------------------------------------------------------------------------------#
       if [ ${runt} != "THE_END" ] && [ ${runt} != "STSTATE" ] && 
-         [ ${runt} != "EXTINCT" ] && [ ${runt} != "BAD_MET" ]
+         [ ${runt} != "EXTINCT" ] && [ ${runt} != "BAD_MET" ] && ${srun_flag}
       then
          running=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
 
