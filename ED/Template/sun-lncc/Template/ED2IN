@@ -266,7 +266,7 @@ $ED_NL
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    NL%UNITFAST   = 0
-   NL%UNITSTATE  = 3
+   NL%UNITSTATE  = myunitstate
    !---------------------------------------------------------------------------------------!
 
 
@@ -919,8 +919,8 @@ $ED_NL
    !             in text files so they may take considerable disk space.                   !
    ! GFILOUT  -- Prefix for the output patch table/gap files.                              !
    !---------------------------------------------------------------------------------------!
-   IGOUTPUT = myigoutput
-   GFILOUT  = 'paththere/thispoly/shade/mygpref'
+   NL%IGOUTPUT = myigoutput
+   NL%GFILOUT  = 'paththere/thispoly/shade/mygpref'
    !---------------------------------------------------------------------------------------!
 
 
@@ -1346,7 +1346,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%MAXSITE        =     1
    NL%MAXPATCH       = mymaxpatch
-   NL%MAXCOHORT      =    80
+   NL%MAXCOHORT      = mymaxcohort
    NL%MIN_SITE_AREA  = 0.001
    NL%MIN_PATCH_AREA = 0.001
    !---------------------------------------------------------------------------------------!

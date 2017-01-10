@@ -917,8 +917,8 @@ $ED_NL
    !             in text files so they may take considerable disk space.                   !
    ! GFILOUT  -- Prefix for the output patch table/gap files.                              !
    !---------------------------------------------------------------------------------------!
-   IGOUTPUT = 0
-   GFILOUT  = '/mypath/generic-prefix'
+   NL%IGOUTPUT = 0
+   NL%GFILOUT  = '/mypath/generic-prefix'
    !---------------------------------------------------------------------------------------!
 
 

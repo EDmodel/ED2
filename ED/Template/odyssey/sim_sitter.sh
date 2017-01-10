@@ -2,7 +2,7 @@
 
 #----- Main settings.  Do look at run_sitter.sh and epost.sh for additional settings. -----#
 here=$(pwd)            # Current path.
-email="none"           # Your e-mail.
+email="none"           # Your e-mail. Put a backslash before the @
 queue="anyqueue"       # Queue to run run_sitter.sh and epost.sh
 runtime="infinite"     # Run time request
 memory=2048            # Requested memory (Mb)
@@ -64,9 +64,9 @@ fi
 
 
 #----- Make substitutions. ----------------------------------------------------------------#
-sed -i~ s@"here=\"nowhere\""@"here=\"${here}\""@g           ${here}/run_sitter.sh
+sed -i~ s@"here=\"/nowhere\""@"here=\"${here}\""@g          ${here}/run_sitter.sh
 sed -i~ s@"recipient=\"none\""@"recipient=\"${email}\""@g   ${here}/run_sitter.sh
-sed -i~ s@"here=\"nowhere\""@"here=\"${here}\""@g           ${here}/epost.sh
+sed -i~ s@"here=\"/nowhere\""@"here=\"${here}\""@g          ${here}/epost.sh
 sed -i~ s@"queue=\"anyqueue\""@"queue=\"${queue}\""@g       ${here}/epost.sh
 sed -i~ s@"rscript=\"nothing\""@"rscript=\"${rscript}\""@g  ${here}/epost.sh
 #------------------------------------------------------------------------------------------#

@@ -148,6 +148,7 @@ default = list( run           = "unnamed"
               , iscenario     = "default"
               , isizepft      = 0
               , iage          = 30
+              , imaxcohort    = 50
               , isoilflg      = 1
               , istext        = 1
               , sand          = -1.0
