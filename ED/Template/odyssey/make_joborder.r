@@ -96,7 +96,12 @@ if (! defjob && is.null(lonlat)){
 
 
 #----- Load some packages and scripts. ----------------------------------------------------#
-source(file.path(srcdir,"load.everything.r"))
+if (any(file.exists(srcdir))){
+   srcdir = (srcdir[file.exists(srcdir)])[1]
+   source(file.path(srcdir,"load.everything.r"))
+}else{
+   stop("None of the paths provided in variable \"srcdir\" exist.")
+}#end if (any(file.exists(srcdir)))
 #------------------------------------------------------------------------------------------#
 
 
