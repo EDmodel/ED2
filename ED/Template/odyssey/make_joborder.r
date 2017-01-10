@@ -15,15 +15,22 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
-here    = getwd()                             # Current directory
-srcdir  = "/n/home00/mlongo/util/Rsc"         # Script directory
-outfile = file.path(here,"joborder.txt")      # Job order
-defjob  = FALSE                               # Generate the default job order?
-lonlat  = NULL                                # NULL - define runs locally 
-                                              #        (varrun/varlabel)
-#lonlat  = file.path(here,"lonlat_input.txt") # Not NULL - read lon/lat from file, and
-                                              #    finish up settings below
+here       = getwd()                             # Current directory
+srcdir     = c("/prj/prjidfca/marcosl/Util/Rsc"  # Possible paths with libraries
+              ,"/n/home00/mlongo/util/Rsc"       #    R will select the first one that
+              ,"/Users/mlongo/Util/Rsc"          #    is found, or issue an error message
+              ,"/home/b14275/Util/Rsc"           #    in case none of them exist.
+              )#end c                            #
+outfile    = file.path(here,"joborder.txt")      # Job order
+defjob     = FALSE                               # Generate the default job order?
+append.job = FALSE                               # Append job? (FALSE means new file)
+lonlat     = NULL                                # NULL - define runs locally 
+                                                 #        (varrun/varlabel)
+#lonlat  = file.path(here,"lonlat_input.txt")    # Not NULL - read lon/lat from file, and
+                                                 #    finish up settings below
 #------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #      Variables that will vary (check the list below for all possibilities).              #
@@ -36,15 +43,15 @@ if (! defjob && is.null(lonlat)){
                   , iage      = c(1,25)
                   , isizepft  = c(2 ,5)
                   , ivegtdyn  = 0
-                  , queue     = "moorcroft_6100"
+                  , queue     = "general"
                   )#end list
    varlabel = list( iata      = varrun$iata
-                  , iscenario = c("wmo")
+                  , iscenario = varrun$iscenario
                   , ibigleaf  = c("sas","ble")
                   , iage      = paste("iage" , sprintf( "%2.2i",varrun$iage     ), sep="" )
                   , isizepft  = paste("pft"  , sprintf( "%2.2i",varrun$isizepft ), sep="" )
                   , ivegtdyn  = 0
-                  , queue     = "moorcroft_6100"
+                  , queue     = varrun$queue
                   )#end list
 }else if(! defjob){
    #----- Regional run.  Read in the list of polygons, and complete the settings. ---------#
@@ -95,7 +102,7 @@ source(file.path(srcdir,"load.everything.r"))
 
 #----- Check whether there is a joborder.  In case there is one, back it up. --------------#
 backupfile = file.path(dirname(outfile),paste("old",basename(outfile),sep="_"))
-if (file.exists(outfile)) dummy = file.rename(from=outfile,to=backupfile)
+if (file.exists(outfile)) dummy = file.copy(from=outfile,to=backupfile)
 #------------------------------------------------------------------------------------------#
 
 
@@ -135,7 +142,7 @@ default = list( run           = "unnamed"
               , init.mode     = 6
               , iscenario     = "default"
               , isizepft      = 0
-              , iage          = 20
+              , iage          = 30
               , isoilflg      = 1
               , istext        = 1
               , sand          = -1.0
@@ -145,7 +152,7 @@ default = list( run           = "unnamed"
               , sldrain       = 90.
               , scolour       = 16
               , slzres        = 0
-              , queue         = "general"
+              , queue         = "linux.q"
               , met.driver    = "tower"
               , dtlsm         = 600.
               , vmfact.c3     = 1.00
@@ -332,10 +339,11 @@ if (is.null(lonlat)){
    # the value is not zero.                                                                #
    #---------------------------------------------------------------------------------------#
    if ("istext" %in% names(varrun)){
-      sel                    = joborder$istext != 0
-      joborder$sand  [  sel] = -1.0
-      joborder$clay  [  sel] = -1.0
-      joborder$istext[! sel] = poidata$istext[! sel]
+      sel                      = joborder$istext != 0
+      joborder$sand    [  sel] = -1.0
+      joborder$clay    [  sel] = -1.0
+      joborder$istext  [! sel] = poidata$istext[! sel]
+      joborder$isoilflg[  sel] = 2
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -380,8 +388,35 @@ if (is.null(lonlat)){
 
 
 #------------------------------------------------------------------------------------------#
-#     Write the joborder table.                                                            #
+#     In case we must append the file, we read the previous file and merge them before     #
+# writing, so they follow a single format.                                                 #
 #------------------------------------------------------------------------------------------#
+if (append.job){
+   jobprev    = read.table( file             = outfile
+                          , skip             = 3
+                          , stringsAsFactors = FALSE
+                          )#end read.table
+   names(jobprev) = names(joborder)
+   joborder       = rbind(jobprev,joborder)
+
+}else{
+
+}#end append.job
+#------------------------------------------------------------------------------------------#
+
+
+#----- Make sure days, months, and hours are properly formatted. --------------------------#
+joborder$montha = sprintf("%2.2i",as.numeric(joborder$montha))
+joborder$daya   = sprintf("%2.2i",as.numeric(joborder$daya  ))
+joborder$timea  = sprintf("%4.4i",as.numeric(joborder$timea ))
+joborder$monthz = sprintf("%2.2i",as.numeric(joborder$monthz))
+joborder$dayz   = sprintf("%2.2i",as.numeric(joborder$dayz  ))
+joborder$timez  = sprintf("%4.4i",as.numeric(joborder$timez ))
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Create new joborder file. ----------------------------------------------------------#
 dash       = sapply( FUN      = paste
                    , X        = mapply( FUN      = rep
                                       , times    = nchar(names(joborder))
@@ -393,5 +428,10 @@ jobneat    = format(rbind(dash,toupper(names(joborder)),dash,joborder),justify="
 jobneat    = apply(X=jobneat,MARGIN=1,FUN=paste,collapse="  ")
 jobneat[1] = gsub(pattern=" ",replacement="-",x=jobneat[1])
 jobneat[3] = gsub(pattern=" ",replacement="-",x=jobneat[3])
-dum        = write.table(x=jobneat,file=outfile,quote=FALSE,row.names=FALSE,col.names=FALSE)
+dum        = write.table( x         = jobneat
+                        , file      = outfile
+                        , quote     = FALSE
+                        , row.names = FALSE
+                        , col.names = FALSE
+                        )#end write.table
 #------------------------------------------------------------------------------------------#
