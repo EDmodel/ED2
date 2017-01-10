@@ -17,8 +17,8 @@
 
 
 #----- Main path, you must actually type the path in case you add to chron. ---------------#
-here=""
-if [ "x${here}" == "x" ]
+here="/nowhere"
+if [ "x${here}" == "x/nowhere" ]
 then
    echo " You must set up variable here before using run_sitter.sh!!!"
    exit 99
@@ -196,7 +196,7 @@ runtime_gen="7-00:00:00"    # Runtime for general nodes
 #    email1day    -- Reminder so the script knows whether an e-mail has been sent or not.  #
 #------------------------------------------------------------------------------------------#
 email1day=1
-recipient=""
+recipient="none"
 mailprog="${HOME}/util/mutt"
 plotstatus=1
 Rscript_plot="${situtils}/plot.status.r"
@@ -215,7 +215,7 @@ queuefile="${situtils}/queue.txt"
 tablefile="${situtils}/table_queue.txt"
 pendfile="${here}/pending.txt"
 emailday="${here}/emailday.txt"
-if [ "x${recipient}" == "x" ]
+if [ "x${recipient}" == "xnone" ]
 then
    echo "You must specify the e-mail (variable recipient)"
    exit 92
@@ -387,7 +387,7 @@ do
       # ing this, but this works.  Here we obtain the polygon name, and its longitude and  #
       # latitude.                                                                          #
       #------------------------------------------------------------------------------------#
-      oi=$(head -${line} ${joborder} | tail -1)
+      oi=$(head -${line} ${lonlat} | tail -1)
       polyname=$(echo ${oi}     | awk '{print $1 }')
       polyiata=$(echo ${oi}     | awk '{print $2 }')
       polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -474,15 +474,16 @@ do
       orientgrass=$(echo ${oi}  | awk '{print $84}')
       clumptree=$(echo ${oi}    | awk '{print $85}')
       clumpgrass=$(echo ${oi}   | awk '{print $86}')
-      ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-      igndvap=$(echo ${oi}      | awk '{print $88}')
-      iphen=$(echo ${oi}        | awk '{print $89}')
-      iallom=$(echo ${oi}       | awk '{print $90}')
-      ibigleaf=$(echo ${oi}     | awk '{print $91}')
-      irepro=$(echo ${oi}       | awk '{print $92}')
-      treefall=$(echo ${oi}     | awk '{print $93}')
-      ianthdisturb=$(echo ${oi} | awk '{print $94}')
-      ianthdataset=$(echo ${oi} | awk '{print $95}')
+      ixoutput=$(echo ${oi}     | awk '{print $87}')
+      ivegtdyn=$(echo ${oi}     | awk '{print $88}')
+      igndvap=$(echo ${oi}      | awk '{print $89}')
+      iphen=$(echo ${oi}        | awk '{print $90}')
+      iallom=$(echo ${oi}       | awk '{print $91}')
+      ibigleaf=$(echo ${oi}     | awk '{print $92}')
+      irepro=$(echo ${oi}       | awk '{print $93}')
+      treefall=$(echo ${oi}     | awk '{print $94}')
+      ianthdisturb=$(echo ${oi} | awk '{print $95}')
+      ianthdataset=$(echo ${oi} | awk '{print $96}')
       #------------------------------------------------------------------------------------#
 
 
@@ -1542,6 +1543,24 @@ do
                   #------------------------------------------------------------------------#
 
 
+
+                  #------------------------------------------------------------------------#
+                  #     Set xfilout prefix according to ihrzrad.                           #
+                  #------------------------------------------------------------------------#
+                  case ${ihrzrad} in
+                  1) 
+                     xpref="gap"
+                     ;;
+                  2)
+                     xpref="pix"
+                     ;;
+                  *)
+                     xpref="dum"
+                     ;;
+                  esac
+                  #------------------------------------------------------------------------#
+
+
                   #----- Update the polygon information on ED2IN. -------------------------#
                   sed -i s@paththere@${there}@g                ${ED2IN}
                   sed -i s@myyeara@${thisyeara}@g              ${ED2IN}
@@ -1632,6 +1651,8 @@ do
                   sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
                   sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
                   sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+                  sed -i s@myixoutput@${ixoutput}@g            ${ED2IN}
+                  sed -i s@myxpref@${xpref}@g                  ${ED2IN}
                   sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
                   sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
                   sed -i s@myrepro@${irepro}@g                 ${ED2IN}
@@ -1937,6 +1958,24 @@ do
 
 
 
+            #------------------------------------------------------------------------------#
+            #     Set xfilout prefix according to ihrzrad.                                 #
+            #------------------------------------------------------------------------------#
+            case ${ihrzrad} in
+            1) 
+               xpref="gap"
+               ;;
+            2)
+               xpref="pix"
+               ;;
+            *)
+               xpref="dum"
+               ;;
+            esac
+            #------------------------------------------------------------------------------#
+
+
+
 
             #----- Update the polygon information on ED2IN. -------------------------------#
             sed -i s@paththere@${there}@g                ${ED2IN}
@@ -2028,6 +2067,8 @@ do
             sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
             sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
             sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
+            sed -i s@myixoutput@${ixoutput}@g            ${ED2IN}
+            sed -i s@myxpref@${xpref}@g                  ${ED2IN}
             sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
             sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
             sed -i s@myrepro@${irepro}@g                 ${ED2IN}
@@ -2531,7 +2572,7 @@ do
       # ing this, but this works.  Here we obtain the polygon name, and its longitude and  #
       # latitude.                                                                          #
       #------------------------------------------------------------------------------------#
-      oi=$(head -${line} ${joborder} | tail -1)
+      oi=$(head -${line} ${lonlat} | tail -1)
       polyname=$(echo ${oi}     | awk '{print $1 }')
       polyiata=$(echo ${oi}     | awk '{print $2 }')
       polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -2618,15 +2659,16 @@ do
       orientgrass=$(echo ${oi}  | awk '{print $84}')
       clumptree=$(echo ${oi}    | awk '{print $85}')
       clumpgrass=$(echo ${oi}   | awk '{print $86}')
-      ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-      igndvap=$(echo ${oi}      | awk '{print $88}')
-      iphen=$(echo ${oi}        | awk '{print $89}')
-      iallom=$(echo ${oi}       | awk '{print $90}')
-      ibigleaf=$(echo ${oi}     | awk '{print $91}')
-      irepro=$(echo ${oi}       | awk '{print $92}')
-      treefall=$(echo ${oi}     | awk '{print $93}')
-      ianthdisturb=$(echo ${oi} | awk '{print $94}')
-      ianthdataset=$(echo ${oi} | awk '{print $95}')
+      ixoutput=$(echo ${oi}     | awk '{print $87}')
+      ivegtdyn=$(echo ${oi}     | awk '{print $88}')
+      igndvap=$(echo ${oi}      | awk '{print $89}')
+      iphen=$(echo ${oi}        | awk '{print $90}')
+      iallom=$(echo ${oi}       | awk '{print $91}')
+      ibigleaf=$(echo ${oi}     | awk '{print $92}')
+      irepro=$(echo ${oi}       | awk '{print $93}')
+      treefall=$(echo ${oi}     | awk '{print $94}')
+      ianthdisturb=$(echo ${oi} | awk '{print $95}')
+      ianthdataset=$(echo ${oi} | awk '{print $96}')
       #------------------------------------------------------------------------------------#
 
 

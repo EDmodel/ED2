@@ -118,33 +118,10 @@ fi
 #    Make sure that the directory there exists, if not, create all parent directories      #
 # needed.                                                                                  #
 #------------------------------------------------------------------------------------------#
-while [ ! -s ${outroot} ]
-do
-   namecheck=$(basename ${outroot})
-   dircheck=$(dirname ${outroot})
-   while [ ! -s ${dircheck} ] && [ ${namecheck} != "/" ]
-   do
-      namecheck=$(basename ${dircheck})
-      dircheck=$(dirname ${dircheck})
-   done
-
-   if [ ${namecheck} == "/" ]
-   then
-      echo "Invalid disk for variable outroot:"
-      echo " DISK = ${diskhere}"
-      exit 58
-   elif [ ${namecheck} == "xxxxxxxx" ] || [ ${namecheck} == "xxx_XXX" ] ||
-        [ ${namecheck} == "XXXXXXXXXXX" ]
-   then
-      echo " - Found this directory in your path: ${namecheck} ..."
-      echo " - Outroot given: ${outroot} ..."
-      echo " - It looks like you forgot to set up your outroot path, check it!"
-      exit 92
-   else
-      echo "Making directory: ${dircheck}/${namecheck}"
-      mkdir ${dircheck}/${namecheck}
-   fi
-done
+if [ ! -s ${outroot} ]
+then
+   mkdir -p ${outroot}
+fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -296,15 +273,16 @@ do
    orientgrass=$(echo ${oi}  | awk '{print $84}')
    clumptree=$(echo ${oi}    | awk '{print $85}')
    clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   ixoutput=$(echo ${oi}     | awk '{print $87}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $88}')
+   igndvap=$(echo ${oi}      | awk '{print $89}')
+   iphen=$(echo ${oi}        | awk '{print $90}')
+   iallom=$(echo ${oi}       | awk '{print $91}')
+   ibigleaf=$(echo ${oi}     | awk '{print $92}')
+   irepro=$(echo ${oi}       | awk '{print $93}')
+   treefall=$(echo ${oi}     | awk '{print $94}')
+   ianthdisturb=$(echo ${oi} | awk '{print $95}')
+   ianthdataset=$(echo ${oi} | awk '{print $96}')
    #---------------------------------------------------------------------------------------#
 
 

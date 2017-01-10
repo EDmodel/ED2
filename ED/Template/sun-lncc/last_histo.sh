@@ -117,7 +117,7 @@ do
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${joborder} | tail -1)
+   oi=$(head -${line} ${lonlat} | tail -1)
    polyname=$(echo ${oi}     | awk '{print $1 }')
    polyiata=$(echo ${oi}     | awk '{print $2 }')
    polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -204,15 +204,16 @@ do
    orientgrass=$(echo ${oi}  | awk '{print $84}')
    clumptree=$(echo ${oi}    | awk '{print $85}')
    clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   ixoutput=$(echo ${oi}     | awk '{print $87}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $88}')
+   igndvap=$(echo ${oi}      | awk '{print $89}')
+   iphen=$(echo ${oi}        | awk '{print $90}')
+   iallom=$(echo ${oi}       | awk '{print $91}')
+   ibigleaf=$(echo ${oi}     | awk '{print $92}')
+   irepro=$(echo ${oi}       | awk '{print $93}')
+   treefall=$(echo ${oi}     | awk '{print $94}')
+   ianthdisturb=$(echo ${oi} | awk '{print $95}')
+   ianthdataset=$(echo ${oi} | awk '{print $96}')
    #---------------------------------------------------------------------------------------
 
 
@@ -223,8 +224,30 @@ do
    minuz=$(echo ${timez}  | awk '{print substr($1,3,2)}')
    #---------------------------------------------------------------------------------------#
 
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Set xfilout prefix according to ihrzrad.                                          #
+   #---------------------------------------------------------------------------------------#
+   case ${ihrzrad} in
+   1) 
+      xpref="gap"
+      ;;
+   2)
+      xpref="pix"
+      ;;
+   *)
+      xpref="dum"
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
    #----- Define the main path for this polygon. ------------------------------------------#
    pypath="${there}/${polyname}"
+   sfilout="${pypath}/histo/${polyname}"
+   ffilout="${pypath}/analy/${polyname}"
+   xfilout="${pypath}/shade/${xpref}"
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
@@ -235,10 +258,10 @@ do
       echo "${ff} - Delete history files for polygon ${polyname}:"
 
       #---- First we delete all -Z- files. ------------------------------------------------#
-      nzed=$(/bin/ls -1 ${pypath}/histo/${polyname}-Z-*h5 2> /dev/null | wc -l)
+      nzed=$(/bin/ls -1 ${sfilout}-Z-*h5 2> /dev/null | wc -l)
       if [ ${nzed} -gt 0 ]
       then
-         zeds=$(/bin/ls -1 ${pypath}/histo/${polyname}-Z-*h5 2> /dev/null)
+         zeds=$(/bin/ls -1 ${sfilout}-Z-*h5 2> /dev/null)
          for zed in ${zeds}
          do
             echo -n "    - Delete: $(basename ${zed})..."
@@ -251,11 +274,11 @@ do
 
 
       #---- Now we delete all -S- files except the last ${retain} ones. -------------------#
-      ness=$(/bin/ls -1 ${pypath}/histo/${polyname}-S-*h5 2> /dev/null | wc -l)
+      ness=$(/bin/ls -1 ${sfilout}-S-*h5 2> /dev/null | wc -l)
       if [ ${ness} -gt ${retain} ]
       then
          let head=${ness}-${retain}
-         esses=$(/bin/ls -1 ${pypath}/histo/${polyname}-S-*h5 | head -${head})
+         esses=$(/bin/ls -1 ${sfilout}-S-*h5 | head -${head})
          for ess in ${esses}
          do
             echo -n "    - Delete: $(basename ${ess})..."
@@ -268,11 +291,11 @@ do
 
 
       #---- Now we compress all raster files except for the last one. ---------------------#
-      nrst=$(/bin/ls -1 ${pypath}/???_raster_isi001_????-01.txt 2> /dev/null | wc -l)
+      nrst=$(/bin/ls -1 ${xfilout}_raster_isi001_????-01.txt 2> /dev/null | wc -l)
       if [ ${nrst} -gt 1 ]
       then
          let head=${nrst}-1
-         rasters=$(/bin/ls -1 ${pypath}/???_raster_isi001_????-01.txt | head -${head})
+         rasters=$(/bin/ls -1 ${xfilout}_raster_isi001_????-01.txt | head -${head})
          for rst in ${rasters}
          do
             echo -n "    - Compress: $(basename ${rst})..."
@@ -285,11 +308,11 @@ do
 
 
       #---- Now we compress all ptable files except for the last one. ---------------------#
-      nptb=$(/bin/ls -1 ${pypath}/???_ptable_isi001_????-01.txt 2> /dev/null | wc -l)
+      nptb=$(/bin/ls -1 ${xfilout}_ptable_isi001_????-01.txt 2> /dev/null | wc -l)
       if [ ${nptb} -gt 1 ]
       then
          let head=${nptb}-1
-         ptables=$(/bin/ls -1 ${pypath}/???_ptable_isi001_????-01.txt | head -${head})
+         ptables=$(/bin/ls -1 ${xfilout}_ptable_isi001_????-01.txt | head -${head})
          for ptb in ${ptables}
          do
             echo -n "    - Compress: $(basename ${ptb})..."
@@ -304,7 +327,6 @@ do
       #------------------------------------------------------------------------------------#
       #      Decide whether to check the status before compressing files.                  #
       #------------------------------------------------------------------------------------#
-      analy="${pypath}/analy"
       status="${pypath}/rdata_month/status_${polyname}.txt"
 
       #----- Check the status before compressing?. ----------------------------------------#
@@ -393,7 +415,7 @@ do
 
 
                #----- Compress monthly mean file. -----------------------------------------#
-               qfile=${analy}/${polyname}-Q-${yyyy}-${mm}-00-000000-g01.h5
+               qfile=${ffilout}-Q-${yyyy}-${mm}-00-000000-g01.h5
                if [ -s ${qfile} ]
                then
                   echo -n "   - Compress file: $(basename ${qfile})..."
@@ -431,7 +453,7 @@ do
                         let hour=${hour}+1
                         hh=$(printf "%2.2i" ${hour})
 
-                        ifile=${analy}/${polyname}-I-${yyyy}-${mm}-${dd}-${hh}0000-g01.h5
+                        ifile=${ffilout}-I-${yyyy}-${mm}-${dd}-${hh}0000-g01.h5
                         if [ -s ${ifile} ]
                         then
                            echo -n "     * Compress file: $(basename ${ifile})..."

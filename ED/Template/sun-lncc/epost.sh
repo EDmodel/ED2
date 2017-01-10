@@ -231,7 +231,7 @@ do
    # this, but this works.  Here we obtain the polygon name, and its longitude and         #
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
-   oi=$(head -${line} ${joborder} | tail -1)
+   oi=$(head -${line} ${lonlat} | tail -1)
    polyname=$(echo ${oi}     | awk '{print $1 }')
    polyiata=$(echo ${oi}     | awk '{print $2 }')
    polylon=$(echo ${oi}      | awk '{print $3 }')
@@ -318,15 +318,16 @@ do
    orientgrass=$(echo ${oi}  | awk '{print $84}')
    clumptree=$(echo ${oi}    | awk '{print $85}')
    clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   ixoutput=$(echo ${oi}     | awk '{print $87}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $88}')
+   igndvap=$(echo ${oi}      | awk '{print $89}')
+   iphen=$(echo ${oi}        | awk '{print $90}')
+   iallom=$(echo ${oi}       | awk '{print $91}')
+   ibigleaf=$(echo ${oi}     | awk '{print $92}')
+   irepro=$(echo ${oi}       | awk '{print $93}')
+   treefall=$(echo ${oi}     | awk '{print $94}')
+   ianthdisturb=$(echo ${oi} | awk '{print $95}')
+   ianthdataset=$(echo ${oi} | awk '{print $96}')
    #---------------------------------------------------------------------------------------#
 
 

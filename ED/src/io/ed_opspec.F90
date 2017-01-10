@@ -1143,6 +1143,7 @@ subroutine ed_opspec_misc
                                     , iyoutput                     & ! intent(in)
                                     , itoutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
+                                    , ixoutput                     & ! intent(in)
                                     , iadd_site_means              & ! intent(in)
                                     , iadd_patch_means             & ! intent(in)
                                     , iadd_cohort_means            & ! intent(in)
@@ -2231,6 +2232,14 @@ end do
       write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                            &
                     'Invalid CLUMP_GRASS, it must be between 0.01 and 1.00.'               &
                    ,'Yours is set to',clump_grass,'...'
+      ifaterr = ifaterr +1
+      call opspec_fatal(reason,'opspec_misc')
+   end if
+
+   if (ihrzrad /= 0 .and. (ixoutput < 0 .or. ixoutput > 1)) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IXOUTPUT, it must be 0 or 1.  Yours is set to'                &
+                    ,ixoutput,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
    end if

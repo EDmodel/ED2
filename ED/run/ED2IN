@@ -909,6 +909,15 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   ! IXOUTPUT -- In case IHRZRAD is not zero, should the model write the patch table and   !
+   !             gap realisation files? (0 -- no; 1 -- yes).  Note these files are still   !
+   !             in text files so they may take considerable disk space.                   !
+   ! XFILOUT  -- Prefix for the output files.                                              !
+   !---------------------------------------------------------------------------------------!
+   IXOUTPUT = 0
+   XFILOUT  = '/mypath/generic-prefix'
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

@@ -45,6 +45,7 @@ Module ed_misc_coms
    integer :: iyoutput
    integer :: itoutput
    integer :: isoutput
+   integer :: ixoutput
    integer :: iclobber
 
    integer :: iadd_site_means
@@ -71,6 +72,7 @@ Module ed_misc_coms
    character(len=str_len), dimension(maxgrds) :: sfilin
    character(len=str_len) ::ffilout 
    character(len=str_len) ::sfilout
+   character(len=str_len) ::xfilout
    integer :: ied_init_mode
    
    character(len=str_len) :: thsums_database

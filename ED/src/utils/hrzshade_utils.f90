@@ -229,7 +229,9 @@ module hrzshade_utils
    !---------------------------------------------------------------------------------------!
    subroutine split_hrzshade(csite,isi)
       use ed_max_dims           , only : str_len             ! ! intent(in)
-      use ed_misc_coms          , only : current_time        ! ! intent(in)
+      use ed_misc_coms          , only : current_time        & ! intent(in)
+                                       , ixoutput            & ! intent(in)
+                                       , xfilout             ! ! intent(in)
       use ed_state_vars         , only : sitetype            & ! structure
                                        , patchtype           & ! structure
                                        , allocate_sitetype   & ! subroutine
@@ -323,7 +325,6 @@ module hrzshade_utils
       real(kind=4)                              :: at_bright   ! Minimum value for bright
       real(kind=4)                              :: at_dark     ! Maximum value for dark
       !----- Local constants. -------------------------------------------------------------!
-      logical                     , parameter   :: print_debug   = .false.
       logical                     , parameter   :: verbose       = .false.
       !----- External functions. ----------------------------------------------------------!
       real                        , external    :: fquant
@@ -333,26 +334,16 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Initialise raster file and patch name in case we must debug.                   !
       !------------------------------------------------------------------------------------!
-      if (print_debug) then
-         select case (ihrzrad)
-         case (1)
-            write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
-               'gap_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-            write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
-               'gap_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-         case (2)
-            write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
-               'pix_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-            write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
-               'pix_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-         case (3)
-            write(raster_file,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
-               'dum_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-            write(patch_table,fmt='(a,i3.3,a,i4.4,a,i2.2,a)')                              &
-               'dum_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-         end select
-      end if
+      select case (ixoutput)
+      case (1)
+         write(raster_file,fmt='(2a,i3.3,a,i4.4,a,i2.2,a)') trim(xfilout)                  &
+               '_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         write(patch_table,fmt='(2a,i3.3,a,i4.4,a,i2.2,a)') trim(xfilout)                  &
+               '_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+      end select
       !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !       Allocate temporary vectors.                                                  !
@@ -599,7 +590,8 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Print a matrix with the raster information.                                    !
       !------------------------------------------------------------------------------------!
-      if (print_debug) then
+      select case (ixoutput)
+      case (1)
          if (verbose) write(unit=*,fmt='(a)') '    -> Print ''raster'' information...'
          !----- Reset file. ---------------------------------------------------------------!
          open(unit=72,file=trim(raster_file),status='replace',action='write')
@@ -616,7 +608,7 @@ module hrzshade_utils
             end do
          end do
          close(unit=72,status='keep')
-      end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -794,7 +786,8 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Print a matrix with the patch table information.                               !
       !------------------------------------------------------------------------------------!
-      if (print_debug) then
+      select (ixoutput)
+      case (1)
          if (verbose) write(unit=*,fmt='(a)') '    -> Print patch table...'
          !----- Reset file. ---------------------------------------------------------------!
          open(unit=72,file=trim(patch_table),status='replace',action='write')
@@ -820,7 +813,7 @@ module hrzshade_utils
             end do
          end do
          close(unit=72,status='keep')
-      end if
+      end select
       !------------------------------------------------------------------------------------!
 
 

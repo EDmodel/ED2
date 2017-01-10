@@ -206,6 +206,7 @@ default = list( run           = "unnamed"
               , orient.grass  = 0.000
               , clump.tree    = 0.800
               , clump.grass   = 1.000
+              , ixoutput      = 0
               , ivegtdyn      = 1
               , igndvap       = 0
               , iphen         = -1

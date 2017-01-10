@@ -1,18 +1,18 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here=$(pwd)                           # ! Main path
+here="/nowhere"                       # ! Main path
 myself=$(whoami)                      # ! You
 diskthere=""                          # ! Disk where the output files are
-thisqueue="moorcroft_amd"             # ! Queue where jobs should be submitted
+thisqueue="anyqueue"                  # ! Queue where jobs should be submitted
 runtime="7-00:00:00"                  # ! Run time request
 memory=2048                           # ! Requested memory (Mb)
 sbatch=$(which sbatch)                # ! SLURM command to submit job.
 lonlat="${here}/joborder.txt"         # ! File with the job instructions
 #----- Outroot is the main output directory. ----------------------------------------------#
-outroot="/n/moorcroftfs2/mlongo/diary/xxxxxxxx/figures/xxx_XXX/XXXXXXXXXXX"
+outroot="/nowhere"
 submit="y"       # y = Submit the script; n = Copy the script
 #----- Plot only one meteorological cycle. ------------------------------------------------#
-useperiod="t"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
+useperiod="a"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # "a" -- All period
                  # "t" -- One eddy flux tower met cycle
                  # "u" -- User defined period, defined by the variables below.
@@ -35,10 +35,11 @@ outform="c(\"pdf\")"           # x11 - On screen (deprecated on shell scripts)
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
 #----- DBH classes. -----------------------------------------------------------------------#
-idbhtype=3                     # Type of DBH class
+idbhtype=4                     # Type of DBH class
                                # 1 -- Every 10 cm until 100cm; > 100cm
                                # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                                # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
+                               # 4 -- 0-10; 10-30; 30-50; 50-80; > 80 (cm)
 #----- Default background colour. ---------------------------------------------------------#
 background=0                   # 0 -- White
                                # 1 -- Pitch black
@@ -88,12 +89,7 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscripts="plot_yearly.r"
-#rscripts="yearly_ascii.r"
-#rscripts="plot_monthly.r"
-#rscripts="plot_census.r" 
-#rscripts="plot_ycomp.r"
-#rscripts="plot_eval_ed.r"
+rscripts="nothing"
 #------------------------------------------------------------------------------------------#
 
 
@@ -125,6 +121,39 @@ fi
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#     Make sure the main path is set.                                                      #
+#------------------------------------------------------------------------------------------#
+if [ "x${here}" == "x/nowhere" ]
+then
+   echo "You must set variable \"here\"!"
+   exit 91
+fi
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Make sure the queue is set.                                                          #
+#------------------------------------------------------------------------------------------#
+if [ "x${queue}" == "xanyqueue" ]
+then
+   echo "You must set variable \"queue\"!"
+   exit 91
+fi
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Make sure the R script is set.                                                       #
+#------------------------------------------------------------------------------------------#
+if [ "x${rscript}" == "xrscript" ]
+then
+   echo "You must set variable \"rscript\"!"
+   exit 91
+fi
+#------------------------------------------------------------------------------------------#
+
+
 
 #------------------------------------------------------------------------------------------#
 #    Make sure that the directory there exists, if not, create all parent directories      #
@@ -133,34 +162,13 @@ fi
 if [ "x${outroot}" == "x" ]
 then
    outroot=${here}
-else
-   while [ ! -s ${outroot} ]
-   do
-      namecheck=$(basename ${outroot})
-      dircheck=$(dirname ${outroot})
-      while [ ! -s ${dircheck} ] && [ ${namecheck} != "/" ]
-      do
-         namecheck=$(basename ${dircheck})
-         dircheck=$(dirname ${dircheck})
-      done
-
-      if [ ${namecheck} == "/" ]
-      then
-         echo "Invalid disk for variable outroot:"
-         echo " DISK = ${diskhere}"
-         exit 58
-      elif [ ${namecheck} == "xxxxxxxx" ] || [ ${namecheck} == "xxx_XXX" ] ||
-           [ ${namecheck} == "XXXXXXXXXXX" ]
-      then
-         echo " - Found this directory in your path: ${namecheck} ..."
-         echo " - Outroot given: ${outroot} ..."
-         echo " - It looks like you forgot to set up your outroot path, check it!"
-         exit 92
-      else
-         echo "Making directory: ${dircheck}/${namecheck}"
-         mkdir ${dircheck}/${namecheck}
-      fi
-   done
+elif [ "x${outroot}" == "x/nowhere" ]
+then
+   echo "You must set variable \"outroot\"!"
+   exit 91
+elif [ ! -s ${outroot} ]
+then
+   mkdir -p ${outroot}
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -294,15 +302,16 @@ do
    orientgrass=$(echo ${oi}  | awk '{print $84}')
    clumptree=$(echo ${oi}    | awk '{print $85}')
    clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   ixoutput=$(echo ${oi}     | awk '{print $87}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $88}')
+   igndvap=$(echo ${oi}      | awk '{print $89}')
+   iphen=$(echo ${oi}        | awk '{print $90}')
+   iallom=$(echo ${oi}       | awk '{print $91}')
+   ibigleaf=$(echo ${oi}     | awk '{print $92}')
+   irepro=$(echo ${oi}       | awk '{print $93}')
+   treefall=$(echo ${oi}     | awk '{print $94}')
+   ianthdisturb=$(echo ${oi} | awk '{print $95}')
+   ianthdataset=$(echo ${oi} | awk '{print $96}')
    #---------------------------------------------------------------------------------------#
 
 

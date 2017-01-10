@@ -12,7 +12,7 @@ crashed_msg="RK4 PROBLEM"
 metmiss_msg="DID NOT FIND MET DRIVERS"
 stopped_msg="UNKNOWN REASON"
 fstline_msg="Number of polygons:"
-wait_minutes=60
+wait_minutes=30
 frqpost=4
 #------------------------------------------------------------------------------------------#
 
