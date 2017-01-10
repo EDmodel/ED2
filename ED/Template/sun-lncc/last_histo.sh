@@ -204,7 +204,7 @@ do
    orientgrass=$(echo ${oi}  | awk '{print $84}')
    clumptree=$(echo ${oi}    | awk '{print $85}')
    clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ixoutput=$(echo ${oi}     | awk '{print $87}')
+   igoutput=$(echo ${oi}     | awk '{print $87}')
    ivegtdyn=$(echo ${oi}     | awk '{print $88}')
    igndvap=$(echo ${oi}      | awk '{print $89}')
    iphen=$(echo ${oi}        | awk '{print $90}')
@@ -227,17 +227,17 @@ do
 
 
    #---------------------------------------------------------------------------------------#
-   #     Set xfilout prefix according to ihrzrad.                                          #
+   #     Set gfilout prefix according to ihrzrad.                                          #
    #---------------------------------------------------------------------------------------#
    case ${ihrzrad} in
    1) 
-      xpref="gap"
+      gpref="gap"
       ;;
    2)
-      xpref="pix"
+      gpref="pix"
       ;;
    *)
-      xpref="dum"
+      gpref="dum"
       ;;
    esac
    #---------------------------------------------------------------------------------------#
@@ -247,7 +247,7 @@ do
    pypath="${there}/${polyname}"
    sfilout="${pypath}/histo/${polyname}"
    ffilout="${pypath}/analy/${polyname}"
-   xfilout="${pypath}/shade/${xpref}"
+   gfilout="${pypath}/shade/${gpref}"
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
@@ -291,11 +291,11 @@ do
 
 
       #---- Now we compress all raster files except for the last one. ---------------------#
-      nrst=$(/bin/ls -1 ${xfilout}_raster_isi001_????-01.txt 2> /dev/null | wc -l)
+      nrst=$(/bin/ls -1 ${gfilout}_raster_isi001_????-01.txt 2> /dev/null | wc -l)
       if [ ${nrst} -gt 1 ]
       then
          let head=${nrst}-1
-         rasters=$(/bin/ls -1 ${xfilout}_raster_isi001_????-01.txt | head -${head})
+         rasters=$(/bin/ls -1 ${gfilout}_raster_isi001_????-01.txt | head -${head})
          for rst in ${rasters}
          do
             echo -n "    - Compress: $(basename ${rst})..."
@@ -308,11 +308,11 @@ do
 
 
       #---- Now we compress all ptable files except for the last one. ---------------------#
-      nptb=$(/bin/ls -1 ${xfilout}_ptable_isi001_????-01.txt 2> /dev/null | wc -l)
+      nptb=$(/bin/ls -1 ${gfilout}_ptable_isi001_????-01.txt 2> /dev/null | wc -l)
       if [ ${nptb} -gt 1 ]
       then
          let head=${nptb}-1
-         ptables=$(/bin/ls -1 ${xfilout}_ptable_isi001_????-01.txt | head -${head})
+         ptables=$(/bin/ls -1 ${gfilout}_ptable_isi001_????-01.txt | head -${head})
          for ptb in ${ptables}
          do
             echo -n "    - Compress: $(basename ${ptb})..."

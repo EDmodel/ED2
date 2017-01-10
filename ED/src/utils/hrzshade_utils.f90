@@ -230,8 +230,8 @@ module hrzshade_utils
    subroutine split_hrzshade(csite,isi)
       use ed_max_dims           , only : str_len             ! ! intent(in)
       use ed_misc_coms          , only : current_time        & ! intent(in)
-                                       , ixoutput            & ! intent(in)
-                                       , xfilout             ! ! intent(in)
+                                       , igoutput            & ! intent(in)
+                                       , gfilout             ! ! intent(in)
       use ed_state_vars         , only : sitetype            & ! structure
                                        , patchtype           & ! structure
                                        , allocate_sitetype   & ! subroutine
@@ -334,12 +334,12 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Initialise raster file and patch name in case we must debug.                   !
       !------------------------------------------------------------------------------------!
-      select case (ixoutput)
+      select case (igoutput)
       case (1)
-         write(raster_file,fmt='(2a,i3.3,a,i4.4,a,i2.2,a)') trim(xfilout)                  &
-               '_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
-         write(patch_table,fmt='(2a,i3.3,a,i4.4,a,i2.2,a)') trim(xfilout)                  &
-               '_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         write(raster_file,fmt='(2a,i3.3,a,i4.4,a,i2.2,a)') trim(gfilout)                  &
+              ,'_raster_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
+         write(patch_table,fmt='(2a,i3.3,a,i4.4,a,i2.2,a)') trim(gfilout)                  &
+              ,'_ptable_isi',isi,'_',current_time%year,'-',current_time%month,'.txt'
       end select
       !------------------------------------------------------------------------------------!
 
@@ -590,7 +590,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Print a matrix with the raster information.                                    !
       !------------------------------------------------------------------------------------!
-      select case (ixoutput)
+      select case (igoutput)
       case (1)
          if (verbose) write(unit=*,fmt='(a)') '    -> Print ''raster'' information...'
          !----- Reset file. ---------------------------------------------------------------!
@@ -786,7 +786,7 @@ module hrzshade_utils
       !------------------------------------------------------------------------------------!
       !     Print a matrix with the patch table information.                               !
       !------------------------------------------------------------------------------------!
-      select (ixoutput)
+      select case (igoutput)
       case (1)
          if (verbose) write(unit=*,fmt='(a)') '    -> Print patch table...'
          !----- Reset file. ---------------------------------------------------------------!

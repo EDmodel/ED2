@@ -108,7 +108,7 @@ do
    orientgrass=$(echo ${oi}  | awk '{print $84}')
    clumptree=$(echo ${oi}    | awk '{print $85}')
    clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ixoutput=$(echo ${oi}     | awk '{print $87}')
+   igoutput=$(echo ${oi}     | awk '{print $87}')
    ivegtdyn=$(echo ${oi}     | awk '{print $88}')
    igndvap=$(echo ${oi}      | awk '{print $89}')
    iphen=$(echo ${oi}        | awk '{print $90}')

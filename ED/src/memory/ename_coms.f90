@@ -158,8 +158,8 @@ module ename_coms
       real                                              :: orient_grass
       real                                              :: clump_tree
       real                                              :: clump_grass
-      integer                                           :: ixoutput
-      character(len=str_len)                            :: xfilout
+      integer                                           :: igoutput
+      character(len=str_len)                            :: gfilout
       integer                                           :: h2o_plant_lim
       integer                                           :: iddmort_scheme
       integer                                           :: cbr_scheme
@@ -430,8 +430,8 @@ module ename_coms
       enl%orient_grass              = undef_real
       enl%clump_tree                = undef_real
       enl%clump_grass               = undef_real
-      enl%ixoutput                  = undef_integer
-      enl%xfilout                   = undef_path
+      enl%igoutput                  = undef_integer
+      enl%gfilout                   = undef_path
       enl%h2o_plant_lim             = undef_integer
       enl%iddmort_scheme            = undef_integer
       enl%cbr_scheme                = undef_integer

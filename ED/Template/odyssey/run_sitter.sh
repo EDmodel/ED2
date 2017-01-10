@@ -474,7 +474,7 @@ do
       orientgrass=$(echo ${oi}  | awk '{print $84}')
       clumptree=$(echo ${oi}    | awk '{print $85}')
       clumpgrass=$(echo ${oi}   | awk '{print $86}')
-      ixoutput=$(echo ${oi}     | awk '{print $87}')
+      igoutput=$(echo ${oi}     | awk '{print $87}')
       ivegtdyn=$(echo ${oi}     | awk '{print $88}')
       igndvap=$(echo ${oi}      | awk '{print $89}')
       iphen=$(echo ${oi}        | awk '{print $90}')
@@ -1545,17 +1545,17 @@ do
 
 
                   #------------------------------------------------------------------------#
-                  #     Set xfilout prefix according to ihrzrad.                           #
+                  #     Set gfilout prefix according to ihrzrad.                           #
                   #------------------------------------------------------------------------#
                   case ${ihrzrad} in
                   1) 
-                     xpref="gap"
+                     gpref="gap"
                      ;;
                   2)
-                     xpref="pix"
+                     gpref="pix"
                      ;;
                   *)
-                     xpref="dum"
+                     gpref="dum"
                      ;;
                   esac
                   #------------------------------------------------------------------------#
@@ -1651,8 +1651,8 @@ do
                   sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
                   sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
                   sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
-                  sed -i s@myixoutput@${ixoutput}@g            ${ED2IN}
-                  sed -i s@myxpref@${xpref}@g                  ${ED2IN}
+                  sed -i s@myigoutput@${igoutput}@g            ${ED2IN}
+                  sed -i s@mygpref@${gpref}@g                  ${ED2IN}
                   sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
                   sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
                   sed -i s@myrepro@${irepro}@g                 ${ED2IN}
@@ -1959,17 +1959,17 @@ do
 
 
             #------------------------------------------------------------------------------#
-            #     Set xfilout prefix according to ihrzrad.                                 #
+            #     Set gfilout prefix according to ihrzrad.                                 #
             #------------------------------------------------------------------------------#
             case ${ihrzrad} in
             1) 
-               xpref="gap"
+               gpref="gap"
                ;;
             2)
-               xpref="pix"
+               gpref="pix"
                ;;
             *)
-               xpref="dum"
+               gpref="dum"
                ;;
             esac
             #------------------------------------------------------------------------------#
@@ -2067,8 +2067,8 @@ do
             sed -i s@myorientgrass@${orientgrass}@g      ${ED2IN}
             sed -i s@myclumptree@${clumptree}@g          ${ED2IN}
             sed -i s@myclumpgrass@${clumpgrass}@g        ${ED2IN}
-            sed -i s@myixoutput@${ixoutput}@g            ${ED2IN}
-            sed -i s@myxpref@${xpref}@g                  ${ED2IN}
+            sed -i s@myigoutput@${igoutput}@g            ${ED2IN}
+            sed -i s@mygpref@${gpref}@g                  ${ED2IN}
             sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
             sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
             sed -i s@myrepro@${irepro}@g                 ${ED2IN}
@@ -2659,7 +2659,7 @@ do
       orientgrass=$(echo ${oi}  | awk '{print $84}')
       clumptree=$(echo ${oi}    | awk '{print $85}')
       clumpgrass=$(echo ${oi}   | awk '{print $86}')
-      ixoutput=$(echo ${oi}     | awk '{print $87}')
+      igoutput=$(echo ${oi}     | awk '{print $87}')
       ivegtdyn=$(echo ${oi}     | awk '{print $88}')
       igndvap=$(echo ${oi}      | awk '{print $89}')
       iphen=$(echo ${oi}        | awk '{print $90}')
