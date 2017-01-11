@@ -180,10 +180,12 @@ subroutine copy_nl(copy_type)
                                    , iyoutput                  & ! intent(out)
                                    , iqoutput                  & ! intent(out)
                                    , itoutput                  & ! intent(out)
+                                   , igoutput                  & ! intent(out)
                                    , dtlsm                     & ! intent(out)
                                    , frqstate                  & ! intent(out)
                                    , sfilout                   & ! intent(out)
                                    , isoutput                  & ! intent(out)
+                                   , gfilout                   & ! intent(out)
                                    , iadd_site_means           & ! intent(out)
                                    , iadd_patch_means          & ! intent(out)
                                    , iadd_cohort_means         & ! intent(out)
@@ -213,7 +215,8 @@ subroutine copy_nl(copy_type)
                                    , history_dail              & ! intent(out) 
                                    , history_eorq              & ! intent(out)
                                    , growth_resp_scheme        & ! intent(out)
-                                   , storage_resp_scheme       ! ! intent(out)
+                                   , storage_resp_scheme       & ! intent(out)
+                                   , attach_metadata           ! ! intent(out)
    use grid_coms            , only : time                      & ! intent(out)
                                    , centlon                   & ! intent(out)
                                    , centlat                   & ! intent(out)
@@ -230,7 +233,6 @@ subroutine copy_nl(copy_type)
                                    , time                      & ! intent(out)
                                    , nzg                       & ! intent(out)
                                    , nzs                       ! ! intent(out)
-   use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
                                    , ied_grndvap               & ! intent(out)
@@ -387,6 +389,8 @@ subroutine copy_nl(copy_type)
       orient_grass              = nl%orient_grass
       clump_tree                = nl%clump_tree
       clump_grass               = nl%clump_grass
+      igoutput                  = nl%igoutput
+      gfilout                   = nl%gfilout
       h2o_plant_lim             = nl%h2o_plant_lim
       iddmort_scheme            = nl%iddmort_scheme
       cbr_scheme                = nl%cbr_scheme
