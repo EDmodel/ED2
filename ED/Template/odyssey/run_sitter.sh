@@ -494,6 +494,7 @@ do
       #------------------------------------------------------------------------------------#
       let elapseda=12*${yeara}+${montha}
       let elapsedz=12*${yearz}+${monthz}
+      let nmonths=${elapsedz}-${elapseda}
       if [ ${nmonths} -ge 240 ]
       then
          iunitstate=3
@@ -2702,6 +2703,7 @@ do
       #------------------------------------------------------------------------------------#
       let elapseda=12*${yeara}+${montha}
       let elapsedz=12*${yearz}+${monthz}
+      let nmonths=${elapsedz}-${elapseda}
       if [ ${nmonths} -ge 240 ]
       then
          iunitstate=3

@@ -81,6 +81,9 @@ do
    echo " Current time: $(date +'%a %d-%b-%Y %H:%M:%S %Z')"
    echo " Total number of simulations: ${n_polygon}"
    echo " "
+   echo " Individual polygon check: "
+   cat ${check_out} | tail -${n_polygon}
+   echo " "
    echo " Status count:"
    echo " Running:                       ${n_running}"
    echo " Finished:                      ${n_the_end}"
