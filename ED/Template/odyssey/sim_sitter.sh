@@ -67,6 +67,7 @@ fi
 sed -i~ s@"here=\"/nowhere\""@"here=\"${here}\""@g          ${here}/run_sitter.sh
 sed -i~ s@"recipient=\"none\""@"recipient=\"${email}\""@g   ${here}/run_sitter.sh
 sed -i~ s@"here=\"/nowhere\""@"here=\"${here}\""@g          ${here}/epost.sh
+sed -i~ s@"outroot=\"/nowhere\""@"outroot=\"${here}\""@g    ${here}/epost.sh
 sed -i~ s@"queue=\"anyqueue\""@"queue=\"${queue}\""@g       ${here}/epost.sh
 sed -i~ s@"rscript=\"nothing\""@"rscript=\"${rscript}\""@g  ${here}/epost.sh
 #------------------------------------------------------------------------------------------#

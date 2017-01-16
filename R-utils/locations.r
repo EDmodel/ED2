@@ -1204,10 +1204,10 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(    9)
          nz     = c(   10)
       }else if (lenici == 12){
-         nparms = 1
-         param  = c("npatch")
-         na     = c(       9)
-         nz     = c(      12)
+         nparms = 2
+         param  = c("met.forcing","isas")
+         na     = c(            6,    10)
+         nz     = c(            8,    12)
       }else if (lenici == 14){
          nparms = 1
          param  = c("icanrad")
@@ -4610,6 +4610,27 @@ poitmp[[u]] = list( short           = "tanguro"
                   , met.driver      = "Sheffield"
                   , yeara           = 1964
                   , yearz           = 2009
+                  , iphen           = -1
+                  )#end list
+u           = u + 1
+poitmp[[u]] = list( short           = "tapajos"     
+                  , longname        = "Tapajos Natl. Forest, PA"
+                  , iata            = "tni"
+                  , lon             = -54.955
+                  , lat             =  -2.857
+                  , alt             = 199.
+                  , wmo             = NA
+                  , isoilflg        = 2
+                  , ntext           = 16
+                  , sand            = 0.390
+                  , clay            = 0.590
+                  , depth           = "H"
+                  , isoilbc         = 1
+                  , sldrain         = 90.
+                  , scolour         = 14
+                  , met.driver      = "Santarem_Km67"
+                  , yeara           = 1996
+                  , yearz           = 2012
                   , iphen           = -1
                   )#end list
 u           = u + 1
