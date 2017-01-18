@@ -972,7 +972,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             downward_rshort_below_beam = 0.
             downward_rshort_below_diffuse = 0.
 
-            do wlr = 1, size(lrv)
+            do wlr = 1, size(lrv(:,1))
 
                do ii = 1, lpft
                   leaf_reflect_vis(npft(ii)) = lrv(wlr,ii)
