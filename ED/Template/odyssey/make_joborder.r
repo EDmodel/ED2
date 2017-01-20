@@ -15,19 +15,20 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
-here       = getwd()                             # Current directory
-srcdir     = c("/prj/prjidfca/marcosl/Util/Rsc"  # Possible paths with libraries
-              ,"/n/home00/mlongo/util/Rsc"       #    R will select the first one that
-              ,"/Users/mlongo/Util/Rsc"          #    is found, or issue an error message
-              ,"/home/b14275/Util/Rsc"           #    in case none of them exist.
-              )#end c                            #
-outfile    = file.path(here,"joborder.txt")      # Job order
-defjob     = FALSE                               # Generate the default job order?
-append.job = FALSE                               # Append job? (FALSE means new file)
-lonlat     = NULL                                # NULL - define runs locally 
-                                                 #        (varrun/varlabel)
-#lonlat  = file.path(here,"lonlat_input.txt")    # Not NULL - read lon/lat from file, and
-                                                 #    finish up settings below
+here       = getwd()                                  # Current directory
+srcdir     = c("/prj/prjidfca/marcosl/Util/Rsc"       # Possible paths with libraries
+              ,"/prj/bramsolam/marcos.longo/Util/Rsc" #    R will select the first one that
+              ,"/n/home00/mlongo/util/Rsc"            #    is found, or issue an error
+              ,"/Users/mlongo/Util/Rsc"               #    message in case none of them
+              ,"/home/b14275/Util/Rsc"                #    exist.
+              )#end c                                 #
+outfile    = file.path(here,"joborder.txt")           # Job order
+defjob     = FALSE                                    # Generate the default job order?
+append.job = FALSE                                    # Append job? (FALSE means new file)
+lonlat     = NULL                                     # NULL - define runs locally 
+                                                      #        (varrun/varlabel)
+#lonlat  = file.path(here,"lonlat_input.txt")         # Not NULL - read lon/lat from file,
+                                                      #    and finish up settings below
 #------------------------------------------------------------------------------------------#
 
 

@@ -526,7 +526,7 @@ if (iallom %in% c(0,1)){
    hgt.ref.trop = 47.173
    b1Ht.trop    = 0.044037
    b2Ht.trop    = 0.80248
-   hgt.max.trop = 45.0
+   hgt.max.trop = 42.0
    #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
@@ -1618,9 +1618,9 @@ for (ipft in sequence(npft)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.2313194 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.3554124
-         pft$b2Bs.large[ipft] = 2.1291482
+         pft$b1Bs.small[ipft] = C2B * 0.1685739 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.4400991
+         pft$b2Bs.large[ipft] = 2.1159602
          pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
                                 ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if

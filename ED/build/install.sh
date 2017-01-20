@@ -1,29 +1,34 @@
 #!/bin/bash
-################ COMPILER OPTIONS (INTEL, ODYSSEY, and EMBRAPA ONLY) #######################
+################ COMPILER OPTIONS (INTEL, ODYSSEY, SUN-HPC, SDUMONT ONLY) ##################
 #------------------------------------------------------------------------------------------#
-# A/B. Pickiest - Use this whenever you change arguments on functions and subroutines.     #
-#                 This will perform the same tests as B but it will also check whether all #
-#                 arguments match between subroutine declaration and subroutine calls.     #
-#                 WARNING: In order to really check all interfaces you must compile with   #
-#                          this option twice:                                              #
-#                 1. Compile (./install.sh A)                                              #
-#                 2. Prepare second compilation(./2ndcomp.sh)                              #
-#                 3. Compile one more time (./install.sh B)                                #
-#                 If the compilation fails either at step 3, then your code has interface  #
-#                 problems. If it successfully compiles, then the code is fine for         #
-#                 interfaces.                                                              #
+# A/B. Pickiest.  Use this whenever you change arguments on functions and subroutines, and #
+#      perform the three steps to make sure the code has consistent interfaces (i.e.       #
+#      arguments match between subroutine declaration and subroutine calls).  A and B are  #
+#      the same now (stick with one), but you must provide another argument, -s <value>,   #
+#      which will tell which step of the compilation is to be run.                         #
+#      Step 1. Compile and generate interfaces                                             #
+#              (e.g. ./install.sh -k A -p odyssey -s 1)                                    #
+#      Step 2. Remove original files, but keep modules (only run this step after you       #
+#              create the executable using step 1).                                        #
+#              (e.g. ./install.sh -k A -p odyssey -s 2)                                    #
+#      Step 3. Compile again with the interface verification.                              #
+#              (e.g. ./install.sh -k A -p odyssey -s 3)                                    #
+#                                                                                          #
 # C. Pickiest with no interface - This will compile fast but the run will be slow due to   #
 #    the -O0 option. However, by setting -O0 you will take full advantage of the intel     #
 #    debugger.                                                                             #
 #    Ideally, you should compile your code with this option whenever you make any changes. #
 #    Note, however, that if you change arguments you should first try A.                   #
+#                                                                                          #
 # D. Fast check - This will check pretty much the same as C, but it will not set up        #
 #    anything for the debugger. Use this only if you really don't want to deal with idb or #
 #    if you have a good idea of which problem you are dealing with.                        #
+#                                                                                          #
 # E. Fast - This is all about performance, use only when you are sure that the model has   #
-#           no code problem, and you want results asap. This will not check for any        #
-#           problems, which means that this is an option suitable for end users, not de-   #
-#           velopers.                                                                      #
+#           no code problem, and you want results fast. This will not check for any        #
+#           problems, which means that this is an OPTION SUITABLE for end users.           #
+#           DEVELOPERS, THIS IS NOT THE OPTION YOU SHOULD USE TO CHECK WHETHER YOUR        #
+#           NEW CODE IS WORKING OR NOT.                                                    #
 #------------------------------------------------------------------------------------------#
 
 #----- Define the number of arguments. ----------------------------------------------------#
@@ -37,6 +42,7 @@ KIND=""
 PLATFORM=""
 OPT=""
 USE_GIT=true
+STEP=0
 
 # Argument parsing
 while [[ $# > 0 ]]
@@ -56,6 +62,10 @@ key="$1"
       ;;
    -g|--gitoff)
       USE_GIT=false
+      ;;
+   -s|--step)
+      STEP="$2"
+      shift # past argument
       ;;
    *)
       echo "Unknown key-value argument pair."
@@ -78,6 +88,42 @@ then
    KIND="E"
 fi
 
+
+# Check that the step is properly set 
+case ${KIND} in
+['A','B']*)
+   case ${STEP} in
+   0)
+      echo "You must provide step (option -s or --step) when use \"-k A\" or \"-k B\""
+      exit 1
+      ;;
+   1)
+      LKIND="A"
+      echo "Step ${STEP}, generate interfaces."
+      ;;
+   2)
+      LKIND="A"
+      echo "Step ${STEP}, prepare for interface check."
+      ;;
+   3)
+      LKIND="B"
+      echo "Step ${STEP}, check interfaces."
+      ;;
+   *)
+      echo "Invalid step! It must be one of the following options:"
+      echo "-s 1 (--step 1): Generate interfaces"
+      echo "-s 2 (--step 2): Prepare for interface check"
+      echo "-s 3 (--step 3): Check interfaces"
+      exit 1
+      ;;
+   esac
+   ;;
+*)
+   LKIND=${KIND}
+   ;;
+esac
+
+      
 # Set opt and bin
 case ${KIND} in
 ['A','B','C','D']*)
@@ -113,23 +159,29 @@ if [ ! -d "${BIN}" ]; then
 fi
 cd ${BIN}
 
+case ${STEP} in
+2)
+   ./2ndcomp.sh
+   ;;
+*)
+   # Link to makefiles, includes, and shell scripts
+   ln -sf ../make/*.mk ./
+   ln -sf ../make/Makefile ./
+   ln -sf ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
+   ln -sf ../shell/* ./
+   touch dependency.mk
 
-# Link to makefiles, includes, and shell scripts
-ln -sf ../make/*.mk ./
-ln -sf ../make/Makefile ./
-ln -sf ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
-ln -sf ../shell/* ./
-touch dependency.mk
+   #----- Launch the compiler. ------------------------------------------------------------#
+   make OPT=${OPT} KIND_COMP=${LKIND} ${CLEAN} GIT_TAG=${GIT_TAG}
+   make_exit_code=$?
+   #---------------------------------------------------------------------------------------#
 
-#----- Launch the compiler. ---------------------------------------------------------------#
-make OPT=${OPT} KIND_COMP=${KIND} ${CLEAN} GIT_TAG=${GIT_TAG}
-make_exit_code=$?
-#------------------------------------------------------------------------------------------#
-
-if [ ${make_exit_code} != 0 ]
-then
-   exit 1
-else
-   echo "Installation Complete."
-   exit 0
-fi
+   if [ ${make_exit_code} != 0 ]
+   then
+      exit 1
+   else
+      echo "Installation Complete."
+      exit 0
+   fi
+   ;;
+esac

@@ -2845,14 +2845,16 @@ subroutine init_pft_alloc_params()
    hgt_max(17) = 35.0
    !---------------------------------------------------------------------------------------!
    !     In case we are using the new allometry, set maximum height of (sub)tropical trees !
-   ! to 45m (about 95% of the maximum height).                                             !
+   ! to 42m.  This corresponds to a DBH of about 120cm, above which leaf biomass has too   !
+   ! much extrapolation.  This is similar to Feldpausch's average maximum height for the   !
+   ! Amazon too.                                                                           !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (4)
-      hgt_max( 2) = 45.0
-      hgt_max( 3) = 45.0
-      hgt_max( 4) = 45.0
-      hgt_max(17) = 45.0
+      hgt_max( 2) = 42.0
+      hgt_max( 3) = 42.0
+      hgt_max( 4) = 42.0
+      hgt_max(17) = 42.0
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -3186,9 +3188,9 @@ subroutine init_pft_alloc_params()
             !  to include below ground biomass.  The result was fit using a DBH-dependent  !
             !  only model.                                                                 !
             !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.2313194 * rho(ipft)
-            b2Bs_small(ipft) = 2.3554124
-            b2Bs_large(ipft) = 2.1291482
+            b1Bs_small(ipft) = C2B * 0.1685739 * rho(ipft)
+            b2Bs_small(ipft) = 2.4400991
+            b2Bs_large(ipft) = 2.1159602
             b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
                              * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
             !------------------------------------------------------------------------------!
@@ -3798,6 +3800,8 @@ subroutine init_pft_derived_params()
                                    , seed_rain            ! ! intent(out)
    use phenology_coms       , only : elongf_min           & ! intent(in)
                                    , elongf_flush         ! ! intent(in)
+   use fusion_fission_coms  , only : hgt_class            & ! intent(out)
+                                   , ff_nhgt              ! ! intent(out)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , size2bl              & ! function
@@ -3828,6 +3832,7 @@ subroutine init_pft_derived_params()
    real                              :: wood_hcap_min
    real                              :: lai_min
    real                              :: min_plant_dens
+   real                              :: max_hgt_max
    logical                           :: print_zero_table
    character(len=str_len), parameter :: zero_table_fn    = 'pft_sizes.txt'
    !---------------------------------------------------------------------------------------!
@@ -3995,6 +4000,29 @@ subroutine init_pft_derived_params()
    if (print_zero_table) then
       close (unit=61,status='keep')
    end if
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Define the patch fusion layers based on the maximum height amongst PFTs.           !
+   !---------------------------------------------------------------------------------------!
+   max_hgt_max   = maxval(hgt_max)
+   ff_nhgt           = 12
+   allocate (hgt_class(ff_nhgt))
+   hgt_class( 1) = 0.00
+   hgt_class( 2) = 0.06 * max_hgt_max
+   hgt_class( 3) = 0.12 * max_hgt_max
+   hgt_class( 4) = 0.18 * max_hgt_max
+   hgt_class( 5) = 0.26 * max_hgt_max
+   hgt_class( 6) = 0.34 * max_hgt_max
+   hgt_class( 7) = 0.42 * max_hgt_max
+   hgt_class( 8) = 0.52 * max_hgt_max
+   hgt_class( 9) = 0.62 * max_hgt_max
+   hgt_class(10) = 0.72 * max_hgt_max
+   hgt_class(11) = 0.84 * max_hgt_max
+   hgt_class(12) = 0.96 * max_hgt_max
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine init_pft_derived_params
@@ -5146,12 +5174,10 @@ end subroutine init_phen_coms
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
    use fusion_fission_coms, only : niter_patfus              & ! intent(out)
-                                 , hgt_class                 & ! intent(out)
                                  , fusetol                   & ! intent(out)
                                  , fusetol_h                 & ! intent(out)
                                  , lai_fuse_tol              & ! intent(out)
                                  , lai_tol                   & ! intent(out)
-                                 , ff_nhgt                   & ! intent(out)
                                  , min_oldgrowth             & ! intent(out)
                                  , coh_tolerance_max         & ! intent(out)
                                  , dark_cumlai_min           & ! intent(out)
@@ -5184,24 +5210,13 @@ subroutine init_ff_coms
    fusetol_h         = 0.5
    lai_fuse_tol      = 0.8
    lai_tol           = 1.0
-   ff_nhgt           = 13
    coh_tolerance_max = 10.0    ! Original 2.0
 
-   !----- Define the number of height classes. --------------------------------------------!
-   allocate (hgt_class(ff_nhgt))
-   hgt_class( 1) =  0.0
-   hgt_class( 2) =  2.0
-   hgt_class( 3) =  5.0
-   hgt_class( 4) =  8.0
-   hgt_class( 5) = 11.0
-   hgt_class( 6) = 14.0
-   hgt_class( 7) = 18.0
-   hgt_class( 8) = 22.0
-   hgt_class( 9) = 26.0
-   hgt_class(10) = 30.0
-   hgt_class(11) = 34.0
-   hgt_class(12) = 38.0
-   hgt_class(13) = 42.0
+
+   !---------------------------------------------------------------------------------------!
+   !     Patch fusion layers were relocated to init_pft_derived_params, so the default     !
+   ! numbers are based on the height of the tallest possible PFT.                          !
+   !---------------------------------------------------------------------------------------!
 
    niter_patfus       = 100
    exp_patfus         = 1. / real(niter_patfus-1)

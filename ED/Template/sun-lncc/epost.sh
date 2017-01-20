@@ -125,7 +125,7 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 if [ ${myself} == "marcosl" ]
 then
-   rscpath="/prj/prjidfca/marcosl/Util/Rsc"
+   rscpath="${HOME}/Util/Rsc"
 fi
 #------------------------------------------------------------------------------------------#
 
