@@ -237,6 +237,7 @@ echo "ulimit -s unlimited"                                                     >
 echo ""                                                                        >> ${sbatch}
 echo "#--- Initial settings."                                                  >> ${sbatch}
 echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
+echo "nodehome=\"${SCRATCH}\"                     # Node home"                 >> ${sbatch}
 echo "exec=\"\${here}/executable/${execname}\"    # Executable"                >> ${sbatch}
 echo "modpath=\"${modpath}\"                      # Module path"               >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
@@ -261,6 +262,7 @@ echo "echo \"\""                                                               >
 echo ""                                                                        >> ${sbatch}
 echo "echo \"----- Global settings for this array of simulations ----------\"" >> ${sbatch}
 echo "echo \" Main path:       \${here}\""                                     >> ${sbatch}
+echo "echo \" Node home:       \${nodehome}\""                                 >> ${sbatch}
 echo "echo \" Executable:      \${exec}\""                                     >> ${sbatch}
 echo "echo \" Module path:     \${modpath}\""                                  >> ${sbatch}
 echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
@@ -270,12 +272,8 @@ echo ""                                                                        >
 echo "#--- Set nodes."                                                         >> ${sbatch}
 echo "nodeset -e \${SLURM_JOB_NODELIST}"                                       >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
-echo "#--- Load modules."                                                      >> ${sbatch}
-echo ". /scratch/app/modulos/intel-psxe-2016.2.062.sh"                         >> ${sbatch}
-echo "for file in \$(/bin/ls -1 \${modpath}/*sh)"                              >> ${sbatch}
-echo "do"                                                                      >> ${sbatch}
-echo "   . \${file}"                                                           >> ${sbatch}
-echo "done"                                                                    >> ${sbatch}
+echo "#--- Load modules and settings."                                         >> ${sbatch}
+echo ". \${nodehome}/.bashrc"                                                  >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo ""                                                                        >> ${sbatch}

@@ -471,16 +471,16 @@ subroutine reproduction(cgrid, month)
 
 
             !------------------------------------------------------------------------------!
-            !   Now that recruitment has occured, terminate, fuse, split, and re-sort.     !
+            !   Now that recruitment has occured, fuse, terminate, split, and re-sort.     !
             !------------------------------------------------------------------------------!
             update_patch_loop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
                !----- Update the cohort distribution. -------------------------------------!
                if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
-                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
                                    ,cpoly%lsl(isi),.false.)
+                  call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
                   call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
                end if
                !---------------------------------------------------------------------------!

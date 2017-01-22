@@ -367,6 +367,7 @@ echo "ulimit -s unlimited"                                                     >
 echo ""                                                                        >> ${sbatch}
 echo "#--- Initial settings."                                                  >> ${sbatch}
 echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
+echo "nodehome=\"${SCRATCH}\"                     # Node home"                 >> ${sbatch}
 echo "modpath=\"${modpath}\"                      # Module path"               >> ${sbatch}
 echo "rscript=\"${rscript}\"                      # R Script"                  >> ${sbatch}
 echo "rstdout=\"${epostout}\"                     # Standard output"           >> ${sbatch}
@@ -395,22 +396,8 @@ echo ""                                                                        >
 echo "#--- Set nodes."                                                         >> ${sbatch}
 echo "nodeset -e \${SLURM_JOB_NODELIST}"                                       >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
-echo "#--- Load modules."                                                      >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo ". /scratch/app/modulos/intel-psxe-2016.2.062.sh"                         >> ${sbatch}
-echo "module load R/3.3.1_intel"                                               >> ${sbatch}
-echo "for file in \$(/bin/ls -1 \${modpath}/*sh)"                              >> ${sbatch}
-echo "do"                                                                      >> ${sbatch}
-echo "   echo \"Load file \${file}.\""                                         >> ${sbatch}
-echo "   . \${file}"                                                           >> ${sbatch}
-echo "done"                                                                    >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "#--- Set R Library environments."                                        >> ${sbatch}
-echo "export R_LIBS=\"${rlibs}\""                                              >> ${sbatch}
-echo "export R_SCRP=\"${rscpath}\""                                            >> ${sbatch}
+echo "#--- Load modules and settings."                                         >> ${sbatch}
+echo ". \${nodehome}/.bashrc"                                                  >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "echo \"\""                                                               >> ${sbatch}
 echo "echo \"\""                                                               >> ${sbatch}

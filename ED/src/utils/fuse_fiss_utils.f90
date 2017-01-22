@@ -589,18 +589,29 @@ module fuse_fiss_utils
       type(patchtype)        , pointer     :: cpatch         ! Current patch
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
       integer                              :: donc,recc,ico3 ! Counters
-      logical                              :: fusion_test    ! Flag: proceed with fusion?
+      logical                              :: donc_resolv    ! Flag: Donor cohort is
+                                                             !     resolvable
+      logical                              :: dr_sim_size    ! Flag: donor and receptor
+                                                             !    have similar size.
+      logical                              :: dr_eqv_recruit ! Flag: donor and receptor
+                                                             !    have same recruitment
+                                                             !    status.
+      logical                              :: dr_eqv_phen    ! Flag: donor and receptor
+                                                             !    have same phenology
+                                                             !    status.
       real                                 :: newn           ! new nplants of merged coh.
-      real                                 :: lai_max        ! Maximum LAI the fused 
-                                                             !    cohort could have.
       real                                 :: total_size     ! Total size
       real                                 :: tolerance_mult ! Multiplication factor
       integer                              :: ncohorts_old   ! # of coh. before fusion test
       real                                 :: mean_dbh       ! Mean DBH           (???)
       real                                 :: mean_hite      ! Mean height        (???)
+      real                                 :: diff_dbh       ! Mean DBH           (???)
+      real                                 :: diff_hite      ! Mean height        (???)
       real                                 :: new_size       ! New size
       integer                              :: ntall          ! # of tall cohorts  (???)
       integer                              :: nshort         ! # of short cohorts (???)
+      integer                              :: dpft           ! PFT of donor cohort
+      integer                              :: rpft           ! PFT of receptor cohort
       logical                              :: any_fusion     ! Flag: was there any fusion?
       !------------------------------------------------------------------------------------!
 
@@ -653,150 +664,161 @@ module fuse_fiss_utils
          
          donloop:do donc = 1,cpatch%ncohorts-1
             if (.not. fuse_table(donc)) cycle donloop ! This one is gone, move to next.
+            dpft        = cpatch%pft(donc)
+            donc_resolv = cpatch%leaf_resolvable(donc) .or. cpatch%wood_resolvable(donc)
 
             recloop: do recc = donc+1,cpatch%ncohorts
-               if (.not. fuse_table(recc)) cycle recloop ! This one is gone, move to next.
-                                                         ! Hope it never happens...
+               rpft  = cpatch%pft(recc)
+
+
+               !---------------------------------------------------------------------------!
+               !     Initial tests, so we don't compare cohort sizes between cohorts that  !
+               ! can never be fused.                                                       !
+               !                                                                           !
+               ! 1. Receptor cohort has been fused (it should never happen, though).       !
+               ! 2. Cohorts have different PFTs.                                           !
+               !                                                                           !
+               ! The following checks are only applied in case the donor cohort is         !
+               !    resolvable or this is not called during initialisation.                !
+               !    3. Cohorts have different recruit statuses.                            !
+               !    4. Cohorts have different phenology statuses.                          !
+               !---------------------------------------------------------------------------!
+               if (.not. fuse_table(recc)) cycle recloop
+               if (dpft /= rpft)           cycle recloop
+               if (donc_resolv .or. (.not. fuse_initial)) then
+                  dr_eqv_recruit =                                                         &
+                     cpatch%first_census    (donc) == cpatch%first_census    (recc) .and.  &
+                     cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc) .and.  &
+                     cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh     (recc) .and.  &
+                     cpatch%census_status   (donc) == cpatch%census_status   (recc)
+                  dr_eqv_phen    =                                                         &
+                     cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
+                  if (.not. dr_eqv_recruit) cycle recloop
+                  if (.not. dr_eqv_phen   ) cycle recloop
+               end if
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !     Test for similarity.  Again, we use height to assess similarity only  !
-               ! when the cohort is not approaching the maximum height.  If this is the    !
-               ! case, then we use DBH to test.                                            !
+               ! in case the cohorts are not approaching maximum height, otherwise use     !
+               ! DBH instead.                                                              !
                !---------------------------------------------------------------------------!
-               if (cpatch%hite(donc) >= (0.95 * hgt_max(cpatch%pft(donc))) ) then
-                  mean_dbh=0.5*(cpatch%dbh(donc)+cpatch%dbh(recc))
-                  fusion_test = ( abs(cpatch%dbh(donc) - cpatch%dbh(recc)))/mean_dbh       &
-                              < fusetol * tolerance_mult
+               if (cpatch%hite(donc) >= (0.95 * hgt_max(dpft)) ) then
+                  mean_dbh    = 0.5*( cpatch%dbh(donc) + cpatch%dbh(recc) )
+                  diff_dbh    = abs ( cpatch%dbh(donc) - cpatch%dbh(recc) )
+                  dr_sim_size = ( diff_dbh  / mean_dbh  ) < ( fusetol * tolerance_mult)
                elseif (fuse_relax) then
-                  fusion_test = ( abs(cpatch%hite(donc) - cpatch%hite(recc))               &
-                                     / (0.5*(cpatch%hite(donc) + cpatch%hite(recc)))  <    &
-                                fusetol * tolerance_mult)  
+                  mean_hite   = 0.5*( cpatch%hite(donc) + cpatch%hite(recc) )
+                  diff_hite   = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
+                  dr_sim_size = ( diff_hite / mean_hite ) < ( fusetol * tolerance_mult)
                else
-                  fusion_test = (abs(cpatch%hite(donc) - cpatch%hite(recc))  <             &
-                                fusetol_h * tolerance_mult)
+                  diff_hite   = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
+                  dr_sim_size = diff_hite < ( fusetol_h * tolerance_mult)
                end if
+               !---------------------------------------------------------------------------!
 
-               if (fusion_test) then
+
+
+               !---------------------------------------------------------------------------!
+               !      We no longer check whether the LAI exceeds maximum LAI allowed for   !
+               ! any given cohort.  In case they do exceed, split_cohorts will split them  !
+               ! accordingly.  Split_cohorts is always called after fusion, and by allow-  !
+               ! ing fusion to happen we avoid cohort termination of those that are just   !
+               ! too similar to others but rather small.                                   !
+               !---------------------------------------------------------------------------!
+               if (dr_sim_size) then
 
                   !----- New cohort has the total number of plants ------------------------!
                   newn = cpatch%nplant(donc) + cpatch%nplant(recc)
-
                   !------------------------------------------------------------------------!
-                  !     We now check the maximum LAI the fused cohorts could have.  We     !
-                  ! don't want the cohort to have a very large LAI.  If both cohorts have  !
-                  ! leaves fully flushed, this is the same as adding the individual LAIs,  !
-                  ! but if they are not, we need to consider that LAI may grow...          !
-                  !------------------------------------------------------------------------!
-                  if (is_grass(cpatch%pft(donc)) .and. igrass==1) then
-                      !--use actual bleaf for grass
-                      lai_max = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                 &
-                                + cpatch%nplant(donc) * cpatch%bleaf(donc) )               &
-                                * cpatch%sla(recc)
-                  else
-                      !--use dbh for trees
-                      lai_max = ( cpatch%nplant(recc)                                      &
-                                * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
-                                         ,cpatch%pft(recc))                                &
-                                + cpatch%nplant(donc)                                      &
-                                * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
-                                         ,cpatch%pft(donc)))                               &
-                                * cpatch%sla(recc)
-                  end if
 
-                  !----- Checking the total size of this cohort before and after fusion. --!
+                  !----- Check the total size of this cohort before and after fusion. -----!
                   total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
                                                      + cpatch%bdead(donc)                  &
                                                      + cpatch%bstorage(donc) )             &
                              + cpatch%nplant(recc) * ( cpatch%balive(recc)                 &
                                                      + cpatch%bdead(recc)                  &
                                                      + cpatch%bstorage(recc) )
-
-                  
-                  
-                  
                   !------------------------------------------------------------------------!
-                  !    Six conditions must be met to allow two cohorts to be fused:        !
-                  ! 1. Both cohorts must have the same PFT;                                !
-                  ! 2. Combined LAI won't be too large.                                    !
-                  ! 3. Both cohorts must have the same status with respect to the first    !
-                  !    census.                                                             !
-                  ! 4. Both cohorts must have the same recruit status with respect to the  !
-                  !    first census.                                                       !
-                  ! 5. Both cohorts must have the same recruitment status with respect to  !
-                  !    the DBH.                                                            !
-                  ! 6. Both cohorts must have the same recruitment status with respect to  !
-                  !    the census.                                                         !
-                  ! 7. Both cohorts must have the same phenology status.                   !
+
+
+
                   !------------------------------------------------------------------------!
-                  if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
-                     .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
-                     .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
-                     .and. cpatch%new_recruit_flag(donc) == cpatch%new_recruit_flag(recc)  &
-                     .and. cpatch%recruit_dbh     (donc) == cpatch%recruit_dbh(recc)       &
-                     .and. cpatch%census_status   (donc) == cpatch%census_status(recc)     &
-                     .and. cpatch%phenology_status(donc) == cpatch%phenology_status(recc)  &
-                     ) then
-
-                     !----- Proceed with fusion -------------------------------------------!
-                     call fuse_2_cohorts(cpatch,donc,recc,newn                             &
-                                        ,green_leaf_factor(cpatch%pft(donc))               &
-                                        ,csite%can_prss(ipa),csite%can_shv(ipa),lsl        &
-                                        ,fuse_initial)
-
-                     !----- Flag donating cohort as gone, so it won't be checked again. ---!
-                     fuse_table(donc) = .false.
-                     
-                     !----- Check whether total size and LAI are conserved. ---------------!
-                     new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                &
-                                                      + cpatch%bdead(recc)                 &
-                                                      + cpatch%bstorage(recc) )
-                     if (new_size < 0.99* total_size .or. new_size > 1.01* total_size )    &
-                     then
-                        write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE: ',total_size
-                        write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE: ',new_size
-                        call fatal_error('Cohort fusion didn''t conserve plant size!!!'    &
-                                        &,'fuse_2_cohorts','fuse_fiss_utils.f90')
-                     end if
-                     !---------------------------------------------------------------------!
+                  !     Proceed with fusion.                                               !
+                  !------------------------------------------------------------------------!
+                  call fuse_2_cohorts(cpatch,donc,recc,newn                                &
+                                     ,green_leaf_factor(cpatch%pft(donc))                  &
+                                     ,csite%can_prss(ipa),csite%can_shv(ipa),lsl           &
+                                     ,fuse_initial)
+                  !------------------------------------------------------------------------!
 
 
-                     !---------------------------------------------------------------------!
-                     !    Recalculate the means                                            !
-                     !---------------------------------------------------------------------!
-                     mean_dbh  = 0.0
-                     mean_hite = 0.0
-                     nshort    = 0
-                     ntall     = 0
-                     recalcloop: do ico3 = 1,cpatch%ncohorts
-                        if (.not. fuse_table(ico3)) cycle recalcloop
-                        !----- Get fusion height threshold --------------------------------!
-                        if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
-                           mean_hite = mean_hite + cpatch%hite(ico3)
-                           nshort = nshort+1
-                        else
-                           mean_dbh = mean_dbh + cpatch%dbh(ico3)
-                           ntall=ntall+1
-                        end if
-                     end do recalcloop
-                     !---------------------------------------------------------------------!
-                     cycle donloop
+                  !----- Flag donating cohort as gone, so it won't be checked again. ------!
+                  fuse_table(donc) = .false.
+                  
+                  !----- Check whether total size and LAI are conserved. ------------------!
+                  new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                   &
+                                                   + cpatch%bdead(recc)                    &
+                                                   + cpatch%bstorage(recc) )
+                  if (new_size < 0.99* total_size .or. new_size > 1.01* total_size )       &
+                  then
+                     write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE: ',total_size
+                     write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE: ',new_size
+                     call fatal_error('Cohort fusion didn''t conserve plant size!!!'       &
+                                     &,'fuse_2_cohorts','fuse_fiss_utils.f90')
                   end if
                   !------------------------------------------------------------------------!
-               end if
-            end do recloop
-         end do donloop
 
-         !------ If we are under maxcohort, no need to continue fusing. -------------------!
-         if ( count(fuse_table) <= abs(maxcohort)) exit force_fusion
-         !------ If no fusion happened and the tolerance exceeded the maximum, I give up. -!
-         if ( count(fuse_table) == ncohorts_old .and. tolerance_mult > coh_tolerance_max ) &
-            exit force_fusion
+
+                  !------------------------------------------------------------------------!
+                  !    Recalculate the means                                               !
+                  !------------------------------------------------------------------------!
+                  mean_dbh  = 0.0
+                  mean_hite = 0.0
+                  nshort    = 0
+                  ntall     = 0
+                  recalcloop: do ico3 = 1,cpatch%ncohorts
+                     if (.not. fuse_table(ico3)) cycle recalcloop
+                     !----- Get fusion height threshold -----------------------------------!
+                     if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
+                        mean_hite = mean_hite + cpatch%hite(ico3)
+                        nshort = nshort+1
+                     else
+                        mean_dbh = mean_dbh + cpatch%dbh(ico3)
+                        ntall=ntall+1
+                     end if
+                  end do recalcloop
+                  !------------------------------------------------------------------------!
+                  cycle donloop
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+            end do recloop
+            !------------------------------------------------------------------------------!
+         end do donloop
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      In case we met maxcohort goals or in case tolerance exceeded the maximum,  !
+         ! interrupt cohort fusion.                                                        !
+         !---------------------------------------------------------------------------------!
+         if ( count(fuse_table) <= abs(maxcohort)   ) exit force_fusion
+         if ( tolerance_mult    >  coh_tolerance_max) exit force_fusion
+         !---------------------------------------------------------------------------------!
 
          tolerance_mult = tolerance_mult * 1.01
          ncohorts_old = count(fuse_table)
       end do force_fusion
+      !------------------------------------------------------------------------------------!
 
-      !----- If any fusion has happened, then we need to rearrange cohorts. ---------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      In case any fusion has happened, rearrange cohorts.                           !
+      !------------------------------------------------------------------------------------!
       any_fusion = .not. all(fuse_table)
       if (any_fusion) then
 
@@ -809,25 +831,31 @@ module fuse_fiss_utils
          call allocate_patchtype(temppatch,cpatch%ncohorts)
          call copy_patchtype_mask(cpatch,temppatch,fuse_table,size(fuse_table)             &
                                  ,count(fuse_table))
+         !---------------------------------------------------------------------------------!
 
          !----- Now I reallocate the current patch with its new reduced size. -------------!
          call deallocate_patchtype(cpatch)  
          call allocate_patchtype(cpatch,count(fuse_table))
-  
+         !---------------------------------------------------------------------------------!
+ 
          !----- Make fuse_table true to all remaining cohorts. ----------------------------!
          fuse_table(:)                 = .false.
          fuse_table(1:cpatch%ncohorts) = .true.
          call copy_patchtype_mask(temppatch,cpatch,fuse_table,size(fuse_table)             &
                                  ,count(fuse_table))
+         !---------------------------------------------------------------------------------!
 
          !----- Discard the scratch patch. ------------------------------------------------!
          call deallocate_patchtype(temppatch)
          deallocate(temppatch)  
+         !---------------------------------------------------------------------------------!
 
          !----- Sort cohorts by size again, and update the cohort census for this patch. --!
          call sort_cohorts(cpatch)
          csite%cohort_count(ipa) = count(fuse_table)
+         !---------------------------------------------------------------------------------!
       end if
+      !------------------------------------------------------------------------------------!
 
       !----- Deallocate the aux. table ----------------------------------------------------!
       deallocate(fuse_table)
