@@ -856,7 +856,7 @@ subroutine init_can_rad_params()
    cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
    cci_pixres   = 1.0  ! Pixel resolution for TCH and CCI                          [     m]
    cci_gapsize  = 10.0 ! Gap size                                                  [     m]
-   cci_gapmin   = 3.0  ! # of gaps associated with the smallest area               [   ---]
+   cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
    cci_nretn    = 30   ! "Return density" to generate the TCH map                  [  1/m2]
    !---------------------------------------------------------------------------------------!
 

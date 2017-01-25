@@ -877,6 +877,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qpatch$gpp           = list()
    qpatch$npp           = list()
    qpatch$plant.resp    = list()
+   qpatch$reco          = list()
    qpatch$hflxlc        = list()
    qpatch$hflxwc        = list()
    qpatch$wflxlc        = list()
@@ -1739,6 +1740,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qpatch$gpp           = old.datum$qpatch$gpp
    new.datum$qpatch$npp           = old.datum$qpatch$npp
    new.datum$qpatch$plant.resp    = old.datum$qpatch$plant.resp
+   new.datum$qpatch$reco          = old.datum$qpatch$reco
    new.datum$qpatch$hflxlc        = old.datum$qpatch$hflxlc
    new.datum$qpatch$hflxwc        = old.datum$qpatch$hflxwc
    new.datum$qpatch$wflxlc        = old.datum$qpatch$wflxlc
