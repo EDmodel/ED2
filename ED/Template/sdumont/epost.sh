@@ -99,7 +99,7 @@ sim_memory=2500
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscript="plot_yearly.r"
+rscript="plot_monthly.r"
 #rscript="yearly_ascii.r"
 #rscript="plot_monthly.r"
 #rscript="plot_census.r" 
@@ -241,7 +241,7 @@ r10_monthly.r)
    epostkey="rm10"
    ;;
 plot_monthly.r)
-   epostkey"pmon"
+   epostkey="pmon"
    ;;
 plot_yearly.r)
    epostkey="pyrs"
@@ -940,9 +940,9 @@ do
 
    #----- Switch the keywords by the current settings. ------------------------------------#
    sed -i s@thispoly@${polyname}@g             ${scriptnow}
-   sed -i s@thisoutroot@${outroot}@g           ${scriptnow}
+   sed -i s@thisoutroot@${here}@g              ${scriptnow}
    sed -i s@thispath@${here}@g                 ${scriptnow}
-   sed -i s@thatpath@${there}@g                ${scriptnow}
+   sed -i s@thatpath@${here}@g                 ${scriptnow}
    sed -i s@thisrscpath@${rscpath}@g           ${scriptnow}
    sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
    sed -i s@thismontha@${thismontha}@g         ${scriptnow}
@@ -997,6 +997,7 @@ do
       srun="srun --nodes=1 --ntasks=1"
       srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
       srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
+      srun="${srun} --job-name=${polyname}"
       srun="${srun} --chdir=\${here}/${polyname}"
       srun="${srun} --output=\${here}/${polyname}/${epoststo}"
       srun="${srun} --error=\${here}/${polyname}/${epostste}"

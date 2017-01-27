@@ -856,7 +856,7 @@ subroutine init_can_rad_params()
    cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
    cci_pixres   = 1.0  ! Pixel resolution for TCH and CCI                          [     m]
    cci_gapsize  = 10.0 ! Gap size                                                  [     m]
-   cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
+   cci_gapmin   = 50.0 ! # of gaps associated with the smallest area               [   ---]
    cci_nretn    = 30   ! "Return density" to generate the TCH map                  [  1/m2]
    !---------------------------------------------------------------------------------------!
 
@@ -4007,20 +4007,20 @@ subroutine init_pft_derived_params()
    !    Define the patch fusion layers based on the maximum height amongst PFTs.           !
    !---------------------------------------------------------------------------------------!
    max_hgt_max   = maxval(hgt_max)
-   ff_nhgt           = 12
+   ff_nhgt       = 12
    allocate (hgt_class(ff_nhgt))
    hgt_class( 1) = 0.00
-   hgt_class( 2) = 0.06 * max_hgt_max
-   hgt_class( 3) = 0.12 * max_hgt_max
-   hgt_class( 4) = 0.18 * max_hgt_max
-   hgt_class( 5) = 0.26 * max_hgt_max
-   hgt_class( 6) = 0.34 * max_hgt_max
-   hgt_class( 7) = 0.42 * max_hgt_max
-   hgt_class( 8) = 0.52 * max_hgt_max
-   hgt_class( 9) = 0.62 * max_hgt_max
-   hgt_class(10) = 0.72 * max_hgt_max
-   hgt_class(11) = 0.84 * max_hgt_max
-   hgt_class(12) = 0.96 * max_hgt_max
+   hgt_class( 2) = 0.09 * max_hgt_max
+   hgt_class( 3) = 0.18 * max_hgt_max
+   hgt_class( 4) = 0.27 * max_hgt_max
+   hgt_class( 5) = 0.36 * max_hgt_max
+   hgt_class( 6) = 0.45 * max_hgt_max
+   hgt_class( 7) = 0.54 * max_hgt_max
+   hgt_class( 8) = 0.63 * max_hgt_max
+   hgt_class( 9) = 0.72 * max_hgt_max
+   hgt_class(10) = 0.81 * max_hgt_max
+   hgt_class(11) = 0.90 * max_hgt_max
+   hgt_class(12) = 0.99 * max_hgt_max
    !---------------------------------------------------------------------------------------!
 
 
@@ -5180,15 +5180,12 @@ subroutine init_ff_coms
                                  , lai_tol                   & ! intent(out)
                                  , min_oldgrowth             & ! intent(out)
                                  , coh_tolerance_max         & ! intent(out)
-                                 , dark_cumlai_min           & ! intent(out)
-                                 , dark_cumlai_max           & ! intent(out)
-                                 , dark_cumlai_mult          & ! intent(out)
-                                 , sunny_cumlai_min          & ! intent(out)
-                                 , sunny_cumlai_max          & ! intent(out)
-                                 , sunny_cumlai_mult         & ! intent(out)
-                                 , light_toler_min           & ! intent(out)
-                                 , light_toler_max           & ! intent(out)
-                                 , light_toler_mult          & ! intent(out)
+                                 , pat_light_ext             & ! intent(out)
+                                 , pat_light_tol_min         & ! intent(out)
+                                 , pat_light_tol_max         & ! intent(out)
+                                 , pat_light_tol_mult        & ! intent(out)
+                                 , pat_light_mxd_fac         & ! intent(out)
+                                 , pat_diff_age_tol          & ! intent(out)
                                  , fuse_relax                & ! intent(out)
                                  , corr_patch                & ! intent(out)
                                  , corr_cohort               & ! intent(out)
@@ -5206,33 +5203,46 @@ subroutine init_ff_coms
    real              :: exp_patfus
    !---------------------------------------------------------------------------------------!
 
-   fusetol           = 0.4
-   fusetol_h         = 0.5
-   lai_fuse_tol      = 0.8
-   lai_tol           = 1.0
-   coh_tolerance_max = 10.0    ! Original 2.0
+   fusetol            = 0.4
+   fusetol_h          = 0.5
+   lai_fuse_tol       = 0.8
+   lai_tol            = 1.0
+   coh_tolerance_max  = 10.0    ! Original 2.0
+   fuse_relax         = .false.
 
 
    !---------------------------------------------------------------------------------------!
    !     Patch fusion layers were relocated to init_pft_derived_params, so the default     !
    ! numbers are based on the height of the tallest possible PFT.                          !
+   !                                                                                       !
+   ! niter_patfus       -- number of patch fusion iterations (more iterations mean slower  !
+   !                       increase in tolerance                                           !
+   ! exp_patfus         -- exponential factor, used to determine the incremental           !
+   !                       multiplication factor.                                          !
+   ! pat_light_ext      -- extinction coefficient for light level.  Typically this should  !
+   !                       be 0.5.                                                         !
+   ! pat_light_tol_min  -- Minimum tolerance for average profile                           !
+   ! pat_light_tol_max  -- Maximum tolerance for average profile                           !
+   ! pat_light_tol_mult -- Factor that increments tolerance (derived from previous vari-   !
+   !                       ables).                                                         !
+   ! pat_light_mxd_fac  -- Maximum deviation from average tolerance (e.g. 1.25 means that  !
+   !                       the maximum difference in light levels can be 25% greater than  !
+   !                       tolerance for average maximum.                                  !
+   !---------------------------------------------------------------------------------------!
+   niter_patfus       = 30
+   exp_patfus         = 1. / real(niter_patfus)
+   pat_light_ext      = 0.5
+   pat_light_tol_min  = 0.01
+   pat_light_tol_max  = 0.10
+   pat_light_tol_mult = (pat_light_tol_max/pat_light_tol_min)**exp_patfus
+   pat_light_mxd_fac  = 1.50
    !---------------------------------------------------------------------------------------!
 
-   niter_patfus       = 100
-   exp_patfus         = 1. / real(niter_patfus-1)
 
-   dark_cumlai_min    = 5.5
-   dark_cumlai_max    = 8.0
-   sunny_cumlai_min   = 0.1
-   sunny_cumlai_max   = 0.3
-   light_toler_min    = 0.01
-   light_toler_max    = onethird
+   !----- Maximum age difference allowed for two patches being considered same age [yr]. --!
+   pat_diff_age_tol   = 0.999 / 12.
+   !---------------------------------------------------------------------------------------!
 
-   sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
-   dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
-   light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
-
-   fuse_relax        = .false.
 
    !---------------------------------------------------------------------------------------!
    !      Coefficient of correlation assumed between two patches and cohorts that are      !

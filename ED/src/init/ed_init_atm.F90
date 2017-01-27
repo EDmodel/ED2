@@ -485,7 +485,7 @@ subroutine ed_init_atm()
             end do siteloop3
 
             write(unit = *                                                                 &
-                 ,fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i4,1x))')  &
+                 ,fmt  = '(2(a,1x,i6,1x),2(a,1x,f9.4,1x),2(a,1x,f7.2,1x),2(a,1x,i6,1x))')  &
                      'Grid:',igr,'Poly:',ipy,'Lon:',cgrid%lon(ipy),'Lat: ',cgrid%lat(ipy)  &
                     ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                           &
                     ,'NPatches:',npatches,'NCohorts:',ncohorts

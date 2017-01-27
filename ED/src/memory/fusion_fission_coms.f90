@@ -40,15 +40,14 @@ module fusion_fission_coms
    real    :: coh_tolerance_max
 
    !---- Patch fusion variables. ----------------------------------------------------------!
-   real :: dark_cumlai_min
-   real :: dark_cumlai_max
-   real :: sunny_cumlai_min
-   real :: sunny_cumlai_max
-   real :: dark_cumlai_mult
-   real :: sunny_cumlai_mult
-   real :: light_toler_min
-   real :: light_toler_max
-   real :: light_toler_mult
+   real :: pat_light_ext        ! Extinction coefficient for patch fusion.  This is more
+                                !    like ED-1.0, but for simplicity we compare patch 
+                                !    similarity using Beer's law. 
+   real :: pat_light_tol_min    ! Minimum tolerance for patch light difference
+   real :: pat_light_tol_max    ! Maximum tolerance for patch light difference
+   real :: pat_light_tol_mult   ! Multiplier for the light tolerance
+   real :: pat_light_mxd_fac    ! Light tolerance for maximum deviation.
+   real :: pat_diff_age_tol     ! Maximum age difference to be considered same age [yr]
    !---------------------------------------------------------------------------------------!
 
    !----- Flag to allow a less strict fusion test for short cohorts. ----------------------!

@@ -1572,12 +1572,11 @@ do
       #------------------------------------------------------------------------------------#
 
 
-
-
       #----- Append job to submission list. -----------------------------------------------#
       srun="srun --nodes=1 --ntasks=1"
       srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
       srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
+      srun="${srun} --job-name=${polyname}"
       srun="${srun} --chdir=\${here}/${polyname}"
       srun="${srun} --output=\${here}/${polyname}/serial_out.out"
       srun="${srun} --error=\${here}/${polyname}/serial_out.err"
