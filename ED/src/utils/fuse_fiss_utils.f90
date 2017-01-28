@@ -3775,6 +3775,62 @@ module fuse_fiss_utils
             end do mainfuseloop
             !------------------------------------------------------------------------------!
 
+
+
+            !------------------------------------------------------------------------------!
+            !      There is a chance that the fusion process will still allow a            !
+            ! significant information loss.  This could happen in case min_patch_area is   !
+            ! very large and the current tolerance settings didn't merge enough patches    !
+            ! that allowed most of the information to remain.  In case this happens, warn  !
+            ! the user.  In the extreme case in which all patches would be gone, stop the  !
+            ! run.                                                                         !
+            !------------------------------------------------------------------------------!
+            npatches_remain = count(fuse_table .and. csite%area >= min_patch_area)
+            area_remain     = sum(csite%area,mask=fuse_table)
+            if ( area_remain < pat_min_area_remain ) then
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               if (npatches_remain > 0) then
+                  write(unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING!'
+                  write(unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING!'
+                  write(unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING!'
+                  write(unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING!'
+                  write(unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING!'
+                  write(unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING!'
+               else
+                  write(unit=*,fmt='(a)') '   PROBLEM! PROBLEM! PROBLEM! PROBLEM! PROBLEM!'
+                  write(unit=*,fmt='(a)') '   PROBLEM! PROBLEM! PROBLEM! PROBLEM! PROBLEM!'
+                  write(unit=*,fmt='(a)') '   PROBLEM! PROBLEM! PROBLEM! PROBLEM! PROBLEM!'
+                  write(unit=*,fmt='(a)') '   PROBLEM! PROBLEM! PROBLEM! PROBLEM! PROBLEM!'
+                  write(unit=*,fmt='(a)') '   PROBLEM! PROBLEM! PROBLEM! PROBLEM! PROBLEM!'
+                  write(unit=*,fmt='(a)') '   PROBLEM! PROBLEM! PROBLEM! PROBLEM! PROBLEM!'
+               end if
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               write(unit=*,fmt='(a)') ' This simulation has too many tiny patches.'
+               write(unit=*,fmt='(a)') ' Significant amount of information may be lost.'
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)'  ) ' NPATCHES  (ORIG)   =',csite%npatches
+               write(unit=*,fmt='(a,1x,i6)'  ) ' NPATCHES  (REMAIN) =',npatches_remain
+               write(unit=*,fmt='(a,1x,f9.5)') ' SITE AREA (REMAIN) =',area_remain
+               write(unit=*,fmt='(a,1x,f9.5)') ' MIN. SITE AREA OK  =',pat_min_area_remain
+               write(unit=*,fmt='(a,1x,f9.5)') ' MIN. PATCH AREA    =',min_patch_area
+               write(unit=*,fmt='(a,1x,f9.5)') ' MIN. LIGHT TOL.    =',pat_light_tol_min
+               write(unit=*,fmt='(a,1x,f9.5)') ' MAX. LIGHT TOL.    =',pat_light_tol_max
+               write(unit=*,fmt='(a,1x,f9.4)') ' DEVIATION FACTOR   =',pat_light_mxd_fac
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               write(unit=*,fmt='(a)') ' Consider making min_patch_area smaller, or change'
+               write(unit=*,fmt='(a)') ' patch fusion parameters.'
+               write(unit=*,fmt='(a)') '--------------------------------------------------'
+               
+               if (npatches_remain == 0) then
+                  call fatal_error('Patch fusion was going to terminate all patches'       &
+                                  ,'fuse_patches','fuse_fiss_utils.f90')
+               end if
+            end if 
+            !------------------------------------------------------------------------------!
+
+
+
+
             !----- Set the number of patches in the site to "npatches_new" ----------------!
             tempsite%npatches = npatches_new
             !------------------------------------------------------------------------------!
