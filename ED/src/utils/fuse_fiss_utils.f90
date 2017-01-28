@@ -2911,7 +2911,8 @@ module fuse_fiss_utils
       type(patchtype)       , pointer     :: donpatch        ! Donor patch
       type(patchtype)       , pointer     :: recpatch        ! Receptor patch
       type(sitetype)        , pointer     :: tempsite        ! Temporary site
-      logical, dimension(:) , allocatable :: fuse_table      ! Flag: this will remain.
+      logical, dimension(:) , allocatable :: fuse_table      ! Flag: still can be fused.
+      logical, dimension(:) , allocatable :: remain          ! Flag: will remain
       character(len=str_len)              :: fuse_fout       ! Filename for detailed output
       integer                             :: ipy             ! Counters
       integer                             :: isi             ! Counters
@@ -3060,6 +3061,7 @@ module fuse_fiss_utils
             allocate(tempsite)
             call allocate_sitetype(tempsite, csite%npatches)
             allocate(fuse_table(csite%npatches))
+            allocate(remain(csite%npatches))
 
             !------------------------------------------------------------------------------!
             !     Allocate the fusion flag vector, and set all elements to .true., which   !
@@ -3067,6 +3069,7 @@ module fuse_fiss_utils
             ! switch the flag to false.                                                    !
             !------------------------------------------------------------------------------!
             fuse_table(:) = .true.
+            remain    (:) = fuse_table(:) .and. csite%area(:) >= min_patch_area
             !------------------------------------------------------------------------------!
 
 
@@ -3476,8 +3479,9 @@ module fuse_fiss_utils
                   ! but we must check for when the initial conditions have a sheer number  !
                   ! of patches.                                                            !
                   !------------------------------------------------------------------------!
-                  npatches_remain = count(fuse_table .and. csite%area >= min_patch_area)
-                  area_remain     = sum(csite%area,mask=fuse_table)
+                  remain(:)       = fuse_table(:) .and. csite%area(:) >= min_patch_area
+                  npatches_remain = count(remain)
+                  area_remain     = sum(csite%area,mask=remain)
                   if ( npatches_remain <= abs(maxpatch) .and.                              &
                        area_remain     >= pat_min_area_remain ) exit mainfuseloopa
                   !------------------------------------------------------------------------!
@@ -3760,8 +3764,9 @@ module fuse_fiss_utils
                ! but we must check for when the initial conditions have a sheer number     !
                ! of patches.                                                               !
                !---------------------------------------------------------------------------!
-               npatches_remain = count(fuse_table .and. csite%area >= min_patch_area)
-               area_remain     = sum(csite%area,mask=fuse_table)
+               remain(:)       = fuse_table(:) .and. csite%area(:) >= min_patch_area
+               npatches_remain = count(remain)
+               area_remain     = sum(csite%area,mask=remain)
                if ( npatches_remain <= abs(maxpatch) .and.                                 &
                     area_remain     >= pat_min_area_remain ) exit mainfuseloop
                !---------------------------------------------------------------------------!
@@ -3785,8 +3790,9 @@ module fuse_fiss_utils
             ! the user.  In the extreme case in which all patches would be gone, stop the  !
             ! run.                                                                         !
             !------------------------------------------------------------------------------!
-            npatches_remain = count(fuse_table .and. csite%area >= min_patch_area)
-            area_remain     = sum(csite%area,mask=fuse_table)
+            remain(:)       = fuse_table(:) .and. csite%area(:) >= min_patch_area
+            npatches_remain = count(remain)
+            area_remain     = sum(csite%area,mask=remain)
             if ( area_remain < pat_min_area_remain ) then
                write(unit=*,fmt='(a)') '--------------------------------------------------'
                if (npatches_remain > 0) then
@@ -3865,8 +3871,9 @@ module fuse_fiss_utils
 
 
             !----- Deallocation should happen outside the "if" statement ------------------!
-            deallocate(tempsite)
+            deallocate(tempsite  )
             deallocate(fuse_table)
+            deallocate(remain    )
             !------------------------------------------------------------------------------!
 
 
