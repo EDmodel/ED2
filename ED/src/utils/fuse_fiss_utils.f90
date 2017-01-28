@@ -2884,8 +2884,10 @@ module fuse_fiss_utils
                                      , pat_light_tol_mult  & ! intent(in)
                                      , pat_light_mxd_fac   & ! intent(in)
                                      , pat_diff_age_tol    & ! intent(in)
+                                     , pat_min_area_remain & ! intent(in)
                                      , min_oldgrowth       & ! intent(in)
                                      , fuse_prefix         ! ! intent(in)
+      use disturb_coms        , only : min_patch_area      ! ! intent(in)
       use ed_max_dims         , only : n_pft               & ! intent(in)
                                      , str_len             ! ! intent(in)
       use mem_polygons        , only : maxpatch            & ! intent(in)
@@ -2923,6 +2925,10 @@ module fuse_fiss_utils
       integer                             :: don_lu          ! Land use of donor patch
       integer                             :: ihgt            ! Counters
       integer                             :: ifus            ! Counters
+      integer                             :: npatches_remain ! # of patches that will remain
+                                                             !   (i.e. excluding patches 
+                                                             !   with small area that will
+                                                             !   be terminated)
       integer                             :: npatches_new    ! New # of patches
       integer                             :: npatches_old    ! Old # of patches
       integer                             :: npatches_orig   ! Original # of patches
@@ -2936,6 +2942,10 @@ module fuse_fiss_utils
       logical                             :: same_age        ! Patches with same age
       logical                             :: same_lu         ! Patches with same age
       logical                             :: old_or_same_lu  ! Old patches or the same LU.
+      real                                :: area_remain     ! Area of patches that will 
+                                                             !    remain (i.e. excluding 
+                                                             !    patches  with small area 
+                                                             !    that will be terminated)
       real                                :: age_diff        ! Age difference.
       real                                :: llevel_diff     ! Absolute difference in prof.
       real                                :: llevel_diff_max ! Maximum llevel_diff
@@ -3240,8 +3250,8 @@ module fuse_fiss_utils
 
                mainfuseloopa: do ifus=0,niter_patfus
 
-                  npatches_old = count(fuse_table)
-                  npatches_new = npatches_old
+                  npatches_old    = count(fuse_table)
+                  npatches_new    = npatches_old
 
                   !------------------------------------------------------------------------!
                   !    Inform that the upcoming fusions are going to be with populated     !
@@ -3455,16 +3465,21 @@ module fuse_fiss_utils
                         exit recloopa
                      end do recloopa
                      !---------------------------------------------------------------------!
-                 end do donloopa
-                 !-------------------------------------------------------------------------!
+                  end do donloopa
+                  !------------------------------------------------------------------------!
 
                   !------------------------------------------------------------------------!
-                  !      Check how many patches are valid.  If the total number of patches !
-                  ! is less than the target, or if we have reached the maximum tolerance   !
-                  ! and the patch fusion still can't find similar patches, we quit the     !
-                  ! fusion loop.                                                           !
+                  !      Check how many patches are valid and the original area that will  !
+                  ! remain after patch termination.  We leave the loop when we have a      !
+                  ! sufficient number of patches that will remain, and a sufficient area   !
+                  ! that will be still represented.  Normally the second criterion is met, !
+                  ! but we must check for when the initial conditions have a sheer number  !
+                  ! of patches.                                                            !
                   !------------------------------------------------------------------------!
-                  if (npatches_new <= abs(maxpatch)) exit mainfuseloopa
+                  npatches_remain = count(fuse_table .and. csite%area >= min_patch_area)
+                  area_remain     = sum(csite%area,mask=fuse_table)
+                  if ( npatches_remain <= abs(maxpatch) .and.                              &
+                       area_remain     >= pat_min_area_remain ) exit mainfuseloopa
                   !------------------------------------------------------------------------!
 
 
@@ -3738,15 +3753,24 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
-               !      Check how many patches are valid.  If the total number of patches is !
-               ! less than the target, or if we have reached the maximum tolerance and the !
-               ! patch fusion still can't find similar patches, we quit the fusion loop.   !
+               !      Check how many patches are valid and the original area that will     !
+               ! remain after patch termination.  We leave the loop when we have a         !
+               ! sufficient number of patches that will remain, and a sufficient area      !
+               ! that will be still represented.  Normally the second criterion is met,    !
+               ! but we must check for when the initial conditions have a sheer number     !
+               ! of patches.                                                               !
                !---------------------------------------------------------------------------!
-               if (npatches_new <= abs(maxpatch))  exit mainfuseloop
+               npatches_remain = count(fuse_table .and. csite%area >= min_patch_area)
+               area_remain     = sum(csite%area,mask=fuse_table)
+               if ( npatches_remain <= abs(maxpatch) .and.                                 &
+                    area_remain     >= pat_min_area_remain ) exit mainfuseloop
                !---------------------------------------------------------------------------!
+
+
 
                !----- Increment tolerance -------------------------------------------------!
                pat_light_tol = pat_light_tol * pat_light_tol_mult
+               pat_light_mxd = pat_light_tol * pat_light_mxd_fac
                !---------------------------------------------------------------------------!
             end do mainfuseloop
             !------------------------------------------------------------------------------!

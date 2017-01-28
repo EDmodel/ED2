@@ -50,6 +50,16 @@ module fusion_fission_coms
    real :: pat_diff_age_tol     ! Maximum age difference to be considered same age [yr]
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum area to remain resolved.  This condition is normally met, except when    !
+   ! initialising the simulation with massive amount of data (like airborne lidar data).   !
+   !---------------------------------------------------------------------------------------!
+   real    :: pat_min_area_remain
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Flag to allow a less strict fusion test for short cohorts. ----------------------!
    logical :: fuse_relax
 

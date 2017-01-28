@@ -5186,6 +5186,7 @@ subroutine init_ff_coms
                                  , pat_light_tol_mult        & ! intent(out)
                                  , pat_light_mxd_fac         & ! intent(out)
                                  , pat_diff_age_tol          & ! intent(out)
+                                 , pat_min_area_remain       & ! intent(out)
                                  , fuse_relax                & ! intent(out)
                                  , corr_patch                & ! intent(out)
                                  , corr_cohort               & ! intent(out)
@@ -5241,6 +5242,15 @@ subroutine init_ff_coms
 
    !----- Maximum age difference allowed for two patches being considered same age [yr]. --!
    pat_diff_age_tol   = 0.999 / 12.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Minimum area to remain resolved.  This condition is normally met, except when    !
+   ! initialising the simulation with massive amount of data (like airborne lidar data).   !
+   !---------------------------------------------------------------------------------------!
+   pat_min_area_remain = 0.95
    !---------------------------------------------------------------------------------------!
 
 
