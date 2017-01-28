@@ -3543,9 +3543,10 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   recp_found = .false.
                   recloopp: do recp=donp-1,1,-1
-                     rec_lu  = csite%dist_type(recp)
-                     rec_old = csite%age(recp) >= min_oldgrowth(rec_lu)
-                     rec_pop = recpatch%ncohorts > 0 
+                     recpatch => csite%patch(recp)
+                     rec_lu   = csite%dist_type(recp)
+                     rec_old  = csite%age(recp) >= min_oldgrowth(rec_lu)
+                     rec_pop  = recpatch%ncohorts > 0 
 
                      old_or_same_lu =   don_lu == rec_lu .or. ( don_old .and. rec_old)
 
