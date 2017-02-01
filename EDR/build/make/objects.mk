@@ -2,7 +2,7 @@
 
 # Define main source.
 
-MAIN = $(ED_DRIVER)/edmain.F90
+MAIN = $(EDR_DRIVER)/edmain.F90
 MAINOBJ = edmain.o
 
 
