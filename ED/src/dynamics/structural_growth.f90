@@ -975,58 +975,44 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
          ! form to constrain this throughout the season - also consider moving this to     !
          ! growth_balive since it isn't actually structural growth                         !
          !---------------------------------------------------------------------------------!
-         if (is_grass(ipft)) then
-            select case(igrass)
-            case (0)
-               !----- Bonsai grasses. -----------------------------------------------------!
-               if (dbh >= dbh_crit(ipft)) then
-                  !------------------------------------------------------------------------!
-                  !    Grasses have reached the maximum height, stop growing in size and   !
-                  ! send everything to reproduction.                                       !
-                  !------------------------------------------------------------------------!
-                  f_bseeds = 1.0 - st_fract(ipft)
-               elseif (hite <= repro_min_h(ipft)) then
-                  !----- The plant is too short, invest as much as it can in growth. ------!
-                  f_bseeds = 0.0
-               else
-                  !----- Medium-sized bonsai, use prescribed reproduction rate. -----------!
-                  f_bseeds = r_fract(ipft)
-               end if
-               f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+         if (is_grass(ipft) .and. igrass == 1) then
+            !----- New grasses. -----------------------------------------------------------!
+            if ( hite >= (1.0-epsilon(1.)) * hgt_max(ipft)) then 
                !---------------------------------------------------------------------------!
-
-
-            case (1) 
-               !----- New grasses loop. ---------------------------------------------------!
-               if ((hite * (1 + 1.0e-4)) >= hgt_max(ipft)) then 
-                  !------------------------------------------------------------------------!
-                  !   Grasses have reached the maximum height, stop growing in size and    !
-                  ! send everything to reproduction.                                       !
-                  !------------------------------------------------------------------------!
-                  f_bseeds = 1.0 - st_fract(ipft)
-               elseif ((hite * (1 + epsilon(1.))) <= repro_min_h(ipft)) then
-                  !----- The plant is too short, invest as much as it can in growth. ------!
-                  f_bseeds = 0.0
-               else ! repro_min_h < hite< hgt_max
-                  !----- Medium-sized grass, use prescribed reproduction rate. ------------!
-                  f_bseeds = r_fract(ipft)
-               end if
-               f_bdead  = 0.0
-            end select
+               !   Grasses have reached the maximum height, stop growing in size and send  !
+               ! everything to reproduction.                                               !
+               !---------------------------------------------------------------------------!
+               f_bseeds = 1.0 - st_fract(ipft)
+               !---------------------------------------------------------------------------!
+            elseif (hite < ((1.0-epsilon(1.))*repro_min_h(ipft))) then
+               !----- The plant is too short, invest as much as it can in growth. ---------!
+               f_bseeds = 0.0
+               !---------------------------------------------------------------------------!
+            else ! repro_min_h < hite< hgt_max
+               !----- Medium-sized grass, use prescribed reproduction rate. ---------------!
+               f_bseeds = r_fract(ipft)
+               !---------------------------------------------------------------------------!
+            end if
+            f_bdead  = 0.0
             !------------------------------------------------------------------------------!
 
-         elseif (hite <= repro_min_h(ipft)) then
+         elseif (hite < (1.0-epsilon(1.))*repro_min_h(ipft)) then
             !----- The tree is too short, invest as much as it can in growth. -------------!
             f_bseeds = 0.0
             f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+            !------------------------------------------------------------------------------!
          else
             !----- Medium-sized tree, use prescribed reproduction rate. -------------------!
             f_bseeds = r_fract(ipft)
             f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+            !------------------------------------------------------------------------------!
          end if
-      else  !-- Plant should not allocate carbon to seeds or grow new biomass. ------------!
+         !---------------------------------------------------------------------------------!
+      else  
+         !----- Plant should not allocate carbon to seeds or grow new biomass. ------------!
          f_bdead  = 0.0
          f_bseeds = 0.0
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
    case (1)

@@ -3726,7 +3726,7 @@ subroutine init_pft_repro_params()
    st_fract(6:11)          = 0.0
    st_fract(12:15)         = 0.0
    st_fract(16)            = 0.0
-   st_fract(17)            = 0.0
+   st_fract(17)            = 0.1
 
    nonlocal_dispersal(1)   =  1.000 ! 1.000
    nonlocal_dispersal(2)   =  1.000 ! 0.900
