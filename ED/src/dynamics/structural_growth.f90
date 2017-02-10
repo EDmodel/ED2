@@ -914,8 +914,9 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
                             , hgt_max      & ! intent(in)
                             , is_grass     ! ! intent(in)
    use ed_misc_coms  , only : current_time & ! intent(in)
-                            , igrass       ! ! intent(in)
-   use ed_misc_coms  , only : ibigleaf     ! ! intent(in)
+                            , igrass       & ! intent(in)
+                            , ibigleaf     ! ! intent(in)
+   use consts_coms   , only : r_tol_trunc  ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer          , intent(in)  :: ipft
@@ -977,14 +978,14 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
          !---------------------------------------------------------------------------------!
          if (is_grass(ipft) .and. igrass == 1) then
             !----- New grasses. -----------------------------------------------------------!
-            if ( hite >= (1.0-epsilon(1.)) * hgt_max(ipft)) then 
+            if ( hite >= (1.0-r_tol_trunc) * hgt_max(ipft)) then 
                !---------------------------------------------------------------------------!
                !   Grasses have reached the maximum height, stop growing in size and send  !
                ! everything to reproduction.                                               !
                !---------------------------------------------------------------------------!
                f_bseeds = 1.0 - st_fract(ipft)
                !---------------------------------------------------------------------------!
-            elseif (hite < ((1.0-epsilon(1.))*repro_min_h(ipft))) then
+            elseif (hite < ( (1.0-r_tol_trunc) * repro_min_h(ipft) ) ) then
                !----- The plant is too short, invest as much as it can in growth. ---------!
                f_bseeds = 0.0
                !---------------------------------------------------------------------------!
@@ -996,7 +997,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
             f_bdead  = 0.0
             !------------------------------------------------------------------------------!
 
-         elseif (hite < (1.0-epsilon(1.))*repro_min_h(ipft)) then
+         elseif (hite < ((1.0-r_tol_trunc) * repro_min_h(ipft))) then
             !----- The tree is too short, invest as much as it can in growth. -------------!
             f_bseeds = 0.0
             f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 

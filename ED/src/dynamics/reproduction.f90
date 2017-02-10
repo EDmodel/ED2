@@ -259,7 +259,7 @@ subroutine reproduction(cgrid, month)
                      !---------------------------------------------------------------------!
                      select case (repro_scheme)
                      case (3)
-                        if ( rec_biomass              >  min_recruit_size(ipft) .and.      &
+                        if ( rec_biomass              >=  min_recruit_size(ipft) .and.     &
                              rectest%phenology_status == 0                      ) then
 
                            !----- Add new recruit. ----------------------------------------!
@@ -274,7 +274,7 @@ subroutine reproduction(cgrid, month)
                         !------------------------------------------------------------------!
 
                      case default
-                        if (rec_biomass > min_recruit_size(ipft)) then
+                        if (rec_biomass >= min_recruit_size(ipft)) then
 
                            !----- Add new recruit. ----------------------------------------!
                            inew = inew + 1

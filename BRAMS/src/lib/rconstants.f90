@@ -321,6 +321,19 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   !     Tolerance for truncation errors.  "s" are the strict tolerance (literally the     !
+   ! machine epsilon), whereas the "r" are the relaxed tolerance (the square root of the   !
+   ! strict tolerance).                                                                    !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: s_tol_trunc  = epsilon(1.)
+   real(kind=4), parameter :: r_tol_trunc  = 100. * s_tol_trunc
+   real(kind=8), parameter :: s_tol_trunc8 = epsilon(1.d0)
+   real(kind=8), parameter :: r_tol_trunc8 = 1.d2 * s_tol_trunc8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Carbon-related unit conversions.                                                  !
    !---------------------------------------------------------------------------------------!
    real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
