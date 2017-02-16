@@ -25,11 +25,25 @@ module canopy_radiation_coms
 
 
    !---------------------------------------------------------------------------------------!
-   ! IHRZRAD -- Specifies how horizontal canopy radiation is solved.                       !
-   !            0.  Default ED-2.0: no horizontal patch shading.                           !
-   !            1.  Crown closure modifies the total incident light the the top cohort     !
-   !                receives based on the probability of being next to a taller or shorter !
-   !                patch.                                                                 !
+   ! IHRZRAD      -- Specifies how horizontal canopy radiation is solved.                  !
+   !                 0.  Default ED-2.0: no horizontal patch shading.  All patches receive !
+   !                     the same amount of light at the top.                              !
+   !                 1.  A realized map of the plant community is built by randomly        !
+   !                     assigning gaps associated with gaps (number of gaps proportional  !
+   !                     to the patch area), and populating them with individuals,         !
+   !                     respecting the cohort distribution in each patch.  The crown      !
+   !                     closure index is calculated for the entire landscape and used     !
+   !                     to change the amount of direct light reaching the top of the      !
+   !                     canopy.  Patches are then split into 1-3 patches based on the     !
+   !                     light condition (so expect simulations to be slower).  This       !
+   !                     method is under development, suggestions on how to improve are    !
+   !                     welcome.                                                          !
+   !                 2.  Similar to option 1, except that height for trees with DBH >      !
+   !                     DBH_crit are rescaled to calculate CCI.                           !
+   !                 3.  Dummy horizontal canopy radiation.  This applies the same method  !
+   !                     as 1 and 2 to split patches, but it does not change radiation     !
+   !                     reaching the top of the canopy.  This is only useful to isolate   !
+   !                     the effect of heterogeneous illumination from the patch count.    !
    !---------------------------------------------------------------------------------------!
    integer :: ihrzrad
    !---------------------------------------------------------------------------------------!
@@ -232,6 +246,7 @@ module canopy_radiation_coms
    real(kind=4)    :: cci_gapsize  ! Gap size                                      [     m]
    real(kind=4)    :: cci_gapmin   ! # of gaps associated with the smallest area   [   ---]
    integer         :: cci_nretn    ! "Return density" to generate the TCH map      [  1/m2]
+   real(kind=4)    :: cci_hmax     ! Maximum height allowed in the CCI scheme      [     m]
    !---------------------------------------------------------------------------------------!
 
 

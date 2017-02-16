@@ -244,6 +244,7 @@ module hrzshade_utils
                                        , cci_gapsize         & ! intent(in)
                                        , cci_gapmin          & ! intent(in)
                                        , cci_nretn           & ! intent(in)
+                                       , cci_hmax            & ! intent(in)
                                        , rls_nxy             & ! intent(in)
                                        , rls_npixel          & ! intent(in)
                                        , rls_ngap            & ! intent(in)
@@ -275,6 +276,7 @@ module hrzshade_utils
                                        , runif_sca           & ! function
                                        , ipickone            & ! function
                                        , fpickone            ! ! function
+      use pft_coms              , only : dbh_crit            ! ! intent(in)
       use consts_coms           , only : pii                 & ! intent(in)
                                        , twopi               & ! intent(in)
                                        , onethird            & ! intent(in)
@@ -293,6 +295,7 @@ module hrzshade_utils
       integer     , dimension(:)  , allocatable :: ipa_ngaps   ! Sequential
       integer     , dimension(:)  , allocatable :: ipa_seq     ! Sequential
       integer     , dimension(:)  , allocatable :: ipa_shf     ! Shuffler
+      integer                                   :: ipft        ! PFT counter
       integer                                   :: ico         ! Cohort counter
       integer                                   :: igp         ! Gap counter
       integer                                   :: iii         ! Aux counter
@@ -310,6 +313,7 @@ module hrzshade_utils
       real(kind=4), dimension(:,:), allocatable :: fbeam_ipa   ! Absorption at the top
       real(kind=4)                              :: a_ptc       ! Angle of point
       real(kind=4)                              :: ca_ind      ! Crown area
+      real(kind=4)                              :: hgt_eff     ! Effective height
       real(kind=4)                              :: rh_ind      ! Crown horizontal radius
       real(kind=4)                              :: rh_ptc      ! Hor. radius of the point
       real(kind=4)                              :: rv_ind      ! Crown vertical radius
@@ -506,12 +510,26 @@ module hrzshade_utils
 
          !----- Loop through all cohorts. -------------------------------------------------!
          cohloop: do ico=1,cpatch%ncohorts
+            ipft = cpatch%pft(ico)
+         
+            !----- Decide the height based on ihrzrad. ------------------------------------!
+            select case (ihrzrad)
+            case (2)
+               hgt_eff = min( cci_hmax , cpatch%hite(ico)                                  &
+                            * (max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft))** 2)
+            case default
+               hgt_eff = cpatch%hite(ico)
+            end select
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Find horizontal and vertical radii. ------------------------------------!
             ca_ind = dbh2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)               &
                            ,cpatch%pft(ico))
             rh_ind = sqrt(ca_ind * pii)
-            rv_ind = 0.5 * ( cpatch%hite(ico) - h2crownbh(cpatch%hite(ico),cpatch%pft(ico)))
+            rv_ind = 0.5 * hgt_eff                                                         &
+                   * ( 1.0 - h2crownbh(cpatch%hite(ico),cpatch%pft(ico))/cpatch%hite(ico))
             !------------------------------------------------------------------------------!
 
 
@@ -535,7 +553,7 @@ module hrzshade_utils
                   rv_ptc          = rv_ind * sqrt(1.0-rh_ptc*rh_ptc/(rh_ind*rh_ind))
                   x_ptc           = modulo(x_ind + rh_ptc * cos(a_ptc),rls_length)
                   y_ptc           = modulo(y_ind + rh_ptc * sin(a_ptc),rls_length)
-                  z_ptc           = cpatch%hite(ico) - rv_ind + rv_ptc
+                  z_ptc           = hgt_eff - rv_ind + rv_ptc
                   ix              = 1 + modulo(floor(x_ptc/cci_pixres),rls_nxy)
                   iy              = 1 + modulo(floor(y_ptc/cci_pixres),rls_nxy)
                   !------------------------------------------------------------------------!
@@ -618,61 +636,26 @@ module hrzshade_utils
       !      Aggregate the illumination factor differently depending on ihrzrad.           !
       !------------------------------------------------------------------------------------!
       if (verbose) write(unit=*,fmt='(a)') '    -> Aggregate illumination factor...'
-      select case (ihrzrad)
-      case (1)
-         !---------------------------------------------------------------------------------!
-         !    Gap illumination factor is going to be proportional to the gap average.      !
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     First step: add fbeam and count pixels.                                     !
-         !---------------------------------------------------------------------------------!
-         do iy=1,rls_nxy
-            do ix=1,rls_nxy
-               igp            = rls_igp(ix,iy)
-               gap_fbeam(igp) = gap_fbeam(igp) + rls_fbeam(ix,iy)
-               gap_nuse (igp) = gap_nuse (igp) + 1
-            end do
-         end do
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Average by gap.  In the unlikely case that a gap is completely suppressed,  !
-         ! we assign the minimum value at pixel level (minval(rls_fbeam)).                 !
-         !---------------------------------------------------------------------------------!
-         min_fbeam = minval(rls_fbeam)
-         where (gap_nuse(:) > 0)
-            gap_fbeam(:) = gap_fbeam(:) / gap_nuse(:)
-         elsewhere
-            gap_fbeam(:) = min_fbeam
-         end where
-         !---------------------------------------------------------------------------------!
-
-      case default
-         !---------------------------------------------------------------------------------!
-         !    Gap illumination factor is going to be proportional to the gap maximum.  In  !
-         ! case the gap was completely suppressed, we take the minimum value at pixel      !
-         ! scale (minval(rls_fbeam)).                                                      !
-         !---------------------------------------------------------------------------------!
-         min_fbeam = minval(rls_fbeam)
-         do igp=1,rls_ngap
-            rls_mask   (:,:) = rls_igp(:,:) == igp
-            !----- Check whether any pixel still belongs to the gap. ----------------------!
-            if (any(rls_mask)) then
-               !----- Yes, take the highest value. ----------------------------------------!
-               gap_fbeam(igp) = maxval(rls_fbeam,mask=rls_mask)
-               !---------------------------------------------------------------------------!
-            else
-               !----- No, take the minimum pixel value. -----------------------------------!
-               gap_fbeam(igp) = min_fbeam
-               !---------------------------------------------------------------------------!
-            end if
+      !------------------------------------------------------------------------------------!
+      !    Gap illumination factor is going to be proportional to the gap maximum.  In     !
+      ! case the gap was completely suppressed, we take the minimum value at pixel scale   !
+      ! (minval(rls_fbeam)).                                                               !
+      !------------------------------------------------------------------------------------!
+      min_fbeam = minval(rls_fbeam)
+      do igp=1,rls_ngap
+         rls_mask   (:,:) = rls_igp(:,:) == igp
+         !----- Check whether any pixel still belongs to the gap. -------------------------!
+         if (any(rls_mask)) then
+            !----- Yes, take the highest value. -------------------------------------------!
+            gap_fbeam(igp) = maxval(rls_fbeam,mask=rls_mask)
             !------------------------------------------------------------------------------!
-         end do 
+         else
+            !----- No, take the minimum pixel value. --------------------------------------!
+            gap_fbeam(igp) = min_fbeam
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
-      end select
+      end do 
       !------------------------------------------------------------------------------------!
 
 
@@ -797,11 +780,25 @@ module hrzshade_utils
                                              ,'   CAN_DEPTH'
          do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
-            if (cpatch%ncohorts == 0) then
-               patch_tch = 0.
-            else
-               patch_tch = maxval(cpatch%hite)
-            end if
+            patch_tch = 0.
+
+            !----- Find TCH. --------------------------------------------------------------!
+            tchloop: do ico=1,cpatch%ncohorts
+               ipft = cpatch%pft(ico)
+            
+               !----- Decide the height based on ihrzrad. ---------------------------------!
+               select case (ihrzrad)
+               case (2)
+                  hgt_eff = min( cci_hmax , cpatch%hite(ico)                               &
+                               * (max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft))** 2)
+               case default
+                  hgt_eff = cpatch%hite(ico)
+               end select
+               !---------------------------------------------------------------------------!
+
+               patch_tch = max(patch_tch,hgt_eff)
+            end do tchloop
+            !------------------------------------------------------------------------------!
 
             do iii=1,3
                if (cciarea_ipa(iii,ipa) > 0.) then

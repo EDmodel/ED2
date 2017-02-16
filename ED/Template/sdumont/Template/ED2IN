@@ -870,9 +870,8 @@ $ED_NL
    !                     light condition (so expect simulations to be slower).  This       !
    !                     method is under development, suggestions on how to improve are    !
    !                     welcome.                                                          !
-   !                 2.  Similar to option 1, except that when the correction factor is    !
-   !                     aggregated for each gap, option 2 uses the maximum value instead  !
-   !                     of the mean.  This allows somewhat more variability               !
+   !                 2.  Similar to option 1, except that height for trees with DBH >      !
+   !                     DBH_crit are rescaled to calculate CCI.                           !
    !                 3.  Dummy horizontal canopy radiation.  This applies the same method  !
    !                     as 1 and 2 to split patches, but it does not change radiation     !
    !                     reaching the top of the canopy.  This is only useful to isolate   !

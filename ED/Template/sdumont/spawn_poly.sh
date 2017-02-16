@@ -55,6 +55,8 @@ toldef="0.01"
 execname="ed_2.1-opt"             # Normal executable, for most queues
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
+#----- Submit job automatically? (It may become false if something prevents submission). --#
+submit=false
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -289,7 +291,6 @@ echo "#----- Task list."                                                       >
 ff=0
 mc2=0
 n_submit=0
-submit=true
 while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1

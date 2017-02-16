@@ -13,12 +13,18 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
-here        = getwd()                           #   Current directory
-srcdir      = "/prj/prjidfca/marcosl/Util/Rsc"  #   Script directory
-ibackground = 0                                 # Make figures compatible to background
-                                                # 0 -- white
-                                                # 1 -- black
-                                                # 2 -- dark grey
+here        = getwd()                                       #   Current directory
+srcdir      = c( "/home/b14275/Util/Rsc"                    # Possible paths with libraries
+               , "/Users/mlongo/Util/Rsc"                   #    R will select the first
+               , "/prj/prjidfca/marcosl/Util/Rsc"           #    one that is found.
+               , "/prj/bramsolam/marcos.longo/Util/Rsc"     #
+               , "/scratch/bramsolam/marcos.longo/Util/Rsc" #
+               , "/n/home00/mlongo/util/Rsc"                #
+               )#end c                                      #
+ibackground = 0                                             # Sought background
+                                                            # 0 -- white
+                                                            # 1 -- black
+                                                            # 2 -- dark grey
 #----- Output directory -------------------------------------------------------------------#
 outroot = file.path(here,paste0("patch_comp_ibg",sprintf("%2.2i",ibackground)))
 #------------------------------------------------------------------------------------------#
@@ -39,6 +45,21 @@ emean.yeara = 2008  # First year
 emean.yearz = 2010  # Last year
 eshow.yeara = 2009  # First year to show
 eshow.yearz = 2009  # First year to show
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Quantiles that determine which patches to show.                                       #
+#------------------------------------------------------------------------------------------#
+qshow = c(0,0.25,0.50,0.75,1.00)
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Map settings. ----------------------------------------------------------------------#
+pat.min.area = 0.0025
+n.min.area   = 20
+dxy.gap      = 20
 #------------------------------------------------------------------------------------------#
 
 
@@ -70,7 +91,7 @@ eort       = "t"
 n          = 0
 sites      = list()
 n          = n + 1
-sites[[n]] = list( iata = "tnf"
+sites[[n]] = list( iata = "tnf_iage050"
                  , desc = "Tapajos National Forest"
                  , pch  =  5
                  , col  = "#A3CC52"
@@ -78,7 +99,7 @@ sites[[n]] = list( iata = "tnf"
                  , drya = "07/13"
                  , dryz = "11/21"
                  )#end list
-use.sites  = "tnf"
+use.sites  = TRUE
 #------------------------------------------------------------------------------------------#
 
 
@@ -92,198 +113,231 @@ n             = n + 1
 compvar[[ n]] = list( vnam     = "gpp"
                     , desc     = "Gross primary productivity"
                     , unit     = "kgcom2oyr"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "npp"
                     , desc     = "Net primary productivity"
                     , unit     = "kgcom2oyr"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "plant.resp"
                     , desc     = "Plant respiration"
                     , unit     = "kgcom2oyr"
+                    , cscheme  = "iclife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "cba"
                     , desc     = "Carbon balance"
                     , unit     = "kgcom2oyr"
+                    , cscheme  = "clife"
                     , qmean    = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "reco"
                     , desc     = "Ecosystem respiration"
                     , unit     = "kgcom2oyr"
+                    , cscheme  = "iclife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "nep"
                     , desc     = "Net Ecosystem Productivity"
                     , unit     = "kgcom2oyr"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "hflxca"
                     , desc     = "Sensible heat flux"
                     , unit     = "wom2"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "wflxca"
                     , desc     = "Water vapour flux"
                     , unit     = "kgwom2oday"
+                    , cscheme  = "ipanoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "transp"
                     , desc     = "Transpiration"
                     , unit     = "kgwom2oday"
+                    , cscheme  = "ipanoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "rshortup"
                     , desc     = "Upward SW radiation"
                     , unit     = "wom2"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "rlongup"
                     , desc     = "Upward LW radiation"
                     , unit     = "wom2"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "parup"
                     , desc     = "Upward PAR"
                     , unit     = "umolom2os"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.gnd"
                     , desc     = "Ground absorption - PAR"
                     , unit     = "umolom2os"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "rshort.gnd"
                     , desc     = "Ground absorption - SW"
                     , unit     = "umolom2os"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "sm.stress"
                     , desc     = "Soil moisture stress"
                     , unit     = "empty"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gpp"
                     , desc     = "Leaf GPP"
                     , unit     = "kgcom2loyr"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.temp"
                     , desc     = "Mean Leaf Temperature"
                     , unit     = "degC"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.vpd"
                     , desc     = "Mean Leaf VPD"
                     , unit     = "hpa"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gsw"
                     , desc     = "Stomatal conductance"
                     , unit     = "kgwom2loday"
+                    , cscheme  = "ipanoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf"
                     , desc     = "Leaf Absorption - PAR"
                     , unit     = "umolom2os"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf.beam"
                     , desc     = "Leaf Absorption - Direct PAR"
                     , unit     = "umolom2os"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf.diff"
                     , desc     = "Leaf Absorption - Diffuse PAR"
                     , unit     = "umolom2os"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par"
                     , desc     = "Norm. Leaf Absorption - PAR"
                     , unit     = "umolom2los"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par.beam"
                     , desc     = "Norm. Leaf Absorption - Direct PAR"
                     , unit     = "umolom2los"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par.diff"
                     , desc     = "Norm. Leaf Absorption - Diffuse PAR"
                     , unit     = "umolom2los"
+                    , cscheme  = "panoply"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.light"
                     , desc     = "Light-limited Assimilation"
                     , unit     = "umolom2los"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.rubp"
                     , desc     = "RuBP-limited Assimilation"
                     , unit     = "umolom2los"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.co2"
                     , desc     = "CO2-limited Assimilation"
                     , unit     = "umolom2los"
+                    , cscheme  = "clife"
                     , qmean    = TRUE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lpar"
                     , desc     = "Daytime PAR absorportion by leaves"
                     , unit     = "hpa"
+                    , cscheme  = "panoply"
                     , qmean    = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lvpd"
                     , desc     = "Daytime Leaf VPD"
                     , unit     = "hpa"
+                    , cscheme  = "panoply"
                     , qmean    = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.ltemp"
                     , desc     = "Daytime Leaf Temperature"
                     , unit     = "degC"
+                    , cscheme  = "panoply"
                     , qmean    = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.sms"
                     , desc     = "Daytime soil moisture stress"
                     , unit     = "empty"
+                    , cscheme  = "panoply"
                     , qmean    = FALSE
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lgsw"
                     , desc     = "Daytime stomatal conductance"
                     , unit     = "kgwom2loday"
+                    , cscheme  = "ipanoply"
                     , qmean    = FALSE
                     )#end list
 #------------------------------------------------------------------------------------------#
@@ -319,6 +373,7 @@ byeold            = TRUE                 # Remove old files of the given format?
 
 depth             = 300                  # PNG resolution, in pixels per inch
 paper             = "square"             # Paper size, to define the plot shape
+mpaper            = "double"             # Paper size for maps, to define the plot shape
 ptsz              = 17                   # Font size.
 f.leg             = 1/6                  # Factor to expand plot devices
 #------------------------------------------------------------------------------------------#
@@ -331,6 +386,14 @@ f.leg             = 1/6                  # Factor to expand plot devices
 plot.tseries    = c(FALSE,TRUE)[2]
 #------------------------------------------------------------------------------------------#
 
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Number of levels for colour palette.                                                #
+#------------------------------------------------------------------------------------------#
+ncolpal = 200
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -351,7 +414,12 @@ plot.tseries    = c(FALSE,TRUE)[2]
 
 
 #----- Load some packages. ----------------------------------------------------------------#
-source(file.path(srcdir,"load.everything.r"))
+if (any(file.exists(srcdir))){
+   srcdir = (srcdir[file.exists(srcdir)])[1]
+   source(file.path(srcdir,"load.everything.r"))
+}else{
+   stop("None of the paths provided in variable \"srcdir\" exists.")
+}#end if (any(file.exists(srcdir)))
 #------------------------------------------------------------------------------------------#
 
 
@@ -365,6 +433,17 @@ if (! file.exists(rdata.path)) dir.create(rdata.path)
 #------------------------------------------------------------------------------------------#
 
 
+
+#----- Count and configure quantiles. -----------------------------------------------------#
+nquant     = length(qshow)
+qkey.show  = paste0("q",sprintf("%3.3i",100.*qshow))
+qdesc.show = paste0("Quantile: ",100*qshow,"%")
+#------------------------------------------------------------------------------------------#
+
+
+#----- Number of breaks for colour palette. -----------------------------------------------#
+ncpbks     = ncolpal + 1
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
@@ -419,6 +498,13 @@ xsize   = plotsize(proje=FALSE,paper=paper,extendfc="lat",extfactor=f.ext)
 #------------------------------------------------------------------------------------------#
 
 
+
+#----- Define plot window size ------------------------------------------------------------#
+f.ext   = f.leg / (2. - f.leg)
+msize   = plotsize(proje=FALSE,paper=mpaper,extendfc="lon",extfactor=f.ext/2)
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #      Define some utility functions to determine derived patch variables.                 #
 #------------------------------------------------------------------------------------------#
@@ -436,11 +522,13 @@ outsimul = file.path(outroot,sim.suffix)
 outymean = file.path(outsimul,"tseries_ymean")
 outemean = file.path(outsimul,"tseries_emean")
 outqmean = file.path(outsimul,"tseries_qmean")
+outmmean = file.path(outsimul,"maps_emean")
 if (! file.exists(outroot )) dir.create(outroot )
 if (! file.exists(outsimul)) dir.create(outsimul)
 if (! file.exists(outymean)) dir.create(outymean)
 if (! file.exists(outemean)) dir.create(outemean)
 if (! file.exists(outqmean)) dir.create(outqmean)
+if (! file.exists(outmmean)) dir.create(outmmean)
 #------------------------------------------------------------------------------------------#
 
 
@@ -450,6 +538,15 @@ if (! file.exists(outqmean)) dir.create(outqmean)
 #      Find limits for final display.                                                      #
 #------------------------------------------------------------------------------------------#
 when.show = chron(paste(c(1,12),c(1,1),c(eshow.yeara,eshow.yearz),sep="/"))
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Map settings. ----------------------------------------------------------------------#
+n.xy     = ceiling(sqrt(n.min.area / pat.min.area))
+n.gaps   = n.xy*n.xy
+xy.gaps  = (sequence(n.xy)-0.5)*dxy.gap
+xy.range = c(0,n.xy+1)*dxy.gap
 #------------------------------------------------------------------------------------------#
 
 
@@ -539,16 +636,28 @@ for (s in loop.sites){
 
 
    #----- Read in the patch table. --------------------------------------------------------#
-   test.ptable = file.path( test.path
-                          , paste0(c("pix","gap"),"_ptable_isi001_",emean.yeara,"-01.txt")
-                          )#end file.path
-   test.ptable = test.ptable[file.exists(test.ptable)]
-   if (length(test.ptable) != 1) stop(" Problems with test.ptable file name!!!")
-   cat0("      # Test table: ",basename(test.name),"...")
-   ptable        = read.table(test.ptable,header=TRUE)
+   base.ptable     = paste0("pix_ptable_isi001_",emean.yeara,"-01.txt")
+   test.ptable     = file.path( test.path,"shade",base.ptable)
+   test.ptable.bz2 = paste0(test.ptable,".bz2")
+   test.ptable.gz  = paste0(test.ptable,".gz" )
+   if (file.exists(test.ptable)){
+      cat0("      # Test table: ",basename(test.name),"...")
+      ptable       = read.table(test.ptable,header=TRUE)
+   }else if (file.exists(test.ptable.bz2)){
+      temp.ptable  = file.path(tempdir(),base.ptable)
+      dummy        = bunzip2(filename=test.ptable.bz2,destname=temp.ptable,remove=FALSE)
+      ptable       = read.table(temp.ptable,header=TRUE)
+      dummy        = file.remove(temp.ptable)
+   }else if (file.exists(test.ptable.gz )){
+      temp.ptable  = file.path(tempdir(),base.ptable)
+      dummy        = gunzip(filename=test.ptable.gz,destname=temp.ptable,remove=FALSE)
+      ptable       = read.table(temp.ptable,header=TRUE)
+      dummy        = file.remove(temp.ptable)
+   }else{
+      stop(paste0(" File ",base.ptable," (or its gz/bz2 version) wasn't found!!!"))
+   }#end if
    names(ptable) = tolower(gsub(pattern="_",replacement=".",x=names(ptable)))
    #---------------------------------------------------------------------------------------#
-
 
 
 
@@ -565,7 +674,13 @@ for (s in loop.sites){
                                )#end paste
                         )#end chron
    nemean        = length(model$tomonth)
+   model$imap    = sample.int( n       = nrow(ptable)
+                             , size    = n.gaps
+                             , replace = TRUE
+                             , prob    = ptable$cci.area
+                             )#end sample.int
    #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -617,6 +732,24 @@ for (s in loop.sites){
                               )#end list
    model$ptable   = ptable
    #---------------------------------------------------------------------------------------#
+
+
+   #----- Find patches with the closest illumination to the quantiles to show. ------------#
+   plist      = split(x=ptable,f=ptable$ipa)
+   wfbeam          = mapply( FUN = function(x){
+                                      ans = weighted.mean( x     = x$fbeam
+                                                         , w     = x$cci.area/x$orig.area
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+                                      return(ans)
+                                   }#end function
+                           , x   = plist
+                           )#end mapply
+   qfbeam          = quantile(x=wfbeam,probs=qshow,na.rm=TRUE)
+   qidx.show       = mapply(FUN=which.closest,x=qfbeam,MoreArgs=list(A=wfbeam))
+   model$qidx.show = qidx.show
+   #---------------------------------------------------------------------------------------#
+
 
 
 
@@ -887,12 +1020,14 @@ for (s in sequence(nsites)){
       this.desc       = compvar$desc[v]
       this.unit       = untab[[compvar$unit[v]]]
       this.qmean      = compvar$qmean[v]
+      this.cscheme    = get(compvar$cscheme[v])
       tomonth         = model$tomonth
       toyear          = sort(unique(model$toyear))
       emean           = model[[this.vnam]]$emean
       ymean           = qapply(X=emean,INDEX=model$toyear,DIM=1,FUN=mean,na.rm=TRUE)
       qmean           = model[[this.vnam]]$qmean
       wshow           = model$tomonth %wr% when.show
+      qidx.show       = model$qidx.show
       cat0("     > ",this.desc,"...")
       #------------------------------------------------------------------------------------#
 
@@ -938,6 +1073,7 @@ for (s in sequence(nsites)){
       em.yrange = apply(X=emean[eshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
       ym.yrange = apply(X=ymean[yshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
       qm.yrange = apply(X=qmean                    ,MARGIN=3,FUN=range,finite=TRUE)
+      mm.yrange = apply(X=emean                    ,MARGIN=1,FUN=range,finite=TRUE)
       #------------------------------------------------------------------------------------#
 
 
@@ -952,20 +1088,24 @@ for (s in sequence(nsites)){
       #------------------------------------------------------------------------------------#
       #     Loop over patches.                                                             #
       #------------------------------------------------------------------------------------#
-      for (p in sequence(npatches)){
+      for (iq in sequence(nquant)){
          #----- Assign label and suffix. --------------------------------------------------#
-         plabel    = paste0("P",sprintf("%4.4i",p))
-         psuffix   = paste0(this.vnam,"-",iata,"_",plabel)
-         outepatch = file.path(outemean,plabel    )
-         outypatch = file.path(outymean,plabel    )
+         p         = qidx.show [iq]
+         qkey      = qkey.show [iq]
+         qdesc     = qdesc.show[iq]
+         qsuffix   = paste0(this.vnam,"-",iata,"_",qkey)
+         outepatch = file.path(outemean,qkey    )
+         outypatch = file.path(outymean,qkey    )
          if (! file.exists(outepatch)) dir.create(outepatch)
          if (! file.exists(outypatch)) dir.create(outypatch)
          if (this.qmean){
             outqpmain = file.path(outqmean ,this.vnam)
-            outqpatch = file.path(outqpmain,plabel   )
+            outqpatch = file.path(outqpmain,qkey     )
             if (! file.exists(outqpmain)) dir.create(outqpmain)
             if (! file.exists(outqpatch)) dir.create(outqpatch)
          }#end if (this.qmean)
+         outmpmain = file.path(outmmean,this.vnam)
+         if (! file.exists(outmpmain)) dir.create(outmpmain)
          #---------------------------------------------------------------------------------#
 
 
@@ -977,8 +1117,8 @@ for (s in sequence(nsites)){
 
 
          #----- Make title. ---------------------------------------------------------------#
-         le.emean = paste0(longname,"\n","Monthly means -  Patch "      ,p)
-         le.ymean = paste0(longname,"\n","Annual means -  Patch "       ,p)
+         le.emean = paste0(longname,"\n","Monthly means -  ",qdesc)
+         le.ymean = paste0(longname,"\n","Annual means - "  ,qdesc)
          #---------------------------------------------------------------------------------#
 
 
@@ -1044,7 +1184,7 @@ for (s in sequence(nsites)){
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
             #----- Make the file name. ----------------------------------------------------#
-            fichier = file.path(outepatch,paste0("emean-",psuffix,".",outform[o]))
+            fichier = file.path(outepatch,paste0("emean-",qsuffix,".",outform[o]))
             if (outform[o] %in% "x11"){
                X11(width=xsize$width,height=xsize$height,pointsize=col.use)
             }else if (outform[o] %in% "quartz"){
@@ -1155,7 +1295,7 @@ for (s in sequence(nsites)){
          #---------------------------------------------------------------------------------#
          for (o in sequence(nout)){
             #----- Make the file name. ----------------------------------------------------#
-            fichier = file.path(outypatch,paste0("ymean-",psuffix,".",outform[o]))
+            fichier = file.path(outypatch,paste0("ymean-",qsuffix,".",outform[o]))
             if (outform[o] %in% "x11"){
                X11(width=xsize$width,height=xsize$height,pointsize=col.use)
             }else if (outform[o] %in% "quartz"){
@@ -1270,16 +1410,19 @@ for (s in sequence(nsites)){
             #----- Aliases for current month. ---------------------------------------------#
             mlabel   = paste0("M",sprintf("%2.2i",m))
             mdesc    = month.name[m]
-            mpsuffix = paste0(this.vnam,"-",iata,"_",mlabel,"_",plabel)
-            le.qmean = paste0(longname,"\n","Mean diurnal cycle (",mdesc,") -  Patch " ,p)
+            mqsuffix = paste0(this.vnam,"-",iata,"_",mlabel,"_",qkey)
+            le.qmean = paste0(longname,"\n","Mean diurnal cycle (",mdesc,") ",qdesc)
             #------------------------------------------------------------------------------#
+
+
+
 
             #------------------------------------------------------------------------------#
             #      Plot monthly mean diurnal cycle.                                        #
             #------------------------------------------------------------------------------#
             for (o in sequence(nout)){
                #----- Make the file name. -------------------------------------------------#
-               fichier = file.path(outqpatch,paste0("qmean-",mpsuffix,".",outform[o]))
+               fichier = file.path(outqpatch,paste0("qmean-",mqsuffix,".",outform[o]))
                if (outform[o] %in% "x11"){
                   X11(width=xsize$width,height=xsize$height,pointsize=col.use)
                }else if (outform[o] %in% "quartz"){
@@ -1383,6 +1526,158 @@ for (s in sequence(nsites)){
          #---------------------------------------------------------------------------------#
 
       }#end for (p in sequence(npatches))
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Plot maps using emean.                                                         #
+      #------------------------------------------------------------------------------------#
+      echron = chron(dimnames(emean)[[1]])
+      ey4m2  = paste0(sprintf("%4.4i",numyears(echron))
+                     ,"-"
+                     ,sprintf("%2.2i",nummonths(echron))
+                     )#end paste0
+      emzy4  = paste(month.name[nummonths(echron)],sprintf("%4.4i",numyears(echron)))
+      for (e in which(eshow)){
+         #----- Alias for current time suffix (to be appended to file names). -------------#
+         esuffix = paste0(this.vnam,"-",iata,"_",ey4m2[e])
+         etitle  = paste0(this.desc," - ",emzy4[e])
+         #---------------------------------------------------------------------------------#
+
+
+         #------ Get indices for maps. ----------------------------------------------------#
+         ic = cbind(e,ptable$ipa[model$imap],5)
+         it = cbind(e,ptable$ipa[model$imap],ptable$ilight[model$imap])
+         #---------------------------------------------------------------------------------#
+
+
+         #------ Make maps for control and test. ------------------------------------------#
+         ectrl = matrix(data=emean[ic],nrow=n.xy,ncol=n.xy)
+         etest = matrix(data=emean[it],nrow=n.xy,ncol=n.xy)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #     Prepare settings for maps.                                                  #
+         #---------------------------------------------------------------------------------#
+         mm.zat    = pretty(x=mm.yrange[,e])
+         mm.zlab   = sprintf("%g",mm.zat)
+         mm.zlimit = range(mm.zat)
+         mm.zlevs  = seq(from=mm.zlimit[1],to=mm.zlimit[2],length.out=ncpbks)
+         mm.zcols  = this.cscheme(n=ncolpal)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Plot monthly means.                                                        #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            fichier = file.path(outmpmain,paste0("map-",esuffix,".",outform[o]))
+            if (outform[o] %in% "x11"){
+               X11(width=msize$width,height=msize$height,pointsize=col.use)
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=msize$width,height=msize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
+               png(filename=fichier,width=msize$width*depth,height=msize$height*depth
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=msize$width*depth,height=msize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
+               postscript(file=fichier,width=msize$width,height=msize$height
+                         ,pointsize=ptsz,paper=msize$paper)
+            }else if(outform[o] %in% "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=msize$width,height=msize$height
+                  ,pointsize=ptsz,paper=msize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Split device. ----------------------------------------------------------#
+            par(par.user)
+            par(oma=c(0,0,2.5,0))
+            layout(mat= rbind(c(2,3,1)),widths=c(rep(x=(2.-f.leg)/4,times=2),f.leg/2))
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Plot colour palette. ---------------------------------------------------#
+            par(mar=c(1.1,0.5,2.6,3.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=mm.zlimit,xaxs="i",yaxs="i")
+            rect( xleft   = 0
+                , ybottom = mm.zlevs[-ncpbks]
+                , xright  = 1
+                , ytop    = mm.zlevs[-1]
+                , col     = mm.zcols
+                , border  = mm.zcols
+                )#end rect
+            axis(side=4,las=1,at=mm.zat,labels=mm.zlab)
+            title(main=desc.unit(desc=NULL,unit=untab[[this.unit]]),cex.main=1.0,line=1.0)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Plot homogeneous illumination. -----------------------------------------#
+            par(mar=c(1.1,1.1,2.6,0.1))
+            plot.new()
+            plot.window(xlim=xy.range,ylim=xy.range,xaxs="i",yaxs="i")
+            image( x         = xy.gaps
+                 , y         = xy.gaps
+                 , z         = ectrl
+                 , col       = mm.zcols
+                 , add       = TRUE
+                 , breaks    = mm.zlevs
+                 , useRaster = TRUE
+                 )#end image
+            box()
+            title(main="Homogeneous illumination",cex.main=1.25,line=0.5)
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Plot heterogeneous illumination. ---------------------------------------#
+            par(mar=c(1.1,1.1,2.6,0.1))
+            plot.new()
+            plot.window(xlim=xy.range,ylim=xy.range,xaxs="i",yaxs="i")
+            image( x         = xy.gaps
+                 , y         = xy.gaps
+                 , z         = etest
+                 , col       = mm.zcols
+                 , add       = TRUE
+                 , breaks    = mm.zlevs
+                 , useRaster = TRUE
+                 )#end image
+            box()
+            title(main="Heterogeneous illumination",cex.main=1.25,line=0.5)
+            #------------------------------------------------------------------------------#
+
+
+            #----- Main title. ------------------------------------------------------------#
+            mtext(text=etitle,side=3,outer=TRUE,cex=1.25,font=2)
+            #------------------------------------------------------------------------------#
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] %in% c("x11","quartz")){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in sequence(nout))
+         #---------------------------------------------------------------------------------#
+
+      }#end for (e in which(eshow))
       #------------------------------------------------------------------------------------#
    }#end for (v in sequence(ncompvar))
    #---------------------------------------------------------------------------------------#

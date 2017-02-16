@@ -2933,6 +2933,10 @@ module fuse_fiss_utils
       integer                             :: npatches_new    ! New # of patches
       integer                             :: npatches_old    ! Old # of patches
       integer                             :: npatches_orig   ! Original # of patches
+      integer                             :: ncohorts_remain ! # of cohorts that will remain
+                                                             !   (i.e. excluding patches 
+                                                             !   with small area that will
+                                                             !   be terminated)
       integer                             :: npop            ! # of populated layers
       logical                             :: rec_old         ! Receptor patch is old
       logical                             :: don_old         ! Donor patch is old
@@ -3932,28 +3936,65 @@ module fuse_fiss_utils
       end do polyloop
 
       !------------------------------------------------------------------------------------!
-      !     Print a banner to inform the user how many patches and cohorts exist.          !
+      !     Print a banner to inform the user how many patches and cohorts exist.  Make a  !
+      ! simple banner in case this is a multi-polygon simulation, or a detailed banner in  !
+      ! case this is a single polygon simulation.                                          !
       !------------------------------------------------------------------------------------!
       tot_npolygons = cgrid%npolygons
-      tot_ncohorts  = 0
-      tot_npatches  = 0
-      tot_nsites    = 0
-      do ipy=1,cgrid%npolygons
+      if (tot_npolygons > 1) then
+         tot_ncohorts  = 0
+         tot_npatches  = 0
+         tot_nsites    = 0
+                     npatches_remain = count(remain)
+                     area_remain     = sum(csite%area,mask=remain)
+         do ipy=1,cgrid%npolygons
+            cpoly => cgrid%polygon(ipy)
+            tot_nsites = tot_nsites + cpoly%nsites 
+            do isi=1,cpoly%nsites
+               csite => cpoly%site(isi)
+               tot_npatches = tot_npatches + csite%npatches
+               do ipa=1,csite%npatches
+                  cpatch => csite%patch(ipa)
+                  tot_ncohorts = tot_ncohorts + cpatch%ncohorts
+               end do
+            end do
+         end do
+         write (unit=*,fmt='(6(a,1x,i8,1x))')                                              &
+              'After fusion, total count in node',mynum,'for grid',ifm                     &
+             ,': POLYGONS=',tot_npolygons,'SITES=',tot_nsites,'PATCHES=',tot_npatches      &
+             ,'COHORTS=',tot_ncohorts
+      else
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(a)') ' Patch status for each site after fuse_patches.'
+         write(unit=*,fmt='(a)') '   - >= MIN: patches with area >= min_patch_area.'
+         write(unit=*,fmt='(a)') '   - TOTAL: all patches.'
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         ipy = 1
          cpoly => cgrid%polygon(ipy)
-         tot_nsites = tot_nsites + cpoly%nsites 
          do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
-            tot_npatches = tot_npatches + csite%npatches
+            tot_npatches    = csite%npatches
+            npatches_remain = count(csite%area >= min_patch_area)
+            area_remain     = sum  (csite%area,mask=csite%area >= min_patch_area)
+            tot_ncohorts    = 0
+            ncohorts_remain = 0
             do ipa=1,csite%npatches
                cpatch => csite%patch(ipa)
                tot_ncohorts = tot_ncohorts + cpatch%ncohorts
+               if (csite%area(ipa) >= min_patch_area) then
+                  ncohorts_remain = ncohorts_remain + cpatch%ncohorts
+               end if
             end do
+            
+            write (unit=*,fmt='(a,i5,a,2(a,i5),2(a,f9.4),2(a,i5))') ' Site ',isi,' -- '    &
+               ,'    PATCHES (>= MIN/TOTAL) = ',npatches_remain,'/',tot_npatches           &
+               ,'    AREA (>= MIN/TOTAL) = '   ,area_remain,'/',1.0                        &
+               ,'    COHORTS (>= MIN/TOTAL) = ',ncohorts_remain,'/',tot_ncohorts 
          end do
-      end do
-      write (unit=*,fmt='(6(a,1x,i8,1x))')                                                 &
-           'After fusion, total count in node',mynum,'for grid',ifm                        &
-          ,': POLYGONS=',tot_npolygons,'SITES=',tot_nsites,'PATCHES=',tot_npatches         &
-          ,'COHORTS=',tot_ncohorts
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(a)') ' '
+      end if
       !------------------------------------------------------------------------------------!
 
       return

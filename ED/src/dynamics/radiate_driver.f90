@@ -223,7 +223,7 @@ subroutine radiate_driver(cgrid)
                   !------------------------------------------------------------------------!
                   !    Daytime.  Normalise the four components by total radiation.  In     !
                   ! case IHRZRAD = 0, incoming radiation is simply the site level. When    !
-                  ! IHRZRAD = 1, incoming direct radiation may be scaled to account for    !
+                  ! IHRZRAD > 0, incoming direct radiation may be scaled to account for    !
                   ! lateral shading or additional lateral illumination based on crown      !
                   ! closure.  In both cases the canopy radiation model uses normalised     !
                   ! profiles to find the vertical structure.                               !

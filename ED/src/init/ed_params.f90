@@ -568,7 +568,8 @@ subroutine init_can_rad_params()
                                     , cci_pixres                  & ! intent(out)
                                     , cci_gapsize                 & ! intent(out)
                                     , cci_gapmin                  & ! intent(out)
-                                    , cci_nretn                   ! ! intent(out)
+                                    , cci_nretn                   & ! intent(out)
+                                    , cci_hmax                    ! ! intent(out)
    use consts_coms           , only : pio180                      & ! intent(in)
                                     , twothirds8                  ! ! intent(in)
    use ed_max_dims           , only : n_pft                       ! ! intent(in)
@@ -854,10 +855,11 @@ subroutine init_can_rad_params()
    ! on patch neighbourhood                                                                !
    !---------------------------------------------------------------------------------------!
    cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
-   cci_pixres   = 1.0  ! Pixel resolution for TCH and CCI                          [     m]
+   cci_pixres   =  1.0 ! Pixel resolution for TCH and CCI                          [     m]
    cci_gapsize  = 10.0 ! Gap size                                                  [     m]
    cci_gapmin   = 50.0 ! # of gaps associated with the smallest area               [   ---]
-   cci_nretn    = 30   ! "Return density" to generate the TCH map                  [  1/m2]
+   cci_nretn    = 50.0 ! "Return density" to generate the TCH map                  [  1/m2]
+   cci_hmax     = 57.5 ! Maximum height allowed in the CCI scheme                  [     m]
    !---------------------------------------------------------------------------------------!
 
 
@@ -5230,10 +5232,10 @@ subroutine init_ff_coms
    !                       the maximum difference in light levels can be 25% greater than  !
    !                       tolerance for average maximum.                                  !
    !---------------------------------------------------------------------------------------!
-   niter_patfus       = 30
+   niter_patfus       = 80
    exp_patfus         = 1. / real(niter_patfus)
    pat_light_ext      = 0.5
-   pat_light_tol_min  = 0.01
+   pat_light_tol_min  = 0.00666666666666666666666666666666666666666666666666666666666666667
    pat_light_tol_max  = 0.10
    pat_light_tol_mult = (pat_light_tol_max/pat_light_tol_min)**exp_patfus
    pat_light_mxd_fac  = 1.50
