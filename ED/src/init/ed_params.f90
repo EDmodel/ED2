@@ -175,6 +175,7 @@ subroutine load_ed_ecosystem_params()
    call init_soil_coms()
    call init_phen_coms()
    call init_ed_misc_coms()
+   call init_hrzshade_params()
    !---------------------------------------------------------------------------------------!
 
 
@@ -563,13 +564,7 @@ subroutine init_can_rad_params()
                                     , snow_emiss_tir              & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
-                                    , cosz_min8                   & ! intent(out)
-                                    , cci_radius                  & ! intent(out)
-                                    , cci_pixres                  & ! intent(out)
-                                    , cci_gapsize                 & ! intent(out)
-                                    , cci_gapmin                  & ! intent(out)
-                                    , cci_nretn                   & ! intent(out)
-                                    , cci_hmax                    ! ! intent(out)
+                                    , cosz_min8                   ! ! intent(out)
    use consts_coms           , only : pio180                      & ! intent(in)
                                     , twothirds8                  ! ! intent(in)
    use ed_max_dims           , only : n_pft                       ! ! intent(in)
@@ -848,6 +843,32 @@ subroutine init_can_rad_params()
    !---------------------------------------------------------------------------------------!
 
 
+   return
+end subroutine init_can_rad_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will assign some parameters used by the horizontal shading scheme.    !
+!------------------------------------------------------------------------------------------!
+subroutine init_hrzshade_params()
+
+   use canopy_radiation_coms , only : cci_radius                  & ! intent(out)
+                                    , cci_pixres                  & ! intent(out)
+                                    , cci_gapsize                 & ! intent(out)
+                                    , cci_gapmin                  & ! intent(out)
+                                    , cci_nretn                   & ! intent(out)
+                                    , cci_hmax                    ! ! intent(out)
+   implicit none
+   !---------------------------------------------------------------------------------------!
+
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -856,15 +877,15 @@ subroutine init_can_rad_params()
    !---------------------------------------------------------------------------------------!
    cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
    cci_pixres   =  1.0 ! Pixel resolution for TCH and CCI                          [     m]
-   cci_gapsize  = 10.0 ! Gap size                                                  [     m]
-   cci_gapmin   = 50.0 ! # of gaps associated with the smallest area               [   ---]
-   cci_nretn    = 50.0 ! "Return density" to generate the TCH map                  [  1/m2]
-   cci_hmax     = 57.5 ! Maximum height allowed in the CCI scheme                  [     m]
+   cci_gapsize  = 14.0 ! Gap size                                                  [     m]
+   cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
+   cci_nretn    = 30.0 ! "Return density" to generate the TCH map                  [  1/m2]
+   cci_hmax     = 70.0 ! Maximum height allowed in the CCI scheme                  [     m]
    !---------------------------------------------------------------------------------------!
 
 
    return
-end subroutine init_can_rad_params
+end subroutine init_hrzshade_params
 !==========================================================================================!
 !==========================================================================================!
 
@@ -3809,6 +3830,8 @@ subroutine init_pft_derived_params()
                                    , size2bl              & ! function
                                    , dbh2bd               ! ! function
    use ed_therm_lib         , only : calc_veg_hcap        ! ! function
+   use canopy_radiation_coms, only : ihrzrad              & ! intent(in)
+                                   , cci_hmax             ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                           :: ipft
@@ -4008,23 +4031,48 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    !    Define the patch fusion layers based on the maximum height amongst PFTs.           !
    !---------------------------------------------------------------------------------------!
-   max_hgt_max   = maxval(hgt_max)
-   ff_nhgt       = 12
-   allocate (hgt_class(ff_nhgt))
-   hgt_class( 1) = 0.00
-   hgt_class( 2) = 0.09 * max_hgt_max
-   hgt_class( 3) = 0.18 * max_hgt_max
-   hgt_class( 4) = 0.27 * max_hgt_max
-   hgt_class( 5) = 0.36 * max_hgt_max
-   hgt_class( 6) = 0.45 * max_hgt_max
-   hgt_class( 7) = 0.54 * max_hgt_max
-   hgt_class( 8) = 0.63 * max_hgt_max
-   hgt_class( 9) = 0.72 * max_hgt_max
-   hgt_class(10) = 0.81 * max_hgt_max
-   hgt_class(11) = 0.90 * max_hgt_max
-   hgt_class(12) = 0.99 * max_hgt_max
+   select case (ihrzrad)
+   case (2,4)
+      max_hgt_max   = max(cci_hmax,maxval(hgt_max))
+      ff_nhgt       = 19
+      allocate (hgt_class(ff_nhgt))
+      hgt_class( 1) = 0.000
+      hgt_class( 2) = 0.055 * max_hgt_max
+      hgt_class( 3) = 0.110 * max_hgt_max
+      hgt_class( 4) = 0.165 * max_hgt_max
+      hgt_class( 5) = 0.220 * max_hgt_max
+      hgt_class( 6) = 0.275 * max_hgt_max
+      hgt_class( 7) = 0.330 * max_hgt_max
+      hgt_class( 8) = 0.385 * max_hgt_max
+      hgt_class( 9) = 0.440 * max_hgt_max
+      hgt_class(10) = 0.495 * max_hgt_max
+      hgt_class(11) = 0.550 * max_hgt_max
+      hgt_class(12) = 0.605 * max_hgt_max
+      hgt_class(13) = 0.660 * max_hgt_max
+      hgt_class(14) = 0.715 * max_hgt_max
+      hgt_class(15) = 0.770 * max_hgt_max
+      hgt_class(16) = 0.825 * max_hgt_max
+      hgt_class(17) = 0.880 * max_hgt_max
+      hgt_class(18) = 0.935 * max_hgt_max
+      hgt_class(19) = 0.990 * max_hgt_max
+   case default
+      max_hgt_max   = maxval(hgt_max)
+      ff_nhgt       = 12
+      allocate (hgt_class(ff_nhgt))
+      hgt_class( 1) = 0.00
+      hgt_class( 2) = 0.09 * max_hgt_max
+      hgt_class( 3) = 0.18 * max_hgt_max
+      hgt_class( 4) = 0.27 * max_hgt_max
+      hgt_class( 5) = 0.36 * max_hgt_max
+      hgt_class( 6) = 0.45 * max_hgt_max
+      hgt_class( 7) = 0.54 * max_hgt_max
+      hgt_class( 8) = 0.63 * max_hgt_max
+      hgt_class( 9) = 0.72 * max_hgt_max
+      hgt_class(10) = 0.81 * max_hgt_max
+      hgt_class(11) = 0.90 * max_hgt_max
+      hgt_class(12) = 0.99 * max_hgt_max
+   end select
    !---------------------------------------------------------------------------------------!
-
 
    return
 end subroutine init_pft_derived_params
@@ -5176,12 +5224,8 @@ end subroutine init_phen_coms
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
    use fusion_fission_coms, only : niter_patfus              & ! intent(out)
-                                 , fusetol                   & ! intent(out)
-                                 , fusetol_h                 & ! intent(out)
-                                 , lai_fuse_tol              & ! intent(out)
                                  , lai_tol                   & ! intent(out)
                                  , min_oldgrowth             & ! intent(out)
-                                 , coh_tolerance_max         & ! intent(out)
                                  , pat_light_ext             & ! intent(out)
                                  , pat_light_tol_min         & ! intent(out)
                                  , pat_light_tol_max         & ! intent(out)
@@ -5189,7 +5233,10 @@ subroutine init_ff_coms
                                  , pat_light_mxd_fac         & ! intent(out)
                                  , pat_diff_age_tol          & ! intent(out)
                                  , pat_min_area_remain       & ! intent(out)
-                                 , fuse_relax                & ! intent(out)
+                                 , niter_cohfus              & ! intent(out)
+                                 , coh_size_tol_min          & ! intent(out)
+                                 , coh_size_tol_max          & ! intent(out)
+                                 , coh_size_tol_mult         & ! intent(out)
                                  , corr_patch                & ! intent(out)
                                  , corr_cohort               & ! intent(out)
                                  , print_fuse_details        & ! intent(out)
@@ -5203,15 +5250,11 @@ subroutine init_ff_coms
    use ed_max_dims        , only : n_dist_types              ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
+   real              :: exp_cohfus
    real              :: exp_patfus
    !---------------------------------------------------------------------------------------!
 
-   fusetol            = 0.4
-   fusetol_h          = 0.5
-   lai_fuse_tol       = 0.8
    lai_tol            = 1.0
-   coh_tolerance_max  = 10.0    ! Original 2.0
-   fuse_relax         = .false.
 
 
    !---------------------------------------------------------------------------------------!
@@ -5232,14 +5275,35 @@ subroutine init_ff_coms
    !                       the maximum difference in light levels can be 25% greater than  !
    !                       tolerance for average maximum.                                  !
    !---------------------------------------------------------------------------------------!
-   niter_patfus       = 80
-   exp_patfus         = 1. / real(niter_patfus)
+   niter_patfus       = 100
+   exp_patfus         = 1. / (niter_patfus-1.0) 
    pat_light_ext      = 0.5
-   pat_light_tol_min  = 0.00666666666666666666666666666666666666666666666666666666666666667
+   pat_light_tol_min  = twothirds * 0.01
    pat_light_tol_max  = 0.10
    pat_light_tol_mult = (pat_light_tol_max/pat_light_tol_min)**exp_patfus
    pat_light_mxd_fac  = 1.50
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Cohort fusion variables.                                                          !
+   !                                                                                       !
+   ! niter_cohfus       -- number of cohort fusion iterations (more iterations mean slower !
+   !                       increase in tolerance                                           !
+   ! exp_cohfus         -- exponential factor, used to determine the incremental           !
+   !                       multiplication factor.                                          !
+   ! coh_size_tol_min  -- Minimum tolerance for relative difference in size.               !
+   ! coh_size_tol_max  -- Maximum tolerance for relative difference in size.               !
+   ! coh_size_tol_mult -- Factor that increments tolerance (derived from previous vari-    !
+   !                       ables).                                                         !
+   !---------------------------------------------------------------------------------------!
+   niter_cohfus      = 100
+   exp_cohfus        = 1. / (niter_cohfus - 1.0) 
+   coh_size_tol_min  = twothirds * 0.01
+   coh_size_tol_max  = twothirds * 0.10
+   coh_size_tol_mult = (coh_size_tol_max/coh_size_tol_min)**exp_cohfus
+   !---------------------------------------------------------------------------------------!
+
 
 
    !----- Maximum age difference allowed for two patches being considered same age [yr]. --!
@@ -5252,7 +5316,7 @@ subroutine init_ff_coms
    !      Minimum area to remain resolved.  This condition is normally met, except when    !
    ! initialising the simulation with massive amount of data (like airborne lidar data).   !
    !---------------------------------------------------------------------------------------!
-   pat_min_area_remain = 0.95
+   pat_min_area_remain = 0.90
    !---------------------------------------------------------------------------------------!
 
 

@@ -2142,9 +2142,9 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if  (ihrzrad < 0 .or. ihrzrad > 3) then
+   if  (ihrzrad < 0 .or. ihrzrad > 4) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IHRZRAD, it must be between 0 and 3.  Yours is set to'        &
+                    'Invalid IHRZRAD, it must be between 0 and 4.  Yours is set to'        &
                     ,ihrzrad,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
@@ -2236,7 +2236,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
    end if
 
-   if (ihrzrad /= 0 .and. (igoutput < 0 .or. igoutput > 1)) then
+   if (ihrzrad /= 0 .and. ihrzrad /= 4 .and. (igoutput < 0 .or. igoutput > 1)) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid IGOUTPUT, it must be 0 or 1.  Yours is set to'                &
                     ,igoutput,'...'

@@ -40,28 +40,7 @@ view.las <<- function( x
 
 
       #----- Find out whether the file is compressed or not. ------------------------------#
-      is.las = grepl(pattern = "\\.las$"      ,x=ptc.file)
-      is.bz2 = grepl(pattern = "\\.las\\.bz2$",x=ptc.file)
-      is.gz  = grepl(pattern = "\\.las\\.gz$" ,x=ptc.file)
-      if (is.las){
-         pt.cloud = read.las(lasfile=ptc.file)
-      }else if (is.bz2){
-         ptc.base = gsub(pattern="\\.bz2$",replacement="",x=basename(ptc.file))
-         ptc.temp = file.path(tempdir(),ptc.base)
-         if (file.exists(ptc.temp)) file.remove(ptc.temp)
-         dummy    = bunzip2(filename=ptc.file,destname=ptc.temp,remove=FALSE)
-         pt.cloud = read.las(lasfile=ptc.temp)
-         dummy    = file.remove(ptc.temp)
-      }else if (is.gz ){
-         ptc.base = gsub(pattern="\\.gz$",replacement="",x=basename(ptc.file))
-         ptc.temp = file.path(tempdir(),ptc.base)
-         if (file.exists(ptc.temp)) file.remove(ptc.temp)
-         dummy    = gunzip(filename=ptc.file,destname=ptc.temp,remove=FALSE)
-         pt.cloud = read.las(lasfile=ptc.temp)
-         dummy    = file.remove(ptc.temp)
-      }else{
-         stop("Unrecognised format: point cloud must be las, las.gz, or las.bz2!")
-      }#end if
+      pt.cloud = read.las(lasfile=ptc.file)
       #------------------------------------------------------------------------------------#
    }else if (is.data.frame(x)){
       pt.cloud = x

@@ -562,15 +562,14 @@ module fuse_fiss_utils
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
+                                     , dbh_crit            & ! intent(in)
                                      , hgt_max             & ! intent(in)
                                      , sla                 & ! intent(in)
                                      , is_grass            & ! intent(in)
                                      , hgt_ref             ! ! intent(in)
-      use fusion_fission_coms , only : fusetol_h           & ! intent(in)
-                                     , fusetol             & ! intent(in)
-                                     , lai_fuse_tol        & ! intent(in)
-                                     , fuse_relax          & ! intent(in)
-                                     , coh_tolerance_max   ! ! intent(in)
+      use fusion_fission_coms , only : niter_cohfus        & ! intent(in)
+                                     , coh_size_tol_min    & ! intent(in)
+                                     , coh_size_tol_mult   ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
@@ -591,6 +590,10 @@ module fuse_fiss_utils
       integer                              :: donc,recc,ico3 ! Counters
       logical                              :: donc_resolv    ! Flag: Donor cohort is
                                                              !     resolvable
+      logical                              :: dr_sim_dbh     ! Flag: donor and receptor
+                                                             !    have similar size.
+      logical                              :: dr_sim_hgt     ! Flag: donor and receptor
+                                                             !    have similar size.
       logical                              :: dr_sim_size    ! Flag: donor and receptor
                                                              !    have similar size.
       logical                              :: dr_eqv_recruit ! Flag: donor and receptor
@@ -601,13 +604,12 @@ module fuse_fiss_utils
                                                              !    status.
       real                                 :: newn           ! new nplants of merged coh.
       real                                 :: total_size     ! Total size
-      real                                 :: tolerance_mult ! Multiplication factor
+      real                                 :: coh_size_tol   ! Relative size tolerance
       integer                              :: ncohorts_old   ! # of coh. before fusion test
-      real                                 :: mean_dbh       ! Mean DBH           (???)
-      real                                 :: mean_hite      ! Mean height        (???)
-      real                                 :: diff_dbh       ! Mean DBH           (???)
-      real                                 :: diff_hite      ! Mean height        (???)
+      real                                 :: diff_dbh       ! Absolute DBH difference
+      real                                 :: diff_hgt       ! Absolute height difference
       real                                 :: new_size       ! New size
+      integer                              :: ifus           ! Counter: fusion iteractions
       integer                              :: ntall          ! # of tall cohorts  (???)
       integer                              :: nshort         ! # of short cohorts (???)
       integer                              :: dpft           ! PFT of donor cohort
@@ -616,8 +618,6 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-      !----- Start with no factor ---------------------------------------------------------!
-      tolerance_mult = 1.0
 
       cpatch => csite%patch(ipa)
 
@@ -626,42 +626,21 @@ module fuse_fiss_utils
       ! or has a single cohort.                                                            !
       !------------------------------------------------------------------------------------!
       if (maxcohort == 0 .or. cpatch%ncohorts < 2) return
-
       !------------------------------------------------------------------------------------!
-      !    Calculate mean DBH and HITE to help with the normalization of differences mean  !
-      ! hite is not being used right now, but can be optioned in the future if it seems    !
-      ! advantageous.                                                                      !
-      !------------------------------------------------------------------------------------!
-      mean_dbh  = 0.0
-      mean_hite = 0.0
-      nshort    = 0
-      ntall     = 0
-      do ico3 = 1,cpatch%ncohorts
-         !---------------------------------------------------------------------------------!
-         !    Get fusion height threshold.  Height is a good predictor when plants are     !
-         ! growing in height, but it approaches the maximum height DBH becomes the only    !
-         ! possible predictor because height saturates.                                    !
-         !---------------------------------------------------------------------------------!
-         if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
-            mean_hite = mean_hite + cpatch%hite(ico3)
-            nshort    = nshort + 1
-         else
-            mean_dbh  = mean_dbh + cpatch%dbh(ico3)
-            ntall     = ntall + 1
-         end if
-      end do 
-      !------------------------------------------------------------------------------------!
-      if (ntall  > 0) mean_dbh = mean_dbh   / real(ntall)
-      if (nshort > 0) mean_hite= mean_hite  / real(nshort)
 
       !----- Initialize table. In principle, all cohorts stay. ----------------------------!
       allocate(fuse_table(cpatch%ncohorts))
       fuse_table(:) = .true.
+      !------------------------------------------------------------------------------------!
 
-      force_fusion: do
-         
+      !------------------------------------------------------------------------------------!
+      !      Start with minimum tolerance, iterate and relax tolerance in case it still    !
+      ! has too many cohorts.                                                              !
+      !------------------------------------------------------------------------------------!
+      coh_size_tol = coh_size_tol_min
+      coh_fusion: do ifus=1,niter_cohfus
          ncohorts_old =  count(fuse_table) ! Save current number of cohorts ---------------!
-         
+
          donloop:do donc = 1,cpatch%ncohorts-1
             if (.not. fuse_table(donc)) cycle donloop ! This one is gone, move to next.
             dpft        = cpatch%pft(donc)
@@ -700,22 +679,12 @@ module fuse_fiss_utils
 
 
                !---------------------------------------------------------------------------!
-               !     Test for similarity.  Again, we use height to assess similarity only  !
-               ! in case the cohorts are not approaching maximum height, otherwise use     !
-               ! DBH instead.                                                              !
+               !     Test for similarity.                                                  !
                !---------------------------------------------------------------------------!
-               if (cpatch%hite(donc) >= (0.95 * hgt_max(dpft)) ) then
-                  mean_dbh    = 0.5*( cpatch%dbh(donc) + cpatch%dbh(recc) )
-                  diff_dbh    = abs ( cpatch%dbh(donc) - cpatch%dbh(recc) )
-                  dr_sim_size = ( diff_dbh  / mean_dbh  ) < ( fusetol * tolerance_mult)
-               elseif (fuse_relax) then
-                  mean_hite   = 0.5*( cpatch%hite(donc) + cpatch%hite(recc) )
-                  diff_hite   = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
-                  dr_sim_size = ( diff_hite / mean_hite ) < ( fusetol * tolerance_mult)
-               else
-                  diff_hite   = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
-                  dr_sim_size = diff_hite < ( fusetol_h * tolerance_mult)
-               end if
+               diff_dbh    = abs ( cpatch%dbh (donc) - cpatch%dbh (recc) )
+               diff_hgt    = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
+               dr_sim_size = ( diff_dbh < (dbh_crit(dpft)  * coh_size_tol) ) .and.         &
+                             ( diff_hgt < (hgt_max (dpft)  * coh_size_tol) )
                !---------------------------------------------------------------------------!
 
 
@@ -769,27 +738,6 @@ module fuse_fiss_utils
                                      &,'fuse_2_cohorts','fuse_fiss_utils.f90')
                   end if
                   !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !    Recalculate the means                                               !
-                  !------------------------------------------------------------------------!
-                  mean_dbh  = 0.0
-                  mean_hite = 0.0
-                  nshort    = 0
-                  ntall     = 0
-                  recalcloop: do ico3 = 1,cpatch%ncohorts
-                     if (.not. fuse_table(ico3)) cycle recalcloop
-                     !----- Get fusion height threshold -----------------------------------!
-                     if (cpatch%hite(ico3) < (0.95 * hgt_max(cpatch%pft(ico3))) ) then
-                        mean_hite = mean_hite + cpatch%hite(ico3)
-                        nshort = nshort+1
-                     else
-                        mean_dbh = mean_dbh + cpatch%dbh(ico3)
-                        ntall=ntall+1
-                     end if
-                  end do recalcloop
-                  !------------------------------------------------------------------------!
                   cycle donloop
                   !------------------------------------------------------------------------!
                end if
@@ -804,13 +752,12 @@ module fuse_fiss_utils
          !      In case we met maxcohort goals or in case tolerance exceeded the maximum,  !
          ! interrupt cohort fusion.                                                        !
          !---------------------------------------------------------------------------------!
-         if ( count(fuse_table) <= abs(maxcohort)   ) exit force_fusion
-         if ( tolerance_mult    >  coh_tolerance_max) exit force_fusion
+         if ( count(fuse_table) <= abs(maxcohort)   ) exit coh_fusion
          !---------------------------------------------------------------------------------!
 
-         tolerance_mult = tolerance_mult * 1.01
+         coh_size_tol = coh_size_tol * coh_size_tol_mult
          ncohorts_old = count(fuse_table)
-      end do force_fusion
+      end do coh_fusion
       !------------------------------------------------------------------------------------!
 
 
@@ -3255,7 +3202,7 @@ module fuse_fiss_utils
                pat_light_mxd  = pat_light_tol * pat_light_mxd_fac
                !---------------------------------------------------------------------------!
 
-               mainfuseloopa: do ifus=0,niter_patfus
+               mainfuseloopa: do ifus=1,niter_patfus
 
                   npatches_old    = count(fuse_table)
                   npatches_new    = npatches_old
@@ -3462,6 +3409,9 @@ module fuse_fiss_utils
                         !------------------------------------------------------------------!
                         fuse_table(donp) = .false.
                         !------------------------------------------------------------------!
+
+
+
                         !------------------------------------------------------------------!
                         !     Update the number of valid patches.                          !
                         !------------------------------------------------------------------!
@@ -3470,6 +3420,7 @@ module fuse_fiss_utils
 
                         !------ We are done with donp, so we quit the recp loop. ----------!
                         exit recloopa
+                        !------------------------------------------------------------------!
                      end do recloopa
                      !---------------------------------------------------------------------!
                   end do donloopa
@@ -3517,11 +3468,11 @@ module fuse_fiss_utils
             !    maxpatch.                                                                 !
             !------------------------------------------------------------------------------!
             !----- Start with no multiplication factor. -----------------------------------!
-            pat_light_tol  = pat_light_tol_min
+            pat_light_tol = pat_light_tol_min
             pat_light_mxd = pat_light_tol * pat_light_mxd_fac
             !------------------------------------------------------------------------------!
 
-            mainfuseloop: do ifus=0,niter_patfus
+            mainfuseloop: do ifus=1,niter_patfus
 
                npatches_old = count(fuse_table)
                npatches_new = npatches_old
@@ -3571,7 +3522,7 @@ module fuse_fiss_utils
                      rec_old  = csite%age(recp) >= min_oldgrowth(rec_lu)
                      rec_pop  = recpatch%ncohorts > 0 
 
-                     old_or_same_lu =   don_lu == rec_lu .or. ( don_old .and. rec_old)
+                     old_or_same_lu = don_lu == rec_lu .or. (don_old .and. rec_old)
 
                      recp_found     = old_or_same_lu .and. fuse_table(recp) .and.          &
                                       (csite%dist_type(recp) == 1 .or. csite%age(recp) > 3.)
@@ -6089,15 +6040,18 @@ module fuse_fiss_utils
    !=======================================================================================!
    !=======================================================================================!
    subroutine patch_pft_size_profile(csite,ipa)
-      use ed_state_vars       , only : sitetype   & ! structure
-                                     , patchtype  ! ! structure
-      use fusion_fission_coms , only : ff_nhgt    & ! intent(in)
-                                     , hgt_class  ! ! intent(in)
-      use allometry           , only : size2bl    ! ! intent(in)
-      use ed_max_dims         , only : n_pft      ! ! intent(in)
-      use pft_coms            , only : hgt_min    & ! intent(in)
-                                     , is_grass   ! ! intent(in)
-      use ed_misc_coms        , only : igrass     ! ! intent(in)
+      use ed_state_vars        , only : sitetype   & ! structure
+                                      , patchtype  ! ! structure
+      use fusion_fission_coms  , only : ff_nhgt    & ! intent(in)
+                                      , hgt_class  ! ! intent(in)
+      use allometry            , only : size2bl    ! ! intent(in)
+      use ed_max_dims          , only : n_pft      ! ! intent(in)
+      use pft_coms             , only : hgt_min    & ! intent(in)
+                                      , dbh_crit   & ! intent(in)
+                                      , is_grass   ! ! intent(in)
+      use ed_misc_coms         , only : igrass     ! ! intent(in)
+      use canopy_radiation_coms, only : ihrzrad    & ! intent(in)
+                                      , cci_hmax   ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target     :: csite     ! Current site
@@ -6107,14 +6061,16 @@ module fuse_fiss_utils
       integer                             :: ipft      ! PFT index
       integer                             :: ihgt      ! Height class index
       integer                             :: ico       ! Counters
-      real                                :: lai_pot   ! Potential LAI
+      real(kind=4)                        :: lai_pot   ! Potential LAI
+      real(kind=4)                        :: hgt_eff   ! Effective height
+      real(kind=4)                        :: sz_fact   ! Size correction factor 
       !------------------------------------------------------------------------------------!
 
 
       !----- Reset all bins to zero. ------------------------------------------------------!
       do ipft=1,n_pft
          do ihgt=1,ff_nhgt
-            csite%cumlai_profile(ipft,ihgt,ipa)=0.0
+            csite%cumlai_profile(ipft,ihgt,ipa) = 0.0
          end do
       end do
       !------------------------------------------------------------------------------------!
@@ -6127,8 +6083,10 @@ module fuse_fiss_utils
 
          !----- Find the PFT class. -------------------------------------------------------!
          ipft    = cpatch%pft(ico)
-         ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%hite(ico))))
          !---------------------------------------------------------------------------------!
+
+
+
 
          !---------------------------------------------------------------------------------!
          !     Check whether this cohort is almost at the minimum height given its PFT.    !
@@ -6138,8 +6096,18 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
 
 
-         !----- Find the height class. ----------------------------------------------------!
-         ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%hite(ico))))
+         !---------------------------------------------------------------------------------!
+         !     Decide whether to use actual height or effective height (to account for     !
+         ! emergent trees).                                                                !
+         !---------------------------------------------------------------------------------!
+         select case (ihrzrad)
+         case (2,4)
+            sz_fact = max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft)
+            hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
+            ihgt    = min(ff_nhgt,max(1,count(hgt_class < hgt_eff)))
+         case default
+            ihgt    = min(ff_nhgt,max(1,count(hgt_class < cpatch%hite(ico))))
+         end select
          !---------------------------------------------------------------------------------!
 
 
@@ -6156,8 +6124,8 @@ module fuse_fiss_utils
 
 
          !----- Add the potential LAI to the bin. -----------------------------------------!
-         csite%cumlai_profile(ipft,ihgt,ipa) = lai_pot                                     &
-                                             + csite%cumlai_profile(ipft,ihgt,ipa)
+         csite%cumlai_profile(ipft,ihgt,ipa) = csite%cumlai_profile(ipft,ihgt,ipa)         &
+                                             + lai_pot
          !---------------------------------------------------------------------------------!
       end do cohortloop
       !------------------------------------------------------------------------------------!

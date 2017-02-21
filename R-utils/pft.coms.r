@@ -611,7 +611,7 @@ pft01 = list( name               = "C4 grass"
             , clumping.factor    = clumping.grass
             , leaf.width         = lwidth.grass
             , init.density       = 0.1
-            , veg.hcap.min       = 3.68093E+00
+            , veg.hcap.min       = 7.30807E+00
             )
 
 pft02 = list( name               = "Early tropical"
@@ -675,7 +675,7 @@ pft02 = list( name               = "Early tropical"
             , clumping.factor    = clumping.tree
             , leaf.width         = lwidth.bltree
             , init.density       = 0.1
-            , veg.hcap.min       = 9.75446E+00
+            , veg.hcap.min       = 9.53226E+00
             )
 
 pft03 = list( name               = "Mid tropical"
@@ -739,7 +739,7 @@ pft03 = list( name               = "Mid tropical"
             , clumping.factor    = clumping.tree
             , leaf.width         = lwidth.bltree
             , init.density       = 0.1
-            , veg.hcap.min       = 1.30673E+01
+            , veg.hcap.min       = 1.46161E+01
             )
 
 pft04 = list( name               = "Late tropical"
@@ -803,7 +803,7 @@ pft04 = list( name               = "Late tropical"
             , clumping.factor    = clumping.tree
             , leaf.width         = lwidth.bltree
             , init.density       = 0.1
-            , veg.hcap.min       = 1.65642E+01
+            , veg.hcap.min       = 2.43602E+01
             )
 
 pft05 = list( name               = "Temperate C3 Grass"
@@ -1320,7 +1320,7 @@ pft16 = list( name               = "C3 grass"
             , clumping.factor    = clumping.grass
             , leaf.width         = lwidth.grass
             , init.density       = 0.1
-            , veg.hcap.min       = 3.68093E+00
+            , veg.hcap.min       = 7.30807E+00
             )
 
 pft17 = list( name               = "Araucaria"
@@ -1384,7 +1384,7 @@ pft17 = list( name               = "Araucaria"
             , clumping.factor    = clumping.aa
             , leaf.width         = lwidth.nltree
             , init.density       = 0.1
-            , veg.hcap.min       = 9.93851E+00
+            , veg.hcap.min       = 2.19242E+01
             )
 pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour="#404040"
 #------------------------------------------------------------------------------------------#

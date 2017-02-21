@@ -147,7 +147,7 @@ subroutine vegetation_dynamics(new_month,new_year)
             ! shaded by taller neighbours.                                                 !
             !------------------------------------------------------------------------------!
             select case (ihrzrad)
-            case (0)
+            case (0,4)
                !----- Make sure no horizontal shading is applied. -------------------------!
                do ipy = 1,cgrid%npolygons
                   cpoly => cgrid%polygon(ipy)

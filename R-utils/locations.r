@@ -451,8 +451,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #----- ihrzrad is the horizontal shading model. ----------------------------------------#
    flagvar[["ihrzrad"]]         = list( descr   = "Horizontal shading"
                                       , numeric = TRUE
-                                      , values  = seq(from=0,to=2,by=1)
-                                      , names   = c("OFF","GAP","PIXEL")
+                                      , values  = seq(from=0,to=4,by=1)
+                                      , names   = c("OFF","GAP","PIXEL","DUMMY","OFF")
                                       )#end list
    #----- imetavg is the averaging method for met driver. ---------------------------------#
    flagvar[["imetavg"]]         = list( descr   = "Met driver average"

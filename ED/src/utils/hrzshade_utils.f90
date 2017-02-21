@@ -314,6 +314,8 @@ module hrzshade_utils
       real(kind=4)                              :: a_ptc       ! Angle of point
       real(kind=4)                              :: ca_ind      ! Crown area
       real(kind=4)                              :: hgt_eff     ! Effective height
+      real(kind=4)                              :: ch_fact     ! Crown height corr. factor 
+      real(kind=4)                              :: sz_fact     ! Size correction factor 
       real(kind=4)                              :: rh_ind      ! Crown horizontal radius
       real(kind=4)                              :: rh_ptc      ! Hor. radius of the point
       real(kind=4)                              :: rv_ind      ! Crown vertical radius
@@ -332,6 +334,7 @@ module hrzshade_utils
       logical                     , parameter   :: verbose       = .false.
       !----- External functions. ----------------------------------------------------------!
       real                        , external    :: fquant
+      real                        , external    :: fquant_mask
       !------------------------------------------------------------------------------------!
 
 
@@ -514,9 +517,9 @@ module hrzshade_utils
          
             !----- Decide the height based on ihrzrad. ------------------------------------!
             select case (ihrzrad)
-            case (2)
-               hgt_eff = min( cci_hmax , cpatch%hite(ico)                                  &
-                            * (max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft))** 2)
+            case (2,4)
+               sz_fact = max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft)
+               hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
             case default
                hgt_eff = cpatch%hite(ico)
             end select
@@ -525,11 +528,11 @@ module hrzshade_utils
 
 
             !----- Find horizontal and vertical radii. ------------------------------------!
-            ca_ind = dbh2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)               &
-                           ,cpatch%pft(ico))
-            rh_ind = sqrt(ca_ind * pii)
-            rv_ind = 0.5 * hgt_eff                                                         &
-                   * ( 1.0 - h2crownbh(cpatch%hite(ico),cpatch%pft(ico))/cpatch%hite(ico))
+            ca_ind  = dbh2ca(cpatch%dbh(ico),cpatch%hite(ico),cpatch%sla(ico)              &
+                            ,cpatch%pft(ico))
+            rh_ind  = sqrt(ca_ind * pii)
+            ch_fact = h2crownbh(cpatch%hite(ico),cpatch%pft(ico))/cpatch%hite(ico)
+            rv_ind  = 0.5 * hgt_eff * (1.0 - ch_fact)
             !------------------------------------------------------------------------------!
 
 
@@ -646,8 +649,8 @@ module hrzshade_utils
          rls_mask   (:,:) = rls_igp(:,:) == igp
          !----- Check whether any pixel still belongs to the gap. -------------------------!
          if (any(rls_mask)) then
-            !----- Yes, take the highest value. -------------------------------------------!
-            gap_fbeam(igp) = maxval(rls_fbeam,mask=rls_mask)
+            !----- Yes, take the median. --------------------------------------------------!
+            gap_fbeam(igp) = fquant_mask(rls_npixel,rls_fbeam,rls_mask,0.50)
             !------------------------------------------------------------------------------!
          else
             !----- No, take the minimum pixel value. --------------------------------------!
@@ -788,9 +791,9 @@ module hrzshade_utils
             
                !----- Decide the height based on ihrzrad. ---------------------------------!
                select case (ihrzrad)
-               case (2)
-                  hgt_eff = min( cci_hmax , cpatch%hite(ico)                               &
-                               * (max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft))** 2)
+               case (2,4)
+                  sz_fact = max(dbh_crit(ipft),cpatch%dbh(ico))/dbh_crit(ipft)
+                  hgt_eff = min(cci_hmax, cpatch%hite(ico) * sz_fact * sz_fact)
                case default
                   hgt_eff = cpatch%hite(ico)
                end select

@@ -90,7 +90,7 @@ pcabiplot <<- function( pca
          , inset  = 0.0
          , legend = vars.labels
          , fill   = vars.colour
-         , border = foreground
+         , bty    = "n"
          , xpd    = TRUE
          , cex    = cex.leg * cex.ptsz
          , ncol   = min(4,pretty.box(nshow)$ncol)

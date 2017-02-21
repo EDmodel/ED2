@@ -44,6 +44,8 @@ module canopy_radiation_coms
    !                     as 1 and 2 to split patches, but it does not change radiation     !
    !                     reaching the top of the canopy.  This is only useful to isolate   !
    !                     the effect of heterogeneous illumination from the patch count.    !
+   !                 4.  Same as 0., but patch fusion takes into account the correction    !
+   !                     for emergent trees.                                               !
    !---------------------------------------------------------------------------------------!
    integer :: ihrzrad
    !---------------------------------------------------------------------------------------!

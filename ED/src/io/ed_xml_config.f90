@@ -923,24 +923,71 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) min_recruit_size = real(rval)
 
 
-        call getConfigREAL  ('fusetol','fusefiss',i,rval,texist)
-        if(texist) fusetol = real(rval)
-        call getConfigREAL  ('fusetol_h','fusefiss',i,rval,texist)
-        if(texist) fusetol_h = real(rval)
-        call getConfigREAL  ('lai_fuse_tol','fusefiss',i,rval,texist)
-        if(texist) lai_fuse_tol = real(rval)
-        call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
+
+        call getConfigINT  ('niter_patfus','fusefiss',i,ival,texist)
+        if(texist) niter_patfus = ival
+        call getConfigREAL  ('pat_light_ext','fusefiss',i,rval,texist)
+        if(texist) pat_light_ext = real(rval)
+        call getConfigREAL  ('pat_light_tol_min','fusefiss',i,rval,texist)
+        if(texist) pat_light_tol_min = real(rval)
+        call getConfigREAL  ('pat_light_tol_max','fusefiss',i,rval,texist)
+        if(texist) pat_light_tol_max = real(rval)
+        call getConfigREAL  ('pat_light_tol_mult','fusefiss',i,rval,texist)
+        if(texist) pat_light_tol_mult = real(rval)
+        call getConfigREAL  ('pat_light_mxd_fac','fusefiss',i,rval,texist)
+        if(texist) pat_light_mxd_fac = real(rval)
+        call getConfigREAL  ('pat_diff_age_tol','fusefiss',i,rval,texist)
+        if(texist) pat_diff_age_tol = real(rval)
+        call getConfigREAL  ('pat_min_area_remain','fusefiss',i,rval,texist)
+        if(texist) pat_min_area_remain = real(rval)
+
+        call getConfigINT  ('niter_cohfus','fusefiss',i,ival,texist)
+        if(texist) niter_cohfus = ival
+        call getConfigREAL  ('coh_size_tol_min','fusefiss',i,rval,texist)
+        if(texist) coh_size_tol_min = real(rval)
+        call getConfigREAL  ('coh_size_tol_max','fusefiss',i,rval,texist)
+        if(texist) coh_size_tol_max = real(rval)
+        call getConfigREAL  ('coh_size_tol_mult','fusefiss',i,rval,texist)
+        if(texist) coh_size_tol_mult = real(rval)
+
+       call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
         if(texist) lai_tol = real(rval)
         call getConfigREAL  ('ff_nhgt','fusefiss',i,rval,texist)
         if(texist) ff_nhgt = real(rval)
-        call getConfigREAL  ('coh_tolerance_max','fusefiss',i,rval,texist)
-        if(texist) coh_tolerance_max = real(rval)
 !        call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
   endif
     
+  !*********  Horizontal shading
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','hrzshade',ntag)    !get number of hrzshade tags
+  print*,"HORIZONTAL SHADING READ FROM FILE ::",ntag
+  if (ntag >= 1) then
+     do i=1,ntag
+
+        call libxml2f90__ll_selecttag('DOWN','hrzshade',i)
+
+        call getConfigREAL  ('cci_radius','hrzshade',i,rval,texist)
+        if(texist) cci_radius = real(rval)
+        call getConfigREAL  ('cci_pixres','hrzshade',i,rval,texist)
+        if(texist) cci_pixres = real(rval)
+        call getConfigREAL  ('cci_gapsize','hrzshade',i,rval,texist)
+        if(texist) cci_gapsize = real(rval)
+        call getConfigREAL  ('cci_gapmin','hrzshade',i,rval,texist)
+        if(texist) cci_gapmin = real(rval)
+        call getConfigREAL  ('cci_nretn','hrzshade',i,rval,texist)
+        if(texist) cci_nretn = real(rval)
+        call getConfigREAL  ('cci_hmax','hrzshade',i,rval,texist)
+        if(texist) cci_hmax = real(rval)
+
+
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     end do
+  end if
+
 
   !*********  DISTURBANCE
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
@@ -1633,13 +1680,35 @@ subroutine write_ed_xml_config
 
   !************   FUSION/FISSION  *****************
   call libxml2f90_ll_opentag("fusefiss")
-     call putConfigREAL("fusetol",fusetol)
-     call putConfigREAL("fusetol_h",fusetol_h)
-     call putConfigREAL("lai_fuse_tol",lai_fuse_tol)
-     call putConfigREAL("lai_tol",lai_tol)
-     call putConfigINT ("ff_nhgt",ff_nhgt)
-     call putConfigREAL("coh_tolerance_max",coh_tolerance_max)
+     call putConfigINT  ("ff_nhgt"            ,ff_nhgt            )
+     call putConfigINT  ("niter_patfus"       ,niter_patfus       )
+     call putConfigREAL ("pat_light_tol_min"  ,pat_light_tol_min  )
+     call putConfigREAL ("pat_light_tol_max"  ,pat_light_tol_max  )
+     call putConfigREAL ("pat_light_tol_mult" ,pat_light_tol_mult )
+     call putConfigREAL ("pat_light_mxd_fac"  ,pat_light_mxd_fac  )
+     call putConfigREAL ("pat_diff_age_tol"   ,pat_diff_age_tol   )
+     call putConfigREAL ("pat_min_area_remain",pat_min_area_remain)
+     call putConfigINT  ("niter_cohfus"       ,niter_cohfus       )
+     call putConfigREAL ("coh_size_tol_min"   ,coh_size_tol_min   )
+     call putConfigREAL ("coh_size_tol_max"   ,coh_size_tol_max   )
+     call putConfigREAL ("coh_size_tol_mult"  ,coh_size_tol_mult  )
+     call putConfigREAL ("lai_tol"            ,lai_tol            )
   call libxml2f90_ll_closetag("fusefiss")
+
+
+
+  !************   HRZSHADE  *****************
+  call libxml2f90_ll_opentag("hrzshade")
+     call putConfigREAL ("cci_radius" ,cci_radius )
+     call putConfigREAL ("cci_pixres" ,cci_pixres )
+     call putConfigREAL ("cci_gapsize",cci_gapsize)
+     call putConfigREAL ("cci_gapmin" ,cci_gapmin )
+     call putConfigREAL ("cci_nretn"  ,cci_nretn  )
+     call putConfigREAL ("cci_hmax"   ,cci_hmax   )
+  call libxml2f90_ll_closetag("hrzshade")
+
+
+
 
   !************   DISTURBANCE  *****************
   call libxml2f90_ll_opentag("disturbance")

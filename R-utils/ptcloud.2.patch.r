@@ -213,8 +213,11 @@ ptcloud.2.patch <<- function( pt.cloud
 
 
       #----- Find uncalibrated properties. ------------------------------------------------#
-      udbh    = h2dbh(h=uhgt,ipft=pft.def)
-      unpl    = ulai / (pft$SLA[pft.def] * dbh2bl(dbh=udbh,ipft=pft.def))
+      uhgt.bnd = pmin(uhgt,pft$hgt.max[pft.def])
+      udbh     = ( h2dbh(h=uhgt.bnd,ipft=pft.def)
+                 * sqrt(pmax(uhgt,pft$hgt.max[pft.def])/pft$hgt.max[pft.def])
+                 )#end udbh
+      unpl     = ulai / (pft$SLA[pft.def] * dbh2bl(dbh=udbh,ipft=pft.def))
       #------------------------------------------------------------------------------------#
 
 
@@ -224,7 +227,7 @@ ptcloud.2.patch <<- function( pt.cloud
       #------------------------------------------------------------------------------------#
       npl.pft    = rep(unpl           , times= npfts)      * fpft
       dbh.pft    = rep(udbh           , times= npfts) + 0. * fpft
-      hgt.pft    = rep(uhgt           , times= npfts) + 0. * fpft  
+      hgt.pft    = rep(uhgt.bnd       , times= npfts) + 0. * fpft  
       ipft.pft   = rep(mypfts         , each = ncoh ) + 0L * fpft
       wdns.pft   = rep(pft$rho[mypfts], each = ncoh ) + 0. * fpft
       bleaf.pft  = dbh2bl(dbh=dbh.pft,ipft=ipft.pft)

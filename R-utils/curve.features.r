@@ -2,8 +2,21 @@
 #==========================================================================================#
 #     This function determines the minima, maxima, and the "horizontal" and "vertical"     #
 # inflection points for a given series.  It returns the indices of such features.          #
+#                                                                                          #
+# INPUTS:                                                                                  #
+# x      -- vector to be analysed.                                                         #
+# span   -- the window to be used                                                          #
+# xscale -- scaling factor for x, so the sequence is normalised. If not provided, the      #
+#           code will use by default the maximum absolute value in the series.             #
+# toler  -- Tolerance for derivatives.  Values smaller than toler will be assumed zero.    #
+#                                                                                          #
 #------------------------------------------------------------------------------------------#
-curve.features <<- function(x,span=3L,do.pad=TRUE){
+curve.features <<- function( x
+                           , span   = 3L
+                           , do.pad = TRUE
+                           , xscale = max(abs(x),na.rm=TRUE)
+                           , toler  = 1000. * .Machine$double.eps
+                           ){
    #----- Make sure span is odd. ----------------------------------------------------------#
    span = as.integer(span)
    if ( ! ((span %% 2) %==% 1 && span %>=% 3L)){
@@ -24,6 +37,16 @@ curve.features <<- function(x,span=3L,do.pad=TRUE){
    #---------------------------------------------------------------------------------------#
 
 
+   #---------------------------------------------------------------------------------------#
+   #     Make sure that x can be normalised by the given scale.                            #
+   #---------------------------------------------------------------------------------------#
+   if (xscale %>% 0.){
+      x = x / xscale
+   }else{
+      stop(paste0("Invalid xscale (",xscale,").  It must be positive."))
+   }#end if 
+   #---------------------------------------------------------------------------------------#
+
 
    #---------------------------------------------------------------------------------------#
    #      Find the derivatives.                                                            #
@@ -33,10 +56,12 @@ curve.features <<- function(x,span=3L,do.pad=TRUE){
    im1     = pmax(i-1, 1)
    #----- First derivative. ---------------------------------------------------------------#
    xp      = x[ip1] - x[im1]
+   xp      = ifelse(test=abs(xp) >= toler, yes=xp, no = 0.)
    #----- Second derivative. --------------------------------------------------------------#
    xpp     = x[ip1] - 2.*x[i] + x[im1]
    xpp[1]  = xpp[2]
    xpp[nx] = xpp[nx-1] 
+   xpp     = ifelse(test=abs(xpp) >= toler, yes=xpp, no = 0.)
    #---------------------------------------------------------------------------------------#
 
 

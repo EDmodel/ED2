@@ -24,30 +24,15 @@ module fusion_fission_coms
    !----- Number of height bins in patch profiling ----------------------------------------!
    integer :: ff_nhgt
 
-   !----- Cohort fusion tolerance on DBH (dimensionless) ----------------------------------!
-   real    :: fusetol
-
-   !----- Cohort fusion tolerance on height (m) -------------------------------------------!
-   real    :: fusetol_h
-
-   !----- Cohort fusion tolerance on LAI (m2 leaf/m2 ground) ------------------------------!
-   real    :: lai_fuse_tol
-
-   !----- Cohort splitting tolerance on LAI (m2 leaf/ m2 ground) --------------------------!
-   real    :: lai_tol
-
-   !----- Cohort maximum tolerance factor -------------------------------------------------!
-   real    :: coh_tolerance_max
-
    !---- Patch fusion variables. ----------------------------------------------------------!
    real :: pat_light_ext        ! Extinction coefficient for patch fusion.  This is more
                                 !    like ED-1.0, but for simplicity we compare patch 
                                 !    similarity using Beer's law. 
-   real :: pat_light_tol_min    ! Minimum tolerance for patch light difference
-   real :: pat_light_tol_max    ! Maximum tolerance for patch light difference
-   real :: pat_light_tol_mult   ! Multiplier for the light tolerance
+   real :: pat_light_tol_min    ! Minimum tolerance for patch light difference.
+   real :: pat_light_tol_max    ! Maximum tolerance for patch light difference.
+   real :: pat_light_tol_mult   ! Multiplier for the light tolerance.
    real :: pat_light_mxd_fac    ! Light tolerance for maximum deviation.
-   real :: pat_diff_age_tol     ! Maximum age difference to be considered same age [yr]
+   real :: pat_diff_age_tol     ! Maximum age difference to be considered same age [yr].
    !---------------------------------------------------------------------------------------!
 
 
@@ -59,9 +44,20 @@ module fusion_fission_coms
    real    :: pat_min_area_remain
    !---------------------------------------------------------------------------------------!
 
+   !---- Cohort fusion variables. ---------------------------------------------------------!
+   integer :: niter_cohfus      ! Number of cohort fusion iterations.
+   real    :: coh_size_tol_min  ! Minimum tolerance for relative size difference.
+   real    :: coh_size_tol_max  ! Maximum tolerance for relative size difference.
+   real    :: coh_size_tol_mult ! Multiplier for the relative size tolerance.
+   !---------------------------------------------------------------------------------------!
 
-   !----- Flag to allow a less strict fusion test for short cohorts. ----------------------!
-   logical :: fuse_relax
+
+
+   !----- Cohort splitting tolerance on LAI (m2 leaf/ m2 ground) --------------------------!
+   real    :: lai_tol
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Correlation coefficient that is assumed between two patches and two cohorts when !
