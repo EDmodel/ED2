@@ -247,7 +247,7 @@ subroutine ed_model()
       end do
       !------------------------------------------------------------------------------------!
 
-
+goto 100
 
       !------------------------------------------------------------------------------------!
       !     At this point, all meteorologic driver data for the land surface model has     !
@@ -316,6 +316,8 @@ subroutine ed_model()
    write(unit=*,fmt='(a,1x,f10.1,1x,a)') ' === Time integration ends; Total elapsed time=' &
                                         ,wtime_tot," ===" 
    return
+
+100 continue
 end subroutine ed_model
 !==========================================================================================!
 !==========================================================================================!
