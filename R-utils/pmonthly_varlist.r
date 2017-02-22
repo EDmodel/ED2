@@ -154,8 +154,8 @@ tspftdbh[[n]]     = list( vnam     = "balive"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -180,8 +180,8 @@ tspftdbh[[n]]     = list( vnam     = "bleaf"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -194,8 +194,8 @@ tspftdbh[[n]]     = list( vnam     = "broot"
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
-                        , pftdbh   = FALSE
-                        , sas      = FALSE
+                        , pftdbh   = T
+                        , sas      = T
                         , bar.plot = FALSE
                         , stack    = TRUE
                         , scsout   = TRUE
@@ -206,8 +206,8 @@ tspftdbh[[n]]     = list( vnam     = "bstem"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = T
+                        , pftdbh   = T
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -219,8 +219,8 @@ tspftdbh[[n]]     = list( vnam     = "bsapwood"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = T
+                        , pftdbh   = T
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -309,12 +309,12 @@ tspftdbh[[n]]     = list( vnam     = "nplant"
                         , desc     = "Plant density"
                         , e.unit   = untab$plom2
                         , i.unit   = untab$plom2
-                        , plog     = TRUE
+                        , plog     = T
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
                         , bar.plot = TRUE
-                        , stack    = TRUE
+                        , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1

@@ -16,16 +16,16 @@ graphics.off()
 
 #----- Paths. -----------------------------------------------------------------------------#
 here           = "/Users/manfredo/Documents/Eclipse_workspace/ED/Template/odyssey/Template/"     # Current directory.
-there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/inventory_lianas/"     # Directory where analyses/history are
-srcdir         = "/Users/manfredo/Documents/Eclipse_workspace/R-utils"  # Source  directory.
-outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/inventory_lianas/figures"  # Directory for figures
+there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/liana_1_commit/"     # Directory where analyses/history are
+srcdir         = "/Users/manfredo/Desktop/R-utils"  # Source  directory.
+outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/liana_1_commit/figures"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
 #----- Time options. ----------------------------------------------------------------------#
 monthbeg       = 01   # First month to use
-yearbeg        = 2005    # First year to consider
-yearend        = 2015    # Maximum year to consider
+yearbeg        = 2001    # First year to consider
+yearend        = 2010    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
@@ -76,11 +76,11 @@ ylnudge         = 0.05                  # Nudging factor for ylimit
 ptype          = "l"                    # Type of plot
 ptyped         = "p"                    # Type of plot
 ptypeb         = "o"                    # Type of plot
-drought.mark   = mydroughtmark          # Put a background to highlight droughts?
-drought.yeara  = mydroughtyeara         # First year that has drought
-drought.yearz  = mydroughtyearz         # Last year that has drought
-months.drought = mymonthsdrought        # Months with drought
-ibackground    = mybackground           # Background settings (check load_everything.r)
+drought.mark   = F          # Put a background to highlight droughts?
+drought.yeara  = 1600         # First year that has drought
+drought.yearz  = 1601         # Last year that has drought
+months.drought = 1        # Months with drought
+ibackground    = 1          # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 

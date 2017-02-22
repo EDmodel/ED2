@@ -327,7 +327,7 @@ module growth_balive
                                    ,cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico)   &
                                    ,cpatch%hite(ico) ,cpatch%pft(ico),cpatch%sla(ico)      &
                                    ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico) &
-                                   ,cpatch%bsapwooda(ico),cpatch)
+                                   ,cpatch%bsapwooda(ico))
                   !------------------------------------------------------------------------!
 
 
@@ -1053,7 +1053,7 @@ module growth_balive
       !     Maximum bleaf that the allometric relationship would allow.  If the plant is   !
       ! drought stressed (elongf < 1), we don't allow it to get back to full allometry.    !
       !------------------------------------------------------------------------------------!
-      bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+      bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch%hite(1))
       bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
       broot_aim      = bleaf_aim * q(ipft)
       bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
@@ -1691,7 +1691,7 @@ module growth_balive
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
             ! to full allometry.   green_leaf_factor e elongf misurano il grado di stress  !
             !------------------------------------------------------------------------------!
-            bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+            bleaf_max      = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch%hite(1))
             bleaf_aim      = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
             broot_aim      = bleaf_aim * q(ipft)
             bsapwooda_aim  = bleaf_aim * qsw(ipft) * cpatch%hite(ico) * agf_bs(ipft)
@@ -2385,7 +2385,7 @@ module growth_balive
             ! plant is drought stress (elongf < 1), we do not allow the plant to get back  !
             ! to full allometry.                                                           !
             !------------------------------------------------------------------------------!
-            bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+            bleaf_max     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch%hite(1))
             bleaf_aim     = bleaf_max * green_leaf_factor * cpatch%elongf(ico)
             broot_aim     = bleaf_max * q(ipft)   * cpatch%elongf(ico)
             bsapwooda_aim = bleaf_max * qsw(ipft) * cpatch%hite(ico) * cpatch%elongf(ico)  &
@@ -2611,7 +2611,7 @@ module growth_balive
 
       elseif (cpatch%phenology_status(ico) == 1) then
          ! this calculation of bl_max is wrong for grass, but they should not have phenology_status=1 yet
-         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)                           &
+         bl_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch%hite(1))                           &
                 * green_leaf_factor * cpatch%elongf(ico)
          bl_pot = cpatch%bleaf(ico) + carbon_balance_pot
 

@@ -149,7 +149,7 @@ module canopy_struct_dynamics
                                   , extheta2temp         & ! function
                                   , tq2enthalpy          ! ! function
       use allometry        , only : h2crownbh            & ! function
-                                  , size2bl_old          ! ! function
+                                  , size2bl          ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
       !$ use omp_lib
@@ -793,7 +793,7 @@ module canopy_struct_dynamics
                else
                   !---- Use dbh for trees and old grasses. --------------------------------!
                   waiuse = 0.10 * cpatch%nplant(ico) * cpatch%sla(ico)                     &
-                         * size2bl_old(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                         * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                end if
                !---------------------------------------------------------------------------!
 
@@ -865,7 +865,7 @@ module canopy_struct_dynamics
                   !     Dry grasses only.  Create a pseudo TAI so it won't be a            !
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
-                  tai_drygrass = elongf_min * size2bl_old(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                  tai_drygrass = elongf_min * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else
@@ -1487,7 +1487,7 @@ module canopy_struct_dynamics
                                   , soil_rough8          ! ! intent(in)
       use pft_coms         , only : is_grass             ! ! intent(in)
       use allometry        , only : h2crownbh            & ! function
-                                  , size2bl_old          ! ! function
+                                  , size2bl          ! ! function
       use ed_misc_coms     , only : igrass               ! ! intent(in)
       use phenology_coms   , only : elongf_min           ! ! intent(in)
       !$ use omp_lib
@@ -2074,7 +2074,7 @@ module canopy_struct_dynamics
                else
                    !--use dbh for trees
                    waiuse = 1.d-1 * initp%nplant(ico) * dble(cpatch%sla(ico))              &
-                          * dble(size2bl_old(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+                          * dble(size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
                end if
                !---------------------------------------------------------------------------!
 
@@ -2147,7 +2147,7 @@ module canopy_struct_dynamics
                   ! singularity.                                                           !
                   !------------------------------------------------------------------------!
                   tai_drygrass = dble( elongf_min                                          &
-                                     * size2bl_old(cpatch%dbh(ico),cpatch%hite(ico),ipft))
+                                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft))
                   ladcohort    = tai_drygrass / (htopcrown - hbotcrown)
                   !------------------------------------------------------------------------!
                else

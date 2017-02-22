@@ -291,7 +291,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h_simple, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass
+  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
   use budget_utils     , only : update_budget
@@ -394,7 +394,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                        cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
                     else
                        cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
-                       cpatch%hite(ico) = dbh2h_simple (cpatch%pft(ico), cpatch%dbh(ico))
+                       cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
                     end if
                  else
                     cpatch%dbh(ico)  = 0.0
@@ -406,7 +406,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
                                   ,cpatch%wai(ico), cpatch%crown_area(ico)                 &
-                                  ,cpatch%bsapwooda(ico),cpatch)
+                                  ,cpatch%bsapwooda(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            

@@ -312,7 +312,7 @@ try(unlockBinding("pspline",envir),silent=TRUE)
 #------------------------------------------------------------------------------------------#
 at.first      = c("colour.utils.r","rconstants.r","globdims.r","unitlist.r")
 at.end        = c("iso3166.r","pft.coms.r","pmonthly_varlist.r")
-myself        = c("load.everything.r")
+myself        = c("load.everything.r","plot_yearly.r")
 all.scripts   = sort(list.files(path=srcdir,pattern="\\.[RrSsQq]$"))
 back.up       = sort(list.files(path=srcdir,pattern="^[~]"))
 keep          = ! ( all.scripts %in% at.first

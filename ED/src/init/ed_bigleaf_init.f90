@@ -255,7 +255,7 @@ subroutine ed_bigleaf_init(cgrid)
                      cpatch%pft          (1) = ipft
                      cpatch%hite         (1) = hgt_max(ipft)
                      cpatch%dbh          (1) = dbh_bigleaf(ipft)
-                     cpatch%bleaf        (1) = size2bl(cpatch%dbh(1),cpatch%hite(1),ipft,cpatch)
+                     cpatch%bleaf        (1) = size2bl(cpatch%dbh(1),cpatch%hite(1),ipft)
                      cpatch%bdead        (1) = dbh2bd (cpatch%dbh(1),ipft)
                      cpatch%broot        (1) = cpatch%bleaf(1) * q(ipft)
                      cpatch%bsapwooda    (1) = agf_bs(ipft) * cpatch%bleaf(1)              &
@@ -294,7 +294,7 @@ subroutine ed_bigleaf_init(cgrid)
                                       ,cpatch%balive(1),cpatch%dbh(1), cpatch%hite(1)      &
                                       ,cpatch%pft(1),cpatch%sla(1),cpatch%lai(1)           &
                                       ,cpatch%wai(1),cpatch%crown_area(1)                  &
-                                      ,cpatch%bsapwooda(1),cpatch)
+                                      ,cpatch%bsapwooda(1))
 
                      !----- Above ground biomass, use the allometry. ----------------------!
                      cpatch%agb(1)     = ed_biomass(cpatch%bdead(1),cpatch%bleaf(1)        &

@@ -478,7 +478,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
             !----- Find the maximum allowed leaf biomass. ---------------------------------!
-            bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+            bl_max = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             !------------------------------------------------------------------------------!
 
 
@@ -592,7 +592,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
          !---------------------------------------------------------------------------------!
 
 
@@ -804,7 +804,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                ! leaves appear all of a sudden.                                            !
                !---------------------------------------------------------------------------! 
                cpatch%phenology_status(ico) = 1
-               cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+               cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%balive(ico)           = cpatch%balive(ico) + cpatch%bleaf(ico)
                cpatch%elongf(ico)           = 1.0
             end if  ! critical moisture
@@ -825,7 +825,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                   bleaf_new = 0.0
                else
                   bleaf_new = cpoly%green_leaf_factor(ipft,isi)                            &
-                            * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+                            * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                end if
                
                delta_bleaf = cpatch%bleaf(ico) - bleaf_new
@@ -881,7 +881,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                cpatch%phenology_status(ico) = 1
                cpatch%elongf          (ico) = 1.
                cpatch%bleaf(ico)            = cpoly%green_leaf_factor(ipft,isi)            &
-                                            * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+                                            * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%balive(ico)           = cpatch%balive(ico) + cpatch%bleaf(ico)
                !---------------------------------------------------------------------------!
             end if
@@ -902,7 +902,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
             !----- In case it is too dry, drop all the leaves. ----------------------------!
             if (elongf_try < elongf_min) elongf_try = 0.
             !----- Find the new leaf biomass. ---------------------------------------------!
-            bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+            bleaf_new = elongf_try * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
 
             !------------------------------------------------------------------------------!
             !     Delta_bleaf is the difference between the current leaf biomass and the   !
@@ -998,7 +998,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
+                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
@@ -1029,9 +1029,9 @@ end subroutine update_phenology_eq_0
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine establishes whether it�s time to drop leaves or start flushing them  !
+!     This subroutine establishes whether it´s time to drop leaves or start flushing them  !
 ! for cold deciduous or temperate drought deciduous.                                       !
-! MLO. Shouldn�t we have a similar criterion for both tropical and temperate, based on a   !
+! MLO. Shouldn´t we have a similar criterion for both tropical and temperate, based on a   !
 !      long term dry condition?                                                            !
 !------------------------------------------------------------------------------------------!
 subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd,sum_dgd   &
@@ -1119,7 +1119,7 @@ end subroutine phenology_thresholds
 !------------------------------------------------------------------------------------------!
 subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height,pft       &
                                  ,drop_cold,leaf_out_cold,bl_max)
-   use allometry     , only : size2bl_old
+   use allometry     , only : size2bl
    use phenology_coms, only : elongf_min
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
@@ -1135,7 +1135,7 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height
 
    drop_cold     = green_leaf_factor /= leaf_aging_factor
    leaf_out_cold = green_leaf_factor > elongf_min .and. (.not. drop_cold)
-   bl_max        = green_leaf_factor * size2bl_old(dbh, height, pft)
+   bl_max        = green_leaf_factor * size2bl(dbh, height, pft)
 
    return
 end subroutine assign_prescribed_phen

@@ -318,7 +318,7 @@ module fuse_fiss_utils
       use ed_misc_coms , only : iqoutput           & ! intent(in)
                               , imoutput           & ! intent(in)
                               , idoutput           ! ! intent(in)
-      use allometry    , only : size2bl_old        ! ! function
+      use allometry    , only : size2bl        ! ! function
       use ed_max_dims  , only : n_dist_types       & ! intent(in)
                               , n_pft              ! ! intent(in)
       
@@ -444,7 +444,7 @@ module fuse_fiss_utils
          do ico = 1,cpatch%ncohorts
             ipft              = cpatch%pft(ico)
             laimax            = cpatch%nplant(ico) * cpatch%sla(ico)                       &
-                              * size2bl_old(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                              * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
             patch_laimax(ipa) = patch_laimax(ipa) + laimax * csite%area(ipa)
          end do
 
@@ -574,7 +574,7 @@ module fuse_fiss_utils
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
-      use allometry           , only : size2bl_old         ! ! function
+      use allometry           , only : size2bl         ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -694,10 +694,10 @@ module fuse_fiss_utils
                   else
                       !--use dbh for trees
                       lai_max = ( cpatch%nplant(recc)                                      &
-                                * size2bl_old(cpatch%dbh(recc),cpatch%hite(recc)               &
+                                * size2bl(cpatch%dbh(recc),cpatch%hite(recc)               &
                                          ,cpatch%pft(recc))                                &
                                 + cpatch%nplant(donc)                                      &
-                                * size2bl_old(cpatch%dbh(donc),cpatch%hite(donc)               &
+                                * size2bl(cpatch%dbh(donc),cpatch%hite(donc)               &
                                          ,cpatch%pft(donc)))                               &
                                 * cpatch%sla(recc)
                   end if
@@ -855,7 +855,7 @@ module fuse_fiss_utils
                                       , is_grass               ! ! intent(in)
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
-      use allometry            , only : dbh2h_simple           & ! function
+      use allometry            , only : dbh2h                  & ! function
                                       , bd2dbh                 & ! function
                                       , bl2dbh                 & ! function
                                       , bl2h                   & ! function
@@ -973,11 +973,11 @@ module fuse_fiss_utils
                    !-- use bdead for trees
                    cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
                    cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-                   cpatch%hite (ico)  = dbh2h_simple(cpatch%pft(ico), cpatch%dbh(ico))
+                   cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
                    cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
                    cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-                   cpatch%hite (inew) = dbh2h_simple(cpatch%pft(inew), cpatch%dbh(inew))
+                   cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
                end if
                !---------------------------------------------------------------------------!
 
@@ -1038,7 +1038,7 @@ module fuse_fiss_utils
                                     , bd2dbh                 & ! function
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
-                                    , dbh2h_simple           ! ! function
+                                    , dbh2h                  ! ! function
       use ed_max_dims        , only : n_mort                 ! ! intent(in)
       use ed_misc_coms       , only : writing_long           & ! intent(in)
                                     , writing_eorq           & ! intent(in)
@@ -1128,7 +1128,7 @@ module fuse_fiss_utils
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
           cpatch%bdead(recc) = cpatch%bdead(recc) * rnplant + cpatch%bdead(donc) * dnplant
           cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
-          cpatch%hite(recc)  = dbh2h_simple(cpatch%pft(recc),  cpatch%dbh(recc))
+          cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
           !--------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -6043,7 +6043,7 @@ module fuse_fiss_utils
                                      , patchtype  ! ! structure
       use fusion_fission_coms , only : ff_nhgt    & ! intent(in)
                                      , hgt_class  ! ! intent(in)
-      use allometry           , only : size2bl_old! ! intent(in)
+      use allometry           , only : size2bl! ! intent(in)
       use ed_max_dims         , only : n_pft      ! ! intent(in)
       use pft_coms            , only : hgt_min    & ! intent(in)
                                      , is_grass   ! ! intent(in)
@@ -6100,7 +6100,7 @@ module fuse_fiss_utils
          else
              !--use dbh for trees
              lai_pot = cpatch%nplant(ico) * cpatch%sla(ico)                                &
-                     * size2bl_old(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          end if
          !---------------------------------------------------------------------------------!
 

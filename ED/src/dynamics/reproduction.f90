@@ -431,7 +431,7 @@ subroutine reproduction(cgrid, month)
                                       ,cpatch%bdead(ico),cpatch%balive(ico)                &
                                       ,cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico)    &
                                       ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico)     &
-                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
+                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
@@ -628,7 +628,7 @@ subroutine reproduction(cgrid, month)
                      !    Will only reproduce/grow if on-allometry so dont' have to worry  !
                      ! about elongation factor.                                            !
                      !---------------------------------------------------------------------!
-                     bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft,cpatch)
+                     bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
                      broot_plant     = bleaf_plant * q(ipft)
                      bsapwood_plant  = bleaf_plant * qsw(ipft) * cpatch%hite(ico)
                      balive_plant    = bleaf_plant + broot_plant + bsapwood_plant
@@ -659,7 +659,7 @@ subroutine reproduction(cgrid, month)
                                       ,cpatch%dbh(ico),cpatch%hite(ico)                    &
                                       ,cpatch%pft(ico),cpatch%sla(ico)                     &
                                       ,cpatch%lai(ico),cpatch%wai(ico)                     &
-                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico),cpatch)
+                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
