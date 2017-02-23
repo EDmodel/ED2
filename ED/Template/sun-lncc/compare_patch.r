@@ -43,8 +43,8 @@ rdata.suffix = "patches_ed22.RData"
 #----- Default settings. ------------------------------------------------------------------#
 emean.yeara = 2008  # First year
 emean.yearz = 2010  # Last year
-eshow.yeara = 2009  # First year to show
-eshow.yearz = 2009  # First year to show
+eshow.yeara = 2008  # First year to show
+eshow.yearz = 2008  # First year to show
 #------------------------------------------------------------------------------------------#
 
 
@@ -60,6 +60,17 @@ qshow = c(0,0.25,0.50,0.75,1.00)
 pat.min.area = 0.0025
 n.min.area   = 20
 dxy.gap      = 20
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Confidence band. ----------------------------------------------------------------------#
+cband         = -1 # 2*pnorm(q=1)-1
+cband.leg     = c(test="Heterogeneous",ctrl="Homogeneous")
+cband.col     = c(test="#1E90FF"      ,ctrl="#BFBFBF"    )
+cmean.col     = c(test="#191970"      ,ctrl="#404040"    )
+cband.angle   = c(test=-45            ,ctrl=+45          )
+cband.density = c(test= 25            ,ctrl= 25          )
 #------------------------------------------------------------------------------------------#
 
 
@@ -91,7 +102,7 @@ eort       = "t"
 n          = 0
 sites      = list()
 n          = n + 1
-sites[[n]] = list( iata = "tnf_iage050"
+sites[[n]] = list( iata = "tnf_iage060"
                  , desc = "Tapajos National Forest"
                  , pch  =  5
                  , col  = "#A3CC52"
@@ -353,7 +364,7 @@ compvar[[ n]] = list( vnam     = "phap.lgsw"
 # colour  -- colour to represent this simulation                                           #
 #------------------------------------------------------------------------------------------#
 sim.suffix  = "imetrad01"
-sim.struct  = c(ctrl = "ihrzrad00", test = "ihrzrad02")
+sim.struct  = c(ctrl = "ihrzrad04", test = "ihrzrad02")
 #------------------------------------------------------------------------------------------#
 
 
@@ -515,20 +526,28 @@ discard.fun    = function(x) x * NA
 #------------------------------------------------------------------------------------------#
 
 
+
+#------ Find out whether to plot annual means (it must have at least 2 years... -----------#
+plot.ymean = eshow.yearz > eshow.yeara
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #      Create all output directories, separated by format.                                 #
 #------------------------------------------------------------------------------------------#
 outsimul = file.path(outroot,sim.suffix)
 outymean = file.path(outsimul,"tseries_ymean")
 outemean = file.path(outsimul,"tseries_emean")
+outcmean = file.path(outsimul,"tseries_cmean")
 outqmean = file.path(outsimul,"tseries_qmean")
 outmmean = file.path(outsimul,"maps_emean")
-if (! file.exists(outroot )) dir.create(outroot )
-if (! file.exists(outsimul)) dir.create(outsimul)
-if (! file.exists(outymean)) dir.create(outymean)
-if (! file.exists(outemean)) dir.create(outemean)
-if (! file.exists(outqmean)) dir.create(outqmean)
-if (! file.exists(outmmean)) dir.create(outmmean)
+if (! file.exists(outroot )             ) dir.create(outroot )
+if (! file.exists(outsimul)             ) dir.create(outsimul)
+if (! file.exists(outymean) & plot.ymean) dir.create(outymean)
+if (! file.exists(outemean)             ) dir.create(outemean)
+if (! file.exists(outcmean)             ) dir.create(outcmean)
+if (! file.exists(outqmean)             ) dir.create(outqmean)
+if (! file.exists(outmmean)             ) dir.create(outmmean)
 #------------------------------------------------------------------------------------------#
 
 
@@ -551,6 +570,16 @@ xy.range = c(0,n.xy+1)*dxy.gap
 
 
 
+
+#----- Confidence band. -------------------------------------------------------------------#
+if (cband > 0){
+   qlwr   = 0.5 - 0.5 * cband
+   qupr   = 0.5 + 0.5 * cband
+   cbdesc = paste0(sprintf("%2i",round(100*cband)),"% range")
+}else{
+   cbdesc = paste0("+/-",sprintf("%.1f",abs(cband))," S.D.")
+}#end if
+#------------------------------------------------------------------------------------------#
 
 
 
@@ -575,9 +604,9 @@ for (s in sequence(nsites)){
       #----- Add site to read list. -------------------------------------------------------#
       loop.sites = c(loop.sites,s)
       #------------------------------------------------------------------------------------#
-   }#end if
+   }#end if (reload.hour && file.exists(rdata.iata))
    #---------------------------------------------------------------------------------------#
-}#end for
+}#end for (s in sequence(nsites))
 #------------------------------------------------------------------------------------------#
 
 
@@ -763,6 +792,13 @@ for (s in loop.sites){
                                    , light.key
                                    )#end list
                   )#end array
+   c.empty = array( data     = NA
+                  , dim      = c(nemean,3,2)
+                  , dimnames = list( as.character(model$tomonth)
+                                   , c("qlwr","mean","qupr")
+                                   , c("ctrl","test")
+                                   )#end list
+                  )#end array
    q.empty = array( data     = NA
                   , dim      = c(nemean,ndcycle,npatches,nlight)
                   , dimnames = list( as.character(model$tomonth)
@@ -792,7 +828,7 @@ for (s in loop.sites){
       #------------------------------------------------------------------------------------#
       #     Initialise array for this variable.                                            #
       #------------------------------------------------------------------------------------#
-      model[[this.vnam]] = list( emean = e.empty, qmean = q.empty)
+      model[[this.vnam]] = list( emean = e.empty, qmean = q.empty, cmean = c.empty)
       #------------------------------------------------------------------------------------#
 
 
@@ -853,6 +889,8 @@ for (s in loop.sites){
          q.cpatch = ctrl$qpatch[[this.vnam]]
          q.tpatch = test$qpatch[[this.vnam]]
       }#end if (this.vnam %in% "tot.soil.c")
+      carea = ctrl$patch$area
+      tarea = test$patch$area
       #------------------------------------------------------------------------------------#
 
 
@@ -874,6 +912,23 @@ for (s in loop.sites){
          #----- Copy homogeneous patch. ---------------------------------------------------#
          if(!is.null(cpatch  )) model[[this.vnam]]$emean[e, ,nlight] = cpatch[[stamp]]
          if(!is.null(q.cpatch)) model[[this.vnam]]$qmean[e,,,nlight] = t(q.cpatch[[stamp]])
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Find mean and the lower and upper bounds of patch distribution. -----------#
+         if (! is.null(cpatch)){
+            #----- Find mean and the lower and the upper bounds. --------------------------#
+            cmean = weighted.mean    (x=cpatch[[stamp]],w=carea[[stamp]]        )
+            if (cband > 0){
+               cqlwr = weighted.quantile(x=cpatch[[stamp]],w=carea[[stamp]],qu=qlwr)
+               cqupr = weighted.quantile(x=cpatch[[stamp]],w=carea[[stamp]],qu=qupr)
+               model[[this.vnam]]$cmean[e,,"ctrl"] = c(cqlwr,cmean,cqupr)
+            }else{
+               csdev = weighted.sd      (x=cpatch[[stamp]],w=carea[[stamp]]        )
+               model[[this.vnam]]$cmean[e,,"ctrl"] = cmean + c(-1.,0.,1.)*abs(cband)*csdev
+            }#end if (cband > 0)
+            #------------------------------------------------------------------------------#
+         }#end if (! is.null(cpatch))
          #---------------------------------------------------------------------------------#
       }#end for (e in emean.loop)
       #------------------------------------------------------------------------------------#
@@ -910,6 +965,19 @@ for (s in loop.sites){
                                                      + tnow[sel] * wgt
                                                      )#end
             }#end for (l in sequence(nltype))
+            #------------------------------------------------------------------------------#
+
+
+            #----- Find mean and the lower and the upper bounds. --------------------------#
+            tmean = weighted.mean    (x=tpatch[[stamp]],w=tarea[[stamp]]        )
+            if (cband > 0){
+               tqlwr = weighted.quantile(x=tpatch[[stamp]],w=tarea[[stamp]],qu=qlwr)
+               tqupr = weighted.quantile(x=tpatch[[stamp]],w=tarea[[stamp]],qu=qupr)
+               model[[this.vnam]]$cmean[e,,"test"] = c(tqlwr,tmean,tqupr)
+            }else{
+               tsdev = weighted.sd      (x=tpatch[[stamp]],w=tarea[[stamp]]        )
+               model[[this.vnam]]$cmean[e,,"test"] = tmean + c(-1.,0.,1.)*abs(cband)*tsdev
+            }#end if (cband > 0)
             #------------------------------------------------------------------------------#
          }#end if (! is.null(tpatch)){
          #---------------------------------------------------------------------------------#
@@ -1024,6 +1092,7 @@ for (s in sequence(nsites)){
       tomonth         = model$tomonth
       toyear          = sort(unique(model$toyear))
       emean           = model[[this.vnam]]$emean
+      cmean           = model[[this.vnam]]$cmean
       ymean           = qapply(X=emean,INDEX=model$toyear,DIM=1,FUN=mean,na.rm=TRUE)
       qmean           = model[[this.vnam]]$qmean
       wshow           = model$tomonth %wr% when.show
@@ -1058,9 +1127,11 @@ for (s in sequence(nsites)){
       #     Find plot limits for time.                                                     #
       #------------------------------------------------------------------------------------#      
       em.xlimit = chron(range(x=model$tomonth[wshow]))
+      cm.xlimit = em.xlimit
       ym.xlimit = pretty.xylim(u=model$toyear [wshow])
       qm.xlimit = pretty.xylim(u=model$dchour)
       em.pretty = pretty.time (when=em.xlimit)
+      cm.pretty = em.pretty
       qm.pretty = pretty.elapsed(x=model$dchour,base=24)
       #------------------------------------------------------------------------------------#
 
@@ -1069,8 +1140,10 @@ for (s in sequence(nsites)){
       #     Find range for each patch.                                                     #
       #------------------------------------------------------------------------------------#
       eshow     = chron(dimnames(emean)[[1]])      %wr% when.show
+      cshow     = chron(dimnames(cmean)[[1]])      %wr% when.show
       yshow     = as.numeric(dimnames(ymean)[[1]]) %wr% numyears(when.show)
       em.yrange = apply(X=emean[eshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
+      cm.yrange = range(c(cmean[eshow,,]),finite=TRUE)
       ym.yrange = apply(X=ymean[yshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
       qm.yrange = apply(X=qmean                    ,MARGIN=3,FUN=range,finite=TRUE)
       mm.yrange = apply(X=emean                    ,MARGIN=1,FUN=range,finite=TRUE)
@@ -1096,8 +1169,8 @@ for (s in sequence(nsites)){
          qsuffix   = paste0(this.vnam,"-",iata,"_",qkey)
          outepatch = file.path(outemean,qkey    )
          outypatch = file.path(outymean,qkey    )
-         if (! file.exists(outepatch)) dir.create(outepatch)
-         if (! file.exists(outypatch)) dir.create(outypatch)
+         if (! file.exists(outepatch)             ) dir.create(outepatch)
+         if (! file.exists(outypatch) & plot.ymean) dir.create(outypatch)
          if (this.qmean){
             outqpmain = file.path(outqmean ,this.vnam)
             outqpatch = file.path(outqpmain,qkey     )
@@ -1117,8 +1190,8 @@ for (s in sequence(nsites)){
 
 
          #----- Make title. ---------------------------------------------------------------#
-         le.emean = paste0(longname,"\n","Monthly means -  ",qdesc)
-         le.ymean = paste0(longname,"\n","Annual means - "  ,qdesc)
+         le.emean = paste0(longname,"\n","Monthly means - "  ,qdesc )
+         le.ymean = paste0(longname,"\n","Annual means - "   ,qdesc )
          #---------------------------------------------------------------------------------#
 
 
@@ -1291,9 +1364,10 @@ for (s in sequence(nsites)){
 
 
          #---------------------------------------------------------------------------------#
-         #      Plot monthly means.                                                        #
+         #      Plot annual means.                                                         #
          #---------------------------------------------------------------------------------#
-         for (o in sequence(nout)){
+         if (plot.ymean){ymean.loop = sequence(nout)}else{ymean.loop = numeric(0)}
+         for (o in ymean.loop){
             #----- Make the file name. ----------------------------------------------------#
             fichier = file.path(outypatch,paste0("ymean-",qsuffix,".",outform[o]))
             if (outform[o] %in% "x11"){
@@ -1527,6 +1601,154 @@ for (s in sequence(nsites)){
 
       }#end for (p in sequence(npatches))
       #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #     Plot mean and horizontal heterogeneity.                                        #
+      #------------------------------------------------------------------------------------#
+         #----- Assign label and suffix. --------------------------------------------------#
+         csuffix   = paste0(this.vnam,"-",iata)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Limits for this patch. ----------------------------------------------------#
+         cm.ylimit = pretty.xylim(u=c(cm.yrange    ))
+         #---------------------------------------------------------------------------------#
+
+
+         #----- Make title. ---------------------------------------------------------------#
+         le.cmean = paste0(longname,"\n","Monthly means and ",cbdesc)
+         #---------------------------------------------------------------------------------#
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      Plot monthly means.                                                        #
+         #---------------------------------------------------------------------------------#
+         for (o in sequence(nout)){
+            #----- Make the file name. ----------------------------------------------------#
+            fichier = file.path(outcmean,paste0("cmean-",csuffix,".",outform[o]))
+            if (outform[o] %in% "x11"){
+               X11(width=xsize$width,height=xsize$height,pointsize=col.use)
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=xsize$width,height=xsize$height,pointsize=col.use)
+            }else if(outform[o] %in% "png"){
+               png(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
+               postscript(file=fichier,width=xsize$width,height=xsize$height
+                         ,pointsize=ptsz,paper=xsize$paper)
+            }else if(outform[o] %in% "pdf"){
+               pdf(file=fichier,onefile=FALSE,width=xsize$width,height=xsize$height
+                  ,pointsize=ptsz,paper=xsize$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Split device. ----------------------------------------------------------#
+            par(par.user)
+            layout(mat= rbind(2,1),heights=c(1.-f.leg,f.leg))
+            #------------------------------------------------------------------------------#
+
+
+            #----- Plot legend. -----------------------------------------------------------#
+            par(mar=c(0.1,0.1,0.1,0.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x       = "center"
+                  , inset   = 0.0
+                  , legend  = cband.leg
+                  , fill    = cband.col
+                  , border  = cband.col
+                  , angle   = cband.angle
+                  , density = cband.density
+                  , col     = cmean.col
+                  , lty     = "solid"
+                  , lwd     = 2.5
+                  , ncol    = 2
+                  , cex     = 1.0
+                  , xpd     = TRUE
+                  , bty     = "n"
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #      Open and set plot window.                                               #
+            #------------------------------------------------------------------------------#
+            par(mar=c(3.1,4.6,3.1,1.6))
+            plot.new()
+            plot.window(xlim=cm.xlimit,ylim=cm.ylimit)
+            axis(side=1,las=1,at=em.pretty$levels,labels=em.pretty$labels)
+            axis(side=2,las=1)
+            title(main=le.cmean,ylab=ley,cex.main=1.0)
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #       Plot range bands.                                                      #
+            #------------------------------------------------------------------------------#
+            polygon( x       = c( tomonth[eshow]
+                                , rev(tomonth[eshow])
+                                , NA
+                                , tomonth[eshow]
+                                , rev(tomonth[eshow])
+                                )#end c
+                   , y       = c( cmean[eshow,"qlwr","test"]
+                                , rev(cmean[eshow,"qupr","test"])
+                                , NA
+                                , cmean[eshow,"qlwr","ctrl"]
+                                , rev(cmean[eshow,"qupr","ctrl"])
+                                )#end c
+                   , col     = cband.col
+                   , angle   = cband.angle
+                   , density = cband.density
+                   )#end polygon
+            #------------------------------------------------------------------------------#
+
+
+
+            #------ Plot monthly averages. ------------------------------------------------#
+            lines( x    = tomonth[eshow]
+                 , y    = cmean[eshow,"mean","test"]
+                 , type = "l"
+                 , col  = cmean.col["test"]
+                 , lwd  = 2.5
+                 )#end lines
+            lines( x    = tomonth[eshow]
+                 , y    = cmean[eshow,"mean","ctrl"]
+                 , type = "l"
+                 , col  = cmean.col["ctrl"]
+                 , lwd  = 2.5
+                 )#end lines
+            box()
+            #------------------------------------------------------------------------------#
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] %in% c("x11","quartz")){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy = clean.tmp()
+            #------------------------------------------------------------------------------#
+         }#end for (o in sequence(nout))
+         #---------------------------------------------------------------------------------#
+      #------------------------------------------------------------------------------------#
+
+
+
+
+
+
 
 
 

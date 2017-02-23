@@ -20,9 +20,14 @@ modpath="${SCRATCH}/Modules"
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit="${d_scratch}/ed2_data/site_bio_data"
 alsinit="${d_scratch}/ed2_data/lidar_bio_data"
+intinit="${d_scratch}/ed2_data/intensity_bio_data"
+lutinit="${d_scratch}/ed2_data/alslookup_bio_data"
 biotype=2      # 0 -- "default" setting (isizepft controls default/nounder)
                # 1 -- isizepft controls number of PFTs, whereas iage controls patches.
-               # 2 -- lidar initialisation. isizepft is the disturbance history key.
+               # 2 -- airborne lidar initialisation using return counts ("default"). 
+               # 3 -- airborne lidar initialisation using intensity counts.
+               # 4 -- airborne lidar/inventory hybrid initialisation ("lookup table"). 
+               # For lidar initialisation (2-4), isizepft is the disturbance history key.
 #----- Path and file prefix for init_mode = 5. --------------------------------------------#
 restart="${d_scratch}/ed2_data/restarts_XXX"
 #----- File containing the list of jobs and their settings: -------------------------------#
@@ -564,7 +569,7 @@ do
    #     Determine which PFTs to use based on the "iata" code, isizepft, and biotype.      #
    #---------------------------------------------------------------------------------------#
    case ${biotype} in
-   2)
+   2|3|4)
       #------------------------------------------------------------------------------------#
       #     Airborne lidar.  isizepft is not controlling isizepft, but disturbance         #
       # history. Initialise PFTs using the default settings.                               #
@@ -1371,6 +1376,22 @@ do
          #     ALS initialisation. ISIZEPFT has disturbance history information.           #
          #---------------------------------------------------------------------------------#
          thissfilin="${alsinit}/${polyiata}_${isizepft}."
+         #---------------------------------------------------------------------------------#
+         ;;
+      3)
+         #---------------------------------------------------------------------------------#
+         #     ALS initialisation using intensity. ISIZEPFT has disturbance history        #
+         # information.                                                                    #
+         #---------------------------------------------------------------------------------#
+         thissfilin="${intinit}/${polyiata}_${isizepft}."
+         #---------------------------------------------------------------------------------#
+         ;;
+      4)
+         #---------------------------------------------------------------------------------#
+         #     ALS initialisation using the lookup table. ISIZEPFT has disturbance history #
+         # information.                                                                    #
+         #---------------------------------------------------------------------------------#
+         thissfilin="${lutinit}/${polyiata}_${isizepft}."
          #---------------------------------------------------------------------------------#
          ;;
       esac

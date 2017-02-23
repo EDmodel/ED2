@@ -1860,6 +1860,26 @@ theme[[n]] = list( vnam      = c( "ncoh.global")
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
+theme[[n]] = list( vnam      = c(         "workload",                "specwork")
+                 , desc      = c("RK4 steps (Total)","Avg. RK4 steps per patch")
+                 , colour    = c(          "purple3",             "chartreuse2")
+                 , lwd       = c(                2.5,                       2.5)
+                 , type      = "o"
+                 , plog      = TRUE
+                 , prefix    = "workload"
+                 , title     = "Work Load"
+                 , unit      = untab$empty
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = FALSE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
 theme[[n]] = list( vnam      = c(          "reco",    "plant.resp",      "het.resp"
                                 ,     "leaf.resp",     "stem.resp",     "root.resp")
                  , desc      = c(     "Ecosystem",   "Autotrophic", "Heterotrophic"
