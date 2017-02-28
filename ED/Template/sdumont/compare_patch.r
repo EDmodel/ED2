@@ -67,10 +67,18 @@ dxy.gap      = 20
 #----- Confidence band. ----------------------------------------------------------------------#
 cband         = -1 # 2*pnorm(q=1)-1
 cband.leg     = c(test="Heterogeneous",ctrl="Homogeneous")
-cband.col     = c(test="#1E90FF"      ,ctrl="#BFBFBF"    )
-cmean.col     = c(test="#191970"      ,ctrl="#404040"    )
+cband.col     = c(test="#9EEEEE"      ,ctrl="#7F7F7F"    )
+cmean.col     = c(test="#36A6A6"      ,ctrl="#404040"    )
+cmean.lty     = c(test="twodash"      ,ctrl="solid"      )
 cband.angle   = c(test=-45            ,ctrl=+45          )
-cband.density = c(test= 25            ,ctrl= 25          )
+cband.density = c(test= 60            ,ctrl= 60          )
+cband.lwd     = c(test=1/2            ,ctrl= 1/2         )
+#------------------------------------------------------------------------------------------#
+
+
+#----- Limits for cumulative LAI layers. --------------------------------------------------#
+clai.top.lim  = list(zupr=0  ,zmid=0.5,zlwr=2  )
+clai.bot.lim  = list(zupr=0.5,zmid=2.0,zlwr=Inf)
 #------------------------------------------------------------------------------------------#
 
 
@@ -120,6 +128,27 @@ use.sites  = TRUE
 #------------------------------------------------------------------------------------------#
 n = 0
 compvar       = list()
+n             = n + 1
+compvar[[ n]] = list( vnam     = "zupr.gpp"
+                    , desc     = "GPP - Upper canopy"
+                    , unit     = "kgwom2oday"
+                    , cscheme  = "clife"
+                    , qmean    = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam     = "zmid.gpp"
+                    , desc     = "GPP - Mid-canopy"
+                    , unit     = "kgwom2oday"
+                    , cscheme  = "clife"
+                    , qmean    = FALSE
+                    )#end list
+n             = n + 1
+compvar[[ n]] = list( vnam     = "zlwr.gpp"
+                    , desc     = "GPP - Lower canopy"
+                    , unit     = "kgwom2oday"
+                    , cscheme  = "clife"
+                    , qmean    = FALSE
+                    )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "gpp"
                     , desc     = "Gross primary productivity"
@@ -526,6 +555,77 @@ discard.fun    = function(x) x * NA
 #------------------------------------------------------------------------------------------#
 
 
+#------------------------------------------------------------------------------------------#
+#      Function that integrates variables by LAI layers within each cohort.                #
+#------------------------------------------------------------------------------------------#
+layer.gpp.list.fun = function(nplant,area,gpp,lai,ipa,top,bot){
+   #----- Create data frame with nplant, gpp, and LAI.
+   dat        = data.frame(nplant = nplant, area = area, gpp = gpp, lai = lai)
+   dlist      = split(x=dat,f=ipa)
+   ans        = sapply(X=dlist,FUN=layer.gpp.one.fun,top=top,bot=bot)
+   names(ans) = NULL
+   return(ans)
+}#end function layer.gpp.list.fun
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#      Function that integrates variables by LAI layers within each cohort.                #
+#------------------------------------------------------------------------------------------#
+layer.gpp.one.fun = function(dat,top,bot){
+
+   #------ We can't process empty data frames. --------------------------------------------#
+   if (nrow(dat) > 0){
+      #----- Discard empty layers. --------------------------------------------------------#
+      dat = dat[dat$lai %>% 0,,drop=FALSE]
+      #------------------------------------------------------------------------------------#
+   }#end if (nrow(dat) > 0)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Check again if the number of rows is greater than zero. -------------------------#
+   if (nrow(dat) > 0){
+
+      #----- Copy data to local variables. ------------------------------------------------#
+      nplant = dat$nplant / dat$area
+      gpp    = dat$gpp
+      lai    = dat$lai
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Cumulative LAI. --------------------------------------------------------------#
+      clai     = cumsum(c(0,lai))
+      nlai     = length(clai)
+      clai.top = clai[-nlai]
+      clai.bot = clai[   -1]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Integrate the productivity. --------------------------------------------------#
+      fmult = ifelse( test = clai.bot > top & clai.top < bot
+                    , yes  = (pmin(clai.bot,bot)-pmax(clai.top,top))/(clai.bot-clai.top)
+                    , no   = 0.
+                    )#end ifelse
+      #------------------------------------------------------------------------------------#
+
+      #----- Scale cohorts with fmult and return the sum. ---------------------------------#
+      ans = sum(nplant * gpp * fmult)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #------ Nothing to return. ----------------------------------------------------------#
+      ans = 0
+      #------------------------------------------------------------------------------------#
+   }#end if (nrow(dat) > 0)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Return the sum. -----------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end slice lai.fun
+#------------------------------------------------------------------------------------------#
+
 
 #------ Find out whether to plot annual means (it must have at least 2 years... -----------#
 plot.ymean = eshow.yearz > eshow.yeara
@@ -883,6 +983,36 @@ for (s in loop.sites){
          q.tpatch = with( data = test$qpatch
                         , expr = mapply(FUN=tratio.fun,tp=transp,w=wflxca,SIMPLIFY=FALSE)
                        )#end with
+      }else if (this.vnam %in% c("zupr.gpp","zmid.gpp","zlwr.gpp")){
+         args.top = modifyList(x=list(EXPR=substring(this.vnam,1,4)),val=clai.top.lim)
+         args.bot = modifyList(x=list(EXPR=substring(this.vnam,1,4)),val=clai.bot.lim)
+      
+         ltop     = do.call(what="switch",args=args.top)
+         lbot     = do.call(what="switch",args=args.bot)
+         cpatch   = with( data     = ctrl$cohort
+                        , expr     = mapply( FUN      = layer.gpp.list.fun
+                                           , nplant   = nplant
+                                           , area     = area
+                                           , gpp      = gpp
+                                           , lai      = lai
+                                           , ipa      = ipa
+                                           , MoreArgs = list(top=ltop,bot=lbot)
+                                           , SIMPLIFY = FALSE
+                                           )#end mapply
+                        )#end with
+         tpatch   = with( data     = test$cohort
+                        , expr     = mapply( FUN      = layer.gpp.list.fun
+                                           , nplant   = nplant
+                                           , area     = area
+                                           , gpp      = gpp
+                                           , lai      = lai
+                                           , ipa      = ipa
+                                           , MoreArgs = list(top=ltop,bot=lbot)
+                                           , SIMPLIFY = FALSE
+                                           )#end mapply
+                        )#end with
+         q.cpatch = NULL
+         q.tpatch = NULL
       }else{
          cpatch   = ctrl$patch [[this.vnam]]
          tpatch   = test$patch [[this.vnam]]
@@ -1669,7 +1799,7 @@ for (s in sequence(nsites)){
                   , angle   = cband.angle
                   , density = cband.density
                   , col     = cmean.col
-                  , lty     = "solid"
+                  , lty     = cmean.lty
                   , lwd     = 2.5
                   , ncol    = 2
                   , cex     = 1.0
@@ -1709,6 +1839,7 @@ for (s in sequence(nsites)){
                    , col     = cband.col
                    , angle   = cband.angle
                    , density = cband.density
+                   , lwd     = cband.lwd
                    )#end polygon
             #------------------------------------------------------------------------------#
 
@@ -1719,12 +1850,14 @@ for (s in sequence(nsites)){
                  , y    = cmean[eshow,"mean","test"]
                  , type = "l"
                  , col  = cmean.col["test"]
+                 , lty  = cmean.lty["test"]
                  , lwd  = 2.5
                  )#end lines
             lines( x    = tomonth[eshow]
                  , y    = cmean[eshow,"mean","ctrl"]
                  , type = "l"
                  , col  = cmean.col["ctrl"]
+                 , lty  = cmean.lty["ctrl"]
                  , lwd  = 2.5
                  )#end lines
             box()
@@ -1780,125 +1913,131 @@ for (s in sequence(nsites)){
          #---------------------------------------------------------------------------------#
 
 
-
-
          #---------------------------------------------------------------------------------#
-         #     Prepare settings for maps.                                                  #
+         #     Check that this month has at least one valid (non-NA) point.                #
          #---------------------------------------------------------------------------------#
-         mm.zat    = pretty(x=mm.yrange[,e])
-         mm.zlab   = sprintf("%g",mm.zat)
-         mm.zlimit = range(mm.zat)
-         mm.zlevs  = seq(from=mm.zlimit[1],to=mm.zlimit[2],length.out=ncpbks)
-         mm.zcols  = this.cscheme(n=ncolpal)
+         if (all(is.finite(mm.yrange[,e]))){
+            #------------------------------------------------------------------------------#
+            #     Prepare settings for maps.                                               #
+            #------------------------------------------------------------------------------#
+            mm.zat    = pretty(x=mm.yrange[,e])
+            mm.zlab   = sprintf("%g",mm.zat)
+            mm.zlimit = range(mm.zat)
+            mm.zlevs  = seq(from=mm.zlimit[1],to=mm.zlimit[2],length.out=ncpbks)
+            mm.zcols  = this.cscheme(n=ncolpal)
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot monthly means.                                                     #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               fichier = file.path(outmpmain,paste0("map-",esuffix,".",outform[o]))
+               if (outform[o] %in% "x11"){
+                  X11(width=msize$width,height=msize$height,pointsize=col.use)
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=msize$width,height=msize$height,pointsize=col.use)
+               }else if(outform[o] %in% "png"){
+                  png(filename=fichier,width=msize$width*depth,height=msize$height*depth
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=msize$width*depth,height=msize$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
+                  postscript(file=fichier,width=msize$width,height=msize$height
+                            ,pointsize=ptsz,paper=msize$paper)
+               }else if(outform[o] %in% "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=msize$width,height=msize$height
+                     ,pointsize=ptsz,paper=msize$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Split device. -------------------------------------------------------#
+               par(par.user)
+               par(oma=c(0,0,2.5,0))
+               layout(mat= rbind(c(2,3,1)),widths=c(rep(x=(2.-f.leg)/4,times=2),f.leg/2))
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Plot colour palette. ------------------------------------------------#
+               par(mar=c(1.1,0.5,2.6,3.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=mm.zlimit,xaxs="i",yaxs="i")
+               rect( xleft   = 0
+                   , ybottom = mm.zlevs[-ncpbks]
+                   , xright  = 1
+                   , ytop    = mm.zlevs[-1]
+                   , col     = mm.zcols
+                   , border  = mm.zcols
+                   )#end rect
+               axis(side=4,las=1,at=mm.zat,labels=mm.zlab)
+               title( main     = desc.unit(desc=NULL,unit=untab[[this.unit]])
+                    , cex.main = 1.0
+                    , line     = 1.0
+                    )#end title
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Plot homogeneous illumination. --------------------------------------#
+               par(mar=c(1.1,1.1,2.6,0.1))
+               plot.new()
+               plot.window(xlim=xy.range,ylim=xy.range,xaxs="i",yaxs="i")
+               image( x         = xy.gaps
+                    , y         = xy.gaps
+                    , z         = ectrl
+                    , col       = mm.zcols
+                    , add       = TRUE
+                    , breaks    = mm.zlevs
+                    , useRaster = TRUE
+                    )#end image
+               box()
+               title(main="Homogeneous illumination",cex.main=1.25,line=0.5)
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Plot heterogeneous illumination. ------------------------------------#
+               par(mar=c(1.1,1.1,2.6,0.1))
+               plot.new()
+               plot.window(xlim=xy.range,ylim=xy.range,xaxs="i",yaxs="i")
+               image( x         = xy.gaps
+                    , y         = xy.gaps
+                    , z         = etest
+                    , col       = mm.zcols
+                    , add       = TRUE
+                    , breaks    = mm.zlevs
+                    , useRaster = TRUE
+                    )#end image
+               box()
+               title(main="Heterogeneous illumination",cex.main=1.25,line=0.5)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Main title. ---------------------------------------------------------#
+               mtext(text=etitle,side=3,outer=TRUE,cex=1.25,font=2)
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] %in% c("x11","quartz")){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+            }#end for (o in sequence(nout))
+            #------------------------------------------------------------------------------#
+         }#end if (all(is.finite(mm.yrange[,e])))
          #---------------------------------------------------------------------------------#
-
-
-
-
-         #---------------------------------------------------------------------------------#
-         #      Plot monthly means.                                                        #
-         #---------------------------------------------------------------------------------#
-         for (o in sequence(nout)){
-            #----- Make the file name. ----------------------------------------------------#
-            fichier = file.path(outmpmain,paste0("map-",esuffix,".",outform[o]))
-            if (outform[o] %in% "x11"){
-               X11(width=msize$width,height=msize$height,pointsize=col.use)
-            }else if (outform[o] %in% "quartz"){
-               quartz(width=msize$width,height=msize$height,pointsize=col.use)
-            }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=msize$width*depth,height=msize$height*depth
-                  ,pointsize=ptsz,res=depth,bg="transparent")
-            }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=msize$width*depth,height=msize$height*depth
-                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-            }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=msize$width,height=msize$height
-                         ,pointsize=ptsz,paper=msize$paper)
-            }else if(outform[o] %in% "pdf"){
-               pdf(file=fichier,onefile=FALSE,width=msize$width,height=msize$height
-                  ,pointsize=ptsz,paper=msize$paper)
-            }#end if
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Split device. ----------------------------------------------------------#
-            par(par.user)
-            par(oma=c(0,0,2.5,0))
-            layout(mat= rbind(c(2,3,1)),widths=c(rep(x=(2.-f.leg)/4,times=2),f.leg/2))
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Plot colour palette. ---------------------------------------------------#
-            par(mar=c(1.1,0.5,2.6,3.1))
-            plot.new()
-            plot.window(xlim=c(0,1),ylim=mm.zlimit,xaxs="i",yaxs="i")
-            rect( xleft   = 0
-                , ybottom = mm.zlevs[-ncpbks]
-                , xright  = 1
-                , ytop    = mm.zlevs[-1]
-                , col     = mm.zcols
-                , border  = mm.zcols
-                )#end rect
-            axis(side=4,las=1,at=mm.zat,labels=mm.zlab)
-            title(main=desc.unit(desc=NULL,unit=untab[[this.unit]]),cex.main=1.0,line=1.0)
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Plot homogeneous illumination. -----------------------------------------#
-            par(mar=c(1.1,1.1,2.6,0.1))
-            plot.new()
-            plot.window(xlim=xy.range,ylim=xy.range,xaxs="i",yaxs="i")
-            image( x         = xy.gaps
-                 , y         = xy.gaps
-                 , z         = ectrl
-                 , col       = mm.zcols
-                 , add       = TRUE
-                 , breaks    = mm.zlevs
-                 , useRaster = TRUE
-                 )#end image
-            box()
-            title(main="Homogeneous illumination",cex.main=1.25,line=0.5)
-            #------------------------------------------------------------------------------#
-
-
-
-            #----- Plot heterogeneous illumination. ---------------------------------------#
-            par(mar=c(1.1,1.1,2.6,0.1))
-            plot.new()
-            plot.window(xlim=xy.range,ylim=xy.range,xaxs="i",yaxs="i")
-            image( x         = xy.gaps
-                 , y         = xy.gaps
-                 , z         = etest
-                 , col       = mm.zcols
-                 , add       = TRUE
-                 , breaks    = mm.zlevs
-                 , useRaster = TRUE
-                 )#end image
-            box()
-            title(main="Heterogeneous illumination",cex.main=1.25,line=0.5)
-            #------------------------------------------------------------------------------#
-
-
-            #----- Main title. ------------------------------------------------------------#
-            mtext(text=etitle,side=3,outer=TRUE,cex=1.25,font=2)
-            #------------------------------------------------------------------------------#
-
-
-            #----- Close the device. ------------------------------------------------------#
-            if (outform[o] %in% c("x11","quartz")){
-               locator(n=1)
-               dev.off()
-            }else{
-               dev.off()
-            }#end if
-            dummy = clean.tmp()
-            #------------------------------------------------------------------------------#
-         }#end for (o in sequence(nout))
-         #---------------------------------------------------------------------------------#
-
       }#end for (e in which(eshow))
       #------------------------------------------------------------------------------------#
    }#end for (v in sequence(ncompvar))

@@ -4102,7 +4102,6 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine wood_aerodynamic_conductances(ipft,dbh,height,veg_wind,wood_temp,can_temp    &
                                            ,can_shv,can_rhos,can_cp,wood_gbh,wood_gbw)
-      use allometry      , only : dbh2vol       ! ! intent(in)
       use canopy_air_coms, only : acyli_lami    & ! intent(in)
                                 , ocyli_lami    & ! intent(in)
                                 , ncyli_lami    & ! intent(in)
@@ -4148,18 +4147,15 @@ module canopy_struct_dynamics
       real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=4)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=4)                 :: gbh_mos         ! Total convection cond.  [      m/s]
-      !----- External functions. ----------------------------------------------------------!
-      real(kind=4)   , external    :: cbrt            ! Cubic root.
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !      This is the characteristic diameter.  Even though branches are close to       !
-      ! cylinders but with different lengths and diameters.  Since the shape is rather     !
-      ! heterogeneous, we find the volume and use the cubic root as the characteristic     !
-      ! diameter.                                                                          !
+      !      This is the characteristic diameter.  For simplicity we assume that the       !
+      ! typical diameter is 5% of the DBH.  More sophisticated methods that integrate the  !
+      ! branch length may exist and could eventually supersede the current assumption.     !
       !------------------------------------------------------------------------------------!
-      w_diam = 0.01 * cbrt(dbh2vol(height,dbh,ipft))
+      w_diam = max(5.e-3,5.e-4 * dbh)
       !------------------------------------------------------------------------------------!
 
 
@@ -4257,7 +4253,6 @@ module canopy_struct_dynamics
    subroutine wood_aerodynamic_conductances8(ipft,dbh,height,veg_wind,wood_temp,can_temp   &
                                             ,can_shv,can_rhos,can_cp,wood_gbh,wood_gbw     &
                                             ,reynolds,grashof,nusselt_free,nusselt_forced)
-      use allometry      , only : dbh2vol       ! ! intent(in)
       use canopy_air_coms, only : ocyli_lami8   & ! intent(in)
                                 , acyli_lami8   & ! intent(in)
                                 , ncyli_lami8   & ! intent(in)
@@ -4304,18 +4299,15 @@ module canopy_struct_dynamics
       real(kind=8)                 :: forced_gbh_mos  ! Forced convection cond. [      m/s]
       real(kind=8)                 :: free_gbh_mos    ! Free convection cond.   [      m/s]
       real(kind=8)                 :: gbh_mos         ! Total convection cond.  [      m/s]
-      !----- External functions. ----------------------------------------------------------!
-      real(kind=8)   , external    :: cbrt8           ! Cubic root.
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !      This is the characteristic diameter.  Even though branches are close to       !
-      ! cylinders but with different lengths and diameters.  Since the shape is rather     !
-      ! heterogeneous, we find the volume and use the cubic root as the characteristic     !
-      ! diameter.                                                                          !
+      !      This is the characteristic diameter.  For simplicity we assume that the       !
+      ! typical diameter is 5% of the DBH.  More sophisticated methods that integrate the  !
+      ! branch length may exist and could eventually supersede the current assumption.     !
       !------------------------------------------------------------------------------------!
-      w_diam = 1.d-2 * cbrt8(dble(dbh2vol(height,dbh,ipft)))
+      w_diam = max(5.d-3,5.d-4 * dble(dbh))
       !------------------------------------------------------------------------------------!
 
 

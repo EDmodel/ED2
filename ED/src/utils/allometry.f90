@@ -448,7 +448,7 @@ module allometry
       !------------------------------------------------------------------------------------!
 
 
-      dbh2vol = b1Vol(ipft) * hgt * dbh ** b2Vol(ipft)
+      dbh2vol = b1Vol(ipft) * (hgt * dbh * dbh) ** b2Vol(ipft)
 
       return
    end function dbh2vol
@@ -488,8 +488,8 @@ module allometry
          !    Original ED-2.1 (I don't know the source for this equation, though).         !
          !---------------------------------------------------------------------------------!
          volume     = dbh2vol(hite,dbh,ipft) 
-         root_depth = b1Rd(ipft)  * volume ** b2Rd(ipft)
-
+         root_depth = b1Rd(ipft)  * (1.e6 * volume) ** b2Rd(ipft)
+         !---------------------------------------------------------------------------------!
       case default
          !---------------------------------------------------------------------------------!
          !    This is just a test allometry, that imposes root depth to be 0.5 m for       !

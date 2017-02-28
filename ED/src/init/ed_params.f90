@@ -3344,10 +3344,27 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Volume coefficients.  MLO. Is there any reference for this equation?              !
+   !     Volume coefficients.  New allometry for tropical trees simply uses the biomass    !
+   ! based on Chave et al. (2014) divided by wood density.  No reference found for old     !
+   ! allometric equation.                                                                  !
    !---------------------------------------------------------------------------------------!
-   b1Vol(1:17)  = 0.65 * pi1 * 0.11 * 0.11
-   b2Vol(1:17)  = 2.0
+   b1Vol(1:17)  = 1.e-6 * 0.65 * pi1 * 0.11 * 0.11
+   b2Vol(1:17)  = 1.0
+   select case (iallom)
+   case (4)
+      do ipft=1,n_pft
+         !---------------------------------------------------------------------------------!
+         !      Coefficients are directly taken from Chave et al. (2014).  Division by     !
+         ! wood density must convert it to kg/m3 (but not the term inside the empirical    !
+         ! formulation by Chave.                                                           !
+         !---------------------------------------------------------------------------------!
+         if (is_tropical(ipft)) then
+            b2Vol(ipft) = 0.976
+            b1Vol(ipft) = 0.001 * 0.0673 * rho(ipft) ** (b2Vol(ipft) - 1)
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+   end select
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
