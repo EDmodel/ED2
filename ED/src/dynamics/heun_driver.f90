@@ -366,7 +366,6 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
                              , safety                 & ! intent(in)
                              , pgrow                  & ! intent(in)
                              , pshrnk                 & ! intent(in)
-                             , errcon                 & ! intent(in)
                              , norm_rk4_fluxes        & ! sub-routine
                              , reset_rk4_fluxes       ! ! sub-routine
    use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
@@ -407,6 +406,7 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
    real(kind=8)                            :: newh             ! New time step suggested
    real(kind=8)                            :: oldh             ! Old time step
    real(kind=8)                            :: h                ! Current delta-t attempt
+   real(kind=8)                            :: hgoal            ! Delta-t ignoring overstep
    real(kind=8)                            :: hnext            ! Next delta-t
    real(kind=8)                            :: hdid             ! delta-t that worked (???)
    real(kind=8)                            :: qwfree           ! Free water internal energy
@@ -453,6 +453,7 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
                     ,integration_buff(ibuff)%yscal,cpatch)
 
       !----- Be sure not to overstep ------------------------------------------------------!
+      hgoal = h
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !------------------------------------------------------------------------------------!
@@ -509,6 +510,7 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
 
             !----- Defining next time, and checking if it really added something. ---------!
             h       = max(1.d-1*h, newh)
+            hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
 
@@ -590,12 +592,10 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
             !    and try something faster.                                                 !
             !------------------------------------------------------------------------------!
-            if (errmax > errcon) then
-               hnext = safety * h * errmax**pgrow
-            else
-               hnext = 5.d0 * h
-            endif
-            hnext = max(2.d0*hmin,hnext)
+            hnext = max(2.d0*hmin,min(5.d0,max(safety*errmax**pgrow,1.d0)) * hgoal)
+            !------------------------------------------------------------------------------!
+
+
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
@@ -685,9 +685,12 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
 
          !------ Copy the temporary patch to the next intermediate step -------------------!
          call copy_rk4_patch(integration_buff(ibuff)%y,integration_buff(ibuff)%initp,cpatch)
+         !---------------------------------------------------------------------------------!
 
          !------ Update the substep for next time and leave -------------------------------!
-         csite%htry(ipa) = sngl(hnext)
+         csite%hprev(ipa) = csite%htry(ipa)
+         csite%htry(ipa)  = sngl(hnext)
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !

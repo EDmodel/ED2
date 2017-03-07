@@ -864,7 +864,11 @@ subroutine init_hrzshade_params()
                                     , cci_gapsize                 & ! intent(out)
                                     , cci_gapmin                  & ! intent(out)
                                     , cci_nretn                   & ! intent(out)
-                                    , cci_hmax                    ! ! intent(out)
+                                    , cci_hmax                    & ! intent(out)
+                                    , at0                         & ! intent(out)
+                                    , at1                         & ! intent(out)
+                                    , at08                        & ! intent(out)
+                                    , at18                        ! ! intent(out)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -881,6 +885,16 @@ subroutine init_hrzshade_params()
    cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
    cci_nretn    = 30.0 ! "Return density" to generate the TCH map                  [  1/m2]
    cci_hmax     = 70.0 ! Maximum height allowed in the CCI scheme                  [     m]
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Coefficients that control CCI vs. light-correction curve.                         !
+   !---------------------------------------------------------------------------------------!
+   at0       =  3.012569
+   at1       = -0.0044086
+   at08      = dble(at0)
+   at18      = dble(at1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -5271,7 +5285,14 @@ subroutine init_ff_coms
    real              :: exp_patfus
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !      Maximum LAI that a cohort is allowed to have.  This cap ensures that self-thin-  !
+   ! ning mechanisms work in the model.  This parameter is used in fuse_cohorts and        !
+   ! split_cohorts.                                                                        !
+   !---------------------------------------------------------------------------------------!
    lai_tol            = 1.0
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

@@ -569,7 +569,8 @@ module fuse_fiss_utils
                                      , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : niter_cohfus        & ! intent(in)
                                      , coh_size_tol_min    & ! intent(in)
-                                     , coh_size_tol_mult   ! ! intent(in)
+                                     , coh_size_tol_mult   & ! intent(in)
+                                     , lai_tol             ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_polygons        , only : maxcohort           ! ! intent(in)
       use canopy_layer_coms   , only : crown_mod           ! ! intent(in)
@@ -587,7 +588,9 @@ module fuse_fiss_utils
       logical, dimension(:)  , allocatable :: fuse_table     ! Flag, remaining cohorts
       type(patchtype)        , pointer     :: cpatch         ! Current patch
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
-      integer                              :: donc,recc,ico3 ! Counters
+      integer                              :: donc           ! Index: donor cohort
+      integer                              :: recc           ! Index: receptor cohort
+      integer                              :: ico3           ! Cohort counter
       logical                              :: donc_resolv    ! Flag: Donor cohort is
                                                              !     resolvable
       logical                              :: dr_sim_dbh     ! Flag: donor and receptor
@@ -602,7 +605,12 @@ module fuse_fiss_utils
       logical                              :: dr_eqv_phen    ! Flag: donor and receptor
                                                              !    have same phenology
                                                              !    status.
+      logical                              :: dr_le_lai_max  ! Flag: donor and receptor
+                                                             !    do not exceed maximum
+                                                             !    LAI.
       real                                 :: newn           ! new nplants of merged coh.
+      real                                 :: donc_lai_max   ! Maximum LAI: donor cohort
+      real                                 :: recc_lai_max   ! Maximum LAI: receptor cohort
       real                                 :: total_size     ! Total size
       real                                 :: coh_size_tol   ! Relative size tolerance
       integer                              :: ncohorts_old   ! # of coh. before fusion test
@@ -661,6 +669,11 @@ module fuse_fiss_utils
                !    resolvable or this is not called during initialisation.                !
                !    3. Cohorts have different recruit statuses.                            !
                !    4. Cohorts have different phenology statuses.                          !
+               !                                                                           !
+               ! 5. Combined LAI shall not exceed maximum LAI for any cohort.  This is to  !
+               !    prevent bulky cohorts, which prevents self-thinning to work properly.  !
+               !    This check is not carried out during initialisation so tiny cohorts    !
+               !    can be fused with large ones, and thus improving carbon conservation.  !
                !---------------------------------------------------------------------------!
                if (.not. fuse_table(recc)) cycle recloop
                if (dpft /= rpft)           cycle recloop
@@ -674,6 +687,36 @@ module fuse_fiss_utils
                      cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
                   if (.not. dr_eqv_recruit) cycle recloop
                   if (.not. dr_eqv_phen   ) cycle recloop
+               end if
+               if (.not. fuse_initial) then
+                  !------------------------------------------------------------------------!
+                  !     Find maximum LAI.  Here we must check life form first.             !
+                  !------------------------------------------------------------------------!
+                  if (is_grass(rpft) .and. igrass == 1) then
+                     !----- New grasses.  Use actual LAI. ---------------------------------!
+                     donc_lai_max = cpatch%lai(donc)
+                     recc_lai_max = cpatch%lai(recc)
+                     !---------------------------------------------------------------------!
+                  else
+                     !----- Trees or old grasses. Use on-allometry LAI. -------------------!
+                     donc_lai_max = cpatch%nplant(donc)                                    &
+                                  * size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)       &
+                                  * cpatch%sla(donc)
+                     recc_lai_max = cpatch%nplant(recc)                                    &
+                                  * size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)       &
+                                  * cpatch%sla(recc)
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !      Prevent fusion in case the cohort would be too leafy.             !
+                  !------------------------------------------------------------------------!
+                  dr_le_lai_max = ( donc_lai_max + recc_lai_max ) <= lai_tol
+                  if (.not. dr_le_lai_max) cycle recloop
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
 
@@ -864,126 +907,176 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-      !----- Initialize the vector with splitting table -----------------------------------!
-      allocate(split_mask(cpatch%ncohorts))
-      split_mask(:) = .false.
-      old_nplant = 0.
-      old_size   = 0.
-      !----- Loop through cohorts ---------------------------------------------------------!
-      do ico = 1,cpatch%ncohorts
-         ipft = cpatch%pft(ico)
-
+      !------------------------------------------------------------------------------------!
+      !    We add the iterative loop in case cohorts have too high LAI.  The routine will  !
+      ! repeat the steps until all cohorts are below the maximum potential TAI.            !
+      !------------------------------------------------------------------------------------!
+      splitloop: do
+         !----- Initialize the vector with splitting table --------------------------------!
+         allocate(split_mask(cpatch%ncohorts))
+         split_mask(:) = .false.
+         old_nplant = 0.
+         old_size   = 0.
          !---------------------------------------------------------------------------------! 
-         !     STAI is the potential TAI that this cohort has when its leaves are fully    !
-         ! flushed.                                                                        !
+
+
+
+         !----- Loop through cohorts ------------------------------------------------------!
+         do ico = 1,cpatch%ncohorts
+            ipft = cpatch%pft(ico)
+
+            !------------------------------------------------------------------------------! 
+            !     STAI is the potential TAI that this cohort has when its leaves are fully !
+            ! flushed.                                                                     !
+            !------------------------------------------------------------------------------! 
+            stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)       &
+                 * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )              &
+                 * cpatch%sla(ico) + cpatch%wai(ico)
+            !------------------------------------------------------------------------------! 
+
+            !----- If the resulting TAI is too large, split this cohort. ------------------!
+            split_mask(ico) = stai > lai_tol
+            
+            old_nplant = old_nplant + cpatch%nplant(ico)
+            old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &
+                                                           + cpatch%bdead(ico)                &
+                                                           + cpatch%bstorage(ico) )
+            !------------------------------------------------------------------------------! 
+         end do
          !---------------------------------------------------------------------------------! 
-         stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)          &
-              * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )                 &
-              * cpatch%sla(ico) + cpatch%wai(ico)
-
-         !----- If the resulting TAI is too large, split this cohort. ---------------------!
-         split_mask(ico) = stai > lai_tol
-         
-         old_nplant = old_nplant + cpatch%nplant(ico)
-         old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &
-                                                        + cpatch%bdead(ico)                &
-                                                        + cpatch%bstorage(ico) )
-      end do
-
-      !----- Compute the new number of cohorts. -------------------------------------------!
-      tobesplit    = count(split_mask)
-      ncohorts_new = cpatch%ncohorts + tobesplit
-      
-      if (tobesplit > 0) then
-
-         !----- Allocate the temppatch. ---------------------------------------------------!
-         nullify(temppatch)
-         allocate(temppatch)
-         call allocate_patchtype(temppatch,cpatch%ncohorts)
-
-         !----- Fill the temp space with the current patches. -----------------------------!
-         call copy_patchtype(cpatch,temppatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
-
-         !----- Deallocate the current patch. ---------------------------------------------!
-         call deallocate_patchtype(cpatch)
-
-         !----- Re-allocate the current patch. --------------------------------------------!
-         call allocate_patchtype(cpatch,ncohorts_new)
-
-         !----- Transfer the temp values back in. -----------------------------------------!
-         call copy_patchtype(temppatch,cpatch,1,temppatch%ncohorts,1,temppatch%ncohorts)
-
-         !----- Remove the temporary patch. -----------------------------------------------!
-         call deallocate_patchtype(temppatch)
-         deallocate(temppatch)
-     
-         inew = size(split_mask)
-         do ico = 1,size(split_mask)
-
-            if (split_mask(ico)) then
-
-               !---------------------------------------------------------------------------!
-               !   Half the densities of the original cohort.  All "extensive" variables   !
-               ! must be rescaled.                                                         !
-               !---------------------------------------------------------------------------!
-               call update_cohort_extensive_props(cpatch,ico,ico,0.5)
-               !---------------------------------------------------------------------------!
 
 
-               !----- Apply these values to the new cohort. -------------------------------!
-               inew = inew+1
-               call copy_patchtype(cpatch,cpatch,ico,ico,inew,inew)
-               !---------------------------------------------------------------------------!
 
-               !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
-               if (is_grass(cpatch%pft(ico)) .and. igrass==1) then 
-                   !-- use bleaf for grass
-                   cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
-                   cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
-                   cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico))
+         !----- Compute the new number of cohorts. ----------------------------------------!
+         tobesplit    = count(split_mask)
+         ncohorts_new = cpatch%ncohorts + tobesplit
+         !---------------------------------------------------------------------------------!
 
-                   cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
-                   cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
-                   cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))               
-               else
-                   !-- use bdead for trees
-                   cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
-                   cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-                   cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
-                   cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
-                   cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
-                   cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether any cohort splitting is necessary.                            !
+         !---------------------------------------------------------------------------------!
+         if (tobesplit > 0) then
+
+            !----- Allocate the temppatch. ------------------------------------------------!
+            nullify(temppatch)
+            allocate(temppatch)
+            call allocate_patchtype(temppatch,cpatch%ncohorts)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Fill the temp space with the current patches. --------------------------!
+            call copy_patchtype(cpatch,temppatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+            !------------------------------------------------------------------------------!
+
+            !----- Deallocate the current patch. ------------------------------------------!
+            call deallocate_patchtype(cpatch)
+            !------------------------------------------------------------------------------!
+
+            !----- Re-allocate the current patch. -----------------------------------------!
+            call allocate_patchtype(cpatch,ncohorts_new)
+            !------------------------------------------------------------------------------!
+
+            !----- Transfer the temp values back in. --------------------------------------!
+            call copy_patchtype(temppatch,cpatch,1,temppatch%ncohorts,1,temppatch%ncohorts)
+            !------------------------------------------------------------------------------!
+
+            !----- Remove the temporary patch. --------------------------------------------!
+            call deallocate_patchtype(temppatch)
+            deallocate(temppatch)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Go through 
+            !------------------------------------------------------------------------------!
+            inew = size(split_mask)
+            do ico = 1,size(split_mask)
+
+               if (split_mask(ico)) then
+                  !------------------------------------------------------------------------!
+                  !   Half the densities of the original cohort.  All "extensive" vari-    !
+                  ! ables must be rescaled.                                                !
+                  !------------------------------------------------------------------------!
+                  call update_cohort_extensive_props(cpatch,ico,ico,0.5)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Apply these values to the new cohort. ----------------------------!
+                  inew = inew+1
+                  call copy_patchtype(cpatch,cpatch,ico,ico,inew,inew)
+                  !------------------------------------------------------------------------!
+
+                  !----- Tweaking bdead, to ensure carbon is conserved. -------------------!
+                  if (is_grass(cpatch%pft(ico)) .and. igrass==1) then 
+                     !----- Use bleaf for grass. ------------------------------------------!
+                     cpatch%bleaf(ico)  = cpatch%bleaf(ico) * (1.-epsilon)
+                     cpatch%dbh  (ico)  = bl2dbh(cpatch%bleaf(ico), cpatch%pft(ico))
+                     cpatch%hite (ico)  = bl2h(cpatch%bleaf(ico), cpatch%pft(ico))
+
+                     cpatch%bleaf(inew)  = cpatch%bleaf(inew) * (1.+epsilon)
+                     cpatch%dbh  (inew)  = bl2dbh(cpatch%bleaf(inew), cpatch%pft(inew))
+                     cpatch%hite (inew)  = bl2h(cpatch%bleaf(inew), cpatch%pft(inew))            
+                     !---------------------------------------------------------------------!
+                  else
+                     !-- use bdead for trees and old grasses. -----------------------------!
+                     cpatch%bdead(ico)  = cpatch%bdead(ico) * (1.-epsilon)
+                     cpatch%dbh  (ico)  = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+                     cpatch%hite (ico)  = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+
+                     cpatch%bdead(inew) = cpatch%bdead(inew) * (1.+epsilon)
+                     cpatch%dbh  (inew) = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
+                     cpatch%hite (inew) = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
+            end do
+            !------------------------------------------------------------------------------!
 
+
+            !----- After splitting, cohorts may need to be sorted again... ----------------!
+            call sort_cohorts(cpatch)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Checking whether the total # of plants is conserved... -----------------!
+            new_nplant = 0.
+            new_size   = 0.
+            do ico=1,cpatch%ncohorts
+               new_nplant = new_nplant + cpatch%nplant(ico)
+               new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)         &
+                                                              + cpatch%bdead(ico)          &
+                                                              + cpatch%bstorage(ico) )
+            end do
+            if (new_nplant < 0.99 * old_nplant .or. new_nplant > 1.01 * old_nplant .or.    &
+                new_size   < 0.99 * old_size   .or. new_size   > 1.01 * old_size) then
+               write (unit=*,fmt='(a,1x,es14.7)') 'OLD NPLANT: ',old_nplant
+               write (unit=*,fmt='(a,1x,es14.7)') 'NEW NPLANT: ',new_nplant
+               write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE:   ',old_size
+               write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE:   ',new_size
+               call fatal_error('Cohort splitting didn''t conserve plants!!!'              &
+                                           &,'split_cohorts','fuse_fiss_utils.f90')
             end if
-         end do
+            !------------------------------------------------------------------------------!
 
-         !----- After splitting, cohorts may need to be sorted again... -------------------!
-         call sort_cohorts(cpatch)
 
-         !----- Checking whether the total # of plants is conserved... --------------------!
-         new_nplant = 0.
-         new_size   = 0.
-         do ico=1,cpatch%ncohorts
-            new_nplant = new_nplant + cpatch%nplant(ico)
-            new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)            &
-                                                           + cpatch%bdead(ico)             &
-                                                           + cpatch%bstorage(ico) )
-         end do
-         if (new_nplant < 0.99 * old_nplant .or. new_nplant > 1.01 * old_nplant .or.       &
-             new_size   < 0.99 * old_size   .or. new_size   > 1.01 * old_size) then
-            write (unit=*,fmt='(a,1x,es14.7)') 'OLD NPLANT: ',old_nplant
-            write (unit=*,fmt='(a,1x,es14.7)') 'NEW NPLANT: ',new_nplant
-            write (unit=*,fmt='(a,1x,es14.7)') 'OLD SIZE:   ',old_size
-            write (unit=*,fmt='(a,1x,es14.7)') 'NEW SIZE:   ',new_size
-            call fatal_error('Cohort splitting didn''t conserve plants!!!'                 &
-                                        &,'split_cohorts','fuse_fiss_utils.f90')
+            !----- Free memory. -----------------------------------------------------------!
+            deallocate(split_mask)
+            !------------------------------------------------------------------------------!
+         else 
+            !----- Free memory then exit loop. --------------------------------------------!
+            deallocate(split_mask)
+            exit splitloop
+            !------------------------------------------------------------------------------!
          end if
-         
-      end if
-      deallocate(split_mask)
+         !---------------------------------------------------------------------------------!
+      end do splitloop
+      !------------------------------------------------------------------------------------!
+
       return
    end subroutine split_cohorts
    !=======================================================================================!

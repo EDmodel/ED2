@@ -1457,7 +1457,7 @@ do
       #     Check whether the job is still running
       #------------------------------------------------------------------------------------#
       jobname="${desc}-${polyname}"
-      running=$(qjobs -j ${jobname} -n 2> /dev/null | wc -l)
+      running=$(qcheck -n | grep ${jobname} 2> /dev/null | wc -l)
       #------------------------------------------------------------------------------------#
 
 

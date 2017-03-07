@@ -212,6 +212,24 @@ subroutine radiate_driver(cgrid)
             !------------------------------------------------------------------------------!
             patchloop: do ipa=1,csite%npatches
 
+               !---------------------------------------------------------------------------!
+               !     Copy radiation components to the local variables; they will be        !
+               ! normalised in the 'if' block that follows this block.  In case IHRZRAD is !
+               ! 1 or 2, the correction term 'fbeam' changes the amount of incoming        !
+               ! radiation to account for lateral shading or lateral illumination.  Other- !
+               ! wise, fbeam is always 1.                                                  !
+               !---------------------------------------------------------------------------!
+               par_beam_norm = dble(cpoly%met(isi)%par_beam*csite%fbeam(ipa))
+               par_diff_norm = dble(cpoly%met(isi)%par_diffuse              )
+               nir_beam_norm = dble(cpoly%met(isi)%nir_beam*csite%fbeam(ipa))
+               nir_diff_norm = dble(cpoly%met(isi)%nir_diffuse              )
+               rshort_tot    = cpoly%met(isi)%par_beam * csite%fbeam(ipa)                  &
+                             + cpoly%met(isi)%par_diffuse                                  &
+                             + cpoly%met(isi)%nir_beam * csite%fbeam(ipa)                  &
+                             + cpoly%met(isi)%nir_diffuse
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !      In case the angle of incidence is too high (i.e., its cosine is too  !
@@ -228,39 +246,22 @@ subroutine radiate_driver(cgrid)
                   ! closure.  In both cases the canopy radiation model uses normalised     !
                   ! profiles to find the vertical structure.                               !
                   !------------------------------------------------------------------------!
-                  rshort_tot    = cpoly%met(isi)%par_beam * csite%fbeam(ipa)               &
-                                + cpoly%met(isi)%nir_beam * csite%fbeam(ipa)               &
-                                + cpoly%met(isi)%par_diffuse                               &
-                                + cpoly%met(isi)%nir_diffuse
-                  par_beam_norm = max( 1.d-5                                               &
-                                     , dble(cpoly%met(isi)%par_beam*csite%fbeam(ipa))      &
-                                     / dble(rshort_tot)                             )
-                  par_diff_norm = max( 1.d-5                                               &
-                                     , dble(cpoly%met(isi)%par_diffuse              )      &
-                                     / dble(rshort_tot)                             )
-                  nir_beam_norm = max( 1.d-5                                               &
-                                     , dble(cpoly%met(isi)%nir_beam*csite%fbeam(ipa))      &
-                                     / dble(rshort_tot)                             )
-                  nir_diff_norm = max( 1.d-5                                               &
-                                     , dble(cpoly%met(isi)%nir_diffuse              )      &
-                                     / dble(rshort_tot)                             )
-                  sum_norm      = par_beam_norm + par_diff_norm                            &
-                                + nir_beam_norm + nir_diff_norm
+                  par_beam_norm = max( 1.d-5, par_beam_norm / dble(rshort_tot) )
+                  par_diff_norm = max( 1.d-5, par_diff_norm / dble(rshort_tot) )
+                  nir_beam_norm = max( 1.d-5, nir_beam_norm / dble(rshort_tot) )
+                  nir_diff_norm = max( 1.d-5, nir_diff_norm / dble(rshort_tot) )
                   !------------------------------------------------------------------------!
                elseif (twilight) then
                   !------------------------------------------------------------------------!
                   !     Twilight, if for some reason there is any direct radiation, copy   !
                   ! it to diffuse light.                                                   !
                   !------------------------------------------------------------------------!
-                  rshort_tot    = cpoly%met(isi)%rshort_diffuse
+                  par_diff_norm = max( 1.d-5                                               &
+                                     , (par_beam_norm + par_diff_norm) / dble(rshort_tot) )
+                  nir_diff_norm = max( 1.d-5                                               &
+                                     , (nir_beam_norm + nir_diff_norm) / dble(rshort_tot) )
                   par_beam_norm = 1.d-5
-                  par_diff_norm = 1.d-5
-                  nir_beam_norm = max(1.d-5, dble(cpoly%met(isi)%nir_beam   )              &
-                                           / dble(cpoly%met(isi)%rshort     ) )
-                  nir_diff_norm = max(1.d-5, dble(cpoly%met(isi)%nir_diffuse)              &
-                                           / dble(cpoly%met(isi)%rshort     ) )
-                  sum_norm      = par_beam_norm + par_diff_norm                            &
-                                + nir_beam_norm + nir_diff_norm
+                  nir_beam_norm = 1.d-5
                   !------------------------------------------------------------------------!
                else 
                   !------------------------------------------------------------------------!
@@ -272,7 +273,6 @@ subroutine radiate_driver(cgrid)
                   par_diff_norm = 2.5d-1
                   nir_beam_norm = 2.5d-1
                   nir_diff_norm = 2.5d-1
-                  sum_norm      = 1.d0
                end if
                !---------------------------------------------------------------------------!
 
@@ -282,6 +282,8 @@ subroutine radiate_driver(cgrid)
                !     Because we must tweak the radiation so none of the terms are zero, we !
                ! must correct the normalised radiation variables so they add up to one.    !
                !---------------------------------------------------------------------------!
+               sum_norm      = par_beam_norm + par_diff_norm                               &
+                             + nir_beam_norm + nir_diff_norm
                par_beam_norm = par_beam_norm / sum_norm
                par_diff_norm = par_diff_norm / sum_norm
                nir_beam_norm = nir_beam_norm / sum_norm
@@ -289,14 +291,14 @@ subroutine radiate_driver(cgrid)
                !---------------------------------------------------------------------------!
 
 
-               !----- Get unnormalized radiative transfer information. --------------------!
+               !----- Get normalised radiative transfer information. ----------------------!
                call sfcrad_ed(cpoly%cosaoi(isi),csite,ipa,nzg,nzs,cpoly%ntext_soil(:,isi)  &
                              ,cpoly%ncol_soil(isi),tuco,cpoly%met(isi)%rlong,twilight)
                !---------------------------------------------------------------------------!
 
 
 
-               !----- Normalize the absorbed radiations. ----------------------------------!
+               !----- Scale radiation back to the actual values. --------------------------!
                call scale_ed_radiation(rshort_tot,cpoly%met(isi)%rlong                     &
                                       ,cpoly%nighttime(isi),csite,ipa)
                !---------------------------------------------------------------------------!

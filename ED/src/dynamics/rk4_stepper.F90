@@ -10,7 +10,7 @@ module rk4_stepper
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine rkqs(x,htry,hdid,hnext,csite,ipa,isi)
+   subroutine rkqs(x,htry,hgoal,hdid,hnext,csite,ipa,isi)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_buff    & ! intent(inout)
@@ -21,7 +21,6 @@ module rk4_stepper
                                , safety              & ! intent(in)
                                , pgrow               & ! intent(in)
                                , pshrnk              & ! intent(in)
-                               , errcon              & ! intent(in)
                                , print_diags         & ! intent(in)
                                , print_detailed      & ! intent(in)
                                , norm_rk4_fluxes     & ! intent(in)
@@ -38,8 +37,10 @@ module rk4_stepper
       integer                  , intent(in)    :: isi
       type(sitetype)           , target        :: csite
       real(kind=8)             , intent(in)    :: htry
+      real(kind=8)             , intent(inout) :: hgoal
       real(kind=8)             , intent(inout) :: x
-      real(kind=8)             , intent(out)   :: hdid,hnext
+      real(kind=8)             , intent(out)   :: hdid
+      real(kind=8)             , intent(out)   :: hnext
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                             :: h,errmax,xnew,newh,oldh
       logical                                  :: reject_step,reject_result
@@ -99,6 +100,7 @@ module rk4_stepper
 
             !----- Defining next time, and checking if it really added something. ---------!
             h       = max(1.d-1*h, newh)
+            hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
 
@@ -179,12 +181,9 @@ module rk4_stepper
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
             !    and try something faster.                                                 !
             !------------------------------------------------------------------------------!
-            if (errmax > errcon) then
-               hnext = safety * h * errmax**pgrow
-            else
-               hnext = 5.d0 * h
-            endif
-            hnext = max(2.d0*hmin,hnext)
+            hnext = max(2.d0*hmin,min(5.d0,max(safety*errmax**pgrow,1.d0)) * hgoal)
+            !------------------------------------------------------------------------------!
+
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then
@@ -192,6 +191,7 @@ module rk4_stepper
                call print_rk4_state(integration_buff(ibuff)%y                              &
                                    ,integration_buff(ibuff)%ytemp,csite,ipa,isi,x,h)
             end if
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !    3e. Copy the temporary structure to the intermediate state.               !

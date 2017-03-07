@@ -305,10 +305,10 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
    !     Hold these parameters as constants, the functional form may change soon.          !
    !---------------------------------------------------------------------------------------!
-   real(kind=4), parameter :: at0       =  3.012569
-   real(kind=4), parameter :: at1       = -0.0044086
-   real(kind=4), parameter :: at08      = dble(at0)
-   real(kind=4), parameter :: at18      = dble(at1)
+   real(kind=4) :: at0
+   real(kind=4) :: at1
+   real(kind=8) :: at08
+   real(kind=8) :: at18
    !---------------------------------------------------------------------------------------!
 
 

@@ -4151,11 +4151,10 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !      This is the characteristic diameter.  For simplicity we assume that the       !
-      ! typical diameter is 5% of the DBH.  More sophisticated methods that integrate the  !
-      ! branch length may exist and could eventually supersede the current assumption.     !
+      !      This is the characteristic diameter.  For simplicity we assume a fixed        !
+      ! diameter of 2 cm.  This could be improved with better branching models.            !
       !------------------------------------------------------------------------------------!
-      w_diam = max(5.e-3,5.e-4 * dbh)
+      w_diam = 0.02
       !------------------------------------------------------------------------------------!
 
 
@@ -4303,11 +4302,10 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !      This is the characteristic diameter.  For simplicity we assume that the       !
-      ! typical diameter is 5% of the DBH.  More sophisticated methods that integrate the  !
-      ! branch length may exist and could eventually supersede the current assumption.     !
+      !      This is the characteristic diameter.  For simplicity we assume a fixed        !
+      ! diameter of 2 cm.  This could be improved with better branching models.            !
       !------------------------------------------------------------------------------------!
-      w_diam = max(5.d-3,5.d-4 * dble(dbh))
+      w_diam = 2.d-2
       !------------------------------------------------------------------------------------!
 
 

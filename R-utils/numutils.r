@@ -336,7 +336,7 @@ weighted.quantile <<- function(x,w,qu=0.50,size.minp=10,na.rm=FALSE){
 #==========================================================================================#
 #     This function estimates the weighted standard deviation.                             #
 #------------------------------------------------------------------------------------------#
-weighted.sd <<- function(x,w,na.rm=FALSE){
+weighted.sd <<- function(x,w,M=NULL,na.rm=FALSE){
 
    #----- Delete the missing values if the user asked to do it. ---------------------------#
    if (any(w < 0, na.rm = TRUE) || any(is.infinite(w)) || any(is.na(w))){
@@ -349,6 +349,9 @@ weighted.sd <<- function(x,w,na.rm=FALSE){
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Assume M to be inversely proportional to the smallest weight. -------------------#
+   if (is.null(M)) M = min(w)
+   #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
    #      Check whether at least one weight is non-zero.                                   #
@@ -357,10 +360,9 @@ weighted.sd <<- function(x,w,na.rm=FALSE){
       ans = NA
    }else{
       xwm    = weighted.mean(x=x,w=w)
-      M      = sum(w %>% 0)
       w.sum  = sum(w)
       r2.sum = sum(w*(x-xwm)^2)
-      ans    = sqrt(M * r2.sum / ( (M-1) * w.sum))
+      ans    = sqrt(M * r2.sum / (M * w.sum - 1))
    }#end if
    #---------------------------------------------------------------------------------------#
 

@@ -83,7 +83,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
    real                                    :: pss_available_water
    real                                    :: vm0_tuco
    real                                    :: llspan_tuco
-   real                                    :: can_ssh
    integer, dimension(n_pft)               :: tuco_pft
    !---------------------------------------------------------------------------------------!
 
@@ -283,13 +282,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             !------------------------------------------------------------------------------!
 
 
-            !------------------------------------------------------------------------------!
-            !    Find the 100% relative humidity.  This is a temporary test to make the    !
-            ! maximum carbon balance less negative.                                        !
-            !------------------------------------------------------------------------------!
-            can_ssh = csite%can_shv(ipa)
-            !------------------------------------------------------------------------------!
-
 
             !------------------------------------------------------------------------------!
             !    Call the photosynthesis for maximum photosynthetic rates.  The units      !
@@ -301,7 +293,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,lsl,ntext_soil              
             call lphysiol_full(            & !
                csite%can_prss(ipa)         & ! Canopy air pressure              [       Pa]
              , csite%can_rhos(ipa)         & ! Canopy air density               [    kg/m³]
-             , can_ssh                     & ! Canopy air sp. humidity          [    kg/kg]
+             , csite%can_shv(ipa)          & ! Canopy air sp. humidity          [    kg/kg]
              , csite%can_co2(ipa)          & ! Canopy air CO2 mixing ratio      [ µmol/mol]
              , ipft                        & ! Plant functional type            [      ---]
              , csite%par_l_max(ipa)        & ! Absorbed photos. active rad.     [ W/m²leaf]

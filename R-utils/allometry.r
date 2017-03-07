@@ -225,7 +225,7 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
 #    Standing volume of a tree.                                                            #
 #------------------------------------------------------------------------------------------#
 dbh2vol <<- function(hgt,dbh,ipft){
-   vol  = pft$b1Vol[ipft] * hgt * dbh ^ pft$b2Vol[ipft]
+   vol  = pft$b1Vol[ipft] * ( hgt * dbh * dbh ) ^ pft$b2Vol[ipft]
    return(vol)
 }#end function dbh2ca
 #==========================================================================================#

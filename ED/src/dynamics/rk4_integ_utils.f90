@@ -48,6 +48,7 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
    integer                                 :: i                ! Step counter
    integer                                 :: ksn              ! # of snow/water layers
    real(kind=8)                            :: x                ! Elapsed time
+   real(kind=8)                            :: hgoal            ! Current delta-t attempt
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
    real(kind=8)                            :: hdid             ! delta-t that worked (???)
@@ -88,17 +89,22 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,csite,ipa,h,.false.)
+      call leaf_derivs(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx,csite,ipa,h  &
+                      ,.false.)
 
       !----- Get scalings used to determine stability -------------------------------------!
-      call get_yscal(integration_buff(ibuff)%y, integration_buff(ibuff)%dydx,h,integration_buff(ibuff)%yscal    &
-                       ,cpatch)
+      call get_yscal(integration_buff(ibuff)%y, integration_buff(ibuff)%dydx,h             &
+                    ,integration_buff(ibuff)%yscal,cpatch)
 
-      !----- Be sure not to overstep ------------------------------------------------------!
-      if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
+      !------------------------------------------------------------------------------------!
+      !     Be sure not to overstep, but save the intended step to control the next step   !
+      ! and thus avoid unnecessary shrinking.                                              !
+      !------------------------------------------------------------------------------------!
+      hgoal = h
+      if ((x+h-tend)*(x+h-tbeg) > 0.d0) h = tend - x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs(x,h,hdid,hnext,csite,ipa,isi)
+      call rkqs(x,h,hgoal,hdid,hnext,csite,ipa,isi)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
@@ -167,9 +173,13 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!
-         call copy_rk4_patch(integration_buff(ibuff)%y,integration_buff(ibuff)%initp, cpatch)
+         call copy_rk4_patch(integration_buff(ibuff)%y,integration_buff(ibuff)%initp,cpatch)
+
          !------ Update the substep for next time and leave -------------------------------!
-         csite%htry(ipa) = sngl(hnext)
+         csite%hprev(ipa) = csite%htry(ipa)
+         csite%htry(ipa)  = sngl(hnext)
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !
