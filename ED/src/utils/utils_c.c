@@ -14,7 +14,7 @@
 #ifdef CRAY
 #include <stdlib.h>
 #endif
-#ifdef IBM
+#if defined(IBM) || defined(__APPLE__)
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>

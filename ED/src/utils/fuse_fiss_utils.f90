@@ -365,6 +365,7 @@ module fuse_fiss_utils
       allocate (elim_area(n_dist_types))
       elim_area (:) = 0.0
 
+      !Manfredo: inefficient: (.not. onlyone) should be checked outside the do loop
       do ipa = 1,csite%npatches
          if (csite%area(ipa) < min_patch_area .and. (.not. onlyone)) then
             ilu = csite%dist_type(ipa)
@@ -727,6 +728,10 @@ module fuse_fiss_utils
                   !    the census.                                                         !
                   ! 7. Both cohorts must have the same phenology status.                   !
                   !------------------------------------------------------------------------!
+                  !Manfredo: first census does not seem to be changed anywhere in the code
+                  ! plus I guess the first check should not be there. Either at the
+                  ! beginning of the code so that I don't do the rest of the operations
+                  ! or otherwise before calling the subroutine
                   if (     cpatch%pft(donc)              == cpatch%pft(recc)               &
                      .and. lai_max                        < lai_fuse_tol*tolerance_mult    &
                      .and. cpatch%first_census(donc)     == cpatch%first_census(recc)      &
@@ -788,6 +793,7 @@ module fuse_fiss_utils
          !------ If we are under maxcohort, no need to continue fusing. -------------------!
          if ( count(fuse_table) <= abs(maxcohort)) exit force_fusion
          !------ If no fusion happened and the tolerance exceeded the maximum, I give up. -!
+         !Manfredo I don't understand this condition
          if ( count(fuse_table) == ncohorts_old .and. tolerance_mult > coh_tolerance_max ) &
             exit force_fusion
 

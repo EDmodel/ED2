@@ -249,19 +249,19 @@ module ed_state_vars
       ! Leaf surface specific humidity for closed stomata (kg/kg)
       real ,pointer,dimension(:) :: lsfc_shv_closed
 
-      ! Leaf surface CO2 for open stomata (µmol/mol)
+      ! Leaf surface CO2 for open stomata (ï¿½mol/mol)
       real ,pointer,dimension(:) :: lsfc_co2_open
 
-      ! Leaf surface CO2 for closed stomata (µmol/mol)
+      ! Leaf surface CO2 for closed stomata (ï¿½mol/mol)
       real ,pointer,dimension(:) :: lsfc_co2_closed
 
       ! Leaf interecellular specific humidity (kg/kg)
       real ,pointer,dimension(:) :: lint_shv
 
-      ! Leaf intercellular CO2 for open stomata (µmol/mol)
+      ! Leaf intercellular CO2 for open stomata (ï¿½mol/mol)
       real ,pointer,dimension(:) :: lint_co2_open
 
-      ! Leaf intercellular CO2 for closed stomata (µmol/mol)
+      ! Leaf intercellular CO2 for closed stomata (ï¿½mol/mol)
       real ,pointer,dimension(:) :: lint_co2_closed
 
 
@@ -9175,8 +9175,6 @@ module ed_state_vars
       integer                                      :: i
       integer                                      :: o
       integer                                      :: z
-      integer                                      :: m
-      integer                                      :: n
       !------------------------------------------------------------------------------------!
 
 
