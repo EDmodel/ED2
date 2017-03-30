@@ -43,8 +43,8 @@ rdata.suffix = "patches_ed22.RData"
 #----- Default settings. ------------------------------------------------------------------#
 emean.yeara = 2008  # First year
 emean.yearz = 2010  # Last year
-eshow.yeara = 2008  # First year to show
-eshow.yearz = 2008  # First year to show
+eshow.yeara = 2009  # First year to show
+eshow.yearz = 2009  # First year to show
 #------------------------------------------------------------------------------------------#
 
 
@@ -63,6 +63,10 @@ dxy.gap      = 20
 #------------------------------------------------------------------------------------------#
 
 
+#----- Original number of patches: this is used to determine the weighted variance. -------#
+npat.orig = 4203
+#------------------------------------------------------------------------------------------#
+
 
 #----- Confidence band. ----------------------------------------------------------------------#
 cband         = -1 # 2*pnorm(q=1)-1
@@ -77,8 +81,9 @@ cband.lwd     = c(test=1/2            ,ctrl= 1/2         )
 
 
 #----- Limits for cumulative LAI layers. --------------------------------------------------#
-clai.top.lim  = list(zupr=0  ,zmid=0.5,zlwr=2  )
-clai.bot.lim  = list(zupr=0.5,zmid=2.0,zlwr=Inf)
+clai.lim      = c(0,0.5,3.0,Inf)
+clai.top.lim  = list(zupr=clai.lim[1],zmid=clai.lim[2],zlwr=clai.lim[3])
+clai.bot.lim  = list(zupr=clai.lim[2],zmid=clai.lim[3],zlwr=clai.lim[4])
 #------------------------------------------------------------------------------------------#
 
 
@@ -134,6 +139,8 @@ compvar[[ n]] = list( vnam     = "zupr.gpp"
                     , unit     = "kgwom2oday"
                     , cscheme  = "clife"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "zmid.gpp"
@@ -141,6 +148,8 @@ compvar[[ n]] = list( vnam     = "zmid.gpp"
                     , unit     = "kgwom2oday"
                     , cscheme  = "clife"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "zlwr.gpp"
@@ -148,6 +157,8 @@ compvar[[ n]] = list( vnam     = "zlwr.gpp"
                     , unit     = "kgwom2oday"
                     , cscheme  = "clife"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "gpp"
@@ -155,6 +166,8 @@ compvar[[ n]] = list( vnam     = "gpp"
                     , unit     = "kgcom2oyr"
                     , cscheme  = "clife"
                     , qmean    = TRUE
+                    , clprof   = "gpp"
+                    , clcum    = "nplant"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "npp"
@@ -162,6 +175,8 @@ compvar[[ n]] = list( vnam     = "npp"
                     , unit     = "kgcom2oyr"
                     , cscheme  = "clife"
                     , qmean    = TRUE
+                    , clprof   = "npp"
+                    , clcum    = "nplant"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "plant.resp"
@@ -169,6 +184,8 @@ compvar[[ n]] = list( vnam     = "plant.resp"
                     , unit     = "kgcom2oyr"
                     , cscheme  = "iclife"
                     , qmean    = TRUE
+                    , clprof   = "plant.resp"
+                    , clcum    = "nplant"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "cba"
@@ -176,6 +193,8 @@ compvar[[ n]] = list( vnam     = "cba"
                     , unit     = "kgcom2oyr"
                     , cscheme  = "clife"
                     , qmean    = FALSE
+                    , clprof   = "cba"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "reco"
@@ -183,6 +202,8 @@ compvar[[ n]] = list( vnam     = "reco"
                     , unit     = "kgcom2oyr"
                     , cscheme  = "iclife"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "nep"
@@ -190,6 +211,8 @@ compvar[[ n]] = list( vnam     = "nep"
                     , unit     = "kgcom2oyr"
                     , cscheme  = "clife"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "hflxca"
@@ -197,6 +220,8 @@ compvar[[ n]] = list( vnam     = "hflxca"
                     , unit     = "wom2"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "wflxca"
@@ -204,6 +229,8 @@ compvar[[ n]] = list( vnam     = "wflxca"
                     , unit     = "kgwom2oday"
                     , cscheme  = "ipanoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "transp"
@@ -211,6 +238,8 @@ compvar[[ n]] = list( vnam     = "transp"
                     , unit     = "kgwom2oday"
                     , cscheme  = "ipanoply"
                     , qmean    = TRUE
+                    , clprof   = "transp"
+                    , clcum    = "nplant"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "rshortup"
@@ -218,6 +247,8 @@ compvar[[ n]] = list( vnam     = "rshortup"
                     , unit     = "wom2"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "rlongup"
@@ -225,6 +256,8 @@ compvar[[ n]] = list( vnam     = "rlongup"
                     , unit     = "wom2"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "parup"
@@ -232,6 +265,8 @@ compvar[[ n]] = list( vnam     = "parup"
                     , unit     = "umolom2os"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.gnd"
@@ -239,6 +274,8 @@ compvar[[ n]] = list( vnam     = "par.gnd"
                     , unit     = "umolom2os"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "rshort.gnd"
@@ -246,6 +283,8 @@ compvar[[ n]] = list( vnam     = "rshort.gnd"
                     , unit     = "umolom2os"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "sm.stress"
@@ -253,6 +292,8 @@ compvar[[ n]] = list( vnam     = "sm.stress"
                     , unit     = "empty"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gpp"
@@ -260,6 +301,8 @@ compvar[[ n]] = list( vnam     = "leaf.gpp"
                     , unit     = "kgcom2loyr"
                     , cscheme  = "clife"
                     , qmean    = TRUE
+                    , clprof   = "leaf.gpp"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.temp"
@@ -267,6 +310,8 @@ compvar[[ n]] = list( vnam     = "leaf.temp"
                     , unit     = "degC"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.temp"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.vpd"
@@ -274,6 +319,8 @@ compvar[[ n]] = list( vnam     = "leaf.vpd"
                     , unit     = "hpa"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.vpd"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.gsw"
@@ -281,6 +328,8 @@ compvar[[ n]] = list( vnam     = "leaf.gsw"
                     , unit     = "kgwom2loday"
                     , cscheme  = "ipanoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.gsw"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf"
@@ -288,6 +337,8 @@ compvar[[ n]] = list( vnam     = "par.leaf"
                     , unit     = "umolom2os"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.par"
+                    , clcum    = "lai"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf.beam"
@@ -295,6 +346,8 @@ compvar[[ n]] = list( vnam     = "par.leaf.beam"
                     , unit     = "umolom2os"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.par.beam"
+                    , clcum    = "lai"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "par.leaf.diff"
@@ -302,6 +355,8 @@ compvar[[ n]] = list( vnam     = "par.leaf.diff"
                     , unit     = "umolom2os"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.par.diff"
+                    , clcum    = "lai"
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par"
@@ -309,6 +364,8 @@ compvar[[ n]] = list( vnam     = "leaf.par"
                     , unit     = "umolom2los"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.par"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par.beam"
@@ -316,6 +373,8 @@ compvar[[ n]] = list( vnam     = "leaf.par.beam"
                     , unit     = "umolom2los"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.par.beam"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "leaf.par.diff"
@@ -323,6 +382,8 @@ compvar[[ n]] = list( vnam     = "leaf.par.diff"
                     , unit     = "umolom2los"
                     , cscheme  = "panoply"
                     , qmean    = TRUE
+                    , clprof   = "leaf.par.diff"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.light"
@@ -330,6 +391,8 @@ compvar[[ n]] = list( vnam     = "assim.light"
                     , unit     = "umolom2los"
                     , cscheme  = "clife"
                     , qmean    = TRUE
+                    , clprof   = "assim.light"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "assim.rubp"
@@ -337,13 +400,8 @@ compvar[[ n]] = list( vnam     = "assim.rubp"
                     , unit     = "umolom2los"
                     , cscheme  = "clife"
                     , qmean    = TRUE
-                    )#end list
-n             = n + 1
-compvar[[ n]] = list( vnam     = "assim.co2"
-                    , desc     = "CO2-limited Assimilation"
-                    , unit     = "umolom2los"
-                    , cscheme  = "clife"
-                    , qmean    = TRUE
+                    , clprof   = "assim.rubp"
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lpar"
@@ -351,6 +409,8 @@ compvar[[ n]] = list( vnam     = "phap.lpar"
                     , unit     = "hpa"
                     , cscheme  = "panoply"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lvpd"
@@ -358,6 +418,8 @@ compvar[[ n]] = list( vnam     = "phap.lvpd"
                     , unit     = "hpa"
                     , cscheme  = "panoply"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.ltemp"
@@ -365,6 +427,8 @@ compvar[[ n]] = list( vnam     = "phap.ltemp"
                     , unit     = "degC"
                     , cscheme  = "panoply"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.sms"
@@ -372,6 +436,8 @@ compvar[[ n]] = list( vnam     = "phap.sms"
                     , unit     = "empty"
                     , cscheme  = "panoply"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 n             = n + 1
 compvar[[ n]] = list( vnam     = "phap.lgsw"
@@ -379,6 +445,8 @@ compvar[[ n]] = list( vnam     = "phap.lgsw"
                     , unit     = "kgwom2loday"
                     , cscheme  = "ipanoply"
                     , qmean    = FALSE
+                    , clprof   = NA_character_
+                    , clcum    = NA_character_
                     )#end list
 #------------------------------------------------------------------------------------------#
 
@@ -392,7 +460,7 @@ compvar[[ n]] = list( vnam     = "phap.lgsw"
 # verbose -- long description (for titles)                                                 #
 # colour  -- colour to represent this simulation                                           #
 #------------------------------------------------------------------------------------------#
-sim.suffix  = "imetrad01"
+sim.suffix  = "imetrad04"
 sim.struct  = c(ctrl = "ihrzrad04", test = "ihrzrad02")
 #------------------------------------------------------------------------------------------#
 
@@ -627,6 +695,65 @@ layer.gpp.one.fun = function(dat,top,bot){
 #------------------------------------------------------------------------------------------#
 
 
+
+#------------------------------------------------------------------------------------------#
+#      Function that integrates variables by LAI layers within each cohort.                #
+#------------------------------------------------------------------------------------------#
+layer.gpp.one.fun = function(dat,top,bot){
+
+   #------ We can't process empty data frames. --------------------------------------------#
+   if (nrow(dat) > 0){
+      #----- Discard empty layers. --------------------------------------------------------#
+      dat = dat[dat$lai %>% 0,,drop=FALSE]
+      #------------------------------------------------------------------------------------#
+   }#end if (nrow(dat) > 0)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Check again if the number of rows is greater than zero. -------------------------#
+   if (nrow(dat) > 0){
+
+      #----- Copy data to local variables. ------------------------------------------------#
+      nplant = dat$nplant / dat$area
+      gpp    = dat$gpp
+      lai    = dat$lai
+      #------------------------------------------------------------------------------------#
+
+
+      #----- Cumulative LAI. --------------------------------------------------------------#
+      clai     = cumsum(c(0,lai))
+      nlai     = length(clai)
+      clai.top = clai[-nlai]
+      clai.bot = clai[   -1]
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Integrate the productivity. --------------------------------------------------#
+      fmult = ifelse( test = clai.bot > top & clai.top < bot
+                    , yes  = (pmin(clai.bot,bot)-pmax(clai.top,top))/(clai.bot-clai.top)
+                    , no   = 0.
+                    )#end ifelse
+      #------------------------------------------------------------------------------------#
+
+      #----- Scale cohorts with fmult and return the sum. ---------------------------------#
+      ans = sum(nplant * gpp * fmult)
+      #------------------------------------------------------------------------------------#
+   }else{
+      #------ Nothing to return. ----------------------------------------------------------#
+      ans = 0
+      #------------------------------------------------------------------------------------#
+   }#end if (nrow(dat) > 0)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Return the sum. -----------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end slice lai.fun
+#------------------------------------------------------------------------------------------#
+
+
 #------ Find out whether to plot annual means (it must have at least 2 years... -----------#
 plot.ymean = eshow.yearz > eshow.yeara
 #------------------------------------------------------------------------------------------#
@@ -640,6 +767,7 @@ outymean = file.path(outsimul,"tseries_ymean")
 outemean = file.path(outsimul,"tseries_emean")
 outcmean = file.path(outsimul,"tseries_cmean")
 outqmean = file.path(outsimul,"tseries_qmean")
+outzprof = file.path(outsimul,"cumlai_prof"  )
 outmmean = file.path(outsimul,"maps_emean")
 if (! file.exists(outroot )             ) dir.create(outroot )
 if (! file.exists(outsimul)             ) dir.create(outsimul)
@@ -647,6 +775,7 @@ if (! file.exists(outymean) & plot.ymean) dir.create(outymean)
 if (! file.exists(outemean)             ) dir.create(outemean)
 if (! file.exists(outcmean)             ) dir.create(outcmean)
 if (! file.exists(outqmean)             ) dir.create(outqmean)
+if (! file.exists(outzprof)             ) dir.create(outzprof)
 if (! file.exists(outmmean)             ) dir.create(outmmean)
 #------------------------------------------------------------------------------------------#
 
@@ -849,7 +978,6 @@ for (s in loop.sites){
    #---------------------------------------------------------------------------------------#
 
 
-
    #----- Define some patch characteristics based on the first time. ----------------------#
    model$npatches = npatches
    model$props    = data.frame( age   = pmax(1/4,ctrl$patch$age[[1]])
@@ -874,9 +1002,68 @@ for (s in loop.sites){
                                    }#end function
                            , x   = plist
                            )#end mapply
+   wfarea          = mapply( FUN = function(x){
+                                      ans = weighted.mean( x     = x$orig.area
+                                                         , w     = x$cci.area/x$orig.area
+                                                         , na.rm = TRUE
+                                                         )#end weighted.mean
+                                      return(ans)
+                                   }#end function
+                           , x   = plist
+                           )#end mapply
    qfbeam          = quantile(x=wfbeam,probs=qshow,na.rm=TRUE)
    qidx.show       = mapply(FUN=which.closest,x=qfbeam,MoreArgs=list(A=wfbeam))
    model$qidx.show = qidx.show
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Find cohort, patch, and light indices so we store data as arrays. ---------------#
+   c.ipa           = ctrl$cohort$ipa   [[1]]
+   c.ilt           = nlight + 0L * c.ipa
+   c.ico           = ctrl$cohort$ico   [[1]]
+   c.idx           = cbind(c.ico,c.ipa,c.ilt)
+   t.ipa           = ptable$ipa   [test$cohort$ipa[[1]]]
+   t.ilt           = ptable$ilight[test$cohort$ipa[[1]]]
+   t.ico           = test$cohort$ico   [[1]]
+   t.idx           = cbind(t.ico,t.ipa,t.ilt)
+   ncohorts        = max(c.ico)
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Cohort properties: keep both ctrl and test.                                       #
+   #---------------------------------------------------------------------------------------#
+   c.pft           = ctrl$cohort$pft   [[1]]
+   c.lai           = ctrl$cohort$lai   [[1]]
+   c.nplant        = ctrl$cohort$nplant[[1]] / ctrl$cohort$area[[1]]
+   c.resolv        = c.lai > pft$lai.min[c.pft]
+   t.pft           = test$cohort$pft   [[1]]
+   t.lai           = test$cohort$lai   [[1]]
+   t.nplant        = test$cohort$nplant[[1]] / test$cohort$area[[1]]
+   t.resolv        = t.lai > pft$lai.min[t.pft]
+   #---------------------------------------------------------------------------------------#
+
+
+   #------ Find the cumulative LAI for each profile. --------------------------------------#
+   c.cumlai           = matrix(data=NA,nrow=ncohorts,ncol=npatches)
+   c.copa             = cbind(c.ico,c.ipa)
+   c.cumlai[c.copa]   = unlist(tapply(X=c.lai,INDEX=c.ipa,FUN=cumsum))
+   dimnames(c.cumlai) = list( sprintf("C%3.3i",sequence(ncohorts))
+                            , sprintf("P%3.3i",sequence(npatches))
+                            )#end list
+   #---------------------------------------------------------------------------------------#
+
+   #----- Save cohort information to model. -----------------------------------------------#
+   model$ncohorts = ncohorts
+   model$cohorts  = list( nplant = list(ctrl = c.nplant, test = t.nplant)
+                        , lai    = list(ctrl = c.lai   , test = t.lai   )
+                        , resolv = list(ctrl = c.resolv, test = t.resolv)
+                        , pft    = list(ctrl = c.pft   , test = t.pft   )
+                        , cumlai = c.cumlai
+                        , c.idx  = c.idx
+                        , t.idx  = t.idx
+                        )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -888,7 +1075,7 @@ for (s in loop.sites){
    e.empty = array( data     = NA
                   , dim      = c(nemean,npatches,nlight)
                   , dimnames = list( as.character(model$tomonth)
-                                   , sequence(npatches)
+                                   , sprintf("P%3.3i",sequence(npatches))
                                    , light.key
                                    )#end list
                   )#end array
@@ -903,7 +1090,15 @@ for (s in loop.sites){
                   , dim      = c(nemean,ndcycle,npatches,nlight)
                   , dimnames = list( as.character(model$tomonth)
                                    , dclabel
-                                   , sequence(npatches)
+                                     , sprintf("P%3.3i",sequence(npatches))
+                                   , light.key
+                                   )#end list
+                  )#end array
+   z.empty = array( data     = NA
+                  , dim      = c(nemean,ncohorts,npatches,nlight)
+                  , dimnames = list( as.character(model$tomonth)
+                                   , sprintf("C%3.3i",sequence(ncohorts))
+                                   , sprintf("P%3.3i",sequence(npatches))
                                    , light.key
                                    )#end list
                   )#end array
@@ -917,18 +1112,25 @@ for (s in loop.sites){
    cat0("       ~ Load variables...")
    for (v in sequence(ncompvar)){
       #----- Load information. ------------------------------------------------------------#
-      this.vnam      = compvar$vnam [v]
-      this.desc      = compvar$desc [v]
-      this.unit      = compvar$unit [v]
-      this.qmean     = compvar$qmean[v]
+      this.vnam      = compvar$vnam  [v]
+      this.desc      = compvar$desc  [v]
+      this.unit      = compvar$unit  [v]
+      this.qmean     = compvar$qmean [v]
+      this.clprof    = compvar$clprof[v]
+      this.clcum     = compvar$clcum [v]
       cat0("         > ",this.desc,"...")
       #------------------------------------------------------------------------------------#
+
 
 
       #------------------------------------------------------------------------------------#
       #     Initialise array for this variable.                                            #
       #------------------------------------------------------------------------------------#
-      model[[this.vnam]] = list( emean = e.empty, qmean = q.empty, cmean = c.empty)
+      model[[this.vnam]] = list( emean = e.empty
+                               , qmean = q.empty
+                               , cmean = c.empty
+                               , zprof = z.empty
+                               )#end list
       #------------------------------------------------------------------------------------#
 
 
@@ -1025,6 +1227,19 @@ for (s in loop.sites){
 
 
 
+      #------------------------------------------------------------------------------------#
+      #     Load cohort-level variables.                                                   #
+      #------------------------------------------------------------------------------------#
+      if (is.na(this.clprof)){
+         ccohort = NULL
+         tcohort = NULL
+      }else{
+         ccohort = ctrl$cohort[[this.clprof]]
+         tcohort = test$cohort[[this.clprof]]
+      }#end if (is.na(this.clprof))
+      #------------------------------------------------------------------------------------#
+
+
 
       #------------------------------------------------------------------------------------#
       #     Copy control data to array.                                                    #
@@ -1054,11 +1269,35 @@ for (s in loop.sites){
                cqupr = weighted.quantile(x=cpatch[[stamp]],w=carea[[stamp]],qu=qupr)
                model[[this.vnam]]$cmean[e,,"ctrl"] = c(cqlwr,cmean,cqupr)
             }else{
-               csdev = weighted.sd      (x=cpatch[[stamp]],w=carea[[stamp]]        )
+               csdev = weighted.sd(x=cpatch[[stamp]],w=carea[[stamp]],M=npat.orig)
                model[[this.vnam]]$cmean[e,,"ctrl"] = cmean + c(-1.,0.,1.)*abs(cband)*csdev
             }#end if (cband > 0)
             #------------------------------------------------------------------------------#
          }#end if (! is.null(cpatch))
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      In case cohort data exist, copy them to the zprof.                         #
+         #---------------------------------------------------------------------------------#
+         if (! is.null(ccohort)){
+            cnow = ccohort[[stamp]]
+            cidx = cbind(e,model$cohorts$c.idx)
+            cres = model$cohorts$resolv$ctrl
+            if (is.na(this.clcum)){
+               model[[this.vnam]]$zprof[cidx] = ifelse( test = cres
+                                                      , yes  = cnow
+                                                      , no   = NA
+                                                      )#end ifelse
+            }else{
+               cscal                          = model$cohorts[[this.clcum]]$ctrl
+               model[[this.vnam]]$zprof[cidx] = ifelse( test = cres
+                                                      , yes  = cnow * cscal
+                                                      , no   = 0.
+                                                      )#end ifelse
+            }#end if (is.na(this.clcum))
+            #------------------------------------------------------------------------------#
+         }#end if (! is.null(ccohort))
          #---------------------------------------------------------------------------------#
       }#end for (e in emean.loop)
       #------------------------------------------------------------------------------------#
@@ -1105,11 +1344,11 @@ for (s in loop.sites){
                tqupr = weighted.quantile(x=tpatch[[stamp]],w=tarea[[stamp]],qu=qupr)
                model[[this.vnam]]$cmean[e,,"test"] = c(tqlwr,tmean,tqupr)
             }else{
-               tsdev = weighted.sd      (x=tpatch[[stamp]],w=tarea[[stamp]]        )
+               tsdev = weighted.sd(x=tpatch[[stamp]],w=tarea[[stamp]],M=npat.orig)
                model[[this.vnam]]$cmean[e,,"test"] = tmean + c(-1.,0.,1.)*abs(cband)*tsdev
             }#end if (cband > 0)
             #------------------------------------------------------------------------------#
-         }#end if (! is.null(tpatch)){
+         }#end if (! is.null(tpatch))
          #---------------------------------------------------------------------------------#
 
 
@@ -1131,9 +1370,65 @@ for (s in loop.sites){
                                                       )#end
             }#end for (l in sequence(nltype))
             #------------------------------------------------------------------------------#
-         }#end if (! is.null(tpatch)){
+         }#end if (! is.null(tpatch))
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      In case cohort data exist, copy them to the zprof.                         #
+         #---------------------------------------------------------------------------------#
+         if (! is.null(tcohort)){
+            #----- Load cohort. -----------------------------------------------------------#
+            tnow = tcohort[[stamp]]
+            tidx = cbind(e,model$cohorts$t.idx)
+            tres = model$cohorts$resolv$test
+            if (is.na(this.clcum)){
+               model[[this.vnam]]$zprof[tidx] = ifelse( test = tres
+                                                      , yes  = tnow
+                                                      , no   = NA
+                                                      )#end ifelse
+            }else{
+               tscal                          = model$cohorts[[this.clcum]]$test
+               model[[this.vnam]]$zprof[tidx] = ifelse( test = tres
+                                                      , yes  = tnow * tscal
+                                                      , no   = 0.
+                                                      )#end ifelse
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+
+            #----- Find weighted average. -------------------------------------------------#
+            wgt      = matrix(data=0,ncol=nltype,nrow=npatches)
+            idx      = cbind(ptable$ipa,ptable$ilight)
+            wgt[idx] = ptable$cci.area / ptable$orig.area
+            zprof    = model[[this.vnam]]$zprof
+            for (ip in sequence(npatches)){
+               zprof[e,,ip,nwl] = apply( X      = zprof[e,,ip,sequence(nltype)]
+                                       , MARGIN = 1
+                                       , FUN    = weighted.mean
+                                       , w      = wgt[ip,]
+                                       , na.rm  = TRUE
+                                       )#end apply
+            }#end for (ip in sequence(npatches))
+            model[[this.vnam]]$zprof = ifelse(is.finite(zprof),zprof,NA)
+            #------------------------------------------------------------------------------#
+         }#end if (! is.null(tcohort))
          #---------------------------------------------------------------------------------#
       }#end for (e in emean.loop)
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #      Find the weighted mean for each layer of vertical profile.                    #
+      #------------------------------------------------------------------------------------#
+      if (! ( is.na(this.clprof) || is.na(this.clcum))){
+         zprof                    = apply( X = model[[this.vnam]]$zprof
+                                         , MARGIN = c(1,3,4)
+                                         , FUN    = cumsum
+                                         )#end apply
+         model[[this.vnam]]$zprof = aperm(a=zprof,perm=c(2,1,3,4))
+      }#end if (! ( is.na(this.clprof) || is.na(this.clcum)))
       #------------------------------------------------------------------------------------#
    }#end for (v in sequence(ncompvar))
    #---------------------------------------------------------------------------------------#
@@ -1219,12 +1514,15 @@ for (s in sequence(nsites)){
       this.unit       = untab[[compvar$unit[v]]]
       this.qmean      = compvar$qmean[v]
       this.cscheme    = get(compvar$cscheme[v])
+      this.clprof     = ! is.na(compvar$clprof[v])
+      this.clcum      = ! is.na(compvar$clcum [v])
       tomonth         = model$tomonth
       toyear          = sort(unique(model$toyear))
       emean           = model[[this.vnam]]$emean
       cmean           = model[[this.vnam]]$cmean
       ymean           = qapply(X=emean,INDEX=model$toyear,DIM=1,FUN=mean,na.rm=TRUE)
       qmean           = model[[this.vnam]]$qmean
+      zprof           = model[[this.vnam]]$zprof
       wshow           = model$tomonth %wr% when.show
       qidx.show       = model$qidx.show
       cat0("     > ",this.desc,"...")
@@ -1253,6 +1551,28 @@ for (s in sequence(nsites)){
       #------------------------------------------------------------------------------------#
 
 
+
+      #------------------------------------------------------------------------------------#
+      #      Reduce the number of dimensions for vertical profile.                         #
+      #------------------------------------------------------------------------------------#
+      if (this.clprof){
+         zprof        = qapply( X     = zprof[wshow,,,,drop=FALSE]
+                              , INDEX = nummonths(model$tomonth[wshow])
+                              , DIM   = 1
+                              , FUN   = mean
+                              , na.rm = TRUE
+                              )#end qapply
+      }else{
+         zprof        = array(data=NA,dim=c(12,model$ncohorts,dim(emean)[c(2,3)]))
+      }#end if (this.qmean)
+      dimnames(zprof) = list( month.abb
+                            , sprintf("C%3.3i",sequence(model$ncohorts))
+                            , dimnames(emean)[[2]]
+                            , dimnames(emean)[[3]]
+                            )#end list
+      #------------------------------------------------------------------------------------#
+
+
       #------------------------------------------------------------------------------------#
       #     Find plot limits for time.                                                     #
       #------------------------------------------------------------------------------------#      
@@ -1263,6 +1583,7 @@ for (s in sequence(nsites)){
       em.pretty = pretty.time (when=em.xlimit)
       cm.pretty = em.pretty
       qm.pretty = pretty.elapsed(x=model$dchour,base=24)
+      zm.yrange = apply(X=model$cohorts$cumlai,MARGIN=2,FUN=range,finite=TRUE)
       #------------------------------------------------------------------------------------#
 
 
@@ -1277,13 +1598,15 @@ for (s in sequence(nsites)){
       ym.yrange = apply(X=ymean[yshow,,,drop=FALSE],MARGIN=2,FUN=range,finite=TRUE)
       qm.yrange = apply(X=qmean                    ,MARGIN=3,FUN=range,finite=TRUE)
       mm.yrange = apply(X=emean                    ,MARGIN=1,FUN=range,finite=TRUE)
+      zm.xrange = apply(X=zprof                    ,MARGIN=3,FUN=range,finite=TRUE)
       #------------------------------------------------------------------------------------#
 
 
 
 
       #------ Set some common features. ---------------------------------------------------#
-      ley     = desc.unit(desc=this.desc,unit=this.unit)
+      leclai  = desc.unit(desc="Cumulative LAI",unit=untab$m2lom2)
+      ley     = desc.unit(desc=this.desc       ,unit=this.unit   )
       #------------------------------------------------------------------------------------#
 
 
@@ -1307,15 +1630,27 @@ for (s in sequence(nsites)){
             if (! file.exists(outqpmain)) dir.create(outqpmain)
             if (! file.exists(outqpatch)) dir.create(outqpatch)
          }#end if (this.qmean)
+         if (this.clprof){
+            outzpmain = file.path(outzprof ,this.vnam)
+            outzpatch = file.path(outzpmain,qkey     )
+            if (! file.exists(outzpmain)) dir.create(outzpmain)
+            if (! file.exists(outzpatch)) dir.create(outzpatch)
+         }#end if (this.clprof)
          outmpmain = file.path(outmmean,this.vnam)
          if (! file.exists(outmpmain)) dir.create(outmpmain)
          #---------------------------------------------------------------------------------#
 
 
          #----- Limits for this patch. ----------------------------------------------------#
-         em.ylimit = pretty.xylim(u=c(em.yrange[,p]))
-         ym.ylimit = pretty.xylim(u=c(ym.yrange[,p]))
-         qm.ylimit = pretty.xylim(u=c(qm.yrange[,p]))
+         em.ylimit  = pretty.xylim(u= c(em.yrange[,p]))
+         ym.ylimit  = pretty.xylim(u= c(ym.yrange[,p]))
+         qm.ylimit  = pretty.xylim(u= c(qm.yrange[,p]))
+         zm.xlimit  = pretty.xylim(u= c(zm.xrange[,p]))
+         zm.xpretty = pretty(zm.xlimit)
+         zm.xlabels = sprintf("%g",zm.xpretty)
+         zm.ylimit  = pretty.xylim(u=-c(zm.yrange[,p]))
+         zm.ypretty = pretty(zm.ylimit)
+         zm.ylabels = sprintf("%g",ifelse(zm.ypretty == 0.,0,-zm.ypretty))
          #---------------------------------------------------------------------------------#
 
 
@@ -1704,6 +2039,139 @@ for (s in sequence(nsites)){
                for (l in sequence(nlight)){
                   lines( x    = model$dchour
                        , y    = qmean[m,,p,l]
+                       , col  = light.col[l]
+                       , lwd  = light.lwd[l]
+                       , lty  = light.lty[l]
+                       , type = "l"
+                       )#end lines
+               }#end for (s in sequence(nsimul))
+               box()
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] %in% c("x11","quartz")){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy = clean.tmp()
+               #---------------------------------------------------------------------------#
+            }#end for (o in sequence(nout))
+            #------------------------------------------------------------------------------#
+         }#end for (m in mon.loop)
+         #---------------------------------------------------------------------------------#
+
+
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #      In case the mean profile is to be plotted for this variable, go through    #
+         # each month.                                                                     #
+         #---------------------------------------------------------------------------------#
+         mon.loop = sequence(12*this.clprof)
+         for (m in mon.loop){
+            #----- Aliases for current month. ---------------------------------------------#
+            mlabel   = paste0("M",sprintf("%2.2i",m))
+            mdesc    = month.name[m]
+            mzsuffix = paste0(this.vnam,"-",iata,"_",mlabel,"_",qkey)
+            if (this.clcum){
+               le.zprof = paste0(longname,"\n","Cumulative profile (",mdesc,") ",qdesc)
+            }else{
+               le.zprof = paste0(longname,"\n","Vertical profile (",mdesc,") ",qdesc)
+            }#end if (this.clcum)
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Plot monthly mean diurnal cycle.                                        #
+            #------------------------------------------------------------------------------#
+            for (o in sequence(nout)){
+               #----- Make the file name. -------------------------------------------------#
+               fichier = file.path(outzpatch,paste0("zprof-",mzsuffix,".",outform[o]))
+               if (outform[o] %in% "x11"){
+                  X11(width=xsize$width,height=xsize$height,pointsize=col.use)
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=xsize$width,height=xsize$height,pointsize=col.use)
+               }else if(outform[o] %in% "png"){
+                  png(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=xsize$width*depth,height=xsize$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
+                  postscript(file=fichier,width=xsize$width,height=xsize$height
+                            ,pointsize=ptsz,paper=xsize$paper)
+               }else if(outform[o] %in% "pdf"){
+                  pdf(file=fichier,onefile=FALSE,width=xsize$width,height=xsize$height
+                     ,pointsize=ptsz,paper=xsize$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Split device. -------------------------------------------------------#
+               par(par.user)
+               layout(mat= rbind(c(3,3),c(1,2)),heights=c(1.-f.leg,f.leg))
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Plot patch properties. ----------------------------------------------#
+               par(mar=c(0.1,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x       = "center"
+                     , inset   = 0.0
+                     , legend  = lelab
+                     , fill    = "transparent"
+                     , border  = "transparent"
+                     , ncol    = 1
+                     , cex     = 0.8
+                     , xpd     = TRUE
+                     , bty     = "o"
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #----- Plot legend. --------------------------------------------------------#
+               par(mar=c(0.1,0.1,0.1,0.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x       = "center"
+                     , inset   = 0.0
+                     , legend  = light.lab
+                     , col     = light.col
+                     , lty     = light.lty
+                     , lwd     = light.lwd
+                     , ncol    = 1
+                     , cex     = 0.8
+                     , xpd     = TRUE
+                     , bty     = "o"
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Plot annual means.                                                   #
+               #---------------------------------------------------------------------------#
+               par(mar=c(4.1,4.6,3.1,1.6))
+               plot.new()
+               plot.window(xlim=zm.xlimit,ylim=zm.ylimit)
+               axis(side=1,las=1,at=zm.xpretty,labels=zm.xlabels)
+               axis(side=2,las=1,at=zm.ypretty,labels=zm.ylabels)
+               title(main=le.zprof,xlab=ley,ylab=leclai,cex.main=1.0)
+               for (l in sequence(nlight)){
+                  sel = is.finite(zprof[m,,p,l])
+                  lines( x    = zprof[m,sel,p,l]
+                       , y    = -model$cohorts$cumlai[sel,p]
                        , col  = light.col[l]
                        , lwd  = light.lwd[l]
                        , lty  = light.lty[l]

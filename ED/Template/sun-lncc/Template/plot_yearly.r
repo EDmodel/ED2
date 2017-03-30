@@ -670,8 +670,11 @@ for (place in myplaces){
    #      Time series by DBH, by PFT.                                                      #
    #---------------------------------------------------------------------------------------#
    #----- Find the PFTs to plot. ----------------------------------------------------------#
-   pftuse  = which(apply(X=is.na(szpft$nplant),MARGIN=3,FUN=sum,na.rm=TRUE) == 0.)
-   pftuse  = pftuse[pftuse != (npft+1)]
+   pftmat  = apply( X      = szpft$nplant[,-(ndbh+1),-(npft+1),drop=FALSE]
+                  , MARGIN = c(1,3)
+                  , FUN    = function(x) sum(is.finite(x))
+                  )#end apply
+   pftuse  = which(apply(X=pftmat,MARGIN=2,FUN=function(x) max(x) > 1))
    for (v in sequence(ntspftdbh)){
       thistspftdbh   = tspftdbh[[v]]
       vnam        = thistspftdbh$vnam
@@ -684,11 +687,11 @@ for (place in myplaces){
       if (vnam %in% names(szpft)){
          thisvar = szpft[[vnam]]
          if (plog){
-            xylog="y"
-            badlog = is.finite(thisvar) & thisvar <= 0
+            xylog           = "y"
+            badlog          = thisvar %<=% 0
             thisvar[badlog] = NA
          }else{
-            xylog=""
+            xylog           = ""
          }#end if
       }else{
          thisvar = array(NA,dim=c(nyears,ndbh+1,npft+1))

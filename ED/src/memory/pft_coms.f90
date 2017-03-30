@@ -11,23 +11,25 @@ module pft_coms
 
    use ed_max_dims, only: n_pft
    !---------------------------------------------------------------------------------------!
-   !  PFT | Name                                | Grass   | Tropical | agriculture?        !
+   !  PFT | Name                                |   Grass | Tropical | Conifer |      Crop !
    !------+-------------------------------------+---------+----------+---------------------!
-   !    1 | C4 grass                            |     yes |      yes |                 yes !
-   !    2 | Early tropical                      |      no |      yes |                  no !
-   !    3 | Mid tropical                        |      no |      yes |                  no !
-   !    4 | Late tropical                       |      no |      yes |                  no !
-   !    5 | C3 grass                            |     yes |       no |                 yes !
-   !    6 | Northern pines                      |      no |       no |                  no !
-   !    7 | Southern pines                      |      no |       no |                  no !
-   !    8 | Late conifers                       |      no |       no |                  no !
-   !    9 | Early temperate deciduous           |      no |       no |                  no !
-   !   10 | Mid temperate deciduous             |      no |       no |                  no !
-   !   11 | Late temperate deciduous            |      no |       no |                  no !
-   !   12 | C3 pasture                          |     yes |       no |                 yes !
-   !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |                 yes !
-   !   14 | C4 pasture                          |     yes |      yes |                 yes !
-   !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |                 yes !
+   !    1 | C4 grass                            |     yes |      yes |      no |       yes !
+   !    2 | Early tropical                      |      no |      yes |      no |        no !
+   !    3 | Mid tropical                        |      no |      yes |      no |        no !
+   !    4 | Late tropical                       |      no |      yes |      no |        no !
+   !    5 | Temperate C3 grass                  |     yes |       no |      no |       yes !
+   !    6 | Northern pines                      |      no |       no |     yes |        no !
+   !    7 | Southern pines                      |      no |       no |     yes |        no !
+   !    8 | Late conifers                       |      no |       no |     yes |        no !
+   !    9 | Early temperate deciduous           |      no |       no |      no |        no !
+   !   10 | Mid temperate deciduous             |      no |       no |      no |        no !
+   !   11 | Late temperate deciduous            |      no |       no |      no |        no !
+   !   12 | C3 pasture                          |     yes |       no |      no |       yes !
+   !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |      no |       yes !
+   !   14 | C4 pasture                          |     yes |      yes |      no |       yes !
+   !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |      no |       yes !
+   !   16 | Tropical C3 grass                   |     yes |      yes |      no |       yes !
+   !   17 | Araucaria                           |      no |      yes |     yes |        no !
    !------+-------------------------------------+---------+----------+---------------------!
 
 
@@ -122,11 +124,11 @@ module pft_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    The following logical flags will tell whether the PFTs are tropical and also       !
-   ! check whether it is a grass or tree PFT (this may need to be switched to integer if   !
-   ! we start adding bush-like PFTs).                                                      !
+   !    The following logical flags will tell whether the PFTs are tropical, conifrers,    !
+   ! and also check whether it is a grass or tree PFT.                                     !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft)    :: is_tropical
+   logical, dimension(n_pft)    :: is_conifer
    logical, dimension(n_pft)    :: is_grass
    !---------------------------------------------------------------------------------------!
 
@@ -168,12 +170,6 @@ module pft_coms
 
    !----- Base (Q10 term) for Vm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Vm_q10
-
-   !----- The a term for the Vm decline correction for high temperature, as in Collatz. ---!
-   real, dimension(n_pft) :: Vm_decay_a
-
-   !----- The b term for the Vm decline correction for high temperature, as in Collatz. ---!
-   real, dimension(n_pft) :: Vm_decay_b
 
    !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
    real, dimension(n_pft) :: Rd_low_temp 

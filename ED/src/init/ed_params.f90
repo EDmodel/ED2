@@ -13,6 +13,7 @@ subroutine load_ed_ecosystem_params()
                           , plantation_stock    & ! intent(in)
                           , pft_name16          & ! intent(out)
                           , is_tropical         & ! intent(out)
+                          , is_conifer          & ! intent(out)
                           , is_grass            & ! intent(out)
                           , include_pft         & ! intent(out)
                           , include_pft_ag      & ! intent(out)
@@ -85,11 +86,18 @@ subroutine load_ed_ecosystem_params()
    is_tropical(12:13) = .false.
    is_tropical(14:15) = .true.
    is_tropical(16)    = .true.
-   !---------------------------------------------------------------------------------------!
-   !     This uses tropical allometry for DBH->Bleaf and DBH->Bdead, but otherwise it uses !
-   ! the temperate properties.                                                             !
-   !---------------------------------------------------------------------------------------!
    is_tropical(17)    = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------! 
+   !    This flag should be used to define whether the plant is conifer or flowering.      !
+   !---------------------------------------------------------------------------------------! 
+   is_conifer(1:5)  = .false.
+   is_conifer(6:8)  = .true.
+   is_conifer(9:16) = .false.
+   is_conifer(17)   = .true.
    !---------------------------------------------------------------------------------------!
 
 
@@ -183,12 +191,12 @@ subroutine load_ed_ecosystem_params()
    !     Assign many PFT-dependent parameters.  Here the order may matter, so think twice  !
    ! before changing the order.                                                            !
    !---------------------------------------------------------------------------------------!
+   !----- Allometry and some plant traits. ------------------------------------------------!
+   call init_pft_alloc_params()
    !----- Photosynthesis and leaf respiration. --------------------------------------------!
    call init_pft_photo_params()
    !----- Root and heterotrophic respiration. ---------------------------------------------!
    call init_pft_resp_params()
-   !----- Allometry and some plant traits. ------------------------------------------------!
-   call init_pft_alloc_params()
    !----- Mortality. ----------------------------------------------------------------------!
    call init_pft_mort_params()
    !----- Nitrogen. -----------------------------------------------------------------------!
@@ -1515,15 +1523,19 @@ end subroutine init_can_lyr_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-   use ed_max_dims    , only : n_pft                   ! ! intent(in)
+   use ed_max_dims    , only : n_pft                   & ! intent(in)
+                             , str_len                 ! ! intent(in)
    use ed_misc_coms   , only : ibigleaf                & ! intent(in)
                              , iallom                  ! ! intent(in)
-   use pft_coms       , only : D0                      & ! intent(out)
+   use pft_coms       , only : is_tropical             & ! intent(in)
+                             , is_conifer              & ! intent(in)
+                             , is_grass                & ! intent(in)
+                             , SLA                     & ! intent(in)
+                             , C2B                     & ! intent(in)
+                             , D0                      & ! intent(out)
                              , Vm_low_temp             & ! intent(out)
                              , Vm_high_temp            & ! intent(out)
                              , Vm_decay_e              & ! intent(out)
-                             , Vm_decay_a              & ! intent(out)
-                             , Vm_decay_b              & ! intent(out)
                              , Vm0                     & ! intent(out)
                              , Vm_hor                  & ! intent(out)
                              , Vm_q10                  & ! intent(out)
@@ -1544,7 +1556,7 @@ subroutine init_pft_photo_params()
                              , twothirds               & ! intent(in)
                              , umol_2_mol              & ! intent(in)
                              , yr_sec                  ! ! intent(in)
-   use physiology_coms , only: iphysiol                & ! intent(in)
+   use physiology_coms, only : iphysiol                & ! intent(in)
                              , vmfact_c3               & ! intent(in)
                              , vmfact_c4               & ! intent(in)
                              , mphoto_trc3             & ! intent(in)
@@ -1566,72 +1578,101 @@ subroutine init_pft_photo_params()
                              , lwidth_nltree           & ! intent(in)
                              , q10_c3                  & ! intent(in)
                              , q10_c4                  ! ! intent(in)
+   use detailed_coms  , only : idetailed               ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
 
    !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4) :: ssfact
+   real(kind=4)            :: ssfact
+   real(kind=4)            :: vmexpo_pft
+   real(kind=4)            :: vmtref_pft
+   real(kind=4)            :: gamma_pft
+   real(kind=4)            :: a_pft
+   real(kind=4)            :: b_pft
+   integer                 :: ipft
+   integer                 :: n
+   logical                 :: write_photo
+   character(len=2)        :: char_pathway
+   !----- Local parameters, based on Atkin et al. (2015), Table S3 (Rdark,m). -------------!
+   real(kind=4), parameter :: a_c3grss = -1.962            ! 5d, C3H
+   real(kind=4), parameter :: b_c3grss =  1.247            ! 5d, C3H
+   real(kind=4), parameter :: a_c4grss =  0.30103000-1.962 ! Make it twice C3H
+   real(kind=4), parameter :: b_c4grss =  1.247            ! Make it twice C3H
+   real(kind=4), parameter :: a_bltrop = -1.533            ! 5f, TWQ >= 25 degC
+   real(kind=4), parameter :: b_bltrop =  1.022            ! 5f, TWQ >= 25 degC
+   real(kind=4), parameter :: a_bltemp = -0.862            ! 5f, 15 degC <= TWQ < 25 degC
+   real(kind=4), parameter :: b_bltemp =  0.753            ! 5f, 15 degC <= TWQ < 25 degC
+   real(kind=4), parameter :: a_needle = -0.366            ! 5d, NlT
+   real(kind=4), parameter :: b_needle =  0.494            ! 5d, NlT
+   !----- Other constants. ----------------------------------------------------------------!
+   character(len=str_len), parameter :: photo_file  = 'photo_param.txt'
    !---------------------------------------------------------------------------------------!
 
-   D0(1)                     = d0_grass
-   D0(2:4)                   = d0_tree
-   D0(5)                     = d0_grass
-   D0(6:8)                   = d0_tree
-   D0(9:11)                  = d0_tree
-   D0(12:13)                 = d0_tree
-   D0(14:15)                 = d0_tree
-   D0(16)                    = d0_grass
-   D0(17)                    = d0_tree
 
-   Vm_low_temp(1)            =  8.0             ! c4 grass
-   Vm_low_temp(2)            =  8.0             ! early tropical
-   Vm_low_temp(3)            =  8.0             ! mid tropical
-   Vm_low_temp(4)            =  8.0             ! late tropical
-   Vm_low_temp(5)            =  4.7137          ! c3 grass
-   Vm_low_temp(6)            =  4.7137          ! northern pines ! 5.0
-   Vm_low_temp(7)            =  4.7137          ! southern pines ! 5.0
-   Vm_low_temp(8)            =  4.7137          ! late conifers  ! 5.0
-   Vm_low_temp(9)            =  4.7137          ! early hardwoods
-   Vm_low_temp(10)           =  4.7137          ! mid hardwoods
-   Vm_low_temp(11)           =  4.7137          ! late hardwoods
-   Vm_low_temp(12)           =  4.7137          ! c3 pasture
-   Vm_low_temp(13)           =  4.7137          ! c3 crop
-   Vm_low_temp(14)           =  8.0             ! c4 pasture
-   Vm_low_temp(15)           =  8.0             ! c4 crop
-   Vm_low_temp(16)           =  4.7137          ! subtropical C3 grass
-   Vm_low_temp(17)           =  4.7137          ! Araucaria
 
-   Vm_high_temp(1)           =  50.0 ! C4
-   Vm_high_temp(2)           =  50.0 ! C3
-   Vm_high_temp(3)           =  50.0 ! C3
-   Vm_high_temp(4)           =  50.0 ! C3
-   Vm_high_temp(5)           =  45.0 ! C3
-   Vm_high_temp(6)           =  45.0 ! C3
-   Vm_high_temp(7)           =  45.0 ! C3
-   Vm_high_temp(8)           =  45.0 ! C3
-   Vm_high_temp(9)           =  45.0 ! C3
-   Vm_high_temp(10)          =  45.0 ! C3
-   Vm_high_temp(11)          =  45.0 ! C3
-   Vm_high_temp(12)          =  45.0 ! C3
-   Vm_high_temp(13)          =  45.0 ! C3
-   Vm_high_temp(14)          =  45.0 ! C4
-   Vm_high_temp(15)          =  45.0 ! C4
-   Vm_high_temp(16)          =  50.0 ! C3
-   Vm_high_temp(17)          =  45.0 ! C3
+   !----- Check whether to print the photosynthesis table or not. -------------------------!
+   write_photo = btest(idetailed,5)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Photosynthetic pathway (3 is C3; 4 is C4). --------------------------------------!
+   photosyn_pathway(1)       = 4
+   photosyn_pathway(2:4)     = 3
+   photosyn_pathway(5)       = 3
+   photosyn_pathway(6:13)    = 3
+   photosyn_pathway(14:15)   = 4
+   photosyn_pathway(16:17)   = 3
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Critical VPD, for stomata closure due to dry air. -------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         D0(ipft) = d0_grass
+      else
+         D0(ipft) = d0_tree
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Low temperature threshold for photosynthetic capacity. --------------------------!
+   do ipft=1,n_pft
+      if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+         Vm_low_temp(ipft) =  4.7137 ! Conifer of Temperate
+      else
+         Vm_low_temp(ipft) =  8.0    ! Tropical broadleaf
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- High temperature threshold for photosynthetic capacity. -------------------------!
+   do ipft=1,n_pft
+      if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+         Vm_high_temp(ipft) =  45.0 ! Tropical broadleaf
+      else
+         Vm_high_temp(ipft) =  50.0 ! Conifer of Temperate
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !    Vm_decay_e is the correction term for high and low temperatures when running the   !
    ! original ED-2.1 correction as in Moorcroft et al. (2001).                             !
-   !    Vm_decay_a and Vm_decay_b are the correction terms when running the Collatz et al. !
-   ! (1991).  When running Collatz, this is used for both C3 and C4 photosynthesis.        !
    !---------------------------------------------------------------------------------------!
-   Vm_decay_e(1:4)           = 0.8     !                                          [    ---]
-   Vm_decay_e(5:11)          = 0.4     !                                          [    ---]
-   Vm_decay_e(12:16)         = 0.8     !                                          [    ---]
-   Vm_decay_e(17)            = 0.4     !                                          [    ---]
-   Vm_decay_a(1:17)          = 220000. !                                          [  J/mol]
-   Vm_decay_b(1:17)          = 690.    !                                          [J/mol/K]
+   do ipft=1,n_pft
+      if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+         Vm_decay_e(ipft) =  0.4 ! Conifer of Temperate
+      else
+         Vm_decay_e(ipft) =  0.8 ! Tropical broadleaf
+      end if
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -1655,21 +1696,29 @@ subroutine init_pft_photo_params()
       end select
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
-   Vm0(1)     = 12.500000 * ssfact * vmfact_c4
-   Vm0(2)     = 21.500000 * ssfact * vmfact_c3 ! 18.750000
-   Vm0(3)     = 12.500000 * ssfact * vmfact_c3 ! 12.500000
-   Vm0(4)     =  7.500000 * ssfact * vmfact_c3 !  6.250000
-   Vm0(5)     = 18.300000 * ssfact * vmfact_c3
-   Vm0(6)     = 11.350000 * ssfact * vmfact_c3
-   Vm0(7)     = 11.350000 * ssfact * vmfact_c3
-   Vm0(8)     =  4.540000 * ssfact * vmfact_c3
-   Vm0(9)     = 20.387075 * ssfact * vmfact_c3
-   Vm0(10)    = 17.454687 * ssfact * vmfact_c3
-   Vm0(11)    =  6.981875 * ssfact * vmfact_c3
-   Vm0(12:13) = 18.300000 * ssfact * vmfact_c3
-   Vm0(14:15) = 12.500000 * ssfact * vmfact_c4
-   Vm0(16)    = 35.000000 * ssfact * vmfact_c3 ! 18.750000
-   Vm0(17)    = 15.625000 * ssfact * vmfact_c3
+   Vm0(1)     = 16.100000
+   Vm0(2)     = 27.500000 ! 18.750000
+   Vm0(3)     = 16.100000 ! 12.500000
+   Vm0(4)     =  9.200000 !  6.250000
+   Vm0(5)     = 18.300000
+   Vm0(6)     = 11.350000
+   Vm0(7)     = 11.350000
+   Vm0(8)     =  4.540000
+   Vm0(9)     = 20.387075
+   Vm0(10)    = 17.454687
+   Vm0(11)    =  6.981875
+   Vm0(12:13) = 18.300000
+   Vm0(14:15) = 12.500000
+   Vm0(16)    = 52.300000 ! 18.750000
+   Vm0(17)    = 15.625000
+   do ipft = 1, n_pft
+      select case (photosyn_pathway(ipft))
+      case (3)
+         Vm0(ipft) = Vm0(ipft) * ssfact * vmfact_c3
+      case (4)
+         Vm0(ipft) = Vm0(ipft) * ssfact * vmfact_c4
+      end select
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -1678,164 +1727,280 @@ subroutine init_pft_photo_params()
    !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
    ! constant.  Vm_q10 is the base for the Collatz approach.                               !
    !---------------------------------------------------------------------------------------!
-   vm_hor(1:17)              = 3000.
-   !----- Here we distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. -!
-   vm_q10(1)                 = q10_c4
-   vm_q10(2:13)              = q10_c3
-   vm_q10(14:15)             = q10_c4
-   vm_q10(16:17)             = q10_c3
+   do ipft=1,n_pft
+      vm_hor(ipft)    = 3000.
+      !----- Distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. ------!
+      select case (photosyn_pathway(ipft))
+      case (3)
+         vm_q10(ipft) = q10_c3
+      case (4)
+         vm_q10(ipft) = q10_c4
+      end select
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
+
+
+
    !---------------------------------------------------------------------------------------!
-   !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
+   !       By default we assume most Rd parameters to be the same as the Vm ones, but they !
+   ! do not need to be the same.                                                           !
    !---------------------------------------------------------------------------------------!
-   dark_respiration_factor(1)     = gamma_c4
-   dark_respiration_factor(2)     = gamma_c3
-   dark_respiration_factor(3)     = gamma_c3
-   dark_respiration_factor(4)     = gamma_c3
-   dark_respiration_factor(5)     = gamma_c3
-   dark_respiration_factor(6)     = gamma_c3
-   dark_respiration_factor(7)     = gamma_c3
-   dark_respiration_factor(8)     = gamma_c3
-   dark_respiration_factor(9)     = gamma_c3
-   dark_respiration_factor(10)    = gamma_c3
-   dark_respiration_factor(11)    = gamma_c3
-   dark_respiration_factor(12)    = gamma_c3
-   dark_respiration_factor(13)    = gamma_c3
-   dark_respiration_factor(14)    = gamma_c4
-   dark_respiration_factor(15)    = gamma_c4
-   dark_respiration_factor(16)    = gamma_c3
-   dark_respiration_factor(17)    = gamma_c3
+   do ipft=1,n_pft
+      Rd_low_temp (ipft) = Vm_low_temp (ipft)
+      Rd_high_temp(ipft) = Vm_high_temp(ipft)
+      Rd_decay_e  (ipft) = Vm_decay_e  (ipft)
+      Rd_hor      (ipft) = Vm_hor      (ipft)
+      Rd_q10      (ipft) = Vm_q10      (ipft)
+   end do
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Currently we assume most parameters to be the same as the Vm ones. --------------!
-   Rd_low_temp (1:17) = Vm_low_temp (1:17)
-   Rd_high_temp(1:17) = Vm_high_temp(1:17)
-   Rd_decay_e  (1:17) = Vm_decay_e  (1:17)
-   Rd_hor      (1:17) = Vm_hor      (1:17)
-   Rd_q10      (1:17) = Vm_q10      (1:17)
- 
+
+
+
+
    !---------------------------------------------------------------------------------------!
    !    Respiration terms.  Here we must check whether this will run Foley-based or        !
    ! Collatz-based photosynthesis, because the respiration/Vm ratio is constant in the     !
-   ! former but not in the latter.                                                         !
+   ! former but not necessarily in the latter.                                             !
+   !                                                                                       !
+   !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
+   !  In case gamma is set to zero, we use the ratio derived from Atkin et al. (2015).     !
+   !                                                                                       !
+   ! Atkin, O. K., et al. (2015). Global variability in leaf respiration in relation to    !
+   !    climate, plant functional types and leaf traits. New Phytol., 206(2), 614-636,     !
+   !    10.1111/nph.13253.                                                                 !
    !---------------------------------------------------------------------------------------!
-   select case (iphysiol)
-   case (0,1)
-      !------ This should be simply gamma times Vm0. --------------------------------------!
-      Rd0         (1:17) = dark_respiration_factor(1:17) * Vm0(1:17)
+   do ipft=1,n_pft
+      !----- Set Rd parameters for this PFT. ----------------------------------------------!
+      if (is_grass(ipft) .and. (photosyn_pathway(ipft) == 3)) then
+         a_pft     = a_c3grss
+         b_pft     = b_c3grss
+         gamma_pft = gamma_c3
+      elseif (is_grass(ipft)) then
+         a_pft     = a_c4grss
+         b_pft     = b_c4grss
+         gamma_pft = gamma_c4
+      elseif (is_conifer(ipft)) then
+         a_pft     = a_needle
+         b_pft     = b_needle
+         gamma_pft = gamma_c3
+      elseif (is_tropical(ipft)) then
+         a_pft     = a_bltrop
+         b_pft     = b_bltrop
+         gamma_pft = gamma_c3
+      else
+         a_pft     = a_bltemp
+         b_pft     = b_bltemp
+         gamma_pft = gamma_c3
+      end if
+      !------------------------------------------------------------------------------------!
 
-   case (2,3)
       !------------------------------------------------------------------------------------!
-      !     Collatz-based method.  They have the gamma at 25 C, but because the Q10 bases  !
-      ! are different for Vm and respiration (at least for C3), we must convert it to the  !
-      ! ratio at 15C.                                                                      !
+      !     Decide whether to use Atkin's definition of Rd:Vm ratio or the original one.   !
       !------------------------------------------------------------------------------------!
-      Rd0         (1:17) = dark_respiration_factor(1:17) * Vm0(1:17)                       &
-                         * Vm_q10(1:17) / Rd_q10(1:17)
-   end select
+      if (gamma_pft == 0.) then
+         !---------------------------------------------------------------------------------!
+         !     The ratio depends on the method: Collatz may have different q10 factors,    !
+         ! and in ED the reference temperature is 15 degC, not 25 degC.  The q10 numbers   !
+         ! make sure that the comparison is carried out at 25 degC, but the reference is   !
+         ! defined at 15 degC.                                                             !
+         !---------------------------------------------------------------------------------!
+         select case (iphysiol)
+         case (0,1)
+            vmexpo_pft = SLA(ipft) * Vm0(ipft) / C2B
+            vmtref_pft = Vm0(ipft)
+         case (2,3)
+            vmexpo_pft = SLA(ipft) * vm_q10(ipft) * Vm0(ipft) / C2B
+            vmtref_pft = Vm0(ipft) * vm_q10(ipft) / rd_q10(ipft)
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Define dark_respiration_factor (Rd:Vm ratio) from Atkin et al. (2015).     !
+         !---------------------------------------------------------------------------------!
+         dark_respiration_factor(ipft) = 10.0**a_pft * vmexpo_pft ** (b_pft-1.)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     The ratio depends on the method: Collatz may have different q10 factors,    !
+         ! and in ED the reference temperature is 15 degC, not 25 degC.  The q10 numbers   !
+         ! make sure that the comparison is carried out at 25 degC, but the reference is   !
+         ! defined at 15 degC.                                                             !
+         !---------------------------------------------------------------------------------!
+         select case (iphysiol)
+         case (0,1)
+            vmexpo_pft = 1.0
+            vmtref_pft = Vm0(ipft)
+         case (2,3)
+            vmexpo_pft = 1.0
+            vmtref_pft = Vm0(ipft) * vm_q10(ipft) / rd_q10(ipft)
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      gamma_pft is the dark_respiration_factor (Rd:Vm ratio).                    !
+         !---------------------------------------------------------------------------------!
+         dark_respiration_factor(ipft) = gamma_pft
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Define reference dark respiration rate. -------------------------------------!
+      Rd0(ipft) = dark_respiration_factor(ipft) * vmtref_pft
+      !------------------------------------------------------------------------------------!
+
+   end do
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         = mphoto_c4
-   stomatal_slope(2)         = mphoto_trc3
-   stomatal_slope(3)         = mphoto_trc3
-   stomatal_slope(4)         = mphoto_trc3
-   stomatal_slope(5)         = mphoto_trc3
-   stomatal_slope(6)         = mphoto_tec3
-   stomatal_slope(7)         = mphoto_tec3
-   stomatal_slope(8)         = mphoto_tec3
-   stomatal_slope(9)         = mphoto_tec3
-   stomatal_slope(10)        = mphoto_tec3
-   stomatal_slope(11)        = mphoto_tec3
-   stomatal_slope(12)        = mphoto_trc3
-   stomatal_slope(13)        = mphoto_trc3
-   stomatal_slope(14)        = mphoto_c4
-   stomatal_slope(15)        = mphoto_c4
-   stomatal_slope(16)        = mphoto_trc3
-   stomatal_slope(17)        = mphoto_tec3
- 
-   !----- Define the stomatal slope (aka the b term, given in umol/m2/s). -----------------!
-   cuticular_cond(1)         = bphoto_c4
-   cuticular_cond(2)         = bphoto_blc3
-   cuticular_cond(3)         = bphoto_blc3
-   cuticular_cond(4)         = bphoto_blc3
-   cuticular_cond(5)         = bphoto_blc3
-   cuticular_cond(6)         = bphoto_nlc3
-   cuticular_cond(7)         = bphoto_nlc3
-   cuticular_cond(8)         = bphoto_nlc3
-   cuticular_cond(9)         = bphoto_blc3
-   cuticular_cond(10)        = bphoto_blc3
-   cuticular_cond(11)        = bphoto_blc3
-   cuticular_cond(12)        = bphoto_blc3
-   cuticular_cond(13)        = bphoto_blc3
-   cuticular_cond(14)        = bphoto_c4
-   cuticular_cond(15)        = bphoto_c4
-   cuticular_cond(16)        = bphoto_blc3
-   cuticular_cond(17)        = bphoto_nlc3
+   do ipft=1,n_pft
+      if (is_grass(ipft) .and. photosyn_pathway(ipft) == 4) then
+         stomatal_slope(ipft) = mphoto_c4
+      else if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+         stomatal_slope(ipft) = mphoto_tec3
+      else
+         stomatal_slope(ipft) = mphoto_trc3
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
 
-   quantum_efficiency(1)     = alpha_c4
-   quantum_efficiency(2)     = alpha_c3
-   quantum_efficiency(3)     = alpha_c3
-   quantum_efficiency(4)     = alpha_c3
-   quantum_efficiency(5)     = alpha_c3
-   quantum_efficiency(6)     = alpha_c3
-   quantum_efficiency(7)     = alpha_c3
-   quantum_efficiency(8)     = alpha_c3
-   quantum_efficiency(9)     = alpha_c3
-   quantum_efficiency(10)    = alpha_c3
-   quantum_efficiency(11)    = alpha_c3
-   quantum_efficiency(12)    = alpha_c3
-   quantum_efficiency(13)    = alpha_c3
-   quantum_efficiency(14)    = alpha_c4
-   quantum_efficiency(15)    = alpha_c4
-   quantum_efficiency(16)    = alpha_c3
-   quantum_efficiency(17)    = alpha_c3
+
+
+
+   !----- Define the residual stomatal conductance (aka the b term, given in umol/m2/s). --!
+   do ipft=1,n_pft
+      if (is_grass(ipft) .and. photosyn_pathway(ipft) == 4) then
+         cuticular_cond(ipft) = bphoto_c4
+      else if (is_conifer(ipft)) then
+         cuticular_cond(ipft) = bphoto_nlc3
+      else
+         cuticular_cond(ipft) = bphoto_blc3
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ Set quantum yield fraction. ----------------------------------------------------!
+   do ipft=1,n_pft
+      select case(photosyn_pathway(ipft))
+      case (3)
+         quantum_efficiency(ipft) = alpha_c3
+      case (4)
+         quantum_efficiency(ipft) = alpha_c4
+      end select
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001), and the      !
    ! namelist, give the number in m²/yr/kg_C_root.  Here we must convert it to             !
    !  m²/s/kg_C_root.                                                                      !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1)      = kw_grass / yr_sec
-   water_conductance(2:4)    = kw_tree  / yr_sec
-   water_conductance(5)      = kw_grass / yr_sec
-   water_conductance(6:11)   = kw_tree  / yr_sec
-   water_conductance(12:15)  = kw_grass / yr_sec
-   water_conductance(16)     = kw_grass / yr_sec
-   water_conductance(17)     = kw_tree  / yr_sec
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         water_conductance(ipft) = kw_grass / yr_sec
+      else
+         water_conductance(ipft) = kw_tree  / yr_sec
+      end if
+   end do
    !---------------------------------------------------------------------------------------!
 
 
-   photosyn_pathway(1)       = 4
-   photosyn_pathway(2:4)     = 3
-   photosyn_pathway(5)       = 3
-   photosyn_pathway(6:13)    = 3
-   photosyn_pathway(14:15)   = 4
-   photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   leaf_width( 1)    = lwidth_grass
-   leaf_width( 2)    = lwidth_bltree
-   leaf_width( 3)    = lwidth_bltree
-   leaf_width( 4)    = lwidth_bltree
-   leaf_width( 5)    = lwidth_grass
-   leaf_width( 6)    = lwidth_nltree
-   leaf_width( 7)    = lwidth_nltree
-   leaf_width( 8)    = lwidth_nltree
-   leaf_width( 9)    = lwidth_bltree
-   leaf_width(10)    = lwidth_bltree
-   leaf_width(11)    = lwidth_bltree
-   leaf_width(12)    = lwidth_grass
-   leaf_width(13)    = lwidth_grass
-   leaf_width(14)    = lwidth_grass
-   leaf_width(15)    = lwidth_grass
-   leaf_width(16)    = lwidth_grass
-   leaf_width(17)    = lwidth_nltree
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         leaf_width(ipft) = lwidth_grass
+      elseif (is_conifer(ipft)) then
+         leaf_width(ipft) = lwidth_nltree
+      else
+         leaf_width(ipft) = lwidth_bltree
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Decide which variables to write in the output based on iphysiol.                   !
+   !---------------------------------------------------------------------------------------!
+   if (write_photo) then
+      open (unit=18,file=trim(photo_file),status='replace',action='write')
+      select case (iphysiol)
+      case (0,1)
+         !---------------------------------------------------------------------------------!
+         !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
+         !---------------------------------------------------------------------------------!
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'      &
+                                        ,'     Pathway','         SLA','          D0'      &
+                                        ,'         Vm0','         Rd0','       gamma'      &
+                                        ,'    Vm_Tcold','     Vm_Thot','    Vm_decay'      &
+                                        ,'      Vm_hor','    Rd_Tcold','     Rd_Thot'      &
+                                        ,'    Rd_decay','      Rd_hor','    st_slope'      &
+                                        ,'         gs0','     q_yield','      KWroot'      &
+                                        ,'  leaf_width'
+
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         do ipft=1,n_pft
+            write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
+
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,18(1x,es12.5))')                   &
+                           ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
+                          ,D0(ipft),Vm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)      &
+                          ,Vm_low_temp(ipft),Vm_high_temp(ipft),Vm_decay_e(ipft)           &
+                          ,vm_hor(ipft),Rd_low_temp(ipft),Rd_high_temp(ipft)               &
+                          ,Rd_decay_e(ipft),Rd_hor(ipft),stomatal_slope(ipft)              &
+                          ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
+                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
+         end do
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         !---------------------------------------------------------------------------------!
+      case (2,3)
+         !---------------------------------------------------------------------------------!
+         !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
+         !---------------------------------------------------------------------------------!
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'      &
+                                        ,'     Pathway','         SLA','          D0'      &
+                                        ,'         Vm0','         Rd0','       gamma'      &
+                                        ,'    Vm_Tcold','     Vm_Thot','    Vm_decay'      &
+                                        ,'      Vm_Q10','    Rd_Tcold','     Rd_Thot'      &
+                                        ,'    Rd_decay','      Rd_Q10','    st_slope'      &
+                                        ,'         gs0','     q_yield','      KWroot'      &
+                                        ,'  leaf_width'
+
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         do ipft=1,n_pft
+            write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
+
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,18(1x,es12.5))')                   &
+                           ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
+                          ,D0(ipft),Vm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)      &
+                          ,Vm_low_temp(ipft),Vm_high_temp(ipft),Vm_decay_e(ipft)           &
+                          ,vm_q10(ipft),Rd_low_temp(ipft),Rd_high_temp(ipft)               &
+                          ,Rd_decay_e(ipft),Rd_q10(ipft),stomatal_slope(ipft)              &
+                          ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
+                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
+         end do
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         !---------------------------------------------------------------------------------!
+      end select
+      close(unit=18,status='keep')
+   end if
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2014,10 +2179,10 @@ subroutine init_pft_resp_params()
    !---------------------------------------------------------------------------------------!
    !    MLO -- Tropical PFT numbers updated using trait data base.                         !
    !---------------------------------------------------------------------------------------!
-   leaf_turnover_rate(1)          = 2.5   ! 2.0
-   leaf_turnover_rate(2)          = 1.25  ! 1.0
-   leaf_turnover_rate(3)          = 0.575 ! 0.5
-   leaf_turnover_rate(4)          = 0.25  ! onethird
+   leaf_turnover_rate(1)          = 2.9    ! 2.0
+   leaf_turnover_rate(2)          = 1.282  ! 1.0
+   leaf_turnover_rate(3)          = 0.596  ! 0.5
+   leaf_turnover_rate(4)          = 0.266  ! onethird
    leaf_turnover_rate(5)          = 2.0
    leaf_turnover_rate(6)          = onethird
    leaf_turnover_rate(7)          = onethird
@@ -2029,7 +2194,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 2.5 ! 2.0
+   leaf_turnover_rate(16)         = 2.9 ! 2.0
    leaf_turnover_rate(17)         = onesixth
    !---------------------------------------------------------------------------------------!
 
@@ -2603,15 +2768,18 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !  KIM - new tropical parameters.                                                       !
    !  MLO - updated tropical parameters based on SMA using leaf turnover and wood density. !
+   !        Data were derived from GLOPNET:                                                !
+   !        Wright, I. J., et al.  (2004). The worldwide leaf economics spectrum. Nature,  !
+   !           428(6985), 821-827, doi:10.1038/nature02403.                                !
    !---------------------------------------------------------------------------------------!
    !SLA( 1) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
    !SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
    !SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
    !SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
-   SLA( 1) = 30.0
-   SLA( 2) = 23.0
-   SLA( 3) = 15.0
-   SLA( 4) =  9.0
+   SLA( 1) = 35.10
+   SLA( 2) = 23.18
+   SLA( 3) = 14.88
+   SLA( 4) =  9.32
    SLA( 5) = 22.0
    SLA( 6) =  6.0
    SLA( 7) =  9.0
@@ -2624,7 +2792,7 @@ subroutine init_pft_alloc_params()
    SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
    SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
    !SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
-   SLA(16) = 30.0
+   SLA(16) = 35.10
    SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
@@ -2693,8 +2861,8 @@ subroutine init_pft_alloc_params()
       end do
    case default
       !------------------------------------------------------------------------------------!
-      !      Default ED-1 ratio.  Mind that this number may be off by two orders of        !
-      ! magnitude off                                                                      !
+      !      Default ED-1 ratio.  Mind that this number may be off by one or two orders of !
+      ! magnitude...                                                                       !
       !------------------------------------------------------------------------------------!
       sapwood_ratio(1:17) = 3900.0
       !------------------------------------------------------------------------------------!

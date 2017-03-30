@@ -3413,6 +3413,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$leaf.rlong   [[clab]] = leaf.rlongconow
          cohort$leaf.gpp     [[clab]] = leaf.gppconow
          cohort$rue          [[clab]] = rueconow
+         cohort$leaf.temp    [[clab]] = leaf.tempconow
+         cohort$leaf.vpd     [[clab]] = leaf.vpdconow
+         cohort$leaf.gsw     [[clab]] = leaf.gswconow
       } #end if month=sasmonth
       #------------------------------------------------------------------------------------#
    }# end for (m in tresume,ntimes)

@@ -100,8 +100,6 @@ module farq_leuning
                                 , vm_high_temp             & ! intent(in)
                                 , vm_hor                   & ! intent(in)
                                 , vm_q10                   & ! intent(in)
-                                , vm_decay_a               & ! intent(in)
-                                , vm_decay_b               & ! intent(in)
                                 , vm_decay_e               & ! intent(in)
                                 , Rd0                      & ! intent(in)
                                 , rd_low_temp              & ! intent(in)
@@ -226,8 +224,6 @@ module farq_leuning
       thispft(ib)%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
       thispft(ib)%vm_hor        = dble(vm_hor(ipft))
       thispft(ib)%vm_q10        = dble(vm_q10(ipft))
-      thispft(ib)%vm_decay_a    = dble(vm_decay_a(ipft))
-      thispft(ib)%vm_decay_b    = dble(vm_decay_b(ipft))
       thispft(ib)%vm_decay_e    = dble(vm_decay_e(ipft))
       thispft(ib)%rd_low_temp   = dble(rd_low_temp(ipft))  + t008
       thispft(ib)%rd_high_temp  = dble(rd_high_temp(ipft)) + t008
@@ -541,11 +537,6 @@ module farq_leuning
          lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
          tlow_fun  = 1.d0 +  exp(lnexplow)
          !----- High temperature. ---------------------------------------------------------!
-         !lnexphigh = ( - thispft(ib)%vm_decay_a + thispft(ib)%vm_decay_b * met(ib)%leaf_temp)             &
-         !          / (rmol8 * met(ib)%leaf_temp)
-         !lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-         !thigh_fun = 1.d0 + exp(lnexphigh)
-         !----- High temperature. ---------------------------------------------------------!
          lnexphigh = thispft(ib)%vm_decay_e * (met(ib)%leaf_temp - thispft(ib)%vm_high_temp)
          lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
          thigh_fun = 1.d0 + exp(lnexphigh)
@@ -761,12 +752,12 @@ module farq_leuning
          !    C3, there is no CO2 limitation in this formulation.  Copy the Rubisco-       !
          ! -limited case.                                                                  !
          !---------------------------------------------------------------------------------!
-         call copy_solution(rubiscolim(ib),co2lim(ib))
-         success           = .true.
+         !call copy_solution(rubiscolim(ib),co2lim(ib))
+         !success           = .true.
          !---------------------------------------------------------------------------------!
          !    C3, use the expression from C91, that Ao should not exceed 0.5 * Vm.         !
          !---------------------------------------------------------------------------------!
-         ! call solve_aofixed_case(co2lim(ib),success)
+         call solve_aofixed_case(co2lim(ib),success)
          !---------------------------------------------------------------------------------!
 
       case (4)
@@ -1403,14 +1394,14 @@ module farq_leuning
                aparms(ib)%xi    = 1.d0
                aparms(ib)%tau   = aparms(ib)%kco2 * (1.d0 + met(ib)%can_o2 / aparms(ib)%ko2)
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
-            !------------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
 
             case ('CO2')
                !----- CO2-limited for low CO2 concentration case. -------------------------!
                aparms(ib)%rho   = 0.d0
-               aparms(ib)%sigma = 5.d-1 * aparms(ib)%vm
+               aparms(ib)%sigma = aparms(ib)%vm
                aparms(ib)%xi    = 0.d0
-               aparms(ib)%tau   = 1.d0
+               aparms(ib)%tau   = 2.d0
                aparms(ib)%nu    = -aparms(ib)%leaf_resp
 
             end select

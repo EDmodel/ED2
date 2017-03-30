@@ -978,6 +978,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$leaf.rshort    = list()
    cohort$leaf.rlong     = list()
    cohort$rue            = list()
+   cohort$leaf.temp      = list()
+   cohort$leaf.vpd       = list()
+   cohort$leaf.gsw       = list()
    #---------------------------------------------------------------------------------------#
 
 
@@ -1839,6 +1842,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$leaf.rshort      = old.datum$cohort$leaf.rshort
    new.datum$cohort$leaf.rlong       = old.datum$cohort$leaf.rlong
    new.datum$cohort$rue              = old.datum$cohort$rue
+   new.datum$cohort$leaf.temp        = old.datum$cohort$leaf.temp
+   new.datum$cohort$leaf.vpd         = old.datum$cohort$leaf.vpd
+   new.datum$cohort$leaf.gsw         = old.datum$cohort$leaf.gsw
    #---------------------------------------------------------------------------------------#
 
 

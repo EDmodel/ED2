@@ -1020,9 +1020,12 @@ $ED_NL
    !                  when H2O_PLANT_LIM is not 0.                                         !
    ! KW_TREE       -- Water conductance for grasses, in m2/yr/kgC_root.  This is used only !
    !                  when H2O_PLANT_LIM is not 0.                                         !
-   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  Subtropical      !
-   !                  conifers will be scaled by GAMMA_C3 * 0.028 / 0.02                   !
-   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.                   !
+   ! GAMMA_C3      -- The dark respiration factor (gamma) for C3 plants.  In case this     !
+   !                  number is set to 0, find the factor based on Atkin et al. (2015).    !
+   ! GAMMA_C4      -- The dark respiration factor (gamma) for C4 plants.  In case this     !
+   !                  number is set to 0, find the factor based on Atkin et al. (2015).    !
+   !                  (assumed to be twice as large as C3 grasses, as Atkin et al. 2015    !
+   !                  did not estimate Rd0 for C4 grasses).                                !
    ! D0_GRASS      -- The transpiration control in gsw (D0) for ALL grasses.               !
    ! D0_TREE       -- The transpiration control in gsw (D0) for ALL trees.                 !
    ! ALPHA_C3      -- Quantum yield of ALL C3 plants.  This is only applied when           !
@@ -1558,8 +1561,8 @@ $ED_NL
    !               4  -- Detailed output from the integrator (every HDID)                  !
    !               8  -- Thermodynamic bounds for sanity check (every DTLSM)               !
    !               16 -- Daily error stats (which variable caused the time step to shrink) !
-   !               32 -- Allometry parameters, and minimum and maximum sizes               !
-   !                     (two files, only at the beginning)                                !
+   !               32 -- Allometry parameters, photosynthesis parameters, and minimum and  !
+   !                     maximum sizes (three files, only at the beginning)                !
    !                                                                                       !
    !               In case you don't want any detailed output (likely for most runs), set  !
    !               IDETAILED to zero.  In case you want to generate multiple outputs, add  !

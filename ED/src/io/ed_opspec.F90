@@ -1816,17 +1816,17 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (gamma_c3 < 0.001 .or. gamma_c3 > 0.10) then
+   if (gamma_c3 < 0.0 .or. gamma_c3 > 0.10) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid GAMMA_C3, it must be between 0.001 and 0.1.  Yours is set to' &
+                    'Invalid GAMMA_C3, it must be between 0.0 and 0.1.  Yours is set to'   &
                     ,gamma_c3,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
 
-   if (gamma_c4 < 0.001 .or. gamma_c4 > 0.10) then
+   if (gamma_c4 < 0.0 .or. gamma_c4 > 0.10) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid GAMMA_C4, it must be between 0.001 and 0.1.  Yours is set to' &
+                    'Invalid GAMMA_C4, it must be between 0.0 and 0.1.  Yours is set to'   &
                     ,gamma_c4,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
