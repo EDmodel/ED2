@@ -161,7 +161,7 @@ subroutine vegetation_dynamics(new_month,new_year)
       !     Update polygon-level properties that are derived from patches and cohorts.     !
       !------------------------------------------------------------------------------------!
       call update_polygon_derived_props(edgrid_g(ifm))
-      !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -292,7 +292,7 @@ subroutine vegetation_dynamics_eq_0(new_month,new_year)
       !     Update polygon-level properties that are derived from patches and cohorts.     !
       !------------------------------------------------------------------------------------!
       call update_polygon_derived_props(cgrid)
-      !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
 
 

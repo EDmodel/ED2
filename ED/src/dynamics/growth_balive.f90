@@ -254,7 +254,7 @@ module growth_balive
                                           ,csite%fsn_in(ipa))
 
                      !---------------------------------------------------------------------!
-                     !     Update the phenology status.                                    !
+                     !                  Update the phenology status.                       !
                      !---------------------------------------------------------------------!
                      on_allometry = balive_aim - cpatch%balive(ico) <= 0.000001*balive_aim
                      if (flushing .and. cpatch%elongf(ico) == 1.0 .and. on_allometry) then

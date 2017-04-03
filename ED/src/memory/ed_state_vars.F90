@@ -9172,8 +9172,8 @@ module ed_state_vars
       !----- Local variables. -------------------------------------------------------------!
       integer       , dimension(isize)             :: allind
       integer       , dimension(osize)             :: iindex
-      integer                                      :: i
       integer                                      :: o
+      integer                                      :: i
       integer                                      :: z
       !------------------------------------------------------------------------------------!
 
@@ -9244,8 +9244,6 @@ module ed_state_vars
       integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
-      integer                                      :: i
-      integer                                      :: o
       integer                                      :: m
       integer                                      :: n
       !------------------------------------------------------------------------------------!
@@ -9460,10 +9458,7 @@ module ed_state_vars
       integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
-      integer                                      :: i
-      integer                                      :: o
       integer                                      :: m
-      integer                                      :: n
       !------------------------------------------------------------------------------------!
 
       osite%fmean_rh                  (1:z) = pack(isite%fmean_rh                  ,lmask)
@@ -9559,10 +9554,7 @@ module ed_state_vars
       integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
-      integer                                      :: i
-      integer                                      :: o
       integer                                      :: m
-      integer                                      :: n
       !------------------------------------------------------------------------------------!
 
 
@@ -9667,10 +9659,7 @@ module ed_state_vars
       integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
-      integer                                      :: i
-      integer                                      :: o
       integer                                      :: m
-      integer                                      :: n
       !------------------------------------------------------------------------------------!
 
 
@@ -9802,8 +9791,6 @@ module ed_state_vars
       integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
-      integer                                      :: i
-      integer                                      :: o
       integer                                      :: m
       integer                                      :: n
       !------------------------------------------------------------------------------------!
@@ -10489,9 +10476,6 @@ module ed_state_vars
       integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
-      integer                              :: i
-      integer                              :: m
-      integer                              :: n
       integer                              :: z
       !------------------------------------------------------------------------------------!
 
@@ -10550,9 +10534,7 @@ module ed_state_vars
       integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
-      integer                              :: i
       integer                              :: m
-      integer                              :: n
       !------------------------------------------------------------------------------------!
 
 
@@ -10734,9 +10716,7 @@ module ed_state_vars
       integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
-      integer                              :: i
       integer                              :: m
-      integer                              :: n
       !------------------------------------------------------------------------------------!
 
 
@@ -10839,9 +10819,7 @@ module ed_state_vars
       integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
-      integer                              :: i
       integer                              :: m
-      integer                              :: n
       !------------------------------------------------------------------------------------!
 
 
@@ -10950,10 +10928,10 @@ module ed_state_vars
       integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
-      integer                              :: i
       integer                              :: m
-      integer                              :: n
       !------------------------------------------------------------------------------------!
+
+
 
 
 
@@ -11084,7 +11062,6 @@ module ed_state_vars
       integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
-      integer                              :: i
       integer                              :: m
       integer                              :: n
       !------------------------------------------------------------------------------------!
@@ -11302,13 +11279,7 @@ module ed_state_vars
                               , var_table                & ! intent(inout)
                               , reset_vt_vector_pointers ! ! sub-routine
       use ed_node_coms , only : mynum                    & ! intent(in)
-                              , mchnum                   & ! intent(in)
-                              , machs                    & ! intent(in)
-                              , nmachs                   & ! intent(in)
-                              , nnodetot                 & ! intent(in)
-                              , sendnum                  & ! intent(in)
-                              , recvnum                  & ! intent(in)
-                              , master_num               ! ! intent(in)
+                              , nnodetot                 ! ! intent(in)
       use ed_max_dims  , only : maxgrds                  & ! intent(in)
                               , maxmach                  ! ! intent(in)
       implicit none
@@ -11329,14 +11300,10 @@ module ed_state_vars
       integer                                                  :: isi
       integer                                                  :: ipa
       integer                                                  :: nv
-      integer                                                  :: ierr
       integer                                                  :: nm
-      integer                                                  :: iptr
 #if defined(RAMS_MPI)
       integer          , dimension(MPI_STATUS_SIZE)            :: status
 #endif
-      integer                                                  :: ping
-      integer                                                  :: uniqueid
       !----- Local constants. -------------------------------------------------------------!
       logical                                      , parameter :: verbose = .false.    
       !----- Local saved variables. -------------------------------------------------------!
@@ -11815,7 +11782,6 @@ module ed_state_vars
       integer                  :: max_ptrs
       integer                  :: var_len_global
       integer                  :: nvar
-      integer                  :: npts
       !------------------------------------------------------------------------------------!
 
       cgrid => edgrid_g(igr)
@@ -18566,7 +18532,6 @@ module ed_state_vars
       integer                    :: max_ptrs
       integer                    :: var_len_global
       integer                    :: nvar
-      integer                    :: npts
       !------------------------------------------------------------------------------------!
 
 
@@ -20204,7 +20169,6 @@ module ed_state_vars
       integer                    :: max_ptrs
       integer                    :: var_len_global
       integer                    :: nvar
-      integer                    :: npts
       !------------------------------------------------------------------------------------!
 
 
@@ -24387,7 +24351,6 @@ module ed_state_vars
       integer                       :: max_ptrs
       integer                       :: var_len_global
       integer                       :: nvar
-      integer                       :: npts
       !------------------------------------------------------------------------------------!
 
 
@@ -28718,7 +28681,6 @@ module ed_state_vars
       integer                    :: ipy
       integer                    :: isi
       integer                    :: ipa
-      integer                    :: ico
       !------------------------------------------------------------------------------------!
 
       get_ncohorts = 0

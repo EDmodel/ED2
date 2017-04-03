@@ -6,47 +6,6 @@
 !  Regional Atmospheric Modeling System - RAMS
 !###########################################################################
 
-integer function lastchar(str)
-implicit none
-character(len=*) :: str
-integer :: n,ln
-! returns last non-blank character position from a string
-
-ln=len(str)
-do n=ln,1,-1
-   if(str(n:n).ne.' ') then
-      lastchar=n
-      return
-   endif
-enddo
-lastchar=0
-
-return
-end
-
-!***************************************************************************
-
-integer function ifirstchar(str)
-implicit none
-character(len=*) :: str
-integer :: n,ln
-
-! returns first non-blank character position from a string
-
-ln=len(str)
-do n=1,ln
-   if(str(n:n).ne.' ') then
-      ifirstchar=n
-      return
-   endif
-enddo
-ifirstchar=1
-
-return
-end
-
-!***************************************************************************
-
 subroutine deblank(str1,str2,nch)
 implicit none
 character(len=*) :: str1,str2
@@ -66,81 +25,6 @@ enddo
 
 return
 end
-
-!***************************************************************************
-
-subroutine detab(str1,str2,nch)
-implicit none
-character(len=*) :: str1,str2
-integer :: n,ln,nch
-character(len=1) ::  tab
-
-tab=achar( 9)
-
-! strips tabs from a string and returns number of chars
-
-str2=' '
-ln=len_trim(str1)
-nch=0
-do n=1,ln
-   if(str1(n:n).ne.tab) then
-      !print*,'no tab:',str1(n:n)
-      nch=nch+1
-      str2(nch:nch)=str1(n:n)
-   else
-      print*,'found one:',str1
-      str2(nch+1:nch+6)='      '
-      nch=nch+6
-   endif
-enddo
-
-return
-end
-
-!***************************************************************************
-
-integer function lastslash(str)
-implicit none
-character(len=*) :: str
-integer :: n,ln
-
-! returns last slash character position from a string
-
-ln=len(str)
-do n=ln,1,-1
-   if(str(n:n).eq.'/') then
-      lastslash=n
-      return
-   endif
-enddo
-lastslash=0
-
-return
-end
-
-!***************************************************************************
-
-subroutine char_strip_var(line,var,line2)
-implicit none
-character(len=*) :: line,var,line2
-integer :: nn,ncl,nb
-
-! removes instances of a substring from a string
-
-ncl=len(line)
-do nn=1,ncl
-   if(line(nn:nn).ne.' ') then
-      nb=index(line(nn:),' ')
-      var=line(nn:nn+nb-1)
-      goto 25
-   endif
-enddo
-25 continue
-line2=line(nn+nb-1:)
-
-return
-end
-
 !***************************************************************************
 
 subroutine findln(text,ltext,order)
@@ -219,23 +103,6 @@ enddo
 
 25 continue
 
-!do nc=1,nch
-!   if(str(nc:nc).eq.sep.or.nc.eq.nch)then
-!      if(nc-npt.ge.1)then
-!         ntok=ntok+1
-!         tokens(ntok)=str(npt:nc-1)
-!         if(nc.eq.nch.and.str(nc:nc).ne.sep)then
-!            tokens(ntok)=str(npt:nc)
-!            go to 10
-!         endif
-!      endif
-!      ntok=ntok+1
-!      tokens(ntok)=str(nc:nc)
-!      npt=nc+1
-!      go to 10
-!   endif
-!   10 continue
-!enddo
 
 return
 end
@@ -358,58 +225,58 @@ subroutine tolower(word,dimword)
         word(d)(w:w)='y'
       case('Z')
         word(d)(w:w)='z'
-      case('Á')
-        word(d)(w:w)='á'
-      case('É')
-        word(d)(w:w)='é'
-      case('Í')
-        word(d)(w:w)='í'
-      case('Ó')
-        word(d)(w:w)='ó'
-      case('Ú')
-        word(d)(w:w)='ú'
-      case('Ý')
-        word(d)(w:w)='ý'
-      case('À')
-        word(d)(w:w)='à'
-      case('È')
-        word(d)(w:w)='è'
-      case('Ì')
-        word(d)(w:w)='ì'
-      case('Ò')
-        word(d)(w:w)='ò'
-      case('Ù')
-        word(d)(w:w)='ù'
-      case('Â')
-        word(d)(w:w)='â'
-      case('Ê')
-        word(d)(w:w)='ê'
-      case('Î')
-        word(d)(w:w)='î'
-      case('Ô')
-        word(d)(w:w)='ô'
-      case('Û')
-        word(d)(w:w)='û'
-      case('Ä')
-        word(d)(w:w)='ä'
-      case('Ë')
-        word(d)(w:w)='ë'
-      case('Ï')
-        word(d)(w:w)='ï'
-      case('Ö')
-        word(d)(w:w)='ö'
-      case('Ü')
-        word(d)(w:w)='ü'
-      case('Ã')
-        word(d)(w:w)='ã'
-      case('Õ')
-        word(d)(w:w)='õ'
-      case('Ñ')
-        word(d)(w:w)='ñ'
-      case('Å')
-        word(d)(w:w)='å'
-      case('Ç')
-        word(d)(w:w)='ç'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
+      case('ï¿½')
+        word(d)(w:w)='ï¿½'
       end select
     end do
   end do
