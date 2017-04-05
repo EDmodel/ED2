@@ -79,9 +79,9 @@ subroutine radiate_driver(cgrid)
             !------------------------------------------------------------------------------!
             daytime  = cpoly%cosaoi(isi) > cosz_min .and.                                  &
                        cpoly%met(isi)%rshort > rshort_twilight_min
-            twilight = cpoly%met(isi)%rshort > rshort_twilight_min
+!            twilight = cpoly%met(isi)%rshort > rshort_twilight_min
+            twilight = rshort_twilight_min > 0.
             !------------------------------------------------------------------------------!
-
 
             !------------------------------------------------------------------------------!
             !      Update the daylight length and nighttime flag.                          !
@@ -157,8 +157,6 @@ subroutine radiate_driver(cgrid)
                           ,rshort_tot,cpoly%met(isi)%rshort_diffuse,cpoly%met(isi)%rlong   &
                           ,daytime,twilight)
             !------------------------------------------------------------------------------!
-
-
 
             !----- Normalize the absorbed radiations. -------------------------------------!
             call scale_ed_radiation(tuco,rshort_tot,cpoly%met(isi)%rshort_diffuse          &
@@ -364,6 +362,9 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    wrn = 0.
    srv = 0.
    srn = 0.
+
+   alp = 0.
+   aln = 0.
 
    open(21,file='trans_par.dat')
    do ii = 1, lpft
@@ -966,6 +967,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          !---------------------------------------------------------------------------------!
          !     Compute short wave only if it is daytime or at least twilight.              !
          !---------------------------------------------------------------------------------!
+
          if (twilight) then
 
             upward_rshort_above_diffuse = 0.
@@ -1177,11 +1179,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                     / sngloff( nir_beam_norm + nir_diff_norm, tiny_offset )
                csite%albedo     (ipa) = upward_rshort_above_diffuse
                !------------------------------------------------------------------------------!
-
                alp(wlr) = csite%albedo_par(ipa)
             end do
 
-            do wlr = 1, size(lrn)
+            do wlr = 1, size(lrn(:,1))
 
                do ii = 1, lpft
                   leaf_reflect_nir(npft(ii)) = lrn(wlr,ii)
