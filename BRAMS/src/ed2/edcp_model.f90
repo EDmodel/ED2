@@ -138,6 +138,7 @@ subroutine ed_coup_model(ifm)
                            , frqstate                    & ! intent(in)
                            , out_time_fast               & ! intent(in)
                            , dtlsm                       & ! intent(in)
+                           , month_yrstep                & ! intent(in)
                            , ifoutput                    & ! intent(in)
                            , isoutput                    & ! intent(in)
                            , idoutput                    & ! intent(in)
@@ -159,8 +160,7 @@ subroutine ed_coup_model(ifm)
                            , outstate                    & ! intent(in)
                            , outfast                     & ! intent(in)
                            , nrec_fast                   & ! intent(in)
-                           , nrec_state                  & ! intent(in)
-                           , outputmonth                 ! ! intent(in)
+                           , nrec_state                  ! ! intent(in)
    use grid_coms    , only : ngrids                      & ! intent(in)
                            , istp                        & ! intent(in)
                            , time                        & ! intent(inout)
@@ -278,12 +278,11 @@ subroutine ed_coup_model(ifm)
       !     Check whether now is any of those special times...                             !
       !------------------------------------------------------------------------------------!
       new_day         = current_time%time  <  dtlsm
-      new_month       = current_time%date  == 1  .and. new_day
-      new_year        = current_time%month == 1  .and. new_month
+      new_month       = current_time%date  == 1            .and. new_day
+      new_year        = current_time%month == month_yrstep .and. new_month
       mont_analy_time = new_month .and. writing_mont
       dcyc_analy_time = new_month .and. writing_dcyc
-      annual_time     = new_month .and. writing_year .and.                                 &
-                        current_time%month == outputmonth
+      annual_time     = new_year  .and. writing_year
       dail_analy_time = new_day   .and. writing_dail
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax)       < dble(dtlsm)
@@ -336,8 +335,9 @@ subroutine ed_coup_model(ifm)
       !------------------------------------------------------------------------------------!
       !     Call the model output driver.                                                  !
       !------------------------------------------------------------------------------------!
-      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,history_time,dcycle_time,the_end)
+      call ed_output(analysis_time,new_day,new_month,new_year,dail_analy_time              &
+                    ,mont_analy_time,dcyc_analy_time,annual_time,history_time,dcycle_time  &
+                    ,the_end)
       !------------------------------------------------------------------------------------!
 
 

@@ -1892,6 +1892,15 @@ $ED2_INFO
 
 
 
+
+   !---------------------------------------------------------------------------------------!
+   ! MONTH_YRSTEP -- Month in which the yearly time step (patch dynamics) should occur.    !
+   !---------------------------------------------------------------------------------------!
+   MONTH_YRSTEP = 7,
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    ! CO2_OFFSET -- This is for the case in which plants have grown using a different CO2   !
    !               concentration and BRAMS, and you don't want the plants to be shocked by !
@@ -2666,8 +2675,51 @@ $ED2_INFO
    !                   such as land clearing, abandonment, and logging.                    !
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
+   !                                                                                       !
+   ! The other variables are used only when IANTH_DISTURB is 2.                            !
+   !                                                                                       !
+   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
+   !                       landscape.  This controls the recurrence of logging.            !
+   !                       0.  Local. The simulation represents one logging unit.  Apply   !
+   !                           logging only once every SL_NYRS                             !
+   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
+   !                           occurs every year but it is restricted to patches with age  !
+   !                           greater than or equal to SL_NYRS                            !
+   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
+   !                       SL_SCALE above)                                                 !
+   ! SL_PFT             -- PFTs that can be harvested.                                     !
+   ! SL_INTENSITY       -- Logging intensity (one value for each PFT provided in SL_PFT).  !
+   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
+   !                       removal, and 1 removal of all trees needed to meet demands.     !
+   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
+   !                       SL_PFT).                                                        !
+   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
+   !                       zero, then all trees that meet the minimum DBH and minimum      !
+   !                       patch age will be logged.  In case you don't want logging to    !
+   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
+   !                       to zero.                                                        !
+   !                                                                                       !
+   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
+   !                                                                                       !
+   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   !                                                                                       !
+   ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
+   !                                                                                       !
+   ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
+   ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
+   ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
-   IANTH_DISTURB   = 0,
+   IANTH_DISTURB       = 0,
+   SL_SCALE            = 1,
+   SL_NYRS             = 40,
+   SL_PFT              = 2,3,4,
+   SL_INTENSITY        = 1.0,1.0,1.0,
+   SL_MINDBH_HARVEST   = 35.0,35.0,35.0,
+   SL_BIOMASS_HARVEST  = 0.,
+   SL_SKID_REL_AREA    = 0.6,
+   CL_FSEEDS_HARVEST   = 0.75,
+   CL_FSTORAGE_HARVEST = 0.0,
+   CL_FLEAF_HARVEST    = 0.0,
    !---------------------------------------------------------------------------------------!
 
 
@@ -2699,6 +2751,8 @@ $ED2_INFO
    ! used in this simulation.                                                              !
    !                                                                                       !
    ! INCLUDE_THESE_PFT -- a list containing all the PFTs you want to include in this run   !
+   ! PASTURE_STOCK     -- which PFT should be used for pastures                            !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! AGRI_STOCK        -- which PFT should be used for agriculture                         !
    !                      (used only when IANTH_DISTURB = 1)                               !
    ! PLANTATION_STOCK  -- which PFT should be used for plantation                          !
@@ -2716,6 +2770,7 @@ $ED2_INFO
    ! 8 - late conifers                    |      Southern Pines).                          !
    !---------------------------------------------------------------------------------------!
    INCLUDE_THESE_PFT = 1,2,3,4,16,
+   PASTURE_STOCK     = 1,
    AGRI_STOCK        = 1,
    PLANTATION_STOCK  = 3,
    !---------------------------------------------------------------------------------------!

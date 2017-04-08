@@ -54,6 +54,7 @@ subroutine read_ed21_history_file
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
+                             , size2bt                 & ! function
                              , bd2dbh                  & ! function
                              , size2bl                 & ! function
                              , dbh2h                   & ! function
@@ -522,7 +523,7 @@ subroutine read_ed21_history_file
                            !---------------------------------------------------------------!
                            if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                               csite%dist_type(ipa) = 5
-                           else if (plantation(ipa) == 0 .and. ianth_disturb == 1) then
+                           else if (plantation(ipa) == 0 .and. ianth_disturb /= 0) then
                               csite%dist_type(ipa) = 6
                            else
                               csite%dist_type(ipa) = 2
@@ -766,9 +767,16 @@ subroutine read_ed21_history_file
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
-                                                    ,cpatch%bsapwooda(ico),cpatch%pft(ico))
-                           cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%agb    (ico) = ed_biomass( cpatch%bdead    (ico)         &
+                                                           , cpatch%bleaf    (ico)         &
+                                                           , cpatch%bsapwooda(ico)         &
+                                                           , cpatch%pft      (ico) )
+                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bdead    (ico)            &
+                                                        , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%pft      (ico) )
 
                             
                            !----- Assign LAI, WAI, and CAI --------------------------------!
@@ -928,6 +936,7 @@ subroutine read_ed21_history_unstruct
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
+                             , size2bt                 & ! function
                              , bd2dbh                  & ! function
                              , dbh2h                   & ! function
                              , dbh2bd                  & ! function
@@ -1706,7 +1715,7 @@ subroutine read_ed21_history_unstruct
                            !---------------------------------------------------------------!
                            if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                               csite%dist_type(ipa) = 5
-                           else if (plantation(ipa) == 0 .and. ianth_disturb == 1) then
+                           else if (plantation(ipa) == 0 .and. ianth_disturb /= 0) then
                               csite%dist_type(ipa) = 6
                            else
                               csite%dist_type(ipa) = 2
@@ -1985,10 +1994,18 @@ subroutine read_ed21_history_unstruct
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
-                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                           cpatch%agb(ico)     = ed_biomass( cpatch%bdead    (ico)         &
+                                                           , cpatch%bleaf    (ico)         &
+                                                           , cpatch%bsapwooda(ico)         &
+                                                           , cpatch%pft      (ico) )
+                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bdead    (ico)            &
+                                                        , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%pft      (ico) )
+                           !---------------------------------------------------------------!
 
-                           cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
@@ -2157,6 +2174,7 @@ subroutine read_ed21_polyclone
                              , memsize                 ! ! intent(in)
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
+                             , size2bt                 & ! function
                              , bd2dbh                  & ! function
                              , dbh2h                   & ! function
                              , dbh2bd                  & ! function
@@ -2874,7 +2892,7 @@ subroutine read_ed21_polyclone
                               !---------------------------------------------------------------!
                               if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                                  csite%dist_type(ipa) = 5
-                              else if (plantation(ipa) == 0 .and. ianth_disturb == 1) then
+                              else if (plantation(ipa) == 0 .and. ianth_disturb /= 0) then
                                  csite%dist_type(ipa) = 6
                               else
                                  csite%dist_type(ipa) = 2
@@ -3194,10 +3212,16 @@ subroutine read_ed21_polyclone
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
-                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
-
-                           cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%agb(ico)     = ed_biomass( cpatch%bdead    (ico)         &
+                                                           , cpatch%bleaf    (ico)         &
+                                                           , cpatch%bsapwooda(ico)         &
+                                                           , cpatch%pft      (ico) )
+                           cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+                           cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bdead    (ico)            &
+                                                        , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%pft      (ico) )
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &

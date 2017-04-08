@@ -19,6 +19,8 @@
 !     !  17  : rank 2 : age                                 !                              !
 !     !  155 : rank 2 : max_lu_years                        !                              !
 !     !  156 : rank 3 : max_lu_years, num_lu_transitions    !                              !
+!     !  19  : rank 2 : months (12)                         !                              !
+!     !  191 : rank 2 : months+1 (13)                       !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- SITE: -----------------------------------------!                              !
@@ -51,17 +53,20 @@
 !     !  35  : rank 2 : disturbance                         !                              !
 !     !  36  : rank 2 : dbh                                 !                              !
 !     !  37  : rank 2 : age                                 !                              !
+!     !  38  : rank 2 : mortality                           !                              !
+!     !  39  : rank 2 : months (12)                         !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- COHORT: ---------------------------------------!                              !
 !     !  40  : rank 1 : integer                             !                              !
-!     !  41  : rank 1 : cohort (real)                       !                              !
+!     !  41  : rank 1 : real                                !                              !
 !     ! -41  : rank 2 : ndcycle                             !                              !
-!     !  44  : rank 2 : cohort, pft                         !                              !
-!     !  46  : rank 2 : cohort, dbh                         !                              !
-!     !  47  : rank 2 : cohort, age                         !                              !
-!     !  48  : rank 2 : cohort, mort                        !                              !
-!     !  49  : rank 2 : cohort, nmonths+1                   !                              !
+!     !  44  : rank 2 : pft                                 !                              !
+!     !  46  : rank 2 : dbh                                 !                              !
+!     !  47  : rank 2 : age                                 !                              !
+!     !  48  : rank 2 : mort                                !                              !
+!     !  49  : rank 2 : nmonths (12)                        !                              !
+!     !  491 : rank 2 : nmonths+1 (13)                      !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- OTHER: ----------------------------------------!                              !

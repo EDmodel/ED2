@@ -435,23 +435,93 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   !    This function computes the standing volume of a tree.                              !
+   !    This function computes the commercial volume of a tree (stem/bole volume, in m3).  !
+   ! The current equation is a re-fit from Nogueira et al. (2008) so a single set of       !
+   ! parameters can be used.  Their equation is for tropical trees only, so temperate and  !
+   ! boreal forests may need a different set of parameters.  Grasses are assumed to have   !
+   ! no commercial volume.                                                                 !
+   !                                                                                       !
+   ! Nogueira, E. M., et al.  Estimates of forest biomass in the Brazilian Amazon: new     !
+   !    allometric equations and adjustments to biomass from wood-volume inventories.      !
+   !    Forest Ecol. Manag., 256(11), 1853-1867, Nov. 2008,                                !
+   !    doi:10.1016/j.foreco.2008.07.022.                                                  !
    !---------------------------------------------------------------------------------------!
-   real function dbh2vol(hgt,dbh,ipft)
+   real function dbh2vol(dbh,hgt,ipft)
       use pft_coms    , only : b1Vol    & ! intent(in)
                              , b2Vol    ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real   , intent(in) :: hgt
       real   , intent(in) :: dbh
+      real   , intent(in) :: hgt
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
 
 
-      dbh2vol = b1Vol(ipft) * (hgt * dbh * dbh) ** b2Vol(ipft)
+      dbh2vol = b1Vol(ipft) * (dbh * dbh * hgt) ** b2Vol(ipft)
 
       return
    end function dbh2vol
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This function computes the commercial timber biomass for different PFTs.           !
+   !---------------------------------------------------------------------------------------!
+   real function size2bt(dbh,hgt,bdead,bsapwooda,ipft)
+      use pft_coms    , only : is_grass    & ! intent(in)
+                             , is_tropical & ! intent(in)
+                             , rho         & ! intent(in)
+                             , agf_bs      & ! intent(in)
+                             , C2B         ! ! intent(in)
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: dbh
+      real(kind=4), intent(in) :: hgt
+      real(kind=4), intent(in) :: bdead
+      real(kind=4), intent(in) :: bsapwooda
+      integer     , intent(in) :: ipft
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: btimber
+      real(kind=4)             :: bagwood
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Calculate commercial timber biomass based on the life form and habitat.       !
+      !------------------------------------------------------------------------------------!
+      if (is_grass(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Grasses don't have commercial timber.                                       !
+         !---------------------------------------------------------------------------------!
+         size2bt = 0.0
+         !---------------------------------------------------------------------------------!
+      else if (is_tropical(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Tropical trees.  We use the tree volume scaled with typical wood density.   !
+         !---------------------------------------------------------------------------------!
+         btimber  = 1000. * rho(ipft) * dbh2vol(dbh,hgt,ipft) / C2B
+         bagwood  = agf_bs(ipft) * bdead + bsapwooda
+         size2bt  = min(btimber,bagwood)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Temperate trees.  For the time being we use total aboveground wood biomass, !
+         ! so results are consistent with former implementation.                           !
+         !---------------------------------------------------------------------------------!
+         size2bt  = agf_bs(ipft) * bdead + bsapwooda
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function size2bt
    !=======================================================================================!
    !=======================================================================================!
 
@@ -475,7 +545,6 @@ module allometry
       integer, intent(in) :: ipft
       integer, intent(in) :: lsl
       !----- Local variables --------------------------------------------------------------!
-      real                :: volume
       real                :: root_depth
       integer             :: k
       !------------------------------------------------------------------------------------!
@@ -487,8 +556,7 @@ module allometry
          !---------------------------------------------------------------------------------!
          !    Original ED-2.1 (I don't know the source for this equation, though).         !
          !---------------------------------------------------------------------------------!
-         volume     = dbh2vol(hite,dbh,ipft) 
-         root_depth = b1Rd(ipft)  * (1.e6 * volume) ** b2Rd(ipft)
+         root_depth = b1Rd(ipft)  * (hite * dbh * dbh) ** b2Rd(ipft)
          !---------------------------------------------------------------------------------!
       case default
          !---------------------------------------------------------------------------------!

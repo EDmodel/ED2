@@ -16,6 +16,7 @@ subroutine ed_bigleaf_init(cgrid)
                              , n_dist_types         ! ! intent(in)
    use allometry      , only : size2bl              & ! function
                              , dbh2bd               & ! function
+                             , size2bt              & ! function
                              , area_indices         & ! function
                              , ed_biomass           ! ! function
    use pft_coms       , only : hgt_max              & ! intent(in)
@@ -304,6 +305,11 @@ subroutine ed_bigleaf_init(cgrid)
                      cpatch%agb(1)     = ed_biomass(cpatch%bdead(1),cpatch%bleaf(1)        &
                                                ,cpatch%bsapwooda(1),cpatch%pft(1))
                      cpatch%basarea(1) = pio4 * cpatch%dbh(1) * cpatch%dbh(1)
+                     cpatch%btimber(1) = size2bt(cpatch%dbh(1),cpatch%hite(1)              &
+                                                ,cpatch%bdead(1),cpatch%bsapwooda(1)       &
+                                                ,cpatch%pft(1))
+                     !---------------------------------------------------------------------!
+
 
                      !----- Growth rates, start with zero. --------------------------------!
                      cpatch%dagb_dt  (1)  = 0.

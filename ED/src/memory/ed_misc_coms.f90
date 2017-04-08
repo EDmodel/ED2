@@ -150,6 +150,14 @@ Module ed_misc_coms
    !---------------------------------------------------------------------------------------!
 
 
+
+
+   !---------------------------------------------------------------------------------------!
+   ! MONTH_YRSTEP -- Month in which the yearly time step (patch dynamics) should occur.    !
+   !---------------------------------------------------------------------------------------!
+   integer :: month_yrstep
+   !---------------------------------------------------------------------------------------!
+
    ! Control parameters for printing. Read in the namelist
    integer :: iprintpolys
    integer :: npvars
@@ -166,8 +174,6 @@ Module ed_misc_coms
    character(len=str_len) :: event_file
 
    integer :: burnin          !! number of years to ignore demography when starting a run
-
-   integer :: outputMonth     !! month to output annual files
 
    integer :: restart_target_year    !! year to read when parsing pss/css with multiple years
 

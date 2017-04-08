@@ -7365,14 +7365,14 @@ module average_utils
    !---------------------------------------------------------------------------------------!
    subroutine update_ed_yearly_vars(cgrid)
 
-      use ed_state_vars, only : edtype      & ! structure
-                              , polygontype & ! structure
-                              , sitetype    & ! structure
-                              , patchtype   ! ! structure
-      use ed_max_dims  , only : n_pft       & ! intent(in)
-                              , n_dbh       ! ! intent(in)
-      use consts_coms  , only : pi1         ! ! intent(in)
-     
+      use ed_state_vars, only : edtype       & ! structure
+                              , polygontype  & ! structure
+                              , sitetype     & ! structure
+                              , patchtype    ! ! structure
+      use ed_max_dims  , only : n_pft        & ! intent(in)
+                              , n_dbh        ! ! intent(in)
+      use consts_coms  , only : pi1          ! ! intent(in)
+      use ed_misc_coms , only : current_time ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       type(edtype)     , target  :: cgrid

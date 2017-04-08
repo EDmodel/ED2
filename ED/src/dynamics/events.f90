@@ -291,7 +291,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass
+  use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass, &
+                        size2bt
   use consts_coms, only : pio4
   use ed_misc_coms     , only : igrass               ! ! intent(in)
   use budget_utils     , only : update_budget
@@ -410,6 +411,9 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            
+                 cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)            &
+                                              ,cpatch%bdead(ico),cpatch%bsapwooda(ico)     &
+                                              ,cpatch%pft(ico))
                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)      &
                                                  ,cpatch%bsapwooda(ico),cpatch%pft(ico))   
                  !-------------------------------------------------------------------------!

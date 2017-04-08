@@ -125,6 +125,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , size2bl            & ! function
+                                 , size2bt            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
@@ -246,6 +247,9 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
                                      ,cpatch%bsapwooda(ico),cpatch%pft(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
+         cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdead(ico)  &
+                                      ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
@@ -256,9 +260,10 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
       end do pftloop
       
       !------------------------------------------------------------------------------------!
-      !     Since initial heights may not be constant, we must sort the cohorts.           !
+      !     Because initial heights may not be constant, we must sort the cohorts.         !
       !------------------------------------------------------------------------------------!
       call sort_cohorts(cpatch)
+      !------------------------------------------------------------------------------------!
    end do patchloop
 
    return

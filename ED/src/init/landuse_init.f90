@@ -5,24 +5,29 @@
 !------------------------------------------------------------------------------------------!
 subroutine landuse_init
 
-   use ed_state_vars , only : edtype          & ! structure
-                            , polygontype     & ! structure
-                            , sitetype        & ! structure
-                            , edgrid_g        ! ! structure
-   use consts_coms   , only : erad            & ! intent(in)
-                            , pio180          ! ! intent(in)
-   use disturb_coms  , only : lutime          & ! intent(in)
-                            , max_lu_years    & ! intent(in)
-                            , num_lu_trans    & ! intent(in)
-                            , ianth_disturb   & ! intent(in)
-                            , lu_database     ! ! intent(in)
-   use ed_misc_coms  , only : iyeara          & ! intent(in)
-                            , iyearz          ! ! intent(in)
-   use grid_coms     , only : ngrids          ! ! intent(in)
-   use ed_max_dims   , only : str_len         & ! intent(in)
-                            , huge_lu         & ! intent(in)
-                            , n_pft           & ! intent(in)
-                            , maxlist         ! ! intent(in)
+   use ed_state_vars , only : edtype            & ! structure
+                            , polygontype       & ! structure
+                            , sitetype          & ! structure
+                            , edgrid_g          ! ! structure
+   use consts_coms   , only : erad              & ! intent(in)
+                            , pio180            ! ! intent(in)
+   use disturb_coms  , only : lutime            & ! intent(in)
+                            , max_lu_years      & ! intent(in)
+                            , num_lu_trans      & ! intent(in)
+                            , ianth_disturb     & ! intent(in)
+                            , lu_database       & ! intent(in)
+                            , sl_pft            & ! intent(in)
+                            , sl_scale          & ! intent(in)
+                            , sl_nyrs           & ! intent(in)
+                            , sl_mindbh_harvest & ! intent(in)
+                            , sl_prob_harvest   ! ! intent(in)
+   use ed_misc_coms  , only : iyeara            & ! intent(in)
+                            , iyearz            ! ! intent(in)
+   use grid_coms     , only : ngrids            ! ! intent(in)
+   use ed_max_dims   , only : str_len           & ! intent(in)
+                            , huge_lu           & ! intent(in)
+                            , n_pft             & ! intent(in)
+                            , maxlist           ! ! intent(in)
 
    implicit none
    !----- Local variables -----------------------------------------------------------------!
@@ -59,10 +64,10 @@ subroutine landuse_init
    integer                                    :: yd_last
    integer                                    :: yd_tot
    logical                                    :: inside
-   real                  , dimension(n_pft)   :: mindbh_1ary
-   real                  , dimension(n_pft)   :: harvprob_1ary
-   real                  , dimension(n_pft)   :: mindbh_2ary
-   real                  , dimension(n_pft)   :: harvprob_2ary
+   real                  , dimension(n_pft)   :: mindbh_slog
+   real                  , dimension(n_pft)   :: harvprob_slog
+   real                  , dimension(n_pft)   :: mindbh_fplt
+   real                  , dimension(n_pft)   :: harvprob_fplt
    real                                       :: lu_area
    real                                       :: lu_area_i
    real                                       :: wlon
@@ -79,11 +84,15 @@ subroutine landuse_init
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Finding number of simulation years ----------------------------------------------!
+
+   !----- Find number of simulation years -------------------------------------------------!
    sim_years = iyearz-iyeara+1
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Crashing the run if the user set up a very long run... --------------------------!
-   if (ianth_disturb == 1 .and. sim_years > max_lu_years) then
+   if (ianth_disturb /= 0 .and. sim_years > max_lu_years) then
       write (unit=*,fmt='(a,1x,i5)') 'IYEARA       (From namelist)        :',iyeara
       write (unit=*,fmt='(a,1x,i5)') 'IYEARZ       (From namelist)        : ',iyearz
       write (unit=*,fmt='(a,1x,i5)') 'MAX_LU_YEARS (From disturb_coms.f90): ',max_lu_years
@@ -93,6 +102,7 @@ subroutine landuse_init
       call fatal_error ('Simulation is too long for anthropogenic disturbance.'            &
                        ,'landuse_init','landuse_init.f90')
    end if
+   !---------------------------------------------------------------------------------------!
 
 
    gridloop: do igr = 1,ngrids
@@ -112,15 +122,46 @@ subroutine landuse_init
          cpoly => cgrid%polygon(ipy)
 
          select case (ianth_disturb)
-         case (1)
+         case (0)
+            !----- No plantations. --------------------------------------------------------!
+            cpoly%plantation(:) = 0
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
-            !     Comput the distance between the current polygon and all the files.       !
+            !      Anthropogenic disturbance is not used this time, allocate only a single !
+            ! landuse year.                                                                !
+            !------------------------------------------------------------------------------!
+            allocate(cpoly%clutimes(1,cpoly%nsites))
+            !------------------------------------------------------------------------------!
+
+            !----- Set the parameters in a way that no logging/ploughing will happen. -----!
+            do isi = 1,cpoly%nsites
+               cpoly%num_landuse_years(isi)                  = 1
+               cpoly%mindbh_harvest    (1:n_pft,isi)         = huge_dbh
+               cpoly%prob_harvest      (1:n_pft,isi)         = 0.
+               cpoly%clutimes(1,isi)%landuse_year            = iyeara
+               cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
+            end do
+            !------------------------------------------------------------------------------!
+
+         case (1)
+
+            !----- Initialise plantation patches if plantation information is available. --!
+            cpoly%plantation(:) = 0
+            call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy),igr)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Compute the distance between the current polygon and all the files.      !
             !------------------------------------------------------------------------------!
             do nf=1,nfllu
                file_ldist(nf) = dist_gc(cgrid%lon(ipy),llon_list(nf)                       &
                                        ,cgrid%lat(ipy),llat_list(nf) )
             end do
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Pick the closest file.  This is not a guarantee that it will be used      !
@@ -130,21 +171,24 @@ subroutine landuse_init
             ncl     = minloc(file_ldist(1:nfllu),dim=1)
             lu_name = lu_list(ncl)
             write (unit=*,fmt='(2a)') 'Using land use file: ',trim(lu_name)
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !    Open the patch file and read in all patches.                              !
             !------------------------------------------------------------------------------!
             open(unit=12,file=trim(lu_name),form='formatted',status='old',action='read')
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             !     Initialise the temporary arrays with data that will not cause any        !
             ! harvesting.  The actual variables will be read in the following block.       !
             !------------------------------------------------------------------------------!
-            harvest_pft(1:n_pft)   = -1
-            mindbh_1ary(1:n_pft)   = huge_dbh
-            harvprob_1ary(1:n_pft) = 0.
-            mindbh_2ary(1:n_pft)   = huge_dbh
-            harvprob_2ary(1:n_pft) = 0.
+            harvest_pft  (1:n_pft) = -1
+            mindbh_slog  (1:n_pft) = huge_dbh
+            harvprob_slog(1:n_pft) = 0.
+            mindbh_fplt  (1:n_pft) = huge_dbh
+            harvprob_fplt(1:n_pft) = 0.
 
             !----- Define the format for the header. --------------------------------------!
             write(hform,fmt='(a,i3.3,a)') '(a',str_len,')'
@@ -193,19 +237,19 @@ subroutine landuse_init
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (mindbh_1ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (mindbh_slog(h)  ,h=1,nharvest)
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (harvprob_1ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (harvprob_slog(h)  ,h=1,nharvest)
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (mindbh_2ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (mindbh_fplt(h)  ,h=1,nharvest)
 
                read (unit=12,fmt=hform)  cdum
                cdum = cdum(hoff:)
-               read (cdum, fmt=*) (harvprob_2ary(h)  ,h=1,nharvest)
+               read (cdum, fmt=*) (harvprob_fplt(h)  ,h=1,nharvest)
             else
                !---------------------------------------------------------------------------!
                !     No specific PFT information was given, this is likely to be a case in !
@@ -216,8 +260,8 @@ subroutine landuse_init
                nopftloop: do ipft=1,n_pft
                   h=h+1
                   harvest_pft(h)       = ipft
-                  mindbh_1ary(1:n_pft) = 0.
-                  mindbh_2ary(1:n_pft) = 0.
+                  mindbh_slog(1:n_pft) = 0.
+                  mindbh_fplt(1:n_pft) = 0.
                end do nopftloop
             end if
             read (unit=12,fmt=*) 
@@ -265,23 +309,30 @@ subroutine landuse_init
 
 
                !----- Initialise the PFT-dependent arrays. --------------------------------!
-               cpoly%mindbh_primary    (1:n_pft,isi) = huge_dbh
-               cpoly%probharv_primary  (1:n_pft,isi) = 0.
-               cpoly%mindbh_secondary  (1:n_pft,isi) = huge_dbh
-               cpoly%probharv_secondary(1:n_pft,isi) = 0.
+               cpoly%mindbh_harvest    (1:n_pft,isi) = huge_dbh
+               cpoly%prob_harvest      (1:n_pft,isi) = 0.
+
 
                !----- Fill the arrays with the appropriate PFT. ---------------------------!
-               do ipft=1,n_pft
-                  harvloop: do h=1,nharvest
-                     if (harvest_pft(h) == ipft) then
-                        cpoly%mindbh_primary    (ipft,isi) = mindbh_1ary  (h)
-                        cpoly%probharv_primary  (ipft,isi) = harvprob_1ary(h)
-                        cpoly%mindbh_secondary  (ipft,isi) = mindbh_2ary  (h)
-                        cpoly%probharv_secondary(ipft,isi) = harvprob_2ary(h)
-                        exit harvloop
+               select case(cpoly%plantation(isi))
+               case (0)
+                  harvloop_slog: do h=1,nharvest
+                     ipft = harvest_pft(h)
+                     if (ipft >= 1 .and. ipft <= n_pft) then
+                        cpoly%mindbh_harvest(ipft,isi) = mindbh_slog  (h)
+                        cpoly%prob_harvest  (ipft,isi) = harvprob_slog(h)
                      end if
-                  end do harvloop
-               end do
+                  end do harvloop_slog
+               case (1)
+                  harvloop_fplt: do h=1,nharvest
+                     ipft = harvest_pft(h)
+                     if (ipft >= 1 .and. ipft <= n_pft) then
+                        cpoly%mindbh_harvest(ipft,isi) = mindbh_fplt  (h)
+                        cpoly%prob_harvest  (ipft,isi) = harvprob_fplt(h)
+                     end if
+                  end do harvloop_fplt
+               end select
+               !---------------------------------------------------------------------------!
 
 
                !----- Padding disturbances with zero before first available lu year. ------!
@@ -289,7 +340,6 @@ subroutine landuse_init
                do yd_this = iyeara,(yd_1st-1)
                   iyear = iyear + 1
                   clutime => cpoly%clutimes(iyear,isi)
-
                   clutime%landuse_year            = yd_this
                   clutime%landuse(1:num_lu_trans) = 0.0
                end do
@@ -322,13 +372,14 @@ subroutine landuse_init
                   clutime%landuse_year            = yd_this
                   clutime%landuse(1:num_lu_trans) = 0.0
                end do
+               !---------------------------------------------------------------------------!
 
 
                !---------------------------------------------------------------------------!
                !      Copy the information from the first site to the other, if they       !
                ! exist.                                                                    !
                !---------------------------------------------------------------------------!
-               siteloop: do isi = 2,cpoly%nsites
+               siteloop_one: do isi = 2,cpoly%nsites
                   csite => cpoly%site(isi)
 
                   !----- Determine the number of disturbance years. -----------------------!
@@ -343,7 +394,7 @@ subroutine landuse_init
                      clutime%landuse(1:num_lu_trans) = onelutime%landuse(1:num_lu_trans)
                   end do
 
-               end do siteloop
+               end do siteloop_one
             else
                !---------------------------------------------------------------------------!
                !      No GLU data for this site.  Probably water.                          !
@@ -369,13 +420,10 @@ subroutine landuse_init
 
                !----- Set the parameters in a way that no logging/ploughing will happen. --!
                do isi = 1,cpoly%nsites
-                  cpoly%num_landuse_years(isi)                  = 1
-                  cpoly%mindbh_primary    (1:n_pft,isi)         = huge_dbh
-                  cpoly%probharv_primary  (1:n_pft,isi)         = 0.
-                  cpoly%mindbh_secondary  (1:n_pft,isi)         = huge_dbh
-                  cpoly%probharv_secondary(1:n_pft,isi)         = 0.
                   cpoly%clutimes(1,isi)%landuse_year            = iyeara
                   cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
+                  cpoly%mindbh_harvest(1:n_pft,isi)             = huge_dbh
+                  cpoly%prob_harvest  (1:n_pft,isi)             = 0.
                end do
             end if
             !------------------------------------------------------------------------------!
@@ -385,37 +433,106 @@ subroutine landuse_init
             close(unit=12,status='keep')
             !------------------------------------------------------------------------------!
 
-            !----- Initialise plantation patches if plantation information is available. --!
-            cpoly%plantation(:) = 0
-            call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy),igr)
-         case (0)
+         case (2)
             !------------------------------------------------------------------------------!
-            !      Anthropogenic disturbance is not used this time, allocate only a single !
-            ! landuse year.                                                                !
+            !      Make the land use data based on ED2IN.                                  !
+            !      Work with the first site, then copy the data to the others.             !
             !------------------------------------------------------------------------------!
-            allocate(cpoly%clutimes(1,cpoly%nsites))
-            !------------------------------------------------------------------------------!
-
-            !----- Set the parameters in a way that no logging/ploughing will happen. -----!
-            do isi = 1,cpoly%nsites
-               cpoly%num_landuse_years(isi)                  = 1
-               cpoly%mindbh_primary    (1:n_pft,isi)         = huge_dbh
-               cpoly%probharv_primary  (1:n_pft,isi)         = 0.
-               cpoly%mindbh_secondary  (1:n_pft,isi)         = huge_dbh
-               cpoly%probharv_secondary(1:n_pft,isi)         = 0.
-               cpoly%clutimes(1,isi)%landuse_year            = iyeara
-               cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
-            end do
+            isi   = 1
+            csite => cpoly%site(isi)
             !------------------------------------------------------------------------------!
 
 
             !----- No plantations. --------------------------------------------------------!
-            cpoly%plantation(:) = 0
+            cpoly%plantation(:) = 0.
             !------------------------------------------------------------------------------!
+
+
+
+            !----- Determine the number of disturbance years. -----------------------------!
+            cpoly%num_landuse_years(isi) = sim_years
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- File exists, allocate the maximum number of years. ---------------------!
+            allocate(cpoly%clutimes(sim_years,cpoly%nsites))
+            !------------------------------------------------------------------------------!
+
+
+            !----- Initialise the PFT-dependent arrays. --------------------------------!
+            cpoly%mindbh_harvest    (1:n_pft,isi) = huge_dbh
+            cpoly%prob_harvest      (1:n_pft,isi) = 0.
+            !------------------------------------------------------------------------------!
+
+
+
+            !------ Find the number of PFT that can be harvested. -------------------------!
+            nharvest = count(sl_pft >= 1 .and. sl_pft <= n_pft)
+            !------------------------------------------------------------------------------!
+
+            !----- Fill the arrays with the appropriate PFT. ------------------------------!
+            harvloop_two: do h=1,nharvest
+               ipft = harvest_pft(h)
+               if (ipft >= 1 .and. ipft <= n_pft) then
+                  cpoly%mindbh_harvest(ipft,isi) = sl_mindbh_harvest(h)
+                  cpoly%prob_harvest  (ipft,isi) = sl_prob_harvest  (h)
+               end if
+            end do harvloop_two
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Fill in the disturbance matrices and biomass target.                    !
+            !------------------------------------------------------------------------------!
+            iyear = 0
+            do yd_this = iyeara,iyearz
+               iyear = iyear + 1
+               clutime => cpoly%clutimes(iyear,isi)
+
+               clutime%landuse_year            = yd_this
+               clutime%landuse(1:num_lu_trans) = 0.
+
+               !---------------------------------------------------------------------------!
+               !     Decide whether to include logging disturbance in this year.           !
+               !---------------------------------------------------------------------------!
+               if ( (sl_scale == 1) .or. (mod(yd_this-iyeara,sl_nyrs) == 1)) then
+                  clutime%landuse(12) = -1.0
+                  clutime%landuse(14) = -1.0
+               end if
+               !---------------------------------------------------------------------------!
+            end do
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Copy the information from the first site to the others.                 !
+            !------------------------------------------------------------------------------!
+            siteloop_two: do isi = 2,cpoly%nsites
+               csite => cpoly%site(isi)
+
+               !----- Determine the number of disturbance years. --------------------------!
+               cpoly%num_landuse_years(isi) = cpoly%num_landuse_years(1)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Disturbances. -------------------------------------------------------!
+               do iyear = 1,cpoly%num_landuse_years(isi)
+                  clutime   => cpoly%clutimes(iyear,isi)
+                  onelutime => cpoly%clutimes(iyear,1)
+                  clutime%landuse_year            = onelutime%landuse_year 
+                  clutime%landuse(1:num_lu_trans) = onelutime%landuse(1:num_lu_trans)
+               end do
+               !---------------------------------------------------------------------------!
+
+            end do siteloop_two
          end select
-         
+         !---------------------------------------------------------------------------------!
       end do polyloop
+      !------------------------------------------------------------------------------------!
    end do gridloop
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine landuse_init

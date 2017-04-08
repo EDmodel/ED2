@@ -481,6 +481,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call fill_history_grid_p12     (cgrid,ipy,py_index)
    call fill_history_grid_m11     (cgrid,ipy,py_index)
    call fill_history_grid_p19     (cgrid,ipy,py_index)
+   call fill_history_grid_p191    (cgrid,ipy,py_index)
    call fill_history_grid_m12     (cgrid,ipy,py_index)
    call fill_history_grid_p146    (cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
@@ -724,6 +725,10 @@ subroutine fill_history_grid_p11(cgrid,ipy,py_index)
                      ,'MINERAL_SOIL_N_PY '        ,dsetrank,iparallel,.false.,foundvar)
    call hdf_getslab_r(cgrid%cwd_n                   (ipy:ipy)                              &
                      ,'CWD_N_PY '                 ,dsetrank,iparallel,.false.,foundvar)
+   call hdf_getslab_r(cgrid%crop_harvest            (ipy:ipy)                              &
+                     ,'CROP_HARVEST_PY '          ,dsetrank,iparallel,.false.,foundvar)
+   call hdf_getslab_r(cgrid%logging_harvest         (ipy:ipy)                              &
+                     ,'LOGGING_HARVEST_PY '       ,dsetrank,iparallel,.false.,foundvar)
    !---------------------------------------------------------------------------------------!
    return
 end subroutine fill_history_grid_p11
@@ -2422,6 +2427,166 @@ subroutine fill_history_grid_p19(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
+   !      2-D variables, dimensions: (12 months; npolygons).                               !
+   !---------------------------------------------------------------------------------------!
+   dsetrank    = 2
+   globdims(1) = int(12,8)
+   chnkdims(1) = int(12,8)
+   memdims (1) = int(12,8)
+   memsize (1) = int(12,8)
+   chnkoffs(1) = 0_8
+   memoffs (1) = 0_8
+   globdims(2) = int(cgrid%npolygons_global,8)
+   chnkdims(2) = 1_8
+   chnkoffs(2) = int(py_index - 1,8)
+   memdims (2) = 1_8
+   memsize (2) = 1_8
+   memoffs (2) = 0_8
+
+   call hdf_getslab_r(cgrid%crop_yield(:,ipy)                                              &
+                     ,'CROP_YIELD_PY ',dsetrank,iparallel,.true.,foundvar)
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   return
+end subroutine fill_history_grid_p19
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine fill_history_grid_p191(cgrid,ipy,py_index)
+   use ed_state_vars, only : edtype        & ! structure
+                           , polygontype   ! ! structure
+   use grid_coms    , only : nzg           ! ! intent(in)
+   use ed_max_dims  , only : n_pft         & ! intent(in)
+                           , n_dbh         & ! intent(in)
+                           , n_age         & ! intent(in)
+                           , max_site      & ! intent(in)
+                           , n_dist_types  ! ! intent(in)
+   use hdf5
+   use hdf5_coms    , only : file_id       & ! intent(inout)
+                           , dset_id       & ! intent(inout)
+                           , dspace_id     & ! intent(inout)
+                           , plist_id      & ! intent(inout)
+                           , globdims      & ! intent(inout)
+                           , chnkdims      & ! intent(inout)
+                           , chnkoffs      & ! intent(inout)
+                           , cnt           & ! intent(inout)
+                           , stride        & ! intent(inout)
+                           , memdims       & ! intent(inout)
+                           , memoffs       & ! intent(inout)
+                           , memsize       & ! intent(inout)
+                           , datatype_id   ! ! intent(inout)
+   use ed_misc_coms , only : ndcycle       & ! intent(in)
+                           , writing_long  & ! intent(in)
+                           , writing_eorq  & ! intent(in)
+                           , writing_dcyc  ! ! intent(in)
+   implicit none
+   !----- Interfaces. ---------------------------------------------------------------------!
+#if USE_INTERF
+   interface
+      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_r
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_d
+      !------------------------------------------------------------------------------------!
+      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
+         use hdf5_coms, only : memsize ! ! intent(in)
+         !----- Arguments. ----------------------------------------------------------------!
+         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
+                                                          , intent(inout) :: buff
+         character(len=*)                                 , intent(in)    :: varn
+         integer                                          , intent(in)    :: dsetrank
+         integer                                          , intent(in)    :: iparallel
+         logical                                          , intent(in)    :: required
+         logical                                          , intent(out)   :: foundvar
+         !---------------------------------------------------------------------------------!
+      end subroutine hdf_getslab_i
+      !------------------------------------------------------------------------------------!
+   end interface
+#endif
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)   , target      :: cgrid
+   integer        , intent(in)  :: ipy
+   integer        , intent(in)  :: py_index
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: iparallel
+   integer                      :: dsetrank
+   logical                      :: foundvar
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Turn off parallel for this sub-routine. -----------------------------------------!
+   iparallel = 0
+   !---------------------------------------------------------------------------------------!
+ 
+
+   !---------------------------------------------------------------------------------------!
+   !     Reset the dimension arrays.                                                       !
+   !---------------------------------------------------------------------------------------!
+   globdims(:) = 0_8
+   chnkdims(:) = 0_8
+   chnkoffs(:) = 0_8
+   memoffs (:) = 0_8
+   memdims (:) = 0_8
+   memsize (:) = 1_8
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     For the remainder of this sub-routine, we must load the polygon variables         !
+   ! according to the dimensionality.  If you are adding a new variable, make sure that it !
+   ! is placed together with variables of the same dimensions.                             !
+   !                                                                                       !
+   ! DSETRANK -- the rank of the variable.                                                 !
+   ! GLOBDIMS -- the size of each dimension                                                !
+   ! CHNKDIMS -- the size of the chunk to be read this time                                !
+   ! CHNKOFFS -- the offset (number of indices to be skipped)                              !
+   ! MEMDIMS  -- the dimensions of the buffer to be filled.                                !
+   ! MEMOFFS  -- the offset of the memory                                                  !
+   ! MEMSIZE  -- the size of variable that will house the information read.                !
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
    !      2-D variables, dimensions: (13 months; npolygons).                               !
    !---------------------------------------------------------------------------------------!
    dsetrank    = 2
@@ -2444,7 +2609,7 @@ subroutine fill_history_grid_p19(cgrid,ipy,py_index)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    return
-end subroutine fill_history_grid_p19
+end subroutine fill_history_grid_p191
 !==========================================================================================!
 !==========================================================================================!
 
@@ -2794,6 +2959,8 @@ subroutine fill_history_grid_p146(cgrid,ipy,py_index)
                      ,'BASAL_AREA_PY                ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%bdead                    (:,:,ipy)                             &
                      ,'BDEAD_PY                     ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cgrid%btimber                  (:,:,ipy)                             &
+                     ,'BTIMBER_PY                   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%balive                   (:,:,ipy)                             &
                      ,'BALIVE_PY                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%bleaf                    (:,:,ipy)                             &
@@ -2806,6 +2973,8 @@ subroutine fill_history_grid_p146(cgrid,ipy,py_index)
                      ,'BSAPWOODB_PY                 ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%bseeds                   (:,:,ipy)                             &
                      ,'BSEEDS_PY                    ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cgrid%byield                   (:,:,ipy)                             &
+                     ,'BYIELD_PY                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%bstorage                 (:,:,ipy)                             &
                      ,'BSTORAGE_PY                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cgrid%bdead_n                  (:,:,ipy)                             &
@@ -3024,6 +3193,8 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
                      ,'HYDRO_PREV              ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%plantation                                                     &
                      ,'PLANTATION_SI           ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_i(cpoly%pasture_stocking_pft                                           &
+                     ,'PASTURE_STOCKING_PFT    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%agri_stocking_pft                                              &
                      ,'AGRI_STOCKING_PFT       ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_i(cpoly%plantation_stocking_pft                                        &
@@ -3109,6 +3280,8 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
                       ,'BASEFLOW_SI                ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%min_monthly_temp                                               &
                       ,'MIN_MONTHLY_TEMP           ' ,dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpoly%pasture_stocking_density                                       &
+                      ,'PASTURE_STOCKING_DENSITY   ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%agri_stocking_density                                          &
                       ,'AGRI_STOCKING_DENSITY      ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%plantation_stocking_density                                    &
@@ -3129,6 +3302,10 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
                       ,'DAYLIGHT                   ' ,dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpoly%cosaoi                                                         &
                       ,'COSAOI                     ' ,dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpoly%crop_harvest                                                   &
+                     ,'CROP_HARVEST_SI              ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpoly%logging_harvest                                                &
+                     ,'LOGGING_HARVEST_SI           ',dsetrank,iparallel,.true. ,foundvar)
    !------ Daily means. -------------------------------------------------------------------!
    if (writing_long) then
       call hdf_getslab_r(cpoly%dmean_atm_theiv                                             &
@@ -3369,6 +3546,8 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
                      ,'LAMBDA_FIRE ',dsetrank,iparallel,.true.,foundvar)
    call hdf_getslab_r(cpoly%avg_monthly_pcpg                                               &
                      ,'AVG_MONTHLY_PCPG ',dsetrank,iparallel,.true.,foundvar)
+   call hdf_getslab_r(cpoly%crop_yield                                                     &
+                     ,'CROP_YIELD_SI ',dsetrank,iparallel,.true.,foundvar)
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -4977,6 +5156,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'DBH                       ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%bdead                                                         &
                      ,'BDEAD                     ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%btimber                                                        &
+                     ,'BTIMBER                   ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%bleaf                                                         &
                      ,'BLEAF                     ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%balive                                                        &
@@ -4991,6 +5172,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                      ,'BSTORAGE                  ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%bseeds                                                        &
                      ,'BSEEDS_CO                 ',dsetrank,iparallel,.true. ,foundvar)
+   call hdf_getslab_r(cpatch%byield                                                        &
+                     ,'BYIELD_CO                 ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%lai                                                           &
                      ,'LAI_CO                    ',dsetrank,iparallel,.true. ,foundvar)
    call hdf_getslab_r(cpatch%wai                                                           &

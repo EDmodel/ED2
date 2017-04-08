@@ -46,6 +46,7 @@ subroutine read_ed10_ed20_history_file
                              , dbh2h               & ! function
                              , dbh2bd              & ! function
                              , size2bl             & ! function
+                             , size2bt             & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
@@ -450,7 +451,7 @@ subroutine read_ed10_ed20_history_file
                            !----- No anthropogenic, assume abandoned lands. ---------------!
                            csite%dist_type (ip2) = 5
                            !---------------------------------------------------------------!
-                        case (1)
+                        case (1,2)
                            !----- Anthropogenic, assume logging. --------------------------!
                            csite%dist_type (ip2) = 6
                            !---------------------------------------------------------------!
@@ -529,7 +530,7 @@ subroutine read_ed10_ed20_history_file
                         !----- No anthropogenic, assume abandoned lands. ------------------!
                         csite%dist_type (ip) = 5
                         !------------------------------------------------------------------!
-                     case (1)
+                     case (1,2)
                         !----- Anthropogenic, assume logging. -----------------------------!
                         csite%dist_type (ip) = 6
                         !------------------------------------------------------------------!
@@ -848,9 +849,16 @@ subroutine read_ed10_ed20_history_file
                         !------------------------------------------------------------------!
 
                         !----- Above ground biomass, use the allometry. -------------------!
-                        cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%bleaf(ic2)   &
-                                                    ,cpatch%bsapwooda(ic2),cpatch%pft(ic2))
-                        cpatch%basarea(ic2)  = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
+                        cpatch%agb    (ic2) = ed_biomass( cpatch%bdead     (ic2)           &
+                                                        , cpatch%bleaf     (ic2)           &
+                                                        , cpatch%bsapwooda (ic2)           &
+                                                        , cpatch%pft       (ic2) )
+                        cpatch%basarea(ic2) = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
+                        cpatch%btimber(ic2) = size2bt( cpatch%dbh       (ic2)              &
+                                                     , cpatch%hite      (ic2)              &
+                                                     , cpatch%bdead     (ic2)              &
+                                                     , cpatch%bsapwooda (ic2)              &
+                                                     , cpatch%pft       (ic2) )
 
                         !----- Growth rates, start with zero. -----------------------------!
                         cpatch%dagb_dt  (ic2)  = 0.

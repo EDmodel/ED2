@@ -46,6 +46,7 @@ subroutine reproduction(cgrid, month)
                                  , size2bl                  & ! function
                                  , h2dbh                    & ! function
                                  , dbh2h                    & ! function
+                                 , size2bt                  & ! function
                                  , ed_biomass               & ! function
                                  , area_indices             & ! subroutine
                                  , dbh2krdepth              ! ! function
@@ -403,6 +404,11 @@ subroutine reproduction(cgrid, month)
                      !---------------------------------------------------------------------!
                      cpatch%agb      (ico) = ed_biomass( cpatch%bdead     (ico)            &
                                                        , cpatch%bleaf     (ico)            &
+                                                       , cpatch%bsapwooda (ico)            &
+                                                       , cpatch%pft       (ico) )
+                     cpatch%btimber  (ico) = size2bt   ( cpatch%dbh       (ico)            &
+                                                       , cpatch%hite      (ico)            &
+                                                       , cpatch%bdead     (ico)            &
                                                        , cpatch%bsapwooda (ico)            &
                                                        , cpatch%pft       (ico) )
                      cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)

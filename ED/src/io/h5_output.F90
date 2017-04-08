@@ -1072,11 +1072,23 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
 
-   case (19) ! (13 months,npolygons)  
+   case (19) ! (12 months,npolygons)  
       
       dsetrank = 2
-      globdims(1) = int(13,8)
-      chnkdims(1) = int(13,8)
+      globdims(1) = 12_8
+      chnkdims(1) = 12_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+
+   case (191) ! (13 months,npolygons)  
+      
+      dsetrank = 2
+      globdims(1) = 13_8
+      chnkdims(1) = 13_8
       chnkoffs(1) = 0_8
       globdims(2) = int(var_len_global,8)
       chnkdims(2) = int(varlen,8)
@@ -1370,6 +1382,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+  
+   case (39) !(n_mort,npatches)
+      
+      ! Month type
+      dsetrank = 2
+      globdims(1) = 12_8
+      chnkdims(1) = 12_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
               
    case (40,41) !(ncohorts)
       
@@ -1443,7 +1468,20 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
      
-   case (49) !(13,ncohorts)
+   case (49) !(12,ncohorts)
+      
+      ! 12 Months type
+      dsetrank = 2
+      globdims(1) = 12_8
+      chnkdims(1) = 12_8
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+     
+   case (491) !(13,ncohorts)
       
       ! 13 Months type
       dsetrank = 2

@@ -62,27 +62,26 @@ module ed_state_vars
 
 
       !------------------------------------------------------------------------------------!
-      ! Plant functional type.  Default values are:                                        !
-      ! PFT | Name                                     | Grass   | Tropical | agriculture? !
-      !-----+------------------------------------------+---------+----------+--------------!
-      !   1 | C4 grass                                 |     yes |      yes |          yes !
-      !   2 | Early tropical                           |      no |      yes |           no !
-      !   3 | Mid tropical                             |      no |      yes |           no !
-      !   4 | Late tropical                            |      no |      yes |           no !
-      !   5 | Temperate C3 grass                       |     yes |       no |          yes !
-      !   6 | Northern pines                           |      no |       no |           no !
-      !   7 | Southern pines                           |      no |       no |           no !
-      !   8 | Late conifers                            |      no |       no |           no !
-      !   9 | Early temperate deciduous                |      no |       no |           no !
-      !  10 | Mid temperate deciduous                  |      no |       no |           no !
-      !  11 | Late temperate deciduous                 |      no |       no |           no !
-      !  12 | C3 pasture                               |     yes |       no |          yes !
-      !  13 | C3 crop (e.g.,wheat, rice, soybean)      |     yes |       no |          yes !
-      !  14 | C4 pasture                               |     yes |      yes |          yes !
-      !  15 | C4 crop (e.g.,corn/maize)                |     yes |      yes |          yes !
-      !  16 | Tropical C3 grass                        |     yes |      yes |          yes !
-      !  17 | Araucaria (based on 7, tropical allom.)  |      no |      yes |           no !
-      !-----+------------------------------------------+---------+----------+--------------!
+      ! PFT | Name                                |  Grass | Tropical | Conifer |     Crop !
+      !-----+-------------------------------------+--------+----------+--------------------!
+      !   1 | C4 grass                            |    yes |      yes |      no |      yes !
+      !   2 | Early tropical                      |     no |      yes |      no |       no !
+      !   3 | Mid tropical                        |     no |      yes |      no |       no !
+      !   4 | Late tropical                       |     no |      yes |      no |       no !
+      !   5 | Temperate C3 grass                  |    yes |       no |      no |      yes !
+      !   6 | Northern pines                      |     no |       no |     yes |       no !
+      !   7 | Southern pines                      |     no |       no |     yes |       no !
+      !   8 | Late conifers                       |     no |       no |     yes |       no !
+      !   9 | Early temperate deciduous           |     no |       no |      no |       no !
+      !  10 | Mid temperate deciduous             |     no |       no |      no |       no !
+      !  11 | Late temperate deciduous            |     no |       no |      no |       no !
+      !  12 | C3 pasture                          |    yes |       no |      no |      yes !
+      !  13 | C3 crop (e.g.,wheat, rice, soybean) |    yes |       no |      no |      yes !
+      !  14 | C4 pasture                          |    yes |      yes |      no |      yes !
+      !  15 | C4 crop (e.g.,corn/maize)           |    yes |      yes |      no |      yes !
+      !  16 | Tropical C3 grass                   |    yes |      yes |      no |      yes !
+      !  17 | Araucaria                           |     no |      yes |     yes |       no !
+      !------------------------------------------------------------------------------------!
       integer ,pointer,dimension(:) :: pft
 
       ! Density of plants (number/m2)
@@ -140,6 +139,9 @@ module ed_state_vars
       ! Biomass of the structural wood (kgC/plant)
       real ,pointer,dimension(:) :: bdead
 
+      ! Biomass of commercial timber wood (kgC/plant)
+      real ,pointer,dimension(:) :: btimber
+
       ! Biomass of leaves (kgC/plant)
       real ,pointer,dimension(:) :: bleaf
 
@@ -160,6 +162,9 @@ module ed_state_vars
 
       ! Amount of seeds produced for dispersal [kgC/plant]
       real ,pointer,dimension(:) :: bseeds
+
+      ! Amount of seeds harvested -- yield [kgC/plant]
+      real ,pointer,dimension(:) :: byield
 
       ! Leaf area index (m2 leaf / m2 ground)
       real ,pointer,dimension(:) :: lai
@@ -1764,10 +1769,8 @@ module ed_state_vars
       !----- The vectorized landuse matrix is allocated in landuse_init. ------------------!
       type(lutime), pointer,dimension(:,:)  :: clutimes !(luyears,nsites)
       !----- Minimum DBH and probability of being harvest when selective logging happens. -!
-      real        , pointer, dimension(:,:) :: mindbh_primary
-      real        , pointer, dimension(:,:) :: probharv_primary
-      real        , pointer, dimension(:,:) :: mindbh_secondary
-      real        , pointer, dimension(:,:) :: probharv_secondary
+      real        , pointer, dimension(:,:) :: mindbh_harvest
+      real        , pointer, dimension(:,:) :: prob_harvest
       !------------------------------------------------------------------------------------!
 
 
@@ -1776,6 +1779,15 @@ module ed_state_vars
       !-----------------------------------
       ! is the site under plantation management? (1=yes, 0=no)
       integer,pointer,dimension(:) :: plantation  ! initialized to zero in site creation
+
+      ! Upon creating a pasture patch in this site, stock it with this 
+      ! PFT.  Set, along with the other stocking parameters, in 
+      ! init_ed_site_vars().
+      integer,pointer,dimension(:) :: pasture_stocking_pft
+     
+      ! Upon creating a pasture patch in this site, stock it with 
+      ! this density of plants [plants/m2]
+      real,pointer,dimension(:) :: pasture_stocking_density
 
       ! Upon creating an agriculture patch in this site, stock it with this 
       ! PFT.  Set, along with the other stocking parameters, in 
@@ -1846,7 +1858,20 @@ module ed_state_vars
       real,pointer, dimension(:,:,:) :: agb_mort          ! kgC/m2/yr
       real,pointer, dimension(:,:,:) :: agb_cut           ! kgC/m2/yr
 
+      !------------------------------------------------------------------------------------!
+      !      Crop and logging output.                                                      !
+      !------------------------------------------------------------------------------------!
+      !----- Crop yield (specifically, seeds), kgC/m2, one value for each month. ----------!
+      real, pointer, dimension(:,:) :: crop_yield
+      !----- Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ------!
+      real, pointer, dimension(:) :: crop_harvest
+      !----- Logging harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ---!
+      real, pointer, dimension(:) :: logging_harvest
+      !------------------------------------------------------------------------------------!
 
+
+
+      !---- Angle of incidence. 
       real,pointer,dimension(:) :: cosaoi
 
       !----- Length of day light, used to average light levels properly. -------------------!
@@ -2041,6 +2066,17 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !      Crop and logging output.                                                      !
+      !------------------------------------------------------------------------------------!
+      !----- Crop yield (specifically, seeds), kgC/m2, one value for each month. ----------!
+      real, pointer, dimension(:,:) :: crop_yield
+      !----- Crop harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ------!
+      real, pointer, dimension(:) :: crop_harvest
+      !----- Logging harvest (leaves or non-structural carbon), kgC/m2, patch dynamics. ---!
+      real, pointer, dimension(:) :: logging_harvest
+      !------------------------------------------------------------------------------------!
+
 
       ! Polygon AGB (kgC/m2)
       real,pointer,dimension(:) :: total_agb
@@ -2118,12 +2154,14 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: wai
       real,pointer,dimension(:,:,:) :: basal_area
       real,pointer,dimension(:,:,:) :: bdead
+      real,pointer,dimension(:,:,:) :: btimber
       real,pointer,dimension(:,:,:) :: balive
       real,pointer,dimension(:,:,:) :: bleaf
       real,pointer,dimension(:,:,:) :: broot
       real,pointer,dimension(:,:,:) :: bsapwooda
       real,pointer,dimension(:,:,:) :: bsapwoodb
       real,pointer,dimension(:,:,:) :: bseeds
+      real,pointer,dimension(:,:,:) :: byield
       real,pointer,dimension(:,:,:) :: bstorage
       real,pointer,dimension(:,:,:) :: bdead_n
       real,pointer,dimension(:,:,:) :: balive_n
@@ -3050,6 +3088,9 @@ module ed_state_vars
       allocate(cgrid%ilon                       (                    npolygons))
       allocate(cgrid%ilat                       (                    npolygons))
       allocate(cgrid%workload                   (                 13,npolygons))
+      allocate(cgrid%crop_yield                 (                 12,npolygons))
+      allocate(cgrid%crop_harvest               (                    npolygons))
+      allocate(cgrid%logging_harvest            (                    npolygons))
       allocate(cgrid%total_agb                  (                    npolygons))
       allocate(cgrid%total_basal_area           (                    npolygons))
       allocate(cgrid%total_agb_growth           (                    npolygons))
@@ -3081,12 +3122,14 @@ module ed_state_vars
       allocate(cgrid%wai                        (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%basal_area                 (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bdead                      (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%btimber                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%balive                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bleaf                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%broot                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwooda                  (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwoodb                  (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bseeds                     (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%byield                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bstorage                   (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bdead_n                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%balive_n                   (   n_pft,     n_dbh,npolygons))
@@ -3841,11 +3884,11 @@ module ed_state_vars
       allocate(cpoly%qrunoff                       (                          nsites))
       allocate(cpoly%min_monthly_temp              (                          nsites))
       allocate(cpoly%num_landuse_years             (                          nsites))
-      allocate(cpoly%mindbh_primary                (                    n_pft,nsites))
-      allocate(cpoly%probharv_primary              (                    n_pft,nsites))
-      allocate(cpoly%mindbh_secondary              (                    n_pft,nsites))
-      allocate(cpoly%probharv_secondary            (                    n_pft,nsites))
+      allocate(cpoly%mindbh_harvest                (                    n_pft,nsites))
+      allocate(cpoly%prob_harvest                  (                    n_pft,nsites))
       allocate(cpoly%plantation                    (                          nsites))
+      allocate(cpoly%pasture_stocking_pft          (                          nsites))
+      allocate(cpoly%pasture_stocking_density      (                          nsites))
       allocate(cpoly%agri_stocking_pft             (                          nsites))
       allocate(cpoly%agri_stocking_density         (                          nsites))
       allocate(cpoly%plantation_stocking_pft       (                          nsites))
@@ -3870,6 +3913,10 @@ module ed_state_vars
       allocate(cpoly%basal_area_cut                (       n_pft,       n_dbh,nsites))
       allocate(cpoly%agb_mort                      (       n_pft,       n_dbh,nsites))
       allocate(cpoly%agb_cut                       (       n_pft,       n_dbh,nsites))
+
+      allocate(cpoly%crop_yield                    (                       12,nsites))
+      allocate(cpoly%crop_harvest                  (                          nsites))
+      allocate(cpoly%logging_harvest               (                          nsites))
 
       allocate(cpoly%cosaoi                        (                          nsites))
       allocate(cpoly%daylight                      (                          nsites))
@@ -4512,6 +4559,7 @@ module ed_state_vars
       allocate(cpatch%dlndbh_dt                    (                    ncohorts))
       allocate(cpatch%dbh                          (                    ncohorts))
       allocate(cpatch%bdead                        (                    ncohorts))
+      allocate(cpatch%btimber                      (                    ncohorts))
       allocate(cpatch%bleaf                        (                    ncohorts))
       allocate(cpatch%balive                       (                    ncohorts))
       allocate(cpatch%broot                        (                    ncohorts))
@@ -4519,6 +4567,7 @@ module ed_state_vars
       allocate(cpatch%bsapwoodb                    (                    ncohorts))
       allocate(cpatch%bstorage                     (                    ncohorts))
       allocate(cpatch%bseeds                       (                    ncohorts))
+      allocate(cpatch%byield                       (                    ncohorts))
       allocate(cpatch%lai                          (                    ncohorts))
       allocate(cpatch%wai                          (                    ncohorts))
       allocate(cpatch%crown_area                   (                    ncohorts))
@@ -4981,6 +5030,9 @@ module ed_state_vars
       nullify(cgrid%ilon                    )
       nullify(cgrid%ilat                    )
       nullify(cgrid%workload                )
+      nullify(cgrid%crop_yield              )
+      nullify(cgrid%crop_harvest            )
+      nullify(cgrid%logging_harvest         )
       nullify(cgrid%total_agb               )
       nullify(cgrid%total_basal_area        )
       nullify(cgrid%total_agb_growth        )
@@ -5011,12 +5063,14 @@ module ed_state_vars
       nullify(cgrid%wai                     )
       nullify(cgrid%basal_area              )
       nullify(cgrid%bdead                   )
+      nullify(cgrid%btimber                 )
       nullify(cgrid%balive                  )
       nullify(cgrid%bleaf                   )
       nullify(cgrid%broot                   )
       nullify(cgrid%bsapwooda               )
       nullify(cgrid%bsapwoodb               )
       nullify(cgrid%bseeds                  )
+      nullify(cgrid%byield                  )
       nullify(cgrid%bstorage                )
       nullify(cgrid%bdead_n                 )
       nullify(cgrid%balive_n                )
@@ -5715,11 +5769,11 @@ module ed_state_vars
       nullify(cpoly%qrunoff                    )
       nullify(cpoly%min_monthly_temp           )
       nullify(cpoly%num_landuse_years          )
-      nullify(cpoly%mindbh_primary             )
-      nullify(cpoly%probharv_primary           )
-      nullify(cpoly%mindbh_secondary           )
-      nullify(cpoly%probharv_secondary         )
+      nullify(cpoly%mindbh_harvest             )
+      nullify(cpoly%prob_harvest               )
       nullify(cpoly%plantation                 )
+      nullify(cpoly%pasture_stocking_pft       )
+      nullify(cpoly%pasture_stocking_density   )
       nullify(cpoly%agri_stocking_pft          )
       nullify(cpoly%agri_stocking_density      )
       nullify(cpoly%plantation_stocking_pft    )
@@ -5744,6 +5798,9 @@ module ed_state_vars
       nullify(cpoly%basal_area_cut             )
       nullify(cpoly%agb_mort                   )
       nullify(cpoly%agb_cut                    )
+      nullify(cpoly%crop_yield                 )
+      nullify(cpoly%crop_harvest               )
+      nullify(cpoly%logging_harvest            )
       nullify(cpoly%cosaoi                     )
       nullify(cpoly%daylight                   )
       nullify(cpoly%nighttime                  )
@@ -6311,6 +6368,7 @@ module ed_state_vars
       nullify(cpatch%dlndbh_dt             )
       nullify(cpatch%dbh                   )
       nullify(cpatch%bdead                 )
+      nullify(cpatch%btimber               )
       nullify(cpatch%bleaf                 )
       nullify(cpatch%balive                )
       nullify(cpatch%broot                 )
@@ -6318,6 +6376,7 @@ module ed_state_vars
       nullify(cpatch%bsapwoodb             )
       nullify(cpatch%bstorage              )
       nullify(cpatch%bseeds                )
+      nullify(cpatch%byield                )
       nullify(cpatch%lai                   )
       nullify(cpatch%wai                   )
       nullify(cpatch%crown_area            )
@@ -6776,6 +6835,9 @@ module ed_state_vars
       if(associated(cgrid%ilon                  )) deallocate(cgrid%ilon                  )
       if(associated(cgrid%ilat                  )) deallocate(cgrid%ilat                  )
       if(associated(cgrid%workload              )) deallocate(cgrid%workload              )
+      if(associated(cgrid%crop_yield            )) deallocate(cgrid%crop_yield            )
+      if(associated(cgrid%crop_harvest          )) deallocate(cgrid%crop_harvest          )
+      if(associated(cgrid%logging_harvest       )) deallocate(cgrid%logging_harvest       )
       if(associated(cgrid%total_agb             )) deallocate(cgrid%total_agb             )
       if(associated(cgrid%total_basal_area      )) deallocate(cgrid%total_basal_area      )
       if(associated(cgrid%total_agb_growth      )) deallocate(cgrid%total_agb_growth      )
@@ -6809,12 +6871,14 @@ module ed_state_vars
       if(associated(cgrid%wai                   )) deallocate(cgrid%wai                   )
       if(associated(cgrid%basal_area            )) deallocate(cgrid%basal_area            )
       if(associated(cgrid%bdead                 )) deallocate(cgrid%bdead                 )
+      if(associated(cgrid%btimber               )) deallocate(cgrid%btimber               )
       if(associated(cgrid%balive                )) deallocate(cgrid%balive                )
       if(associated(cgrid%bleaf                 )) deallocate(cgrid%bleaf                 )
       if(associated(cgrid%broot                 )) deallocate(cgrid%broot                 )
       if(associated(cgrid%bsapwooda             )) deallocate(cgrid%bsapwooda             )
       if(associated(cgrid%bsapwoodb             )) deallocate(cgrid%bsapwoodb             )
       if(associated(cgrid%bseeds                )) deallocate(cgrid%bseeds                )
+      if(associated(cgrid%byield                )) deallocate(cgrid%byield                )
       if(associated(cgrid%bstorage              )) deallocate(cgrid%bstorage              )
       if(associated(cgrid%bdead_n               )) deallocate(cgrid%bdead_n               )
       if(associated(cgrid%balive_n              )) deallocate(cgrid%balive_n              )
@@ -7524,13 +7588,17 @@ module ed_state_vars
       if(associated(cpoly%qrunoff               )) deallocate(cpoly%qrunoff               )
       if(associated(cpoly%min_monthly_temp      )) deallocate(cpoly%min_monthly_temp      )
       if(associated(cpoly%num_landuse_years     )) deallocate(cpoly%num_landuse_years     )
-      if(associated(cpoly%mindbh_primary        )) deallocate(cpoly%mindbh_primary        )
-      if(associated(cpoly%probharv_primary      )) deallocate(cpoly%probharv_primary      )
-      if(associated(cpoly%mindbh_secondary      )) deallocate(cpoly%mindbh_secondary      )
-      if(associated(cpoly%probharv_secondary    )) deallocate(cpoly%probharv_secondary    )
+      if(associated(cpoly%mindbh_harvest        )) deallocate(cpoly%mindbh_harvest        )
+      if(associated(cpoly%prob_harvest          )) deallocate(cpoly%prob_harvest          )
       if(associated(cpoly%plantation            )) deallocate(cpoly%plantation            )
-      if(associated(cpoly%agri_stocking_pft     )) deallocate(cpoly%agri_stocking_pft     )
-      if(associated(cpoly%agri_stocking_density )) deallocate(cpoly%agri_stocking_density )
+      if(associated(cpoly%pasture_stocking_pft       ))                                    &
+                                              deallocate(cpoly%pasture_stocking_pft       )
+      if(associated(cpoly%pasture_stocking_density   ))                                    &
+                                              deallocate(cpoly%pasture_stocking_density   )
+      if(associated(cpoly%agri_stocking_pft          ))                                    &
+                                              deallocate(cpoly%agri_stocking_pft          )
+      if(associated(cpoly%agri_stocking_density      ))                                    &
+                                              deallocate(cpoly%agri_stocking_density      )
       if(associated(cpoly%plantation_stocking_pft    ))                                    &
                                               deallocate(cpoly%plantation_stocking_pft    )
       if(associated(cpoly%plantation_stocking_density))                                    &
@@ -7559,6 +7627,9 @@ module ed_state_vars
       if(associated(cpoly%basal_area_cut        )) deallocate(cpoly%basal_area_cut        )
       if(associated(cpoly%agb_mort              )) deallocate(cpoly%agb_mort              )
       if(associated(cpoly%agb_cut               )) deallocate(cpoly%agb_cut               )
+      if(associated(cpoly%crop_yield            )) deallocate(cpoly%crop_yield            )
+      if(associated(cpoly%crop_harvest          )) deallocate(cpoly%crop_harvest          )
+      if(associated(cpoly%logging_harvest       )) deallocate(cpoly%logging_harvest       )
       if(associated(cpoly%cosaoi                )) deallocate(cpoly%cosaoi                )
       if(associated(cpoly%daylight              )) deallocate(cpoly%daylight              )
       if(associated(cpoly%nighttime             )) deallocate(cpoly%nighttime             )
@@ -8141,6 +8212,7 @@ module ed_state_vars
       if(associated(cpatch%dlndbh_dt           )) deallocate(cpatch%dlndbh_dt           )
       if(associated(cpatch%dbh                 )) deallocate(cpatch%dbh                 )
       if(associated(cpatch%bdead               )) deallocate(cpatch%bdead               )
+      if(associated(cpatch%btimber             )) deallocate(cpatch%btimber             )
       if(associated(cpatch%bleaf               )) deallocate(cpatch%bleaf               )
       if(associated(cpatch%balive              )) deallocate(cpatch%balive              )
       if(associated(cpatch%broot               )) deallocate(cpatch%broot               )
@@ -8148,6 +8220,7 @@ module ed_state_vars
       if(associated(cpatch%bsapwoodb           )) deallocate(cpatch%bsapwoodb           )
       if(associated(cpatch%bstorage            )) deallocate(cpatch%bstorage            )
       if(associated(cpatch%bseeds              )) deallocate(cpatch%bseeds              )
+      if(associated(cpatch%byield              )) deallocate(cpatch%byield              )
       if(associated(cpatch%lai                 )) deallocate(cpatch%lai                 )
       if(associated(cpatch%wai                 )) deallocate(cpatch%wai                 )
       if(associated(cpatch%crown_area          )) deallocate(cpatch%crown_area          )
@@ -9988,6 +10061,7 @@ module ed_state_vars
          opatch%dlndbh_dt             (oco) = ipatch%dlndbh_dt             (ico)
          opatch%dbh                   (oco) = ipatch%dbh                   (ico)
          opatch%bdead                 (oco) = ipatch%bdead                 (ico)
+         opatch%btimber               (oco) = ipatch%btimber               (ico)
          opatch%bleaf                 (oco) = ipatch%bleaf                 (ico)
          opatch%balive                (oco) = ipatch%balive                (ico)
          opatch%broot                 (oco) = ipatch%broot                 (ico)
@@ -9995,6 +10069,7 @@ module ed_state_vars
          opatch%bsapwoodb             (oco) = ipatch%bsapwoodb             (ico)
          opatch%bstorage              (oco) = ipatch%bstorage              (ico)
          opatch%bseeds                (oco) = ipatch%bseeds                (ico)
+         opatch%byield                (oco) = ipatch%byield                (ico)
          opatch%lai                   (oco) = ipatch%lai                   (ico)
          opatch%wai                   (oco) = ipatch%wai                   (ico)
          opatch%crown_area            (oco) = ipatch%crown_area            (ico)
@@ -10594,6 +10669,7 @@ module ed_state_vars
       opatch%dlndbh_dt             (1:z) = pack(ipatch%dlndbh_dt                 ,lmask)
       opatch%dbh                   (1:z) = pack(ipatch%dbh                       ,lmask)
       opatch%bdead                 (1:z) = pack(ipatch%bdead                     ,lmask)
+      opatch%btimber               (1:z) = pack(ipatch%btimber                   ,lmask)
       opatch%bleaf                 (1:z) = pack(ipatch%bleaf                     ,lmask)
       opatch%balive                (1:z) = pack(ipatch%balive                    ,lmask)
       opatch%broot                 (1:z) = pack(ipatch%broot                     ,lmask)
@@ -10601,6 +10677,7 @@ module ed_state_vars
       opatch%bsapwoodb             (1:z) = pack(ipatch%bsapwoodb                 ,lmask)
       opatch%bstorage              (1:z) = pack(ipatch%bstorage                  ,lmask)
       opatch%bseeds                (1:z) = pack(ipatch%bseeds                    ,lmask)
+      opatch%byield                (1:z) = pack(ipatch%byield                    ,lmask)
       opatch%lai                   (1:z) = pack(ipatch%lai                       ,lmask)
       opatch%wai                   (1:z) = pack(ipatch%wai                       ,lmask)
       opatch%crown_area            (1:z) = pack(ipatch%crown_area                ,lmask)
@@ -11857,6 +11934,7 @@ module ed_state_vars
       call filltab_edtype_p12     (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_edtype_m12     (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_edtype_p19     (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p191    (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_edtype_p146    (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_edtype_p199    (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       !----- Save the number of polygon-level (edtype) variables that go to the output. ---!
@@ -12382,6 +12460,22 @@ module ed_state_vars
                            ,'CWD_N_PY    :11:hist:anal:dail')
          call metadata_edio(nvar,igr,'Coarse woody debris nitrogen'                        &
                            ,'[kgN/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%crop_harvest)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%crop_harvest                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CROP_HARVEST_PY    :11:hist:mont:dcyc')
+         call metadata_edio(nvar,igr,'Crop harvest output (leaves+NSC)'                    &
+                           ,'[kgC/m2]','(ipoly)')
+      end if
+      if(associated(cgrid%logging_harvest)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%logging_harvest                                     &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'LOGGING_HARVEST_PY    :11:hist:mont:dcyc')
+         call metadata_edio(nvar,igr,'Logging harvest output (timber)'                     &
+                           ,'[kgC/m2]','(ipoly)')
       end if
       !------------------------------------------------------------------------------------!
 
@@ -18141,9 +18235,59 @@ module ed_state_vars
    !=======================================================================================!
    !=======================================================================================!
    !     This routine will fill the pointer table with the polygon-level variables         !
-   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).       !
+   ! (edtype) that have two dimensions (12 months,npolygons) and are real (type 19).       !
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype_p19(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     This is the 2-D block, with 12 months.  All variables must have the            !
+      ! number of points defined by npts.                                                  !
+      !------------------------------------------------------------------------------------!
+      npts = cgrid%npolygons * 12
+
+      if(associated(cgrid%crop_yield)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%crop_yield                                          &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CROP_YIELD_PY :19:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Crop yield (seeds)','[kgC/m2]','(12,ipoly)') 
+      end if
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+      return     
+   end subroutine filltab_edtype_p19
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 191).      !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p191(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
                               , metadata_edio  ! ! sub-routine
 
@@ -18171,7 +18315,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%workload                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'WORKLOAD :19:hist:mont:dcyc') 
+                           ,'WORKLOAD :191:hist:mont:dcyc') 
          call metadata_edio(nvar,igr,'Polygon computational workload'                      &
                            ,'[steps/month]','(13,ipoly)') 
       end if
@@ -18180,7 +18324,7 @@ module ed_state_vars
 
 
       return     
-   end subroutine filltab_edtype_p19
+   end subroutine filltab_edtype_p191
    !=======================================================================================!
    !=======================================================================================!
 
@@ -18278,6 +18422,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Biomass of structural (dead) tissues'                &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
+      if (associated(cgrid%btimber    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%btimber                                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BTIMBER_PY     :146:hist:anal:mont:dail:dcyc')
+         call metadata_edio(nvar,igr,'(Commercial) Timber biomass'                         &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
       if (associated(cgrid%balive     )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%balive                                              &
@@ -18324,6 +18476,14 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'BSEEDS_PY      :146:hist:anal:mont:dail:dcyc')
          call metadata_edio(nvar,igr,'Seed biomass'                                        &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%byield     )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%byield                                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BYIELD_PY      :146:hist:anal:mont:dail:dcyc')
+         call metadata_edio(nvar,igr,'Yield biomass'                                          &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%bstorage   )) then
@@ -18778,25 +18938,33 @@ module ed_state_vars
 
       if (associated(cpoly%plantation)) then
          nvar=nvar+1
-           call vtable_edio_i(npts,cpoly%plantation,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'PLANTATION_SI :20:hist') 
+         call vtable_edio_i(npts,cpoly%plantation,nvar,igr,init,cpoly%siglob_id            &
+                           ,var_len,var_len_global,max_ptrs,'PLANTATION_SI :20:hist') 
          call metadata_edio(nvar,igr,'Plantation flag (0-no;1-yes)','[--]','(isite)') 
       end if 
 
+      if (associated(cpoly%pasture_stocking_pft)) then
+         nvar=nvar+1
+         call vtable_edio_i(npts,cpoly%pasture_stocking_pft,nvar,igr,init,cpoly%siglob_id  &
+                           ,var_len,var_len_global,max_ptrs,'PASTURE_STOCKING_PFT :20:hist') 
+         call metadata_edio(nvar,igr,'Pasture PFT','[pft #]','(isite)') 
+      end if
+
       if (associated(cpoly%agri_stocking_pft)) then
          nvar=nvar+1
-           call vtable_edio_i(npts,cpoly%agri_stocking_pft,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'AGRI_STOCKING_PFT :20:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call vtable_edio_i(npts,cpoly%agri_stocking_pft,nvar,igr,init,cpoly%siglob_id     &
+                           ,var_len,var_len_global,max_ptrs,'AGRI_STOCKING_PFT :20:hist') 
+         call metadata_edio(nvar,igr,'Cropland PFT','[pft #]','(isite)') 
       end if
 
       if (associated(cpoly%plantation_stocking_pft)) then
          nvar=nvar+1
-           call vtable_edio_i(npts,cpoly%plantation_stocking_pft,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'PLANTATION_STOCKING_PFT :20:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call vtable_edio_i(npts,cpoly%plantation_stocking_pft,nvar,igr,init               &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'PLANTATION_STOCKING_PFT :20:hist') 
+         call metadata_edio(nvar,igr,'Forest Plantation PFT','[pft #]','(isite)') 
       end if
-     !------------------------------------------------------------------------------------!
+     !-------------------------------------------------------------------------------------!
 
       return
    end subroutine filltab_polygontype_p20
@@ -18933,18 +19101,28 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpoly%pasture_stocking_density)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%pasture_stocking_density,nvar,igr,init              &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'PASTURE_STOCKING_DENSITY :21:hist') 
+         call metadata_edio(nvar,igr,'Initial density (pasture)','[pl/m2]','(isite)') 
+      end if
+
       if (associated(cpoly%agri_stocking_density)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpoly%agri_stocking_density,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'AGRI_STOCKING_DENSITY :21:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call vtable_edio_r(npts,cpoly%agri_stocking_density,nvar,igr,init                 &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'AGRI_STOCKING_DENSITY :21:hist') 
+         call metadata_edio(nvar,igr,'Initial density (cropland)','[pl/m2]','(isite)') 
       end if
 
       if (associated(cpoly%plantation_stocking_density)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,cpoly%plantation_stocking_density,nvar,igr,init,cpoly%siglob_id, &
-           var_len,var_len_global,max_ptrs,'PLANTATION_STOCKING_DENSITY :21:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call vtable_edio_r(npts,cpoly%plantation_stocking_density,nvar,igr,init           &
+                           ,cpoly%siglob_id,var_len,var_len_global,max_ptrs                &
+                           ,'PLANTATION_STOCKING_DENSITY :21:hist') 
+         call metadata_edio(nvar,igr,'Initial density (plantation)','[pl/m2]','(isite)') 
       end if
 
       if (associated(cpoly%primary_harvest_target)) then
@@ -18994,8 +19172,26 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cpoly%cosaoi                                              &
                            ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'COSAOI :21:hist') 
+                           ,'COSAOI :21:hist:anal') 
          call metadata_edio(nvar,igr,'Co-sine of the angle of incidence','[--]','(isite)') 
+      end if
+
+      if (associated(cpoly%crop_harvest)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cpoly%crop_harvest                                        &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'CROP_HARVEST_SI :21:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Crop harvest output (leaves+NSC)','[kgC/m2]','(isite)') 
+      end if
+
+      if (associated(cpoly%logging_harvest)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cpoly%logging_harvest                                     &
+                           ,nvar,igr,init,cpoly%siglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'LOGGING_HARVEST_SI :21:hist:mont:dcyc') 
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Logging harvest output (timber)','[kgC/m2]','(isite)') 
       end if
 
       if (associated(cpoly%rad_avg)) then
@@ -19745,7 +19941,6 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       !------------------------------------------------------------------------------------!
-      !------------------------------------------------------------------------------------!
 
       return
    end subroutine filltab_polygontype_p24
@@ -20019,6 +20214,14 @@ module ed_state_vars
          call vtable_edio_r(npts,cpoly%avg_monthly_pcpg,nvar,igr,init,cpoly%siglob_id      &
                            ,var_len,var_len_global,max_ptrs,'AVG_MONTHLY_PCPG :29:hist')     
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpoly%crop_yield)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%crop_yield,nvar,igr,init,cpoly%siglob_id            &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'CROP_YIELD_PY :29:hist:mont:dcyc')     
+         call metadata_edio(nvar,igr,'Crop yield (seeds)','[kgC/m2]','(12,isite)') 
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -24491,7 +24694,7 @@ module ed_state_vars
       call filltab_patchtype_p41mmean(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_m41     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p48     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
-      call filltab_patchtype_p49     (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_patchtype_p491    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_p411    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_patchtype_m411    (cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       !------------------------------------------------------------------------------------!
@@ -24727,28 +24930,36 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bdead,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BDEAD :41:hist:anal:mont:dail:year:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Biomass of structural (dead) tissues'                &
+                           ,'[kgC/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%btimber)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%btimber,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BTIMBER :41:hist:anal:mont:dail:year:dcyc') 
+         call metadata_edio(nvar,igr,'(Commercial) timber biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%bleaf)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bleaf,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BLEAF :41:hist:anal:year:dail:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Leaf biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%balive)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%balive,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BALIVE :41:hist:anal:year:dail:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Biomass of living tissues','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%broot)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%broot,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BROOT :41:hist:anal:year:dail:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Fine-root biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%bsapwooda)) then
@@ -24756,7 +24967,7 @@ module ed_state_vars
            call vtable_edio_r(npts,cpatch%bsapwooda,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs                                          &
            ,'BSAPWOODA :41:hist:anal:year:dail:anal:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Above-ground sapwood biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%bsapwoodb)) then
@@ -24764,21 +24975,21 @@ module ed_state_vars
            call vtable_edio_r(npts,cpatch%bsapwoodb,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs                                          &
            ,'BSAPWOODB :41:hist:anal:year:dail:anal:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Below-ground sapwood biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%lai)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%lai,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:anal:dail:mont:year:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Leaf area index','[m2leaf/m2]','icohort') 
       end if
 
       if (associated(cpatch%wai)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%wai,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:anal:dail:mont:year:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Wood area index','[m2wood/m2]','icohort') 
       end if
 
       if (associated(cpatch%crown_area)) then
@@ -24786,14 +24997,15 @@ module ed_state_vars
            call vtable_edio_r(npts,cpatch%crown_area,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs                                           &
            ,'CROWN_AREA_CO :41:hist:anal:dail:mont:year:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Relative crown area','[m2crown/m2]','icohort') 
       end if
 
       if (associated(cpatch%bstorage)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bstorage,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:anal:year:dail:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Biomass of non-structural carbon'                    &
+                           ,'[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%cbr_bar)) then
@@ -25397,7 +25609,14 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bseeds,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist:dail:mont:dcyc') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'Seed biomass','[kgC/pl]','icohort') 
+      end if
+
+      if (associated(cpatch%byield)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%byield,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BYIELD_CO :41:hist:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'Yield biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%leaf_respiration)) then
@@ -28373,9 +28592,9 @@ module ed_state_vars
    !=======================================================================================!
    !=======================================================================================!
    !     This routine will fill the pointer table with the cohort-level variables          !
-   ! (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 49).     !
+   ! (patchtype) that have two dimensions (13 months,ncohorts) and are real (type 491).    !
    !---------------------------------------------------------------------------------------!
-   subroutine filltab_patchtype_p49(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
+   subroutine filltab_patchtype_p491(cpatch,igr,init,var_len,var_len_global,max_ptrs,nvar)
       use ed_var_tables, only : vtable_edio_r  & ! sub-routine
                               , metadata_edio  ! ! sub-routine
 
@@ -28400,7 +28619,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !       This part should have only 2-D vectors, with dimension ncohorts and 13       !
       ! months.  Notice that they all use the same npts.  Here you should only add vari-   !
-      ! ables of type 49.                                                                  !
+      ! ables of type 491.                                                                 !
       !------------------------------------------------------------------------------------!
       npts = cpatch%ncohorts * 13
 
@@ -28409,7 +28628,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cpatch%cb,nvar,igr,init,cpatch%coglob_id                  &
                            ,var_len,var_len_global,max_ptrs                                &
-                           ,'CB :49:hist:mont:dcyc:year')
+                           ,'CB :491:hist:mont:dcyc:year')
          call metadata_edio(nvar,igr,'carbon balance previous 12 months+current'           &
                            ,'[kgC/plant]','13 - icohort') 
       end if
@@ -28418,7 +28637,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cpatch%cb_lightmax,nvar,igr,init,cpatch%coglob_id         &
                            ,var_len,var_len_global,max_ptrs                                &
-                           ,'CB_LIGHTMAX :49:hist:mont:dcyc:year') 
+                           ,'CB_LIGHTMAX :491:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Full light carbon balance last 12 months+current'    &
                            ,'[kgC/plant]','13 - icohort') 
       end if
@@ -28427,7 +28646,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cpatch%cb_moistmax,nvar,igr,init,cpatch%coglob_id         &
                            ,var_len,var_len_global,max_ptrs                                &
-                           ,'CB_MOISTMAX :49:hist:mont:dcyc:year') 
+                           ,'CB_MOISTMAX :491:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Full moisture carbon balance last 12 months+current' &
                            ,'[kgC/plant]','13 - icohort') 
       end if
@@ -28436,7 +28655,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cpatch%cb_mlmax,nvar,igr,init,cpatch%coglob_id            &
                            ,var_len,var_len_global,max_ptrs                                &
-                           ,'CB_MLMAX :49:hist:mont:dcyc:year') 
+                           ,'CB_MLMAX :491:hist:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Full moisture+light C balance last 12 months+current'&
                            ,'[kgC/plant]','13 - icohort') 
       end if
@@ -28444,7 +28663,7 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine filltab_patchtype_p49
+   end subroutine filltab_patchtype_p491
    !=======================================================================================!
    !=======================================================================================!
 

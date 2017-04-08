@@ -36,7 +36,7 @@ subroutine ed_model()
                             , nrec_state                  & ! intent(in)
                             , ffilout                     & ! intent(in)
                             , runtype                     ! ! intent(in)
-   use ed_misc_coms  , only : outputMonth                 & ! intent(in)
+   use ed_misc_coms  , only : month_yrstep                & ! intent(in)
                             , fast_diagnostics            & ! intent(in)
                             , writing_dail                & ! intent(in)
                             , writing_mont                & ! intent(in)
@@ -178,10 +178,11 @@ subroutine ed_model()
          if (writing_dcyc) call zero_ed_qmean_vars(edgrid_g(ifm))
       end do
 
-      !----- Output initial state. --------------------------------------------------------!
+      !----- Long-term dynamics structure. ------------------------------------------------!
       do ifm=1,ngrids
          call update_ed_yearly_vars(edgrid_g(ifm))
       end do
+      !------------------------------------------------------------------------------------!
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -309,14 +310,13 @@ subroutine ed_model()
       new_month       = current_time%date == 1  .and. new_day
       if (.not. past_one_month .and. new_month) past_one_month=.true.
 
-      new_year        = current_time%month == 1 .and. new_month
+      new_year        = current_time%month == month_yrstep .and. new_month
       mont_analy_time = new_month .and. writing_mont
       dail_analy_time = new_day   .and. writing_dail
       dcyc_analy_time = new_month .and. writing_dcyc
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax) < dble(dtlsm)
-      annual_time     = new_month .and. writing_year .and.                                 &
-                        current_time%month == outputMonth
+      annual_time     = new_year .and. writing_year
 
       !----- Check whether this is time to write fast analysis output or not. -------------!
       select case (unitfast)
@@ -442,7 +442,7 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       !      Update the yearly variables.                                                  !
       !------------------------------------------------------------------------------------!
-      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
+      if (analysis_time .and. new_year .and. new_day) then
          do ifm = 1,ngrids
             call update_ed_yearly_vars(edgrid_g(ifm))
          end do
@@ -453,8 +453,9 @@ subroutine ed_model()
       !------------------------------------------------------------------------------------!
       !     Call the model output driver.                                                  !
       !------------------------------------------------------------------------------------!
-      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,history_time,dcycle_time,the_end)
+      call ed_output(analysis_time,new_day,new_month,new_year,dail_analy_time              &
+                    ,mont_analy_time,dcyc_analy_time,annual_time,history_time,dcycle_time  &
+                    ,the_end)
       !------------------------------------------------------------------------------------!
 
 

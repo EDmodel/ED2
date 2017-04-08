@@ -45,6 +45,8 @@ subroutine copy_nl(copy_type)
    use ed_max_dims          , only : n_pft                     & ! intent(in)
                                    , nzgmax                    & ! intent(in)
                                    , undef_integer             & ! intent(in)
+                                   , skip_integer              & ! intent(in)
+                                   , skip_real                 & ! intent(in)
                                    , maxgrds                   ! ! intent(in)
    use ename_coms           , only : nl                        ! ! intent(in)
    use soil_coms            , only : find_soil_class           & ! function
@@ -142,8 +144,19 @@ subroutine copy_nl(copy_type)
                                    , lu_rescale_file           & ! intent(out)
                                    , sm_fire                   & ! intent(out)
                                    , time2canopy               & ! intent(out)
-                                   , min_patch_area            ! ! intent(out)
+                                   , min_patch_area            & ! intent(out)
+                                   , sl_scale                  & ! intent(out)
+                                   , sl_nyrs                   & ! intent(out)
+                                   , sl_pft                    & ! intent(out)
+                                   , sl_prob_harvest           & ! intent(out)
+                                   , sl_mindbh_harvest         & ! intent(out)
+                                   , sl_biomass_harvest        & ! intent(out)
+                                   , sl_skid_rel_area          & ! intent(out)
+                                   , cl_fseeds_harvest         & ! intent(out)
+                                   , cl_fstorage_harvest       & ! intent(out)
+                                   , cl_fleaf_harvest          ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
+                                   , pasture_stock             & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
                                    , pft_1st_check             ! ! intent(out)
@@ -182,6 +195,7 @@ subroutine copy_nl(copy_type)
                                    , itoutput                  & ! intent(out)
                                    , igoutput                  & ! intent(out)
                                    , dtlsm                     & ! intent(out)
+                                   , month_yrstep              & ! intent(out)
                                    , frqstate                  & ! intent(out)
                                    , sfilout                   & ! intent(out)
                                    , isoutput                  & ! intent(out)
@@ -276,6 +290,7 @@ subroutine copy_nl(copy_type)
    character(len=*), intent(in) :: copy_type
    !----- Internal variables. -------------------------------------------------------------!
    integer                      :: ifm
+   integer, dimension(n_pft)    :: idx
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -298,6 +313,7 @@ subroutine copy_nl(copy_type)
       iyearz                    = nl%iyearz
       dtlsm                     = nl%dtlsm
       radfrq                    = nl%radfrq
+      month_yrstep              = nl%month_yrstep
 
       ifoutput                  = nl%ifoutput
       idoutput                  = nl%idoutput
@@ -429,6 +445,17 @@ subroutine copy_nl(copy_type)
       fire_parameter            = nl%fire_parameter
       sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
+      sl_scale                  = nl%sl_scale
+      sl_nyrs                   = nl%sl_nyrs
+      sl_pft                    = nl%sl_pft
+      sl_prob_harvest           = nl%sl_prob_harvest
+      sl_mindbh_harvest         = nl%sl_mindbh_harvest
+      sl_biomass_harvest        = nl%sl_biomass_harvest
+      sl_skid_rel_area          = nl%sl_skid_rel_area
+      cl_fseeds_harvest         = nl%cl_fseeds_harvest
+      cl_fstorage_harvest       = nl%cl_fstorage_harvest
+      cl_fleaf_harvest          = nl%cl_fleaf_harvest
+
       decomp_scheme             = nl%decomp_scheme
 
       icanturb                  = nl%icanturb
@@ -442,6 +469,7 @@ subroutine copy_nl(copy_type)
       ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
+      pasture_stock             = nl%pasture_stock
       agri_stock                = nl%agri_stock
       plantation_stock          = nl%plantation_stock
       pft_1st_check             = nl%pft_1st_check
@@ -623,10 +651,25 @@ subroutine copy_nl(copy_type)
 
 
    !----- Sort up the chosen PFTs. --------------------------------------------------------!
-   where (include_these_pft < 1 .or. include_these_pft == undef_integer) 
-      include_these_pft=huge(1)
+   where (include_these_pft < 1 .or. include_these_pft > n_pft) 
+      include_these_pft = skip_integer
    end where
    call sort_up(include_these_pft,n_pft)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Sort up the PFTs that may be logged. --------------------------------------------!
+   where (sl_pft < 1 .or. sl_pft > n_pft)
+      sl_pft            = skip_integer
+      sl_mindbh_harvest = skip_real
+      sl_prob_harvest   = skip_real
+   end where
+   call rank_up(n_pft,sl_pft,idx)
+   sl_pft           (idx) = sl_pft(:)
+   sl_mindbh_harvest(idx) = sl_mindbh_harvest(:)
+   sl_prob_harvest  (idx) = sl_prob_harvest(:)
    !---------------------------------------------------------------------------------------!
 
       

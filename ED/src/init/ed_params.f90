@@ -9,6 +9,7 @@ subroutine load_ed_ecosystem_params()
 
    use ed_max_dims , only : n_pft               ! ! intent(in)
    use pft_coms    , only : include_these_pft   & ! intent(in)
+                          , pasture_stock       & ! intent(in)
                           , agri_stock          & ! intent(in)
                           , plantation_stock    & ! intent(in)
                           , pft_name16          & ! intent(out)
@@ -16,6 +17,7 @@ subroutine load_ed_ecosystem_params()
                           , is_conifer          & ! intent(out)
                           , is_grass            & ! intent(out)
                           , include_pft         & ! intent(out)
+                          , include_pft_pt      & ! intent(out)
                           , include_pft_ag      & ! intent(out)
                           , include_pft_fp      & ! intent(out)
                           , C2B                 & ! intent(out)
@@ -34,26 +36,28 @@ subroutine load_ed_ecosystem_params()
    ! that you assign values for all PFT-dependent variables.  Below is a summary table of  !
    ! the main characteristics of the currently available PFTs.                             !
    !---------------------------------------------------------------------------------------!
-   !  PFT | Name                                       | Grass   | Tropical | agriculture? !
-   !------+--------------------------------------------+---------+----------+--------------!
-   !    1 | C4 grass                                   |     yes |      yes |          yes !
-   !    2 | Early tropical                             |      no |      yes |           no !
-   !    3 | Mid tropical                               |      no |      yes |           no !
-   !    4 | Late tropical                              |      no |      yes |           no !
-   !    5 | Temperate C3 grass                         |     yes |       no |          yes !
-   !    6 | Northern pines                             |      no |       no |           no !
-   !    7 | Southern pines                             |      no |       no |           no !
-   !    8 | Late conifers                              |      no |       no |           no !
-   !    9 | Early temperate deciduous                  |      no |       no |           no !
-   !   10 | Mid temperate deciduous                    |      no |       no |           no !
-   !   11 | Late temperate deciduous                   |      no |       no |           no !
-   !   12 | C3 pasture                                 |     yes |       no |          yes !
-   !   13 | C3 crop (e.g.,wheat, rice, soybean)        |     yes |       no |          yes !
-   !   14 | C4 pasture                                 |     yes |      yes |          yes !
-   !   15 | C4 crop (e.g.,corn/maize)                  |     yes |      yes |          yes !
-   !   16 | Tropical C3 grass                          |     yes |      yes |          yes !
-   !   17 | Araucaria (similar to 7, tropical allom.)  |      no |      yes |           no !
-   !------+--------------------------------------------+---------+----------+--------------!
+   !  PFT | Name                                |   Grass | Tropical | Conifer |      Crop !
+   !------+-------------------------------------+---------+----------+---------+-----------!
+   !    1 | C4 grass                            |     yes |      yes |      no |       yes !
+   !    2 | Early tropical                      |      no |      yes |      no |        no !
+   !    3 | Mid tropical                        |      no |      yes |      no |        no !
+   !    4 | Late tropical                       |      no |      yes |      no |        no !
+   !    5 | Temperate C3 grass                  |     yes |       no |      no |       yes !
+   !    6 | Northern pines                      |      no |       no |     yes |        no !
+   !    7 | Southern pines                      |      no |       no |     yes |        no !
+   !    8 | Late conifers                       |      no |       no |     yes |        no !
+   !    9 | Early temperate deciduous           |      no |       no |      no |        no !
+   !   10 | Mid temperate deciduous             |      no |       no |      no |        no !
+   !   11 | Late temperate deciduous            |      no |       no |      no |        no !
+   !   12 | C3 pasture                          |     yes |       no |      no |       yes !
+   !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |      no |       yes !
+   !   14 | C4 pasture                          |     yes |      yes |      no |       yes !
+   !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |      no |       yes !
+   !   16 | Tropical C3 grass                   |     yes |      yes |      no |       yes !
+   !   17 | Araucaria                           |      no |      yes |     yes |        no !
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Name the PFTs (no spaces, please). ----------------------------------------------!
    pft_name16( 1) = 'C4_grass        '
@@ -132,6 +136,17 @@ subroutine load_ed_ecosystem_params()
 
 
    !---------------------------------------------------------------------------------------!
+   !     Only the PFTs listed in pasture_stock are allowed in pasture patches.  For the    !
+   ! time being this means a single PFT, but it could change in the future.                !
+   !---------------------------------------------------------------------------------------!
+   include_pft_pt                = .false.
+   include_pft_pt(pasture_stock) = is_grass(pasture_stock) .and. include_pft(pasture_stock)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Only the PFTs listed in agri_stock are allowed in agriculture patches.  For the   !
    ! time being this means a single PFT, but it could change in the future.                !
    !---------------------------------------------------------------------------------------!
@@ -154,15 +169,20 @@ subroutine load_ed_ecosystem_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Warn the user in case the PFT choice for agriculture or forest plantation was    !
-   ! inconsistent.                                                                         !
+   !      Warn the user in case the PFT choice for pasture, agriculture or forest          !
+   ! plantation was inconsistent.                                                          !
    !---------------------------------------------------------------------------------------!
-   if (count(include_pft_ag) == 0 .and. ianth_disturb == 1) then
+   if (count(include_pft_pt) == 0 .and. ianth_disturb /= 0) then
+      call warning ('PFT defined in pasture_stock is not included in include_these_pft,'// &
+                    ' your cattle will starve and your ranch will not be profitable...'    &
+                   ,'load_ecosystem_params','ed_params.f90')
+   end if
+   if (count(include_pft_ag) == 0 .and. ianth_disturb /= 0) then
       call warning ('PFT defined in agri_stock is not included in include_these_pft,'//    &
                     ' your croplands will be barren and not very profitable...'            &
                    ,'load_ecosystem_params','ed_params.f90')
    end if
-   if (count(include_pft_fp) == 0 .and. ianth_disturb == 1) then
+   if (count(include_pft_fp) == 0 .and. ianth_disturb /= 0) then
       call warning ('PFT defined in plantation_stock is not listed in include_these_pft,'//&
                     ' your forest plantation will be barren and not very profitable ...'   &
                    ,'load_ecosystem_params','ed_params.f90')
@@ -252,7 +272,6 @@ subroutine init_ed_misc_coms
    use consts_coms  , only : erad                 & ! intent(in)
                            , pio180               ! ! intent(in)
    use ed_misc_coms , only : burnin               & ! intent(out)
-                           , outputMonth          & ! intent(out)
                            , restart_target_year  & ! intent(out)
                            , use_target_year      & ! intent(out)
                            , maxage               & ! intent(out)
@@ -278,11 +297,6 @@ subroutine init_ed_misc_coms
 
    !----- Number of years to ignore demography when starting a run. -----------------------!
    burnin = 0
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Month to output the yearly files. -----------------------------------------------!
-   outputMonth = 6
    !---------------------------------------------------------------------------------------!
 
 
@@ -2306,7 +2320,11 @@ end subroutine init_pft_resp_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
 
-   use pft_coms    , only : mort0                      & ! intent(out)
+   use ed_max_dims , only : n_pft                      ! ! intent(in)
+   use pft_coms    , only : is_grass                   & ! intent(in)
+                          , is_tropical                & ! intent(in)
+                          , is_conifer                 & ! intent(in)
+                          , mort0                      & ! intent(out)
                           , mort1                      & ! intent(out)
                           , mort2                      & ! intent(out)
                           , mort3                      & ! intent(out)
@@ -2317,6 +2335,10 @@ subroutine init_pft_mort_params()
                           , treefall_s_ltht            & ! intent(out)
                           , fire_s_gtht                & ! intent(out)
                           , fire_s_ltht                & ! intent(out)
+                          , felling_s_ltharv           & ! intent(out)
+                          , felling_s_gtharv           & ! intent(out)
+                          , skid_s_ltharv              & ! intent(out)
+                          , skid_s_gtharv              & ! intent(out)
                           , plant_min_temp             & ! intent(out)
                           , frost_mort                 ! ! intent(out)
    use consts_coms , only : t00                        & ! intent(in)
@@ -2327,7 +2349,6 @@ subroutine init_pft_mort_params()
                           , iallom                     ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
                           , time2canopy                ! ! intent(in)
-
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
@@ -2342,74 +2363,51 @@ subroutine init_pft_mort_params()
    real     :: m3_slope
    real     :: m3_scale
    real     :: tdr_default
+   integer  :: ipft
    !---------------------------------------------------------------------------------------!
 
 
-   frost_mort(1)     = 3.0
-   frost_mort(2:4)   = 3.0
-   frost_mort(5)     = 3.0
-   frost_mort(6:11)  = 3.0
-   frost_mort(12:13) = 3.0
-   frost_mort(14:15) = 3.0
-   frost_mort(16:17) = 3.0
+   !---------------------------------------------------------------------------------------!
+   !      Frost mortality is assumed the same for all PFTs (hardiness will be given by     !
+   ! plant_min_temp.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      frost_mort(ipft) = 3.0
+      if (is_tropical(ipft) .and. (.not. is_conifer(ipft))) then
+         plant_min_temp(ipft) = t00 + 2.5
+      else
+         select case (ipft)
+         case (5,6,9)
+            plant_min_temp(ipft) = t00 - 80.0
+         case (7)
+            plant_min_temp(ipft) = t00 - 10.0
+         case (8)
+            plant_min_temp(ipft) = t00 - 60.0
+         case (10,11)
+            plant_min_temp(ipft) = t00 - 20.0
+         case default
+            plant_min_temp(ipft) = t00 - 15.0
+         end select
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
    !     The following variables control the density-dependent mortality rates.            !
+   !  DD = mort1 / (1 + exp(mort0 + mort2 * CB))                                           !
    !---------------------------------------------------------------------------------------!
-   mort0(1)  = -0.2 ! -0.35
-   mort0(2)  = -0.2 ! -0.35
-   mort0(3)  = -0.2 ! -0.35
-   mort0(4)  = -0.2 ! -0.35
-   mort0(5)  =  0.0
-   mort0(6)  =  0.0
-   mort0(7)  =  0.0
-   mort0(8)  =  0.0
-   mort0(9)  =  0.0
-   mort0(10) =  0.0
-   mort0(11) =  0.0
-   mort0(12) =  0.0
-   mort0(13) =  0.0
-   mort0(14) = -0.2 ! -0.35
-   mort0(15) = -0.2 ! -0.35
-   mort0(16) = -0.2 ! -0.35
-   mort0(17) = -0.2 ! -0.35
-
-   mort1(1)  = 5.0 ! 10.0
-   mort1(2)  = 5.0 ! 10.0
-   mort1(3)  = 5.0 ! 10.0
-   mort1(4)  = 5.0 ! 10.0
-   mort1(5)  = 1.0
-   mort1(6)  = 1.0
-   mort1(7)  = 1.0
-   mort1(8)  = 1.0
-   mort1(9)  = 1.0
-   mort1(10) = 1.0
-   mort1(11) = 1.0
-   mort1(12) = 1.0
-   mort1(13) = 1.0
-   mort1(14) = 5.0 ! 10.0
-   mort1(15) = 5.0 ! 10.0
-   mort1(16) = 5.0 ! 10.0
-   mort1(17) = 5.0 ! 10.0
-
-   mort2(1:17) = 20.0 ! 20.0
-   mort2(2)    = 20.0 ! 20.0
-   mort2(3)    = 20.0 ! 20.0
-   mort2(4)    = 20.0 ! 20.0
-   mort2(5)    = 20.0
-   mort2(6)    = 20.0
-   mort2(7)    = 20.0
-   mort2(8)    = 20.0
-   mort2(9)    = 20.0
-   mort2(10)   = 20.0
-   mort2(11)   = 20.0
-   mort2(12)   = 20.0
-   mort2(13)   = 20.0
-   mort2(14)   = 20.0 ! 20.0
-   mort2(15)   = 20.0 ! 20.0
-   mort2(16)   = 20.0 ! 20.0
-   mort2(17)   = 20.0 ! 20.0
+   do ipft=1,n_pft
+     if (is_tropical(ipft)) then
+        mort0(ipft) = -0.2
+        mort1(ipft) =  5.0
+        mort2(ipft) = 20.0
+     else
+        mort0(ipft) =  0.0
+        mort1(ipft) =  1.0
+        mort2(ipft) = 20.0
+     end if
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -2561,13 +2559,45 @@ subroutine init_pft_mort_params()
    !----- Trees taller than treefall_hite_threshold. --------------------------------------!
    treefall_s_gtht(1:17)    = 0.0
    !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
-   treefall_s_ltht(1)       = 0.25
-   treefall_s_ltht(2:4)     = 0.10
-   treefall_s_ltht(5)       = 0.25
-   treefall_s_ltht(6:11)    = 0.10
-   treefall_s_ltht(12:15)   = 0.25
-   treefall_s_ltht(16)      = 0.25
-   treefall_s_ltht(17)      = 0.10
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         treefall_s_ltht(ipft) = 0.70
+      else
+         treefall_s_ltht(ipft) = 0.10
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Felling survivorship fraction.                                                   !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         felling_s_gtharv(ipft) = 0.70
+         felling_s_ltharv(ipft) = 0.70
+      else
+         felling_s_gtharv(ipft) = 0.35
+         felling_s_ltharv(ipft) = 0.0
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Survivorship to collateral damage due to logging.                                !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         skid_s_gtharv(ipft) = 1.0
+         skid_s_ltharv(ipft) = 1.0
+      else
+         skid_s_gtharv(ipft) = 0.60
+         skid_s_ltharv(ipft) = 1.00
+      end if
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -2586,17 +2616,6 @@ subroutine init_pft_mort_params()
    fire_s_ltht(16)      = 0.0
    fire_s_ltht(17)      = 0.0
    !---------------------------------------------------------------------------------------!
-
-   plant_min_temp(1:4)      = t00+2.5
-   plant_min_temp(5:6)      = t00-80.0
-   plant_min_temp(7)        = t00-10.0
-   plant_min_temp(8)        = t00-60.0
-   plant_min_temp(9)        = t00-80.0
-   plant_min_temp(10:11)    = t00-20.0
-   plant_min_temp(12:13)    = t00-80.0
-   plant_min_temp(14:15)    = t00+2.5
-   plant_min_temp(16)       = t00-20.0
-   plant_min_temp(17)       = t00-15.0
 
    return
 end subroutine init_pft_mort_params
@@ -3525,51 +3544,61 @@ subroutine init_pft_alloc_params()
 
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Volume coefficients.  New allometry for tropical trees simply uses the biomass    !
-   ! based on Chave et al. (2014) divided by wood density.  No reference found for old     !
-   ! allometric equation.                                                                  !
-   !---------------------------------------------------------------------------------------!
-   b1Vol(1:17)  = 1.e-6 * 0.65 * pi1 * 0.11 * 0.11
-   b2Vol(1:17)  = 1.0
-   select case (iallom)
-   case (4)
-      do ipft=1,n_pft
-         !---------------------------------------------------------------------------------!
-         !      Coefficients are directly taken from Chave et al. (2014).  Division by     !
-         ! wood density must convert it to kg/m3 (but not the term inside the empirical    !
-         ! formulation by Chave.                                                           !
-         !---------------------------------------------------------------------------------!
-         if (is_tropical(ipft)) then
-            b2Vol(ipft) = 0.976
-            b1Vol(ipft) = 0.001 * 0.0673 * rho(ipft) ** (b2Vol(ipft) - 1)
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-   end select
-   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !     DBH-Root depth allometry.  Check which allometry to use.  Notice that b?Rd have   !
-   ! different meanings depending on the allometry. b?Vol is always defined because we     !
-   ! may want to estimate the standing volume for other reasons (e.g. the characteristic   !
-   ! diameter of branches).                                                                !
+   !     Commercial volume of trees (stem/bole volume, in m3).  The current equation is a  !
+   ! re-fit from Nogueira et al. (2008) so a single set of parameters can be used.  Their  !
+   ! equation is for tropical trees only, so temperate and boreal forests may need a       !
+   ! different set of parameters.  Grasses are assumed to have no commercial volume.       !
+   !                                                                                       !
+   ! Nogueira, E. M., et al. Estimates of forest biomass in the Brazilian Amazon: new      !
+   !    allometric equations and adjustments to biomass from wood-volume inventories.      !
+   !    Forest Ecol. Manag., 256(11), 1853-1867, Nov. 2008,                                !
+   !    doi:10.1016/j.foreco.2008.07.022.                                                  !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         !------ Grasses, assume no commercial volume. ------------------------------------!
+         b1Vol(ipft) = 0.0
+         b2Vol(ipft) = 1.0
+         !---------------------------------------------------------------------------------!
+      else
+         !------ Trees, use Nogueira et al. (2008). ---------------------------------------!
+         b1Vol(ipft) = 3.528e-5
+         b2Vol(ipft) = 0.976
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-Root depth allometry.  Check which allometry to use.  The original volume     !
+   ! equation in ED-2.1 didn't have any references (at least I never found it), so the     !
+   ! rooting depth equation now incorporates the original "volume".  The current volume    !
+   ! allometry is based on tropical trees, and it estimates the commercial volume (stem    !
+   ! volume).                                                                              !
    !---------------------------------------------------------------------------------------!
    select case (iallom)
    case (0)
-      b1Rd(1)     = - 0.700
-      b1Rd(2:4)   = - exp(0.545 * log(10.))
-      b1Rd(5)     = - 0.700
-      b1Rd(6:11)  = - exp(0.545 * log(10.))
-      b1Rd(12:16) = - 0.700
-      b1Rd(17)    = - exp(0.545 * log(10.))
-
-      b2Rd(1)     = 0.000
-      b2Rd(2:4)   = 0.277
-      b2Rd(5)     = 0.000
-      b2Rd(6:11)  = 0.277
-      b2Rd(12:16) = 0.000
-      b2Rd(17)    = 0.277
+      !------------------------------------------------------------------------------------!
+      !      Grasses are assumed to have constant rooting depth.  Tree rooting depth is a  !
+      ! function of dbh and height.                                                        !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_grass(ipft)) then
+            b2Rd(ipft) =  0.000
+            b1Rd(ipft) = -0.700
+         else
+            b2Rd(ipft) = 0.277
+            b1Rd(ipft) = - exp(0.545 * log(10.)) * 0.65 * pi1 * 0.11 * 0.11
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
    case default
       !------------------------------------------------------------------------------------!
       !     This is just a test, not based on any paper.  This is simply a fit that would  !
@@ -4287,23 +4316,27 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-   use disturb_coms , only : treefall_hite_threshold  & ! intent(out)
-                           , fire_hite_threshold      & ! intent(out)
-                           , forestry_on              & ! intent(out)
-                           , agriculture_on           & ! intent(out)
-                           , plantation_year          & ! intent(out)
-                           , plantation_rotation      & ! intent(out)
-                           , min_harvest_biomass      & ! intent(out)
-                           , mature_harvest_age       & ! intent(out)
-                           , fire_dryness_threshold   & ! intent(out)
-                           , fire_smoist_depth        & ! intent(out)
-                           , k_fire_first             & ! intent(out)
-                           , min_plantation_frac      & ! intent(out)
-                           , max_plantation_dist      ! ! intent(out)
-   use consts_coms  , only : erad                     & ! intent(in)
-                           , pio180                   ! ! intent(in)
-   use soil_coms    , only : slz                      ! ! intent(in)
-   use grid_coms    , only : nzg                      ! ! intent(in)
+   use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
+                           , treefall_hite_threshold   & ! intent(out)
+                           , fire_hite_threshold       & ! intent(out)
+                           , forestry_on               & ! intent(out)
+                           , agriculture_on            & ! intent(out)
+                           , plantation_year           & ! intent(out)
+                           , plantation_rotation       & ! intent(out)
+                           , min_harvest_biomass       & ! intent(out)
+                           , mature_harvest_age        & ! intent(out)
+                           , min_oldgrowth             & ! intent(out)
+                           , fire_dryness_threshold    & ! intent(out)
+                           , fire_smoist_depth         & ! intent(out)
+                           , k_fire_first              & ! intent(out)
+                           , min_plantation_frac       & ! intent(out)
+                           , max_plantation_dist       ! ! intent(out)
+   use consts_coms  , only : erad                      & ! intent(in)
+                           , pio180                    & ! intent(in)
+                           , tiny_num                  & ! intent(in)
+                           , huge_num                  ! ! intent(in)
+   use soil_coms    , only : slz                       ! ! intent(in)
+   use grid_coms    , only : nzg                       ! ! intent(in)
    implicit none
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
@@ -4358,6 +4391,24 @@ subroutine init_disturb_params
    ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
    !---------------------------------------------------------------------------------------!
    max_plantation_dist = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the minimum age above which we disregard the disturbance type because the    !
+   ! patch can be considered old growth.                                                   !
+   !---------------------------------------------------------------------------------------!
+   !----- Non-cultivated patches: use the mean age for tree fall disturbances. ------------!
+   if (abs(treefall_disturbance_rate) > tiny_num) then
+      min_oldgrowth(:) = 1. / abs(treefall_disturbance_rate)
+   else
+      min_oldgrowth(:) = huge_num
+   end if
+   !----- Cultivated lands should never be considered old-growth. -------------------------!
+   min_oldgrowth(1) = huge_num
+   min_oldgrowth(2) = huge_num
+   min_oldgrowth(8) = huge_num
    !---------------------------------------------------------------------------------------!
 
    return
@@ -5424,7 +5475,6 @@ end subroutine init_phen_coms
 subroutine init_ff_coms
    use fusion_fission_coms, only : niter_patfus              & ! intent(out)
                                  , lai_tol                   & ! intent(out)
-                                 , min_oldgrowth             & ! intent(out)
                                  , pat_light_ext             & ! intent(out)
                                  , pat_light_tol_min         & ! intent(out)
                                  , pat_light_tol_max         & ! intent(out)
@@ -5442,10 +5492,7 @@ subroutine init_ff_coms
                                  , fuse_prefix               ! ! intent(out)
    use consts_coms        , only : onethird                  & ! intent(out)
                                  , twothirds                 & ! intent(in)
-                                 , onesixth                  & ! intent(in)
-                                 , tiny_num                  & ! intent(in)
-                                 , huge_num                  ! ! intent(in)
-   use disturb_coms       , only : treefall_disturbance_rate ! ! intent(in)
+                                 , onesixth                  ! ! intent(in)
    use ed_max_dims        , only : n_dist_types              ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -5538,23 +5585,6 @@ subroutine init_ff_coms
    !----- The following flag switches detailed debugging on. ------------------------------!
    print_fuse_details = .false.
    fuse_prefix        = 'patch_fusion_'
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the minimum age above which we disregard the disturbance type because the    !
-   ! patch can be considered old growth.                                                   !
-   !---------------------------------------------------------------------------------------!
-   !----- Non-cultivated patches: use the mean age for tree fall disturbances. ------------!
-   if (abs(treefall_disturbance_rate) > tiny_num) then
-      min_oldgrowth(:) = 1. / abs(treefall_disturbance_rate)
-   else
-      min_oldgrowth(:) = huge_num
-   end if
-   !----- Cultivated lands should never be fused with non-cultivated lands. ---------------!
-   min_oldgrowth(1) = huge_num
-   min_oldgrowth(2) = huge_num
    !---------------------------------------------------------------------------------------!
 
    return

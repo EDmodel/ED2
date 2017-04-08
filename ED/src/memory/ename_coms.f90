@@ -44,6 +44,7 @@ module ename_coms
       !----- Timestep specification. ------------------------------------------------------!
       real                                              :: dtlsm
       real                                              :: radfrq
+      integer                                           :: month_yrstep
 
       !----- Analysis/history files. ------------------------------------------------------!
       integer                                           :: ifoutput
@@ -197,11 +198,22 @@ module ename_coms
       real                                              :: fire_parameter
       real                                              :: sm_fire
       integer                                           :: ianth_disturb
+      integer                                           :: sl_scale
+      integer                                           :: sl_nyrs
+      integer               , dimension(n_pft)          :: sl_pft
+      real                  , dimension(n_pft)          :: sl_prob_harvest
+      real                  , dimension(n_pft)          :: sl_mindbh_harvest
+      real                                              :: sl_biomass_harvest
+      real                                              :: sl_skid_rel_area
+      real                                              :: cl_fseeds_harvest
+      real                                              :: cl_fstorage_harvest
+      real                                              :: cl_fleaf_harvest
       integer                                           :: icanturb
       integer                                           :: isfclyrm
       integer                                           :: ied_grndvap
       integer                                           :: ipercol
       integer               , dimension(n_pft)          :: include_these_pft
+      integer                                           :: pasture_stock
       integer                                           :: agri_stock
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
@@ -317,6 +329,7 @@ module ename_coms
 
       enl%dtlsm                     = undef_real
       enl%radfrq                    = undef_real
+      enl%month_yrstep              = undef_integer
 
       enl%ifoutput                  = undef_integer
       enl%idoutput                  = undef_integer
@@ -469,11 +482,22 @@ module ename_coms
       enl%fire_parameter            = undef_real
       enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
+      enl%sl_scale                  = undef_integer
+      enl%sl_nyrs                   = undef_integer
+      enl%sl_pft                    = (/(undef_integer,i=1,n_pft)/) 
+      enl%sl_prob_harvest           = (/(undef_real   ,i=1,n_pft)/) 
+      enl%sl_mindbh_harvest         = (/(undef_real   ,i=1,n_pft)/) 
+      enl%sl_biomass_harvest        = undef_real
+      enl%sl_skid_rel_area          = undef_real
+      enl%cl_fseeds_harvest         = undef_real
+      enl%cl_fstorage_harvest       = undef_real
+      enl%cl_fleaf_harvest          = undef_real
       enl%icanturb                  = undef_integer
       enl%isfclyrm                  = undef_integer
       enl%ipercol                   = undef_integer
 
       enl%include_these_pft         = (/(undef_integer,i=1,n_pft)/) 
+      enl%pasture_stock             = undef_integer
       enl%agri_stock                = undef_integer
       enl%plantation_stock          = undef_integer
       enl%pft_1st_check             = undef_integer

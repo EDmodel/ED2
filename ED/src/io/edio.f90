@@ -2,8 +2,9 @@
 !==========================================================================================!
 !     This is the main driver for file output in ED.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,history_time,dcycle_time,the_end)
+subroutine ed_output(analysis_time,new_day,new_month,new_year,dail_analy_time              &
+                    ,mont_analy_time,dcyc_analy_time,annual_time,history_time,dcycle_time  &
+                    ,the_end)
 
    use ed_state_vars, only : edgrid_g                & ! structure
                            , filltab_alltypes        & ! subroutine
@@ -45,6 +46,8 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
    logical, intent(in)  :: history_time
    logical, intent(in)  :: dcycle_time
    logical, intent(in)  :: new_day
+   logical, intent(in)  :: new_month
+   logical, intent(in)  :: new_year
    logical, intent(in)  :: annual_time
    !----- Local variables. ----------------------------------------------------------------!
    integer              :: ifm
@@ -152,6 +155,8 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
    !----- Yearly analysis output. ---------------------------------------------------------!
    if (annual_time) then
       call h5_output('YEAR')
+   end if
+   if (new_year) then
       do ifm=1,ngrids
          call zero_ed_yearly_vars(edgrid_g(ifm))
       end do

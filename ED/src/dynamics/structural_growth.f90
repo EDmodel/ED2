@@ -23,6 +23,7 @@ subroutine structural_growth(cgrid, month)
                              , agf_bs                 & ! intent(in)
                              , cbr_severe_stress      ! ! intent(in)
    use decomp_coms    , only : f_labile               ! ! intent(in)
+   use disturb_coms   , only : cl_fseeds_harvest      ! ! intent(in)
    use ed_max_dims    , only : n_pft                  & ! intent(in)
                              , n_dbh                  ! ! intent(in)
    use ed_misc_coms   , only : ibigleaf               & ! intent(in)
@@ -106,15 +107,26 @@ subroutine structural_growth(cgrid, month)
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Previous month (for crop yield update and carbon balance mortality). ------------!
+   prev_month = 1 + mod(month+10,12)
+   !---------------------------------------------------------------------------------------!
+
+
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 
-      !----- Initialization. --------------------------------------------------------------!
-      cpoly%basal_area(:,:,:) = 0.0
-      cpoly%agb(:,:,:)        = 0.0
+
+     !----- Initialization. --------------------------------------------------------------!
+     cgrid%crop_yield(prev_month,ipy) = 0.0
+
+      
 
       siteloop: do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
+         !----- Initialization. --------------------------------------------------------------!
+         cpoly%basal_area(:,:,isi)       = 0.0
+         cpoly%agb(:,:,isi)               = 0.0
+         cpoly%crop_yield(prev_month,isi) = 0.0
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -209,35 +221,69 @@ subroutine structural_growth(cgrid, month)
                
                !---------------------------------------------------------------------------!
                !      Calculate total seed production and seed litter.  The seed pool gets !
-               ! a fraction f_bseeds of bstorage.                                          !
+               ! a fraction f_bseeds of bstorage.  In case this is agriculture, we also    !
+               ! set a fraction of seeds as crop yield.                                    !
                !---------------------------------------------------------------------------!
-               cpatch%bseeds(ico) = f_bseeds * cpatch%bstorage(ico)
-               
-               cpatch%today_NPPseeds(ico) = f_bseeds * cpatch%bstorage(ico)                &
-                                          * cpatch%nplant(ico)
+               select case (csite%dist_type(ipa))
+               case (8)
+                  !------------------------------------------------------------------------!
+                  !      Cropland patch.  Here we must account for harvesting of seeds.    !
+                  ! Leaves and non-structural carbon must be harvested at the end of the   !
+                  ! cropland cycle.                                                        !
+                  !------------------------------------------------------------------------!
+
+
+                  !----- bseeds contains only non-harvested seeds. ------------------------!
+                  cpatch%bseeds(ico) = (1.-cl_fseeds_harvest)                              &
+                                     * f_bseeds * cpatch%bstorage(ico)
+                  cpatch%byield(ico) = cl_fseeds_harvest * f_bseeds * cpatch%bstorage(ico)
+                  !------------------------------------------------------------------------!
+
+
+               case default
+                  !------------------------------------------------------------------------!
+                  !      Not a cropland patch. No harvesting should occur.                 !
+                  !------------------------------------------------------------------------!
+                  cpatch%bseeds(ico) = f_bseeds * cpatch%bstorage(ico)
+                  cpatch%byield(ico) = 0.
+                  !------------------------------------------------------------------------!
+               end select
                !---------------------------------------------------------------------------!
-               
+
                !---------------------------------------------------------------------------!
-               ! ALS. If agriculture: set seedling_mortality very low or zero              !
-               !      to keep all of the seeds for harvest later in the season             !
+               !      Net primary productivity used for seed production.  This must        !
+               ! include seeds that have been harvested.                                   !
+               !---------------------------------------------------------------------------!
+               cpatch%today_NPPseeds(ico) = cpatch%nplant(ico)                             &
+                                          * f_bseeds * cpatch%bstorage(ico)
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !      Send dead seeds to the litter pool (this time, only those that were  !
+               ! not harvested).                                                           !
                !---------------------------------------------------------------------------!
                seed_litter        = cpatch%bseeds(ico) * cpatch%nplant(ico)                &
                                   * seedling_mortality(ipft)
-                                  
                !---------------------------------------------------------------------------!
-               
+
+
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
                ! ation to seeds.  This is necessary because c2n_recruit does not have to   !
-               ! be equal to c2n_storage.                                                  !
+               ! be equal to c2n_storage.  Here we must also account for harvested seeds.  !
                !---------------------------------------------------------------------------!
-               net_seed_N_uptake = cpatch%bseeds(ico) * cpatch%nplant(ico)                 &
+               net_seed_N_uptake =  cpatch%nplant(ico)                                     &
+                                 * f_bseeds * cpatch%bstorage(ico)                         &
                                  * (1.0 / c2n_recruit(ipft) - 1.0 / c2n_storage)
                !---------------------------------------------------------------------------!
 
-               !----- Decrement the storage pool. -----------------------------------------!
+
+               !----- Decrement the storage pool due to allocation. -----------------------!
                cpatch%bstorage(ico) = cpatch%bstorage(ico) * (1.0 - f_bdead - f_bseeds)
                !---------------------------------------------------------------------------!
+
+
 
                !----- Finalize litter inputs. ---------------------------------------------!
                csite%fsc_in(ipa) = csite%fsc_in(ipa) + f_labile(ipft) * balive_mort_litter &
@@ -255,6 +301,16 @@ subroutine structural_growth(cgrid, month)
                       csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
                     + net_stem_N_uptake
                !---------------------------------------------------------------------------!
+
+
+
+               !------ Update crop yield. -------------------------------------------------!
+               cpoly%crop_yield(prev_month,isi) = cpoly%crop_yield(prev_month,isi)         &
+                                                + cpatch%nplant(ico) * cpatch%byield(ico)  &
+                                                * csite%area(ipa)
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !     Calculate some derived cohort properties:                             !
@@ -274,11 +330,6 @@ subroutine structural_growth(cgrid, month)
 
 
                !----- Update annual average carbon balances for mortality. ----------------!
-               if (month == 1) then
-                  prev_month = 12
-               else
-                  prev_month = month - 1 
-               end if
                cpatch%cb          (prev_month,ico) = cpatch%cb          (13,ico)
                cpatch%cb_lightmax (prev_month,ico) = cpatch%cb_lightmax (13,ico)
                cpatch%cb_moistmax (prev_month,ico) = cpatch%cb_moistmax (13,ico)
@@ -467,6 +518,13 @@ subroutine structural_growth(cgrid, month)
             !------------------------------------------------------------------------------!
 
          end do patchloop
+         !---------------------------------------------------------------------------------!
+
+
+         !------ Update polygon-level crop yield. -----------------------------------------!
+         cgrid%crop_yield(prev_month,ipy) = cgrid%crop_yield(prev_month,ipy)               &
+                                          + cpoly%crop_yield(prev_month,isi)               &
+                                          * cpoly%area(isi)
          !---------------------------------------------------------------------------------!
       end do siteloop
       !------------------------------------------------------------------------------------!
@@ -1077,6 +1135,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , bl2dbh              & ! function
                             , bl2h                & ! function
                             , size2bl             & ! function
+                            , size2bt             & ! function
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
@@ -1167,9 +1226,11 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
               ,cpatch%bsapwooda(ico))
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
-   cpatch%basarea(ico)= pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
-   cpatch%agb(ico)    = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                     &
-                                  ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+   cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                    &
+                                   ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+   cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdead(ico)        &
+                                ,cpatch%bsapwooda(ico),cpatch%pft(ico))
 
    !----- Update rooting depth ------------------------------------------------------------!
    cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)

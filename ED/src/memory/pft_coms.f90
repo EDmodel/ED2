@@ -30,8 +30,7 @@ module pft_coms
    !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |      no |       yes !
    !   16 | Tropical C3 grass                   |     yes |      yes |      no |       yes !
    !   17 | Araucaria                           |      no |      yes |     yes |        no !
-   !------+-------------------------------------+---------+----------+---------------------!
-
+   !---------------------------------------------------------------------------------------!
 
 
    !=======================================================================================!
@@ -57,10 +56,11 @@ module pft_coms
    integer :: pft_1st_check
 
    !---------------------------------------------------------------------------------------!
-   !     These are the flags that indicate which PFTs should be used for agriculture and   !
-   ! plantation stock should go. They are currently a single PFT, but they should become:  !
-   ! vectors eventually (so multiple PFTs can be used...).                                 !
+   !     These are the flags that indicate which PFTs should be used for pastures, agri-   !
+   ! culture and plantation stockS. They are currently a single PFT, but they should       !
+   ! become vectors eventually (and thus multiple PFTs can be used...).                    !
    !---------------------------------------------------------------------------------------!
+   integer :: pasture_stock 
    integer :: agri_stock 
    integer :: plantation_stock
    !=======================================================================================!
@@ -101,6 +101,15 @@ module pft_coms
    !    This is the list of PFTs that are included.  0 means off, 1 means on.              !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft) :: include_pft
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This flag specifies which PFTs are allowed to grow on pasture patches.             !
+   ! Zero means the PFT is forbidden, 1 means that the PFT is allowed.                     !
+   !---------------------------------------------------------------------------------------!
+   logical, dimension(n_pft) :: include_pft_pt
    !---------------------------------------------------------------------------------------!
 
 
@@ -355,6 +364,20 @@ module pft_coms
    ! (see disturbance_coms.f90).                                                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: fire_s_ltht
+
+   !---------------------------------------------------------------------------------------!
+   !     Survivorship fraction for plants near felled trees.                               !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: felling_s_ltharv
+   real, dimension(n_pft) :: felling_s_gtharv
+
+   !---------------------------------------------------------------------------------------!
+   !     Survivorship fractions for plants at skid trails and roads.  Both smaller and     !
+   ! larger than the minimum harvesting size.                                              !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_pft) :: skid_s_ltharv
+   real, dimension(n_pft) :: skid_s_gtharv
+   !---------------------------------------------------------------------------------------!
 
    !----- Below this temperature, mortality rapidly increases. ----------------------------!
    real, dimension(n_pft) :: plant_min_temp

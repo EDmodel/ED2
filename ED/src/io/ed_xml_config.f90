@@ -167,8 +167,6 @@ recursive subroutine read_ed_xml_config(filename)
            restart_target_year = ival
            use_target_year = 1
         endif
-        call getConfigINT  ('outputMonth','ed_misc',i,ival,texist)
-        if(texist) outputMonth = ival
         call getConfigINT  ('burnin','ed_misc',i,ival,texist)
         if(texist) burnin = ival
 
@@ -405,7 +403,14 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) treefall_s_ltht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_s_ltht','pft',i,rval,texist)
            if(texist) treefall_s_ltht(myPFT) = real(rval)
-
+           call getConfigREAL  ('felling_s_gtharv','pft',i,rval,texist)
+           if(texist) felling_s_gtharv(myPFT) = real(rval)
+           call getConfigREAL  ('felling_s_ltharv','pft',i,rval,texist)
+           if(texist) felling_s_ltharv(myPFT) = real(rval)
+           call getConfigREAL  ('skid_s_gtharv','pft',i,rval,texist)
+           if(texist) skid_s_gtharv(myPFT) = real(rval)
+           call getConfigREAL  ('skid_s_ltharv','pft',i,rval,texist)
+           if(texist) skid_s_ltharv(myPFT) = real(rval)
            call getConfigREAL  ('fire_s_gtht','pft',i,rval,texist)
            if(texist) fire_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('fire_s_ltht','pft',i,rval,texist)
@@ -1343,7 +1348,6 @@ subroutine write_ed_xml_config
   !************   ED_MISC  *****************
   call libxml2f90_ll_opentag("ed_misc")
      call putConfigINT("restart_target_year",restart_target_year)
-     call putConfigINT("outputMonth",outputMonth)
      call putConfigINT("burnin",burnin)
      call putConfigINT("vary_elev",vary_elev)
      call putConfigINT("vary_rad",vary_rad)
@@ -1477,8 +1481,12 @@ subroutine write_ed_xml_config
         call putConfigREAL("cbr_severe_stress",cbr_severe_stress(i))
         call putConfigREAL("seedling_mortality",seedling_mortality(i))
 
-        call putConfigREAL("treefall_s_gt",treefall_s_gtht(i))
-        call putConfigREAL("treefall_s_lt",treefall_s_ltht(i))
+        call putConfigREAL("treefall_s_gt"   ,treefall_s_gtht (i))
+        call putConfigREAL("treefall_s_lt"   ,treefall_s_ltht (i))
+        call putConfigREAL("felling_s_gtharv",felling_s_gtharv(i))
+        call putConfigREAL("felling_s_ltharv",felling_s_ltharv(i))
+        call putConfigREAL("skid_s_gtharv"   ,skid_s_gtharv   (i))
+        call putConfigREAL("skid_s_ltharv"   ,skid_s_ltharv   (i))
 
         call putConfigREAL("fire_s_gt",fire_s_gtht(i))
         call putConfigREAL("fire_s_lt",fire_s_ltht(i))

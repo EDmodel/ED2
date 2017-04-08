@@ -439,6 +439,7 @@ subroutine ed_opspec_times
                            , itimez           & ! intent(in)
                            , dtlsm            & ! intent(in)
                            , radfrq           & ! intent(in)
+                           , month_yrstep     & ! intent(in)
                            , ifoutput         & ! intent(in)
                            , isoutput         & ! intent(in)
                            , idoutput         & ! intent(in)
@@ -1105,6 +1106,18 @@ subroutine ed_opspec_times
 
 
 
+   !----- MONTH_YRSTEP must be a valid month. ---------------------------------------------!
+   if (month_yrstep < 1 .or. month_yrstep > 12) then
+      write(reason,fmt='(2a,1x,i6,a)') 'MONTH_YRSTEP must be a a valid calendar month '    &
+                                      ,'(1-12), and yours is set to',month_yrstep,'...'
+      call opspec_fatal(reason,'opspec_times')  
+      ifaterr=ifaterr+1
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
    !------ Stop the run if there are any fatal errors. ------------------------------------!
    if (ifaterr > 0) then
       write (unit=*,fmt='(a)')       ' -----------ED_OPSPEC_TIMES ------------------------'
@@ -1135,7 +1148,9 @@ end subroutine ed_opspec_times
 !------------------------------------------------------------------------------------------!
 subroutine ed_opspec_misc
    use ed_max_dims           , only : n_pft                        & ! intent(in)
-                                    , str_len                      ! ! intent(in)
+                                    , str_len                      & ! intent(in)
+                                    , skip_integer                 & ! intent(in)
+                                    , skip_real                    ! ! intent(in)
    use ed_misc_coms          , only : ifoutput                     & ! intent(in)
                                     , idoutput                     & ! intent(in)
                                     , iqoutput                     & ! intent(in)
@@ -1224,7 +1239,17 @@ subroutine ed_opspec_misc
                                     , sm_fire                      & ! intent(in)
                                     , time2canopy                  & ! intent(in)
                                     , treefall_disturbance_rate    & ! intent(in)
-                                    , min_patch_area               ! ! intent(in)
+                                    , min_patch_area               & ! intent(in)
+                                    , sl_scale                     & ! intent(in)
+                                    , sl_nyrs                      & ! intent(in)
+                                    , sl_pft                       & ! intent(in)
+                                    , sl_prob_harvest              & ! intent(in)
+                                    , sl_mindbh_harvest            & ! intent(in)
+                                    , sl_biomass_harvest           & ! intent(in)
+                                    , sl_skid_rel_area             & ! intent(in)
+                                    , cl_fseeds_harvest            & ! intent(in)
+                                    , cl_fstorage_harvest          & ! intent(in)
+                                    , cl_fleaf_harvest             ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , repro_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
@@ -1232,6 +1257,7 @@ subroutine ed_opspec_misc
                                     , thetacrit                    ! ! intent(in)
    use pft_coms              , only : include_these_pft            & ! intent(in)
                                     , pft_1st_check                & ! intent(in)
+                                    , pasture_stock                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_layer_coms     , only : crown_mod                    ! ! intent(in)
@@ -1270,11 +1296,10 @@ subroutine ed_opspec_misc
    integer                :: ifaterr
    integer                :: ifm
    integer                :: ipft
+   logical                :: pasture_ok
    logical                :: agri_ok
    logical                :: plantation_ok
    logical                :: patch_detailed
-   !----- Local constants -----------------------------------------------------------------!
-   integer, parameter :: skip=huge(6)
    !---------------------------------------------------------------------------------------!
 
    !----- IFATERR will count the number of bad set ups. -----------------------------------!
@@ -2005,12 +2030,148 @@ end do
       end if
    end select
 
-   if (ianth_disturb < 0 .or. ianth_disturb > 1) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid IANTH_DISTURB, it must be between 0 and 1. Yours is set to',ianth_disturb,'...'
+   if (ianth_disturb < 0 .or. ianth_disturb > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid IANTH_DISTURB, it must be between 0 and 2. Yours is set to'   &
+                   ,ianth_disturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
+   
+   !---------------------------------------------------------------------------------------!
+   !      The following settings matter only when ianth_disturb is 2.                      !
+   !---------------------------------------------------------------------------------------!
+   select case (ianth_disturb)
+   case (2)
+      if (sl_scale < 0 .or. ianth_disturb > 1) then
+         write (reason,fmt='(a,1x,i4,a)')                                                  &
+                       'Invalid SL_SCALE, it must be either 0 and 1. Yours is set to'      &
+                      ,sl_scale,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (sl_nyrs < 1) then
+         write (reason,fmt='(a,1x,i4,a)')                                                  &
+                       'Invalid SL_NYRS, it must be positive. Yours is set to'             &
+                      ,sl_nyrs,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether the user is attempting to include invalid pfts.                  !
+      !------------------------------------------------------------------------------------!
+      sl_pft_loop: do ipft=1,n_pft
+         if (sl_pft(ipft) == skip_integer) then
+           if (ipft /= 1) then
+              exit sl_pft_loop
+           else
+              write (reason,fmt='(a)') 'You did not specify any valid SL_PFT.'
+              call opspec_fatal(reason,'opspec_misc')
+              ifaterr=ifaterr+1
+           end if
+         elseif (sl_pft(ipft) < 0 .or. sl_pft(ipft) > n_pft) then
+            write (reason,fmt='(a,1x,i4,a,1x,i4,a)')                                       &
+                'Invalid SL_PFT, it must be between 1 and ',n_pft                          &
+               ,'. One of yours is set to',sl_pft(ipft),'...'
+            call opspec_fatal(reason,'opspec_misc')  
+            ifaterr=ifaterr+1
+         end if
+      end do sl_pft_loop
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether the user is attempting to include invalid minimum DBH.           !
+      !------------------------------------------------------------------------------------!
+      sl_mindbh_loop: do ipft=1,n_pft
+         if (sl_mindbh_harvest(ipft) == skip_real) then
+           if (ipft /= 1) then
+              exit sl_mindbh_loop
+           else
+              write (reason,fmt='(a)') 'You did not specify any valid SL_MINDBH_HARVEST.'
+              call opspec_fatal(reason,'opspec_misc')
+              ifaterr=ifaterr+1
+           end if
+         elseif (sl_mindbh_harvest(ipft) < 0) then
+            write (reason,fmt='(2a,1x,es12.5,a)')                                          &
+                'Invalid SL_MINDBH_HARVEST, it must be non-negative.'                      &
+               ,' One of yours is set to',sl_mindbh_harvest(ipft),'...'
+            call opspec_fatal(reason,'opspec_misc')  
+            ifaterr=ifaterr+1
+         end if
+      end do sl_mindbh_loop
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Check whether the user is attempting to include invalid harvest probability.   !
+      !------------------------------------------------------------------------------------!
+      sl_pharv_loop: do ipft=1,n_pft
+         if (sl_prob_harvest(ipft) == skip_real) then
+           if (ipft /= 1) then
+              exit sl_pharv_loop
+           else
+              write (reason,fmt='(a)') 'You did not specify any valid SL_PROB_HARVEST.'
+              call opspec_fatal(reason,'opspec_misc')
+              ifaterr=ifaterr+1
+           end if
+         elseif (sl_prob_harvest(ipft) < 0. .or. sl_prob_harvest(ipft) > 1.) then
+            write (reason,fmt='(2a,1x,es12.5,a)')                                          &
+                'Invalid SL_MINDBH_HARVEST, it must be between 0.0 and 1.0.'               &
+               ,'. One of yours is set to',sl_prob_harvest(ipft),'...'
+            call opspec_fatal(reason,'opspec_misc')  
+            ifaterr=ifaterr+1
+         end if
+      end do sl_pharv_loop
+      !------------------------------------------------------------------------------------!
+
+      if (sl_biomass_harvest < 0. .or. sl_biomass_harvest > 50.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid SL_BIOMASS_HARVEST, it must be between 0. and 50.'         &
+                      ,'  Yours is set to',sl_biomass_harvest,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+   end select
+
+   !---------------------------------------------------------------------------------------!
+   !      The following settings matter only when ianth_disturb is 1 or 2.                 !
+   !---------------------------------------------------------------------------------------!
+   select case (ianth_disturb)
+   case (1,2)
+      if (sl_skid_rel_area < 0. .or. sl_skid_rel_area > 5.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid SL_SKID_REL_AREA, it must be between 0. and 5.'            &
+                      ,'  Yours is set to',sl_skid_rel_area,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (cl_fseeds_harvest < 0. .or. cl_fseeds_harvest > 1.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid CL_FSEEDS_HARVEST, it must be between 0. and 1.'           &
+                      ,'  Yours is set to',cl_fseeds_harvest,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (cl_fstorage_harvest < 0. .or. cl_fstorage_harvest > 1.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid CL_FSTORAGE_HARVEST, it must be between 0. and 1.'         &
+                      ,'  Yours is set to',cl_fstorage_harvest,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (cl_fleaf_harvest < 0. .or. cl_fleaf_harvest > 1.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid CL_FLEAF_HARVEST, it must be between 0. and 1.'            &
+                      ,'  Yours is set to',cl_fleaf_harvest,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+   end select
+   !---------------------------------------------------------------------------------------!
 
    select case (icanturb)
    case (0:4)
@@ -2044,10 +2205,11 @@ end do
       ifaterr = ifaterr +1
    end if
    
-   ! Checking if I am attempting to include invalid pfts. I can leave the loop once I hit
-   ! the first "huge" value
+   !---------------------------------------------------------------------------------------!
+   !     Check whether the user is attempting to include invalid pfts.                     !
+   !---------------------------------------------------------------------------------------!
    pftloop: do ipft=1,n_pft
-      if (include_these_pft(ipft) == skip) then
+      if (include_these_pft(ipft) == skip_integer) then
         if (ipft /= 1) then
            exit pftloop
         else
@@ -2064,22 +2226,26 @@ end do
          ifaterr=ifaterr+1
       end if
    end do pftloop
-   
+   !---------------------------------------------------------------------------------------!
+
+
    !----- Checking whether the user choice for agriculture and plantation make sense. -----!
-   if (ianth_disturb == 1) then
-      !------ Checking the plantation PFT.  It must be a tree PFT. ------------------------!
-      select case (plantation_stock)
-      case (2,3,4,6,7,8,9,10,11,17)
+   select case (ianth_disturb)
+   case (1,2)
+   
+      !------ Check the pasture PFT. It must be a grass. ----------------------------------!
+      select case (pasture_stock)
+      case (1,5,12,13,14,15,16)
          continue
       case default
          write(reason,fmt='(a,1x,i5,a)')                                                   &
-                      'Invalid plantation_stock , it can''t be grass and yours is set to'  &
-                      ,plantation_stock,'...'
+             'Invalid PASTURE_STOCK , it can''t be a tree and yours is set to'             &
+            ,pasture_stock,'...'
          ifaterr = ifaterr +1
          call opspec_fatal(reason,'opspec_misc')
       end select
    
-      !------ Checking the plantation PFT. It must be a grass PFT. ------------------------!
+      !------ Check the cropland PFT. It must be a grass PFT. -----------------------------!
       select case (agri_stock)
       case (1,5,12,13,14,15,16)
          continue
@@ -2090,13 +2256,35 @@ end do
          call opspec_fatal(reason,'opspec_misc')
       end select
 
+      !------ Check the plantation PFT.  It must be a tree PFT. ---------------------------!
+      select case (plantation_stock)
+      case (2,3,4,6,7,8,9,10,11,17)
+         continue
+      case default
+         write(reason,fmt='(a,1x,i5,a)')                                                   &
+                      'Invalid plantation_stock , it can''t be grass and yours is set to'  &
+                      ,plantation_stock,'...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end select
+
+      pasture_ok    = .false.
       agri_ok       = .false.
       plantation_ok = .false.
       agriloop: do ipft=1,n_pft
-         if (include_these_pft(ipft) == skip) exit agriloop
-         if (agri_stock == include_these_pft(ipft)) agri_ok = .true.
-         if (plantation_stock == include_these_pft(ipft)) plantation_ok=.true.
+         if (include_these_pft(ipft) == skip_integer) exit agriloop
+         if (pasture_stock    == include_these_pft(ipft)) pasture_ok    = .true.
+         if (agri_stock       == include_these_pft(ipft)) agri_ok       = .true.
+         if (plantation_stock == include_these_pft(ipft)) plantation_ok = .true.
       end do agriloop
+      
+      if (.not. pasture_ok) then
+         write(reason,fmt='(a,1x,i5,a)')                                                   &
+             'Invalid PASTURE_STOCK (',pasture_stock                                       &
+            ,'). The pft must be in INCLUDE_THESE_PFT.'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end if
       
       if (.not. agri_ok) then
          write(reason,fmt='(a,1x,i5,a)')                                                   &
@@ -2112,7 +2300,8 @@ end do
          ifaterr = ifaterr +1
          call opspec_fatal(reason,'opspec_misc')
       end if
-   end if
+   end select
+   !---------------------------------------------------------------------------------------!
 
    if (pft_1st_check < 0 .or. pft_1st_check > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

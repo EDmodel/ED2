@@ -938,8 +938,8 @@ module fuse_fiss_utils
             split_mask(ico) = stai > lai_tol
             
             old_nplant = old_nplant + cpatch%nplant(ico)
-            old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &
-                                                           + cpatch%bdead(ico)                &
+            old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive  (ico)          &
+                                                           + cpatch%bdead   (ico)          &
                                                            + cpatch%bstorage(ico) )
             !------------------------------------------------------------------------------! 
          end do
@@ -1048,8 +1048,8 @@ module fuse_fiss_utils
             new_size   = 0.
             do ico=1,cpatch%ncohorts
                new_nplant = new_nplant + cpatch%nplant(ico)
-               new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)         &
-                                                              + cpatch%bdead(ico)          &
+               new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%balive  (ico)       &
+                                                              + cpatch%bdead   (ico)       &
                                                               + cpatch%bstorage(ico) )
             end do
             if (new_nplant < 0.99 * old_nplant .or. new_nplant > 1.01 * old_nplant .or.    &
@@ -1190,14 +1190,14 @@ module fuse_fiss_utils
       if (is_grass(cpatch%pft(donc)) .and. igrass == 1) then
           !----- New grass scheme, use bleaf then find DBH and height. --------------------!
           cpatch%bleaf(recc) = cpatch%bleaf(recc) * rnplant + cpatch%bleaf(donc) * dnplant
-          cpatch%dbh(recc)   = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
-          cpatch%hite(recc)  = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
+          cpatch%dbh  (recc) = bl2dbh(cpatch%bleaf(recc), cpatch%pft(recc))
+          cpatch%hite (recc) = bl2h  (cpatch%bleaf(recc), cpatch%pft(recc))
           !--------------------------------------------------------------------------------!
       else
           !----- Trees, or old grass scheme.  Use bdead then find DBH and height. ---------!
           cpatch%bdead(recc) = cpatch%bdead(recc) * rnplant + cpatch%bdead(donc) * dnplant
-          cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
-          cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
+          cpatch%dbh  (recc) = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
+          cpatch%hite (recc) = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
           !--------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -1226,8 +1226,13 @@ module fuse_fiss_utils
                                      + cpatch%bsapwoodb       (donc) * dnplant
       cpatch%bstorage         (recc) = cpatch%bstorage        (recc) * rnplant             &
                                      + cpatch%bstorage        (donc) * dnplant
+      cpatch%btimber          (recc) = cpatch%btimber         (recc) * rnplant             &
+                                     + cpatch%btimber         (donc) * dnplant
       cpatch%bseeds           (recc) = cpatch%bseeds          (recc) * rnplant             &
                                      + cpatch%bseeds          (donc) * dnplant
+      cpatch%byield           (recc) = cpatch%byield          (recc) * rnplant             &
+                                     + cpatch%byield          (donc) * dnplant
+
       cpatch%leaf_maintenance (recc) = cpatch%leaf_maintenance(recc) * rnplant             &
                                      + cpatch%leaf_maintenance(donc) * dnplant
       cpatch%root_maintenance (recc) = cpatch%root_maintenance(recc) * rnplant             &
@@ -2925,9 +2930,9 @@ module fuse_fiss_utils
                                      , pat_light_mxd_fac   & ! intent(in)
                                      , pat_diff_age_tol    & ! intent(in)
                                      , pat_min_area_remain & ! intent(in)
-                                     , min_oldgrowth       & ! intent(in)
                                      , fuse_prefix         ! ! intent(in)
-      use disturb_coms        , only : min_patch_area      ! ! intent(in)
+      use disturb_coms        , only : min_patch_area      & ! intent(in)
+                                     , min_oldgrowth       ! ! intent(in)
       use ed_max_dims         , only : n_pft               & ! intent(in)
                                      , str_len             ! ! intent(in)
       use mem_polygons        , only : maxpatch            & ! intent(in)

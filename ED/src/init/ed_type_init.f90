@@ -206,6 +206,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%elongf                (ico) = 0.0
    cpatch%new_recruit_flag      (ico) = 0
    cpatch%bseeds                (ico) = 0.0
+   cpatch%byield                (ico) = 0.0
    cpatch%leaf_energy           (ico) = 0.
    cpatch%leaf_hcap             (ico) = 0.
    cpatch%leaf_temp             (ico) = 0.
@@ -1123,7 +1124,8 @@ subroutine init_ed_site_vars(cpoly, lat)
    use ed_state_vars, only : polygontype      ! ! intent(in)
    use ed_max_dims  , only : n_pft            & ! intent(in)
                            , n_dbh            ! ! intent(in)
-   use pft_coms     , only : agri_stock       & ! intent(in)
+   use pft_coms     , only : pasture_stock    & ! intent(in)
+                           , agri_stock       & ! intent(in)
                            , plantation_stock ! ! intent(in)
    use grid_coms    , only : nzs              & ! intent(in)
                            , nzg              ! ! intent(in)
@@ -1153,6 +1155,14 @@ subroutine init_ed_site_vars(cpoly, lat)
    cpoly%agb_growth       (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_mort         (1:n_pft, 1:n_dbh, :) = 0.0
    cpoly%agb_cut          (1:n_pft, 1:n_dbh, :) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Cropland and forestry productivity.                                              !
+   !---------------------------------------------------------------------------------------!
+   cpoly%crop_yield     (:,:) = 0.0
+   cpoly%crop_harvest     (:) = 0.0
+   cpoly%logging_harvest  (:) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -1206,6 +1216,8 @@ subroutine init_ed_site_vars(cpoly, lat)
    !      Initialise several disturbance- and LU-related variables.                        !
    !---------------------------------------------------------------------------------------!
    cpoly%plantation                       (:) = 0
+   cpoly%pasture_stocking_pft             (:) = pasture_stock
+   cpoly%pasture_stocking_density         (:) = 10.0
    cpoly%agri_stocking_pft                (:) = agri_stock
    cpoly%agri_stocking_density            (:) = 10.0
    cpoly%plantation_stocking_pft          (:) = plantation_stock
@@ -1427,18 +1439,23 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%total_basal_area_growth     (ipy) = 0.0
       cgrid%total_basal_area_mort       (ipy) = 0.0
       cgrid%total_basal_area_recruit    (ipy) = 0.0
+      cgrid%crop_yield                (:,ipy) = 0.0
+      cgrid%crop_harvest                (ipy) = 0.0
+      cgrid%logging_harvest             (ipy) = 0.0
       cgrid%nplant                  (:,:,ipy) = 0.0
       cgrid%agb                     (:,:,ipy) = 0.0
       cgrid%lai                     (:,:,ipy) = 0.0
       cgrid%wai                     (:,:,ipy) = 0.0
       cgrid%basal_area              (:,:,ipy) = 0.0
       cgrid%bdead                   (:,:,ipy) = 0.0
+      cgrid%btimber                 (:,:,ipy) = 0.0
       cgrid%balive                  (:,:,ipy) = 0.0
       cgrid%bleaf                   (:,:,ipy) = 0.0
       cgrid%broot                   (:,:,ipy) = 0.0
       cgrid%bsapwooda               (:,:,ipy) = 0.0
       cgrid%bsapwoodb               (:,:,ipy) = 0.0
       cgrid%bseeds                  (:,:,ipy) = 0.0
+      cgrid%byield                  (:,:,ipy) = 0.0
       cgrid%bstorage                (:,:,ipy) = 0.0
       cgrid%bdead_n                 (:,:,ipy) = 0.0
       cgrid%balive_n                (:,:,ipy) = 0.0

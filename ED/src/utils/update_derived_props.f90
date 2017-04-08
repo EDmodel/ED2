@@ -436,7 +436,7 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
          ipft = cpatch%pft(ico)
 
          !----- Update basal area and above-ground biomass. -------------------------------!
-         if(census_flag == 0 .or. cpatch%first_census(ico) == 1)then
+         if (census_flag == 0 .or. cpatch%first_census(ico) == 1) then
             bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
 
             cpoly%basal_area(ipft,bdbh,isi) = cpoly%basal_area(ipft, bdbh,isi)             &
@@ -546,12 +546,14 @@ subroutine update_polygon_derived_props(cgrid)
       cgrid%wai                 (:,:,ipy) = 0.0
       cgrid%basal_area          (:,:,ipy) = 0.0
       cgrid%bdead               (:,:,ipy) = 0.0
+      cgrid%btimber             (:,:,ipy) = 0.0
       cgrid%balive              (:,:,ipy) = 0.0
       cgrid%bleaf               (:,:,ipy) = 0.0
       cgrid%broot               (:,:,ipy) = 0.0
       cgrid%bsapwooda           (:,:,ipy) = 0.0
       cgrid%bsapwoodb           (:,:,ipy) = 0.0
       cgrid%bseeds              (:,:,ipy) = 0.0
+      cgrid%byield              (:,:,ipy) = 0.0
       cgrid%bstorage            (:,:,ipy) = 0.0
       cgrid%bdead_n             (:,:,ipy) = 0.0
       cgrid%balive_n            (:,:,ipy) = 0.0
@@ -711,6 +713,10 @@ subroutine update_polygon_derived_props(cgrid)
                                                + cpatch%bdead              (ico)           &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
+               cgrid%btimber         (p,d,ipy) = cgrid%btimber         (p,d,ipy)           &
+                                               + cpatch%btimber            (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
                cgrid%balive          (p,d,ipy) = cgrid%balive          (p,d,ipy)           &
                                                + cpatch%balive             (ico)           &
                                                * cpatch%nplant             (ico)           &
@@ -733,6 +739,10 @@ subroutine update_polygon_derived_props(cgrid)
                                                * patch_wgt
                cgrid%bseeds          (p,d,ipy) = cgrid%bseeds          (p,d,ipy)           &
                                                + cpatch%bseeds             (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               cgrid%byield          (p,d,ipy) = cgrid%byield          (p,d,ipy)           &
+                                               + cpatch%byield             (ico)           &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
                cgrid%bstorage        (p,d,ipy) = cgrid%bstorage        (p,d,ipy)           &

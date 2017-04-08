@@ -88,6 +88,16 @@ subroutine read_ednl(iunit,filename)
    use disturb_coms         , only : include_fire                          & ! intent(out)
                                    , fire_parameter                        & ! intent(out)
                                    , ianth_disturb                         & ! intent(out)
+                                   , sl_scale                              & ! intent(out)
+                                   , sl_nyrs                               & ! intent(out)
+                                   , sl_pft                                & ! intent(out)
+                                   , sl_prob_harvest                       & ! intent(out)
+                                   , sl_mindbh_harvest                     & ! intent(out)
+                                   , sl_biomass_harvest                    & ! intent(out)
+                                   , sl_skid_rel_area                      & ! intent(out)
+                                   , cl_fseeds_harvest                     & ! intent(out)
+                                   , cl_fstorage_harvest                   & ! intent(out)
+                                   , cl_fleaf_harvest                      ! ! intent(out)
                                    , lu_database                           & ! intent(out)
                                    , plantation_file                       & ! intent(out)
                                    , lu_rescale_file                       & ! intent(out)
@@ -96,6 +106,7 @@ subroutine read_ednl(iunit,filename)
                                    , sm_fire                               & ! intent(out)
                                    , min_patch_area                        ! ! intent(out)
    use pft_coms             , only : include_these_pft                     & ! intent(out)
+                                   , pasture_stock                         & ! intent(out)
                                    , agri_stock                            & ! intent(out)
                                    , plantation_stock                      & ! intent(out)
                                    , pft_1st_check                         ! ! intent(out)
@@ -125,6 +136,7 @@ subroutine read_ednl(iunit,filename)
                                    , integration_scheme                    & ! intent(out)
                                    , ffilout                               & ! intent(out)
                                    , dtlsm                                 & ! intent(out)
+                                   , month_yrstep                          & ! intent(out)
                                    , iprintpolys                           & ! intent(out)
                                    , printvars                             & ! intent(out)
                                    , npvars                                & ! intent(out)
@@ -246,8 +258,8 @@ subroutine read_ednl(iunit,filename)
    logical                      :: fexists
    logical                      :: op
    !----- Namelist. -----------------------------------------------------------------------!
-   namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iqoutput,iyoutput      &
-                       ,itoutput,isoutput,iadd_site_means,iadd_patch_means                 &
+   namelist /ED2_INFO/  dtlsm,month_yrstep,co2_offset,ifoutput,idoutput,imoutput,iqoutput  &
+                       ,iyoutput,itoutput,isoutput,iadd_site_means,iadd_patch_means        &
                        ,iadd_cohort_means,attach_metadata,outfast,outstate,ffilout,sfilout &
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
@@ -262,7 +274,10 @@ subroutine read_ednl(iunit,filename)
                        ,d0_tree,alpha_c3,alpha_c4,klowco2in,rrffact,growthresp             &
                        ,lwidth_grass,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit   &
                        ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
-                       ,fire_parameter,sm_fire,ianth_disturb,icanturb,include_these_pft    &
+                       ,fire_parameter,sm_fire,ianth_disturb,sl_scale,sl_nyrs,sl_pft       &
+                       ,sl_prob_harvest,sl_mindbh_harvest,sl_biomass_harvest               &
+                       ,sl_skid_rel_area,cl_fseeds_harvest,cl_fstorage_harvest             &
+                       ,cl_fleaf_harvest,icanturb,include_these_pft,pasture_stock          &
                        ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
                        ,min_patch_area,treefall_disturbance_rate,time2canopy,iprintpolys   &
                        ,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf     &
@@ -293,6 +308,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt='(a)')        '--------------------------------------------------'
       write (unit=*,fmt='(a)')        ''
       write (unit=*,fmt=*) ' dtlsm                     =',dtlsm
+      write (unit=*,fmt=*) ' month_yrstep              =',month_yrstep
       write (unit=*,fmt=*) ' co2_offset                =',co2_offset
       write (unit=*,fmt=*) ' ifoutput                  =',ifoutput
       write (unit=*,fmt=*) ' idoutput                  =',idoutput
@@ -390,6 +406,7 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' ianth_disturb             =',ianth_disturb
       write (unit=*,fmt=*) ' icanturb                  =',icanturb
       write (unit=*,fmt=*) ' include_these_pft         =',include_these_pft
+      write (unit=*,fmt=*) ' pasture_stock             =',pasture_stock
       write (unit=*,fmt=*) ' agri_stock                =',agri_stock
       write (unit=*,fmt=*) ' plantation_stock          =',plantation_stock
       write (unit=*,fmt=*) ' pft_1st_check             =',pft_1st_check

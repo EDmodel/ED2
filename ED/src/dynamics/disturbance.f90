@@ -38,32 +38,35 @@ module disturbance_utils
    !---------------------------------------------------------------------------------------!
    subroutine apply_disturbances(cgrid)
 
-      use ed_state_vars, only : edtype                    & ! structure
-                              , polygontype               & ! structure
-                              , sitetype                  & ! structure
-                              , patchtype                 ! ! structure
-      use ed_misc_coms , only : current_time              & ! intent(in)
-                              , ibigleaf                  ! ! intent(in)
-      use disturb_coms , only : min_patch_area            & ! intent(in)
-                              , mature_harvest_age        & ! intent(in)
-                              , plantation_year           & ! intent(in)
-                              , plantation_rotation       & ! intent(in)
-                              , ianth_disturb             & ! intent(in)
-                              , time2canopy               & ! intent(in)
-                              , treefall_disturbance_rate ! ! intent(in)
-      use ed_max_dims  , only : n_dist_types              & ! intent(in)
-                              , n_pft                     & ! intent(in)
-                              , n_dbh                     ! ! intent(in)
-      use mem_polygons , only : maxcohort                 ! ! intent(in)
-      use grid_coms    , only : nzg                       & ! intent(in)
-                              , nzs                       ! ! intent(in)
-      use pft_coms     , only : include_pft               ! ! intent(in)
-      use allometry    , only : area_indices              ! ! function
-      use mortality    , only : disturbance_mortality     ! ! subroutine
-      use consts_coms  , only : lnexp_max                 & ! intent(in)
-                              , tiny_num                  & ! intent(in)
-                              , huge_num                  ! ! intent(in)
-      use budget_utils , only : update_budget             ! ! sub-routine
+      use ed_state_vars      , only : edtype                    & ! structure
+                                    , polygontype               & ! structure
+                                    , sitetype                  & ! structure
+                                    , patchtype                 ! ! structure
+      use ed_misc_coms       , only : current_time              & ! intent(in)
+                                    , ibigleaf                  ! ! intent(in)
+      use disturb_coms       , only : min_patch_area            & ! intent(in)
+                                    , mature_harvest_age        & ! intent(in)
+                                    , plantation_year           & ! intent(in)
+                                    , plantation_rotation       & ! intent(in)
+                                    , time2canopy               & ! intent(in)
+                                    , treefall_disturbance_rate & ! intent(in)
+                                    , min_oldgrowth             & ! intent(in)
+                                    , sl_skid_rel_area          ! ! intent(in)
+      use ed_max_dims        , only : n_dist_types              & ! intent(in)
+                                    , n_pft                     & ! intent(in)
+                                    , n_dbh                     ! ! intent(in)
+      use mem_polygons       , only : maxcohort                 ! ! intent(in)
+      use grid_coms          , only : nzg                       & ! intent(in)
+                                    , nzs                       ! ! intent(in)
+      use pft_coms           , only : include_pft               ! ! intent(in)
+      use allometry          , only : area_indices              ! ! function
+      use mortality          , only : disturbance_mortality     ! ! subroutine
+      use consts_coms        , only : lnexp_max                 & ! intent(in)
+                                    , tiny_num                  & ! intent(in)
+                                    , huge_num                  ! ! intent(in)
+      use budget_utils       , only : update_budget             ! ! sub-routine
+      use forestry           , only : find_lambda_harvest       ! ! sub-routine
+      use consts_coms        , only : lnexp_max                 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                    , target      :: cgrid
@@ -88,28 +91,27 @@ module disturbance_utils
       integer                                       :: nnsp_ble
       integer                                       :: old_lu
       integer                                       :: new_lu
-      integer                                       :: dist_path
       integer, dimension(:)           , allocatable :: pfts
       logical, dimension(:)           , allocatable :: disturb_mask
       real   , dimension(:)           , allocatable :: original_area
       real   , dimension(:)           , allocatable :: original_lu
       real   , dimension(:)           , allocatable :: harvestable_agb
-      real   , dimension(:)           , allocatable :: pot_area_harv
+      real   , dimension(:)           , allocatable :: lambda_harvest
       real   , dimension(:,:)         , allocatable :: pot_area_loss
       real   , dimension(:,:)         , allocatable :: act_area_loss
+      real   , dimension(n_dist_types)              :: lambda_now
       real   , dimension(n_dist_types)              :: pot_area_gain
       real   , dimension(n_dist_types)              :: act_area_gain
+      real   , dimension(n_dist_types)              :: one_area_loss
       logical                                       :: biomass_harvest
       logical                                       :: disturbed
       logical                                       :: same_pft
-      logical                                       :: mature_plantation
-      logical                                       :: mature_primary
-      logical                                       :: mature_secondary
-      logical                                       :: mature_patch
-      real   , dimension(n_pft,n_dbh)               :: initial_agb
-      real   , dimension(n_pft,n_dbh)               :: initial_basal_area
+      logical                                       :: is_mature
+      logical                                       :: is_primary
       real   , dimension(n_pft)                     :: mindbh_harvest
       real                                          :: pot_area_remain
+      real                                          :: area_loss_sum
+      real                                          :: lambda_sum
       real                                          :: area_fac
       real                                          :: orig_area
       real                                          :: dist_area
@@ -117,9 +119,12 @@ module disturbance_utils
       real                                          :: elim_nplant
       real                                          :: elim_lai
       real                                          :: new_nplant
+      real                                          :: lfactor
+      logical                                       :: is_managed
+      logical                                       :: is_oldgrowth
       logical                                       :: is_plantation
       !----- Debugging controls. ----------------------------------------------------------!
-      logical                         , parameter   :: print_debug = .false.
+      logical                         , parameter   :: print_debug = .true.
       !------------------------------------------------------------------------------------!
 
 
@@ -138,10 +143,10 @@ module disturbance_utils
 
       !------------------------------------------------------------------------------------!
       !      nnsp_ble stands for the new number of site patches for big leaf.  Each site   !
-      ! may have additional mypfts, except if land use is 1 (cropland/pasture) or 2        !
-      ! (forest plantation), in which case only one PFT is allowed.                        !
+      ! may have additional mypfts, except if land use is 1 (cropland/pasture), 2          !
+      ! (forest plantation), or 8 (cropland), in which case only one PFT is allowed.       !
       !------------------------------------------------------------------------------------!
-      nnsp_ble = 2 + (n_dist_types - 2) * mypfts
+      nnsp_ble = 3 + (n_dist_types - 3) * mypfts
       !------------------------------------------------------------------------------------!
 
 
@@ -152,14 +157,26 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
 
 
+      !----- Reset polygon-level harvest variables. ---------------------------------------!
+      cgrid%crop_harvest   (ipy) = 0.0
+      cgrid%logging_harvest(ipy) = 0.0
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !     Loop over polygons and sites.                                                  !
       !------------------------------------------------------------------------------------!
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-         siteloop: do isi = 1,cpoly%nsites
 
+
+         !----- Reset site-level harvest variables. ---------------------------------------!
+         cgrid%crop_harvest   (ipy) = 0.0
+         cgrid%logging_harvest(ipy) = 0.0
+         !---------------------------------------------------------------------------------!
+
+
+         siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
 
             !----- Save the Original Number (of) Site Patches, onsp... --------------------!
@@ -167,12 +184,20 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
 
 
-
             !----- Test whether the new explored patch will be plantation or logged. ------!
             is_plantation = cpoly%plantation(isi) == 1               .and.                 &
                             current_time%year     >  plantation_year
             !------------------------------------------------------------------------------!
 
+
+            !----- Reset site-level harvest variables. ------------------------------------!
+            cpoly%crop_harvest   (isi) = 0.0
+            cpoly%logging_harvest(isi) = 0.0
+            !------------------------------------------------------------------------------!
+
+            !----- Copy mindbh for harvesting to a local variable. ------------------------!
+            mindbh_harvest  (:) = cpoly%mindbh_harvest  (:,isi)
+            !------------------------------------------------------------------------------!
 
 
             !------------------------------------------------------------------------------!
@@ -183,18 +208,17 @@ module disturbance_utils
             allocate (original_area  (onsp)             )
             allocate (original_lu    (onsp)             )
             allocate (harvestable_agb(onsp)             )
-            allocate (pot_area_harv  (onsp)             )
+            allocate (lambda_harvest (onsp)             )
             allocate (pot_area_loss  (onsp,n_dist_types))
             allocate (act_area_loss  (onsp,n_dist_types))
             original_area  (:  ) = 0.0
             original_lu    (:  ) = 0.0
             harvestable_agb(:  ) = 0.0
-            pot_area_harv  (:  ) = 0.0
-            pot_area_harv  (:  ) = 0.0
-            pot_area_loss  (:,:) = 0.0
-            act_area_loss  (:,:) = 0.0
+            lambda_harvest (:  ) = 0.0
             pot_area_gain  (  :) = 0.0
             act_area_gain  (  :) = 0.0
+            pot_area_loss  (:,:) = 0.0
+            act_area_loss  (:,:) = 0.0
             !------------------------------------------------------------------------------!
 
 
@@ -211,19 +235,12 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
 
 
-            !----- Store AGB, basal area profiles in memory. ------------------------------!
-            call update_site_derived_props(cpoly, 1,isi)
-            initial_agb       (1:n_pft,1:n_dbh) = cpoly%agb       (1:n_pft,1:n_dbh,isi)
-            initial_basal_area(1:n_pft,1:n_dbh) = cpoly%basal_area(1:n_pft,1:n_dbh,isi)
-            !------------------------------------------------------------------------------!
-
-
 
             !------------------------------------------------------------------------------!
             !      Find the area to be harvested when biomass targets have been            !
             ! established.                                                                 !
             !------------------------------------------------------------------------------!
-            call find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
+            call find_lambda_harvest(cpoly,isi,onsp,harvestable_agb,lambda_harvest)
             !------------------------------------------------------------------------------!
 
 
@@ -331,123 +348,129 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
 
 
-
             !------------------------------------------------------------------------------!
-            !      Loop over new_lu, the new land use type, and find the contribution      !
-            ! of all old patches to these potential new patches.                           !
+            !      First iteration: we determine the area loss to each disturbance type,   !
+            ! and fix the rates based on whether there is any biomass-based harvesting.    !
+            ! We also ensure that the lost area is equivalent to the sum of disturbance    !
+            ! rates.                                                                       !
             !------------------------------------------------------------------------------!
-            new_lu_l1st: do new_lu = 1, n_dist_types
+            old_lu_l1st: do ipa=1,onsp
 
                !---------------------------------------------------------------------------!
-               !     Loop over the old patches, find the potential area that could go      !
-               ! to the new patch.                                                         !
+               !      Save the old land use in a shorter variable for convenience.         !
+               ! "Managed" means a completely managed patch: pasture, cropland, and        !
+               ! forest plantation.  Logged forests are not considered managed in the      !
+               ! sense that anything can potentially grow in there.                        !
                !---------------------------------------------------------------------------!
-               old_lu_l1st: do ipa=1,onsp
+               old_lu       = csite%dist_type(ipa)
+               is_managed   = old_lu == 1 .or. old_lu == 2 .or. old_lu == 8
+               is_oldgrowth = csite%age(ipa) >= min_oldgrowth(old_lu)
+               !---------------------------------------------------------------------------!
+               
+               !---------------------------------------------------------------------------!
+               !     Copy the disturbance rates to a temporary array.  We may need to      !
+               ! adjust harvesting in case disturbance is based on demand.                 !
+               !---------------------------------------------------------------------------!
+               lambda_now   (:) = cpoly%disturbance_rates (:,old_lu,isi)                   &
+                                + cpoly%disturbance_memory(:,old_lu,isi)
+               one_area_loss(:) = 0.0
+               !---------------------------------------------------------------------------!
 
-                  !----- Save the old land use in a shorter variable for convenience. -----!
-                  old_lu        = csite%dist_type(ipa)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Check whether the patch is ready  be harvested. ------------------!
-                  mature_primary    = old_lu == 3                                 .and.    &
-                                      csite%age(ipa) > mature_harvest_age
-                  mature_plantation = old_lu == 2                                 .and.    &
-                                      csite%age(ipa) > plantation_rotation
-                  mature_secondary  = old_lu >= 4 .and. old_lu <= 6               .and.    &
-                                      csite%age(ipa) > mature_harvest_age
-                  mature_patch      = mature_primary .or. mature_secondary .or.            &
-                                      mature_plantation
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !    Check whether to apply the disturbance transition from the old      !
-                  ! patch to the current land use.                                         !
-                  !                                                                        !
-                  ! * ploughed  - conversion from primary/secondary land to agriculture.   !
-                  ! * planted   - conversion to forest plantation.                         !
-                  ! * natural   - natural disturbance from primary/secondary land to       !
-                  !               primary land due to tree fall                            !
-                  ! * burnt     - conversion from primary/secondary land to secondary      !
-                  !               land due to fire                                         !
-                  ! * abandoned - conversion from agriculture to secondary land.           !
-                  ! * logged    - conversion from primary/secondary land to secondary      !
-                  !               land due to logging.                                     !
-                  !------------------------------------------------------------------------!
-                  !----- Check whether this patch can be disturbed. -----------------------!
-                  select case (new_lu)
-                  case (1)
-                     !----- Conversion to agriculture (cropland/pasture). -----------------!
-                     biomass_harvest = .false.
-                     disturbed       = old_lu /= 1
+               !---------------------------------------------------------------------------!
+               !      Update lambda in case there are biomass-based harvest demands for    !
+               ! this patch.                                                               !
+               !---------------------------------------------------------------------------!
+               if (lambda_harvest(ipa) > 0) then
+                  if (is_plantation) then
+                     !----- Forest plantation. --------------------------------------------!
+                     lambda_now(2) = lambda_harvest(ipa)
                      !---------------------------------------------------------------------!
+                  else
+                     !----- Logging.  We must also calculate damage. ----------------------!
+                     lambda_now(6) = lambda_harvest(ipa)
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+               else
+                  !------------------------------------------------------------------------!
+                  !      Check whether the patch is ready  be harvested.  Maturity is      !
+                  ! defined by age since last disturbance.                                 !
+                  !------------------------------------------------------------------------!
+                  select case (old_lu)
                   case (2)
-                     !----- Establishment or rotation of forest plantation. ---------------!
-                     biomass_harvest = pot_area_harv(ipa) > 0. .and. is_plantation
-                     disturbed       = ( mature_patch .and. is_plantation ) .or.           &
-                                       ( old_lu == 2 .and.  csite%age(ipa) > time2canopy )
-                     disturbed       = disturbed .or. biomass_harvest
+                     !----- Forest plantation. --------------------------------------------!
+                     is_mature = csite%age(ipa) > plantation_rotation
                      !---------------------------------------------------------------------!
                   case (3)
-                     !----- Tree fall. ----------------------------------------------------!
-                     biomass_harvest = .false.
-                     disturbed       = old_lu /= 1 .and. old_lu /= 2 .and.                 &
-                                       csite%age(ipa) > time2canopy
+                     !----- Tree fall, burned, logged, and secondary forests. -------------!
+                     is_mature    = csite%age(ipa) > mature_harvest_age
                      !---------------------------------------------------------------------!
-                  case (4)
-                     !----- Fire disturbance. ---------------------------------------------!
-                     biomass_harvest = .false.
-                     disturbed       = old_lu /= 1 .and. old_lu /= 2
-                     !---------------------------------------------------------------------!
-                  case (5)
-                     !----- Abandonment. --------------------------------------------------!
-                     biomass_harvest = .false.
-                     disturbed       = old_lu == 1 .or.  old_lu == 2
-                     !---------------------------------------------------------------------!
-                  case (6)
-                     !----- Logging. ------------------------------------------------------!
-                     biomass_harvest = pot_area_harv(ipa) > 0.                  .and.      &
-                                       ( .not. is_plantation )
-                     disturbed       = ( mature_primary .or. mature_secondary ) .and.      &
-                                       ( .not. is_plantation )
-                     disturbed       = disturbed .or. biomass_harvest
+                  case default
+                     !----- Pastures and croplands. ---------------------------------------!
+                     is_mature    = .false.
                      !---------------------------------------------------------------------!
                   end select
                   !------------------------------------------------------------------------!
 
 
-
                   !------------------------------------------------------------------------!
-                  !    Accumulate the lost area to the new patch.                          !
+                  !     Set disturbance rates to plantation and logging to zero in case    !
+                  ! this patch is not mature.                                              !
                   !------------------------------------------------------------------------!
-                  if  (disturbed .and. biomass_harvest) then
-                     !---------------------------------------------------------------------!
-                     !     Patch has been harvest using biomass target.  Use the area from !
-                     ! pot_area_harv.                                                      ! 
-                     !---------------------------------------------------------------------!
-                     pot_area_loss(ipa,new_lu) = pot_area_harv(ipa)
-                     !---------------------------------------------------------------------!
-                  else if (disturbed) then
-                     !---------------------------------------------------------------------!
-                     !      Disturbance rate is the total for this time plus any value     !
-                     ! that was not previously applied.                                    !
-                     !---------------------------------------------------------------------!
-                     dist_rate = cpoly%disturbance_rates (new_lu,old_lu,isi)               &
-                               + cpoly%disturbance_memory(new_lu,old_lu,isi)
-                     dist_rate = min(lnexp_max,max(0.,dist_rate))
-                     !---------------------------------------------------------------------!
-
-                     !----- Save the potentially lost area. -------------------------------!
-                     pot_area_loss(ipa,new_lu) = csite%area(ipa) * (1.0 - exp(-dist_rate))
-                     !---------------------------------------------------------------------!
+                  if (.not. is_mature) then
+                     lambda_now(2) = 0.0
+                     lambda_now(6) = 0.0
                   end if
                   !------------------------------------------------------------------------!
-               end do old_lu_l1st
+               end if
                !---------------------------------------------------------------------------!
-            end do new_lu_l1st
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Collateral damage due to logging.  This is defined as a function of   !
+               ! the tree felling disturbance, and can be thought as a way to quantify     !
+               ! the logging impact.                                                       !
+               !---------------------------------------------------------------------------!
+               if (sl_skid_rel_area == 1.0) then
+                  !----- Special case: we simply copy the felling disturbance. ------------!
+                  lambda_now(7) = lambda_now(6)
+                  !------------------------------------------------------------------------!
+               else if (lambda_now(6) > 0.0 .and. sl_skid_rel_area > 0.0) then
+                  !------------------------------------------------------------------------!
+                  !     The collateral damage is given in terms of area, so we must        !
+                  ! convert the ratio to disturbance rate.  We use the definition of       !
+                  ! disturbed area.                                                        !
+                  !------------------------------------------------------------------------!
+                  lfactor = sl_skid_rel_area * (1.0 - exp( - lambda_now(6)))
+                  if ( lfactor <= 1.0 * (1.0 - epsilon(1.0)) ) then
+                     lambda_now(7) = log( 1.0 / (1.0 - lfactor) )
+                  else
+                     lambda_now(7) = lnexp_max
+                  end if
+                  !------------------------------------------------------------------------!
+               else
+                  !----- No collateral damage, or no logging. -----------------------------!
+                  lambda_now(7) = 0.0
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !     Total area loss depends on the sum of all disturbance rates.  The     !
+               ! individual loss is then calculated to be proportional to each disturbance !
+               ! rate if the rates were the only rates.  We skip this step in case all     !
+               ! disturbance rates are zero.                                               !
+               !---------------------------------------------------------------------------!
+               if (any(lambda_now > 0.)) then
+                  lambda_sum           = min(lnexp_max,sum(lambda_now))
+                  area_loss_sum        = csite%area(ipa) * (1.0 - exp(-lambda_sum   ))
+                  one_area_loss(:)     = csite%area(ipa) * (1.0 - exp(-lambda_now(:)))
+                  pot_area_loss(ipa,:) = one_area_loss(:) / area_loss_sum
+               end if
+               !---------------------------------------------------------------------------!
+            end do old_lu_l1st
             !------------------------------------------------------------------------------!
 
 
@@ -478,27 +501,6 @@ module disturbance_utils
 
 
                !---------------------------------------------------------------------------!
-               !    In case the area would become smaller than the minimum area, the patch !
-               ! must be eliminated.  The commented section below adjusts the disturbance  !
-               ! rate to completely eliminate the patch.                                   !
-               !---------------------------------------------------------------------------!
-               ! pot_area_remain = csite%area(ipa) - sum(act_area_loss(ipa,:))
-               ! if ( sum(act_area_loss(ipa,:)) > tiny_num       .and.                     &
-               !      pot_area_remain           < min_patch_area ) then
-               !    area_fac             = csite%area(ipa) / sum(act_area_loss(ipa,:))
-               !    act_area_loss(ipa,:) = act_area_loss(ipa,:) * area_fac
-               ! 
-               !    !----------------------------------------------------------------------!
-               !    !     Set disturb_mask to false, so this patch is purged from csite    !
-               !    ! later in this sub-routine.                                           !
-               !    !----------------------------------------------------------------------!
-               !    disturb_mask (ipa)   = .false.
-               !    !----------------------------------------------------------------------!
-               ! end if
-               !---------------------------------------------------------------------------!
-
-
-               !---------------------------------------------------------------------------!
                !    In case the area would become smaller than the minimum area,  the      !
                ! patch must be eliminated. Set disturb_mask to false, so this patch is     !
                ! purged from csite later in this sub-routine.                              !
@@ -508,6 +510,7 @@ module disturbance_utils
                   disturb_mask (ipa)   = .false.
                end if
                !---------------------------------------------------------------------------!
+
             end do old_lu_l2nd
             !------------------------------------------------------------------------------!
 
@@ -567,20 +570,28 @@ module disturbance_utils
                      ! transition patch.                                                   !
                      !---------------------------------------------------------------------!
                      select case (new_lu)
-                     case (1,2)
+                     case (1,2,8)
                         !------------------------------------------------------------------!
                         !     Cropland, pasture, and forest plantation.  Only one PFT is   !
                         ! allowed in such patches.                                         !
                         !------------------------------------------------------------------!
+                        select case (new_lu)
+                        case (1,2)
+                           npa = onsp + new_lu
+                        case (8)
+                           npa = onsp + 2 + (new_lu - 3)*mypfts + 1
+                        end select
+                        !------------------------------------------------------------------!
+
 
 
                         !------------------------------------------------------------------!
                         !     Set the flag that this patch should be kept as a newly       !
                         ! created transition patch.                                        !
                         !------------------------------------------------------------------!
-                        disturb_mask    (onsp+new_lu)  = .true.
-                        csite%dist_type (onsp+new_lu)  = new_lu
-                        csite%area      (onsp+new_lu)  = act_area_gain(new_lu)
+                        disturb_mask    (npa)  = .true.
+                        csite%dist_type (npa)  = new_lu
+                        csite%area      (npa)  = act_area_gain(new_lu)
                         !------------------------------------------------------------------!
 
 
@@ -630,22 +641,13 @@ module disturbance_utils
                      !---------------------------------------------------------------------!
 
 
-                     !---------------------------------------------------------------------!
-                     !     Save the old land use in a shorter variable for convenience.    !
-                     !---------------------------------------------------------------------!
-                     old_lu        = csite%dist_type(ipa)
-                     !---------------------------------------------------------------------!
 
-
-
-                     !----- Check whether the patch is ready  be harvested. ---------------!
-                     mature_primary    = old_lu == 3                              .and.    &
-                                         csite%age(ipa) > mature_harvest_age
-                     mature_plantation = old_lu == 2                              .and.    &
-                                         csite%age(ipa) > plantation_rotation
-                     mature_secondary  = old_lu >= 4 .and. old_lu <= 6            .and.    &
-                                         csite%age(ipa) > mature_harvest_age
-                     biomass_harvest   = pot_area_harv(ipa) > 0.
+                     !---------------------------------------------------------------------!
+                     !      Save the old land use in a shorter variable for convenience.   !
+                     !---------------------------------------------------------------------!
+                     old_lu       = csite%dist_type(ipa)
+                     is_oldgrowth = csite%age(ipa) >= min_oldgrowth(old_lu)
+                     is_primary   = old_lu == 3 .or. is_oldgrowth
                      !---------------------------------------------------------------------!
 
 
@@ -656,53 +658,6 @@ module disturbance_utils
                      ! harvesting.                                                         !
                      !---------------------------------------------------------------------!
                      disturbed               = act_area_loss(ipa,new_lu) > tiny_num
-                     dist_path               = 0
-                     mindbh_harvest(1:n_pft) = huge(1.)
-                     !---------------------------------------------------------------------!
-
-
-
-
-                     !---------------------------------------------------------------------!
-                     !     Some disturbance types may contain multiple disturbance         !
-                     ! pathways.  Besides, logging may have different harvest              !
-                     ! requirements.                                                       !
-                     !---------------------------------------------------------------------!
-                     select case (new_lu)
-                     case (2)
-                        if (mature_plantation .or. biomass_harvest .or. old_lu /= 2) then
-                           !----- Time to harvest. ----------------------------------------!
-                           dist_path = 20
-                           !---------------------------------------------------------------!
-                        else
-                           !----- Losses due to tree fall. --------------------------------!
-                           dist_path = 21
-                           !---------------------------------------------------------------!
-                        end if
-                        !------------------------------------------------------------------!
-
-                     case (5)
-                        !----- Abandonment. -----------------------------------------------!
-                        select case (old_lu)
-                        case (1)
-                           !----- Abandoned cropland/pasture. -----------------------------!
-                           dist_path = 50
-                           !---------------------------------------------------------------!
-                        case (2)
-                           !----- Abandoned plantation following fire. --------------------!
-                           dist_path = 51
-                           !---------------------------------------------------------------!
-                        end select
-                        !------------------------------------------------------------------!
-                     case (6)
-                        !----- Logging. ---------------------------------------------------!
-                        if (mature_primary) then
-                           mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
-                        else if (mature_secondary) then
-                           mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
-                        end if
-                        !------------------------------------------------------------------!
-                     end select
                      !---------------------------------------------------------------------!
 
 
@@ -714,22 +669,6 @@ module disturbance_utils
                      ! patch area here.                                                    !
                      !---------------------------------------------------------------------!
                      if (disturbed) then
-                        !------------------------------------------------------------------!
-                        !     Find the actual disturbance rate associated with this        !
-                        ! transition.                                                      !
-                        !------------------------------------------------------------------!
-                        if ( act_area_loss(ipa,new_lu) < csite%area(ipa) ) then
-                           dist_rate = log( csite%area(ipa)                                &
-                                          / (csite%area(ipa)-act_area_loss(ipa,new_lu)) )
-                        else
-                           dist_rate = lnexp_max
-                        end if
-                        !----- Find the mortality associated with disturbance. ------------!
-                        call disturbance_mortality(csite,ipa,dist_rate,new_lu              &
-                                                  ,dist_path,mindbh_harvest)
-                        !------------------------------------------------------------------!
-
-
 
                         !------------------------------------------------------------------!
                         !     Add area and survivors to the new patches.  Here again we    !
@@ -744,9 +683,9 @@ module disturbance_utils
                            area_fac = act_area_loss(ipa,new_lu) / csite%area(onsp+new_lu)
                            call increment_patch_vars(csite,onsp+new_lu,ipa,area_fac)
                            call insert_survivors(csite,onsp+new_lu,ipa,new_lu,area_fac     &
-                                                ,dist_path,mindbh_harvest)
-                           call accum_dist_litt(csite,onsp+new_lu,ipa,new_lu,area_fac      &
-                                               ,dist_path,mindbh_harvest)
+                                                ,mindbh_harvest)
+                           call accum_dist_harv_litt(cpoly,isi,1,onsp+new_lu,ipa,new_lu    &
+                                                    ,area_fac,mindbh_harvest)
                            !---------------------------------------------------------------!
                         case (1)
                            !---------------------------------------------------------------!
@@ -754,16 +693,27 @@ module disturbance_utils
                            ! we are creating.                                              !
                            !---------------------------------------------------------------!
                            select case (new_lu)
-                           case (1,2)
+                           case (1,2,8)
+                              !------------------------------------------------------------!
+                              !    Find the correct index.                                 !
+                              !------------------------------------------------------------!
+                              select case (new_lu)
+                              case (1,2)
+                                 npa = onsp + new_lu 
+                              case (8)
+                                 npa = onsp + 2 + (new_lu - 3) * mypfts + 1
+                              end select
+                              !------------------------------------------------------------!
+
                               !------------------------------------------------------------!
                               !     Cropland, pasture, or forest plantation.               !
                               !------------------------------------------------------------!
-                              area_fac = act_area_loss(ipa,new_lu)/csite%area(onsp+new_lu)
-                              call increment_patch_vars(csite,onsp+new_lu,ipa,area_fac)
-                              call insert_survivors(csite,onsp+new_lu,ipa,new_lu,area_fac  &
-                                                   ,dist_path,mindbh_harvest)
-                              call accum_dist_litt(csite,onsp+new_lu,ipa,new_lu,area_fac   &
-                                                  ,dist_path,mindbh_harvest)
+                              area_fac = act_area_loss(ipa,new_lu)/csite%area(npa)
+                              call increment_patch_vars(csite,npa,ipa,area_fac)
+                              call insert_survivors(csite,npa,ipa,new_lu,area_fac          &
+                                                   ,mindbh_harvest)
+                              call accum_dist_harv_litt(cpoly,isi,1,npa,ipa,new_lu         &
+                                                       ,area_fac,mindbh_harvest)
                               !------------------------------------------------------------!
                            case default
                               !------------------------------------------------------------!
@@ -812,9 +762,9 @@ module disturbance_utils
                                  if (same_pft) then
                                     call increment_patch_vars(csite,npa,ipa,area_fac)
                                     call insert_survivors(csite,npa,ipa,new_lu,area_fac    &
-                                                         ,dist_path,mindbh_harvest)
-                                    call accum_dist_litt(csite,npa,ipa,new_lu,area_fac     &
-                                                        ,dist_path,mindbh_harvest)
+                                                         ,mindbh_harvest)
+                                    call accum_dist_harv_litt(cpoly,isi,1,npa,ipa,new_lu   &
+                                                             ,area_fac,mindbh_harvest)
                                  end if
                                  !---------------------------------------------------------!
                               end do
@@ -851,8 +801,8 @@ module disturbance_utils
                   select case (new_lu)
                   case (1)
                      call plant_patch(csite,onsp+new_lu,nzg                                &
-                                     ,cpoly%agri_stocking_pft(isi)                         &
-                                     ,cpoly%agri_stocking_density(isi)                     &
+                                     ,cpoly%pasture_stocking_pft(isi)                      &
+                                     ,cpoly%pasture_stocking_density(isi)                  &
                                      ,cpoly%ntext_soil(:,isi)                              &
                                      ,cpoly%green_leaf_factor(:,isi), 1.0                  &
                                      ,cpoly%lsl(isi))
@@ -862,6 +812,13 @@ module disturbance_utils
                                      ,cpoly%plantation_stocking_density(isi)               &
                                      ,cpoly%ntext_soil(:,isi)                              &
                                      ,cpoly%green_leaf_factor(:,isi), 2.0                  &
+                                     ,cpoly%lsl(isi))
+                  case (8)
+                     call plant_patch(csite,onsp+new_lu,nzg                                &
+                                     ,cpoly%agri_stocking_pft(isi)                         &
+                                     ,cpoly%agri_stocking_density(isi)                     &
+                                     ,cpoly%ntext_soil(:,isi)                              &
+                                     ,cpoly%green_leaf_factor(:,isi), 1.0                  &
                                      ,cpoly%lsl(isi))
                   end select
                   !------------------------------------------------------------------------!
@@ -885,15 +842,6 @@ module disturbance_utils
 
 
 
-                  !----- Store AGB, basal area profiles in memory. ------------------------!
-                  initial_agb(1:n_pft,1:n_dbh) = cpoly%agb(1:n_pft, 1:n_dbh,isi)
-                  initial_basal_area(1:n_pft,1:n_dbh) =                                    &
-                                                   cpoly%basal_area(1:n_pft,1:n_dbh,isi)
-                  !------------------------------------------------------------------------!
-
-
-
-
                   !------------------------------------------------------------------------!
                   !     Update the derived properties including veg_height, and patch-     !
                   ! -level LAI, WAI.                                                       !
@@ -906,27 +854,6 @@ module disturbance_utils
                   call update_budget(csite,cpoly%lsl(isi),onsp+new_lu,onsp+new_lu)
                   !----- Update AGB, basal area. ------------------------------------------!
                   call update_site_derived_props(cpoly,1,isi)
-                  !----- Update either cut or mortality. ----------------------------------!
-                  select case (new_lu)
-                  case (1,2,6)
-                     cpoly%agb_cut(1:n_pft,1:n_dbh,isi) =                                  &
-                            cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)                            &
-                          + initial_agb(1:n_pft, 1:n_dbh)                                  &
-                          - cpoly%agb(1:n_pft, 1:n_dbh,isi)
-                     cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi) =                          &
-                            cpoly%basal_area_cut(1:n_pft, 1:n_dbh,isi)                     &
-                          + initial_basal_area(1:n_pft, 1:n_dbh)                           &
-                          - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
-                  case default
-                     cpoly%agb_mort(1:n_pft,1:n_dbh,isi) =                                 &
-                            cpoly%agb_mort(1:n_pft,1:n_dbh,isi)                            &
-                          + initial_agb(1:n_pft,1:n_dbh)                                   &
-                          - cpoly%agb(1:n_pft,1:n_dbh,isi)
-                     cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi) =                         &
-                            cpoly%basal_area_mort(1:n_pft, 1:n_dbh,isi)                    &
-                          + initial_basal_area(1:n_pft, 1:n_dbh)                           &
-                          - cpoly%basal_area(1:n_pft, 1:n_dbh,isi)
-                  end select
                   !------------------------------------------------------------------------!
 
 
@@ -979,9 +906,11 @@ module disturbance_utils
 
 
             !------------------------------------------------------------------------------!
-            !      Deduct the distubed area from this patch.                               !
+            !      Update mortality rate due to disturbance, and deduct the distubed area  !
+            ! from this patch.                                                             !
             !------------------------------------------------------------------------------!
             old_lu_l4th: do ipa=1,onsp
+               call disturbance_mortality(csite,ipa,act_area_loss(ipa,:),mindbh_harvest)
                csite%area(ipa) = csite%area(ipa) - sum(act_area_loss(ipa,:))
             end do old_lu_l4th
             !------------------------------------------------------------------------------!
@@ -1006,6 +935,9 @@ module disturbance_utils
                   case (2)
                      apa = onsp + 2
                      zpa = onsp + 2
+                  case (8)
+                     apa = onsp + 2 + ( new_lu - 3 ) * mypfts + 1
+                     zpa = onsp + 2 + ( new_lu - 3 ) * mypfts + 1
                   case default
                      apa = onsp + 2 + ( new_lu - 3 ) * mypfts + 1
                      zpa = onsp + 2 + ( new_lu - 3 ) * mypfts + mypfts
@@ -1202,13 +1134,21 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
 
 
+            !------ Update polygon-level crop and logging harvest. ------------------------!
+            cgrid%crop_harvest   (ipy) = cgrid%crop_harvest   (ipy)                        &
+                                       + cpoly%crop_harvest   (isi) * cpoly%area(isi)
+            cgrid%logging_harvest(ipy) = cgrid%logging_harvest(ipy)                        &
+                                       + cpoly%logging_harvest(isi) * cpoly%area(isi)
+            !------------------------------------------------------------------------------!
+
+
 
             !----- Free memory before re-allocating for the next site... ------------------!
             deallocate(disturb_mask   )
             deallocate(original_area  )
             deallocate(original_lu    )
             deallocate(harvestable_agb)
-            deallocate(pot_area_harv  )
+            deallocate(lambda_harvest )
             deallocate(pot_area_loss  )
             deallocate(act_area_loss  )
             !------------------------------------------------------------------------------!
@@ -1248,10 +1188,13 @@ module disturbance_utils
                               , include_fire              & ! intent(in)
                               , plantation_year           & ! intent(in)
                               , plantation_rotation       & ! intent(in)
-                              , mature_harvest_age        ! ! intent(in)
+                              , mature_harvest_age        & ! intent(in)
+                              , min_oldgrowth             & ! intent(in)
+                              , sl_biomass_harvest        ! ! intent(in)
       use ed_max_dims  , only : n_pft                     & ! intent(in)
                               , n_dist_types              ! ! intent(in)
       use ed_misc_coms , only : current_time              ! ! intent(in)
+      use consts_coms  , only : lnexp_max                 ! ! intent(in)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1270,13 +1213,16 @@ module disturbance_utils
       integer                                    :: ilu
       integer                                    :: iyear
       integer                                    :: useyear
-      real                                       :: weight
-      real(kind=4)     , dimension(n_dist_types) :: sumweight
-      real(kind=4)     , dimension(n_dist_types) :: pharvest
+      real                                       :: bharvest
+      real                                       :: pot_harvest_target
       real                                       :: fire_disturbance_rate
       logical                                    :: is_plantation
-      !----- Local constants. -------------------------------------------------------------!
-      real             , parameter               :: max_pharvest = 1.-2.*epsilon(1.)
+      logical                                    :: is_rotation
+      logical                                    :: is_mature
+      logical                                    :: is_oldgrowth
+      logical                                    :: harv_secondary
+      logical                                    :: harv_primary
+      logical                                    :: find_target
       !------------------------------------------------------------------------------------!
 
 
@@ -1302,12 +1248,14 @@ module disturbance_utils
             ! may be positive.  The first index is the new land use type, and the second   !
             ! index is the old land use type.  Both use the following convention:          !
             !                                                                              !
-            !  1.  Agricultural lands (cropland / pasture)                                 !
+            !  1.  Pasture                                                                 !
             !  2.  Forest plantation                                                       !
             !  3.  Tree fall                                                               !
             !  4.  Burnt                                                                   !
             !  5.  Abandoned                                                               !
-            !  6.  Logged                                                                  !
+            !  6.  Logged (felling)                                                        !
+            !  7.  Logged (skid trail / road)                                              !
+            !  8.  Agricultural lands (cropland / pasture)                                 !
             !------------------------------------------------------------------------------!
             cpoly%disturbance_rates(:,:,isi) = 0.0
             !------------------------------------------------------------------------------!
@@ -1329,11 +1277,11 @@ module disturbance_utils
 
 
             !------------------------------------------------------------------------------!
-            !      Tree fall and fires also occur in plantations.  Treefall allows the     !
-            ! plantation to continue, but fire leads to abandonment.                       !
+            !      Tree fall and fires also occur in plantations.  Treefall is assumed to  !
+            ! lead to abandonment.  Not ideal, but this is the only way out of a forest    !
+            ! plantation right now.                                                        !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(2,2,isi) = treefall_disturbance_rate
-            cpoly%disturbance_rates(5,2,isi) = fire_disturbance_rate
+            cpoly%disturbance_rates(5,2,isi) = treefall_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1346,6 +1294,7 @@ module disturbance_utils
             cpoly%disturbance_rates(3,4,isi) = treefall_disturbance_rate
             cpoly%disturbance_rates(3,5,isi) = treefall_disturbance_rate
             cpoly%disturbance_rates(3,6,isi) = treefall_disturbance_rate
+            cpoly%disturbance_rates(3,7,isi) = treefall_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1354,19 +1303,12 @@ module disturbance_utils
             !      Disturbance that creates new "burnt patches".  Only non-cultivated      !
             ! lands may suffer this disturbance.                                           !
             !------------------------------------------------------------------------------!
+            cpoly%disturbance_rates(4,2,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,3,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,4,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,5,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,6,isi) = fire_disturbance_rate
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !      Disturbance that creates new "burnt patches".  Only non-cultivated      !
-            ! lands may suffer this disturbance.                                           !
-            !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(4,3:6,isi) = fire_disturbance_rate
+            cpoly%disturbance_rates(4,7,isi) = fire_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1396,45 +1338,92 @@ module disturbance_utils
 
 
             !------------------------------------------------------------------------------!
-            !      For the time being conversion between pasture and croplands are not     !
-            ! included.                                                                    !
+            !      Transition rates are based on the input file, formatted as the original !
+            ! data set from George Hurtt et al. (2006).  This will be eventually replaced  !
+            ! by the most current version.                                                 !
+            !                                                                              !
+            ! Hurtt, G. et al., 2006: The underpinnings of land-use history: three         !
+            !    centuries of global gridded land-use transitions, wood-harvest activity,  !
+            !    and resulting secondary forests.  Glob. Change Biol., 12(7), 1208-1229,   !
+            !    doi:10.1111/j.1365-2486.2006.01150.x                                      !
+            !                                                                              !
+            ! The elements of vector clutime%landuse are:                                  !
+            ! ..... Disturbance rates .................................................... !
+            !   1 - Cropland to pasture                                            [1/yr]  !
+            !   2 - Pasture to cropland                                            [1/yr]  !
+            !   3 - Pasture to primary forest (in ED this goes to abandonment)     [1/yr]  !
+            !   4 - Primary forest to pasture                                      [1/yr]  !
+            !   5 - Primary forest to cropland                                     [1/yr]  !
+            !   6 - Cropland to primary forest (in ED this goes to abandonment)    [1/yr]  !
+            !   7 - Secondary forest to cropland                                   [1/yr]  !
+            !   8 - Cropland to secondary forest (in ED this goes to abandonment)  [1/yr]  !
+            !   9 - Secondary forest to pasture                                    [1/yr]  !
+            !  10 - Pasture to secondary forest (in ED this goes to abandonment)   [1/yr]  !
+            !  11 - Primary forest to secondary forest (assumed logging in ED)     [1/yr]  !
+            ! ..... Harvested area ....................................................... !
+            !  12 - Wood harvest on mature secondary forest land          [          kgC]  !
+            !  13 - Wood harvest on mature secondary forest land          [grid fraction]  !
+            !  14 - Wood harvest on primary forest land                   [          kgC]  !
+            !  15 - Wood harvest on primary forest land                   [grid fraction]  !
+            !  16 - Wood harvest on young secondary forest land           [          kgC]  !
+            !  17 - Wood harvest on young secondary forest land           [grid fraction]  !
+            !  18 - Wood harvest on primary non-forest land               [          kgC]  !
+            !  19 - Wood harvest on primary non-forest land               [grid fraction]  !
+            ! ............................................................................ !
+            !                                                                              !
+            !   The definition of primary and secondary forests can be quite confusing.    !
+            ! For ED purposes, we assume that patches previously disturbed by treefall     !
+            ! are primary, whereas patches previously generated by fire, abandonment, and  !
+            ! logging are considered secondary.  Fire is the one that may be the hardest   !
+            ! to reconcile: in tropical forests fires are almost exclusively               !
+            ! anthropogenic, but they can be mostly natural in boreal forests, for         !
+            ! example.                                                                     !
             !------------------------------------------------------------------------------!
-            ! cpoly%disturbance_rates(1,1,isi) = clutime%landuse(1) + clutime%landuse(2)
+
+
+            !------------------------------------------------------------------------------!
+            !      Apply disturbance rates that generate pasture (see table above).        !
+            !------------------------------------------------------------------------------!
+            cpoly%disturbance_rates(1,2,isi) = clutime%landuse(9)
+            cpoly%disturbance_rates(1,3,isi) = clutime%landuse(4)
+            cpoly%disturbance_rates(1,4,isi) = clutime%landuse(9)
+            cpoly%disturbance_rates(1,5,isi) = clutime%landuse(9)
+            cpoly%disturbance_rates(1,6,isi) = clutime%landuse(9)
+            cpoly%disturbance_rates(1,7,isi) = clutime%landuse(9)
+            cpoly%disturbance_rates(1,8,isi) = clutime%landuse(1)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      Apply disturbance rates that generate cropland (see table above).        !
+            !------------------------------------------------------------------------------!
+            cpoly%disturbance_rates(8,1,isi) = clutime%landuse(2)
+            cpoly%disturbance_rates(8,2,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(8,3,isi) = clutime%landuse(5)
+            cpoly%disturbance_rates(8,4,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(8,5,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(8,6,isi) = clutime%landuse(7)
+            cpoly%disturbance_rates(8,7,isi) = clutime%landuse(7)
             !------------------------------------------------------------------------------!
 
 
 
             !------------------------------------------------------------------------------!
-            !      Secondary forest (plantation, logged, burnt, abandoned) to agriculture. !
-            !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(1,2,isi) = clutime%landuse(7) + clutime%landuse(9)
-            cpoly%disturbance_rates(1,4,isi) = clutime%landuse(7) + clutime%landuse(9)
-            cpoly%disturbance_rates(1,5,isi) = clutime%landuse(7) + clutime%landuse(9)
-            cpoly%disturbance_rates(1,6,isi) = clutime%landuse(7) + clutime%landuse(9)
-            !------------------------------------------------------------------------------!
-
-
-
-            !----- Primary forest to agriculture (3 => 1). --------------------------------!
-            cpoly%disturbance_rates(1,3,isi) = clutime%landuse(4) + clutime%landuse(5)
-            !------------------------------------------------------------------------------!
-
-
-
-            !------------------------------------------------------------------------------!
-            !     Agriculture to abandoned (1 => 5).   Here it depends on whether          !
-            ! to establish plantations or abandoned lands.                                 !
+            !     Secondary forests.   Here the transition depends on whether to establish !
+            ! plantations or to assume secondary forests = abandoned lands.                !
             !------------------------------------------------------------------------------!
             select case (cpoly%plantation(isi))
             case (0)
                !----- Abandoned lands only. -----------------------------------------------!
-               cpoly%disturbance_rates(5,1,isi) = clutime%landuse(8) + clutime%landuse(10) &
-                                                + clutime%landuse(3) + clutime%landuse(6)
+               cpoly%disturbance_rates(5,1,isi) = clutime%landuse( 3) + clutime%landuse(10)
+               cpoly%disturbance_rates(5,8,isi) = clutime%landuse( 6) + clutime%landuse( 8)
                !---------------------------------------------------------------------------!
             case (1)
                !----- "Secondary" sends area to plantation, "Primary" to abandoned. -------!
-               cpoly%disturbance_rates(2,1,isi) = clutime%landuse(8) + clutime%landuse(10)
-               cpoly%disturbance_rates(5,1,isi) = clutime%landuse(3) + clutime%landuse(6)
+               cpoly%disturbance_rates(2,1,isi) = clutime%landuse(10)
+               cpoly%disturbance_rates(2,8,isi) = clutime%landuse( 8)
+               cpoly%disturbance_rates(5,1,isi) = clutime%landuse( 3)
+               cpoly%disturbance_rates(5,8,isi) = clutime%landuse( 6)
                !---------------------------------------------------------------------------!
             end select
             !------------------------------------------------------------------------------!
@@ -1443,143 +1432,161 @@ module disturbance_utils
 
             !------------------------------------------------------------------------------!
             !     Harvesting (either plantation -> plantation or logging) when a biomass   !
-            ! target does not exist (e.g. SimAmazonia)).  Convert the    !
-            ! harvest probability of being cut given that the DBH exceeds the minimum DBH. !
-            ! This is done only when anthropogenic disturbance is on and we are not seek-  !
-            ! ing the biomass target, otherwise we set it to zero.                         !
+            ! target does not exist (e.g. SimAmazonia)).  Convert the harvest probability  !
+            ! of being cut given that the DBH exceeds the minimum DBH.  This is done only  !
+            ! when anthropogenic disturbance is on and we are not seeking the biomass      !
+            ! target, otherwise we set it to zero.                                         !
             !------------------------------------------------------------------------------!
-            if (ianth_disturb == 1) then
-               if (clutime%landuse(12) <= 0) then
-
-                  !----- Loop over all patches, and find the harvest probability. ---------!
-                  sumweight(:) = 0.
-                  pharvest (:) = 0.
-                  patchloop: do ipa=1,csite%npatches
-                     cpatch => csite%patch(ipa)
-
-                     !---------------------------------------------------------------------!
-                     !     Check the land use of this patch, based on the definition we    !
-                     ! define whether it is mature or not.                                 !
-                     !---------------------------------------------------------------------!
-                     ilu = csite%dist_type(ipa)
-                     select case (ilu)
-                     case (2)
-                        !------------------------------------------------------------------!
-                        !      Plantation.  Check whether the plantation is mature.  If    !
-                        ! so, all trees may be harvested.                                  !
-                        !------------------------------------------------------------------!
-                        if (csite%age(ipa) > plantation_rotation) then
-                           cohortloop_02: do ico=1,cpatch%ncohorts
-                              ipft      = cpatch%pft(ico)
-                              weight    = cpatch%nplant(ico) * cpatch%basarea(ico)         &
-                                        * csite%area(ipa)
-                              pharvest (ilu) = pharvest(ilu)                               &
-                                             + cpoly%probharv_secondary(ipft,isi) * weight
-                              sumweight(ilu) = sumweight(ilu) + weight
-                           end do cohortloop_02
-                           !---------------------------------------------------------------!
-                        end if
-                        !------------------------------------------------------------------!
-                     case (6)
-                        !------------------------------------------------------------------!
-                        !      Logging.  Check whether the managed forest is mature.  If   !
-                        ! so, all trees with sufficiently large DBH may be harvested.      !
-                        !------------------------------------------------------------------!
-                        if (csite%age(ipa) > mature_harvest_age) then
-                           cohortloop_06: do ico=1,cpatch%ncohorts
-                              ipft = cpatch%pft(ico)
-                              if (cpatch%dbh(ico) >= cpoly%mindbh_secondary(ipft,isi)) then
-                                 weight         = cpatch%nplant(ico) * cpatch%basarea(ico) &
-                                                * csite%area(ipa)
-                                 pharvest (ilu) = pharvest(ilu)                               &
-                                                + cpoly%probharv_secondary(ipft,isi)       &
-                                                * weight
-                                 sumweight(ilu) = sumweight(ilu) + weight
-                              end if  
-                           end do cohortloop_06
-                           !---------------------------------------------------------------!
-                        end if
-                        !------------------------------------------------------------------!
-                     end select
-                     !---------------------------------------------------------------------!
-                  end do patchloop
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Normalise the probability, unless it's zero. ---------------------!
-                  where (sumweight(:) > 0.)
-                     pharvest(:) = min(max_pharvest,pharvest(:)/sumweight(:))
-                  elsewhere
-                     pharvest(:) = 0.
-                  end where
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Convert the probability into disturbance rate. -------------------!
-                  cpoly%disturbance_rates(6,6,isi) = - log(1.0 - pharvest(6))
-                  cpoly%disturbance_rates(2,2,isi) = max( treefall_disturbance_rate        &
-                                                        , - log(1.0 - pharvest(2)) )
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Logging based on tree size, set the biomass target to zero.        !
-                  !------------------------------------------------------------------------!
-                  cpoly%secondary_harvest_target(isi) = 0.0
-                  !------------------------------------------------------------------------!
-
+            select case (ianth_disturb)
+            case (0)
+               !----- Anthropogenic disturbance is off. No logging should occur. ----------!
+               find_target                         = .false.
+               cpoly%primary_harvest_target  (isi) = 0.
+               cpoly%secondary_harvest_target(isi) = 0.
+               !---------------------------------------------------------------------------!
+            case default
+               !------ Read anthropogenic disturbance from external data set. -------------!
+               if (clutime%landuse(12) <= 0 .or. clutime%landuse(14) <= 0) then
+                  find_target                         = .true.
+                  cpoly%primary_harvest_target  (isi) = 0.
+                  cpoly%secondary_harvest_target(isi) = 0.
                else
-
-                  !------------------------------------------------------------------------!
-                  !     Logging based on target biomass, leave the disturbance rates as    !
-                  ! zero and set the target.                                               !
-                  !------------------------------------------------------------------------!
-                  cpoly%secondary_harvest_target    (isi) = clutime%landuse(12)            &
-                                                          + clutime%landuse(16)
-                  !------------------------------------------------------------------------!
-               end if                  
-               !---------------------------------------------------------------------------!
-
-
-
-               !---------------------------------------------------------------------------!
-               !     "Primary" forest to secondary forest.  Check whether to use biomass   !
-               ! target or logging based on transition matrix.                             !
-               !---------------------------------------------------------------------------!
-               if (is_plantation) then
-                  !------------------------------------------------------------------------!
-                  !     Non-cultivated lands will be replaced by forest plantation.        !
-                  !------------------------------------------------------------------------!
-                  cpoly%disturbance_rates     (2,3,isi) = clutime%landuse(11)
-                  cpoly%disturbance_rates     (2,4,isi) = clutime%landuse(11)
-                  cpoly%disturbance_rates     (2,5,isi) = clutime%landuse(11)
-                  cpoly%disturbance_rates     (2,6,isi) = clutime%landuse(11)
-                  cpoly%primary_harvest_target    (isi) = 0.0
-                  !------------------------------------------------------------------------!
-               elseif (clutime%landuse(14) <= 0.) then
-                  !------------------------------------------------------------------------!
-                  !     Logging based on tree size, set the distrubance rates for all non- !
-                  ! logged, non-cultivated patches and set the biomass target to zero.     !
-                  !------------------------------------------------------------------------!
-                  cpoly%disturbance_rates     (6,3,isi) = clutime%landuse(11)
-                  cpoly%disturbance_rates     (6,4,isi) = clutime%landuse(11)
-                  cpoly%disturbance_rates     (6,5,isi) = clutime%landuse(11)
-                  cpoly%primary_harvest_target    (isi) = 0.0
-                  !------------------------------------------------------------------------!
-               else
-                  !------------------------------------------------------------------------!
-                  !     Logging based on target biomass, leave the disturbance rates as    !
-                  ! zero and set the target.                                               !
-                  !------------------------------------------------------------------------!
-                  cpoly%primary_harvest_target    (isi) = clutime%landuse(14)              &
-                                                        + clutime%landuse(18)
-                  !------------------------------------------------------------------------!
+                  find_target                         = .false.
+                  cpoly%primary_harvest_target  (isi) = clutime%landuse(14)                &
+                                                      + clutime%landuse(18)
+                  cpoly%secondary_harvest_target(isi) = clutime%landuse(12)                &
+                                                      + clutime%landuse(16)
                end if
+               !---------------------------------------------------------------------------!
+            end select
             !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Find target biomass as all the biomass that can be harvested.            !
+            !------------------------------------------------------------------------------!
+            if (find_target) then
+               pharv_loop: do ipa=1,csite%npatches
+                  cpatch => csite%patch(ipa)
+
+
+                  !----- Check age and type of forest. ------------------------------------!
+                  ilu          = csite%dist_type(ipa)
+                  is_rotation  = is_plantation .and. csite%age(ipa) >= plantation_rotation
+                  is_mature    = csite%age(ipa) >= mature_harvest_age
+                  is_oldgrowth = csite%age(ipa) >= min_oldgrowth (ilu)
+                  !------------------------------------------------------------------------!
+
+
+                  !----- Reset harvest contribution from patch. ---------------------------!
+                  bharvest     = 0.
+                  !------------------------------------------------------------------------!
+
+
+
+                  !----- Select the minimum DBH depending on the forest category. ---------!
+                  select case(ilu)
+                  case (1,8)
+                     !----- Pasture and agriculture.  No timber harvesting here. ----------!
+                     harv_primary      = .false.
+                     harv_secondary    = .false.
+                     !---------------------------------------------------------------------!
+                  case (2)
+                     !----- Forest plantation.  Usually all biomass is cleared. -----------!
+                     harv_primary      = .false.
+                     harv_secondary    = is_rotation
+                     !---------------------------------------------------------------------!
+                  case (3)
+                     !----- Treefall.  Assume primary vegetation. -------------------------!
+                     harv_primary      = is_mature
+                     harv_secondary    = .false.
+                     !---------------------------------------------------------------------!
+                  case (4:7)
+                     !---------------------------------------------------------------------!
+                     !      Other disturbances.  Assume "primary" in case this is old-     !
+                     ! growth, otherwise assume it secondary vegetation.                   !
+                     !---------------------------------------------------------------------!
+                     harv_primary   = is_mature .and. is_oldgrowth
+                     harv_secondary = is_mature .and. (.not. is_oldgrowth)
+                     !---------------------------------------------------------------------!
+                  end select
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Accumulate harvestable agb.                                        !
+                  !------------------------------------------------------------------------!
+                  if (harv_primary .or. harv_secondary) then
+                     do ico=1,cpatch%ncohorts
+                        ipft = cpatch%pft(ico)
+                        if (cpatch%dbh(ico) >= cpoly%mindbh_harvest(ipft,isi)) then
+                           bharvest  = bharvest + cpoly%prob_harvest(ipft,isi)             &
+                                                * cpatch%nplant(ico) * cpatch%btimber(ico)
+                        end if  
+                     end do
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Accumulate site-level harvest target.                              !
+                  !------------------------------------------------------------------------!
+                  if (harv_primary) then
+                     cpoly%primary_harvest_target(isi) =                                   &
+                        cpoly%primary_harvest_target(isi) + bharvest * csite%area(ipa)
+                  else if (harv_secondary) then
+                     cpoly%secondary_harvest_target(isi) =                                 &
+                        cpoly%secondary_harvest_target(isi) + bharvest * csite%area(ipa)
+                  end if
+                  !------------------------------------------------------------------------!
+               end do pharv_loop
+               !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Check whether to scale targets.                                          !
+            !------------------------------------------------------------------------------!
+            if (ianth_disturb == 2 .and. sl_biomass_harvest > 0.) then
+               pot_harvest_target = cpoly%primary_harvest_target  (isi)                    &
+                                  + cpoly%secondary_harvest_target(isi)
+               if (pot_harvest_target > 0) then
+                  cpoly%primary_harvest_target  (isi) =                                    &
+                        cpoly%primary_harvest_target  (isi) * sl_biomass_harvest           &
+                                                            / pot_harvest_target
+                  cpoly%secondary_harvest_target(isi) =                                    &
+                        cpoly%secondary_harvest_target(isi) * sl_biomass_harvest           &
+                                                            / pot_harvest_target
+               end if
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     In case anthropogenic disturbance is turned on, make sure that croplands !
+            ! that remain croplands are completely ploughed.  This may need to change for  !
+            ! a perennial crop.                                                            !
+            !------------------------------------------------------------------------------!
+            select case (ianth_disturb)
+            case (0)
+               !----- Anthropogenic disturbance is off. No logging should occur. ----------!
+               continue
+               !---------------------------------------------------------------------------!
+            case default
+               !---------------------------------------------------------------------------!
+               !   Anthropogenic disturbance is on.  All area that is not abandoned or     !
+               ! converted to pasture should be cleared again for cropland.                !
+               !---------------------------------------------------------------------------!
+               cpoly%disturbance_rates(8,8,isi) = lnexp_max                                &
+                                                - sum(cpoly%disturbance_rates(1:7,8,isi))
+               !---------------------------------------------------------------------------!
+            end select
+            !------------------------------------------------------------------------------!
+
 
          end do siteloop
          !---------------------------------------------------------------------------------!
@@ -2836,7 +2843,7 @@ module disturbance_utils
    !     This subroutine will populate the disturbed patch with the cohorts that were      !
    ! disturbed but did not go extinct.                                                     !
    !---------------------------------------------------------------------------------------!
-   subroutine insert_survivors(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest)
+   subroutine insert_survivors(csite,np,cp,new_lu,area_fac,mindbh_harvest)
 
       use ed_state_vars, only : sitetype     & ! structure
                               , patchtype    ! ! structure
@@ -2850,7 +2857,6 @@ module disturbance_utils
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target      :: csite
       integer                         , intent(in)  :: new_lu
-      integer                         , intent(in)  :: dist_path
       integer                         , intent(in)  :: np
       integer                         , intent(in)  :: cp
       real          , dimension(n_pft), intent(in)  :: mindbh_harvest
@@ -2860,11 +2866,11 @@ module disturbance_utils
       type(patchtype)                 , pointer     :: npatch
       type(patchtype)                 , pointer     :: tpatch
       logical        , dimension(:)   , allocatable :: mask
+      real           , dimension(:)   , allocatable :: survival_fac
       integer                                       :: ico
       integer                                       :: nco
       integer                                       :: addco
       real                                          :: n_survivors
-      real                                          :: survival_fac
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -2879,13 +2885,15 @@ module disturbance_utils
 
       !----- Mask: flag to decide whether the cohort survived or not. ---------------------!
       if (cpatch%ncohorts > 0) then
-         allocate(mask(cpatch%ncohorts))
-         mask(:) = .false.
+         allocate(mask        (cpatch%ncohorts))
+         allocate(survival_fac(cpatch%ncohorts))
+         mask(:)         = .false.
+         survival_fac(:) = 0.
     
          survivalloop: do ico = 1,cpatch%ncohorts
-            survival_fac = survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)        &
-                         * area_fac
-            n_survivors  = cpatch%nplant(ico) * survival_fac
+            survival_fac(ico) = survivorship(new_lu,csite%dist_type(cp),mindbh_harvest     &
+                                            ,cpatch,ico) * area_fac
+            n_survivors       = cpatch%nplant(ico) * survival_fac(ico)
 
             !----- If something survived, make a new cohort. ------------------------------!
             mask(ico) = n_survivors > 0.0
@@ -2918,11 +2926,6 @@ module disturbance_utils
 
 
       cohortloop: do ico = 1,cpatch%ncohorts
-         
-         survival_fac = survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)           &
-                      * area_fac
-         n_survivors  = cpatch%nplant(ico) * survival_fac
-
          !----- If mask is true, at least some of this cohort survived. -------------------!
          if (mask(ico)) then
             nco = nco + 1
@@ -2931,7 +2934,7 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             !    Scale the total area based on the new population density and new area.    !
             !------------------------------------------------------------------------------!
-            call update_cohort_extensive_props(tpatch,nco,nco,survival_fac)
+            call update_cohort_extensive_props(tpatch,nco,nco,survival_fac(ico))
             !------------------------------------------------------------------------------!
 
             !----- Make mortality rate due to disturbance zero to avoid double counting. --!
@@ -2949,7 +2952,8 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
 
       deallocate(tpatch)
-      if (allocated(mask)) deallocate(mask)
+      if (allocated(mask        )) deallocate(mask        )
+      if (allocated(survival_fac)) deallocate(survival_fac)
 
 
       return
@@ -2964,97 +2968,229 @@ module disturbance_utils
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This subroutine updates the litter pools after a disturbance takes place.         !
+   !     This subroutine updates the harvest and litter pools after a disturbance takes    !
+   ! place.                                                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine accum_dist_litt(csite,np,cp,new_lu,area_fac,dist_path,mindbh_harvest)
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    & ! structure
-                              , polygontype  ! ! structure
-      use decomp_coms  , only : f_labile     ! ! intent(in)
-      use ed_max_dims  , only : n_pft        ! ! intent(in)
-      use pft_coms     , only : c2n_storage  & ! intent(in)
-                              , c2n_leaf     & ! intent(in)
-                              , c2n_recruit  & ! intent(in)
-                              , c2n_stem     & ! intent(in)
-                              , l2n_stem     ! ! intent(in)
-      use pft_coms     , only : agf_bs       ! ! intent(in)
-      use grid_coms    , only : nzg          ! ! intent(in)
-      use mortality    , only : survivorship ! ! function
+   subroutine accum_dist_harv_litt(cpoly,isi,census_flag,np,cp,new_lu,area_fac             &
+                                  ,mindbh_harvest)
+      use ed_state_vars, only : sitetype            & ! structure
+                              , patchtype           & ! structure
+                              , polygontype         ! ! structure
+      use decomp_coms  , only : f_labile            ! ! intent(in)
+      use disturb_coms , only : cl_fleaf_harvest    & ! intent(in)
+                              , cl_fstorage_harvest ! ! intent(in)
+      use ed_max_dims  , only : n_pft               ! ! intent(in)
+      use pft_coms     , only : c2n_storage         & ! intent(in)
+                              , c2n_leaf            & ! intent(in)
+                              , c2n_recruit         & ! intent(in)
+                              , c2n_stem            & ! intent(in)
+                              , l2n_stem            & ! intent(in)
+                              , agf_bs              ! ! intent(in)
+      use grid_coms    , only : nzg                 ! ! intent(in)
+      use mortality    , only : survivorship        ! ! function
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype)                   , target     :: csite
-      integer                          , intent(in) :: np
-      integer                          , intent(in) :: cp
-      real           , dimension(n_pft), intent(in) :: mindbh_harvest
-      integer                          , intent(in) :: new_lu
-      real                             , intent(in) :: area_fac
-      integer                          , intent(in) :: dist_path
+      type(polygontype)                  , target     :: cpoly
+      integer                            , intent(in) :: isi
+      integer                            , intent(in) :: census_flag
+      integer                            , intent(in) :: np
+      integer                            , intent(in) :: cp
+      real             , dimension(n_pft), intent(in) :: mindbh_harvest
+      integer                            , intent(in) :: new_lu
+      real                               , intent(in) :: area_fac
       !----- Local variables. -------------------------------------------------------------!
-      type(patchtype)                  , pointer    :: cpatch
-      type(patchtype)                  , pointer    :: npatch
-      integer                                       :: ico
-      integer                                       :: ipft
-      real                                          :: loss_fraction
-      real                                          :: fast_litter
-      real                                          :: struct_litter
-      real                                          :: struct_lignin
-      real                                          :: fast_litter_n
-      real                                          :: struct_cohort
-      real                                          :: survival_fac
+      type(sitetype)                     , pointer    :: csite
+      type(patchtype)                    , pointer    :: cpatch
+      type(patchtype)                    , pointer    :: npatch
+      integer                                         :: ico
+      integer                                         :: ipft
+      integer                                         :: bdbh
+      real                                            :: falive_timber
+      real                                            :: balive_remain
+      real                                            :: bdead_remain
+      real                                            :: bstorage_remain
+      real                                            :: bcrop_harvest
+      real                                            :: blogging_harvest
+      real                                            :: agb_cut
+      real                                            :: agb_mort
+      real                                            :: ba_cut
+      real                                            :: ba_mort
+      real                                            :: fast_litter
+      real                                            :: struct_litter
+      real                                            :: struct_lignin
+      real                                            :: fast_litter_n
+      real                                            :: struct_cohort
+      real                                            :: survival_fac
       !------------------------------------------------------------------------------------!
+
 
       !---- Initialise the non-scaled litter pools. ---------------------------------------!
       fast_litter   = 0.0
       struct_litter = 0.0
       struct_lignin = 0.0
       fast_litter_n = 0.0
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
-      ! cpatch => contributing patch                                                       !
+      ! csite  => current site.                                                            !
+      ! cpatch => contributing patch.                                                      !
       ! npatch => new patch.                                                               !
       !------------------------------------------------------------------------------------!
+      csite  => cpoly%site(isi)
       cpatch => csite%patch(cp)
       npatch => csite%patch(np)
+      !------------------------------------------------------------------------------------!
+
 
       do ico = 1,cpatch%ncohorts
          ipft = cpatch%pft(ico)
+         bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
 
          !---------------------------------------------------------------------------------!
-         !     Find the loss fraction, which normally corresponds to the above-ground bio- !
-         ! mass in case the patch was harvest/logged, or nothing in case it was a natural  !
-         ! disturbance.                                                                    !
+         !     Find the biomass that remains in patch upon disturbance (as opposed to      !
+         ! being removed from the patch).  In the case of logging or forest plantation, we !
+         ! assume that the timber biomass is harvested and removed, and the remaining      !
+         ! biomass becomes necromass.  In the case of croplands, we may harvest leaves and !
+         ! non-structural carbon.  For the other disturbance types, we assume that every-  !
+         ! thing remains in the patch.                                                     !
          !---------------------------------------------------------------------------------!
          select case(new_lu)
-         case (1,2,6)
-            loss_fraction = agf_bs(ipft)
-         case (3,4,5)
-            loss_fraction = 0.
+         case (8)
+            !------ Agriculture. Harvest living tissues and NSC. --------------------------! 
+            balive_remain    = cpatch%balive  (ico) - cl_fleaf_harvest * cpatch%bleaf(ico)
+            bdead_remain     = cpatch%bdead   (ico)
+            bstorage_remain  = (1. - cl_fstorage_harvest) * cpatch%bstorage(ico)
+            bcrop_harvest    = cl_fleaf_harvest    * cpatch%bleaf   (ico)                  & 
+                             + cl_fstorage_harvest * cpatch%bstorage(ico)
+            blogging_harvest = 0.
+            !------------------------------------------------------------------------------!
+         case (2,6)
+            !------ Felling / forest plantation.  Harvest commercial timber. --------------!
+            falive_timber    = cpatch%bsapwooda(ico)                                       &
+                             / ( cpatch%bsapwooda(ico) + agf_bs(ipft) * cpatch%bdead(ico) )
+            balive_remain    = cpatch%balive  (ico) - falive_timber * cpatch%btimber(ico)
+            bdead_remain     = cpatch%bdead   (ico)                                        &
+                             - (1. - falive_timber) * cpatch%btimber(ico)
+            bstorage_remain  = cpatch%bstorage(ico)
+            bcrop_harvest    = 0.
+            blogging_harvest = cpatch%btimber(ico)
+            !------------------------------------------------------------------------------!
+         case default
+            !------ Other types.  Everything remains in. ----------------------------------!
+            balive_remain    = cpatch%balive  (ico)
+            bdead_remain     = cpatch%bdead   (ico)
+            bstorage_remain  = cpatch%bstorage(ico)
+            bcrop_harvest    = 0.
+            blogging_harvest = 0.
+            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
 
-         !----- Find survivorship. --------------------------------------------------------!
-         survival_fac  = survivorship(new_lu,dist_path,mindbh_harvest,cpatch,ico)
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find biomass loss due to cutting (logging) or mortality.  This is slightly  !
+         ! different than crop_harvest/logging_harvest because it corresponds to the loss  !
+         ! of biomass due to removing or mortality.  In the case of logging, for example,  !
+         ! not all biomass is removed from the patch, but both the removed and the remain- !
+         ! ing contribute to biomass loss.                                                 !
+         !---------------------------------------------------------------------------------!
+         select case(new_lu)
+         case (2)
+            !------ Forest plantation, everything is cut. ---------------------------------!
+            agb_cut  = cpatch%agb(ico)
+            agb_mort = 0.
+            ba_cut   = cpatch%basarea(ico)
+            ba_mort  = 0.
+            !------------------------------------------------------------------------------!
+         case (6)
+            !------------------------------------------------------------------------------!
+            !     Logging, we must decide whether the losses are due to cutting or due to  !
+            ! mortality.                                                                   !
+            !------------------------------------------------------------------------------!
+            if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
+               agb_cut          = cpatch%agb(ico)
+               agb_mort         = 0.
+               ba_cut           = cpatch%basarea(ico)
+               ba_mort          = 0.
+            else
+               agb_cut          = 0.
+               agb_mort         = cpatch%agb(ico)
+               ba_cut           = 0.
+               ba_mort          = cpatch%basarea(ico)
+            end if
+            !------------------------------------------------------------------------------!
+         case default
+            !------ Other types.  Everything is assumed mortality. ------------------------! 
+            agb_cut          = 0.
+            agb_mort         = cpatch%agb(ico)
+            ba_cut           = 0.
+            ba_mort          = cpatch%basarea(ico)
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
 
 
+         !----- Find survivorship. --------------------------------------------------------!
+         survival_fac  = survivorship(new_lu,csite%dist_type(cp),mindbh_harvest,cpatch,ico)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Update harvest pool.                                                        !
+         !---------------------------------------------------------------------------------!
+         cpoly%crop_harvest(isi)    = cpoly%crop_harvest(isi)                              &
+                                    + (1.-survival_fac) * cpatch%nplant(ico)               &
+                                    * bcrop_harvest * area_fac * csite%area(np)
+         cpoly%logging_harvest(isi) = cpoly%crop_harvest(isi)                              &
+                                    + (1.-survival_fac) * cpatch%nplant(ico)               &
+                                    * bcrop_harvest * area_fac * csite%area(np)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Update basal area and above-ground biomass loss due to logging or other    !
+         ! types of mortality.                                                             !
+         !---------------------------------------------------------------------------------!
+         if (census_flag == 0 .or. cpatch%first_census(ico) == 1) then
+            cpoly%agb_cut        (ipft,bdbh,isi) = cpoly%agb_cut(ipft,bdbh,isi)            &
+                                                 + (1.-survival_fac) * cpatch%nplant(ico)  &
+                                                 * agb_cut * area_fac * csite%area(np)
+            cpoly%agb_mort       (ipft,bdbh,isi) = cpoly%agb_mort(ipft,bdbh,isi)           &
+                                                 + (1.-survival_fac) * cpatch%nplant(ico)  &
+                                                 * agb_mort * area_fac * csite%area(np)
+            cpoly%basal_area_cut (ipft,bdbh,isi) = cpoly%basal_area_cut(ipft,bdbh,isi)     &
+                                                 + (1.-survival_fac) * cpatch%nplant(ico)  &
+                                                 * ba_cut * area_fac * csite%area(np)
+            cpoly%basal_area_mort(ipft,bdbh,isi) = cpoly%basal_area_mort(ipft,bdbh,isi)    &
+                                                 + (1.-survival_fac) * cpatch%nplant(ico)  &
+                                                 * ba_mort * area_fac * csite%area(np)
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !------ Update soil carbon inputs. -----------------------------------------------!
          fast_litter   = fast_litter                                                       &
                        + (1. - survival_fac)                                               &
-                       * ( f_labile(ipft) * cpatch%balive(ico) + cpatch%bstorage(ico))     &
+                       * ( f_labile(ipft) * balive_remain + bstorage_remain)               &
                        * cpatch%nplant(ico)
          fast_litter_n = fast_litter_n                                                     &
                        + (1. - survival_fac)                                               &
-                       * ( f_labile(ipft) * cpatch%balive(ico) / c2n_leaf(ipft)            &
-                         + cpatch%bstorage(ico) / c2n_storage )                            &
+                       * ( f_labile(ipft) * balive_remain   / c2n_leaf(ipft)               &
+                         +                  bstorage_remain / c2n_storage    )             &
                        * cpatch%nplant(ico)
 
          struct_cohort = cpatch%nplant(ico)                                                &
                        * (1. - survival_fac)                                               &
-                       * ( (1. - loss_fraction ) * cpatch%bdead(ico)                       &
-                         + (1. - f_labile(ipft)) * cpatch%balive(ico) )
+                       * ( bdead_remain + (1. - f_labile(ipft)) * balive_remain )
 
          struct_litter = struct_litter + struct_cohort
          struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
+         !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
 
@@ -3069,7 +3205,7 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
 
       return
-   end subroutine accum_dist_litt
+   end subroutine accum_dist_harv_litt
    !=======================================================================================!
    !=======================================================================================!
 
@@ -3101,6 +3237,7 @@ module disturbance_utils
                                 , pio4                     ! ! intent(in)
       use allometry      , only : h2dbh                    & ! function
                                 , dbh2bd                   & ! function
+                                , size2bt                  & ! function
                                 , area_indices             & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
@@ -3217,10 +3354,11 @@ module disturbance_utils
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
-      cpatch%basarea(nc)= pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
-      cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)                     &
-                                    ,cpatch%bsapwooda(nc),cpatch%pft(nc))
-
+      cpatch%basarea      (nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
+      cpatch%agb          (nc) = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)              &
+                                           ,cpatch%bsapwooda(nc),cpatch%pft(nc))
+      cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bdead(nc)   &
+                                        ,cpatch%bsapwooda(nc),cpatch%pft(nc))
       cpatch%leaf_temp    (nc) = csite%can_temp  (np)
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
       cpatch%leaf_water   (nc) = 0.0

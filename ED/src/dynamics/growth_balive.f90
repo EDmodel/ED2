@@ -47,6 +47,7 @@ module growth_balive
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           & ! subroutine
+                                 , size2bt                & ! subroutine
                                  , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       use fuse_fiss_utils , only : sort_cohorts           ! ! subroutine
@@ -331,6 +332,14 @@ module growth_balive
                   !----- Update above-ground biomass. -------------------------------------!
                   cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
                                               ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                  !------------------------------------------------------------------------!
+
+
+
+                  !----- Update (commercial) timber biomass. ------------------------------!
+                  cpatch%btimber(ico) = size2bt( cpatch%dbh(ico),cpatch%hite(ico)          &
+                                               , cpatch%bdead(ico),cpatch%bsapwooda(ico)   &
+                                               , cpatch%pft(ico) )
                   !------------------------------------------------------------------------!
 
 

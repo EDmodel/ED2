@@ -7,9 +7,10 @@
 !         initialize variables in modules.                                                 !
 !------------------------------------------------------------------------------------------!
 module disturb_coms
-   use ed_max_dims, only : str_len & ! intent(in)
-                         , maxgrds & ! intent(in)
-                         , n_pft   ! ! intent(in)
+   use ed_max_dims, only : str_len      & ! intent(in)
+                         , maxgrds      & ! intent(in)
+                         , n_pft        & ! intent(in)
+                         , n_dist_types ! ! intent(in)
    implicit none
 
 
@@ -97,6 +98,59 @@ module disturb_coms
    character(len=str_len), dimension(maxgrds) :: plantation_file
    !----- File with initial land use area scale.  If no file is available, leave it blank. !
    character(len=str_len), dimension(maxgrds) :: lu_rescale_file
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Selective logging characteristics (when IANTH_DISTURB is set to 2).  Included in !
+   ! ED2IN because selective logging is site-dependent.  Variable description.             !
+   !                                                                                       !
+   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
+   !                       landscape.  This controls the recurrence of logging.            !
+   !                       0.  Local. The simulation represents one logging unit.  Apply   !
+   !                           logging only once every SL_NYRS                             !
+   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
+   !                           occurs every year but it is restricted to patches with age  !
+   !                           greater than or equal to SL_NYRS                            !
+   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
+   !                       SL_SCALE above)                                                 !
+   ! SL_PFT             -- PFTs that can be harvested.                                     !
+   ! SL_PROB_HARVEST    -- Logging intensity (one value for each PFT provided in SL_PFT).  !
+   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
+   !                       removal, and 1 removal of all trees needed to meet demands.     !
+   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
+   !                       SL_PFT).                                                        !
+   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
+   !                       zero, then all trees that meet the minimum DBH and minimum      !
+   !                       patch age will be logged.  In case you don't want logging to    !
+   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
+   !                       to zero.                                                        !
+   !                                                                                       !
+   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
+   !                                                                                       !
+   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   !                                                                                       !
+   ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
+   !                                                                                       !
+   ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
+   ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
+   ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
+   !---------------------------------------------------------------------------------------!
+   integer                        :: sl_scale
+   integer                        :: sl_nyrs
+   integer     , dimension(n_pft) :: sl_pft
+   real(kind=4), dimension(n_pft) :: sl_prob_harvest
+   real(kind=4), dimension(n_pft) :: sl_mindbh_harvest
+   real(kind=4)                   :: sl_biomass_harvest
+   real(kind=4)                   :: sl_skid_rel_area
+   real(kind=4)                   :: cl_fseeds_harvest
+   real(kind=4)                   :: cl_fstorage_harvest
+   real(kind=4)                   :: cl_fleaf_harvest
+   !---------------------------------------------------------------------------------------!
+
+
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -110,9 +164,15 @@ module disturb_coms
    !    Patch dynamics variables, to be set in ed_params.f90.                              !
    !---------------------------------------------------------------------------------------!
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   real :: treefall_hite_threshold
+   real                          :: treefall_hite_threshold
    !----- Cut-off for different fire survivorship. ----------------------------------------!
-   real :: fire_hite_threshold
+   real                          :: fire_hite_threshold
+   !---------------------------------------------------------------------------------------!
+   !      Minimum age above which we disregard the disturbance type (land use) and assume  !
+   ! old growth, thus allowing patch fusion to occur.                                      !
+   !---------------------------------------------------------------------------------------!
+   real, dimension(n_dist_types) :: min_oldgrowth
+   !---------------------------------------------------------------------------------------!
    !=======================================================================================!
    !=======================================================================================!
 
