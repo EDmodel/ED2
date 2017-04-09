@@ -417,7 +417,7 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
             !------------------------------------------------------------------------------!
 
             !------ Rank the sites (1 = commonest, ed_nstyp = rarest). --------------------!
-            call rank_down(ed_nstyp,fraction,rankpct)
+            call rank_down_r(ed_nstyp,fraction,rankpct)
             !------------------------------------------------------------------------------!
 
 

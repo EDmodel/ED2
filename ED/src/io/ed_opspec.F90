@@ -2043,7 +2043,7 @@ end do
    !---------------------------------------------------------------------------------------!
    select case (ianth_disturb)
    case (2)
-      if (sl_scale < 0 .or. ianth_disturb > 1) then
+      if (sl_scale < 0 .or. sl_scale > 1) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
                        'Invalid SL_SCALE, it must be either 0 and 1. Yours is set to'      &
                       ,sl_scale,'...'
@@ -2051,9 +2051,9 @@ end do
          ifaterr = ifaterr +1
       end if
 
-      if (sl_nyrs < 1) then
+      if (sl_nyrs < 1 .or. sl_nyrs > 200) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
-                       'Invalid SL_NYRS, it must be positive. Yours is set to'             &
+                       'Invalid SL_NYRS, it must be between 1 and 200. Yours is set to'    &
                       ,sl_nyrs,'...'
          call opspec_fatal(reason,'opspec_misc')  
          ifaterr = ifaterr +1

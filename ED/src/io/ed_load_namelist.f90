@@ -666,7 +666,7 @@ subroutine copy_nl(copy_type)
       sl_mindbh_harvest = skip_real
       sl_prob_harvest   = skip_real
    end where
-   call rank_up(n_pft,sl_pft,idx)
+   call rank_up_i(n_pft,sl_pft,idx)
    sl_pft           (idx) = sl_pft(:)
    sl_mindbh_harvest(idx) = sl_mindbh_harvest(:)
    sl_prob_harvest  (idx) = sl_prob_harvest(:)

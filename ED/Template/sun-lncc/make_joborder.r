@@ -161,6 +161,7 @@ default = list( run           = "unnamed"
               , queue         = "linux.q"
               , met.driver    = "tower"
               , dtlsm         = 600.
+              , month.yrstep  = 1
               , vmfact.c3     = 1.00
               , vmfact.c4     = 1.00
               , mphoto.trc3   = 9.0
@@ -171,8 +172,8 @@ default = list( run           = "unnamed"
               , bphoto.c4     = 10000.
               , kw.grass      = 900.
               , kw.tree       = 600.
-              , gamma.c3      = 0.020
-              , gamma.c4      = 0.040
+              , gamma.c3      = 0.022
+              , gamma.c4      = 0.044
               , d0.grass      = 0.016
               , d0.tree       = 0.016
               , alpha.c3      = 0.080
@@ -180,7 +181,7 @@ default = list( run           = "unnamed"
               , klowco2       = 4000.
               , decomp.scheme = 2
               , rrffact       = 1.000
-              , growthresp    = 0.400
+              , growthresp    = 0.333
               , lwidth.grass  = 0.05
               , lwidth.bltree = 0.10
               , lwidth.nltree = 0.05
@@ -215,9 +216,9 @@ default = list( run           = "unnamed"
               , lreflect.vis  = 0.100
               , ltrans.nir    = 0.200
               , lreflect.nir  = 0.400
-              , orient.tree   = 0.100
+              , orient.tree   = 0.000
               , orient.grass  = 0.000
-              , clump.tree    = 0.800
+              , clump.tree    = 1.000
               , clump.grass   = 1.000
               , igoutput      = 0
               , ivegtdyn      = 1
@@ -229,6 +230,10 @@ default = list( run           = "unnamed"
               , treefall      = -0.0140
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
+              , sl.scale      = 0
+              , sl.nyrs       = 50.
+              , biomass.harv  = 0.
+              , skid.area     = 1.0
               ) #end list
 #------------------------------------------------------------------------------------------#
 

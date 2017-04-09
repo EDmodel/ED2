@@ -329,7 +329,7 @@ subroutine calc_flow_routing(cgrid,ipy)
    allocate (hyrank(nsites))
 
    ! set flow routing -> sort by TCI, it will give the sites the hydro order
-   call rank_up(nsites,cpoly%TCI,hyrank)
+   call rank_up_r(nsites,cpoly%TCI,hyrank)
 
 
    !init structures and recalculate sitenums list based on hydro order

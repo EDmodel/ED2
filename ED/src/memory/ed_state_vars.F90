@@ -20220,7 +20220,7 @@ module ed_state_vars
          nvar=nvar+1
          call vtable_edio_r(npts,cpoly%crop_yield,nvar,igr,init,cpoly%siglob_id            &
                            ,var_len,var_len_global,max_ptrs                                &
-                           ,'CROP_YIELD_PY :29:hist:mont:dcyc')     
+                           ,'CROP_YIELD_SI :29:hist:mont:dcyc')     
          call metadata_edio(nvar,igr,'Crop yield (seeds)','[kgC/m2]','(12,isite)') 
       end if
       !------------------------------------------------------------------------------------!

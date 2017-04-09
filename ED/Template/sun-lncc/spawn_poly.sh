@@ -31,6 +31,8 @@ packdatasrc="/prj/prjidfca/marcosl/Data/2scratch"
 lumain="/prj/prjidfca/marcosl/Data/lu_scenarios"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch="n"
+#----- If submit is "n", we create paths but skip submission. -----------------------------#
+submit="n"
 #----- Force submit? Or just submit those that would normally be submitted?. --------------#
 forcesubmit="n"
 #------------------------------------------------------------------------------------------#
@@ -204,103 +206,108 @@ do
    # latitude.                                                                             #
    #---------------------------------------------------------------------------------------#
    oi=$(head -${line} ${joborder} | tail -1)
-   polyname=$(echo ${oi}     | awk '{print $1 }')
-   polyiata=$(echo ${oi}     | awk '{print $2 }')
-   polylon=$(echo ${oi}      | awk '{print $3 }')
-   polylat=$(echo ${oi}      | awk '{print $4 }')
-   yeara=$(echo ${oi}        | awk '{print $5 }')
-   montha=$(echo ${oi}       | awk '{print $6 }')
-   datea=$(echo ${oi}        | awk '{print $7 }')
-   timea=$(echo ${oi}        | awk '{print $8 }')
-   yearz=$(echo ${oi}        | awk '{print $9 }')
-   monthz=$(echo ${oi}       | awk '{print $10}')
-   datez=$(echo ${oi}        | awk '{print $11}')
-   timez=$(echo ${oi}        | awk '{print $12}')
-   initmode=$(echo ${oi}     | awk '{print $13}')
-   iscenario=$(echo ${oi}    | awk '{print $14}')
-   isizepft=$(echo ${oi}     | awk '{print $15}')
-   iage=$(echo ${oi}         | awk '{print $16}')
-   imaxcohort=$(echo ${oi}   | awk '{print $17}')
-   polyisoil=$(echo ${oi}    | awk '{print $18}')
-   polyntext=$(echo ${oi}    | awk '{print $19}')
-   polysand=$(echo ${oi}     | awk '{print $20}')
-   polyclay=$(echo ${oi}     | awk '{print $21}')
-   polydepth=$(echo ${oi}    | awk '{print $22}')
-   polysoilbc=$(echo ${oi}   | awk '{print $23}')
-   polysldrain=$(echo ${oi}  | awk '{print $24}')
-   polycol=$(echo ${oi}      | awk '{print $25}')
-   slzres=$(echo ${oi}       | awk '{print $26}')
-   queue=$(echo ${oi}        | awk '{print $27}')
-   metdriver=$(echo ${oi}    | awk '{print $28}')
-   dtlsm=$(echo ${oi}        | awk '{print $29}')
-   vmfactc3=$(echo ${oi}     | awk '{print $30}')
-   vmfactc4=$(echo ${oi}     | awk '{print $31}')
-   mphototrc3=$(echo ${oi}   | awk '{print $32}')
-   mphototec3=$(echo ${oi}   | awk '{print $33}')
-   mphotoc4=$(echo ${oi}     | awk '{print $34}')
-   bphotoblc3=$(echo ${oi}   | awk '{print $35}')
-   bphotonlc3=$(echo ${oi}   | awk '{print $36}')
-   bphotoc4=$(echo ${oi}     | awk '{print $37}')
-   kwgrass=$(echo ${oi}      | awk '{print $38}')
-   kwtree=$(echo ${oi}       | awk '{print $39}')
-   gammac3=$(echo ${oi}      | awk '{print $40}')
-   gammac4=$(echo ${oi}      | awk '{print $41}')
-   d0grass=$(echo ${oi}      | awk '{print $42}')
-   d0tree=$(echo ${oi}       | awk '{print $43}')
-   alphac3=$(echo ${oi}      | awk '{print $44}')
-   alphac4=$(echo ${oi}      | awk '{print $45}')
-   klowco2=$(echo ${oi}      | awk '{print $46}')
-   decomp=$(echo ${oi}       | awk '{print $47}')
-   rrffact=$(echo ${oi}      | awk '{print $48}')
-   growthresp=$(echo ${oi}   | awk '{print $49}')
-   lwidthgrass=$(echo ${oi}  | awk '{print $50}')
-   lwidthbltree=$(echo ${oi} | awk '{print $51}')
-   lwidthnltree=$(echo ${oi} | awk '{print $52}')
-   q10c3=$(echo ${oi}        | awk '{print $53}')
-   q10c4=$(echo ${oi}        | awk '{print $54}')
-   h2olimit=$(echo ${oi}     | awk '{print $55}')
-   imortscheme=$(echo ${oi}  | awk '{print $56}')
-   ddmortconst=$(echo ${oi}  | awk '{print $57}')
-   cbrscheme=$(echo ${oi}    | awk '{print $58}')
-   isfclyrm=$(echo ${oi}     | awk '{print $59}')
-   icanturb=$(echo ${oi}     | awk '{print $60}')
-   ubmin=$(echo ${oi}        | awk '{print $61}')
-   ugbmin=$(echo ${oi}       | awk '{print $62}')
-   ustmin=$(echo ${oi}       | awk '{print $63}')
-   gamm=$(echo ${oi}         | awk '{print $64}')
-   gamh=$(echo ${oi}         | awk '{print $65}')
-   tprandtl=$(echo ${oi}     | awk '{print $66}')
-   ribmax=$(echo ${oi}       | awk '{print $67}')
-   atmco2=$(echo ${oi}       | awk '{print $68}')
-   thcrit=$(echo ${oi}       | awk '{print $69}')
-   smfire=$(echo ${oi}       | awk '{print $70}')
-   ifire=$(echo ${oi}        | awk '{print $71}')
-   fireparm=$(echo ${oi}     | awk '{print $72}')
-   ipercol=$(echo ${oi}      | awk '{print $73}')
-   runoff=$(echo ${oi}       | awk '{print $74}')
-   imetrad=$(echo ${oi}      | awk '{print $75}')
-   ibranch=$(echo ${oi}      | awk '{print $76}')
-   icanrad=$(echo ${oi}      | awk '{print $77}')
-   ihrzrad=$(echo ${oi}      | awk '{print $78}')
-   crown=$(echo   ${oi}      | awk '{print $79}')
-   ltransvis=$(echo ${oi}    | awk '{print $80}')
-   lreflectvis=$(echo ${oi}  | awk '{print $81}')
-   ltransnir=$(echo ${oi}    | awk '{print $82}')
-   lreflectnir=$(echo ${oi}  | awk '{print $83}')
-   orienttree=$(echo ${oi}   | awk '{print $84}')
-   orientgrass=$(echo ${oi}  | awk '{print $85}')
-   clumptree=$(echo ${oi}    | awk '{print $86}')
-   clumpgrass=$(echo ${oi}   | awk '{print $87}')
-   igoutput=$(echo ${oi}     | awk '{print $88}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $89}')
-   igndvap=$(echo ${oi}      | awk '{print $90}')
-   iphen=$(echo ${oi}        | awk '{print $91}')
-   iallom=$(echo ${oi}       | awk '{print $92}')
-   ibigleaf=$(echo ${oi}     | awk '{print $93}')
-   irepro=$(echo ${oi}       | awk '{print $94}')
-   treefall=$(echo ${oi}     | awk '{print $95}')
-   ianthdisturb=$(echo ${oi} | awk '{print $96}')
-   ianthdataset=$(echo ${oi} | awk '{print $97}')
+   polyname=$(echo ${oi}     | awk '{print $1  }')
+   polyiata=$(echo ${oi}     | awk '{print $2  }')
+   polylon=$(echo ${oi}      | awk '{print $3  }')
+   polylat=$(echo ${oi}      | awk '{print $4  }')
+   yeara=$(echo ${oi}        | awk '{print $5  }')
+   montha=$(echo ${oi}       | awk '{print $6  }')
+   datea=$(echo ${oi}        | awk '{print $7  }')
+   timea=$(echo ${oi}        | awk '{print $8  }')
+   yearz=$(echo ${oi}        | awk '{print $9  }')
+   monthz=$(echo ${oi}       | awk '{print $10 }')
+   datez=$(echo ${oi}        | awk '{print $11 }')
+   timez=$(echo ${oi}        | awk '{print $12 }')
+   initmode=$(echo ${oi}     | awk '{print $13 }')
+   iscenario=$(echo ${oi}    | awk '{print $14 }')
+   isizepft=$(echo ${oi}     | awk '{print $15 }')
+   iage=$(echo ${oi}         | awk '{print $16 }')
+   imaxcohort=$(echo ${oi}   | awk '{print $17 }')
+   polyisoil=$(echo ${oi}    | awk '{print $18 }')
+   polyntext=$(echo ${oi}    | awk '{print $19 }')
+   polysand=$(echo ${oi}     | awk '{print $20 }')
+   polyclay=$(echo ${oi}     | awk '{print $21 }')
+   polydepth=$(echo ${oi}    | awk '{print $22 }')
+   polysoilbc=$(echo ${oi}   | awk '{print $23 }')
+   polysldrain=$(echo ${oi}  | awk '{print $24 }')
+   polycol=$(echo ${oi}      | awk '{print $25 }')
+   slzres=$(echo ${oi}       | awk '{print $26 }')
+   queue=$(echo ${oi}        | awk '{print $27 }')
+   metdriver=$(echo ${oi}    | awk '{print $28 }')
+   dtlsm=$(echo ${oi}        | awk '{print $29 }')
+   monyrstep=$(echo ${oi}    | awk '{print $30 }')
+   vmfactc3=$(echo ${oi}     | awk '{print $31 }')
+   vmfactc4=$(echo ${oi}     | awk '{print $32 }')
+   mphototrc3=$(echo ${oi}   | awk '{print $33 }')
+   mphototec3=$(echo ${oi}   | awk '{print $34 }')
+   mphotoc4=$(echo ${oi}     | awk '{print $35 }')
+   bphotoblc3=$(echo ${oi}   | awk '{print $36 }')
+   bphotonlc3=$(echo ${oi}   | awk '{print $37 }')
+   bphotoc4=$(echo ${oi}     | awk '{print $38 }')
+   kwgrass=$(echo ${oi}      | awk '{print $39 }')
+   kwtree=$(echo ${oi}       | awk '{print $40 }')
+   gammac3=$(echo ${oi}      | awk '{print $41 }')
+   gammac4=$(echo ${oi}      | awk '{print $42 }')
+   d0grass=$(echo ${oi}      | awk '{print $43 }')
+   d0tree=$(echo ${oi}       | awk '{print $44 }')
+   alphac3=$(echo ${oi}      | awk '{print $45 }')
+   alphac4=$(echo ${oi}      | awk '{print $46 }')
+   klowco2=$(echo ${oi}      | awk '{print $47 }')
+   decomp=$(echo ${oi}       | awk '{print $48 }')
+   rrffact=$(echo ${oi}      | awk '{print $49 }')
+   growthresp=$(echo ${oi}   | awk '{print $50 }')
+   lwidthgrass=$(echo ${oi}  | awk '{print $51 }')
+   lwidthbltree=$(echo ${oi} | awk '{print $52 }')
+   lwidthnltree=$(echo ${oi} | awk '{print $53 }')
+   q10c3=$(echo ${oi}        | awk '{print $54 }')
+   q10c4=$(echo ${oi}        | awk '{print $55 }')
+   h2olimit=$(echo ${oi}     | awk '{print $56 }')
+   imortscheme=$(echo ${oi}  | awk '{print $57 }')
+   ddmortconst=$(echo ${oi}  | awk '{print $58 }')
+   cbrscheme=$(echo ${oi}    | awk '{print $59 }')
+   isfclyrm=$(echo ${oi}     | awk '{print $60 }')
+   icanturb=$(echo ${oi}     | awk '{print $61 }')
+   ubmin=$(echo ${oi}        | awk '{print $62 }')
+   ugbmin=$(echo ${oi}       | awk '{print $63 }')
+   ustmin=$(echo ${oi}       | awk '{print $64 }')
+   gamm=$(echo ${oi}         | awk '{print $65 }')
+   gamh=$(echo ${oi}         | awk '{print $66 }')
+   tprandtl=$(echo ${oi}     | awk '{print $67 }')
+   ribmax=$(echo ${oi}       | awk '{print $68 }')
+   atmco2=$(echo ${oi}       | awk '{print $69 }')
+   thcrit=$(echo ${oi}       | awk '{print $70 }')
+   smfire=$(echo ${oi}       | awk '{print $71 }')
+   ifire=$(echo ${oi}        | awk '{print $72 }')
+   fireparm=$(echo ${oi}     | awk '{print $73 }')
+   ipercol=$(echo ${oi}      | awk '{print $74 }')
+   runoff=$(echo ${oi}       | awk '{print $75 }')
+   imetrad=$(echo ${oi}      | awk '{print $76 }')
+   ibranch=$(echo ${oi}      | awk '{print $77 }')
+   icanrad=$(echo ${oi}      | awk '{print $78 }')
+   ihrzrad=$(echo ${oi}      | awk '{print $79 }')
+   crown=$(echo   ${oi}      | awk '{print $80 }')
+   ltransvis=$(echo ${oi}    | awk '{print $81 }')
+   lreflectvis=$(echo ${oi}  | awk '{print $82 }')
+   ltransnir=$(echo ${oi}    | awk '{print $83 }')
+   lreflectnir=$(echo ${oi}  | awk '{print $84 }')
+   orienttree=$(echo ${oi}   | awk '{print $85 }')
+   orientgrass=$(echo ${oi}  | awk '{print $86 }')
+   clumptree=$(echo ${oi}    | awk '{print $87 }')
+   clumpgrass=$(echo ${oi}   | awk '{print $88 }')
+   igoutput=$(echo ${oi}     | awk '{print $89 }')
+   ivegtdyn=$(echo ${oi}     | awk '{print $90 }')
+   igndvap=$(echo ${oi}      | awk '{print $91 }')
+   iphen=$(echo ${oi}        | awk '{print $92 }')
+   iallom=$(echo ${oi}       | awk '{print $93 }')
+   ibigleaf=$(echo ${oi}     | awk '{print $94 }')
+   irepro=$(echo ${oi}       | awk '{print $95 }')
+   treefall=$(echo ${oi}     | awk '{print $96 }')
+   ianthdisturb=$(echo ${oi} | awk '{print $97 }')
+   ianthdataset=$(echo ${oi} | awk '{print $98 }')
+   slscale=$(echo ${oi}      | awk '{print $99 }')
+   slnyrs=$(echo ${oi}       | awk '{print $100}')
+   bioharv=$(echo ${oi}      | awk '{print $101}')
+   skidarea=$(echo ${oi}     | awk '{print $102}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -460,33 +467,87 @@ do
       case ${polyiata} in
       tzi|zmh|nqn)
          pfts="6,7,9,10,11,16,17"
+         pasture=16
          crop=16
          plantation=17
+         logging="6,7,9,10,11,17"
+         probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       hvd|wch|tqh)
          pfts="6,8,9,10,11,16,17"
+         pasture=16
          crop=16
          plantation=17
+         logging="6,8,9,10,11,17"
+         probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+         dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
          pfts="1,2,3,4,16,17"
+         pasture=1
          crop=16
          plantation=17
+         logging="2,3,4"
+         probharv="1.0,1.0,1.0"
+         dbhharv="50.,50.,50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       fns*)
          pfts="1,16"
+         pasture=1
          crop=1
          plantation=17
+         logging="2,3,4"
+         probharv="1.0,1.0,1.0"
+         dbhharv="50.,50.,50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       s77*)
          pfts="1,16"
+         pasture=1
          crop=16
          plantation=17
+         logging="2,3,4"
+         probharv="1.0,1.0,1.0"
+         dbhharv="50.,50.,50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
+         ;;
+      s83)
+         pfts="1,2,3,4,16"
+         pasture=1
+         crop=1
+         plantation=3
+         logging="2,3,4"
+         probharv="1.0,1.0,1.0"
+         dbhharv="35.,35.,35."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       *)
          pfts="1,2,3,4,16"
+         pasture=1
          crop=1
          plantation=3
+         logging="2,3,4"
+         probharv="1.0,1.0,1.0"
+         dbhharv="50.,50.,50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       esac
       ;;
@@ -497,33 +558,87 @@ do
          case ${polyiata} in
          tzi|zmh|nqn)
             pfts="6,7,9,10,11,16,17"
+            pasture=16
             crop=16
             plantation=17
+            logging="6,7,9,10,11,17"
+            probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+            dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          hvd|wch|tqh)
             pfts="6,8,9,10,11,16,17"
+            pasture=16
             crop=16
             plantation=17
+            logging="6,8,9,10,11,17"
+            probharv="1.0,1.0,1.0,1.0,1.0,1.0"
+            dbhharv="0.0,0.0,0.0,0.0,0.0,0.0"
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          asu|cnf|bnu|cwb|erm|iqq|ipv|mgf|rao|sla|zpe|kna|sfn)
             pfts="1,2,3,4,16,17"
+            pasture=1
             crop=16
             plantation=17
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          fns*)
             pfts="1,16"
+            pasture=1
             crop=1
             plantation=17
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          s77*)
             pfts="1,16"
+            pasture=1
             crop=16
             plantation=17
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
+            ;;
+         s83)
+            pfts="1,2,3,4,16"
+            pasture=1
+            crop=1
+            plantation=3
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="35.,35.,35."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          *)
             pfts="1,2,3,4,16"
+            pasture=1
             crop=1
             plantation=3
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          esac
          ;;
@@ -531,25 +646,65 @@ do
          case ${polyiata} in
          tzi|zmh|nqn|hvd|wch|tqh)
             pfts="10,16"
+            pasture=16
             crop=16
             plantation=17
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          fns*|s77*)
             pfts="1"
+            pasture=1
             crop=1
             plantation=17
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
+            ;;
+         s83)
+            pfts="1,3"
+            pasture=1
+            crop=1
+            plantation=3
+            logging="3"
+            probharv="1.0"
+            dbhharv="35."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          *)
             pfts="1,3"
+            pasture=1
             crop=1
             plantation=3
+            logging="2,3,4"
+            probharv="1.0,1.0,1.0"
+            dbhharv="50.,50.,50."
+            seedharv=0.75
+            storharv=0.00
+            leafharv=0.00
             ;;
          esac
          ;;
       *)
          pfts="1,2,3,4,16"
+         pasture=1
          crop=16
          plantation=3
+         logging="2,3,4"
+         probharv="1.0,1.0,1.0"
+         dbhharv="50.,50.,50."
+         seedharv=0.75
+         storharv=0.00
+         leafharv=0.00
          ;;
       esac
       ;;
@@ -1317,6 +1472,7 @@ do
    sed -i s@mydatez@${datez}@g                  ${ED2IN}
    sed -i s@mytimez@${timez}@g                  ${ED2IN}
    sed -i s@mydtlsm@${dtlsm}@g                  ${ED2IN}
+   sed -i s@mymonyrstep@${monyrstep}@g          ${ED2IN}
    sed -i s@thispoly@${polyname}@g              ${ED2IN}
    sed -i s@plonflag@${polylon}@g               ${ED2IN}
    sed -i s@platflag@${polylat}@g               ${ED2IN}
@@ -1329,6 +1485,7 @@ do
    sed -i s@mysfilin@${thissfilin}@g            ${ED2IN}
    sed -i s@mytrees@${pfts}@g                   ${ED2IN}
    sed -i s@mycrop@${crop}@g                    ${ED2IN}
+   sed -i s@mypasture@${pasture}@g              ${ED2IN}
    sed -i s@myplantation@${plantation}@g        ${ED2IN}
    sed -i s@myiphen@${iphen}@g                  ${ED2IN}
    sed -i s@myallom@${iallom}@g                 ${ED2IN}
@@ -1419,6 +1576,16 @@ do
    sed -i s@mymaxcohort@${imaxcohort}@g         ${ED2IN}
    sed -i s@myanthdisturb@${ianthdisturb}@g     ${ED2IN}
    sed -i s@myludatabase@${ludatabase}@g        ${ED2IN}
+   sed -i s@myslscale@${slscale}@g              ${ED2IN}
+   sed -i s@myslnyrs@${slnyrs}@g                ${ED2IN}
+   sed -i s@mylogging@${logging}@g              ${ED2IN}
+   sed -i s@myprobharv@${probharv}@g            ${ED2IN}
+   sed -i s@mydbhharv@${dbhharv}@g              ${ED2IN}
+   sed -i s@mybioharv@${bioharv}@g              ${ED2IN}
+   sed -i s@myskidarea@${skidarea}@g            ${ED2IN}
+   sed -i s@myseedharv@${seedharv}@g            ${ED2IN}
+   sed -i s@mystorharv@${storharv}@g            ${ED2IN}
+   sed -i s@myleafharv@${leafharv}@g            ${ED2IN}
    #---------------------------------------------------------------------------------------#
 
    #------ Soil variables. ----------------------------------------------------------------#
@@ -1491,45 +1658,53 @@ do
          sed -i s@zzzzzzzz@${wtime}@g         ${callserial}
          #---------------------------------------------------------------------------------#
 
-
-
-         #----- Submit job. ---------------------------------------------------------------#
-         qsub ${callserial} 1> /dev/null 2> /dev/null
          #---------------------------------------------------------------------------------#
-
-
+         #    Check whether to submit or just copy.                                        #
          #---------------------------------------------------------------------------------#
-         #     Submit, then check whether it went through.  If not, keep trying until it   #
-         # works (or give up after 10 attempts).                                           #
-         #---------------------------------------------------------------------------------#
-         sleep 3
-         nfail=$(qclean | wc -l)
-         if [ ${nfail} -eq 0 ]
+         if [ "x${submit}" != "xn" ] && [ "x${submit}" != "xN" ]
          then
-            echo "  Polygon job submitted."
+
+
+            #----- Submit job. ------------------------------------------------------------#
+            qsub ${callserial} 1> /dev/null 2> /dev/null
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Submit, then check whether it went through.  If not, keep trying until   #
+            # it works (or give up after 10 attempts).                                     #
+            #------------------------------------------------------------------------------#
+            sleep 3
+            nfail=$(qclean | wc -l)
+            if [ ${nfail} -eq 0 ]
+            then
+               echo "  Polygon job submitted."
+            else
+               echo "  Failed submission... Trying again:"
+               attempt=0
+               while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
+               do
+                   let attempt=${attempt}+1
+                   echo -n "  + Attempt number: ${attempt}..."
+                   qsub ${callserial} 1> /dev/null 2> /dev/null
+                   sleep 3
+                   nfail=$(qclean | wc -l)
+                   if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
+                   then
+                      echo "  Failed.  Giving up, looks like a more serious problem..."
+                   elif [ ${nfail} -eq 0 ]
+                   then
+                      echo "          - Success!!!"
+                   else
+                      echo "  Failed."
+                   fi
+               done
+            fi
+            #------------------------------------------------------------------------------#
          else
-            echo "  Failed submission... Trying again:"
-            attempt=0
-            while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
-            do
-                let attempt=${attempt}+1
-                echo -n "  + Attempt number: ${attempt}..."
-                qsub ${callserial} 1> /dev/null 2> /dev/null
-                sleep 3
-                nfail=$(qclean | wc -l)
-                if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
-                then
-                   echo "  Failed.  Giving up, looks like a more serious problem..."
-                elif [ ${nfail} -eq 0 ]
-                then
-                   echo "          - Success!!!"
-                else
-                   echo "  Failed."
-                fi
-            done
+               echo "  Polygon prepared and ready to be submitted."
          fi
          #---------------------------------------------------------------------------------#
-
 
       else
          #----- Check whether I should submit from this path or not. ----------------------#
