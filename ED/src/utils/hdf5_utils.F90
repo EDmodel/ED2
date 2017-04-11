@@ -432,7 +432,7 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   character(len=2) :: ctype
   
   logical :: convert = .false.
-  integer :: type_id
+  integer(HID_T) :: type_id
   real(kind=8), allocatable, dimension(:) :: dvaraTEMP
   
   ! Find which data type will be read

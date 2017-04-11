@@ -1,8 +1,16 @@
+module heun_driver
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine is the main driver for the Heun's (RK2) integration scheme.          !
 !------------------------------------------------------------------------------------------!
 subroutine heun_timestep(cgrid)
+   use rk4_integ_utils
+   use soil_respiration_module
+   use photosyn_driv
+   use rk4_misc
+   use update_derived_props_module
    use rk4_coms              , only : integration_vars   & ! structure
                                     , rk4patchtype       & ! structure
                                     , zero_rk4_patch     & ! subroutine
@@ -343,6 +351,9 @@ end subroutine integrate_patch_heun
 ! state variables using the Heun's method (a 2nd order Runge-Kutta).                       !
 !------------------------------------------------------------------------------------------!
 subroutine heun_integ(h1,csite,ipa,isi,nsteps)
+   use rk4_integ_utils
+   use rk4_misc
+   use rk4_copy_patch
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype            ! ! structure
@@ -369,8 +380,6 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
                              , errcon                 & ! intent(in)
                              , norm_rk4_fluxes        & ! sub-routine
                              , reset_rk4_fluxes       ! ! sub-routine
-   use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
-                             , print_sanity_check     ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
@@ -732,7 +741,9 @@ end subroutine heun_integ
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
-
+   use rk4_copy_patch
+   use rk4_misc
+   use rk4_integ_utils
    use rk4_coms      , only : integration_buff    & ! structure
                             , integration_vars    & ! structure
                             , zero_rk4_patch      & ! subroutine
@@ -745,7 +756,6 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
                             , heun_c2             & ! intent(in)
                             , heun_dc1            & ! intent(in)
                             , heun_dc2            ! ! intent(in)
-   use rk4_stepper   , only : rk4_sanity_check    ! ! subroutine
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
    use grid_coms     , only : nzg                 & ! intent(in)
@@ -858,3 +868,5 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
 end subroutine heun_stepper
 !==========================================================================================!
 !==========================================================================================!
+
+end module heun_driver

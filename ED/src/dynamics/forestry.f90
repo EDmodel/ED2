@@ -1,3 +1,6 @@
+module forestry
+  contains
+
 !==========================================================================================!
 ! Forestry.f90. These subroutines calculate the area to be taken from each patch to meet   !
 !               the biomass demand, in case this site is to be harvest using biomass       !
@@ -716,3 +719,5 @@ subroutine area_harvest_immature(cpoly,isi,onsp,harvestable_agb,pot_area_harv   
 end subroutine area_harvest_immature
 !==========================================================================================!
 !==========================================================================================!
+
+end module forestry

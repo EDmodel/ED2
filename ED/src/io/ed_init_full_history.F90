@@ -1,3 +1,6 @@
+module ed_init_full_history
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will set a full history start for the simulation.  In a full history !
@@ -15,6 +18,7 @@
 ! populate the model states with what is found in the files tree.                          !
 !------------------------------------------------------------------------------------------!
 subroutine init_full_history_restart()
+   use landuse_init_module
    use ed_max_dims      , only : n_pft                 & ! intent(in)
                                , str_len               ! ! intent(in)
    use ed_misc_coms     , only : sfilin                & ! intent(in)
@@ -526,49 +530,7 @@ subroutine fill_history_grid_p11(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -766,49 +728,7 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -1185,49 +1105,7 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -1683,49 +1561,7 @@ subroutine fill_history_grid_p12(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -1876,49 +1712,7 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -2324,49 +2118,7 @@ subroutine fill_history_grid_p19(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -2484,49 +2236,7 @@ subroutine fill_history_grid_m12(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -2664,49 +2374,7 @@ subroutine fill_history_grid_p146(cgrid,ipy,py_index)
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
 
@@ -2897,49 +2565,7 @@ subroutine fill_history_polygon(cpoly,pysi_index,nsites_global,nsites_now,is_bur
                            , writing_dcyc  ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -3621,49 +3247,7 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
    use fusion_fission_coms, only : ff_nhgt       ! ! intent(in)
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -4785,49 +4369,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
    use allometry          , only : dbh2ca        ! ! function
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
-#if USE_INTERF
-   interface
-      subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=4)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_r
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         real(kind=8)    , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_d
-      !------------------------------------------------------------------------------------!
-      subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
-         use hdf5_coms, only : memsize ! ! intent(in)
-         !----- Arguments. ----------------------------------------------------------------!
-         integer         , dimension(memsize(1),memsize(2),memsize(3),memsize(4))          &
-                                                          , intent(inout) :: buff
-         character(len=*)                                 , intent(in)    :: varn
-         integer                                          , intent(in)    :: dsetrank
-         integer                                          , intent(in)    :: iparallel
-         logical                                          , intent(in)    :: required
-         logical                                          , intent(out)   :: foundvar
-         !---------------------------------------------------------------------------------!
-      end subroutine hdf_getslab_i
-      !------------------------------------------------------------------------------------!
-   end interface
-#endif
+
    !---------------------------------------------------------------------------------------!
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -6311,3 +5853,5 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required,foundvar)
 end subroutine hdf_getslab_i
 !==========================================================================================!
 !==========================================================================================!
+
+end module ed_init_full_history
