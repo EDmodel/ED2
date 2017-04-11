@@ -1618,10 +1618,13 @@ $ED_NL
    !               16 -- Daily error stats (which variable caused the time step to shrink) !
    !               32 -- Allometry parameters, photosynthesis parameters, and minimum and  !
    !                     maximum sizes (three files, only at the beginning)                !
-   !               64 -- Schedule for land use transitions.  This is only written once,    !
-   !                     at the beginning of the simulation, and only if ianth_disturb is  !
-   !                     1 or 2.  The output file should be similar to the .lu files in    !
-   !                     case ianth_disturb is set to 1.                                   !
+   !               64 -- Detailed disturbance rate output.  Two types of detailed          !
+   !                     transitions will be written (single polygon runs only). 
+   !                     a. A text file that looks like the .lu files.  This is written 
+   !                        only once, at the beginning of the simulation.
+   !                     b. Detailed information about the transition matrix.  This is 
+   !                        written to the standard output (e.g. screen), every time the 
+   !                        patch dynamics is called.
    !                                                                                       !
    !               In case you don't want any detailed output (likely for most runs), set  !
    !               IDETAILED to zero.  In case you want to generate multiple outputs, add  !

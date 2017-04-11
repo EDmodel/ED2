@@ -67,6 +67,7 @@ module disturbance_utils
       use budget_utils       , only : update_budget             ! ! sub-routine
       use forestry           , only : find_lambda_harvest       ! ! sub-routine
       use consts_coms        , only : lnexp_max                 ! ! intent(in)
+      use detailed_coms      , only : idetailed                 ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                    , target      :: cgrid
@@ -125,8 +126,7 @@ module disturbance_utils
       logical                                       :: is_managed
       logical                                       :: is_oldgrowth
       logical                                       :: is_plantation
-      !----- Debugging controls. ----------------------------------------------------------!
-      logical                         , parameter   :: print_debug = .true.
+      logical                                       :: print_detailed
       !------------------------------------------------------------------------------------!
 
 
@@ -141,6 +141,13 @@ module disturbance_utils
       pfts   = pack(allind,include_pft)
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !       Find out whether to print detailed information on screen.                    !
+      !------------------------------------------------------------------------------------!
+      print_detailed = btest(idetailed,6)
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -862,7 +869,7 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             !     Print the entire disturbance transition matrix if debugging mode is on.  !
             !------------------------------------------------------------------------------!
-            if (print_debug) then
+            if (print_detailed) then
                write(unit=*,fmt='(a)')          ' '
                write(unit=*,fmt='(103a)')       ('-',i=1,103)
                write(unit=*,fmt='(2(a,1x,i5))') ' Summary for IPY =',ipy,'; ISI =',isi
@@ -1068,7 +1075,7 @@ module disturbance_utils
             ! would be too small otherwise.                                                !
             !------------------------------------------------------------------------------!
             !----- Print the area loss and disturbance transitions. -----------------------!
-            if (print_debug) then
+            if (print_detailed) then
                write(unit=*,fmt='(a)')          ' '
                write(unit=*,fmt='(45a)')        ('-',i=1,45)
                write(unit=*,fmt='(2(a,1x,i5))') ' Transitions for IPY =',ipy,'; ISI =',isi
@@ -1109,7 +1116,7 @@ module disturbance_utils
 
 
                   !----- Print the area loss and disturbance transitions. -----------------!
-                  if (print_debug) then
+                  if (print_detailed) then
                      write(unit=*,fmt='(2(1x,i6),3(1x,f9.6))')                             &
                                                  old_lu,new_lu,orig_area,dist_area         &
                                                 ,cpoly%disturbance_rates(new_lu,old_lu,isi)
@@ -1124,7 +1131,7 @@ module disturbance_utils
 
 
             !----- Print the area loss and disturbance transitions. -----------------------!
-            if (print_debug) then
+            if (print_detailed) then
                write(unit=*,fmt='(45a)')        ('-',i=1,45)
                write(unit=*,fmt='(a)')          ' '
             end if

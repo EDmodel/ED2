@@ -484,7 +484,7 @@ subroutine landuse_init
 
             !----- Fill the arrays with the appropriate PFT. ------------------------------!
             harvloop_two: do h=1,nharvest
-               ipft = harvest_pft(h)
+               ipft = sl_pft(h)
                if (ipft >= 1 .and. ipft <= n_pft) then
                   cpoly%mindbh_harvest(ipft,isi) = sl_mindbh_harvest(h)
                   cpoly%prob_harvest  (ipft,isi) = sl_prob_harvest  (h)
@@ -581,14 +581,14 @@ subroutine landuse_init
             !      Write the LU-like file.                                                 !
             !------------------------------------------------------------------------------!
             open(unit=16,file=trim(lu_table),status='replace',action='write')
-            write(unit=16,fmt='(a,1x,f8.3)') 'WEST.LONGITUDE = ',wlon
-            write(unit=16,fmt='(a,1x,f8.3)') 'EAST.LONGITUDE = ',elon
-            write(unit=16,fmt='(a,1x,f8.3)') 'SOUTH.LATITUDE = ',slat
-            write(unit=16,fmt='(a,1x,f8.3)') 'NORTH.LATITUDE = ',nlat
-            write(unit=16,fmt='(a,1x,f8.3)') 'BLOCK.AREA     = ',lu_area
-            write(unit=16,fmt='(a,1x,i4.4)') 'FIRST.LUYEAR   = ',iyeara
-            write(unit=16,fmt='(a,1x,i4.4)') 'LAST.LUYEAR    = ',iyearz
-            write(unit=16,fmt='(a,1x,i2)'  ) 'N.PFT.HARVEST  = ',nharvest
+            write(unit=16,fmt='(a,1x,f8.3)' ) 'WEST.LONGITUDE = ',wlon
+            write(unit=16,fmt='(a,1x,f8.3)' ) 'EAST.LONGITUDE = ',elon
+            write(unit=16,fmt='(a,1x,f8.3)' ) 'SOUTH.LATITUDE = ',slat
+            write(unit=16,fmt='(a,1x,f8.3)' ) 'NORTH.LATITUDE = ',nlat
+            write(unit=16,fmt='(a,1x,f20.5)') 'BLOCK.AREA     = ',lu_area
+            write(unit=16,fmt='(a,1x,i4.4)' ) 'FIRST.LUYEAR   = ',iyeara
+            write(unit=16,fmt='(a,1x,i4.4)' ) 'LAST.LUYEAR    = ',iyearz
+            write(unit=16,fmt='(a,1x,i2)'   ) 'N.PFT.HARVEST  = ',nharvest
             if (nharvest > 0) then
                write(unit=16,fmt=hifmt) 'HARVEST.PFT    = ',(harvest_pft  (h),h=1,nharvest)
                write(unit=16,fmt=hffmt) 'MINDBH.SLOG    = ',(mindbh_slog  (h),h=1,nharvest)
@@ -611,7 +611,7 @@ subroutine landuse_init
                landuse_now(16) = lu_area * landuse_now(16)
                landuse_now(18) = lu_area * landuse_now(18)
 
-               write(unit=16,fmt='(i5,19(1x,es12.5))')                                     &
+               write(unit=16,fmt='(i4.4,19(1x,es12.5))')                                   &
                                      clutime%landuse_year,(landuse_now(h),h=1,num_lu_trans)
                !---------------------------------------------------------------------------!
             end do

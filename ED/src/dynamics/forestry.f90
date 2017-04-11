@@ -45,6 +45,7 @@ module forestry
                                       , n_dbh                      ! ! intent(in)
       use grid_coms            , only : nzg                        & ! intent(in)
                                       , nzs                        ! ! intent(in)
+      use detailed_coms        , only : idetailed                  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)             , target        :: cpoly
@@ -61,6 +62,7 @@ module forestry
       integer                                       :: ilu
       logical                                       :: is_oldgrowth
       logical                                       :: is_mature
+      logical                                       :: print_detailed
       real                                          :: primary_harvest_target
       real                                          :: secondary_harvest_target
       real                                          :: site_harvest_target
@@ -72,13 +74,19 @@ module forestry
       real                                          :: hvagb_mature_secondary
       real                                          :: hvagb_mature_plantation
       real                                          :: harvest_deficit
-      !----- Local constants. -------------------------------------------------------------!
-      logical                       , parameter     :: print_detail = .true.
       !------------------------------------------------------------------------------------!
 
 
       !----- Nothing to do here in case anthropogenic disturbance is turned off. ----------!
       if (ianth_disturb == 0) return
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !       Find out whether to print detailed information on screen.                    !
+      !------------------------------------------------------------------------------------!
+      print_detailed = btest(idetailed,6)
       !------------------------------------------------------------------------------------!
 
 
@@ -171,7 +179,7 @@ module forestry
          !---------------------------------------------------------------------------------!
          !       Print the inventory and the target.                                       !
          !---------------------------------------------------------------------------------!
-         if (print_detail) then
+         if (print_detailed) then
             write (unit=*,fmt='(a)'      )     ' '
             write (unit=*,fmt='(a)'      )     '------------------------------------------'
             write (unit=*,fmt='(a)'      )     ' FORESTRY.  NO HARVEST THIS YEAR...'
@@ -227,7 +235,7 @@ module forestry
       !------------------------------------------------------------------------------------!
       !       Print the inventory and the target.                                          !
       !------------------------------------------------------------------------------------!
-      if (print_detail) then
+      if (print_detailed) then
          write (unit=*,fmt='(a)'      )     ' '
          write (unit=*,fmt='(a)'      )     '---------------------------------------------'
          write (unit=*,fmt='(a)'      )     ' FORESTRY.  HARVEST RATES'
