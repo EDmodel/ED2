@@ -20460,6 +20460,7 @@ module ed_state_vars
       call filltab_sitetype_p31mmean(csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_m31     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p32     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_sitetype_m32     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p33     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p34     (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)
       call filltab_sitetype_p346    (csite,igr,init,var_len,var_len_global,max_ptrs,nvar)

@@ -1300,6 +1300,7 @@ subroutine ed_opspec_misc
    logical                :: agri_ok
    logical                :: plantation_ok
    logical                :: patch_detailed
+   logical                :: lu_detailed
    !---------------------------------------------------------------------------------------!
 
    !----- IFATERR will count the number of bad set ups. -----------------------------------!
@@ -2609,9 +2610,9 @@ end do
    end if
 
 
-   if (idetailed < 0 .or. idetailed > 63) then
+   if (idetailed < 0 .or. idetailed > 127) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IDETAILED, it must be between 0 and 63.  Yours is set to'     &
+                    'Invalid IDETAILED, it must be between 0 and 127.  Yours is set to'    &
                     ,idetailed,'...'
       ifaterr = ifaterr +1
       call opspec_fatal(reason,'opspec_misc')
@@ -2634,6 +2635,23 @@ end do
          write(unit=*,fmt='(a)')       '--------------------------------------------------'
          write (reason,fmt='(2(a,1x))') 'Only single polygon runs are allowed'             &
                                        ,'with detailed patch-level output...'
+         ifaterr = ifaterr +1
+         call opspec_fatal(reason,'opspec_misc')
+      end if
+
+
+      lu_detailed = btest(idetailed,6) .and. ianth_disturb /= 0
+      if (lu_detailed .and. (n_poi > 1 .or. n_ed_region > 0)) then
+         write(unit=*,fmt='(a)')       '--------------------------------------------------'
+         write(unit=*,fmt='(a,1x,i6)') ' IDETAILED   = ',idetailed
+         write(unit=*,fmt='(a,1x,i6)') ' N_POI       = ',n_poi
+         write(unit=*,fmt='(a,1x,i6)') ' N_ED_REGION = ',n_ed_region
+         write(unit=*,fmt='(a)')       ' '
+         write(unit=*,fmt='(2a)')      ' IDETAILED cannot be 64 or greater when '          &
+                                       ,'running regional simulations.'
+         write(unit=*,fmt='(a)')       '--------------------------------------------------'
+         write (reason,fmt='(2(a,1x))') 'Only single polygon runs are allowed'             &
+                                       ,'with detailed land use table output...'
          ifaterr = ifaterr +1
          call opspec_fatal(reason,'opspec_misc')
       end if

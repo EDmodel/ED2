@@ -28,59 +28,67 @@ subroutine landuse_init
                             , huge_lu           & ! intent(in)
                             , n_pft             & ! intent(in)
                             , maxlist           ! ! intent(in)
+   use detailed_coms , only : idetailed         ! ! intent(in)
+   use pft_coms      , only : is_grass          ! ! intent(in)
 
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)          , pointer            :: cgrid
-   type(polygontype)     , pointer            :: cpoly
-   type(sitetype)        , pointer            :: csite
-   type(lutime)          , pointer            :: clutime
-   type(lutime)          , pointer            :: onelutime
-   character(len=str_len), dimension(maxlist) :: full_list
-   character(len=str_len), dimension(maxlist) :: lu_list
-   real                  , dimension(maxlist) :: llon_list
-   real                  , dimension(maxlist) :: llat_list
-   real                  , dimension(maxlist) :: file_ldist
-   character(len=6)                           :: hform
-   character(len=str_len)                     :: lu_name
-   character(len=str_len)                     :: cdum
-   integer                                    :: nharvest
-   integer               , dimension(n_pft)   :: harvest_pft
-   integer                                    :: ierr
-   integer                                    :: nf
-   integer                                    :: nflist
-   integer                                    :: nfllu
-   integer                                    :: ncl
-   integer                                    :: iyear
-   integer                                    :: igr
-   integer                                    :: ipy
-   integer                                    :: isi
-   integer                                    :: ipft
-   integer                                    :: h
-   integer                                    :: sim_years
-   integer                                    :: lu_years
-   integer                                    :: yd_1st
-   integer                                    :: yd_this
-   integer                                    :: yd_last
-   integer                                    :: yd_tot
-   logical                                    :: inside
-   real                  , dimension(n_pft)   :: mindbh_slog
-   real                  , dimension(n_pft)   :: harvprob_slog
-   real                  , dimension(n_pft)   :: mindbh_fplt
-   real                  , dimension(n_pft)   :: harvprob_fplt
-   real                                       :: lu_area
-   real                                       :: lu_area_i
-   real                                       :: wlon
-   real                                       :: elon
-   real                                       :: slat
-   real                                       :: nlat
+   type(edtype)          , pointer                 :: cgrid
+   type(polygontype)     , pointer                 :: cpoly
+   type(sitetype)        , pointer                 :: csite
+   type(lutime)          , pointer                 :: clutime
+   type(lutime)          , pointer                 :: onelutime
+   character(len=str_len), dimension(maxlist)      :: full_list
+   character(len=str_len), dimension(maxlist)      :: lu_list
+   real                  , dimension(maxlist)      :: llon_list
+   real                  , dimension(maxlist)      :: llat_list
+   real                  , dimension(maxlist)      :: file_ldist
+   character(len=6)                                :: hform
+   character(len=str_len)                          :: lu_name
+   character(len=str_len)                          :: cdum
+   character(len=13)                               :: hifmt
+   character(len=15)                               :: hffmt
+   integer                                         :: nharvest
+   integer               , dimension(n_pft)        :: harvest_pft
+   integer                                         :: ierr
+   integer                                         :: nf
+   integer                                         :: nflist
+   integer                                         :: nfllu
+   integer                                         :: ncl
+   integer                                         :: iyear
+   integer                                         :: igr
+   integer                                         :: ipy
+   integer                                         :: isi
+   integer                                         :: ipft
+   integer                                         :: h
+   integer                                         :: sim_years
+   integer                                         :: lu_years
+   integer                                         :: yd_1st
+   integer                                         :: yd_this
+   integer                                         :: yd_last
+   integer                                         :: yd_tot
+   logical                                         :: inside
+   logical                                         :: write_lu_settings
+   real                  , dimension(n_pft)        :: mindbh_slog
+   real                  , dimension(n_pft)        :: harvprob_slog
+   real                  , dimension(n_pft)        :: mindbh_fplt
+   real                  , dimension(n_pft)        :: harvprob_fplt
+   real                  , dimension(num_lu_trans) :: landuse_now
+   real                                            :: lu_area
+   real                                            :: lu_area_i
+   real                                            :: wlon
+   real                                            :: elon
+   real                                            :: slat
+   real                                            :: nlat
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=12)    , parameter           :: fffmt    = '(a,1x,f12.5)'
-   character(len=13)    , parameter           :: esfmt    = '(a,1x,es12.5)'
-   integer              , parameter           :: hoff     = 18
-   real                 , parameter           :: huge_dbh = huge(1.)
+   character(len=12)     , parameter               :: fffmt    = '(a,1x,f12.5)'
+   character(len=13)     , parameter               :: esfmt    = '(a,1x,es12.5)'
+   integer               , parameter               :: hoff     = 18
+   real                  , parameter               :: huge_dbh = huge(1.)
+   character(len=str_len), parameter               :: lu_table = "anth_disturb_table.txt"
    !----- External function. --------------------------------------------------------------!
-   real                 , external            :: dist_gc
+   real                  , external                :: dist_gc
+   real                  , external                :: solid_area
    !---------------------------------------------------------------------------------------!
 
 
@@ -89,6 +97,9 @@ subroutine landuse_init
    sim_years = iyearz-iyeara+1
    !---------------------------------------------------------------------------------------!
 
+   !------ Decide whether to write lu settings. -------------------------------------------!
+   write_lu_settings = btest(idetailed,6) .and. ianth_disturb /= 0
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Crashing the run if the user set up a very long run... --------------------------!
@@ -528,6 +539,85 @@ subroutine landuse_init
 
             end do siteloop_two
          end select
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !       Write a table somewhat similar to lu file.                                !
+         !---------------------------------------------------------------------------------!
+         if (write_lu_settings) then
+            cpoly   => cgrid%polygon(ipy)
+            isi     = 1
+         
+            wlon    = 0.1 * real(nint(10.*cgrid%lon(ipy))) - 0.5
+            elon    = 0.1 * real(nint(10.*cgrid%lon(ipy))) + 0.5
+            slat    = 0.1 * real(nint(10.*cgrid%lat(ipy))) - 0.5
+            nlat    = 0.1 * real(nint(10.*cgrid%lat(ipy))) + 0.5
+            lu_area = solid_area(wlon,slat,elon,nlat)
+            
+            !------------------------------------------------------------------------------!
+            !      Find which PFTs to harvest.  If none is provided, we skip this part of  !
+            ! the header.                                                                  !
+            !------------------------------------------------------------------------------!
+            nharvest = count(cpoly%prob_harvest(:,isi) > 0.0)
+            write(hifmt,fmt='(a,i2.2,a)') '(a,',nharvest,'(i2,1x))'
+            write(hffmt,fmt='(a,i2.2,a)') '(a,',nharvest,'(f8.3,1x))'
+            h = 0
+            do ipft=1,n_pft
+               if (cpoly%prob_harvest(ipft,isi) > 0.0) then
+                  h = h + 1
+                  harvest_pft  (h) = ipft
+                  mindbh_slog  (h) = cpoly%mindbh_harvest(ipft,isi)
+                  harvprob_slog(h) = cpoly%prob_harvest  (ipft,isi)
+                  mindbh_fplt  (h) = cpoly%mindbh_harvest(ipft,isi)
+                  harvprob_fplt(h) = cpoly%prob_harvest  (ipft,isi)
+               end if
+            end do
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Write the LU-like file.                                                 !
+            !------------------------------------------------------------------------------!
+            open(unit=16,file=trim(lu_table),status='replace',action='write')
+            write(unit=16,fmt='(a,1x,f8.3)') 'WEST.LONGITUDE = ',wlon
+            write(unit=16,fmt='(a,1x,f8.3)') 'EAST.LONGITUDE = ',elon
+            write(unit=16,fmt='(a,1x,f8.3)') 'SOUTH.LATITUDE = ',slat
+            write(unit=16,fmt='(a,1x,f8.3)') 'NORTH.LATITUDE = ',nlat
+            write(unit=16,fmt='(a,1x,f8.3)') 'BLOCK.AREA     = ',lu_area
+            write(unit=16,fmt='(a,1x,i4.4)') 'FIRST.LUYEAR   = ',iyeara
+            write(unit=16,fmt='(a,1x,i4.4)') 'LAST.LUYEAR    = ',iyearz
+            write(unit=16,fmt='(a,1x,i2)'  ) 'N.PFT.HARVEST  = ',nharvest
+            if (nharvest > 0) then
+               write(unit=16,fmt=hifmt) 'HARVEST.PFT    = ',(harvest_pft  (h),h=1,nharvest)
+               write(unit=16,fmt=hffmt) 'MINDBH.SLOG    = ',(mindbh_slog  (h),h=1,nharvest)
+               write(unit=16,fmt=hffmt) 'HARVPROB.SLOG  = ',(harvprob_slog(h),h=1,nharvest)
+               write(unit=16,fmt=hffmt) 'MINDBH.FPLT    = ',(mindbh_fplt  (h),h=1,nharvest)
+               write(unit=16,fmt=hffmt) 'HARVPROB.FPLT  = ',(harvprob_fplt(h),h=1,nharvest)
+            end if
+            write(unit=16,fmt='(a,19(1x,a))')  'YEAR','     CPL_PST','     PST_CPL'        &
+                       ,'     PST_VEG','     VEG_PST','     VEG_CLP','     CPL_VEG'        &
+                       ,'     SEC_CPL','     CPL_SEC','     SEC_PST','     PST_SEC'        &
+                       ,'     VEG_SEC','  BT_MAT_SEC','  FL_MAT_SEC','  BT_MAT_VEG'        &
+                       ,'  FL_MAT_VEG','  BT_YNG_SEC','  FL_YNG_SEC','  BT_YNG_VEG'        &
+                       ,'  FL_YNG_VEG'
+            !----- Disturbances. ----------------------------------------------------------!
+            do iyear = 1,cpoly%num_landuse_years(isi)
+               clutime     => cpoly%clutimes(iyear,isi)
+               landuse_now =  clutime%landuse
+               if (landuse_now(12) > 0.) landuse_now(12) = lu_area * landuse_now(12)
+               if (landuse_now(14) > 0.) landuse_now(14) = lu_area * landuse_now(14)
+               landuse_now(16) = lu_area * landuse_now(16)
+               landuse_now(18) = lu_area * landuse_now(18)
+
+               write(unit=16,fmt='(i5,19(1x,es12.5))')                                     &
+                                     clutime%landuse_year,(landuse_now(h),h=1,num_lu_trans)
+               !---------------------------------------------------------------------------!
+            end do
+            close(unit=16,status='keep')
+            !------------------------------------------------------------------------------!
+         end if
          !---------------------------------------------------------------------------------!
       end do polyloop
       !------------------------------------------------------------------------------------!

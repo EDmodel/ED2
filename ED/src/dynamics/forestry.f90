@@ -73,7 +73,7 @@ module forestry
       real                                          :: hvagb_mature_plantation
       real                                          :: harvest_deficit
       !----- Local constants. -------------------------------------------------------------!
-      logical                       , parameter     :: print_detail = .false.
+      logical                       , parameter     :: print_detail = .true.
       !------------------------------------------------------------------------------------!
 
 

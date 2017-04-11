@@ -97,9 +97,11 @@ module disturbance_utils
       real   , dimension(:)           , allocatable :: original_lu
       real   , dimension(:)           , allocatable :: harvestable_agb
       real   , dimension(:)           , allocatable :: lambda_harvest
+      real   , dimension(:,:)         , allocatable :: lambda_arr
       real   , dimension(:,:)         , allocatable :: pot_area_loss
       real   , dimension(:,:)         , allocatable :: act_area_loss
       real   , dimension(n_dist_types)              :: lambda_now
+      real   , dimension(n_dist_types)              :: pat_area_loss
       real   , dimension(n_dist_types)              :: pot_area_gain
       real   , dimension(n_dist_types)              :: act_area_gain
       real   , dimension(n_dist_types)              :: one_area_loss
@@ -110,7 +112,7 @@ module disturbance_utils
       logical                                       :: is_primary
       real   , dimension(n_pft)                     :: mindbh_harvest
       real                                          :: pot_area_remain
-      real                                          :: area_loss_sum
+      real                                          :: area_loss_tot
       real                                          :: lambda_sum
       real                                          :: area_fac
       real                                          :: orig_area
@@ -156,11 +158,6 @@ module disturbance_utils
       allocate(tsite)
       !------------------------------------------------------------------------------------!
 
-
-      !----- Reset polygon-level harvest variables. ---------------------------------------!
-      cgrid%crop_harvest   (ipy) = 0.0
-      cgrid%logging_harvest(ipy) = 0.0
-      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -209,6 +206,7 @@ module disturbance_utils
             allocate (original_lu    (onsp)             )
             allocate (harvestable_agb(onsp)             )
             allocate (lambda_harvest (onsp)             )
+            allocate (lambda_arr     (onsp,n_dist_types))
             allocate (pot_area_loss  (onsp,n_dist_types))
             allocate (act_area_loss  (onsp,n_dist_types))
             original_area  (:  ) = 0.0
@@ -217,6 +215,7 @@ module disturbance_utils
             lambda_harvest (:  ) = 0.0
             pot_area_gain  (  :) = 0.0
             act_area_gain  (  :) = 0.0
+            lambda_arr     (:,:) = 0.0
             pot_area_loss  (:,:) = 0.0
             act_area_loss  (:,:) = 0.0
             !------------------------------------------------------------------------------!
@@ -392,35 +391,9 @@ module disturbance_utils
                   end if
                   !------------------------------------------------------------------------!
                else
-                  !------------------------------------------------------------------------!
-                  !      Check whether the patch is ready  be harvested.  Maturity is      !
-                  ! defined by age since last disturbance.                                 !
-                  !------------------------------------------------------------------------!
-                  select case (old_lu)
-                  case (2)
-                     !----- Forest plantation. --------------------------------------------!
-                     is_mature = csite%age(ipa) > plantation_rotation
-                     !---------------------------------------------------------------------!
-                  case (3)
-                     !----- Tree fall, burned, logged, and secondary forests. -------------!
-                     is_mature    = csite%age(ipa) > mature_harvest_age
-                     !---------------------------------------------------------------------!
-                  case default
-                     !----- Pastures and croplands. ---------------------------------------!
-                     is_mature    = .false.
-                     !---------------------------------------------------------------------!
-                  end select
-                  !------------------------------------------------------------------------!
-
-
-                  !------------------------------------------------------------------------!
-                  !     Set disturbance rates to plantation and logging to zero in case    !
-                  ! this patch is not mature.                                              !
-                  !------------------------------------------------------------------------!
-                  if (.not. is_mature) then
-                     lambda_now(2) = 0.0
-                     lambda_now(6) = 0.0
-                  end if
+                  !----- No harvest should occur. -----------------------------------------!
+                  lambda_now(2) = 0.
+                  lambda_now(6) = 0.
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -465,10 +438,19 @@ module disturbance_utils
                !---------------------------------------------------------------------------!
                if (any(lambda_now > 0.)) then
                   lambda_sum           = min(lnexp_max,sum(lambda_now))
-                  area_loss_sum        = csite%area(ipa) * (1.0 - exp(-lambda_sum   ))
+                  area_loss_tot        = csite%area(ipa) * (1.0 - exp(-lambda_sum   ))
                   one_area_loss(:)     = csite%area(ipa) * (1.0 - exp(-lambda_now(:)))
-                  pot_area_loss(ipa,:) = one_area_loss(:) / area_loss_sum
+                  pot_area_loss(ipa,:) = one_area_loss(:) * area_loss_tot                  &
+                                       / sum(one_area_loss)
                end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Lambda array is used to show the transition matrix.                  !
+               !---------------------------------------------------------------------------!
+               lambda_arr(ipa,:) = lambda_now
                !---------------------------------------------------------------------------!
             end do old_lu_l1st
             !------------------------------------------------------------------------------!
@@ -782,7 +764,7 @@ module disturbance_utils
 
                   !------------------------------------------------------------------------!
                   !      Update temperature and density.  This must be done before         !
-                  ! planting, since the leaf temperature is initially assigned as the      !
+                  ! planting, because leaf temperature is initially assigned based on the  !
                   ! canopy air temperature.                                                !
                   !------------------------------------------------------------------------!
                   call update_patch_thermo_props(csite,onsp+new_lu,onsp+new_lu,nzg,nzs     &
@@ -882,24 +864,38 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             if (print_debug) then
                write(unit=*,fmt='(a)')          ' '
-               write(unit=*,fmt='(85a)')        ('-',i=1,85)
+               write(unit=*,fmt='(103a)')       ('-',i=1,103)
                write(unit=*,fmt='(2(a,1x,i5))') ' Summary for IPY =',ipy,'; ISI =',isi
                write(unit=*,fmt='(a)')          ' '
-               write(unit=*,fmt='(10(1x,a))')   '  IPA','  ILU'                            &
-                                              ,'    AREA','  TO_AGR','  TO_FPL','  TO_TFL' &
-                                              ,'  TO_BRN','  TO_ABN','  TO_LOG','TOT_LOSS'
-               write(unit=*,fmt='(85a)') ('-',i=1,85)
+               write(unit=*,fmt='(12(1x,a))')   '  IPA','  ILU'                            &
+                                              ,'    AREA','  TO_PST','  TO_FPL','  TO_TFL' &
+                                              ,'  TO_BRN','  TO_ABN','  TO_LOG','  TO_SKD' &
+                                              ,'  TO_CPL','TOT_LOSS'
+               write(unit=*,fmt='(103a)')       ('-',i=1,103)
                do ipa=1,onsp
-                  write(unit=*,fmt='(2(1x,i5),8(1x,f8.5))')                                &
+                  write(unit=*,fmt='(2(1x,i5),10(1x,f8.5))')                               &
                                                   ipa,csite%dist_type(ipa),csite%area(ipa) &
-                                                   ,(act_area_loss(ipa,new_lu),new_lu=1,6) &
+                                                   ,(act_area_loss(ipa,new_lu),new_lu=1,8) &
                                                    ,sum(act_area_loss(ipa,:))
                end do
-               write(unit=*,fmt='(85a)') ('-',i=1,85)
-               write(unit=*,fmt='(1x,a,8(1x,f8.5))')                '            TOT_GAIN' &
-                                                       ,(act_area_gain(new_lu),new_lu=1,6) &
+               write(unit=*,fmt='(103a)')       ('-',i=1,103)
+               write(unit=*,fmt='(1x,a,10(1x,f8.5))')               '            TOT_GAIN' &
+                                                       ,(act_area_gain(new_lu),new_lu=1,8) &
                                                        ,sum(act_area_gain(:))
-               write(unit=*,fmt='(85a)') ('-',i=1,85)
+               write(unit=*,fmt='(103a)')       ('-',i=1,103)
+               write(unit=*,fmt='(a)')          ' Transition matrix (disturbance rates)'
+               write(unit=*,fmt='(a)')          ' '
+               write(unit=*,fmt='(11(1x,a))')   '  IPA','  ILU'                            &
+                                              ,'    AREA','  TO_PST','  TO_FPL','  TO_TFL' &
+                                              ,'  TO_BRN','  TO_ABN','  TO_LOG','  TO_SKD' &
+                                              ,'  TO_CPL'
+               write(unit=*,fmt='(94a)')        ('-',i=1,94)
+               do ipa=1,onsp
+                  write(unit=*,fmt='(2(1x,i5),9(1x,f8.5))')                                &
+                                                  ipa,csite%dist_type(ipa),csite%area(ipa) &
+                                                   ,(lambda_arr(ipa,new_lu),new_lu=1,8)
+               end do
+               write(unit=*,fmt='(94a)')        ('-',i=1,94)
                write(unit=*,fmt='(a)')    ' '
             end if
             !------------------------------------------------------------------------------!
@@ -910,8 +906,9 @@ module disturbance_utils
             ! from this patch.                                                             !
             !------------------------------------------------------------------------------!
             old_lu_l4th: do ipa=1,onsp
-               call disturbance_mortality(csite,ipa,act_area_loss(ipa,:),mindbh_harvest)
-               csite%area(ipa) = csite%area(ipa) - sum(act_area_loss(ipa,:))
+               pat_area_loss = act_area_loss(ipa,:)
+               call disturbance_mortality(csite,ipa,pat_area_loss,mindbh_harvest)
+               csite%area(ipa) = csite%area(ipa) - sum(pat_area_loss)
             end do old_lu_l4th
             !------------------------------------------------------------------------------!
 
@@ -1149,6 +1146,7 @@ module disturbance_utils
             deallocate(original_lu    )
             deallocate(harvestable_agb)
             deallocate(lambda_harvest )
+            deallocate(lambda_arr     )
             deallocate(pot_area_loss  )
             deallocate(act_area_loss  )
             !------------------------------------------------------------------------------!
@@ -1446,7 +1444,7 @@ module disturbance_utils
                !---------------------------------------------------------------------------!
             case default
                !------ Read anthropogenic disturbance from external data set. -------------!
-               if (clutime%landuse(12) <= 0 .or. clutime%landuse(14) <= 0) then
+               if (clutime%landuse(12) < 0 .or. clutime%landuse(14) < 0) then
                   find_target                         = .true.
                   cpoly%primary_harvest_target  (isi) = 0.
                   cpoly%secondary_harvest_target(isi) = 0.
@@ -1682,139 +1680,6 @@ module disturbance_utils
 
       return
    end subroutine initialize_disturbed_patch
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine will re-scale some patch variables using new area fraction.       !
-   !---------------------------------------------------------------------------------------!
-   subroutine normal_patch_vars(csite,ipa, area_fac)
-      use ed_state_vars, only : sitetype  & ! structure
-                              , patchtype ! ! structure
-      use ed_max_dims  , only : n_pft     ! ! intent(in)
-      use grid_coms    , only : nzg       ! ! intent(in)
-
-
-      implicit none
-      !----- Arguments. -------------------------------------------------------------------!
-      type(sitetype), target      :: csite
-      integer       , intent(in)  :: ipa
-      real          , intent(in)  :: area_fac
-      !----- Local variables. -------------------------------------------------------------!
-      integer                     :: k
-      !------------------------------------------------------------------------------------!
-
-      csite%fast_soil_C       (ipa) = csite%fast_soil_C       (ipa) * area_fac
-      csite%slow_soil_C       (ipa) = csite%slow_soil_C       (ipa) * area_fac
-      csite%structural_soil_C (ipa) = csite%structural_soil_C (ipa) * area_fac
-      csite%structural_soil_L (ipa) = csite%structural_soil_L (ipa) * area_fac
-      csite%mineralized_soil_N(ipa) = csite%mineralized_soil_N(ipa) * area_fac
-      csite%fast_soil_N       (ipa) = csite%fast_soil_N       (ipa) * area_fac
-      csite%sum_dgd           (ipa) = csite%sum_dgd           (ipa) * area_fac
-      csite%sum_chd           (ipa) = csite%sum_chd           (ipa) * area_fac
-      csite%can_theta         (ipa) = csite%can_theta         (ipa) * area_fac
-      csite%can_theiv         (ipa) = csite%can_theiv         (ipa) * area_fac
-      csite%can_vpdef         (ipa) = csite%can_vpdef         (ipa) * area_fac
-      csite%can_prss          (ipa) = csite%can_prss          (ipa) * area_fac
-      csite%can_shv           (ipa) = csite%can_shv           (ipa) * area_fac
-      csite%can_co2           (ipa) = csite%can_co2           (ipa) * area_fac
-      csite%can_depth         (ipa) = csite%can_depth         (ipa) * area_fac
-      csite%ggbare            (ipa) = csite%ggbare            (ipa) * area_fac
-      csite%ggveg             (ipa) = csite%ggveg             (ipa) * area_fac
-      csite%rough             (ipa) = csite%rough             (ipa) * area_fac
-      csite%today_A_decomp    (ipa) = csite%today_A_decomp    (ipa) * area_fac
-      csite%today_Af_decomp   (ipa) = csite%today_Af_decomp   (ipa) * area_fac
-      csite%fsc_in            (ipa) = csite%fsc_in            (ipa) * area_fac
-      csite%ssc_in            (ipa) = csite%ssc_in            (ipa) * area_fac
-      csite%ssl_in            (ipa) = csite%ssl_in            (ipa) * area_fac
-      csite%fsn_in            (ipa) = csite%fsn_in            (ipa) * area_fac
-      csite%total_plant_nitrogen_uptake(ipa) = csite%total_plant_nitrogen_uptake(ipa)      &
-                                             * area_fac
-
-
-      !----- Do the same thing for the multiple-level variables. --------------------------!
-      do k=1,n_pft
-         csite%repro                 (k,ipa) = csite%repro          (k,ipa) * area_fac
-      end do
-      do k = 1, csite%nlev_sfcwater(ipa)
-         csite%sfcwater_mass         (k,ipa) = csite%sfcwater_mass  (k,ipa) * area_fac
-         csite%sfcwater_energy       (k,ipa) = csite%sfcwater_energy(k,ipa) * area_fac
-         csite%sfcwater_depth        (k,ipa) = csite%sfcwater_depth (k,ipa) * area_fac
-      end do
-      do k = 1, nzg
-         csite%soil_energy           (k,ipa) = csite%soil_energy    (k,ipa) * area_fac
-         csite%soil_water(k,ipa)             = csite%soil_water     (k,ipa) * area_fac
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Fast means must be aggregated as well.                                         !
-      !------------------------------------------------------------------------------------!
-      csite%fmean_rh             (ipa) = csite%fmean_rh             (ipa) * area_fac
-      csite%fmean_cwd_rh         (ipa) = csite%fmean_cwd_rh         (ipa) * area_fac
-      csite%fmean_nep            (ipa) = csite%fmean_nep            (ipa) * area_fac
-      csite%fmean_rk4step        (ipa) = csite%fmean_rk4step        (ipa) * area_fac
-      csite%fmean_available_water(ipa) = csite%fmean_available_water(ipa) * area_fac
-      csite%fmean_can_theiv      (ipa) = csite%fmean_can_theiv      (ipa) * area_fac
-      csite%fmean_can_theta      (ipa) = csite%fmean_can_theta      (ipa) * area_fac
-      csite%fmean_can_vpdef      (ipa) = csite%fmean_can_vpdef      (ipa) * area_fac
-      csite%fmean_can_shv        (ipa) = csite%fmean_can_shv        (ipa) * area_fac
-      csite%fmean_can_co2        (ipa) = csite%fmean_can_co2        (ipa) * area_fac
-      csite%fmean_can_prss       (ipa) = csite%fmean_can_prss       (ipa) * area_fac
-      csite%fmean_gnd_temp       (ipa) = csite%fmean_gnd_temp       (ipa) * area_fac
-      csite%fmean_gnd_shv        (ipa) = csite%fmean_gnd_shv        (ipa) * area_fac
-      csite%fmean_can_ggnd       (ipa) = csite%fmean_can_ggnd       (ipa) * area_fac
-      csite%fmean_sfcw_depth     (ipa) = csite%fmean_sfcw_depth     (ipa) * area_fac
-      csite%fmean_sfcw_energy    (ipa) = csite%fmean_sfcw_energy    (ipa) * area_fac
-      csite%fmean_sfcw_mass      (ipa) = csite%fmean_sfcw_mass      (ipa) * area_fac
-      csite%fmean_rshort_gnd     (ipa) = csite%fmean_rshort_gnd     (ipa) * area_fac
-      csite%fmean_par_gnd        (ipa) = csite%fmean_par_gnd        (ipa) * area_fac
-      csite%fmean_rlong_gnd      (ipa) = csite%fmean_rlong_gnd      (ipa) * area_fac
-      csite%fmean_rlongup        (ipa) = csite%fmean_rlongup        (ipa) * area_fac
-      csite%fmean_parup          (ipa) = csite%fmean_parup          (ipa) * area_fac
-      csite%fmean_nirup          (ipa) = csite%fmean_nirup          (ipa) * area_fac
-      csite%fmean_rshortup       (ipa) = csite%fmean_rshortup       (ipa) * area_fac
-      csite%fmean_rnet           (ipa) = csite%fmean_rnet           (ipa) * area_fac
-      csite%fmean_albedo         (ipa) = csite%fmean_albedo         (ipa) * area_fac
-      csite%fmean_albedo_par     (ipa) = csite%fmean_albedo_par     (ipa) * area_fac
-      csite%fmean_albedo_nir     (ipa) = csite%fmean_albedo_nir     (ipa) * area_fac
-      csite%fmean_rlong_albedo   (ipa) = csite%fmean_rlong_albedo   (ipa) * area_fac
-      csite%fmean_ustar          (ipa) = csite%fmean_ustar          (ipa) * area_fac
-      csite%fmean_tstar          (ipa) = csite%fmean_tstar          (ipa) * area_fac
-      csite%fmean_qstar          (ipa) = csite%fmean_qstar          (ipa) * area_fac
-      csite%fmean_cstar          (ipa) = csite%fmean_cstar          (ipa) * area_fac
-      csite%fmean_carbon_ac      (ipa) = csite%fmean_carbon_ac      (ipa) * area_fac
-      csite%fmean_carbon_st      (ipa) = csite%fmean_carbon_st      (ipa) * area_fac
-      csite%fmean_vapor_gc       (ipa) = csite%fmean_vapor_gc       (ipa) * area_fac
-      csite%fmean_vapor_ac       (ipa) = csite%fmean_vapor_ac       (ipa) * area_fac
-      csite%fmean_throughfall    (ipa) = csite%fmean_throughfall    (ipa) * area_fac
-      csite%fmean_runoff         (ipa) = csite%fmean_runoff         (ipa) * area_fac
-      csite%fmean_drainage       (ipa) = csite%fmean_drainage       (ipa) * area_fac
-      csite%fmean_sensible_gc    (ipa) = csite%fmean_sensible_gc    (ipa) * area_fac
-      csite%fmean_sensible_ac    (ipa) = csite%fmean_sensible_ac    (ipa) * area_fac
-      csite%fmean_qthroughfall   (ipa) = csite%fmean_qthroughfall   (ipa) * area_fac
-      csite%fmean_qrunoff        (ipa) = csite%fmean_qrunoff        (ipa) * area_fac
-      csite%fmean_qdrainage      (ipa) = csite%fmean_qdrainage      (ipa) * area_fac
-
-      do k=1, nzg
-         csite%fmean_soil_energy(k,ipa) = csite%fmean_soil_energy(k,ipa) * area_fac
-         csite%fmean_soil_water (k,ipa) = csite%fmean_soil_water (k,ipa) * area_fac
-         csite%fmean_smoist_gg  (k,ipa) = csite%fmean_smoist_gg  (k,ipa) * area_fac
-         csite%fmean_transloss  (k,ipa) = csite%fmean_transloss  (k,ipa) * area_fac
-         csite%fmean_sensible_gg(k,ipa) = csite%fmean_sensible_gg(k,ipa) * area_fac
-      end do
-      !------------------------------------------------------------------------------------!
-
-      return
-   end subroutine normal_patch_vars
    !=======================================================================================!
    !=======================================================================================!
 

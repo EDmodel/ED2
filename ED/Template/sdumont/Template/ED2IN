@@ -1620,6 +1620,10 @@ $ED_NL
    !               16 -- Daily error stats (which variable caused the time step to shrink) !
    !               32 -- Allometry parameters, photosynthesis parameters, and minimum and  !
    !                     maximum sizes (three files, only at the beginning)                !
+   !               64 -- Schedule for land use transitions.  This is only written once,    !
+   !                     at the beginning of the simulation, and only if ianth_disturb is  !
+   !                     1 or 2.  The output file should be similar to the .lu files in    !
+   !                     case ianth_disturb is set to 1.                                   !
    !                                                                                       !
    !               In case you don't want any detailed output (likely for most runs), set  !
    !               IDETAILED to zero.  In case you want to generate multiple outputs, add  !

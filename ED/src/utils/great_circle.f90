@@ -47,3 +47,49 @@ real function dist_gc(slons,slonf,slats,slatf)
 end function dist_gc
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!   Function to compute the area associated with a solid angle defined by a pair of co-    !
+! ordinates corresponding to the SW and NE corners of a "rectangle" in longitude/latitude  !
+! coordinates.                                                                             !
+!------------------------------------------------------------------------------------------!
+real function solid_area(wlon,slat,elon,nlat)
+   use consts_coms, only : erad8     & ! intent(in)
+                         , pio1808   & ! intent(in)
+                         , tiny_num8 ! ! intent(in)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4), intent(in) :: wlon
+   real(kind=4), intent(in) :: slat
+   real(kind=4), intent(in) :: elon
+   real(kind=4), intent(in) :: nlat
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=8)            :: wlon8
+   real(kind=8)            :: slat8
+   real(kind=8)            :: elon8
+   real(kind=8)            :: nlat8
+   real(kind=8)            :: area8
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4), external  :: sngloff
+   !---------------------------------------------------------------------------------------!
+
+   !----- Convert the co-ordinates to double precision and to radians. --------------------!
+   wlon8 = dble(wlon) * pio1808
+   elon8 = dble(elon) * pio1808
+   slat8 = dble(slat) * pio1808
+   nlat8 = dble(nlat) * pio1808
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the double-precision area, and convert to single precision for output. -----!
+   area8      = (sin(nlat8) - sin(slat8)) * (elon8 - wlon8) * erad8 * erad8
+   solid_area = sngloff(area8,tiny_num8)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end function solid_area
+!==========================================================================================!
+!==========================================================================================!
