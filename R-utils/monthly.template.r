@@ -140,6 +140,9 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$fast.soil.c             = rep(NA,times=ntimes)
    emean$slow.soil.c             = rep(NA,times=ntimes)
    emean$struct.soil.c           = rep(NA,times=ntimes)
+   emean$crop.yield              = rep(NA,times=ntimes)
+   emean$crop.harvest            = rep(NA,times=ntimes)
+   emean$logging.harvest         = rep(NA,times=ntimes)
    emean$het.resp                = rep(NA,times=ntimes)
    emean$cwd.resp                = rep(NA,times=ntimes)
    emean$soil.resp               = rep(NA,times=ntimes)
@@ -455,6 +458,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$ba                = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$nplant            = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bdead             = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$btimber           = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$balive            = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bleaf             = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bstem             = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
@@ -464,6 +468,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    szpft$bsapwood          = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bstorage          = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$bseeds            = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
+   szpft$byield            = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.lai        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.wai        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
    szpft$census.tai        = array(data=0 ,dim=c(ntimes,ndbh+1,npft+1))
@@ -935,6 +940,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$light.diff     = list()
    cohort$balive         = list()
    cohort$bdead          = list()
+   cohort$btimber        = list()
    cohort$bleaf          = list()
    cohort$bstem          = list()
    cohort$broot          = list()
@@ -943,6 +949,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    cohort$bsapwood       = list()
    cohort$bstorage       = list()
    cohort$bseeds         = list()
+   cohort$byield         = list()
    cohort$hflxlc         = list()
    cohort$wflxlc         = list()
    cohort$transp         = list()
@@ -1040,6 +1047,9 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$fast.soil.c       [idx ] = old.datum$emean$fast.soil.c         [sel ]
    new.datum$emean$slow.soil.c       [idx ] = old.datum$emean$slow.soil.c         [sel ]
    new.datum$emean$struct.soil.c     [idx ] = old.datum$emean$struct.soil.c       [sel ]
+   new.datum$emean$crop.yield        [idx ] = old.datum$emean$crop.yield          [sel ]
+   new.datum$emean$crop.harvest      [idx ] = old.datum$emean$crop.harvest        [sel ]
+   new.datum$emean$logging.harvest   [idx ] = old.datum$emean$logging.harvest     [sel ]
    new.datum$emean$het.resp          [idx ] = old.datum$emean$het.resp            [sel ]
    new.datum$emean$cwd.resp          [idx ] = old.datum$emean$cwd.resp            [sel ]
    new.datum$emean$soil.resp         [idx ] = old.datum$emean$soil.resp           [sel ]
@@ -1400,6 +1410,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$bsa.recr       [idx,,] = old.datum$szpft$bsa.recr        [sel,,]
    new.datum$szpft$bsa.change     [idx,,] = old.datum$szpft$bsa.change      [sel,,]
    new.datum$szpft$bdead          [idx,,] = old.datum$szpft$bdead           [sel,,]
+   new.datum$szpft$btimber        [idx,,] = old.datum$szpft$btimber         [sel,,]
    new.datum$szpft$balive         [idx,,] = old.datum$szpft$balive          [sel,,]
    new.datum$szpft$bleaf          [idx,,] = old.datum$szpft$bleaf           [sel,,]
    new.datum$szpft$bstem          [idx,,] = old.datum$szpft$bstem           [sel,,]
@@ -1409,6 +1420,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$szpft$bsapwood       [idx,,] = old.datum$szpft$bsapwood        [sel,,]
    new.datum$szpft$bstorage       [idx,,] = old.datum$szpft$bstorage        [sel,,]
    new.datum$szpft$bseeds         [idx,,] = old.datum$szpft$bseeds          [sel,,]
+   new.datum$szpft$byield         [idx,,] = old.datum$szpft$byield          [sel,,]
    new.datum$szpft$hflxlc         [idx,,] = old.datum$szpft$hflxlc          [sel,,]
    new.datum$szpft$wflxlc         [idx,,] = old.datum$szpft$wflxlc          [sel,,]
    new.datum$szpft$census.lai     [idx,,] = old.datum$szpft$census.lai      [sel,,]
@@ -1799,6 +1811,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$lightdiff        = old.datum$cohort$lightdiff
    new.datum$cohort$balive           = old.datum$cohort$balive
    new.datum$cohort$bdead            = old.datum$cohort$bdead
+   new.datum$cohort$btimber          = old.datum$cohort$btimber
    new.datum$cohort$bleaf            = old.datum$cohort$bleaf
    new.datum$cohort$bstem            = old.datum$cohort$bstem
    new.datum$cohort$broot            = old.datum$cohort$broot
@@ -1807,6 +1820,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$cohort$bsapwood         = old.datum$cohort$bsapwood
    new.datum$cohort$bstorage         = old.datum$cohort$bstorage
    new.datum$cohort$bseeds           = old.datum$cohort$bseeds
+   new.datum$cohort$byield           = old.datum$cohort$byield
    new.datum$cohort$hflxlc           = old.datum$cohort$hflxlc
    new.datum$cohort$wflxlc           = old.datum$cohort$wflxlc
    new.datum$cohort$transp           = old.datum$cohort$transp

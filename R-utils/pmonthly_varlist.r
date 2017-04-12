@@ -175,6 +175,19 @@ tspftdbh[[n]]     = list( vnam     = "bdead"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "btimber"
+                        , desc     = "(Commercial) timber biomass"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
+                        , plog     = FALSE
+                        , pft      = FALSE
+                        , pftdbh   = FALSE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bleaf"
                         , desc     = "Leaf biomass"
                         , e.unit   = untab$kgcom2
@@ -242,6 +255,19 @@ tspftdbh[[n]]     = list( vnam     = "bstorage"
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bseeds"
                         , desc     = "Seed biomass"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "byield"
+                        , desc     = "Yield (seed) biomass"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
@@ -1932,6 +1958,26 @@ theme[[n]] = list( vnam      = c("fast.soil.c","slow.soil.c","struct.soil.c")
                  , plog      = FALSE
                  , prefix    = "soil_carbon"
                  , title     = "Soil Carbon"
+                 , unit      = untab$kgcom2
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = FALSE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(   "crop.yield","crop.harvest","logging.harvest")
+                 , desc      = c( "Crop (Seeds)","Crop (Other)","Logging Harvest")
+                 , colour    = c(  "chartreuse3", "dodgerblue3",      "orangered")
+                 , lwd       = c(            2.5,           2.5,              2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "yield_harvest"
+                 , title     = "Crop and Logging yield"
                  , unit      = untab$kgcom2
                  , legpos    = "topleft"
                  , emean     = TRUE

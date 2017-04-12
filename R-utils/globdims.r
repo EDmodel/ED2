@@ -1,6 +1,6 @@
 #----- Some dimensions based on ED-2.2 default. -------------------------------------------#
 npft       <<- 17 # Number of plant functional types
-nlu        <<-  6 # Number of land use types.
+nlu        <<-  8 # Number of land use types.
 nstyp      <<- 17 # Number of default soil types
 #------------------------------------------------------------------------------------------#
 
@@ -133,22 +133,27 @@ asprs.val <<- seq_along(asprs.col)-1
 
 
 #----- Define some default legend colours and names. --------------------------------------#
-lunames   <<- c("Agricultural","Plantation","Tree fall"
-               ,"Burnt","Abandoned","Logged","Total")
-lucols    <<- c("#E65C17","#2996CC","#306614","#990F0F","#2996CC","#A3CC52",all.colour)
-
-distnames <<- c("AGR->AGR" ,"FPL->AGR" ,"TFL->AGR","BRN->AGR","ABN->AGR","LOG->AGR"
-               ,"AGR->FPL" ,"FPL->FPL" ,"TFL->FPL","BRN->FPL","ABN->FPL","LOG->FPL"
-               ,"AGR->TFL" ,"FPL->TFL" ,"TFL->TFL","BRN->TFL","ABN->TFL","LOG->TFL"
-               ,"AGR->BRN" ,"FPL->BRN" ,"TFL->BRN","BRN->BRN","ABN->BRN","LOG->BRN"
-               ,"AGR->ABN" ,"FPL->ABN" ,"TFL->ABN","BRN->ABN","ABN->ABN","LOG->ABN"
-               ,"AGR->LOG" ,"FPL->LOG" ,"TFL->LOG","BRN->LOG","ABN->LOG","LOG->LOG")
-distcols  <<- c("#66005A","#A80095","#E500CB","#FF4CEA","#FF998F","#FFCCF9"
-               ,"#005A66","#00889A","#00B3CB","#00D3EF","#96F3FF","#CBF9FF"
-               ,"#DEDEDE","#DEDEDE","#596500","#A0B310","#D1ED00","#F2FF91"
-               ,"#DEDEDE","#DEDEDE","#983A2E","#D64F3D","#F29C91","#FFD1CB"
-               ,"#007F0F","#00BE16","#DEDEDE","#DEDEDE","#DEDEDE","#DEDEDE"
-               ,"#DEDEDE","#DEDEDE","#4C3FB2","#6E5AFF","#B0A6FF","#DED9FF")
+lunames   <<- c("Pasture","Plantation","Tree fall","Burnt","Abandoned","Logging"
+               ,"Skid trail","Cropland","Total")
+lucols    <<- c("#E65C17","#2996CC","#306614","#990F0F","#2996CC","#A3CC52"
+               ,"#B49ED2","#F5C858",all.colour)
+distnames <<- c("PST->PST" ,"FPL->PST" ,"TFL->PST","BRN->PST","ABN->PST","LOG->PST","SKD->PST","CPL->PST"
+               ,"PST->FPL" ,"FPL->FPL" ,"TFL->FPL","BRN->FPL","ABN->FPL","LOG->FPL","SKD->FPL","CPL->FPL"
+               ,"PST->TFL" ,"FPL->TFL" ,"TFL->TFL","BRN->TFL","ABN->TFL","LOG->TFL","SKD->TFL","CPL->TFL"
+               ,"PST->BRN" ,"FPL->BRN" ,"TFL->BRN","BRN->BRN","ABN->BRN","LOG->BRN","SKD->BRN","CPL->BRN"
+               ,"PST->ABN" ,"FPL->ABN" ,"TFL->ABN","BRN->ABN","ABN->ABN","LOG->ABN","SKD->ABN","CPL->ABN"
+               ,"PST->LOG" ,"FPL->LOG" ,"TFL->LOG","BRN->LOG","ABN->LOG","LOG->LOG","SKD->LOG","CPL->LOG"
+               ,"PST->SKD" ,"FPL->SKD" ,"TFL->SKD","BRN->SKD","ABN->SKD","LOG->SKD","SKD->SKD","CPL->SKD"
+               ,"PST->CPL" ,"FPL->CPL" ,"TFL->CPL","BRN->CPL","ABN->CPL","LOG->CPL","SKD->CPL","CPL->CPL"
+               )
+distcols  <<- c("#500C22","#FF99A3","#6B0020","#FF7780","#8C001B","#FF7168","#B30010","#CD2A0A"
+               ,"#5B1500","#FF9F7F","#FF7F4F","#AD4000","#FFD4B6","#904E00","#BA7100","#683D00"
+               ,"#FFB055","#FFC27C","#FFB330","#F3B700","#907400","#4F3F00","#F5E074","#B4BA00"
+               ,"#E3E39E","#89A900","#607800","#B9EDA7","#007218","#35CE4D","#8BF790","#002F09"
+               ,"#01B259","#C5E8CE","#009357","#00C377","#006E45","#00C597","#008072","#005654"
+               ,"#71F2F5","#018CD1","#00466D","#53A1FF","#00467E","#9CAAFF","#0E3EC4","#00207B"
+               ,"#D7C5FF","#311B53","#5B008D","#46006D","#E27DFF","#F5B6FF","#F49AFF","#381E3A"
+               ,"#52004E","#FF99E2","#4E053E","#DC1BA7","#92005E","#FFA3CD","#FF47A8","#FFAEC6")
 #------------------------------------------------------------------------------------------#
 
 

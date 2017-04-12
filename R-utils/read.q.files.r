@@ -326,6 +326,9 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       emean$fast.soil.c     [m] =   mymont$MMEAN.FAST.SOIL.C.PY
       emean$slow.soil.c     [m] =   mymont$MMEAN.SLOW.SOIL.C.PY
       emean$struct.soil.c   [m] =   mymont$MMEAN.STRUCT.SOIL.C.PY
+      emean$crop.yield      [m] =   mymont$CROP.YIELD.PY[thismonth]
+      emean$crop.harvest    [m] =   mymont$CROP.HARVEST.PY
+      emean$logging.harvest [m] =   mymont$LOGGING.HARVEST.PY
       emean$het.resp        [m] =   mymont$MMEAN.RH.PY
       emean$cwd.resp        [m] =   mymont$MMEAN.CWD.RH.PY
       emean$gpp             [m] =   mymont$MMEAN.GPP.PY
@@ -785,6 +788,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #     Find biomass of all tissues.                                                #
          #---------------------------------------------------------------------------------#
          bdeadconow        = mymont$BDEAD
+         btimberconow      = mymont$BTIMBER
          bleafconow        = mymont$MMEAN.BLEAF.CO
          bsapwoodconow     = mymont$BSAPWOODA+mymont$BSAPWOODB
          if (all(mymont$MMEAN.BROOT.CO == 0)){
@@ -799,6 +803,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          baliveconow       = bleafconow + bfrootconow + bsapwoodconow
          bstorageconow     = mymont$MMEAN.BSTORAGE.CO
          bseedsconow       = mymont$BSEEDS.CO
+         byieldconow       = mymont$BYIELD.CO
          biomassconow      = baliveconow + bstorageconow + bseedsconow + bdeadconow
          #---------------------------------------------------------------------------------#
 
@@ -1418,6 +1423,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          light.diffconow     = NA
          baliveconow         = NA
          bdeadconow          = NA
+         btimberconow        = NA
          bleafconow          = NA
          bsapwoodconow       = NA
          bfrootconow         = NA
@@ -1426,6 +1432,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          bstemconow          = NA
          bstorageconow       = NA
          bseedsconow         = NA
+         byieldconow         = NA
          hflxlcconow         = NA
          wflxlcconow         = NA
          transpconow         = NA
@@ -2458,6 +2465,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                * bdeadconow        [sel]
                                                , na.rm = TRUE
                                                )#end sum
+               szpft$btimber      [m,d,p] = sum( w.nplant          [sel]
+                                               * btimberconow      [sel]
+                                               , na.rm = TRUE
+                                               )#end sum
                szpft$balive       [m,d,p] = sum( w.nplant          [sel]
                                                * baliveconow       [sel]
                                                , na.rm = TRUE
@@ -2492,6 +2503,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
                                                )#end sum
                szpft$bseeds       [m,d,p] = sum( w.nplant          [sel]
                                                * bseedsconow       [sel]
+                                               , na.rm = TRUE
+                                               )#end sum
+               szpft$byield       [m,d,p] = sum( w.nplant          [sel]
+                                               * byieldconow       [sel]
                                                , na.rm = TRUE
                                                )#end sum
                szpft$hflxlc       [m,d,p] = sum( w.nplant          [sel]
@@ -3371,6 +3386,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$light.diff   [[clab]] = light.diffconow
          cohort$balive       [[clab]] = baliveconow
          cohort$bdead        [[clab]] = bdeadconow
+         cohort$btimber      [[clab]] = btimberconow
          cohort$bleaf        [[clab]] = bleafconow
          cohort$bstem        [[clab]] = bstemconow
          cohort$broot        [[clab]] = brootconow
@@ -3379,6 +3395,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          cohort$bsapwood     [[clab]] = bsapwoodconow
          cohort$bstorage     [[clab]] = bstorageconow
          cohort$bseeds       [[clab]] = bseedsconow
+         cohort$byield       [[clab]] = byieldconow
          cohort$hflxlc       [[clab]] = hflxlcconow
          cohort$wflxlc       [[clab]] = wflxlcconow
          cohort$transp       [[clab]] = transpconow

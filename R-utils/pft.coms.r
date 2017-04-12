@@ -571,16 +571,16 @@ pft01 = list( name               = "C4 grass"
             , lr.high.temp       = lr.thot.c4    + t00
             , lr.decay.e.low     = lr.decay.ecold.c4
             , lr.decay.e.high    = lr.decay.ehot.c4
-            , vm0                = 12.5 * vmfact.c4 * umol.2.mol
+            , vm0                = 16.1 * vmfact.c4 * umol.2.mol
             , m                  = mphoto.c4
             , alpha              = alpha.c4
             , b                  = b.c4 * umol.2.mol
             , gamma.resp         = gamma.c4
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.5
-            , root.turnover.rate = 2.5
-            , SLA                = 30.0
+            , leaf.turnover.rate = 2.9
+            , root.turnover.rate = 2.9
+            , SLA                = 35.1
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -635,16 +635,16 @@ pft02 = list( name               = "Early tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 21.50 * vmfact.c3 * umol.2.mol
+            , vm0                = 27.5 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.53
-            , leaf.turnover.rate = 1.25
-            , root.turnover.rate = 1.25
-            , SLA                = 23.0
+            , leaf.turnover.rate = 1.282
+            , root.turnover.rate = 1.282
+            , SLA                = 23.18
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -699,16 +699,16 @@ pft03 = list( name               = "Mid tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 12.5 * vmfact.c3 * umol.2.mol
+            , vm0                = 16.1 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.71
-            , leaf.turnover.rate = 0.575
-            , root.turnover.rate = 0.575
-            , SLA                = 15.0
+            , leaf.turnover.rate = 0.596
+            , root.turnover.rate = 0.596
+            , SLA                = 14.88
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -763,16 +763,16 @@ pft04 = list( name               = "Late tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 7.50 * vmfact.c3 * umol.2.mol
+            , vm0                = 9.2 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.90
-            , leaf.turnover.rate = 0.25
-            , root.turnover.rate = 0.25
-            , SLA                = 9.0
+            , leaf.turnover.rate = 0.266
+            , root.turnover.rate = 0.266
+            , SLA                = 9.32
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -1280,16 +1280,16 @@ pft16 = list( name               = "C3 grass"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 35.0 * vmfact.c3 * umol.2.mol
+            , vm0                = 52.0 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.5
-            , root.turnover.rate = 2.5
-            , SLA                = 22.7
+            , leaf.turnover.rate = 2.9
+            , root.turnover.rate = 2.9
+            , SLA                = 35.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -1677,47 +1677,65 @@ for (ipft in sequence(npft)){
 
 
 #------------------------------------------------------------------------------------------#
-#     Volume allometry.                                                                    #
+#     Commercial volume of trees (stem/bole volume, in m3).  The current equation is a     #
+# re-fit from Nogueira et al. (2008) so a single set of parameters can be used.  Their     #
+# equation is for tropical trees only, so temperate and boreal forests may need a          #
+# different set of parameters.  Grasses are assumed to have no commercial volume.          #
+#                                                                                          #
+# Nogueira, E. M., et al. Estimates of forest biomass in the Brazilian Amazon: new         #
+#    allometric equations and adjustments to biomass from wood-volume inventories.         #
+#    Forest Ecol. Manag., 256(11), 1853-1867, Nov. 2008, doi:10.1016/j.foreco.2008.07.022. #
 #------------------------------------------------------------------------------------------#
-pft$b1Vol[1:17] = 1.e-6 * 0.65 * pi * 0.11 * 0.11
-pft$b2Vol[1:17] = 1.0
-if (iallom %in% c(4)){
-   #----- New allometry, use Chave et al. (2014) divided by wood density. -----------------#
-   itrop            = pft$tropical
-   pft$b2Vol[itrop] = 0.976
-   pft$b1Vol[itrop] = 0.001 * 0.0673 * pft$rho[itrop]^(pft$b2Vol[itrop]-1.0)
+pft$b1Vol = rep(NA,times=npft+1)
+pft$b2Vol = rep(NA,times=npft+1)
+for (ipft in sequence(npft)){
+   if (pft$grass[ipft]){
+      #----- Grasses have no commercial volume. -------------------------------------------#
+      pft$b1Vol[ipft] = 0.0
+      pft$b2Vol[ipft] = 1.0
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Nogueira et al. (2008) allometry. --------------------------------------------#
+      pft$b1Vol[ipft] = 3.528e-5
+      pft$b2Vol[ipft] = 0.976
+      #------------------------------------------------------------------------------------#
+   }#end if (pft$grass[ipft])
    #---------------------------------------------------------------------------------------#
-}#end if (iallom %in% c(4))
+}#end for (ipft %in% sequence(npft))
 #------------------------------------------------------------------------------------------#
 
 
 
 #------------------------------------------------------------------------------------------#
-#    Rooting depth coefficients.                                                           #
+#     Rooting depth coefficients.  They are updated to account for the volume.  The        #
+# original volume equation did not have any source and it looks way too small (probably    #
+# not SI units?), so I am replacing with commercial volume and making rooting depth self-  #
+# -contained.                                                                              #
 #------------------------------------------------------------------------------------------#
 pft$b1Rd = rep(NA,times=npft+1)
+pft$b2Rd = rep(NA,times=npft+1)
 if (iallom %in% c(0)){
    #----- Original ED-2.1 scheme, based on standing volume. -------------------------------#
-   pft$b1Rd[ 1:17] = NA
-   pft$b1Rd[    1] = -0.700
-   pft$b1Rd[  2:4] = -exp(0.545 * log(10.))
-   pft$b1Rd[    5] = -0.700
-   pft$b1Rd[ 6:11] = -exp(0.545 * log(10.))
-   pft$b1Rd[12:16] = -0.700
-   pft$b1Rd[   17] = -exp(0.545 * log(10.))
-   pft$b2Rd[ 1:17] = NA
-   pft$b2Rd[    1] = 0.000
-   pft$b2Rd[  2:4] = 0.277
-   pft$b2Rd[    5] = 0.000
-   pft$b2Rd[ 6:11] = 0.277
-   pft$b2Rd[12:16] = 0.000
-   pft$b2Rd[   17] = 0.277
-
+   for (ipft in sequence(npft)){
+      if (pft$grass[ipft]){
+         #----- Grasses have fixed rooting depth (70 cm). ---------------------------------#
+         pft$b2Rd[ipft] = 0.0
+         pft$b1Rd[ipft] = -0.700
+         #---------------------------------------------------------------------------------#
+      }else{
+         #----- Volume-based allometry for trees. -----------------------------------------#
+         pft$b2Rd[ipft] = 0.277
+         pft$b1Rd[ipft] = -exp(0.545 *log(10.)) * (0.65*pi*0.11*0.11)^pft$b2Rd[ipft]
+         #---------------------------------------------------------------------------------#
+      }#end if (pft$grass[ipft])
+      #------------------------------------------------------------------------------------#
+   }#end for (ipft %in% sequence(npft))
+   #---------------------------------------------------------------------------------------#
 }else{
    #----- Simple allometry (0.5 m for seedlings, 5.0m for 35-m trees. ---------------------#
    pft$b1Rd[1:17]  = -1.1140580
    pft$b2Rd[1:17]  =  0.4223014
-
+   #---------------------------------------------------------------------------------------#
 }#end if
 #------------------------------------------------------------------------------------------#
 

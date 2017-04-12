@@ -871,8 +871,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                        )#end list
    flagvar[["ianth.disturb"]]    = list( descr  = "Anthropogenic disturbance"
                                        , numeric = TRUE
-                                       , values = c(0,1)
-                                       , names  = c("OFF","ON")
+                                       , values = c(0,1,2)
+                                       , names  = c("OFF","ON","LOG")
                                        )#end list
    flagvar[["ianth.dataset"]]    = list( descr  = "LULCC dataset"
                                        , numeric = FALSE
@@ -1193,21 +1193,21 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("user")
          na     = c(     6)
          nz     = c(     8)
-      }else if (lenici == 11){
-         nparms = 1
-         param  = c("revision")
-         na     = c(         9)
-         nz     = c(        11)
       }else if (lenici == 10){
          nparms = 1
          param  = c("nzs")
          na     = c(    9)
          nz     = c(   10)
+      }else if (lenici == 11){
+         nparms = 1
+         param  = c("revision")
+         na     = c(         9)
+         nz     = c(        11)
       }else if (lenici == 12){
-         nparms = 2
-         param  = c("met.forcing","isas")
-         na     = c(            6,    10)
-         nz     = c(            8,    12)
+         nparms = 1
+         param  = c("ianth.disturb")
+         na     = c(             11)
+         nz     = c(             12)
       }else if (lenici == 14){
          nparms = 1
          param  = c("icanrad")
