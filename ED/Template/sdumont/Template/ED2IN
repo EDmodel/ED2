@@ -1190,6 +1190,8 @@ $ED_NL
    !                       1.  Landscape.  The simulation represents a landscape. Logging  !
    !                           occurs every year but it is restricted to patches with age  !
    !                           greater than or equal to SL_NYRS                            !
+   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
+   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
    ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
    !                       SL_SCALE above)                                                 !
    ! SL_PFT             -- PFTs that can be harvested.                                     !
@@ -1206,7 +1208,10 @@ $ED_NL
    !                                                                                       !
    ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
    !                                                                                       !
-   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
+   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
+   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
    !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !
@@ -1216,12 +1221,16 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IANTH_DISTURB       = myanthdisturb
    NL%SL_SCALE            = myslscale
+   NL%SL_YR_FIRST         = myslyrfirst
    NL%SL_NYRS             = myslnyrs
    NL%SL_PFT              = mylogging
    NL%SL_PROB_HARVEST     = myprobharv
    NL%SL_MINDBH_HARVEST   = mydbhharv
    NL%SL_BIOMASS_HARVEST  = mybioharv
    NL%SL_SKID_REL_AREA    = myskidarea
+   NL%SL_SKID_S_GTHARV    = myskidlarge
+   NL%SL_SKID_S_LTHARV    = myskidsmall
+   NL%SL_FELLING_S_LTHARV = myfellingsmall
    NL%CL_FSEEDS_HARVEST   = myseedharv
    NL%CL_FSTORAGE_HARVEST = mystorharv
    NL%CL_FLEAF_HARVEST    = myleafharv

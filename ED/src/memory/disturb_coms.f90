@@ -113,6 +113,8 @@ module disturb_coms
    !                       1.  Landscape.  The simulation represents a landscape. Logging  !
    !                           occurs every year but it is restricted to patches with age  !
    !                           greater than or equal to SL_NYRS                            !
+   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
+   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
    ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
    !                       SL_SCALE above)                                                 !
    ! SL_PFT             -- PFTs that can be harvested.                                     !
@@ -129,7 +131,10 @@ module disturb_coms
    !                                                                                       !
    ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
    !                                                                                       !
-   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
+   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
+   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
    !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !
@@ -138,12 +143,16 @@ module disturb_coms
    ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
    integer                        :: sl_scale
+   integer                        :: sl_yr_first
    integer                        :: sl_nyrs
    integer     , dimension(n_pft) :: sl_pft
    real(kind=4), dimension(n_pft) :: sl_prob_harvest
    real(kind=4), dimension(n_pft) :: sl_mindbh_harvest
    real(kind=4)                   :: sl_biomass_harvest
    real(kind=4)                   :: sl_skid_rel_area
+   real(kind=4)                   :: sl_skid_s_gtharv
+   real(kind=4)                   :: sl_skid_s_ltharv
+   real(kind=4)                   :: sl_felling_s_ltharv
    real(kind=4)                   :: cl_fseeds_harvest
    real(kind=4)                   :: cl_fstorage_harvest
    real(kind=4)                   :: cl_fleaf_harvest

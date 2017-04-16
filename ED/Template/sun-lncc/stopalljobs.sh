@@ -153,9 +153,13 @@ do
    ianthdisturb=$(echo ${oi} | awk '{print $97 }')
    ianthdataset=$(echo ${oi} | awk '{print $98 }')
    slscale=$(echo ${oi}      | awk '{print $99 }')
-   slnyrs=$(echo ${oi}       | awk '{print $100}')
-   bioharv=$(echo ${oi}      | awk '{print $101}')
-   skidarea=$(echo ${oi}     | awk '{print $102}')
+   slyrfirst=$(echo ${oi}    | awk '{print $100}')
+   slnyrs=$(echo ${oi}       | awk '{print $101}')
+   bioharv=$(echo ${oi}      | awk '{print $102}')
+   skidarea=$(echo ${oi}     | awk '{print $103}')
+   skidsmall=$(echo ${oi}    | awk '{print $104}')
+   skidlarge=$(echo ${oi}    | awk '{print $105}')
+   fellingsmall=$(echo ${oi} | awk '{print $106}')
    #---------------------------------------------------------------------------------------#
 
 

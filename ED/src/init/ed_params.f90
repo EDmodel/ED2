@@ -1723,7 +1723,7 @@ subroutine init_pft_photo_params()
    Vm0(11)    =  6.981875
    Vm0(12:13) = 18.300000
    Vm0(14:15) = 12.500000
-   Vm0(16)    = 52.300000 ! 18.750000
+   Vm0(16)    = 21.500000 ! 18.750000
    Vm0(17)    = 15.625000
    do ipft = 1, n_pft
       select case (photosyn_pathway(ipft))
@@ -2348,7 +2348,10 @@ subroutine init_pft_mort_params()
    use ed_misc_coms, only : ibigleaf                   & ! intent(in)
                           , iallom                     ! ! intent(in)
    use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
-                          , time2canopy                ! ! intent(in)
+                          , time2canopy                & ! intent(in)
+                          , sl_skid_s_gtharv           & ! intent(in)
+                          , sl_skid_s_ltharv           & ! intent(in)
+                          , sl_felling_s_ltharv        ! ! intent(in)
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
@@ -2578,8 +2581,8 @@ subroutine init_pft_mort_params()
          felling_s_gtharv(ipft) = 0.70
          felling_s_ltharv(ipft) = 0.70
       else
-         felling_s_gtharv(ipft) = 0.35
-         felling_s_ltharv(ipft) = 0.0
+         felling_s_gtharv(ipft) = 0.00
+         felling_s_ltharv(ipft) = sl_felling_s_ltharv
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -2594,8 +2597,8 @@ subroutine init_pft_mort_params()
          skid_s_gtharv(ipft) = 1.0
          skid_s_ltharv(ipft) = 1.0
       else
-         skid_s_gtharv(ipft) = 0.60
-         skid_s_ltharv(ipft) = 1.00
+         skid_s_gtharv(ipft) = sl_skid_s_gtharv
+         skid_s_ltharv(ipft) = sl_skid_s_ltharv
       end if
    end do
    !---------------------------------------------------------------------------------------!

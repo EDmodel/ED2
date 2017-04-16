@@ -180,8 +180,8 @@ tspftdbh[[n]]     = list( vnam     = "btimber"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE

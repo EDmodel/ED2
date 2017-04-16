@@ -19,6 +19,7 @@ subroutine landuse_init
                             , sl_pft            & ! intent(in)
                             , sl_scale          & ! intent(in)
                             , sl_nyrs           & ! intent(in)
+                            , sl_yr_first       & ! intent(in)
                             , sl_mindbh_harvest & ! intent(in)
                             , sl_prob_harvest   ! ! intent(in)
    use ed_misc_coms  , only : iyeara            & ! intent(in)
@@ -508,9 +509,11 @@ subroutine landuse_init
                !---------------------------------------------------------------------------!
                !     Decide whether to include logging disturbance in this year.           !
                !---------------------------------------------------------------------------!
-               if ( (sl_scale == 1) .or. (mod(yd_this-iyeara,sl_nyrs) == 1)) then
-                  clutime%landuse(12) = -1.0
-                  clutime%landuse(14) = -1.0
+               if (yd_this >= sl_yr_first) then
+                  if ( (sl_scale == 1) .or. (mod(yd_this-sl_yr_first,sl_nyrs) == 0) ) then
+                     clutime%landuse(12) = -1.0
+                     clutime%landuse(14) = -1.0
+                  end if
                end if
                !---------------------------------------------------------------------------!
             end do

@@ -160,6 +160,7 @@ Module consts_coms
                         , b_lnexp_max      => lnexp_max      & ! intent(in)
                         , b_huge_num       => huge_num       & ! intent(in)
                         , b_tiny_num       => tiny_num       & ! intent(in)
+                        , b_almost_one     => almost_one     & ! intent(in)
                         , b_s_tol_trunc    => b_s_tol_trunc  & ! intent(in)
                         , b_r_tol_trunc    => b_r_tol_trunc  & ! intent(in)
                         , b_s_tol_trunc8   => b_s_tol_trunc8 & ! intent(in)
@@ -331,6 +332,7 @@ Module consts_coms
    real        , parameter :: lnexp_max      = b_lnexp_max
    real        , parameter :: huge_num       = b_huge_num
    real        , parameter :: tiny_num       = b_tiny_num
+   real        , parameter :: almost_one     = b_almost_one
    real        , parameter :: s_tol_trunc    = b_s_tol_trunc 
    real        , parameter :: r_tol_trunc    = b_r_tol_trunc 
    real(kind=8), parameter :: s_tol_trunc8   = b_s_tol_trunc8
@@ -631,6 +633,14 @@ Module consts_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     These are useful to test numbers with a safe margin.                              !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: almost_one = 1.-epsilon(1.)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !     Tolerance for truncation errors.  "s" are the strict tolerance (literally the     !
    ! machine epsilon), whereas the "r" are the relaxed tolerance (the square root of the   !
    ! strict tolerance).                                                                    !
@@ -772,6 +782,7 @@ Module consts_coms
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
+   real(kind=8), parameter :: almost_one8     = dble(almost_one    )
    real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
    real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )
    real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )

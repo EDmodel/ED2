@@ -341,9 +341,13 @@ do
    ianthdisturb=$(echo ${oi} | awk '{print $97 }')
    ianthdataset=$(echo ${oi} | awk '{print $98 }')
    slscale=$(echo ${oi}      | awk '{print $99 }')
-   slnyrs=$(echo ${oi}       | awk '{print $100}')
-   bioharv=$(echo ${oi}      | awk '{print $101}')
-   skidarea=$(echo ${oi}     | awk '{print $102}')
+   slyrfirst=$(echo ${oi}    | awk '{print $100}')
+   slnyrs=$(echo ${oi}       | awk '{print $101}')
+   bioharv=$(echo ${oi}      | awk '{print $102}')
+   skidarea=$(echo ${oi}     | awk '{print $103}')
+   skidsmall=$(echo ${oi}    | awk '{print $104}')
+   skidlarge=$(echo ${oi}    | awk '{print $105}')
+   fellingsmall=$(echo ${oi} | awk '{print $106}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1625,12 +1629,16 @@ do
    sed -i s@myanthdisturb@${ianthdisturb}@g     ${ED2IN}
    sed -i s@myludatabase@${ludatabase}@g        ${ED2IN}
    sed -i s@myslscale@${slscale}@g              ${ED2IN}
+   sed -i s@myslyrfirst@${slyrfirst}@g          ${ED2IN}
    sed -i s@myslnyrs@${slnyrs}@g                ${ED2IN}
    sed -i s@mylogging@${logging}@g              ${ED2IN}
    sed -i s@myprobharv@${probharv}@g            ${ED2IN}
    sed -i s@mydbhharv@${dbhharv}@g              ${ED2IN}
    sed -i s@mybioharv@${bioharv}@g              ${ED2IN}
    sed -i s@myskidarea@${skidarea}@g            ${ED2IN}
+   sed -i s@myskidsmall@${skidsmall}@g          ${ED2IN}
+   sed -i s@myskidlarge@${skidlarge}@g          ${ED2IN}
+   sed -i s@myfellingsmall@${fellingsmall}@g    ${ED2IN}
    sed -i s@myseedharv@${seedharv}@g            ${ED2IN}
    sed -i s@mystorharv@${storharv}@g            ${ED2IN}
    sed -i s@myleafharv@${leafharv}@g            ${ED2IN}

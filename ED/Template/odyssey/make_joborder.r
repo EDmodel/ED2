@@ -173,8 +173,8 @@ default = list( run           = "unnamed"
               , bphoto.c4     = 10000.
               , kw.grass      = 900.
               , kw.tree       = 600.
-              , gamma.c3      = 0.022
-              , gamma.c4      = 0.044
+              , gamma.c3      = 0.020
+              , gamma.c4      = 0.040
               , d0.grass      = 0.016
               , d0.tree       = 0.016
               , alpha.c3      = 0.080
@@ -182,7 +182,7 @@ default = list( run           = "unnamed"
               , klowco2       = 4000.
               , decomp.scheme = 2
               , rrffact       = 1.000
-              , growthresp    = 0.333
+              , growthresp    = 0.400
               , lwidth.grass  = 0.05
               , lwidth.bltree = 0.10
               , lwidth.nltree = 0.05
@@ -209,7 +209,7 @@ default = list( run           = "unnamed"
               , ipercol       = 0
               , runoff.time   = 3600.
               , imetrad       = 2
-              , ibranch       = 1
+              , ibranch       = 0
               , icanrad       = 2
               , ihrzrad       = 0
               , crown.mod     = 0
@@ -219,7 +219,7 @@ default = list( run           = "unnamed"
               , lreflect.nir  = 0.400
               , orient.tree   = 0.000
               , orient.grass  = 0.000
-              , clump.tree    = 1.000
+              , clump.tree    = 0.800
               , clump.grass   = 1.000
               , igoutput      = 0
               , ivegtdyn      = 1
@@ -232,9 +232,13 @@ default = list( run           = "unnamed"
               , ianth.disturb = 0
               , ianth.dataset = "glu-331"
               , sl.scale      = 0
+              , sl.yr.first   = 1992
               , sl.nyrs       = 50.
               , biomass.harv  = 0.
               , skid.area     = 1.0
+              , skid.small    = 0.60
+              , skid.large    = 1.00
+              , felling.small = 0.35
               ) #end list
 #------------------------------------------------------------------------------------------#
 
@@ -270,6 +274,11 @@ for (n in sequence(nvars)){
    }else if (name.now %in% "labsorb.nir"){
       joborder$ltrans.nir   = 1. * (1. - myruns$labsorb.nir) / 3.
       joborder$lreflect.nir = 2. * (1. - myruns$labsorb.nir) / 3.
+   }else if (name.now %in% "sl.type"){
+      joborder$skid.area     = sapply(myruns$sl.type,FUN=switch,ril=0.60,cvl=1.20,NA)
+      joborder$skid.small    = sapply(myruns$sl.type,FUN=switch,ril=0.60,cvl=0.30,NA)
+      joborder$skid.large    = sapply(myruns$sl.type,FUN=switch,ril=1.00,cvl=0.75,NA)
+      joborder$felling.small = sapply(myruns$sl.type,FUN=switch,ril=0.35,cvl=0.10,NA)
    }else if (name.now %in% names(joborder)){
       joborder[[name.now]] = myruns[[name.now]]
    }else{
@@ -289,8 +298,12 @@ forbidden = joborder$iage == 1 & joborder$ibigleaf == 1
 if ( "ianth.dataset" %in% names(varrun)){
    lu.1st    = varrun$ianth.dataset[1]
    redundant = joborder$ianth.disturb == 0 & joborder$ianth.dataset != lu.1st
-   forbidden = forbiden | redundant
+   forbidden = forbidden | redundant
 }#end if ( "ianth.dataset" %in% names(varrun))
+if ( "sl.type" %in% names(varrun)){
+   redundant = joborder$ianth.disturb == 0 & myruns$sl.type != unique(myruns$sl.type)[1]
+   forbidden = forbidden | redundant
+}#end if ("sl.type" %in% names(varrun))
 joborder     = joborder[! forbidden,]
 myruns       = myruns[! forbidden,]
 nruns        = nrow(myruns)

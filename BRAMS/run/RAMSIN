@@ -2685,6 +2685,8 @@ $ED2_INFO
    !                       1.  Landscape.  The simulation represents a landscape. Logging  !
    !                           occurs every year but it is restricted to patches with age  !
    !                           greater than or equal to SL_NYRS                            !
+   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
+   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
    ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
    !                       SL_SCALE above)                                                 !
    ! SL_PFT             -- PFTs that can be harvested.                                     !
@@ -2701,7 +2703,10 @@ $ED2_INFO
    !                                                                                       !
    ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
    !                                                                                       !
-   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
+   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
+   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
    !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !
@@ -2711,12 +2716,16 @@ $ED2_INFO
    !---------------------------------------------------------------------------------------!
    IANTH_DISTURB       = 0,
    SL_SCALE            = 1,
+   SL_YR_FIRST         = 2017,
    SL_NYRS             = 40,
    SL_PFT              = 2,3,4,
    SL_INTENSITY        = 1.0,1.0,1.0,
    SL_MINDBH_HARVEST   = 35.0,35.0,35.0,
    SL_BIOMASS_HARVEST  = 0.,
    SL_SKID_REL_AREA    = 0.6,
+   SL_SKID_S_GTHARV    = 1.00,
+   SL_SKID_S_LTHARV    = 0.60,
+   SL_FELLING_S_LTHARV = 0.35,
    CL_FSEEDS_HARVEST   = 0.75,
    CL_FSTORAGE_HARVEST = 0.0,
    CL_FLEAF_HARVEST    = 0.0,

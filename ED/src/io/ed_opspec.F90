@@ -1159,6 +1159,8 @@ subroutine ed_opspec_misc
                                     , itoutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
                                     , igoutput                     & ! intent(in)
+                                    , iyeara                       & ! intent(in)
+                                    , iyearz                       & ! intent(in)
                                     , iadd_site_means              & ! intent(in)
                                     , iadd_patch_means             & ! intent(in)
                                     , iadd_cohort_means            & ! intent(in)
@@ -1241,12 +1243,16 @@ subroutine ed_opspec_misc
                                     , treefall_disturbance_rate    & ! intent(in)
                                     , min_patch_area               & ! intent(in)
                                     , sl_scale                     & ! intent(in)
+                                    , sl_yr_first                  & ! intent(in)
                                     , sl_nyrs                      & ! intent(in)
                                     , sl_pft                       & ! intent(in)
                                     , sl_prob_harvest              & ! intent(in)
                                     , sl_mindbh_harvest            & ! intent(in)
                                     , sl_biomass_harvest           & ! intent(in)
                                     , sl_skid_rel_area             & ! intent(in)
+                                    , sl_skid_s_gtharv             & ! intent(in)
+                                    , sl_skid_s_ltharv             & ! intent(in)
+                                    , sl_felling_s_ltharv          & ! intent(in)
                                     , cl_fseeds_harvest            & ! intent(in)
                                     , cl_fstorage_harvest          & ! intent(in)
                                     , cl_fleaf_harvest             ! ! intent(in)
@@ -2052,9 +2058,17 @@ end do
          ifaterr = ifaterr +1
       end if
 
-      if (sl_nyrs < 1 .or. sl_nyrs > 200) then
+      if (sl_yr_first < iyeara .or. sl_yr_first > iyearz) then
+         write (reason,fmt='(a,i4,2a,i4,a,1x,i4,a)')                                       &
+                       'Invalid SL_YR_FIRST, it must be between IYEARA (',iyeara,') and '  &
+                      ,'IYEARZ (',iyearz,'). Yours is set to',sl_yr_first,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (sl_nyrs < 1 .or. sl_nyrs > 2000) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
-                       'Invalid SL_NYRS, it must be between 1 and 200. Yours is set to'    &
+                       'Invalid SL_NYRS, it must be between 1 and 2000. Yours is set to'   &
                       ,sl_nyrs,'...'
          call opspec_fatal(reason,'opspec_misc')  
          ifaterr = ifaterr +1
@@ -2144,6 +2158,30 @@ end do
          write (reason,fmt='(2a,1x,es12.5,a)')                                             &
                        'Invalid SL_SKID_REL_AREA, it must be between 0. and 5.'            &
                       ,'  Yours is set to',sl_skid_rel_area,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (sl_skid_s_gtharv < 0. .or. sl_skid_s_gtharv > 1.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid SL_SKID_S_GTHARV, it must be between 0. and 1.'            &
+                      ,'  Yours is set to',sl_skid_s_gtharv,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (sl_skid_s_ltharv < 0. .or. sl_skid_s_ltharv > 1.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid SL_SKID_S_LTHARV, it must be between 0. and 1.'            &
+                      ,'  Yours is set to',sl_skid_s_ltharv,'...'
+         call opspec_fatal(reason,'opspec_misc')  
+         ifaterr = ifaterr +1
+      end if
+
+      if (sl_felling_s_ltharv < 0. .or. sl_felling_s_ltharv > 1.) then
+         write (reason,fmt='(2a,1x,es12.5,a)')                                             &
+                       'Invalid SL_FELLING_S_LTHARV, it must be between 0. and 1.'            &
+                      ,'  Yours is set to',sl_felling_s_ltharv,'...'
          call opspec_fatal(reason,'opspec_misc')  
          ifaterr = ifaterr +1
       end if

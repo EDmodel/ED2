@@ -1186,6 +1186,8 @@ $ED_NL
    !                       1.  Landscape.  The simulation represents a landscape. Logging  !
    !                           occurs every year but it is restricted to patches with age  !
    !                           greater than or equal to SL_NYRS                            !
+   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
+   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
    ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
    !                       SL_SCALE above)                                                 !
    ! SL_PFT             -- PFTs that can be harvested.                                     !
@@ -1202,7 +1204,10 @@ $ED_NL
    !                                                                                       !
    ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
    !                                                                                       !
-   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   ! SL_SKID_REL_AREA    -- area damaged by skid trails (relative to felled area).         !
+   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
+   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
+   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
    !                                                                                       !
    ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
    !                                                                                       !
@@ -1212,12 +1217,16 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IANTH_DISTURB       = 0
    NL%SL_SCALE            = 1
+   NL%SL_YR_FIRST         = 2017
    NL%SL_NYRS             = 40
    NL%SL_PFT              = 2,3,4
    NL%SL_PROB_HARVEST     = 1.0,1.0,1.0
    NL%SL_MINDBH_HARVEST   = 35.0,35.0,35.0
    NL%SL_BIOMASS_HARVEST  = 0.
    NL%SL_SKID_REL_AREA    = 0.6
+   NL%SL_SKID_S_GTHARV    = 1.00
+   NL%SL_SKID_S_LTHARV    = 0.60
+   NL%SL_FELLING_S_LTHARV = 0.35
    NL%CL_FSEEDS_HARVEST   = 0.75
    NL%CL_FSTORAGE_HARVEST = 0.0
    NL%CL_FLEAF_HARVEST    = 0.0

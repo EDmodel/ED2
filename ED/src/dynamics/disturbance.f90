@@ -96,7 +96,6 @@ module disturbance_utils
       logical, dimension(:)           , allocatable :: disturb_mask
       real   , dimension(:)           , allocatable :: original_area
       real   , dimension(:)           , allocatable :: original_lu
-      real   , dimension(:)           , allocatable :: harvestable_agb
       real   , dimension(:)           , allocatable :: lambda_harvest
       real   , dimension(:,:)         , allocatable :: lambda_arr
       real   , dimension(:,:)         , allocatable :: pot_area_loss
@@ -211,14 +210,12 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
             allocate (original_area  (onsp)             )
             allocate (original_lu    (onsp)             )
-            allocate (harvestable_agb(onsp)             )
             allocate (lambda_harvest (onsp)             )
             allocate (lambda_arr     (onsp,n_dist_types))
             allocate (pot_area_loss  (onsp,n_dist_types))
             allocate (act_area_loss  (onsp,n_dist_types))
             original_area  (:  ) = 0.0
             original_lu    (:  ) = 0.0
-            harvestable_agb(:  ) = 0.0
             lambda_harvest (:  ) = 0.0
             pot_area_gain  (  :) = 0.0
             act_area_gain  (  :) = 0.0
@@ -246,7 +243,7 @@ module disturbance_utils
             !      Find the area to be harvested when biomass targets have been            !
             ! established.                                                                 !
             !------------------------------------------------------------------------------!
-            call find_lambda_harvest(cpoly,isi,onsp,harvestable_agb,lambda_harvest)
+            call find_lambda_harvest(cpoly,isi,onsp,lambda_harvest)
             !------------------------------------------------------------------------------!
 
 
@@ -1151,7 +1148,6 @@ module disturbance_utils
             deallocate(disturb_mask   )
             deallocate(original_area  )
             deallocate(original_lu    )
-            deallocate(harvestable_agb)
             deallocate(lambda_harvest )
             deallocate(lambda_arr     )
             deallocate(pot_area_loss  )
@@ -3019,7 +3015,7 @@ module disturbance_utils
                                     * bcrop_harvest * area_fac * csite%area(np)
          cpoly%logging_harvest(isi) = cpoly%crop_harvest(isi)                              &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
-                                    * bcrop_harvest * area_fac * csite%area(np)
+                                    * blogging_harvest * area_fac * csite%area(np)
          !---------------------------------------------------------------------------------!
 
 

@@ -168,9 +168,9 @@ module mortality
       !------------------------------------------------------------------------------------!
       do ico=1,cpatch%ncohorts
          if ( a_factor(ico) < (1.0 - epsilon(1.0)) ) then
-            cpatch%mort_rate(5,ico) = lnexp_max
-         else
             cpatch%mort_rate(5,ico) = log( 1.0 / (1.0 - a_factor(ico)) )
+         else
+            cpatch%mort_rate(5,ico) = lnexp_max
          end if
       end do
       !------------------------------------------------------------------------------------!
