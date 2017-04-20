@@ -3013,7 +3013,7 @@ module disturbance_utils
          cpoly%crop_harvest(isi)    = cpoly%crop_harvest(isi)                              &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
                                     * bcrop_harvest * area_fac * csite%area(np)
-         cpoly%logging_harvest(isi) = cpoly%crop_harvest(isi)                              &
+         cpoly%logging_harvest(isi) = cpoly%logging_harvest(isi)                           &
                                     + (1.-survival_fac) * cpatch%nplant(ico)               &
                                     * blogging_harvest * area_fac * csite%area(np)
          !---------------------------------------------------------------------------------!
