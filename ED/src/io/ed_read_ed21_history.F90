@@ -761,18 +761,12 @@ subroutine read_ed21_history_file
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
-                                                    ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                           cpatch%agb(ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                             
                            !----- Assign LAI, WAI, and CAI --------------------------------!
-                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
-                                            ,cpatch%dbh(ico), cpatch%hite(ico)             &
-                                            ,cpatch%pft(ico), SLA(cpatch%pft(ico))         &
-                                            ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                           call area_indices(cpatch, ico)
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -1975,18 +1969,12 @@ subroutine read_ed21_history_unstruct
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
-                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                           cpatch%agb(ico) = ed_biomass(cpatch, ico)
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
-                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
-                                            ,cpatch%dbh(ico),cpatch%hite(ico)              &
-                                            ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
-                                            ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                           call area_indices(cpatch, ico)
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -3178,18 +3166,12 @@ subroutine read_ed21_polyclone
 
 
                            !----- Compute the above-ground biomass. -----------------------!
-                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)&
-                                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                           cpatch%agb(ico) = ed_biomass(cpatch, ico)
 
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
-                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
-                                            ,cpatch%dbh(ico),cpatch%hite(ico)              &
-                                            ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
-                                            ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                           call area_indices(cpatch, ico)
 
 
                            !----- Update the derived patch-level variables. ---------------!

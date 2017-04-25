@@ -409,11 +409,7 @@ module phenology_aux
 
 
                   !----- Find LAI, WAI, and CAI. ------------------------------------------!
-                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                   ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)    &
-                                   ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)        &
-                                   ,cpatch%wai(ico),cpatch%crown_area(ico)                 &
-                                   ,cpatch%bsapwooda(ico))  
+                  call area_indices(cpatch, ico)
                   !------------------------------------------------------------------------!
 
 
@@ -493,8 +489,8 @@ module phenology_aux
       integer                  , intent(out) :: phenology_status  ! phenology Flag
       real                     , intent(out) :: bleaf             ! Leaf biomass
       real                     , intent(out) :: broot             ! Root biomass
-      real                     , intent(out) :: bsapwooda         ! AG Sapwood biomass 
-      real                     , intent(out) :: bsapwoodb         ! BG Sapwood biomass 
+      real                     , intent(out) :: bsapwooda         ! AG Sapwood biomass
+      real                     , intent(out) :: bsapwoodb         ! BG Sapwood biomass
       real                     , intent(out) :: balive            ! Living tissue biomass
       real                     , intent(out) :: bstorage          ! Storage biomass
       !----- Local variables --------------------------------------------------------------!

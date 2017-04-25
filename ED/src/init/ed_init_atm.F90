@@ -373,7 +373,7 @@ subroutine ed_init_atm()
                call canopy_turbulence(cpoly,isi,ipa)
 
                !----- Compute the storage terms for CO2, energy, and water budgets. -------!
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
 
             end do patchloop2
 

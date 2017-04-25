@@ -115,9 +115,7 @@ subroutine update_patch_derived_props(csite,ipa)
 
       !----- Compute the patch-level above-ground biomass
       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                            &
-                                  + ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
-                                              ,cpatch%bsapwooda(ico),cpatch%pft(ico))                      &
-                                  * cpatch%nplant(ico)           
+                                  + ed_biomass(cpatch, ico) * cpatch%nplant(ico)
       !------------------------------------------------------------------------------------!
 
 
@@ -910,7 +908,7 @@ subroutine read_soil_moist_temp(cgrid)
    real              , parameter  :: dlat = 2.5
    !---------------------------------------------------------------------------------------!
 
-   !----- First thing, check whether the dataset exists and crash the run if it doesn´t. --!
+   !----- First thing, check whether the dataset exists and crash the run if it doesnï¿½t. --!
    inquire(file=trim(soilstate_db),exist=l1)
    if (.not.l1) then
       write (unit=*,fmt='(a)') ' Your namelist has ISOILSTATEINIT set to read the initial'

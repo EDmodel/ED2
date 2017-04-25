@@ -17,7 +17,7 @@ module budget_utils
    !=======================================================================================!
    !    This subroutine simply updates the budget variables.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine update_budget(csite,lsl,ipaa,ipaz)
+   subroutine update_budget(csite,lsl,ipa)
      
       use ed_state_vars, only : sitetype     ! ! structure
       implicit none
@@ -25,21 +25,14 @@ module budget_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)  , target     :: csite
       integer         , intent(in) :: lsl
-      integer         , intent(in) :: ipaa
-      integer         , intent(in) :: ipaz
-      !----- Local variables. -------------------------------------------------------------!
-      integer                      :: ipa
-      !------------------------------------------------------------------------------------!
+      integer         , intent(in) :: ipa
 
-
-      do ipa=ipaa,ipaz
          !---------------------------------------------------------------------------------!
          !      Computing the storage terms for CO2, energy, and water budgets.            !
          !---------------------------------------------------------------------------------!
          csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,ipa)
          csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,ipa)
          csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,ipa)
-      end do
 
       return
    end subroutine update_budget

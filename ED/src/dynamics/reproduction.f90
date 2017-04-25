@@ -400,10 +400,7 @@ subroutine reproduction(cgrid, month)
                      !    Compute initial AGB and Basal Area.  Their derivatives will be   !
                      ! zero.                                                               !
                      !---------------------------------------------------------------------!
-                     cpatch%agb      (ico) = ed_biomass( cpatch%bdead     (ico)            &
-                                                       , cpatch%bleaf     (ico)            &
-                                                       , cpatch%bsapwooda (ico)            &
-                                                       , cpatch%pft       (ico) )
+                     cpatch%agb      (ico) = ed_biomass(cpatch, ico)
                      cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                      cpatch%dagb_dt  (ico) = 0.0
                      cpatch%dlnagb_dt(ico) = 0.0
@@ -427,11 +424,7 @@ subroutine reproduction(cgrid, month)
                      !    Obtain derived properties.                                       !
                      !---------------------------------------------------------------------!
                      !----- Find LAI, WAI, and CAI. ---------------------------------------!
-                     call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                &
-                                      ,cpatch%bdead(ico),cpatch%balive(ico)                &
-                                      ,cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico)    &
-                                      ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico)     &
-                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                     call area_indices(cpatch, ico)
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
@@ -496,7 +489,7 @@ subroutine reproduction(cgrid, month)
 
                !----- Since cohorts may have changed, update patch properties... ----------!
                call update_patch_derived_props(csite,ipa)
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
             end do update_patch_loop
             !------------------------------------------------------------------------------!
@@ -654,12 +647,7 @@ subroutine reproduction(cgrid, month)
                      ! changed.                                                            !
                      !---------------------------------------------------------------------!
                      !----- Find LAI, WAI, and CAI. ---------------------------------------!
-                     call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                &
-                                      ,cpatch%bdead(ico),cpatch%balive(ico)                &
-                                      ,cpatch%dbh(ico),cpatch%hite(ico)                    &
-                                      ,cpatch%pft(ico),cpatch%sla(ico)                     &
-                                      ,cpatch%lai(ico),cpatch%wai(ico)                     &
-                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                     call area_indices(cpatch, ico)
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
@@ -715,7 +703,7 @@ subroutine reproduction(cgrid, month)
 
                !----- Since cohorts may have changed, update patch properties... ----------!
                call update_patch_derived_props(csite,ipa)
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
             end do update_patch_loop_big
             !------------------------------------------------------------------------------!

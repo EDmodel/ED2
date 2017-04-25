@@ -903,7 +903,7 @@ module disturbance_utils
                   call new_patch_sfc_props(csite,onsp+new_lu,nzg,nzs                       &
                                           ,cpoly%ntext_soil(:,isi))
                   !----- Update budget properties. ----------------------------------------!
-                  call update_budget(csite,cpoly%lsl(isi),onsp+new_lu,onsp+new_lu)
+                  call update_budget(csite,cpoly%lsl(isi),onsp+new_lu)
                   !----- Update AGB, basal area. ------------------------------------------!
                   call update_site_derived_props(cpoly,1,isi)
                   !----- Update either cut or mortality. ----------------------------------!
@@ -986,7 +986,11 @@ module disturbance_utils
             end do old_lu_l4th
             !------------------------------------------------------------------------------!
 
-
+            prune_loop: do new_lu=1,n_dist_types 
+            !----------------------- Prune the lianas -------------------------------------!
+               call prune_lianas(csite, onsp + new_lu, cpoly%lsl(isi))
+            !------------------------------------------------------------------------------!
+            end do prune_loop
 
 
             !------------------------------------------------------------------------------!
@@ -2944,6 +2948,9 @@ module disturbance_utils
       call allocate_patchtype(npatch,tpatch%ncohorts)
       call copy_patchtype(tpatch,npatch,1,tpatch%ncohorts,1,tpatch%ncohorts)
       call deallocate_patchtype(tpatch)
+      ! Manfredo: I want to prune the lianas that have survived after the treefall         !
+      ! disturbance, work in progress
+      !call prune(npatch)
       !------------------------------------------------------------------------------------!
 
       deallocate(tpatch)
@@ -3086,7 +3093,6 @@ module disturbance_utils
       use ed_state_vars , only  : sitetype                 & ! structure
                                 , patchtype                ! ! structure
       use pft_coms       , only : q                        & ! intent(in)
-                                , qsw                      & ! intent(in)
                                 , sla                      & ! intent(in)
                                 , hgt_min                  & ! intent(in)
                                 , hgt_max                  & ! intent(in)
@@ -3207,17 +3213,13 @@ module disturbance_utils
 
 
       !----- Compute all area indices needed. ---------------------------------------------!
-      call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
-                       ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
-                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc),cpatch%crown_area(nc) &
-                       ,cpatch%bsapwooda(nc))
+      call area_indices(cpatch, nc)
       !------------------------------------------------------------------------------------!
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea(nc)= pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
-      cpatch%agb(nc)    = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)                     &
-                                    ,cpatch%bsapwooda(nc),cpatch%pft(nc))
+      cpatch%agb(nc)    = ed_biomass(cpatch, nc)
 
       cpatch%leaf_temp    (nc) = csite%can_temp  (np)
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
@@ -3254,6 +3256,181 @@ module disturbance_utils
    end subroutine plant_patch
    !=======================================================================================!
    !=======================================================================================!
+
+   subroutine prune_lianas(csite, np, lsl)
+      use ed_state_vars,   only : patchtype                & ! structure
+                                , sitetype                 ! ! structure
+      use ed_therm_lib,    only : calc_veg_hcap            & ! function
+                                , update_veg_energy_cweh   ! ! function
+      use allometry,       only : area_indices             & ! subroutine
+                                , ed_biomass               & ! function
+                                , h2dbh                    & ! function
+                                , size2bl                  & ! function
+                                , dbh2bd                   & ! function
+                                , dbh2krdepth              ! ! function
+      use disturb_coms,    only : treefall_hite_threshold  ! ! intent(in)
+      use pft_coms,        only : qsw                      & ! intent(in)
+                                , hgt_max                  & ! intent(in)
+                                , l2n_stem                 & ! intent(in)
+                                , c2n_stem                 & ! intent(in)
+                                , c2n_leaf                 & ! intent(in)
+                                , is_liana                 ! ! intent(in)
+      use decomp_coms,     only : f_labile                 ! ! intent(in)
+      use ed_max_dims,     only : n_pft                    ! ! intent(in)
+      use consts_coms,     only : pio4                     ! ! intent(in)
+      use budget_utils,    only : update_budget            ! ! sub-routine
+      use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                  , target     :: csite
+      integer                         , intent(in) :: np
+      integer                         , intent(in) :: lsl
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                 , pointer    :: cpatch
+      integer                                      :: ico
+      integer                                      :: ipft
+      real                                         :: maxh
+      real                                         :: h_pruning_factor
+      real                                         :: struct_cohort
+      real                                         :: fast_litter
+      real                                         :: struct_litter
+      real                                         :: struct_lignin
+      real                                         :: fast_litter_n
+      real                                         :: bleaf_in
+      real                                         :: bsapa_in
+      real                                         :: broot_in
+      real                                         :: bdead_in
+      real                                         :: old_leaf_hcap
+      real                                         :: old_wood_hcap
+      real                                         :: bleaf_max
+      real                                         :: delta_alive
+      real                                         :: delta_dead
+      !------------------------------------------------------------------------------------!
+
+
+      maxh = 0.0
+
+      cpatch => csite%patch(np)
+
+      cohortloop: do ico=1,cpatch%ncohorts
+
+         !----- Alias for current PFT. ----------------------------------------------------!
+         ipft = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+         !---------- Loop over cohorts to find the maximum height for trees ---------------!
+         if (cpatch%hite(ico) > maxh .and. .not. is_liana(ipft)) then
+            maxh = cpatch%hite(ico)
+         end if
+
+      end do cohortloop
+
+      !------------- pruning_factor, how much should I reduce the biomass -----------------!
+      h_pruning_factor    = maxh / hgt_max(17)
+
+      !---- Initialise the non-scaled litter pools. ---------------------------------------!
+      fast_litter   = 0.0
+      struct_litter = 0.0
+      struct_lignin = 0.0
+      fast_litter_n = 0.0
+
+      cohortloop2: do ico=1,cpatch%ncohorts
+
+         !----- Alias for current PFT. ----------------------------------------------------!
+         ipft = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+         ! I want cpatch%hite(ico) > treefall_hite_threshold but also cpatch%hite(ico) > maxh
+         ! since maxh <= treefall_hite_threshold I keep the latter condition
+         ! Attention: if maxh turns out to be less than 1 m there's gonna be a problem
+         ! because cpatch%hite will be increased instead of reduced
+         if (is_liana(ipft) .and. cpatch%hite(ico) > maxh .and. maxh >= 1.0) then
+
+            bleaf_in      = cpatch%bleaf    (ico)
+            bsapa_in      = cpatch%bsapwooda(ico)
+            bdead_in      = cpatch%bdead    (ico)
+            old_leaf_hcap = cpatch%leaf_hcap(ico)
+            old_wood_hcap = cpatch%wood_hcap(ico)
+            !add the agb_f to bdead
+            !if new root depth is smaller keep the old one keep track of the value
+
+            ! Lianas of 35m will be reduced to maxh, all
+            cpatch%hite(ico)      = max(cpatch%hite(ico) * h_pruning_factor, 1.0)
+            cpatch%dbh(ico)       = h2dbh (cpatch%hite(ico), ipft)
+            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico), ipft)
+            cpatch%bleaf(ico)     = bleaf_max * cpatch%elongf(ico)
+            cpatch%bdead(ico)     = dbh2bd(cpatch%dbh(ico), ipft)
+            cpatch%bsapwooda(ico) = bleaf_max * qsw(ipft) * cpatch%hite(ico)
+
+
+            !----- Updating LAI, WAI, and CAI. --------------------------------------!
+            call area_indices(cpatch, ico)
+            !------------------------------------------------------------------------!
+
+            !----- Finding the new basal area and above-ground biomass. ----------------------------!
+            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+            cpatch%agb(ico)     = ed_biomass(cpatch, ico)
+
+            !----- Update rooting depth ------------------------------------------------------------!
+            cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+            !if new root depth is smaller keep the old one
+
+            !------------------------------------------------------------------------!
+            !     It is likely that biomass has changed, therefore, update           !
+            ! vegetation energy and heat capacity.                                   !
+            !------------------------------------------------------------------------!
+            call calc_veg_hcap(cpatch%bleaf(ico), cpatch%bdead(ico), cpatch%bsapwooda(ico),   &
+               cpatch%nplant(ico), cpatch%pft(ico), cpatch%leaf_hcap(ico), cpatch%wood_hcap(ico))
+            call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap)
+            !----- Update the stability status. -------------------------------------!
+            call is_resolvable(csite,np,ico)
+            !------------------------------------------------------------------------!
+
+
+            !---- Compute the amount of carbon lost during the pruning and send it litter ----!
+            delta_alive = bleaf_in + bsapa_in - cpatch%bleaf(ico) - cpatch%bsapwooda(ico)
+            delta_dead  = bdead_in - cpatch%bdead(ico)
+
+            fast_litter   = fast_litter   + (f_labile(ipft) * delta_alive) * cpatch%nplant(ico)
+            fast_litter_n = fast_litter_n + (f_labile(ipft) * delta_alive / c2n_leaf(ipft))   &
+               * cpatch%nplant(ico)
+
+            struct_cohort = (delta_dead + (1. - f_labile(ipft)) * delta_alive )               &
+               * cpatch%nplant(ico)
+
+            struct_litter = struct_litter + struct_cohort
+            struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
+            !---------------------------------------------------------------------------------!
+
+         end if
+
+      end do cohortloop2
+      !attenzione al segno, probabilmente ci va un meno
+
+      !----- Sort the cohorts so that the new cohort is at the correct height bin. --------!
+      call sort_cohorts(cpatch)
+      !------------------------------------------------------------------------------------!
+
+      !----- Load disturbance litter directly into carbon and N pools. -----------------------!
+      csite%fast_soil_C(np)       = csite%fast_soil_C(np)       + fast_litter
+      csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter
+      csite%structural_soil_L(np) = csite%structural_soil_L(np) + struct_lignin
+      csite%fast_soil_N(np)       = csite%fast_soil_N(np)       + fast_litter_n
+      !---------------------------------------------------------------------------------------!
+
+      !------------------- Update patch LAI, WAI, height, roughness... -----------------------!
+      call update_patch_derived_props(csite,np)
+      !---------------------------------------------------------------------------------------!
+
+      !----- Recalculate storage terms (for budget assessment). ------------------------------!
+      call update_budget(csite,lsl,np)
+      !---------------------------------------------------------------------------------------!
+
+      return
+
+end subroutine prune_lianas
+
 end module disturbance_utils
 !==========================================================================================!
 !==========================================================================================!

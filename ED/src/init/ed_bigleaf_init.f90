@@ -290,15 +290,10 @@ subroutine ed_bigleaf_init(cgrid)
 
 
                      !----- Assign LAI, WAI, and CAI --------------------------------------!
-                     call area_indices(cpatch%nplant(1),cpatch%bleaf(1),cpatch%bdead(1)    &
-                                      ,cpatch%balive(1),cpatch%dbh(1), cpatch%hite(1)      &
-                                      ,cpatch%pft(1),cpatch%sla(1),cpatch%lai(1)           &
-                                      ,cpatch%wai(1),cpatch%crown_area(1)                  &
-                                      ,cpatch%bsapwooda(1))
+                     call area_indices(cpatch, 1)
 
                      !----- Above ground biomass, use the allometry. ----------------------!
-                     cpatch%agb(1)     = ed_biomass(cpatch%bdead(1),cpatch%bleaf(1)        &
-                                               ,cpatch%bsapwooda(1),cpatch%pft(1))
+                     cpatch%agb(1)     = ed_biomass(cpatch, 1)
                      cpatch%basarea(1) = pio4 * cpatch%dbh(1) * cpatch%dbh(1)
 
                      !----- Growth rates, start with zero. --------------------------------!

@@ -323,18 +323,13 @@ module growth_balive
 
 
                   !----- Updating LAI, WAI, and CAI. --------------------------------------!
-                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                   &
-                                   ,cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico)   &
-                                   ,cpatch%hite(ico) ,cpatch%pft(ico),cpatch%sla(ico)      &
-                                   ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico) &
-                                   ,cpatch%bsapwooda(ico))
+                  call area_indices(cpatch, ico)
                   !------------------------------------------------------------------------!
 
 
 
                   !----- Update above-ground biomass. -------------------------------------!
-                  cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
-                                              ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                  cpatch%agb(ico) = ed_biomass(cpatch, ico)
                   !------------------------------------------------------------------------!
 
 
@@ -365,7 +360,7 @@ module growth_balive
                !---------------------------------------------------------------------------!
 
                !----- Recalculate storage terms (for budget assessment). ------------------!
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
 
                !----- It's a new day, reset average daily temperature. --------------------!
@@ -410,7 +405,6 @@ module growth_balive
       use grid_coms       , only : nzg                    ! ! intent(in)
       use ed_therm_lib    , only : calc_veg_hcap          & ! function
                                  , update_veg_energy_cweh ! ! function
-      use allometry       , only : area_indices           ! ! subroutine
       use ed_misc_coms    , only : ibigleaf               & ! intent(in)
                                  , growth_resp_scheme     & ! intent(in)
                                  , storage_resp_scheme    ! ! intent(in)

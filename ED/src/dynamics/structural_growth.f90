@@ -1174,19 +1174,15 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !---------------------------------------------------------------------------------------!
 
    !----- Update LAI, WAI, and CAI. -------------------------------------------------------!
-   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
-              ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &
-              ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico)      &
-              ,cpatch%bsapwooda(ico))
+   call area_indices(cpatch, ico)
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
    cpatch%basarea(ico)= pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
-   cpatch%agb(ico)    = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                     &
-                                  ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+   cpatch%agb(ico)    = ed_biomass(cpatch, ico)
 
    !----- Update rooting depth ------------------------------------------------------------!
    cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
-   
+   !if new root depth is smaller keep the old one
    return
 end subroutine update_derived_cohort_props
 !==========================================================================================!
@@ -1250,8 +1246,7 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
 
    !----- Find the new basal area and above-ground biomass. -------------------------------!
    cpatch%basarea(ico)    = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-   cpatch%agb(ico)        = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                 &
-                                      ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
+   cpatch%agb(ico)        = ed_biomass(cpatch, ico)
 
    !---------------------------------------------------------------------------------------!
    !     Change the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH    !

@@ -402,16 +402,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  end if
                  
                  !----- Update LAI, WAI, and CAI ------------------------------------------!
-                 call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
-                                  ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                                  ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
-                                  ,cpatch%wai(ico), cpatch%crown_area(ico)                 &
-                                  ,cpatch%bsapwooda(ico))
+                 call area_indices(cpatch, ico)
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            
-                 cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)      &
-                                                 ,cpatch%bsapwooda(ico),cpatch%pft(ico))   
+                 cpatch%agb(ico)     = ed_biomass(cpatch, ico)
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
                  ! worry, if there is any, it will go down through shedding the next       !
@@ -434,7 +429,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
            end if  !! check to make sure there ARE cohorts
 
            enddo
@@ -499,7 +494,7 @@ subroutine event_planting(pft,density8)
                               ,cpoly%green_leaf_factor(:,isi),planting_ht,cpoly%lsl(isi))
               call update_patch_derived_props(csite,ipa)
               call new_patch_sfc_props(csite, ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
 
            enddo
 
@@ -572,7 +567,7 @@ subroutine event_fertilize(rval8)
              
               !! update patch properties
               call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
@@ -801,7 +796,7 @@ subroutine event_till(rval8)
 
               !! update patch properties
               call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
               endif
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########

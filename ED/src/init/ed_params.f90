@@ -111,8 +111,7 @@ subroutine load_ed_ecosystem_params()
    is_grass(2:4)   = .false.
    is_grass(5)     = .true.
    is_grass(6:11)  = .false.
-   is_grass(12:15) = .true.
-   is_grass(16)    = .true.
+   is_grass(12:16) = .true.
    is_grass(17)    = .false.
    !---------------------------------------------------------------------------------------!
 
@@ -2199,7 +2198,14 @@ subroutine init_pft_mort_params()
 
    !---------------------------------------------------------------------------------------!
    !     Variable mort3 controls the density-independent mortality rate due to ageing.     !
-   ! This value is a constant in units of [fraction/year].                                 !
+   ! This value is a constant in units of [fraction/year].
+   ! With lianas the idea is to give it the normal mort3 mortality that is basically rho   !
+   ! dependent. Then in the next phase I will try to add a limit to the maximum liana load !
+   ! that a tree can born. When the number of lianas hosted by a given tree exceeds the    !
+   ! avreage values given in O. Phillips (2005) I will kill the lianas(...and the trees?..)!
+   ! That will increase mortality as a consequence. I should later check if the resulting  !
+   ! mortality is in line with what stated in the aforementioned article (lianas have +-6% !
+   ! turnover rate, 3 times that of trees...)                                              !
    !---------------------------------------------------------------------------------------!
    if (treefall_disturbance_rate >= 0.) then
       tdr_default               = 0.014
@@ -2212,8 +2218,8 @@ subroutine init_pft_mort_params()
       m3_scale                  = treefall_disturbance_rate / tdr_default
    end if
    mort3(1)  = m3_scale * ( m3_slope * (1. - rho( 1) / rho( 4)) )
-   mort3(2)  = m3_scale * ( m3_slope * (1. - rho( 2) / rho( 4)) )
-   mort3(3)  = m3_scale * ( m3_slope * (1. - rho( 3) / rho( 4)) )
+   mort3(2)  = 0.01745203
+   mort3(3)  = 0.01002563
    mort3(4)  = 0.0!check
    mort3(5)  = 0.066
    mort3(6)  = 0.0033928
@@ -2227,7 +2233,7 @@ subroutine init_pft_mort_params()
    mort3(14) = m3_scale * ( m3_slope * (1. - rho(14) / rho( 4)) )
    mort3(15) = m3_scale * ( m3_slope * (1. - rho(15) / rho( 4)) )
    mort3(16) = m3_scale * ( m3_slope * (1. - rho(16) / rho( 4)) )
-   mort3(17) = m3_scale * ( m3_slope * (1. - rho(17) / rho( 4)) )
+   mort3(17) = 0.01522411
    !---------------------------------------------------------------------------------------!
 
 
@@ -2342,7 +2348,8 @@ subroutine init_pft_mort_params()
    !      Treefall survivorship fraction.                                                  !
    !---------------------------------------------------------------------------------------!
    !----- Trees taller than treefall_hite_threshold. --------------------------------------!
-   treefall_s_gtht(1:17)    = 0.0
+   treefall_s_gtht(1:16)    = 0.00
+   treefall_s_gtht(17)      = 0.90
    !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
    treefall_s_ltht(1)       = 0.25
    treefall_s_ltht(2:4)     = 0.10
@@ -2361,13 +2368,7 @@ subroutine init_pft_mort_params()
    !----- Trees taller than fire_hite_threshold. ------------------------------------------!
    fire_s_gtht(1:17)    = 0.0
    !----- Trees shorter than fire_hite_threshold. -----------------------------------------!
-   fire_s_ltht(1)       = 0.0
-   fire_s_ltht(2:4)     = 0.0
-   fire_s_ltht(5)       = 0.0
-   fire_s_ltht(6:11)    = 0.0
-   fire_s_ltht(12:15)   = 0.0
-   fire_s_ltht(16)      = 0.0
-   fire_s_ltht(17)      = 0.0
+   fire_s_ltht(1:17)       = 0.0
    !---------------------------------------------------------------------------------------!
 
    plant_min_temp(1:4)      = t00+2.5
@@ -2528,9 +2529,7 @@ subroutine init_pft_alloc_params()
    rho(4)     = 0.87   ! 0.90
    rho(5)     = 0.20   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
-   rho(12:13) = 0.20
-   rho(14:15) = 0.20
-   rho(16)    = 0.20
+   rho(12:16) = 0.20
    rho(17)    = 0.46   ! Copied from BCITraits excel data
    !---------------------------------------------------------------------------------------!
 

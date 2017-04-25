@@ -2145,24 +2145,6 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
-
-
-      !-------- TOTAL CARBON AND NITROGEN POOLS  ---------------
-      ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
-      !real,pointer,dimension(:) :: Cleaf
-      !real,pointer,dimension(:) :: Croot
-      !real,pointer,dimension(:) :: Cstore
-      !real,pointer,dimension(:) :: Ccwd
-      !real,pointer,dimension(:) :: Nleaf
-      !real,pointer,dimension(:) :: Ndead
-      !real,pointer,dimension(:) :: Nroot
-      !real,pointer,dimension(:) :: Nstore
-      !real,pointer,dimension(:) :: Ncwd
-      ! MLO (8-Nov-2012) -- these were merged with the PFT/DBH structures above,
-      !    CWD pools are reported, but I am not sure about them, they are simply
-      !    a constant fraction of the structural and slow pools.
-
-
       !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
       ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
       real,pointer,dimension(:) :: Cleaf_grow
@@ -9210,11 +9192,11 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
       !      We break the subroutines into smaller pieces so Fortran doesn't complain...   !
       !------------------------------------------------------------------------------------!
-      call copy_sitetype_mask_inst (isite,osite,z,lmask,isize,osize)
-      call copy_sitetype_mask_fmean(isite,osite,z,lmask,isize,osize)
-      if (writing_long) call copy_sitetype_mask_dmean(isite,osite,z,lmask,isize,osize)
-      if (writing_eorq) call copy_sitetype_mask_mmean(isite,osite,z,lmask,isize,osize)
-      if (writing_dcyc) call copy_sitetype_mask_qmean(isite,osite,z,lmask,isize,osize)
+      call copy_sitetype_mask_inst (isite,osite,z,lmask,isize)
+      call copy_sitetype_mask_fmean(isite,osite,z,lmask,isize)
+      if (writing_long) call copy_sitetype_mask_dmean(isite,osite,z,lmask,isize)
+      if (writing_eorq) call copy_sitetype_mask_mmean(isite,osite,z,lmask,isize)
+      if (writing_dcyc) call copy_sitetype_mask_qmean(isite,osite,z,lmask,isize)
       !------------------------------------------------------------------------------------!
 
       return
@@ -9232,8 +9214,7 @@ module ed_state_vars
    !     This sub-routine copies the variables that are not fmean, dmean, mmean, mmsqu,    !
    ! qmean, and qmsqu.  This sub-routine should be called only from copy_sitetype_mask!!!  !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_sitetype_mask_inst (isite,osite,z,lmask,isize,osize)
-
+   subroutine copy_sitetype_mask_inst (isite,osite,z,lmask,isize)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -9241,7 +9222,6 @@ module ed_state_vars
       type(sitetype)                  , target     :: osite   ! Output (receptor) site
       integer                         , intent(in) :: z       ! Number of elements
       integer                         , intent(in) :: isize   ! Input size 
-      integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: m
@@ -9446,8 +9426,7 @@ module ed_state_vars
    !     This sub-routine copies the variables that are fmean.  This sub-routine should be !
    ! called only from copy_sitetype_mask!!!                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_sitetype_mask_fmean(isite,osite,z,lmask,isize,osize)
-
+   subroutine copy_sitetype_mask_fmean(isite,osite,z,lmask,isize)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -9455,7 +9434,6 @@ module ed_state_vars
       type(sitetype)                  , target     :: osite   ! Output (receptor) site
       integer                         , intent(in) :: z       ! Number of elements
       integer                         , intent(in) :: isize   ! Input size 
-      integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: m
@@ -9542,8 +9520,7 @@ module ed_state_vars
    !     This sub-routine copies the variables that are dmean.  This sub-routine should be !
    ! called only from copy_sitetype_mask!!!                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_sitetype_mask_dmean(isite,osite,z,lmask,isize,osize)
-
+   subroutine copy_sitetype_mask_dmean(isite,osite,z,lmask,isize)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -9551,7 +9528,6 @@ module ed_state_vars
       type(sitetype)                  , target     :: osite   ! Output (receptor) site
       integer                         , intent(in) :: z       ! Number of elements
       integer                         , intent(in) :: isize   ! Input size 
-      integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: m
@@ -9647,8 +9623,7 @@ module ed_state_vars
    !     This sub-routine copies the variables that are mmean.  This sub-routine should be !
    ! called only from copy_sitetype_mask!!!                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_sitetype_mask_mmean(isite,osite,z,lmask,isize,osize)
-
+   subroutine copy_sitetype_mask_mmean(isite,osite,z,lmask,isize)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -9656,7 +9631,6 @@ module ed_state_vars
       type(sitetype)                  , target     :: osite   ! Output (receptor) site
       integer                         , intent(in) :: z       ! Number of elements
       integer                         , intent(in) :: isize   ! Input size 
-      integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: m
@@ -9779,7 +9753,7 @@ module ed_state_vars
    !     This sub-routine copies the variables that are qmean.  This sub-routine should be !
    ! called only from copy_sitetype_mask!!!                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_sitetype_mask_qmean(isite,osite,z,lmask,isize,osize)
+   subroutine copy_sitetype_mask_qmean(isite,osite,z,lmask,isize)
 
 
       implicit none
@@ -9788,7 +9762,6 @@ module ed_state_vars
       type(sitetype)                  , target     :: osite   ! Output (receptor) site
       integer                         , intent(in) :: z       ! Number of elements
       integer                         , intent(in) :: isize   ! Input size 
-      integer                         , intent(in) :: osize   ! Output size
       logical       , dimension(isize), intent(in) :: lmask   ! Mask
       !----- Local variables. -------------------------------------------------------------!
       integer                                      :: m
@@ -10502,11 +10475,11 @@ module ed_state_vars
       ! functions.  We split the packing procedure to reduce the number of calls per       !
       ! procedure and make the compilation more efficient.                                 !
       !------------------------------------------------------------------------------------!
-      call copy_patchtype_mask_inst (ipatch,opatch,z,lmask,isize,osize)
-      call copy_patchtype_mask_fmean(ipatch,opatch,z,lmask,isize,osize)
-      if (writing_long) call copy_patchtype_mask_dmean(ipatch,opatch,z,lmask,isize,osize)
-      if (writing_eorq) call copy_patchtype_mask_mmean(ipatch,opatch,z,lmask,isize,osize)
-      if (writing_dcyc) call copy_patchtype_mask_qmean(ipatch,opatch,z,lmask,isize,osize)
+      call copy_patchtype_mask_inst (ipatch,opatch,z,lmask,isize)
+      call copy_patchtype_mask_fmean(ipatch,opatch,z,lmask,isize)
+      if (writing_long) call copy_patchtype_mask_dmean(ipatch,opatch,z,lmask,isize)
+      if (writing_eorq) call copy_patchtype_mask_mmean(ipatch,opatch,z,lmask,isize)
+      if (writing_dcyc) call copy_patchtype_mask_qmean(ipatch,opatch,z,lmask,isize)
       !------------------------------------------------------------------------------------!
 
       return
@@ -10524,14 +10497,13 @@ module ed_state_vars
    ! mmsqu, qmean, qmsqu.  The only sub-routine that should ever call this one is          !
    ! copy_patchtype_mask.                                                                  !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patchtype_mask_inst(ipatch,opatch,z,lmask,isize,osize)
+   subroutine copy_patchtype_mask_inst(ipatch,opatch,z,lmask,isize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)         , target     :: ipatch
       type(patchtype)         , target     :: opatch
       integer                 , intent(in) :: z
       integer                 , intent(in) :: isize
-      integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
       integer                              :: m
@@ -10706,14 +10678,13 @@ module ed_state_vars
    !     This sub-routine copies the cohort-level variables that are fmean.                !
    ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patchtype_mask_fmean(ipatch,opatch,z,lmask,isize,osize)
+   subroutine copy_patchtype_mask_fmean(ipatch,opatch,z,lmask,isize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)         , target     :: ipatch
       type(patchtype)         , target     :: opatch
       integer                 , intent(in) :: z
       integer                 , intent(in) :: isize
-      integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
       integer                              :: m
@@ -10809,14 +10780,13 @@ module ed_state_vars
    !     This sub-routine copies the cohort-level variables that are dmean.                !
    ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patchtype_mask_dmean(ipatch,opatch,z,lmask,isize,osize)
+   subroutine copy_patchtype_mask_dmean(ipatch,opatch,z,lmask,isize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)         , target     :: ipatch
       type(patchtype)         , target     :: opatch
       integer                 , intent(in) :: z
       integer                 , intent(in) :: isize
-      integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
       integer                              :: m
@@ -10918,14 +10888,13 @@ module ed_state_vars
    !     This sub-routine copies the cohort-level variables that are mmean or mmsqu.       !
    ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patchtype_mask_mmean(ipatch,opatch,z,lmask,isize,osize)
+   subroutine copy_patchtype_mask_mmean(ipatch,opatch,z,lmask,isize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)         , target     :: ipatch
       type(patchtype)         , target     :: opatch
       integer                 , intent(in) :: z
       integer                 , intent(in) :: isize
-      integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
       integer                              :: m
@@ -11052,14 +11021,13 @@ module ed_state_vars
    !     This sub-routine copies the cohort-level variables that are qmean or qmsqu.       !
    ! The only sub-routine that should ever call this one is copy_patchtype_mask.           !
    !---------------------------------------------------------------------------------------!
-   subroutine copy_patchtype_mask_qmean(ipatch,opatch,z,lmask,isize,osize)
+   subroutine copy_patchtype_mask_qmean(ipatch,opatch,z,lmask,isize)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(patchtype)         , target     :: ipatch
       type(patchtype)         , target     :: opatch
       integer                 , intent(in) :: z
       integer                 , intent(in) :: isize
-      integer                 , intent(in) :: osize
       logical,dimension(isize), intent(in) :: lmask
       !----- Local variables. -------------------------------------------------------------!
       integer                              :: m
@@ -24560,12 +24528,6 @@ module ed_state_vars
       !------------------------------------------------------------------------------------!
 
 
-
-
-
-
-
-
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !       This part should have only 1-D vectors, with dimension ncohorts.  Notice     !
@@ -28581,16 +28543,11 @@ module ed_state_vars
 
 
 
-
-
-
    !=======================================================================================!
    !=======================================================================================!
    !                                   UTILITY FUNCTIONS                                   !
    !=======================================================================================!
    !=======================================================================================!
-
-
 
 
 

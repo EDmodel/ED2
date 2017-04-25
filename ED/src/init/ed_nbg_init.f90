@@ -235,14 +235,10 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               + cpatch%bsapwoodb(ico))
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch, ico)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+         cpatch%agb(ico) = ed_biomass(cpatch, ico)
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -375,14 +371,10 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch, ico)
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+         cpatch%agb(ico) = ed_biomass(cpatch, ico)
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -552,15 +544,10 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                             * cpatch%balive(ico) * salloci *(1.-agf_bs(ipft))
 
                !----- Find the initial area indices (LAI, WAI, CAI). ----------------------!
-               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &
-                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
-                                ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
-                                ,cpatch%wai(ico),cpatch%crown_area(ico)                    &
-                                ,cpatch%bsapwooda(ico))
+               call area_indices(cpatch, ico)
 
                !----- Find the above-ground biomass and basal area. -----------------------!
-               cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)            &
-                                           ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+               cpatch%agb(ico) = ed_biomass(cpatch, ico)
                cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
                !----- Initialize other cohort-level variables. ----------------------------!

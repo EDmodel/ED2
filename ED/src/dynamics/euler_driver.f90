@@ -141,7 +141,7 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
 
             !----- Compute current storage terms. -----------------------------------------!
-            call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+            call update_budget(csite,cpoly%lsl(isi),ipa)
             !------------------------------------------------------------------------------!
 
 

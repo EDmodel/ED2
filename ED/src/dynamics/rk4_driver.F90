@@ -198,7 +198,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
 
                !----- Compute current storage terms. --------------------------------------!
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
 
 
@@ -721,7 +721,7 @@ module rk4_driver
       
 
       !------------------------------------------------------------------------------------!
-      !    Surface water energy is computed in J/m² inside the integrator. Convert it back !
+      !    Surface water energy is computed in J/mï¿½ inside the integrator. Convert it back !
       ! to J/kg in the layers that surface water/snow still exists.                        !
       !------------------------------------------------------------------------------------!
       csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater

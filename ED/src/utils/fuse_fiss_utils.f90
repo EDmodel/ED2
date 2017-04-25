@@ -5021,7 +5021,7 @@ module fuse_fiss_utils
             csite%dmean_sfcw_temp  (recp)  = csite%dmean_soil_temp(mzg,recp)
             csite%dmean_sfcw_fliq  (recp)  = csite%dmean_soil_fliq(mzg,recp)
          end if
-         !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
 		end if
       end if
       !------------------------------------------------------------------------------------!
@@ -6018,7 +6018,7 @@ module fuse_fiss_utils
       ! + csite%ebudget_initialstorage(recp)                                               !
       ! + csite%co2budget_initialstorage(recp)                                             !
       !------------------------------------------------------------------------------------!
-      call update_budget(csite,lsl,recp,recp)
+      call update_budget(csite,lsl,recp)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
