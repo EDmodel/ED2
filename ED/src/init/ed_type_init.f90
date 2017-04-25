@@ -1332,7 +1332,7 @@ end subroutine init_ed_site_vars
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_ed_poly_vars(cgrid)
-  
+   use structural_growth_module
    use ed_state_vars, only : edtype       & ! structure
                            , polygontype  & ! structure
                            , sitetype     ! ! structure

@@ -1,3 +1,6 @@
+module soil_respiration_module
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine computes the soil respiration terms (root and heterotrophic).        !
@@ -179,230 +182,6 @@ end subroutine soil_respiration
 !==========================================================================================!
 !==========================================================================================!
 
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This function determines the normalised root respiration (umol/kgC_fine_root/s) at a !
-! given soil layer.                                                                        !
-!------------------------------------------------------------------------------------------!
-real function root_resp_norm(ipft,soil_temp)
-   use pft_coms       , only : root_respiration_factor  & ! intent(in)
-                             , rrf_low_temp             & ! intent(in)
-                             , rrf_high_temp            & ! intent(in)
-                             , rrf_decay_e              & ! intent(in)
-                             , rrf_hor                  & ! intent(in)
-                             , rrf_q10                  ! ! intent(in)
-   use farq_leuning   , only : arrhenius                & ! function
-                             , collatz                  ! ! function
-   use soil_coms      , only : soil8                    ! ! intent(in)
-   use rk4_coms       , only : tiny_offset              ! ! intent(in)
-   use physiology_coms, only : iphysiol                 ! ! intent(in)
-   use consts_coms    , only : lnexp_min8               & ! intent(in)
-                             , lnexp_max8               & ! intent(in)
-                             , t008                     ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer     , intent(in) :: ipft
-   real(kind=4), intent(in) :: soil_temp
-   !----- Local variables. ----------------------------------------------------------------!
-   real(kind=8)             :: soil_temp8
-   real(kind=8)             :: rrf08
-   real(kind=8)             :: rrf_low_temp8
-   real(kind=8)             :: rrf_high_temp8
-   real(kind=8)             :: rrf_decay_e8
-   real(kind=8)             :: rrf_hor8
-   real(kind=8)             :: rrf_q108
-   real(kind=8)             :: lnexplow
-   real(kind=8)             :: lnexphigh
-   real(kind=8)             :: tlow_fun
-   real(kind=8)             :: thigh_fun
-   real(kind=8)             :: rrf8
-   !----- External functions. -------------------------------------------------------------!
-   real(kind=4)             :: sngloff
-   !---------------------------------------------------------------------------------------!
-
-   !----- Copy some variables to double precision temporaries. ----------------------------!
-   soil_temp8      = dble(soil_temp                    )
-   rrf08           = dble(root_respiration_factor(ipft))
-   rrf_low_temp8   = dble(rrf_low_temp           (ipft)) + t008
-   rrf_high_temp8  = dble(rrf_high_temp          (ipft)) + t008
-   rrf_decay_e8    = dble(rrf_decay_e            (ipft))
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Compute the functions that will control the Rrf function for low and high temper-  !
-   ! ature.  In order to avoid floating point exceptions, we check whether the temperature !
-   ! will make the exponential too large or too small.                                     !
-   !---------------------------------------------------------------------------------------!
-   !----- Low temperature. ----------------------------------------------------------------!
-   lnexplow  = rrf_decay_e8 * (rrf_low_temp8  - soil_temp8)
-   lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
-   tlow_fun  = 1.d0 +  exp(lnexplow)
-   !----- High temperature. ---------------------------------------------------------------!
-   lnexphigh = rrf_decay_e8 * (soil_temp8 - rrf_high_temp8)
-   lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
-   thigh_fun = 1.d0 + exp(lnexphigh)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Decide which functional form to use based on the physiology.  This is just to make !
-   ! it look similar to the leaf respiration respiration.                                  !
-   !---------------------------------------------------------------------------------------!
-   select case (iphysiol)
-   case (0,1)
-      rrf_hor8 = dble(rrf_hor(ipft))
-      rrf8     = arrhenius(soil_temp8,rrf08,rrf_hor8) / (tlow_fun * thigh_fun)
-   case (2,3)
-      rrf_q108 = dble(rrf_q10(ipft))
-      rrf8     = collatz(soil_temp8,rrf08,rrf_q108)   / (tlow_fun * thigh_fun)
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Convert result to single precision.                                               !
-   !---------------------------------------------------------------------------------------!
-   root_resp_norm = sngloff(rrf8,tiny_offset)
-   !---------------------------------------------------------------------------------------!
-
-
-   return
-end function root_resp_norm
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This function computes the heterotrophic respiration limitation factor, which        !
-! includes limitations due to temperature and soil moisture.                               !
-!------------------------------------------------------------------------------------------!
-real function het_resp_weight(soil_tempk,rel_soil_moist)
-
-   use decomp_coms, only : resp_temperature_increase  & ! intent(in)
-                         , resp_opt_water             & ! intent(in)
-                         , resp_water_below_opt       & ! intent(in)
-                         , resp_water_above_opt       & ! intent(in)
-                         , decomp_scheme              & ! intent(in)
-                         , rh_lloyd_1                 & ! intent(in)
-                         , rh_lloyd_2                 & ! intent(in)
-                         , rh_lloyd_3                 & ! intent(in)
-                         , rh_decay_low               & ! intent(in)
-                         , rh_decay_high              & ! intent(in)
-                         , rh_low_temp                & ! intent(in)
-                         , rh_high_temp               & ! intent(in)
-                         , rh_decay_dry               & ! intent(in)
-                         , rh_decay_wet               & ! intent(in)
-                         , rh_dry_smoist              & ! intent(in)
-                         , rh_wet_smoist              ! ! intent(in)
-   use consts_coms, only : lnexp_min                  & ! intent(in)
-                         , lnexp_max                  ! ! intent(in)
-
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4), intent(in) :: soil_tempk
-   real(kind=4), intent(in) :: rel_soil_moist
-   !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4)             :: temperature_limitation
-   real(kind=4)             :: water_limitation
-   real(kind=4)             :: lnexplloyd
-   real(kind=4)             :: lnexplow
-   real(kind=4)             :: lnexphigh
-   real(kind=4)             :: tlow_fun
-   real(kind=4)             :: thigh_fun
-   real(kind=4)             :: lnexpdry
-   real(kind=4)             :: lnexpwet
-   real(kind=4)             :: smdry_fun
-   real(kind=4)             :: smwet_fun
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the temperature dependence.                                                  !
-   !---------------------------------------------------------------------------------------!
-   select case(decomp_scheme)
-   case (0)
-      !----- Use original ED-2.1 exponential temperature dependence. ----------------------!
-      temperature_limitation = min( 1.0                                                    &
-                                  , exp( resp_temperature_increase * (soil_tempk-318.15)))
-      !------------------------------------------------------------------------------------!
-   case (1) 
-      !----- Use Lloyd and Taylor (1994) temperature dependence. --------------------------!
-      lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1. / (soil_tempk - rh_lloyd_3))
-      lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
-      temperature_limitation = min( 1.0, resp_temperature_increase * exp(lnexplloyd) )
-      !------------------------------------------------------------------------------------!
-   case (2)
-      !------------------------------------------------------------------------------------!
-      !      Similar to the original ED-1.0 formulation, which is based on the CENTURY     !
-      ! model.  The change in the functional form is to avoid power of negative numbers,   !
-      ! but the coefficients were tuned to give a similar curve.                           !
-      !------------------------------------------------------------------------------------!
-      !----- Low temperature limitation. --------------------------------------------------!
-      lnexplow               = rh_decay_low * (rh_low_temp - soil_tempk)
-      lnexplow               = max(lnexp_min,min(lnexp_max,lnexplow))
-      tlow_fun               = 1.0 + exp(lnexplow)
-      !----- High temperature limitation. -------------------------------------------------!
-      lnexphigh              = rh_decay_high * (soil_tempk - rh_high_temp)
-      lnexphigh              = max(lnexp_min,min(lnexp_max,lnexphigh))
-      thigh_fun              = 1.0 + exp(lnexphigh)
-      !----- Temperature limitation is a combination of both. -----------------------------!
-      temperature_limitation = 1.0 / (tlow_fun * thigh_fun )
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find the limitation due to soil moisture.                                         !
-   !---------------------------------------------------------------------------------------!
-   select case (decomp_scheme)
-   case (0,1)
-      !----- ED-2.1 default, also used when decomp_scheme is 1. ---------------------------!
-      if (rel_soil_moist <= resp_opt_water)then
-         water_limitation = exp( (rel_soil_moist - resp_opt_water) * resp_water_below_opt)
-      else
-         water_limitation = exp( (resp_opt_water - rel_soil_moist) * resp_water_above_opt)
-      end if
-      !------------------------------------------------------------------------------------!
-   case (2)
-      !----- Dry soil limitation. ---------------------------------------------------------!
-      lnexpdry         = rh_decay_dry * (rh_dry_smoist - rel_soil_moist)
-      lnexpdry         = max(lnexp_min,min(lnexp_max,lnexpdry))
-      smdry_fun        = 1.0 + exp(lnexpdry)
-      !----- Wet soil limitation. ---------------------------------------------------------!
-      lnexpwet         = rh_decay_wet * (rel_soil_moist - rh_wet_smoist)
-      lnexpwet         = max(lnexp_min,min(lnexp_max,lnexpwet))
-      smwet_fun        = 1.0 + exp(lnexpwet)
-      !----- Soil moisture limitation is a combination of both. ---------------------------!
-      water_limitation = 1.0 / (smdry_fun * smwet_fun)
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Compute the weight, which is just the combination of both. ----------------------!
-   het_resp_weight = temperature_limitation * water_limitation
-   !---------------------------------------------------------------------------------------!
-
-   return
-end function het_resp_weight
-!==========================================================================================!
-!==========================================================================================!
 
 
 
@@ -639,5 +418,233 @@ subroutine update_C_and_N_pools(cgrid)
    
    return
 end subroutine update_C_and_N_pools
+!==========================================================================================!
+!==========================================================================================!
+
+end module soil_respiration_module
+
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function determines the normalised root respiration (umol/kgC_fine_root/s) at a !
+! given soil layer.                                                                        !
+!------------------------------------------------------------------------------------------!
+real function root_resp_norm(ipft,soil_temp)
+   use pft_coms       , only : root_respiration_factor  & ! intent(in)
+                             , rrf_low_temp             & ! intent(in)
+                             , rrf_high_temp            & ! intent(in)
+                             , rrf_decay_e              & ! intent(in)
+                             , rrf_hor                  & ! intent(in)
+                             , rrf_q10                  ! ! intent(in)
+   use farq_leuning   , only : arrhenius                & ! function
+                             , collatz                  ! ! function
+   use soil_coms      , only : soil8                    ! ! intent(in)
+   use rk4_coms       , only : tiny_offset              ! ! intent(in)
+   use physiology_coms, only : iphysiol                 ! ! intent(in)
+   use consts_coms    , only : lnexp_min8               & ! intent(in)
+                             , lnexp_max8               & ! intent(in)
+                             , t008                     ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer     , intent(in) :: ipft
+   real(kind=4), intent(in) :: soil_temp
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=8)             :: soil_temp8
+   real(kind=8)             :: rrf08
+   real(kind=8)             :: rrf_low_temp8
+   real(kind=8)             :: rrf_high_temp8
+   real(kind=8)             :: rrf_decay_e8
+   real(kind=8)             :: rrf_hor8
+   real(kind=8)             :: rrf_q108
+   real(kind=8)             :: lnexplow
+   real(kind=8)             :: lnexphigh
+   real(kind=8)             :: tlow_fun
+   real(kind=8)             :: thigh_fun
+   real(kind=8)             :: rrf8
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4)             :: sngloff
+   !---------------------------------------------------------------------------------------!
+
+   !----- Copy some variables to double precision temporaries. ----------------------------!
+   soil_temp8      = dble(soil_temp                    )
+   rrf08           = dble(root_respiration_factor(ipft))
+   rrf_low_temp8   = dble(rrf_low_temp           (ipft)) + t008
+   rrf_high_temp8  = dble(rrf_high_temp          (ipft)) + t008
+   rrf_decay_e8    = dble(rrf_decay_e            (ipft))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Compute the functions that will control the Rrf function for low and high temper-  !
+   ! ature.  In order to avoid floating point exceptions, we check whether the temperature !
+   ! will make the exponential too large or too small.                                     !
+   !---------------------------------------------------------------------------------------!
+   !----- Low temperature. ----------------------------------------------------------------!
+   lnexplow  = rrf_decay_e8 * (rrf_low_temp8  - soil_temp8)
+   lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+   tlow_fun  = 1.d0 +  exp(lnexplow)
+   !----- High temperature. ---------------------------------------------------------------!
+   lnexphigh = rrf_decay_e8 * (soil_temp8 - rrf_high_temp8)
+   lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+   thigh_fun = 1.d0 + exp(lnexphigh)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Decide which functional form to use based on the physiology.  This is just to make !
+   ! it look similar to the leaf respiration respiration.                                  !
+   !---------------------------------------------------------------------------------------!
+   select case (iphysiol)
+   case (0,1)
+      rrf_hor8 = dble(rrf_hor(ipft))
+      rrf8     = arrhenius(soil_temp8,rrf08,rrf_hor8) / (tlow_fun * thigh_fun)
+   case (2,3)
+      rrf_q108 = dble(rrf_q10(ipft))
+      rrf8     = collatz(soil_temp8,rrf08,rrf_q108)   / (tlow_fun * thigh_fun)
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Convert result to single precision.                                               !
+   !---------------------------------------------------------------------------------------!
+   root_resp_norm = sngloff(rrf8,tiny_offset)
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end function root_resp_norm
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function computes the heterotrophic respiration limitation factor, which        !
+! includes limitations due to temperature and soil moisture.                               !
+!------------------------------------------------------------------------------------------!
+real function het_resp_weight(soil_tempk,rel_soil_moist)
+
+   use decomp_coms, only : resp_temperature_increase  & ! intent(in)
+                         , resp_opt_water             & ! intent(in)
+                         , resp_water_below_opt       & ! intent(in)
+                         , resp_water_above_opt       & ! intent(in)
+                         , decomp_scheme              & ! intent(in)
+                         , rh_lloyd_1                 & ! intent(in)
+                         , rh_lloyd_2                 & ! intent(in)
+                         , rh_lloyd_3                 & ! intent(in)
+                         , rh_decay_low               & ! intent(in)
+                         , rh_decay_high              & ! intent(in)
+                         , rh_low_temp                & ! intent(in)
+                         , rh_high_temp               & ! intent(in)
+                         , rh_decay_dry               & ! intent(in)
+                         , rh_decay_wet               & ! intent(in)
+                         , rh_dry_smoist              & ! intent(in)
+                         , rh_wet_smoist              ! ! intent(in)
+   use consts_coms, only : lnexp_min                  & ! intent(in)
+                         , lnexp_max                  ! ! intent(in)
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), intent(in) :: soil_tempk
+   real(kind=4), intent(in) :: rel_soil_moist
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4)             :: temperature_limitation
+   real(kind=4)             :: water_limitation
+   real(kind=4)             :: lnexplloyd
+   real(kind=4)             :: lnexplow
+   real(kind=4)             :: lnexphigh
+   real(kind=4)             :: tlow_fun
+   real(kind=4)             :: thigh_fun
+   real(kind=4)             :: lnexpdry
+   real(kind=4)             :: lnexpwet
+   real(kind=4)             :: smdry_fun
+   real(kind=4)             :: smwet_fun
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the temperature dependence.                                                  !
+   !---------------------------------------------------------------------------------------!
+   select case(decomp_scheme)
+   case (0)
+      !----- Use original ED-2.1 exponential temperature dependence. ----------------------!
+      temperature_limitation = min( 1.0                                                    &
+                                  , exp( resp_temperature_increase * (soil_tempk-318.15)))
+      !------------------------------------------------------------------------------------!
+   case (1) 
+      !----- Use Lloyd and Taylor (1994) temperature dependence. --------------------------!
+      lnexplloyd             = rh_lloyd_1 * ( rh_lloyd_2 - 1. / (soil_tempk - rh_lloyd_3))
+      lnexplloyd             = max(lnexp_min,min(lnexp_max,lnexplloyd))
+      temperature_limitation = min( 1.0, resp_temperature_increase * exp(lnexplloyd) )
+      !------------------------------------------------------------------------------------!
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !      Similar to the original ED-1.0 formulation, which is based on the CENTURY     !
+      ! model.  The change in the functional form is to avoid power of negative numbers,   !
+      ! but the coefficients were tuned to give a similar curve.                           !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature limitation. --------------------------------------------------!
+      lnexplow               = rh_decay_low * (rh_low_temp - soil_tempk)
+      lnexplow               = max(lnexp_min,min(lnexp_max,lnexplow))
+      tlow_fun               = 1.0 + exp(lnexplow)
+      !----- High temperature limitation. -------------------------------------------------!
+      lnexphigh              = rh_decay_high * (soil_tempk - rh_high_temp)
+      lnexphigh              = max(lnexp_min,min(lnexp_max,lnexphigh))
+      thigh_fun              = 1.0 + exp(lnexphigh)
+      !----- Temperature limitation is a combination of both. -----------------------------!
+      temperature_limitation = 1.0 / (tlow_fun * thigh_fun )
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the limitation due to soil moisture.                                         !
+   !---------------------------------------------------------------------------------------!
+   select case (decomp_scheme)
+   case (0,1)
+      !----- ED-2.1 default, also used when decomp_scheme is 1. ---------------------------!
+      if (rel_soil_moist <= resp_opt_water)then
+         water_limitation = exp( (rel_soil_moist - resp_opt_water) * resp_water_below_opt)
+      else
+         water_limitation = exp( (resp_opt_water - rel_soil_moist) * resp_water_above_opt)
+      end if
+      !------------------------------------------------------------------------------------!
+   case (2)
+      !----- Dry soil limitation. ---------------------------------------------------------!
+      lnexpdry         = rh_decay_dry * (rh_dry_smoist - rel_soil_moist)
+      lnexpdry         = max(lnexp_min,min(lnexp_max,lnexpdry))
+      smdry_fun        = 1.0 + exp(lnexpdry)
+      !----- Wet soil limitation. ---------------------------------------------------------!
+      lnexpwet         = rh_decay_wet * (rel_soil_moist - rh_wet_smoist)
+      lnexpwet         = max(lnexp_min,min(lnexp_max,lnexpwet))
+      smwet_fun        = 1.0 + exp(lnexpwet)
+      !----- Soil moisture limitation is a combination of both. ---------------------------!
+      water_limitation = 1.0 / (smdry_fun * smwet_fun)
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Compute the weight, which is just the combination of both. ----------------------!
+   het_resp_weight = temperature_limitation * water_limitation
+   !---------------------------------------------------------------------------------------!
+
+   return
+end function het_resp_weight
 !==========================================================================================!
 !==========================================================================================!

@@ -1,3 +1,6 @@
+module rk4_integ_utils
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 ! Subroutine odeint                                                                        !
@@ -6,7 +9,8 @@
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine odeint(h1,csite,ipa,isi,nsteps)
-
+   use rk4_copy_patch
+   use rk4_misc
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype
@@ -23,7 +27,6 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
                              , checkbudget            & ! intent(in)
                              , print_detailed         & ! intent(in)
                              , norm_rk4_fluxes        ! ! sub-routine
-   use rk4_stepper    , only : rkqs                   ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
@@ -1192,279 +1195,6 @@ end subroutine get_errmax
 
 
 
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine copies the values to different buffers inside the RK4 integration     !
-! scheme.                                                                                  !
-!------------------------------------------------------------------------------------------!
-subroutine copy_rk4_patch(sourcep, targetp, cpatch)
-
-   use rk4_coms      , only : rk4patchtype      & ! structure
-                            , checkbudget       & ! intent(in)
-                            , print_detailed    & ! intent(in)
-                            , rk4site
-   use ed_state_vars , only : sitetype          & ! structure
-                            , patchtype         ! ! structure
-   use grid_coms     , only : nzg               & ! intent(in)
-                            , nzs               ! ! intent(in)
-   use ed_max_dims   , only : n_pft             ! ! intent(in)
-   use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
-
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   type(rk4patchtype) , target     :: sourcep
-   type(rk4patchtype) , target     :: targetp
-   type(patchtype)    , target     :: cpatch
-   !----- Local variable ------------------------------------------------------------------!
-   integer                         :: k
-   !---------------------------------------------------------------------------------------!
-
-   targetp%can_enthalpy     = sourcep%can_enthalpy
-   targetp%can_theta        = sourcep%can_theta
-   targetp%can_temp         = sourcep%can_temp
-   targetp%can_shv          = sourcep%can_shv
-   targetp%can_co2          = sourcep%can_co2
-   targetp%can_rhos         = sourcep%can_rhos
-   targetp%can_prss         = sourcep%can_prss
-   targetp%can_exner        = sourcep%can_exner
-   targetp%can_cp           = sourcep%can_cp
-   targetp%can_depth        = sourcep%can_depth
-   targetp%can_rhv          = sourcep%can_rhv
-   targetp%can_ssh          = sourcep%can_ssh
-   targetp%veg_height       = sourcep%veg_height
-   targetp%veg_displace     = sourcep%veg_displace
-   targetp%veg_rough        = sourcep%veg_rough
-   targetp%opencan_frac     = sourcep%opencan_frac
-   targetp%total_sfcw_depth = sourcep%total_sfcw_depth
-   targetp%total_sfcw_mass  = sourcep%total_sfcw_mass
-   targetp%snowfac          = sourcep%snowfac
-
-!  These are not incremented
-   targetp%vels             = sourcep%vels
-   targetp%atm_enthalpy     = sourcep%atm_enthalpy
-
-   targetp%ggbare           = sourcep%ggbare
-   targetp%ggveg            = sourcep%ggveg
-   targetp%ggnet            = sourcep%ggnet
-   targetp%ggsoil           = sourcep%ggsoil
-
-   targetp%flag_wflxgc      = sourcep%flag_wflxgc
-
-   targetp%virtual_water    = sourcep%virtual_water
-   targetp%virtual_energy   = sourcep%virtual_energy
-   targetp%virtual_depth    = sourcep%virtual_depth
-   targetp%virtual_tempk    = sourcep%virtual_tempk
-   targetp%virtual_fracliq  = sourcep%virtual_fracliq
-
-   targetp%rough            = sourcep%rough
- 
-   targetp%upwp             = sourcep%upwp
-   targetp%wpwp             = sourcep%wpwp
-   targetp%tpwp             = sourcep%tpwp
-   targetp%qpwp             = sourcep%qpwp
-   targetp%cpwp             = sourcep%cpwp
-
-   targetp%ground_shv       = sourcep%ground_shv
-   targetp%ground_ssh       = sourcep%ground_ssh
-   targetp%ground_temp      = sourcep%ground_temp
-   targetp%ground_fliq      = sourcep%ground_fliq
-
-   targetp%ustar            = sourcep%ustar
-   targetp%cstar            = sourcep%cstar
-   targetp%tstar            = sourcep%tstar
-   targetp%estar            = sourcep%estar
-   targetp%qstar            = sourcep%qstar
-   targetp%zeta             = sourcep%zeta
-   targetp%ribulk           = sourcep%ribulk
-   targetp%rasveg           = sourcep%rasveg
-
-   targetp%cwd_rh           = sourcep%cwd_rh
-   targetp%rh               = sourcep%rh
-
-   targetp%water_deficit    = sourcep%water_deficit
-
-   do k=rk4site%lsl,nzg      
-      targetp%soil_water            (k) = sourcep%soil_water            (k)
-      targetp%soil_energy           (k) = sourcep%soil_energy           (k)
-      targetp%soil_mstpot           (k) = sourcep%soil_mstpot           (k)
-      targetp%soil_tempk            (k) = sourcep%soil_tempk            (k)
-      targetp%soil_fracliq          (k) = sourcep%soil_fracliq          (k)
-   end do
-
-   targetp%nlev_sfcwater   = sourcep%nlev_sfcwater
-   targetp%flag_sfcwater   = sourcep%flag_sfcwater
-
-   do k=1,nzs
-      targetp%sfcwater_mass   (k) = sourcep%sfcwater_mass   (k)
-      targetp%sfcwater_energy (k) = sourcep%sfcwater_energy (k)
-      targetp%sfcwater_depth  (k) = sourcep%sfcwater_depth  (k)
-      targetp%sfcwater_tempk  (k) = sourcep%sfcwater_tempk  (k)
-      targetp%sfcwater_fracliq(k) = sourcep%sfcwater_fracliq(k)
-   end do
-
-   do k=1,cpatch%ncohorts
-      targetp%leaf_resolvable (k) = sourcep%leaf_resolvable (k)
-      targetp%leaf_energy     (k) = sourcep%leaf_energy     (k)
-      targetp%leaf_water      (k) = sourcep%leaf_water      (k)
-      targetp%leaf_temp       (k) = sourcep%leaf_temp       (k)
-      targetp%leaf_fliq       (k) = sourcep%leaf_fliq       (k)
-      targetp%leaf_hcap       (k) = sourcep%leaf_hcap       (k)
-      targetp%leaf_reynolds   (k) = sourcep%leaf_reynolds   (k)
-      targetp%leaf_grashof    (k) = sourcep%leaf_grashof    (k)
-      targetp%leaf_nussfree   (k) = sourcep%leaf_nussfree   (k)
-      targetp%leaf_nussforc   (k) = sourcep%leaf_nussforc   (k)
-      targetp%leaf_gbh        (k) = sourcep%leaf_gbh        (k)
-      targetp%leaf_gbw        (k) = sourcep%leaf_gbw        (k)
-      targetp%rshort_l        (k) = sourcep%rshort_l        (k)
-      targetp%rlong_l         (k) = sourcep%rlong_l         (k)
-
-      targetp%wood_resolvable (k) = sourcep%wood_resolvable (k)
-      targetp%wood_energy     (k) = sourcep%wood_energy     (k)
-      targetp%wood_water      (k) = sourcep%wood_water      (k)
-      targetp%wood_temp       (k) = sourcep%wood_temp       (k)
-      targetp%wood_fliq       (k) = sourcep%wood_fliq       (k)
-      targetp%wood_hcap       (k) = sourcep%wood_hcap       (k)
-      targetp%wood_reynolds   (k) = sourcep%wood_reynolds   (k)
-      targetp%wood_grashof    (k) = sourcep%wood_grashof    (k)
-      targetp%wood_nussfree   (k) = sourcep%wood_nussfree   (k)
-      targetp%wood_nussforc   (k) = sourcep%wood_nussforc   (k)
-      targetp%wood_gbh        (k) = sourcep%wood_gbh        (k)
-      targetp%wood_gbw        (k) = sourcep%wood_gbw        (k)
-      targetp%rshort_w        (k) = sourcep%rshort_w        (k)
-      targetp%rlong_w         (k) = sourcep%rlong_w         (k)
-
-      targetp%veg_resolvable  (k) = sourcep%veg_resolvable  (k)
-      targetp%veg_energy      (k) = sourcep%veg_energy      (k)
-      targetp%veg_water       (k) = sourcep%veg_water       (k)
-      targetp%veg_hcap        (k) = sourcep%veg_hcap        (k)
-
-      targetp%veg_wind        (k) = sourcep%veg_wind        (k)
-      targetp%lint_shv        (k) = sourcep%lint_shv        (k)
-      targetp%nplant          (k) = sourcep%nplant          (k)
-      targetp%lai             (k) = sourcep%lai             (k)
-      targetp%wai             (k) = sourcep%wai             (k)
-      targetp%tai             (k) = sourcep%tai             (k)
-      targetp%crown_area      (k) = sourcep%crown_area      (k)
-      targetp%elongf          (k) = sourcep%elongf          (k)
-      targetp%gsw_open        (k) = sourcep%gsw_open        (k)
-      targetp%gsw_closed      (k) = sourcep%gsw_closed      (k)
-      targetp%psi_open        (k) = sourcep%psi_open        (k)
-      targetp%psi_closed      (k) = sourcep%psi_closed      (k)
-      targetp%fs_open         (k) = sourcep%fs_open         (k)
-      targetp%gpp             (k) = sourcep%gpp             (k)
-      targetp%leaf_resp       (k) = sourcep%leaf_resp       (k)
-      targetp%root_resp       (k) = sourcep%root_resp       (k)
-      targetp%leaf_growth_resp(k) = sourcep%leaf_growth_resp(k)
-      targetp%root_growth_resp(k) = sourcep%root_growth_resp(k)
-      targetp%sapa_growth_resp(k) = sourcep%sapa_growth_resp(k)
-      targetp%sapb_growth_resp(k) = sourcep%sapb_growth_resp(k)
-      targetp%leaf_storage_resp(k) = sourcep%leaf_storage_resp(k)
-      targetp%root_storage_resp(k) = sourcep%root_storage_resp(k)
-      targetp%sapa_storage_resp(k) = sourcep%sapa_storage_resp(k)
-      targetp%sapb_storage_resp(k) = sourcep%sapb_storage_resp(k)
-   end do
-
-   if (checkbudget) then
-      targetp%co2budget_storage      = sourcep%co2budget_storage
-      targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
-      targetp%ebudget_netrad         = sourcep%ebudget_netrad
-      targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
-      targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
-      targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff
-      targetp%wbudget_loss2atm       = sourcep%wbudget_loss2atm
-      targetp%wbudget_loss2drainage  = sourcep%wbudget_loss2drainage
-      targetp%wbudget_loss2runoff    = sourcep%wbudget_loss2runoff
-      targetp%ebudget_storage        = sourcep%ebudget_storage
-      targetp%wbudget_storage        = sourcep%wbudget_storage
-   end if
-   if (fast_diagnostics) then
-      targetp%avg_ustar              = sourcep%avg_ustar
-      targetp%avg_tstar              = sourcep%avg_tstar
-      targetp%avg_qstar              = sourcep%avg_qstar
-      targetp%avg_cstar              = sourcep%avg_cstar
-      targetp%avg_carbon_ac          = sourcep%avg_carbon_ac
-      targetp%avg_carbon_st          = sourcep%avg_carbon_st
-      targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
-      targetp%avg_throughfall        = sourcep%avg_throughfall
-      targetp%avg_vapor_ac           = sourcep%avg_vapor_ac
-      targetp%avg_qthroughfall       = sourcep%avg_qthroughfall
-      targetp%avg_sensible_gc        = sourcep%avg_sensible_gc
-      targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
-      targetp%avg_drainage           = sourcep%avg_drainage
-      targetp%avg_qdrainage          = sourcep%avg_qdrainage
-
-      do k=rk4site%lsl,nzg
-         targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
-         targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)
-         targetp%avg_transloss(k)   = sourcep%avg_transloss(k)
-      end do
-
-
-      do k=1,cpatch%ncohorts
-         targetp%avg_sensible_lc    (k) = sourcep%avg_sensible_lc   (k)
-         targetp%avg_sensible_wc    (k) = sourcep%avg_sensible_wc   (k)
-         targetp%avg_vapor_lc       (k) = sourcep%avg_vapor_lc      (k)
-         targetp%avg_vapor_wc       (k) = sourcep%avg_vapor_wc      (k)
-         targetp%avg_transp         (k) = sourcep%avg_transp        (k)
-         targetp%avg_intercepted_al (k) = sourcep%avg_intercepted_al(k)
-         targetp%avg_intercepted_aw (k) = sourcep%avg_intercepted_aw(k)
-         targetp%avg_wshed_lg       (k) = sourcep%avg_wshed_lg      (k)
-         targetp%avg_wshed_wg       (k) = sourcep%avg_wshed_wg      (k)
-      end do
-   end if
-
-   if (print_detailed) then
-      targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
-      targetp%flx_carbon_st          = sourcep%flx_carbon_st
-      targetp%flx_vapor_lc           = sourcep%flx_vapor_lc
-      targetp%flx_vapor_wc           = sourcep%flx_vapor_wc
-      targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
-      targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
-      targetp%flx_intercepted        = sourcep%flx_intercepted
-      targetp%flx_throughfall        = sourcep%flx_throughfall
-      targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
-      targetp%flx_transp             = sourcep%flx_transp
-      targetp%flx_rshort_gnd         = sourcep%flx_rshort_gnd
-      targetp%flx_par_gnd            = sourcep%flx_par_gnd
-      targetp%flx_rlong_gnd          = sourcep%flx_rlong_gnd
-      targetp%flx_sensible_lc        = sourcep%flx_sensible_lc
-      targetp%flx_sensible_wc        = sourcep%flx_sensible_wc
-      targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg
-      targetp%flx_qintercepted       = sourcep%flx_qintercepted
-      targetp%flx_qthroughfall       = sourcep%flx_qthroughfall
-      targetp%flx_sensible_gc        = sourcep%flx_sensible_gc
-      targetp%flx_sensible_ac        = sourcep%flx_sensible_ac
-      targetp%flx_drainage           = sourcep%flx_drainage
-      targetp%flx_qdrainage          = sourcep%flx_qdrainage
-
-      do k=rk4site%lsl,nzg
-         targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
-         targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
-         targetp%flx_transloss(k)   = sourcep%flx_transloss(k)  
-      end do
-      
-      do k=1,cpatch%ncohorts
-         targetp%cfx_hflxlc      (k) = sourcep%cfx_hflxlc      (k)
-         targetp%cfx_hflxwc      (k) = sourcep%cfx_hflxwc      (k)
-         targetp%cfx_qwflxlc     (k) = sourcep%cfx_qwflxlc     (k)
-         targetp%cfx_qwflxwc     (k) = sourcep%cfx_qwflxwc     (k)
-         targetp%cfx_qwshed      (k) = sourcep%cfx_qwshed      (k)
-         targetp%cfx_qtransp     (k) = sourcep%cfx_qtransp     (k)
-         targetp%cfx_qintercepted(k) = sourcep%cfx_qintercepted(k)
-      end do
-   end if
-
-
-
-   return
-end subroutine copy_rk4_patch
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
 
 !==========================================================================================!
 !==========================================================================================!
@@ -1965,3 +1695,1284 @@ subroutine initialize_misc_stepvars()
 end subroutine initialize_misc_stepvars
 !==========================================================================================!
 !==========================================================================================!
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine is the main Runge-Kutta step driver.                                !
+   !---------------------------------------------------------------------------------------!
+   subroutine rkqs(x,htry,hdid,hnext,csite,ipa,isi)
+      use rk4_copy_patch
+      use rk4_misc
+      use rk4_coms      , only : rk4patchtype        & ! structure
+                               , integration_buff    & ! intent(inout)
+                               , rk4site             & ! intent(in)
+                               , hmin                & ! intent(in)
+                               , rk4eps              & ! intent(in)
+                               , rk4epsi             & ! intent(in)
+                               , safety              & ! intent(in)
+                               , pgrow               & ! intent(in)
+                               , pshrnk              & ! intent(in)
+                               , errcon              & ! intent(in)
+                               , print_diags         & ! intent(in)
+                               , print_detailed      & ! intent(in)
+                               , norm_rk4_fluxes     & ! intent(in)
+                               , reset_rk4_fluxes    ! ! intent(in)
+      use ed_state_vars , only : sitetype            & ! structure
+                               , patchtype           ! ! structure
+      use grid_coms     , only : nzg                 & ! intent(in)
+                               , nzs                 ! ! intent(in)
+      !$ use omp_lib
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      integer                  , intent(in)    :: ipa
+      integer                  , intent(in)    :: isi
+      type(sitetype)           , target        :: csite
+      real(kind=8)             , intent(in)    :: htry
+      real(kind=8)             , intent(inout) :: x
+      real(kind=8)             , intent(out)   :: hdid,hnext
+      !----- Local variables --------------------------------------------------------------!
+      real(kind=8)                             :: h,errmax,xnew,newh,oldh
+      logical                                  :: reject_step,reject_result
+      logical                                  :: minstep,stuck,test_reject,pdo
+      integer                                  :: k
+      integer                                  :: ibuff
+      !------------------------------------------------------------------------------------!
+
+      ibuff=1
+      !$ ibuff = OMP_get_thread_num()+1
+
+      h           =  htry
+      reject_step =  .false.
+      hstep:   do
+
+         !---------------------------------------------------------------------------------!
+         ! 1. Try a step of varying size.                                                  !
+         !---------------------------------------------------------------------------------!
+         call rkck(integration_buff(ibuff)%y,integration_buff(ibuff)%dydx                  &
+                  ,integration_buff(ibuff)%ytemp,integration_buff(ibuff)%yerr              &
+                  ,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3                 &
+                  ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5                 &
+                  ,integration_buff(ibuff)%ak6,integration_buff(ibuff)%ak7,x,h,csite,ipa   &
+                  ,reject_step,reject_result)
+
+         !---------------------------------------------------------------------------------!
+         ! 2. Check to see how accurate the step was.  Errors were calculated by integrat- !
+         !    ing the derivative of that last step.                                        !
+         !---------------------------------------------------------------------------------!
+         if (reject_step .or. reject_result) then
+            !------------------------------------------------------------------------------!
+            !    If step was already rejected, that means the step had finished premature- !
+            ! ly, so we assign a standard large error (10.0).                              !
+            !------------------------------------------------------------------------------!
+            errmax = 1.d1
+         else
+            call get_errmax(errmax,integration_buff(ibuff)%yerr                            &
+                           ,integration_buff(ibuff)%yscal,csite%patch(ipa)                 &
+                           ,integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
+            errmax = errmax * rk4epsi
+         end if
+
+         !---------------------------------------------------------------------------------!
+         ! 3. If that error was large, then calculate a new step size to try.  There are   !
+         !    two types of new tries.  If step failed to be minimally reasonable (reject-  !
+         !    ed) we have assigned a standard large error (10.0).  Otherwise a new step is !
+         !    calculated based on the size of that error.  Hopefully, those new steps      !
+         !    should be less than the previous h.  If the error was small, i.e. less then  !
+         !    rk4eps, then we are done with this step, and we can move forward             !
+         !    time: x = x + h                                                              !
+         !---------------------------------------------------------------------------------!
+         if (errmax > 1.d0) then
+            !----- Defining new step and checking if it can be. ---------------------------!
+            oldh    = h
+            newh    = safety * h * errmax**pshrnk
+            minstep = (newh == h) .or. newh < hmin
+
+            !----- Defining next time, and checking if it really added something. ---------!
+            h       = max(1.d-1*h, newh)
+            xnew    = x + h
+            stuck   = xnew == x
+
+            !------------------------------------------------------------------------------!
+            ! 3a. Here is the moment of truth... If we reached a tiny step and yet the     !
+            !     model didn't converge, then we print various values to inform the user   !
+            !     and abort the run.  Please, don't hate the messenger.                    !
+            !------------------------------------------------------------------------------!
+            if (minstep .or. stuck) then
+
+               write (unit=*,fmt='(80a)')         ('=',k=1,80)
+               write (unit=*,fmt='(a)')           '   STEPSIZE UNDERFLOW IN RKQS'
+               write (unit=*,fmt='(80a)')         ('-',k=1,80)
+               write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:     ',rk4site%lon
+               write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:      ',rk4site%lat
+               write (unit=*,fmt='(a)')           ' + PATCH INFO:    '
+               write (unit=*,fmt='(a,1x,i6)')     '   - NUMBER:      ',ipa
+               write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:         ',csite%age(ipa)
+               write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:   ',csite%dist_type(ipa)
+               write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_STEP:   ',reject_step
+               write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_RESULT: ',reject_result
+               write (unit=*,fmt='(a,1x,l1)')     ' + MINSTEP:       ',minstep
+               write (unit=*,fmt='(a,1x,l1)')     ' + STUCK:         ',stuck
+               write (unit=*,fmt='(a,1x,es12.4)') ' + ERRMAX:        ',errmax
+               write (unit=*,fmt='(a,1x,es12.4)') ' + X:             ',x
+               write (unit=*,fmt='(a,1x,es12.4)') ' + H:             ',h
+               write (unit=*,fmt='(a,1x,es12.4)') ' + OLDH:          ',oldh
+               write (unit=*,fmt='(a,1x,es12.4)') ' + NEWH:          ',newh
+               write (unit=*,fmt='(a,1x,es12.4)') ' + SAFETY:        ',safety
+               write (unit=*,fmt='(80a)') ('-',k=1,80)
+               if (reject_step .or. reject_result) then
+                  write (unit=*,fmt='(a)') '   Likely to be a rejected step problem.'
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+               else
+                  write (unit=*,fmt='(a)') '   Likely to be an errmax problem.'
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+               end if
+
+               if (reject_result) then
+                  !----- Run the LSM sanity check but this time we force the print. -------!
+                  call rk4_sanity_check(integration_buff(ibuff)%ytemp,test_reject,csite    &
+                                       ,ipa,integration_buff(ibuff)%dydx,h,.true.)
+                  call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
+               elseif (reject_step) then
+                  call rk4_sanity_check(integration_buff(ibuff)%ak7,test_reject,csite,ipa  &
+                                       ,integration_buff(ibuff)%dydx,h,.true.)
+                  call print_sanity_check(integration_buff(ibuff)%y,csite,ipa)
+               else
+                  call print_errmax(errmax,integration_buff(ibuff)%yerr                    &
+                                   ,integration_buff(ibuff)%yscal,csite%patch(ipa)         &
+                                   ,integration_buff(ibuff)%y,integration_buff(ibuff)%ytemp)
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Epsilon:',rk4eps
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+               end if
+               call print_rk4patch(integration_buff(ibuff)%y, csite,ipa)
+            endif
+         
+         else
+
+            !------------------------------------------------------------------------------!
+            ! 3b.  Great, it worked, so now we can advance to the next step.  We just need !
+            !      to do some minor adjustments before...                                  !
+            !------------------------------------------------------------------------------!
+            !----- i.   Final update of leaf properties to avoid negative water. ----------!
+            call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
+            !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
+            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
+            !----- iii. Make temporary surface water stable and positively defined. -------!
+            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h, csite,ipa)
+            !----- iv.  Update the diagnostic variables. ----------------------------------!
+            call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa)
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
+            !    and try something faster.                                                 !
+            !------------------------------------------------------------------------------!
+            if (errmax > errcon) then
+               hnext = safety * h * errmax**pgrow
+            else
+               hnext = 5.d0 * h
+            endif
+            hnext = max(2.d0*hmin,hnext)
+
+            !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
+            if (print_detailed) then
+               call norm_rk4_fluxes(integration_buff(ibuff)%ytemp,h)
+               call print_rk4_state(integration_buff(ibuff)%y                              &
+                                   ,integration_buff(ibuff)%ytemp,csite,ipa,isi,x,h)
+            end if
+
+            !------------------------------------------------------------------------------!
+            !    3e. Copy the temporary structure to the intermediate state.               !
+            !------------------------------------------------------------------------------!
+            call copy_rk4_patch(integration_buff(ibuff)%ytemp,integration_buff(ibuff)%y    &
+                               ,csite%patch(ipa))
+
+            !------------------------------------------------------------------------------!
+            !    3f. Flush step-by-step fluxes to zero if the user wants detailed          !
+            !        debugging.                                                            !
+            !------------------------------------------------------------------------------!
+            if (print_detailed) then
+               call reset_rk4_fluxes(integration_buff(ibuff)%y)
+            end if
+
+            !----- 3g. Update time. -------------------------------------------------------!
+            x    = x + h
+            hdid = h
+
+            exit hstep
+         end if
+      end do hstep
+
+      return
+   end subroutine rkqs
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will update the variables and perform the actual time stepping.    !
+   !---------------------------------------------------------------------------------------!
+   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa                  &
+                  ,reject_step,reject_result)
+      use rk4_misc
+      use rk4_copy_patch
+      use rk4_coms      , only : rk4patchtype        & ! structure
+                               , integration_vars    & ! structure
+                               , rk4site             & ! intent(in)
+                               , print_diags         & ! intent(in)
+                               , rk4_a2              & ! intent(in)
+                               , rk4_a3              & ! intent(in)
+                               , rk4_a4              & ! intent(in)
+                               , rk4_a5              & ! intent(in)
+                               , rk4_a6              & ! intent(in)
+                               , rk4_b21             & ! intent(in)
+                               , rk4_b31             & ! intent(in)
+                               , rk4_b32             & ! intent(in)
+                               , rk4_b41             & ! intent(in)
+                               , rk4_b42             & ! intent(in)
+                               , rk4_b43             & ! intent(in)
+                               , rk4_b51             & ! intent(in)
+                               , rk4_b52             & ! intent(in)
+                               , rk4_b53             & ! intent(in)
+                               , rk4_b54             & ! intent(in)
+                               , rk4_b61             & ! intent(in)
+                               , rk4_b62             & ! intent(in)
+                               , rk4_b63             & ! intent(in)
+                               , rk4_b64             & ! intent(in)
+                               , rk4_b65             & ! intent(in)
+                               , rk4_c1              & ! intent(in)
+                               , rk4_c3              & ! intent(in)
+                               , rk4_c4              & ! intent(in)
+                               , rk4_c6              & ! intent(in)
+                               , rk4_dc5             & ! intent(in)
+                               , rk4_dc1             & ! intent(in)
+                               , rk4_dc3             & ! intent(in)
+                               , rk4_dc4             & ! intent(in)
+                               , rk4_dc6             & ! intent(in)
+                               , zero_rk4_patch      & ! intent(in)
+                               , zero_rk4_cohort     ! ! intent(in)
+      use ed_state_vars , only : sitetype            & ! structure
+                               , patchtype           ! ! structure
+      use grid_coms     , only : nzg                 & ! intent(in)
+                               , nzs                 ! ! intent(in)
+      implicit none
+
+      !----- Arguments --------------------------------------------------------------------!
+      integer           , intent(in)  :: ipa
+      real(kind=8)      , intent(in)  :: x,h
+      type(rk4patchtype), target      :: y,dydx,yout,yerr
+      type(rk4patchtype), target      :: ak2,ak3,ak4,ak5,ak6,ak7
+      type(sitetype)    , target      :: csite
+      logical           , intent(out) :: reject_step
+      logical           , intent(out) :: reject_result
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)   , pointer     :: cpatch
+      real(kind=8)                    :: combh
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Start and assume that nothing went wrong up to this point... If we find any    !
+      ! seriously bad step, quit and reduce the time step without even bothering to try    !
+      ! further.                                                                           !
+      !------------------------------------------------------------------------------------!
+      reject_step   = .false.
+      reject_result = .false.
+      cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     For each stage we checked the sanity, so we avoid using non-sense values to    !
+      ! advance.  Also, we estimate the derivative of pressure after each stage, and in    !
+      ! the end we estimate the full step derivative as the weighted average for each of   !
+      ! these partial steps taken.                                                         !
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Second stage (the first was the Euler, whose derivative is already computed    !
+      ! and saved in dydx.                                                                 !
+      !------------------------------------------------------------------------------------!
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, rk4_b21*h, cpatch)
+      combh = rk4_b21*h
+      call update_diagnostic_vars(ak7, csite,ipa)
+      call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
+      if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
+      call leaf_derivs(ak7, ak2, csite, ipa,h,.false.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Third stage.                                                                    !
+      !------------------------------------------------------------------------------------!
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, rk4_b31*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b32*h, cpatch)
+      combh = (rk4_b31+rk4_b32)*h
+      call update_diagnostic_vars(ak7, csite,ipa)
+      call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
+      if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
+      call leaf_derivs(ak7, ak3, csite,ipa,h,.false.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Fourth stage.                                                                   !
+      !------------------------------------------------------------------------------------!
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, rk4_b41*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b42*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, rk4_b43*h, cpatch)
+      combh = (rk4_b41+rk4_b42+rk4_b43)*h
+      call update_diagnostic_vars(ak7, csite,ipa)
+      call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
+      if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
+      call leaf_derivs(ak7, ak4, csite, ipa,h,.false.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Fifth stage.                                                                    !
+      !------------------------------------------------------------------------------------!
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, rk4_b51*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b52*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, rk4_b53*h, cpatch)
+      call inc_rk4_patch(ak7,  ak4, rk4_b54*h, cpatch)
+      combh = (rk4_b51+rk4_b52+rk4_b53+rk4_b54)*h
+      call update_diagnostic_vars(ak7, csite,ipa)
+      call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
+      if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
+      call leaf_derivs(ak7, ak5, csite, ipa,h,.false.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Sixth stage.                                                                    !
+      !------------------------------------------------------------------------------------!
+      call copy_rk4_patch(y, ak7, cpatch)
+      call inc_rk4_patch(ak7, dydx, rk4_b61*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b62*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, rk4_b63*h, cpatch)
+      call inc_rk4_patch(ak7,  ak4, rk4_b64*h, cpatch)
+      call inc_rk4_patch(ak7,  ak5, rk4_b65*h, cpatch)
+      combh = (rk4_b61+rk4_b62+rk4_b63+rk4_b64+rk4_b65)*h
+      call update_diagnostic_vars(ak7, csite,ipa)
+      call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
+      if(reject_step)return
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
+      call leaf_derivs(ak7, ak6, csite,ipa,h,.false.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Aggregate all derivatives to make the new guess.                                !
+      !------------------------------------------------------------------------------------!
+      call copy_rk4_patch(y, yout, cpatch)
+      call inc_rk4_patch(yout, dydx, rk4_c1*h, cpatch)
+      call inc_rk4_patch(yout,  ak3, rk4_c3*h, cpatch)
+      call inc_rk4_patch(yout,  ak4, rk4_c4*h, cpatch)
+      call inc_rk4_patch(yout,  ak6, rk4_c6*h, cpatch)
+      combh = (rk4_c1+rk4_c3+rk4_c4+rk4_c6)*h
+      call update_diagnostic_vars   (yout, csite,ipa)
+      call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
+      !------------------------------------------------------------------------------------!
+      if(reject_result)return
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Estimate the error for this step.                                               !
+      !------------------------------------------------------------------------------------!
+      call zero_rk4_patch (yerr)
+      call zero_rk4_cohort(yerr)
+      call inc_rk4_patch(yerr, dydx, rk4_dc1*h, cpatch)
+      call inc_rk4_patch(yerr, ak3,  rk4_dc3*h, cpatch)
+      call inc_rk4_patch(yerr, ak4,  rk4_dc4*h, cpatch)
+      call inc_rk4_patch(yerr, ak5,  rk4_dc5*h, cpatch)
+      call inc_rk4_patch(yerr, ak6,  rk4_dc6*h, cpatch)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine rkck
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will check for potentially serious problems.  Note that the upper  !
+   ! and lower bound are defined in rk4_coms.f90, so if you need to change any limit for   !
+   ! some reason, you can adjust there.                                                    !
+   !---------------------------------------------------------------------------------------!
+   subroutine rk4_sanity_check(y,reject_step, csite,ipa,dydx,h,print_problems)
+      use rk4_coms              , only : rk4patchtype          & ! structure
+                                       , integration_vars      & ! structure
+                                       , rk4site               & ! intent(in)
+                                       , rk4eps                & ! intent(in)
+                                       , rk4aux                & ! intent(in)
+                                       , toocold               & ! intent(in)
+                                       , rk4max_can_shv        & ! intent(in)
+                                       , rk4min_can_shv        & ! intent(in)
+                                       , rk4min_can_rhv        & ! intent(in)
+                                       , rk4max_can_rhv        & ! intent(in)
+                                       , rk4min_can_temp       & ! intent(in)
+                                       , rk4max_can_temp       & ! intent(in)
+                                       , rk4min_can_co2        & ! intent(in)
+                                       , rk4max_can_co2        & ! intent(in)
+                                       , rk4max_veg_temp       & ! intent(in)
+                                       , rk4min_veg_temp       & ! intent(in)
+                                       , rk4min_veg_lwater     & ! intent(in)
+                                       , rk4min_sfcw_temp      & ! intent(in)
+                                       , rk4max_sfcw_temp      & ! intent(in)
+                                       , rk4max_soil_temp      & ! intent(in)
+                                       , rk4min_soil_temp      & ! intent(in)
+                                       , rk4min_sfcw_mass      & ! intent(in)
+                                       , rk4min_virt_water     & ! intent(in)
+                                       , rk4tiny_sfcw_mass     & ! intent(in)
+                                       , rk4water_stab_thresh  & ! intent(in)
+                                       , integ_err             & ! intent(inout)
+                                       , record_err            & ! intent(in)
+                                       , osow                  & ! intent(in)
+                                       , osoe                  & ! intent(in)
+                                       , oswe                  & ! intent(in)
+                                       , oswm                  ! ! intent(in)
+      use ed_state_vars         , only : sitetype              & ! structure
+                                       , patchtype             ! ! structure
+      use grid_coms             , only : nzg                   ! ! intent(in)
+      !$ use omp_lib
+
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(rk4patchtype) , target      :: y
+      type(rk4patchtype) , target      :: dydx
+      type(sitetype)     , target      :: csite
+      logical            , intent(in)  :: print_problems
+      logical            , intent(out) :: reject_step
+      real(kind=8)       , intent(in)  :: h
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)    , pointer     :: cpatch
+      integer                          :: k
+      integer                          :: ksn
+      real(kind=8)                     :: rk4min_leaf_water
+      real(kind=8)                     :: rk4min_wood_water
+      integer                          :: ipa
+      integer                          :: ico
+      logical                          :: cflag7
+      logical                          :: cflag8
+      logical                          :: cflag9
+      logical                          :: cflag10
+      integer                          :: ibuff
+      !------------------------------------------------------------------------------------!
+
+      ibuff=1
+      !$ ibuff = OMP_get_thread_num()+1
+
+
+      !----- Be optimistic and start assuming that things are fine. -----------------------!
+      reject_step = .false.
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_enthalpy > rk4aux(ibuff)%rk4max_can_enthalpy   .or.                        &
+          y%can_enthalpy < rk4aux(ibuff)%rk4min_can_enthalpy        ) then
+         reject_step = .true.
+         if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air enthalpy is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air potential temperature is off.                       !
+      !------------------------------------------------------------------------------------!
+      if (  y%can_theta > rk4aux(ibuff)%rk4max_can_theta .or.                              &
+            y%can_theta < rk4aux(ibuff)%rk4min_can_theta ) then
+         reject_step = .true.
+         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air pot. temp. is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if ( y%can_shv > rk4max_can_shv .or. y%can_shv < rk4min_can_shv  ) then
+         reject_step = .true.
+         if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_temp > rk4max_can_temp .or. y%can_temp < rk4min_can_temp) then
+         reject_step = .true.
+         if(record_err) integ_err(4,2) = integ_err(4,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (    y%can_prss > rk4aux(ibuff)%rk4max_can_prss .or.                              &
+              y%can_prss < rk4aux(ibuff)%rk4min_can_prss) then
+         reject_step = .true.
+         if(record_err) integ_err(5,2) = integ_err(5,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air pressure is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
+         reject_step = .true.
+         if(record_err) integ_err(6,2) = integ_err(6,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:      ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTHALPY)/Dt:',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check leaf properties, but only for those cohorts with sufficient LAI.         !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cflag7 = .false.
+      cflag8 = .false.
+      leafloop: do ico = 1,cpatch%ncohorts
+         if (.not. y%leaf_resolvable(ico)) cycle leafloop
+
+         !----- Find the minimum leaf surface water. --------------------------------------!
+         rk4min_leaf_water = rk4min_veg_lwater * y%lai(ico)
+
+         !----- Check leaf surface water. -------------------------------------------------!
+         if (y%leaf_water(ico) < rk4min_leaf_water) then
+            reject_step = .true.
+            if(record_err) cflag7 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Leaf surface water is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_HCAP:     ',y%leaf_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_TEMP:     ',y%leaf_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBH:      ',y%leaf_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBW:      ',y%leaf_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_REYNOLDS: ',y%leaf_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GRASHOF:  ',y%leaf_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFREE:   ',y%leaf_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Check leaf temperature. ---------------------------------------------------!
+         if (y%leaf_temp(ico) > rk4max_veg_temp .or.                                       &
+             y%leaf_temp(ico) < rk4min_veg_temp      ) then
+            reject_step = .true.
+            if(record_err) cflag8 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_HCAP:     ',y%leaf_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_TEMP:     ',y%leaf_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_FRACLIQ:  ',y%leaf_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_ENERGY:   ',y%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_WATER:    ',y%leaf_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_LEAF_WATER:',rk4min_leaf_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBH:      ',y%leaf_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GBW:      ',y%leaf_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_REYNOLDS: ',y%leaf_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_GRASHOF:  ',y%leaf_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFREE:   ',y%leaf_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LEAF_NUFORC:   ',y%leaf_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_EN)/Dt: ',dydx%leaf_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(LEAF_WAT)/Dt:',dydx%leaf_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do leafloop
+      if(record_err .and. cflag7) integ_err(7,2) = integ_err(7,2) + 1_8
+      if(record_err .and. cflag8) integ_err(8,2) = integ_err(8,2) + 1_8
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check wood properties, but only for those cohorts with sufficient LAI.         !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cflag9  = .false.
+      cflag10 = .false.
+      woodloop: do ico = 1,cpatch%ncohorts
+         if (.not. y%wood_resolvable(ico)) cycle woodloop
+
+         !----- Find the minimum wood surface water. --------------------------------------!
+         rk4min_wood_water = rk4min_veg_lwater * y%wai(ico)
+
+         !----- Check wood surface water. -------------------------------------------------!
+         if (y%wood_water(ico) < rk4min_wood_water) then
+            reject_step = .true.
+            if(record_err) cflag9 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Wood surface water is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_HCAP:     ',y%wood_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_TEMP:     ',y%wood_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBH:      ',y%wood_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBW:      ',y%wood_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_REYNOLDS: ',y%wood_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GRASHOF:  ',y%wood_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFREE:   ',y%wood_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Check wood temperature. ---------------------------------------------------!
+         if (y%wood_temp(ico) > rk4max_veg_temp .or.                                       &
+             y%wood_temp(ico) < rk4min_veg_temp      ) then
+            reject_step = .true.
+            if(record_err) cflag10 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Wood temperature is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:           ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:        ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:           ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:           ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:           ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:        ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:    ',y%crown_area(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_HCAP:     ',y%wood_hcap(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_TEMP:     ',y%wood_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_FRACLIQ:  ',y%wood_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_ENERGY:   ',y%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_WATER:    ',y%wood_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:      ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:      ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_WOOD_WATER:',rk4min_wood_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBH:      ',y%wood_gbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GBW:      ',y%wood_gbw(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_REYNOLDS: ',y%wood_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_GRASHOF:  ',y%wood_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFREE:   ',y%wood_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WOOD_NUFORC:   ',y%wood_nussforc(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_EN)/Dt: ',dydx%wood_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(WOOD_WAT)/Dt:',dydx%wood_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do woodloop
+      if(record_err .and. cflag9 ) integ_err( 9,2) = integ_err( 9,2) + 1_8
+      if(record_err .and. cflag10) integ_err(10,2) = integ_err(10,2) + 1_8
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check the water mass of the virtual pool.  The energy is checked only when     !
+      ! there is enough mass.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (y%virtual_water < rk4min_virt_water) then
+         reject_step = .true.
+         if(record_err) integ_err(12,2) = integ_err(12,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_ENERGY:   ',y%virtual_energy
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_WATER:    ',y%virtual_water
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_DEPTH:    ',y%virtual_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_TEMPK:    ',y%virtual_tempk
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_FLIQ :    ',y%virtual_fracliq
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_WATER)/Dt: ',dydx%virtual_water
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_ENERGY)/Dt:',dydx%virtual_energy
+            write(unit=*,fmt='(a)')           '==========================================='
+         elseif (.not. record_err) then
+            return
+         end if
+      elseif (y%virtual_water > 5.d-1 * rk4water_stab_thresh .and.                         &
+             (y%virtual_tempk < rk4min_sfcw_temp .or. y%virtual_tempk > rk4max_sfcw_temp)) &
+      then
+         reject_step = .true.
+         if(record_err) integ_err(11,2) = integ_err(11,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Virtual layer temp. is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_ENERGY:   ',y%virtual_energy
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_WATER:    ',y%virtual_water
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_DEPTH:    ',y%virtual_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_TEMPK:    ',y%virtual_tempk
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_FLIQ :    ',y%virtual_fracliq
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_WATER)/Dt: ',dydx%virtual_water
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_ENERGY)/Dt:',dydx%virtual_energy
+            write(unit=*,fmt='(a)')           '==========================================='
+         elseif (.not. record_err) then
+            return
+         end if
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Checking whether the soil layers have decent moisture and temperatures.         !
+      !------------------------------------------------------------------------------------!
+      do k=rk4site%lsl,nzg
+         !----- Soil moisture -------------------------------------------------------------!
+         if (y%soil_water(k)< rk4aux(ibuff)%rk4min_soil_water(k) .or.                                    &
+             y%soil_water(k)> rk4aux(ibuff)%rk4max_soil_water(k) ) then
+            reject_step = .true.
+            if(record_err) integ_err(osow+k,2) = integ_err(osow+k,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Soil layer water is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
+               write(unit=*,fmt='(a,1x,es12.4)') ' H:           ',h
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_MSTPOT: ',y%soil_mstpot(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
+               if (k == nzg .and. y%nlev_sfcwater > 0) then
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
+               end if
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Soil temperature ----------------------------------------------------------!
+         if (y%soil_tempk(k) > rk4max_soil_temp .or. y%soil_tempk(k) < rk4min_soil_temp )  &
+         then
+            reject_step = .true.
+            if(record_err) integ_err(osoe+k,2) = integ_err(osoe+k,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Soil layer temp is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
+               write(unit=*,fmt='(a,1x,es12.4)') ' H:           ',h
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_MSTPOT: ',y%soil_mstpot(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
+               if (k == nzg .and. y%nlev_sfcwater > 0) then
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
+               end if
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether the temporary snow/water layer(s) has(ve) reasonable values.      !
+      !------------------------------------------------------------------------------------!
+      ksn = y%nlev_sfcwater
+
+      do k=1, ksn
+         !----- Temperature ---------------------------------------------------------------!
+         if (y%sfcwater_tempk(k) < rk4min_sfcw_temp .or.                                   &
+             y%sfcwater_tempk(k) > rk4max_sfcw_temp      ) then
+            reject_step = .true.
+            if(record_err) integ_err(oswe+ksn,2) = integ_err(oswe+ksn,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Snow/pond temperature is off...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' This layer:    ',k
+               write(unit=*,fmt='(a,1x,i6)')     ' # of layers:   ',y%nlev_sfcwater
+               write(unit=*,fmt='(a,1x,i6)')     ' Stability flag:',y%flag_sfcwater
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:     ',y%sfcwater_tempk(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY:   ',y%sfcwater_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:     ',y%sfcwater_mass(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:    ',y%sfcwater_depth(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:  ',dydx%sfcwater_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:  ',dydx%sfcwater_mass(k)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Mass ----------------------------------------------------------------------!
+         if (y%sfcwater_mass(k) < rk4min_sfcw_mass) then
+            reject_step = .true.
+            if(record_err) integ_err(oswm+ksn,2) = integ_err(oswm+ksn,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Snow/pond mass is off...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' This layer:    ',k
+               write(unit=*,fmt='(a,1x,i6)')     ' # of layers:   ',y%nlev_sfcwater
+               write(unit=*,fmt='(a,1x,i6)')     ' Stability flag:',y%flag_sfcwater
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:     ',y%sfcwater_tempk(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY:   ',y%sfcwater_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:     ',y%sfcwater_mass(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:    ',y%sfcwater_depth(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:  ',dydx%sfcwater_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:  ',dydx%sfcwater_mass(k)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      if (reject_step .and. print_problems) then
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('=',k=1,78)
+         write(unit=*,fmt='(a,1x,es12.4)') ' TIMESTEP:          ',h
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           '         ---- SANITY CHECK BOUNDS ----'
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 1. CANOPY AIR SPACE: '
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(4(a,1x))')     '     MIN_SHV','     MAX_SHV','     MIN_RHV'    &
+                                          ,'     MAX_RHV'
+         write(unit=*,fmt='(4(es12.5,1x))')  rk4min_can_shv  ,rk4max_can_shv               &
+                                            ,rk4min_can_rhv  ,rk4max_can_rhv
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(6(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
+                                          ,'   MAX_THETA','MIN_ENTHALPY','MAX_ENTHALPY'
+         write(unit=*,fmt='(6(es12.5,1x))') rk4min_can_temp    ,rk4max_can_temp            &
+                                           ,rk4aux(ibuff)%rk4min_can_theta                 &
+                                           ,rk4aux(ibuff)%rk4max_can_theta                 &
+                                           ,rk4aux(ibuff)%rk4min_can_enthalpy              &
+                                           ,rk4aux(ibuff)%rk4max_can_enthalpy
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
+                                          ,'     MAX_CO2'
+         write(unit=*,fmt='(4(es12.5,1x))') rk4aux(ibuff)%rk4min_can_prss                  &
+                                           ,rk4aux(ibuff)%rk4max_can_prss               &
+                                           ,rk4min_can_co2  ,rk4max_can_co2
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 2. LEAF PROPERTIES: '
+         write(unit=*,fmt='(3(a,1x))')     '    MIN_TEMP','    MAX_TEMP','  MIN_LWATER'
+         write(unit=*,fmt='(3(es12.5,1x))') rk4min_veg_temp ,rk4max_veg_temp               &
+                                           ,rk4min_veg_lwater
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 3. SURFACE WATER / VIRTUAL POOL PROPERTIES: '
+         write(unit=*,fmt='(3(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_WMASS'
+         write(unit=*,fmt='(3(es12.5,1x))') rk4min_sfcw_temp ,rk4max_sfcw_temp             &
+                                           ,rk4min_sfcw_mass
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
+         write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'    &
+                                          ,'    MAX_TEMP'
+         write(unit=*,fmt='(4(es12.5,1x))') rk4aux(ibuff)%rk4min_soil_water(nzg)           &
+                                           ,rk4aux(ibuff)%rk4max_soil_water(nzg)  &
+                                           ,rk4min_soil_temp      ,rk4max_soil_temp
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('=',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+      end if
+
+      return
+   end subroutine rk4_sanity_check
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This will print the values whenever the step didn't converge due to crazy values  !
+   ! no matter how small the steps were (reject_step=.true.).                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine print_sanity_check(y, csite, ipa)
+
+      use rk4_coms              , only : rk4patchtype  & ! structure
+                                       , rk4site       ! ! intent(in)
+      use ed_state_vars         , only : sitetype      & ! structure
+                                       , patchtype     ! ! structure
+      use grid_coms             , only : nzg           ! ! intent(in)
+      use soil_coms             , only : soil8         ! ! intent(in), look-up table
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(rk4patchtype) , target     :: y
+      type(sitetype)     , target     :: csite
+      integer            , intent(in) :: ipa
+      !----- Local variables --------------------------------------------------------------!
+      type(patchtype)    , pointer    :: cpatch
+      integer                         :: ico,k
+      !------------------------------------------------------------------------------------!
+
+      write(unit=*,fmt='(78a)') ('=',k=1,78)
+      write(unit=*,fmt='(78a)') ('=',k=1,78)
+      write(unit=*,fmt='(a,20x,a,20x,a)') '======','SANITY CHECK','======'
+      write(unit=*,fmt='(78a)') ('=',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write(unit=*,fmt='(a5,4(1x,a12))') 'LEVEL','  SOIL_TEMPK','SOIL_FRACLIQ'             &
+                                                ,'  SOIL_WATER','SOIL_MSTPOT'
+      do k=rk4site%lsl,nzg
+         write(unit=*,fmt='(i5,4(1x,es12.4))') &
+              k, y%soil_tempk(k), y%soil_fracliq(k), y%soil_water(k),y%soil_mstpot(k)
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write(unit=*,fmt='(a5,4(1x,a12))') 'LEVEL','  OLD_SOIL_T','OLD_SOIL_FLQ'             &
+                                               &,'OLD_SOIL_H2O','OLD_SOIL_POT'
+      do k=rk4site%lsl,nzg
+         write(unit=*,fmt='(i5,4(1x,es12.4))')                                             &
+              k, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa)                        &
+               , csite%soil_water(k,ipa), csite%soil_mstpot (k,ipa)
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write (unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP=     ',y%can_temp
+      write (unit=*,fmt='(a,1x,es12.4)') ' OLD_CAN_TEMP= ',csite%can_temp(ipa)
+      write (unit=*,fmt='(a,1x,es12.4)') ' CAN_VAPOR=    ',y%can_shv
+      write (unit=*,fmt='(a,1x,es12.4)') ' OLD_CAN_VAP=  ',csite%can_shv(ipa)
+      write (unit=*,fmt='(a,1x,i12)')    ' #LEV_SFCH2O=  ',y%nlev_sfcwater
+      write (unit=*,fmt='(a,1x,i12)')    ' OLD_#_SFCH2O= ',csite%nlev_sfcwater(ipa)
+      if(y%nlev_sfcwater == 1) then
+         write(unit=*,fmt='(a,1x,es12.4)') ,'SFCWATER_TEMPK=',y%sfcwater_tempk(1)
+      end if
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      cpatch => csite%patch(ipa)
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         TAI',' LEAF_ENERGY'       &
+                        ,' OLD_LEAF_EN','   LEAF_TEMP','OLD_LEAF_TMP'
+      do ico = 1,cpatch%ncohorts
+         if(y%leaf_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_energy(ico)     &
+                  ,cpatch%leaf_energy(ico),y%leaf_temp(ico),cpatch%leaf_temp(ico)
+         end if
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         TAI','  LEAF_WATER'       &
+                        ,'OLD_LEAF_H2O','   LEAF_HCAP','   LEAF_FLIQ'
+      do ico = 1,cpatch%ncohorts
+         if(y%leaf_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%leaf_water(ico)      &
+                  ,cpatch%leaf_water(ico),cpatch%leaf_hcap(ico),y%leaf_hcap(ico)
+         end if
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write(unit=*,fmt='(a)') ' '
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      cpatch => csite%patch(ipa)
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         TAI',' WOOD_ENERGY'       &
+                        ,' OLD_WOOD_EN','   WOOD_TEMP','OLD_WOOD_TMP'
+      do ico = 1,cpatch%ncohorts
+         if(y%wood_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_energy(ico)     &
+                  ,cpatch%wood_energy(ico),y%wood_temp(ico),cpatch%wood_temp(ico)
+         end if
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write (unit=*,fmt='(2(a5,1x),7(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         TAI','  WOOD_WATER'       &
+                        ,'OLD_WOOD_H2O','   WOOD_HCAP','   WOOD_FLIQ'
+      do ico = 1,cpatch%ncohorts
+         if(y%wood_resolvable(ico)) then
+            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%tai(ico),y%wood_water(ico)      &
+                  ,cpatch%wood_water(ico),cpatch%wood_hcap(ico),y%wood_hcap(ico)
+         end if
+      end do
+      write(unit=*,fmt='(78a)') ('-',k=1,78)
+      write(unit=*,fmt='(a)') ' '
+
+
+      write(unit=*,fmt='(78a)') ('=',k=1,78)
+      write(unit=*,fmt='(78a)') ('=',k=1,78)
+      write(unit=*,fmt='(a)') ' '
+
+      return
+   end subroutine print_sanity_check
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+end module rk4_integ_utils

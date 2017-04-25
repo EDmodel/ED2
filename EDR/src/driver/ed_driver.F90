@@ -6,6 +6,11 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
+   use update_derived_props_module
+   use ism_hyd
+   use ed_met_driver
+   use ed_init_full_history
+   use ed_init
    use grid_coms         , only : ngrids              & ! intent(in)
                                 , time                & ! intent(inout)
                                 , timmax              ! ! intent(inout)
@@ -216,25 +221,6 @@ subroutine ed_driver()
    call ed_init_atm()
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !      Initialize hydrology related variables.                                          !
-   !---------------------------------------------------------------------------------------!
-!   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] initHydrology...'
-!   call initHydrology()
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Initialise some derived variables.  This must be done outside                    !
-   ! init_full_history_restart because it depends on some meteorological variables that    !
-   ! were not initialised until the sub-routine ed_init_atm was called.                    !
-   !---------------------------------------------------------------------------------------!
-!   do ifm=1,ngrids
-!      call update_derived_props(edgrid_g(ifm))
-!   end do
-   !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !      Initialise drought phenology.  This should be done after the soil moisture has   !
@@ -246,27 +232,6 @@ subroutine ed_driver()
       end do
    end if
    !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Fill the variable data-tables with all of the state data.  Also calculate the    !
-   ! indexing of the vectors to allow for segmented I/O of hyperslabs and referencing of   !
-   ! high level hierarchical data types with their parent types.                           !
-   !---------------------------------------------------------------------------------------!
-!   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
-!   call filltab_alltypes
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Check how the output was configured and determine the averaging frequency.       !
-   !---------------------------------------------------------------------------------------!
-!   if (mynum == nnodetot) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
-!   call find_frqsum()
-   !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!

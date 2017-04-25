@@ -57,6 +57,7 @@ rm -fv fire.?90                      fire.o                     fire.mod
 rm -fv forestry.?90                  forestry.o                 forestry.mod 
 rm -fv fusion_fission_coms.?90       fusion_fission_coms.o      fusion_fission_coms.mod 
 rm -fv fuse_fiss_utils.?90           fuse_fiss_utils.o          fuse_fiss_utils.mod 
+rm -fv patch_pft_size_profile_mod.?90           patch_pft_size_profile_mod.o          patch_pft_size_profile_mod.mod 
 rm -fv great_circle.?90              great_circle.o             great_circle.mod 
 rm -fv grid_coms.?90                 grid_coms.o                grid_coms.mod 
 rm -fv growth_balive.?90             growth_balive.o            growth_balive.mod 
@@ -67,7 +68,6 @@ rm -fv heun_driver.?90               heun_driver.o              heun_driver.mod
 rm -fv hybrid_driver.?90             hybrid_driver.o            hybrid_driver.mod 
 rm -fv hydrology_coms.?90            hydrology_coms.o           hydrology_coms.mod 
 rm -fv hydrology_constants.?90       hydrology_constants.o      hydrology_constants.mod 
-rm -fv init_hydro_sites.?90          init_hydro_sites.o         init_hydro_sites.mod 
 rm -fv invmondays.?90                invmondays.o               invmondays.mod 
 rm -fv landuse_init.?90              landuse_init.o             landuse_init.mod 
 rm -fv lapse.?90                     lapse.o                    lapse.mod 
@@ -95,7 +95,7 @@ rm -fv rk4_derivs.?90                rk4_derivs.o               rk4_derivs.mod
 rm -fv rk4_driver.?90                rk4_driver.o               rk4_driver.mod 
 rm -fv rk4_integ_utils.?90           rk4_integ_utils.o          rk4_integ_utils.mod 
 rm -fv rk4_misc.?90                  rk4_misc.o                 rk4_misc.mod 
-rm -fv rk4_stepper.?90               rk4_stepper.o              rk4_stepper.mod 
+rm -fv rk4_copy_patch.?90               rk4_copy_patch.o              rk4_copy_patch.mod 
 rm -fv rsys.?90                      rsys.o                     rsys.mod 
 rm -fv soil_coms.?90                 soil_coms.o                soil_coms.mod 
 rm -fv soil_respiration.?90          soil_respiration.o         soil_respiration.mod 
