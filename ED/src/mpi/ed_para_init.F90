@@ -532,6 +532,7 @@ end subroutine ed_parvec_work
 ! and use this information to fill the local work array.                                   !
 !------------------------------------------------------------------------------------------!
 subroutine ed_load_work_from_history()
+   use ed_init_full_history
    use ed_max_dims , only : str_len             & ! intent(in)
                           , maxfiles            & ! intent(in)
                           , maxlist             & ! intent(in)

@@ -1,3 +1,6 @@
+module ism_hyd
+  contains
+
 !! Land surface model LATERAL hydrology 
 !! Subsurface hydrology based on TOPMODEL
 !! Surface runoff hydrology based on site adjacency matrix
@@ -1880,3 +1883,4 @@ end subroutine updateHydroParms
 !==========================================================================================!
 !==========================================================================================!
 
+end module ism_hyd

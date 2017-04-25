@@ -1,3 +1,6 @@
+module phenology_driv
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !    This subroutine controls the changes in leaf biomass due to phenology.                !
@@ -157,7 +160,7 @@ end subroutine phenology_driver_eq_0
 !==========================================================================================!
 !==========================================================================================!
 subroutine update_phenology(doy, cpoly, isi, lat)
-
+   use stable_cohorts
    use ed_state_vars  , only : polygontype              & ! structure
                              , sitetype                 & ! structure
                              , patchtype                ! ! structure
@@ -649,7 +652,7 @@ end subroutine update_phenology
 ! to change it, it will simply change it to the target bleaf.                              !
 !------------------------------------------------------------------------------------------!
 subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
-
+   use stable_cohorts
    use ed_state_vars  , only : polygontype              & ! structure
                              , sitetype                 & ! structure
                              , patchtype                ! ! structure
@@ -1141,3 +1144,5 @@ subroutine assign_prescribed_phen(green_leaf_factor,leaf_aging_factor,dbh,height
 end subroutine assign_prescribed_phen
 !==========================================================================================!
 !==========================================================================================!
+
+end module phenology_driv

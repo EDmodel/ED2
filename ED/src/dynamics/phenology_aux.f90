@@ -348,6 +348,7 @@ module phenology_aux
    ! the phenology, so we assign fully flushed leaves.                                     !
    !---------------------------------------------------------------------------------------!
    subroutine first_phenology(cgrid)
+      use stable_cohorts
       use ed_state_vars , only : edtype           & ! structure
                                , polygontype      & ! structure
                                , sitetype         & ! structure
