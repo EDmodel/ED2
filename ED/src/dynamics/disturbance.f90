@@ -50,6 +50,7 @@ module disturbance_utils
                                     , plantation_rotation       & ! intent(in)
                                     , time2canopy               & ! intent(in)
                                     , treefall_disturbance_rate & ! intent(in)
+                                    , treefall_hite_threshold   & ! intent(in)
                                     , min_oldgrowth             & ! intent(in)
                                     , sl_skid_rel_area          ! ! intent(in)
       use ed_max_dims        , only : n_dist_types              & ! intent(in)
@@ -369,7 +370,7 @@ module disturbance_utils
                is_managed   = old_lu == 1 .or. old_lu == 2 .or. old_lu == 8
                is_oldgrowth = csite%age(ipa) >= min_oldgrowth(old_lu)
                !---------------------------------------------------------------------------!
-               
+
                !---------------------------------------------------------------------------!
                !     Copy the disturbance rates to a temporary array.  We may need to      !
                ! adjust harvesting in case disturbance is based on demand.                 !
@@ -378,6 +379,29 @@ module disturbance_utils
                                 + cpoly%disturbance_memory(:,old_lu,isi)
                one_area_loss(:) = 0.0
                !---------------------------------------------------------------------------!
+
+
+               !---------------------------------------------------------------------------!
+               !      Treefall disturbance cannot happen in case there is no tall tree.    !
+               ! This is different from the background mortality that is truly density     !
+               ! independent (treefall disturbance is in fact applied to small trees, but  !
+               ! it does not generate gaps).                                               !
+               !---------------------------------------------------------------------------!
+               cpatch => csite%patch(ipa)
+               if (cpatch%ncohorts == 0) then
+                  !----- Empty patch, and we need trees to have tree fall. ----------------!
+                  lambda_now(3) = 0.
+                  !------------------------------------------------------------------------!
+               else
+                  if (cpatch%hite(1) < treefall_hite_threshold) then
+                     !----- Tallest cohort is too short to create gaps. -------------------!
+                     lambda_now(3) = 0.
+                     !---------------------------------------------------------------------!
+                  end if
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
 
                !---------------------------------------------------------------------------!
                !      Update lambda in case there are biomass-based harvest demands for    !
@@ -1278,11 +1302,11 @@ module disturbance_utils
 
 
             !------------------------------------------------------------------------------!
-            !      Tree fall and fires also occur in plantations.  Treefall is assumed to  !
-            ! lead to abandonment.  Not ideal, but this is the only way out of a forest    !
-            ! plantation right now.                                                        !
+            !      Tree fall and fires also occur in plantations.  Treefall is             !
+            ! incorporated to mortality, whereas fire is assumed to cause abandonment.     !
+            ! Not ideal, but this is the only way out of a forest plantation right now.    !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(5,2,isi) = treefall_disturbance_rate
+            cpoly%disturbance_rates(5,2,isi) = fire_disturbance_rate
             !------------------------------------------------------------------------------!
 
 
@@ -1304,7 +1328,6 @@ module disturbance_utils
             !      Disturbance that creates new "burnt patches".  Only non-cultivated      !
             ! lands may suffer this disturbance.                                           !
             !------------------------------------------------------------------------------!
-            cpoly%disturbance_rates(4,2,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,3,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,4,isi) = fire_disturbance_rate
             cpoly%disturbance_rates(4,5,isi) = fire_disturbance_rate

@@ -2396,7 +2396,7 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
      if (is_tropical(ipft)) then
-        mort0(ipft) =  0.0
+        mort0(ipft) = -0.2
         mort1(ipft) =  5.0
         mort2(ipft) = 20.0
      else

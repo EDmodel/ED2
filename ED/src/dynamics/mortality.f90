@@ -13,7 +13,7 @@ module mortality
    !=======================================================================================!
    !    This subroutine computes the total PFT-dependent mortality rate:                   !
    !---------------------------------------------------------------------------------------!
-   subroutine mortality_rates(cpatch,ico,avg_daily_temp, patch_age)
+   subroutine mortality_rates(cpatch,ico,avg_daily_temp, patch_age,dist_type)
       use ed_state_vars , only : patchtype                  ! ! Structure
       use pft_coms      , only : mort0                      & ! intent(in)
                                , mort1                      & ! intent(in)
@@ -34,6 +34,7 @@ module mortality
       integer        , intent(in) :: ico             ! Current cohort ID
       real           , intent(in) :: avg_daily_temp  ! Mean temperature yesterday
       real           , intent(in) :: patch_age       ! Patch age
+      integer        , intent(in) :: dist_type       ! Disturbance type.
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft            ! PFT 
       real                        :: temp_dep        ! Temp. function  (frost mortality)
@@ -62,9 +63,16 @@ module mortality
 
 
       !------------------------------------------------------------------------------------!
-      ! 3.  Mortality due to treefall.                                                     !
+      ! 3.  Background mortality, defined by treefall_disturbance_rate.  For small trees,  !
+      !     this mortality is applied here because they aren't big enough to generate a    !
+      !     new gap.  Likewise, this rate is applied to all trees in a forest plantation,  !
+      !     because otherwise treefall would create a new patch and the land would         !
+      !     transition from managed to unmanaged.                                          !
       !------------------------------------------------------------------------------------!
-      if (cpatch%hite(ico) <= treefall_hite_threshold .and. patch_age > time2canopy) then
+      if (dist_type == 2) then
+         cpatch%mort_rate(3,ico) = treefall_disturbance_rate
+      elseif ( cpatch%hite(ico) <= treefall_hite_threshold .and.                           &
+               patch_age        >  time2canopy             ) then
          cpatch%mort_rate(3,ico) = treefall_disturbance_rate
       else
          cpatch%mort_rate(3,ico) = 0.
@@ -276,16 +284,16 @@ module mortality
          select case (old_lu)
          case (8)
             !----- Cropland: final harvest. -----------------------------------------------!
-            survivorship = 1.0
+            survivorship = 0.0
             !------------------------------------------------------------------------------!
          case (2)
             !------------------------------------------------------------------------------!
-            !     Forest plantation.  Assume typical tree fall mortality.                  !
+            !     Forest plantation.  Assume fire causes abandonment.                      !
             !------------------------------------------------------------------------------!
-            if (cpatch%hite(ico) < treefall_hite_threshold) then
-               survivorship = treefall_s_ltht(ipft)
+            if (cpatch%hite(ico) < fire_hite_threshold) then
+               survivorship = fire_s_ltht(ipft)
             else
-               survivorship = treefall_s_gtht(ipft)
+               survivorship = fire_s_ltht(ipft)
             end if
             !------------------------------------------------------------------------------!
          case default
