@@ -1666,11 +1666,7 @@ subroutine init_pft_photo_params()
 
    !----- High temperature threshold for photosynthetic capacity. -------------------------!
    do ipft=1,n_pft
-      if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-         Vm_high_temp(ipft) =  45.0 ! Tropical broadleaf
-      else
-         Vm_high_temp(ipft) =  50.0 ! Conifer of Temperate
-      end if
+      Vm_high_temp(ipft) =  45.0 ! Conifer of Temperate
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -1710,10 +1706,10 @@ subroutine init_pft_photo_params()
       end select
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
-   Vm0(1)     = 16.100000
-   Vm0(2)     = 27.500000 ! 18.750000
-   Vm0(3)     = 16.100000 ! 12.500000
-   Vm0(4)     =  9.200000 !  6.250000
+   Vm0(1)     = 16.000000
+   Vm0(2)     = 24.000000 ! 18.750000
+   Vm0(3)     = 16.000000 ! 12.500000
+   Vm0(4)     =  8.000000 !  6.250000
    Vm0(5)     = 18.300000
    Vm0(6)     = 11.350000
    Vm0(7)     = 11.350000
@@ -1722,8 +1718,8 @@ subroutine init_pft_photo_params()
    Vm0(10)    = 17.454687
    Vm0(11)    =  6.981875
    Vm0(12:13) = 18.300000
-   Vm0(14:15) = 12.500000
-   Vm0(16)    = 21.500000 ! 18.750000
+   Vm0(14:15) = 16.000000
+   Vm0(16)    = 24.000000 ! 18.750000
    Vm0(17)    = 15.625000
    do ipft = 1, n_pft
       select case (photosyn_pathway(ipft))
@@ -2193,10 +2189,10 @@ subroutine init_pft_resp_params()
    !---------------------------------------------------------------------------------------!
    !    MLO -- Tropical PFT numbers updated using trait data base.                         !
    !---------------------------------------------------------------------------------------!
-   leaf_turnover_rate(1)          = 2.9    ! 2.0
-   leaf_turnover_rate(2)          = 1.282  ! 1.0
-   leaf_turnover_rate(3)          = 0.596  ! 0.5
-   leaf_turnover_rate(4)          = 0.266  ! onethird
+   leaf_turnover_rate(1)          = 2.50  ! 2.0
+   leaf_turnover_rate(2)          = 1.25  ! 1.0
+   leaf_turnover_rate(3)          = 0.60  ! 0.5
+   leaf_turnover_rate(4)          = 0.25  ! onethird
    leaf_turnover_rate(5)          = 2.0
    leaf_turnover_rate(6)          = onethird
    leaf_turnover_rate(7)          = onethird
@@ -2208,7 +2204,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(13)         = 2.0
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
-   leaf_turnover_rate(16)         = 2.9 ! 2.0
+   leaf_turnover_rate(16)         = 2.50 ! 2.0
    leaf_turnover_rate(17)         = onesixth
    !---------------------------------------------------------------------------------------!
 
@@ -2364,8 +2360,6 @@ subroutine init_pft_mort_params()
    real     :: leff_neg
    real     :: leff_pos
    real     :: m3_slope
-   real     :: m3_scale
-   real     :: tdr_default
    integer  :: ipft
    !---------------------------------------------------------------------------------------!
 
@@ -2402,7 +2396,7 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
      if (is_tropical(ipft)) then
-        mort0(ipft) = -0.2
+        mort0(ipft) =  0.0
         mort1(ipft) =  5.0
         mort2(ipft) = 20.0
      else
@@ -2420,32 +2414,60 @@ subroutine init_pft_mort_params()
    ! This value is a constant in units of [fraction/year].                                 !
    !---------------------------------------------------------------------------------------!
    if (treefall_disturbance_rate >= 0.) then
-      tdr_default               = 0.014
       m3_slope                  = 0.15
-      m3_scale                  = treefall_disturbance_rate / tdr_default
    else
       treefall_disturbance_rate = abs(treefall_disturbance_rate)
-      tdr_default               = 0.014 ! 0.01137329
       m3_slope                  = 0.075 ! 0.02939297
-      m3_scale                  = treefall_disturbance_rate / tdr_default
    end if
-   mort3(1)  = m3_scale * ( m3_slope * (1. - rho( 1) / rho( 4)) )
-   mort3(2)  = m3_scale * ( m3_slope * (1. - rho( 2) / rho( 4)) )
-   mort3(3)  = m3_scale * ( m3_slope * (1. - rho( 3) / rho( 4)) )
-   mort3(4)  = 0.0
-   mort3(5)  = 0.066
-   mort3(6)  = 0.0033928
-   mort3(7)  = 0.0043
-   mort3(8)  = 0.0023568
-   mort3(9)  = 0.006144
-   mort3(10) = 0.003808
-   mort3(11) = 0.00428
-   mort3(12) = 0.066
-   mort3(13) = 0.066
-   mort3(14) = m3_scale * ( m3_slope * (1. - rho(14) / rho( 4)) )
-   mort3(15) = m3_scale * ( m3_slope * (1. - rho(15) / rho( 4)) )
-   mort3(16) = m3_scale * ( m3_slope * (1. - rho(16) / rho( 4)) )
-   mort3(17) = 0.0043 ! Same as pines
+   do ipft=1,n_pft
+      if (is_tropical(ipft) .and. (.not. is_conifer(ipft))) then
+         mort3(ipft) = m3_slope * (1. - rho(ipft) / rho(4))
+      else
+         select case (ipft)
+         case (5,12:13)
+            !----- Temperate grasses. -----------------------------------------------------!
+            mort3(ipft) = 0.066
+            !------------------------------------------------------------------------------!
+         case (6)
+            !----- Northern pines. --------------------------------------------------------!
+            mort3(ipft) = 0.0033928
+            !------------------------------------------------------------------------------!
+         case (7)
+            !----- Southern pines. --------------------------------------------------------!
+            mort3(ipft) = 0.0043
+            !------------------------------------------------------------------------------!
+         case (8)
+            !----- Late-successional conifers ---------------------------------------------!
+            mort3(ipft) = 0.0023568
+            !------------------------------------------------------------------------------!
+         case (9)
+            !----- Early-successional hardwoods. ------------------------------------------!
+            mort3(ipft) = 0.006144
+            !------------------------------------------------------------------------------!
+         case (10)
+            !----- Mid-successional hardwoods. --------------------------------------------!
+            mort3(ipft) = 0.003808
+            !------------------------------------------------------------------------------!
+         case (11)
+            !------------------------------------------------------------------------------!
+            !     Late-successional hardwoods (MLO: does it make sense that this is higher !
+            ! than mid-successional hardwoods?).                                           !
+            !------------------------------------------------------------------------------!
+            mort3(ipft) = 0.00428
+            !------------------------------------------------------------------------------!
+         case (17)
+            !----- Araucaria, assume the same as southern pines. --------------------------!
+            mort3(ipft) = 0.0043
+            !------------------------------------------------------------------------------!
+         case default
+            !----- This shouldn't happen. -------------------------------------------------!
+            mort3(ipft) = 0.005
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -2798,10 +2820,10 @@ subroutine init_pft_alloc_params()
    !SLA( 2) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 2))) * sla_scale
    !SLA( 3) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 3))) * sla_scale
    !SLA( 4) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 4))) * sla_scale
-   SLA( 1) = 35.10
-   SLA( 2) = 23.18
-   SLA( 3) = 14.88
-   SLA( 4) =  9.32
+   SLA( 1) = 30.00
+   SLA( 2) = 23.00
+   SLA( 3) = 16.00
+   SLA( 4) =  9.00
    SLA( 5) = 22.0
    SLA( 6) =  6.0
    SLA( 7) =  9.0
@@ -2814,7 +2836,7 @@ subroutine init_pft_alloc_params()
    SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
    SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
    !SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
-   SLA(16) = 35.10
+   SLA(16) = 30.0
    SLA(17) = 10.0
 
    !---------------------------------------------------------------------------------------!
@@ -3004,8 +3026,8 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
       !     Allometric equation based on the Sustainable Landscapes data.                  !
       !                                                                                    !
-      !    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    !
-      !       the Amazon. Biogeosciences, in prep.                                         !
+      !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests in    !
+      !       the Amazon. ERL, in prep.                                                    !
       !                                                                                    !
       !    Equation was derived from multiple forest inventories carried out at multiple   !
       ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least        !
@@ -3125,8 +3147,8 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
       !     Replace b1Cr/b2Cr ("Crown Radius") coefficients by those calculated by:        !
       !                                                                                    !
-      !    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in    !
-      !       the Amazon. Biogeosciences, in prep.                                         !
+      !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests in    !
+      !       the Amazon. ERL, in prep.                                                    !
       !                                                                                    !
       !    Equation was derived from forest inventory measurements carried out at          !
       ! multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic     !
@@ -3702,34 +3724,40 @@ end subroutine init_pft_alloc_params
 !==========================================================================================!
 subroutine init_pft_nitro_params()
 
-use pft_coms, only: c2n_leaf, Vm0, SLA, &
-     c2n_slow,c2n_structural,c2n_storage,c2n_stem,l2n_stem, &
-     C2B,plant_N_supply_scale
+   use pft_coms, only: Vm0                  & ! intent(in)
+                     , SLA                  & ! intent(in)
+                     , c2n_leaf             & ! intent(out)
+                     , c2n_slow             & ! intent(out)
+                     , c2n_structural       & ! intent(out)
+                     , c2n_storage          & ! intent(out)
+                     , c2n_stem             & ! intent(out)
+                     , l2n_stem             & ! intent(out)
+                     , plant_N_supply_scale ! ! intent(out)
 
-implicit none
+   implicit none
 
-c2n_slow       = 10.0  ! Carbon to Nitrogen ratio, slow pool.
-c2n_structural = 150.0 ! Carbon to Nitrogen ratio, structural pool.
-c2n_storage    = 150.0 ! Carbon to Nitrogen ratio, storage pool.
-c2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
-l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
-
-
-plant_N_supply_scale = 0.5 
-
-c2n_leaf(1:5)    = 1000.0 / ((0.11289 + 0.12947 *   Vm0(1:5)) * SLA(1:5)  )
-c2n_leaf(6)      = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(6)    )
-c2n_leaf(7)      = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(7)    )
-c2n_leaf(8)      = 1000.0 / ((0.11289 + 0.12947 *       6.25) * SLA(8)    )
-c2n_leaf(9)      = 1000.0 / ((0.11289 + 0.12947 *      18.25) * SLA(9)    )
-c2n_leaf(10)     = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(10)   )
-c2n_leaf(11)     = 1000.0 / ((0.11289 + 0.12947 *       6.25) * SLA(11)   )
-c2n_leaf(12:15)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(12:15)) * SLA(12:15))
-c2n_leaf(16:17)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(16:17)) * SLA(16:17))
+   c2n_slow       = 10.0  ! Carbon to Nitrogen ratio, slow pool.
+   c2n_structural = 150.0 ! Carbon to Nitrogen ratio, structural pool.
+   c2n_storage    = 150.0 ! Carbon to Nitrogen ratio, storage pool.
+   c2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
+   l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
 
 
+   plant_N_supply_scale = 0.5 
 
-return
+   c2n_leaf(1:5)    = 1000.0 / ((0.11289 + 0.12947 *   Vm0(1:5)) * SLA(1:5)  )
+   c2n_leaf(6)      = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(6)    )
+   c2n_leaf(7)      = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(7)    )
+   c2n_leaf(8)      = 1000.0 / ((0.11289 + 0.12947 *       6.25) * SLA(8)    )
+   c2n_leaf(9)      = 1000.0 / ((0.11289 + 0.12947 *      18.25) * SLA(9)    )
+   c2n_leaf(10)     = 1000.0 / ((0.11289 + 0.12947 *     15.625) * SLA(10)   )
+   c2n_leaf(11)     = 1000.0 / ((0.11289 + 0.12947 *       6.25) * SLA(11)   )
+   c2n_leaf(12:15)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(12:15)) * SLA(12:15))
+   c2n_leaf(16:17)  = 1000.0 / ((0.11289 + 0.12947 * Vm0(16:17)) * SLA(16:17))
+
+
+
+   return
 end subroutine init_pft_nitro_params
 !==========================================================================================!
 !==========================================================================================!
@@ -3902,8 +3930,8 @@ subroutine init_pft_leaf_params()
    !    For iallom = 4, we use the allometric equation based on the Sustainable Landscapes !
    ! data set.                                                                             !
    !                                                                                       !
-   !    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in       !
-   !       the Amazon. Biogeosciences, in prep.                                            !
+   !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests in       !
+   !       the Amazon. ERL, in prep.                                                       !
    !                                                                                       !
    !    Equation was derived from forest inventory measurements carried out at multiple    !
    ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
