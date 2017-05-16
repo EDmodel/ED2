@@ -117,18 +117,21 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , include_pft_ag     & ! intent(in)
                                  , include_pft_fp     & ! intent(in)
                                  , init_density       & ! intent(in)
+                                 , f_bstorage_init    & ! intent(in)
                                  , agf_bs             ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
+                                 , almost_zero        & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
                                  , tonoha_2_kgom2     ! ! intent(in)
+   use physiology_coms    , only : iddmort_scheme     ! ! intent(in)
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , size2bl            & ! function
                                  , size2bt            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
-   use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
+   use fuse_fiss_utils    , only : sort_cohorts       ! ! subroutine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -232,10 +235,40 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                       * salloci * agf_bs(ipft)
          cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
                                       * salloci * (1.-agf_bs(ipft))
-         cpatch%bstorage(ico)         = 0.5 * ( cpatch%bleaf(ico)                          &
-                                              + cpatch%broot(ico)                          &
-                                              + cpatch%bsapwooda(ico)                      &
-                                              + cpatch%bsapwoodb(ico))
+         cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))             &
+                                      * cpatch%balive(ico)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Initialise the carbon balance.  For initial conditions, we always assume    !
+         ! storage biomass for the previous months so the scale is correct (carbon balance !
+         ! is given in kgC/pl).  The current month carbon balance must be initialised      !
+         ! consistently with the iddmort_scheme set by the user.                           !
+         !---------------------------------------------------------------------------------!
+         cpatch%cb         (1:12,ico) = cpatch%bstorage(ico)
+         cpatch%cb_lightmax(1:12,ico) = cpatch%bstorage(ico)
+         cpatch%cb_moistmax(1:12,ico) = cpatch%bstorage(ico)
+         cpatch%cb_mlmax   (1:12,ico) = cpatch%bstorage(ico)
+         select case (iddmort_scheme)
+         case (0)
+            !------ Storage is not accounted. ---------------------------------------------!
+            cpatch%cb         (13,ico) = 0.0
+            cpatch%cb_lightmax(13,ico) = 0.0
+            cpatch%cb_moistmax(13,ico) = 0.0
+            cpatch%cb_mlmax   (13,ico) = 0.0
+            !------------------------------------------------------------------------------!
+         case (1)
+            cpatch%cb         (13,ico) = cpatch%bstorage(ico)
+            cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
+            cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
+            cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+         end select
+         cpatch%cbr_bar          (ico) = 1.0
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
@@ -296,18 +329,20 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
                                  , init_density       & ! intent(in)
+                                 , f_bstorage_init    & ! intent(in)
                                  , agf_bs             ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
+                                 , almost_zero        & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
                                  , tonoha_2_kgom2     ! ! intent(in)
+   use physiology_coms    , only : iddmort_scheme     ! ! intent(in)
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , size2bl            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use fuse_fiss_utils    , only : sort_cohorts       ! ! subroutine
-
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target     :: csite   ! Current site
@@ -361,7 +396,6 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          !---------------------------------------------------------------------------------!
          cpatch%hite(ico)             = height
          cpatch%phenology_status(ico) = 0
-         cpatch%bstorage(ico)         = 0.0
          cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
          cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
@@ -377,6 +411,35 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                                       * salloci * agf_bs(ipft)
          cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
                                       * salloci * (1.-agf_bs(ipft))
+         cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))             &
+                                      * cpatch%balive(ico)
+
+         !---------------------------------------------------------------------------------!
+         !     Initialise the carbon balance.  For initial conditions, we always assume    !
+         ! storage biomass for the previous months so the scale is correct (carbon balance !
+         ! is given in kgC/pl).  The current month carbon balance must be initialised      !
+         ! consistently with the iddmort_scheme set by the user.                           !
+         !---------------------------------------------------------------------------------!
+         cpatch%cb         (1:12,ico) = cpatch%bstorage(ico)
+         cpatch%cb_lightmax(1:12,ico) = cpatch%bstorage(ico)
+         cpatch%cb_moistmax(1:12,ico) = cpatch%bstorage(ico)
+         cpatch%cb_mlmax   (1:12,ico) = cpatch%bstorage(ico)
+         select case (iddmort_scheme)
+         case (0)
+            !------ Storage is not accounted. ---------------------------------------------!
+            cpatch%cb         (13,ico) = 0.0
+            cpatch%cb_lightmax(13,ico) = 0.0
+            cpatch%cb_moistmax(13,ico) = 0.0
+            cpatch%cb_mlmax   (13,ico) = 0.0
+            !------------------------------------------------------------------------------!
+         case (1)
+            cpatch%cb         (13,ico) = cpatch%bstorage(ico)
+            cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
+            cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
+            cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+         end select
+         cpatch%cbr_bar          (ico) = 1.0
+         !---------------------------------------------------------------------------------!
 
          !----- NPlant is defined such that the cohort LAI is equal to LAI0
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
@@ -440,11 +503,14 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                  , include_pft        & ! intent(in)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
+                                 , f_bstorage_init    & ! intent(in)
                                  , init_density       ! ! intent(in)
    use consts_coms        , only : t3ple              & ! intent(in)
                                  , pio4               & ! intent(in)
+                                 , almost_zero        & ! intent(in)
                                  , kgom2_2_tonoha     & ! intent(in)
                                  , tonoha_2_kgom2     ! ! intent(in)
+   use physiology_coms    , only : iddmort_scheme     ! ! intent(in)
    use allometry          , only : dbh2bd             & ! function
                                  , size2bl            & ! function
                                  , ed_biomass         & ! function
@@ -545,7 +611,6 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                cpatch%dbh(ico)              = dbh_bigleaf(ipft)
                cpatch%hite(ico)             = hgt_max(ipft)
                cpatch%phenology_status(ico) = 0
-               cpatch%bstorage(ico)         = 0.0
                cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
                cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%sla(ico)              = sla(ipft)
@@ -559,6 +624,35 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                                             * cpatch%balive(ico) * salloci *agf_bs(ipft)
                cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico)                 &
                                             * cpatch%balive(ico) * salloci *(1.-agf_bs(ipft))
+               cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))       &
+                                            * cpatch%balive(ico)
+
+               !---------------------------------------------------------------------------!
+               !     Initialise the carbon balance.  For initial conditions, we always     !
+               ! assume storage biomass for the previous months so the scale is correct    !
+               ! (carbon balance is given in kgC/pl).  The current month carbon balance    !
+               ! must be initialised consistently with the iddmort_scheme set by the user. !
+               !---------------------------------------------------------------------------!
+               cpatch%cb         (1:12,ico) = cpatch%bstorage(ico)
+               cpatch%cb_lightmax(1:12,ico) = cpatch%bstorage(ico)
+               cpatch%cb_moistmax(1:12,ico) = cpatch%bstorage(ico)
+               cpatch%cb_mlmax   (1:12,ico) = cpatch%bstorage(ico)
+               select case (iddmort_scheme)
+               case (0)
+                  !------ Storage is not accounted. ---------------------------------------!
+                  cpatch%cb         (13,ico) = 0.0
+                  cpatch%cb_lightmax(13,ico) = 0.0
+                  cpatch%cb_moistmax(13,ico) = 0.0
+                  cpatch%cb_mlmax   (13,ico) = 0.0
+                  !------------------------------------------------------------------------!
+               case (1)
+                  cpatch%cb         (13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
+                  cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+               end select
+               cpatch%cbr_bar          (ico) = 1.0
+               !---------------------------------------------------------------------------!
 
                !----- Find the initial area indices (LAI, WAI, CAI). ----------------------!
                call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &

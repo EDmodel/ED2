@@ -1638,7 +1638,7 @@ module disturbance_utils
       use consts_coms  , only : t3ple     ! ! intent(in)
       use grid_coms    , only : nzs       & ! intent(in)
                               , nzg       ! ! intent(in)
-
+      use ed_max_dims  , only : n_pft     ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype), target      :: csite
@@ -1652,25 +1652,21 @@ module disturbance_utils
 
       !----- Start with an empty patch.  Surviving cohorts will be added later. -----------!
       csite%patch(np)%ncohorts = 0
+      !------------------------------------------------------------------------------------!
 
-      !----- Initialise the surface water diagnostic variables with some defaults. --------!
-      do k=1,nzs
-         csite%sfcwater_tempk(k,np) = atm_tmp
-         if (atm_tmp >= t3ple) then
-            csite%sfcwater_fracliq(k,np) = 1.0
-         else
-            csite%sfcwater_fracliq(k,np) = 0.0
-         end if
-      end do
+      !----- Initialise all fast and long-term variables. ---------------------------------!
+      call init_ed_patch_vars(csite,np,np,lsl)
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !     Initialise most variables, except dist_type, plantation, and area, which will  !
-      ! be defined outside this subroutine.  Most of the following variables will receive  !
-      ! properties from the donor patches.                                                 !
+      !     Initialise a few other variables, that should be set to zero or to values      !
+      ! other than those assigned in init_ed_patch_vars that has been just called.         !
       !------------------------------------------------------------------------------------!
       csite%age                        (np) = 0.0
       csite%fbeam                      (np) = 1.0
       csite%light_type                 (np) = 1
+      csite%htry                       (np) = 0.0
+      csite%hprev                      (np) = 0.0
       csite%fast_soil_C                (np) = 0.0
       csite%slow_soil_C                (np) = 0.0
       csite%structural_soil_C          (np) = 0.0
@@ -1679,30 +1675,7 @@ module disturbance_utils
       csite%fast_soil_N                (np) = 0.0
       csite%sum_dgd                    (np) = 0.0
       csite%sum_chd                    (np) = 0.0
-      csite%can_depth                  (np) = 0.0
-      csite%can_theta                  (np) = 0.0
-      csite%can_theiv                  (np) = 0.0
-      csite%can_vpdef                  (np) = 0.0
-      csite%can_prss                   (np) = 0.0
-      csite%can_shv                    (np) = 0.0
-      csite%can_co2                    (np) = 0.0
-      csite%ggbare                     (np) = 0.0
-      csite%ggveg                      (np) = 0.0
-      csite%soil_energy          (1:nzg,np) = 0.0
-      csite%soil_water           (1:nzg,np) = 0.0
-      csite%sfcwater_mass        (1:nzs,np) = 0.0
-      csite%sfcwater_energy      (1:nzs,np) = 0.0
-      csite%sfcwater_depth       (1:nzs,np) = 0.0
-      csite%rough                      (np) = 0.0
-      csite%fsc_in                     (np) = 0.0
-      csite%ssc_in                     (np) = 0.0
-      csite%ssl_in                     (np) = 0.0
-      csite%fsn_in                     (np) = 0.0
-      csite%total_plant_nitrogen_uptake(np) = 0.0
       !------------------------------------------------------------------------------------!
-
-      !----- Initialise all fast and long-term variables. ---------------------------------!
-      call init_ed_patch_vars(csite,np,np,lsl)
 
       return
    end subroutine initialize_disturbed_patch
@@ -1737,6 +1710,12 @@ module disturbance_utils
       integer                     :: k
       !------------------------------------------------------------------------------------!
 
+      csite%htry                       (np) = csite%htry                       (np)        &
+                                            + csite%htry                       (cp)        &
+                                            * area_fac
+      csite%hprev                      (np) = csite%hprev                      (np)        &
+                                            + csite%hprev                      (cp)        &
+                                            * area_fac
       csite%fast_soil_C                (np) = csite%fast_soil_C                (np)        &
                                             + csite%fast_soil_C                (cp)        &
                                             * area_fac
@@ -1764,20 +1743,14 @@ module disturbance_utils
       csite%can_theta                  (np) = csite%can_theta                  (np)        &
                                             + csite%can_theta                  (cp)        &
                                             * area_fac
+      csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
+                                            + csite%can_theiv                  (cp)        &
+                                            * area_fac
       csite%can_temp                   (np) = csite%can_temp                   (np)        &
                                             + csite%can_temp                   (cp)        &
                                             * area_fac
       csite%can_temp_pv                (np) = csite%can_temp_pv                (np)        &
                                             + csite%can_temp_pv                (cp)        &
-                                            * area_fac
-      csite%htry                       (np) = csite%htry                       (np)        &
-                                            + csite%htry                       (cp)        &
-                                            * area_fac
-      csite%hprev                      (np) = csite%hprev                      (np)        &
-                                            + csite%hprev                      (cp)        &
-                                            * area_fac
-      csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
-                                            + csite%can_theiv                  (cp)        &
                                             * area_fac
       csite%can_vpdef                  (np) = csite%can_vpdef                  (np)        &
                                             + csite%can_vpdef                  (cp)        &
@@ -1824,25 +1797,22 @@ module disturbance_utils
       csite%total_plant_nitrogen_uptake(np) = csite%total_plant_nitrogen_uptake(np)        &
                                             + csite%total_plant_nitrogen_uptake(cp)        &
                                             * area_fac
+      !------------------------------------------------------------------------------------!
 
-      !----- Do the same thing for the multiple-level variables. --------------------------!
+      !----- Reproduction array. ----------------------------------------------------------!
       do k=1,n_pft
          csite%repro                 (k,np) = csite%repro                    (k,np)        &
                                             + csite%repro                    (k,cp)        &
                                             * area_fac
       end do
-      do k = 1, csite%nlev_sfcwater(cp)
-         csite%sfcwater_mass         (k,np) = csite%sfcwater_mass            (k,np)        &
-                                            + csite%sfcwater_mass            (k,cp)        &
-                                            * area_fac
-         csite%sfcwater_energy       (k,np) = csite%sfcwater_energy          (k,np)        &
-                                            + csite%sfcwater_energy          (k,cp)        &
-                                            * csite%sfcwater_mass            (k,cp)        &
-                                            * area_fac
-         csite%sfcwater_depth        (k,np) = csite%sfcwater_depth           (k,np)        &
-                                            + csite%sfcwater_depth           (k,cp)        &
-                                            * area_fac
-      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Soil variables.  We merge internal energy and water, then find temperature and !
+      ! liquid water fraction once all patches have their contribution.                    !
+      !------------------------------------------------------------------------------------!
       do k = 1, nzg
          csite%soil_energy           (k,np) = csite%soil_energy              (k,np)        &
                                             + csite%soil_energy              (k,cp)        &
@@ -1851,6 +1821,38 @@ module disturbance_utils
                                             + csite%soil_water               (k,cp)        &
                                             * area_fac
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Update temporary surface water layer count in case there is any contributor   !
+      ! with more layers.                                                                  !
+      !------------------------------------------------------------------------------------!
+      if (csite%nlev_sfcwater(cp) > csite%nlev_sfcwater(np)) then
+         !----- Increase the number of layers. --------------------------------------------!
+         csite%nlev_sfcwater(np) = 1
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !      Integrate layers.                                                          !
+         !---------------------------------------------------------------------------------!
+         do k = 1, csite%nlev_sfcwater(cp)
+            csite%sfcwater_mass         (1,np) = csite%sfcwater_mass            (1,np)     &
+                                               + csite%sfcwater_mass            (k,cp)     &
+                                               * area_fac
+            csite%sfcwater_energy       (1,np) = csite%sfcwater_energy          (1,np)     &
+                                               + csite%sfcwater_energy          (k,cp)     &
+                                               * csite%sfcwater_mass            (k,cp)     &
+                                               * area_fac
+            csite%sfcwater_depth        (1,np) = csite%sfcwater_depth           (1,np)     &
+                                               + csite%sfcwater_depth           (k,cp)     &
+                                               * area_fac
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -3231,7 +3233,9 @@ module disturbance_utils
                                    ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
                                    ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
                                    ,cpatch%bsapwoodb(nc),cpatch%balive(nc)                 &
-                                   ,cpatch%bstorage(nc))
+                                   ,cpatch%bstorage(nc),cpatch%cb(:,nc)                    &
+                                   ,cpatch%cb_lightmax(:,nc),cpatch%cb_moistmax(:,nc)      &
+                                   ,cpatch%cb_mlmax(:,nc),cpatch%cbr_bar(nc))
       !------------------------------------------------------------------------------------!
 
 

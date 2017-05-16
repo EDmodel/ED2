@@ -434,6 +434,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) qsw(myPFT) = real(rval)
            call getConfigREAL  ('init_density','pft',i,rval,texist)
            if(texist) init_density(myPFT) = real(rval)
+           call getConfigREAL  ('f_bstorage_init','pft',i,rval,texist)
+           if(texist) f_bstorage_init(myPFT) = real(rval)
 
      ! Height
            call getConfigREAL  ('b1Ht','pft',i,rval,texist)
@@ -1501,6 +1503,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("sapwood_ratio",sapwood_ratio(i))
         call putConfigREAL("qsw",qsw(i))
         call putConfigREAL("init_density",init_density(i))
+        call putConfigREAL("f_bstorage_init",f_bstorage_init(i))
 
      !! HEIGHT
         call putConfigREAL("b1Ht",       b1Ht(i))

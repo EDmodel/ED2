@@ -323,7 +323,8 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    !     These are useful to test numbers with a safe margin.                              !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: almost_one = 1.-epsilon(1.)
+   real, parameter :: almost_zero = epsilon(1.)
+   real, parameter :: almost_one  = 1. - almost_zero
    !---------------------------------------------------------------------------------------!
 
 
@@ -475,6 +476,7 @@ Module rconstants
    real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    real(kind=8), parameter :: huge_num8       = dble(huge_num      )
    real(kind=8), parameter :: tiny_num8       = dble(tiny_num      )
+   real(kind=8), parameter :: almost_zero8    = dble(almost_zero   )
    real(kind=8), parameter :: almost_one8     = dble(almost_one    )
    real(kind=8), parameter :: euler_gam8      = dble(euler_gam     )
    real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )

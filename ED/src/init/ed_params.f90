@@ -2586,9 +2586,25 @@ subroutine init_pft_mort_params()
    !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
    do ipft=1,n_pft
       if (is_grass(ipft)) then
+         !----- Probably underestimated, unlikely that many grasses are crushed to death. -!
          treefall_s_ltht(ipft) = 0.70
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !    Testing a higher survivorship of small trees based on the measurements at    !
+         ! Paracou.  Took their average ratio between secondary and primary treefall       !
+         ! mortality.                                                                      !
+         !                                                                                 !
+         ! Ferry, B. et al.  Higher treefall rates on slopes and waterlogged soils result  !
+         !    in lower stand biomass and productivity in a tropical rain forest. J. Veg.   !
+         !    Sci., 98(1), 106-116, 2010. doi:10.1111/j.1365-2745.2009.01604.x             !
+         !---------------------------------------------------------------------------------!
+         treefall_s_ltht(ipft) = 0.30
+         !---------------------------------------------------------------------------------!
       else
+         !----- Original ED-1 parameter. --------------------------------------------------!
          treefall_s_ltht(ipft) = 0.10
+         !---------------------------------------------------------------------------------!
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -2700,7 +2716,8 @@ subroutine init_pft_alloc_params()
                            , sla_scale             & ! intent(out)
                            , sla_inter             & ! intent(out)
                            , sla_slope             & ! intent(out)
-                           , sapwood_ratio         ! ! intent(out)
+                           , sapwood_ratio         & ! intent(out)
+                           , f_bstorage_init       ! ! intent(out)
    use allometry    , only : h2dbh                 & ! function
                            , dbh2bd                & ! function
                            , size2bl               ! ! function
@@ -3635,6 +3652,13 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !    Initial storage pool, relative to on-allometry living biomass, to be given to the  !
+   ! PFTs when the model is run using INITIAL conditions.                                  !
+   !---------------------------------------------------------------------------------------!
+   f_bstorage_init(:) = 0.50
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
@@ -3682,8 +3706,8 @@ subroutine init_pft_alloc_params()
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(312a)') ('-',n=1,312)
-      write(unit=18,fmt='(28(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(377a)') ('-',n=1,377)
+      write(unit=18,fmt='(29(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
                                      ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
@@ -3692,11 +3716,11 @@ subroutine init_pft_alloc_params()
                                      ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
                                      ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
                                      ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
-                                     ,'         SLA'
+                                     ,'         SLA','F_Bstor_init'
 
-      write(unit=18,fmt='(312a)') ('-',n=1,312)
+      write(unit=18,fmt='(377a)') ('-',n=1,377)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),25(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),26(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
                        ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
@@ -3704,9 +3728,9 @@ subroutine init_pft_alloc_params()
                        ,b2Ca(ipft),hgt_min(ipft),hgt_max(ipft),min_dbh(ipft)               &
                        ,dbh_adult(ipft),dbh_crit(ipft),dbh_bigleaf(ipft)                   &
                        ,bleaf_adult(ipft),bdead_crit(ipft),init_density(ipft)              &
-                       ,init_laimax(ipft),sla(ipft)
+                       ,init_laimax(ipft),sla(ipft),f_bstorage_init(ipft)
       end do
-      write(unit=18,fmt='(312a)') ('-',n=1,312)
+      write(unit=18,fmt='(377a)') ('-',n=1,377)
       close(unit=18,status='keep')
    end if
 
@@ -4371,7 +4395,7 @@ subroutine init_disturb_params
    implicit none
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   treefall_hite_threshold = 15.0 
+   treefall_hite_threshold = 10.0 
 
    !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
    fire_hite_threshold     = 5.0

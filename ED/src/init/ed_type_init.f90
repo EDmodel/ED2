@@ -5,20 +5,21 @@
 ! which case there will be a note explaining the reason.                                   !
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
-   use ed_state_vars , only : patchtype           ! ! structure
-   use allometry     , only : dbh2krdepth         ! ! function
-   use pft_coms      , only : phenology           & ! intent(in)
-                            , leaf_turnover_rate  & ! intent(in)
-                            , Vm0                 & ! intent(in)
-                            , sla                 ! ! intent(in)
-   use ed_misc_coms  , only : writing_long        & ! intent(in)
-                            , writing_eorq        & ! intent(in)
-                            , writing_dcyc        ! ! intent(in)
-   use phenology_coms, only : vm0_tran            & ! intent(in)
-                            , vm0_slope           & ! intent(in)
-                            , vm0_amp             & ! intent(in)
-                            , vm0_min             & ! intent(in)
-                            , llspan_inf          ! ! intent(in)
+   use ed_state_vars  , only : patchtype           ! ! structure
+   use allometry      , only : dbh2krdepth         ! ! function
+   use pft_coms       , only : phenology           & ! intent(in)
+                             , leaf_turnover_rate  & ! intent(in)
+                             , Vm0                 & ! intent(in)
+                             , sla                 ! ! intent(in)
+   use ed_misc_coms   , only : writing_long        & ! intent(in)
+                             , writing_eorq        & ! intent(in)
+                             , writing_dcyc        ! ! intent(in)
+   use phenology_coms , only : vm0_tran            & ! intent(in)
+                             , vm0_slope           & ! intent(in)
+                             , vm0_amp             & ! intent(in)
+                             , vm0_min             & ! intent(in)
+                             , llspan_inf          ! ! intent(in)
+   use physiology_coms, only : iddmort_scheme      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -82,24 +83,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! life span in the light-controlled phenology.                                          !
    !---------------------------------------------------------------------------------------!
    cpatch%turnover_amp    (ico) = 1.0
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The carbon balance must be initialised with a number other than zero (and better  !
-   ! be positive), otherwise a massive mortality will happen at the first year.  The 13th  !
-   ! element (current month integration) must be set to 0, though, otherwise the first     !
-   ! month carbon balance will be incorrect.                                               !
-   !---------------------------------------------------------------------------------------!
-   cpatch%cb               (1:12,ico) = 1.0
-   cpatch%cb_lightmax      (1:12,ico) = 1.0
-   cpatch%cb_moistmax      (1:12,ico) = 1.0
-   cpatch%cb_mlmax         (1:12,ico) = 1.0
-   cpatch%cbr_bar               (ico) = 1.0
-   cpatch%cb                 (13,ico) = 0.0
-   cpatch%cb_lightmax        (13,ico) = 0.0
-   cpatch%cb_moistmax        (13,ico) = 0.0
-   cpatch%cb_mlmax           (13,ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -591,7 +574,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    use ed_misc_coms   , only : writing_long         & ! intent(in)
                              , writing_eorq         & ! intent(in)
                              , writing_dcyc         & ! intent(in)
-                             , ied_init_mode        ! ! intent(in)
+                             , ied_init_mode        & ! intent(in)
+                             , dtlsm                ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)   , target     :: csite
@@ -607,8 +591,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
 
 
    !----- Current and previous time steps.  They cannot be set to zero... -----------------!
-   csite%htry                      (ipaa:ipaz) = 1.0
-   csite%hprev                     (ipaa:ipaz) = 0.1
+   csite%htry (ipaa:ipaz) = dtlsm
+   csite%hprev(ipaa:ipaz) = 0.10 * dtlsm
    !---------------------------------------------------------------------------------------!
 
 
@@ -2211,7 +2195,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    snowloop: do k=1,mzs
       !----- Leave the loop if there is not enough mass in this layer... ------------------!
       if (csite%sfcwater_mass(k,ipa) <= tiny_sfcwater_mass)  exit snowloop
-      csite%nlev_sfcwater(ipa) = k
+      csite%nlev_sfcwater(ipa)     = k
       tot_sfcw_mass                = tot_sfcw_mass  + csite%sfcwater_mass (k,ipa)
       csite%total_sfcw_depth(ipa)  = csite%total_sfcw_depth(ipa)                           &
                                    + csite%sfcwater_depth(k,ipa)

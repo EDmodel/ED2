@@ -72,6 +72,7 @@ subroutine reproduction(cgrid, month)
    integer                             :: ico
    integer                             :: ipft
    integer                             :: inew
+   integer                             :: imon
    integer                             :: ncohorts_new
    logical                             :: late_spring
    logical                             :: allow_pft
@@ -232,7 +233,10 @@ subroutine reproduction(cgrid, month)
                                                   ,rectest%phenology_status                &
                                                   ,rectest%bleaf,rectest%broot             &
                                                   ,rectest%bsapwooda,rectest%bsapwoodb     &
-                                                  ,rectest%balive,rectest%bstorage)
+                                                  ,rectest%balive,rectest%bstorage         &
+                                                  ,rectest%cb,rectest%cb_lightmax          &
+                                                  ,rectest%cb_moistmax,rectest%cb_mlmax    &
+                                                  ,rectest%cbr_bar)
 
                      !---------------------------------------------------------------------!
                      !     Find the expected population from the reproduction stocks, and  !
@@ -371,22 +375,29 @@ subroutine reproduction(cgrid, month)
 
 
                      !----- Copy from recruitment table (II). -----------------------------!
-                     cpatch%nplant          (ico) = recruit(inew)%nplant 
-                     cpatch%bdead           (ico) = recruit(inew)%bdead 
-                     cpatch%paw_avg         (ico) = recruit(inew)%paw_avg
-                     cpatch%elongf          (ico) = recruit(inew)%elongf
-                     cpatch%phenology_status(ico) = recruit(inew)%phenology_status
-                     cpatch%bleaf           (ico) = recruit(inew)%bleaf
-                     cpatch%broot           (ico) = recruit(inew)%broot
-                     cpatch%bsapwooda       (ico) = recruit(inew)%bsapwooda
-                     cpatch%bsapwoodb       (ico) = recruit(inew)%bsapwoodb
-                     cpatch%balive          (ico) = recruit(inew)%balive
-                     cpatch%bstorage        (ico) = recruit(inew)%bstorage
-                     cpatch%leaf_temp       (ico) = recruit(inew)%leaf_temp
-                     cpatch%wood_temp       (ico) = recruit(inew)%wood_temp
-                     cpatch%leaf_temp_pv    (ico) = recruit(inew)%leaf_temp_pv
-                     cpatch%wood_temp_pv    (ico) = recruit(inew)%wood_temp_pv
-                     cpatch%leaf_vpdef      (ico) = recruit(inew)%leaf_vpdef
+                     cpatch%nplant             (ico) = recruit(inew)%nplant 
+                     cpatch%bdead              (ico) = recruit(inew)%bdead 
+                     cpatch%paw_avg            (ico) = recruit(inew)%paw_avg
+                     cpatch%elongf             (ico) = recruit(inew)%elongf
+                     cpatch%phenology_status   (ico) = recruit(inew)%phenology_status
+                     cpatch%bleaf              (ico) = recruit(inew)%bleaf
+                     cpatch%broot              (ico) = recruit(inew)%broot
+                     cpatch%bsapwooda          (ico) = recruit(inew)%bsapwooda
+                     cpatch%bsapwoodb          (ico) = recruit(inew)%bsapwoodb
+                     cpatch%balive             (ico) = recruit(inew)%balive
+                     cpatch%bstorage           (ico) = recruit(inew)%bstorage
+                     cpatch%leaf_temp          (ico) = recruit(inew)%leaf_temp
+                     cpatch%wood_temp          (ico) = recruit(inew)%wood_temp
+                     cpatch%leaf_temp_pv       (ico) = recruit(inew)%leaf_temp_pv
+                     cpatch%wood_temp_pv       (ico) = recruit(inew)%wood_temp_pv
+                     cpatch%leaf_vpdef         (ico) = recruit(inew)%leaf_vpdef
+                     do imon=1,13
+                        cpatch%cb         (imon,ico) = recruit(inew)%cb         (imon)
+                        cpatch%cb_lightmax(imon,ico) = recruit(inew)%cb_lightmax(imon)
+                        cpatch%cb_moistmax(imon,ico) = recruit(inew)%cb_moistmax(imon)
+                        cpatch%cb_mlmax   (imon,ico) = recruit(inew)%cb_mlmax   (imon)
+                     end do
+                     cpatch%cbr_bar            (ico) = recruit(inew)%cbr_bar
                      !---------------------------------------------------------------------!
 
 

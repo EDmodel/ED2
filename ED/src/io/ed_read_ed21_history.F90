@@ -23,6 +23,7 @@ subroutine read_ed21_history_file
                              , include_pft_ag          & ! intent(in)
                              , pft_1st_check           & ! intent(in)
                              , agf_bs                  & ! intent(in)
+                             , f_bstorage_init         & ! intent(in)
                              , include_these_pft       ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
@@ -41,7 +42,8 @@ subroutine read_ed21_history_file
                              , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
                              , nzg                     ! ! intent(in)
-   use consts_coms    , only : pio4                    ! ! intent(in)
+   use consts_coms    , only : pio4                    & ! intent(in)
+                             , almost_zero             ! ! intent(in)
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
                              , dspace_id               & ! intent(in)
@@ -61,7 +63,7 @@ subroutine read_ed21_history_file
                              , dbh2bd                  ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
    use disturb_coms   , only : ianth_disturb           ! ! intent(in)
-
+   use physiology_coms, only : iddmort_scheme          ! ! intent(in)
    implicit none
 #if USE_HDF5
 
@@ -594,12 +596,14 @@ subroutine read_ed21_history_file
                         !------------------------------------------------------------------!
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
-
+                           !---------------------------------------------------------------!
+                           !     Initialise size and structural pools.                     !
+                           !---------------------------------------------------------------!
                            if (igrass == 1 .and. is_grass(ipft)                            &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! is set to zero and that biomass is discarded               !
+                              ! is set to zero and the mass is discarded                   !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
@@ -616,66 +620,71 @@ subroutine read_ed21_history_file
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
+                           !---------------------------------------------------------------!
 
 
-                           cpatch%bleaf(ico)  = size2bl(cpatch%dbh(ico),cpatch%hite(ico)   &
-                                                        ,cpatch%pft(ico))
 
-                           !----- Find the other pools. -----------------------------------!
-                           salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
-                           salloci = 1.0 / salloc
-                           cpatch%balive  (ico) = cpatch%bleaf(ico) * salloc
-                           cpatch%broot   (ico) = cpatch%balive(ico) * q(ipft) * salloci
+                           !---------------------------------------------------------------!
+                           !     Use allometry to define leaf and the other live biomass   !
+                           ! pools.                                                        !
+                           !---------------------------------------------------------------!
+                           salloc                = 1.0 + q(ipft)                           &
+                                                 + qsw(ipft) * cpatch%hite(ico)
+                           salloci               = 1.0 / salloc
+                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
+                                                          , cpatch%hite(ico)               &
+                                                          , ipft )
+                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
+                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
                            cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci * agf_bs(ipft)
                            cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci              &
                                                  * (1.-agf_bs(ipft))
-                           cpatch%bstorage(ico) = 0.0
+                           cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
+                                                 * cpatch%balive(ico)
+                           !---------------------------------------------------------------!
+
+
+                           !---------------------------------------------------------------!
+                           !     Start plants with full phenology, we will take care of    !
+                           ! phenology after this sub-routine.                             !
+                           !---------------------------------------------------------------!
                            cpatch%phenology_status(ico) = 0
-                           
-                           
-                        end do
+                           !---------------------------------------------------------------!
 
 
-                        !------------------------------------------------------------------!
-                        !     Carbon balance variables.                                    !
-                        ! MLO.  I commented this out because a restart is likely to have   !
-                        !       different settings and different environment, so it's      !
-                        !       likely that the system will reach a different equilibrium. !
-                        !       For simplicity, we just use the typical initialisation in  !
-                        !       which we give plants one year to adjust to the new         !
-                        !       conditions.                                                !
-                        !------------------------------------------------------------------!
-                        ! dsetrank    = 2
-                        ! globdims(1) = 13_8
-                        ! chnkdims(1) = 13_8
-                        ! chnkoffs(1) = 0_8
-                        ! memdims(1)  = 13_8
-                        ! memsize(1)  = 13_8
-                        ! memoffs(2)  = 0_8
-                        ! globdims(2) = int(dset_ncohorts_global,8)
-                        ! chnkdims(2) = int(cpatch%ncohorts,8)
-                        ! chnkoffs(2) = int(paco_id(pa_index) - 1,8)
-                        ! memdims(2)  = int(cpatch%ncohorts,8)
-                        ! memsize(2)  = int(cpatch%ncohorts,8)
-                        ! memoffs(2)  = 0_8
 
-                        ! call hdf_getslab_r(cpatch%cb    ,'CB '                           &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        ! call hdf_getslab_r(cpatch%cb_lightmax,'CB_LIGHTMAX '             &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        ! call hdf_getslab_r(cpatch%cb_moistmax,'CB_MOISTMAX '             &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        do ico = 1, cpatch%ncohorts
-                           cpatch%cb          (1:12,ico) = 1.0
-                           cpatch%cb_lightmax (1:12,ico) = 1.0
-                           cpatch%cb_moistmax (1:12,ico) = 1.0
-                           cpatch%cb_mlmax    (1:12,ico) = 1.0
-                           cpatch%cb          (  13,ico) = 0.0
-                           cpatch%cb_lightmax (  13,ico) = 0.0
-                           cpatch%cb_moistmax (  13,ico) = 0.0
-                           cpatch%cb_mlmax    (  13,ico) = 0.0
+                           !---------------------------------------------------------------!
+                           !     Initialise the carbon balance.  We ignore the carbon      !
+                           ! balance from history files, the models are so different that  !
+                           ! there is no reason to use the stored value.  For initial      !
+                           ! conditions, we always assume storage biomass for the previous !
+                           ! months so the scale is correct (carbon balance is given in    !
+                           ! kgC/pl).  The current month carbon balance must be            !
+                           ! initialised consistently with the iddmort_scheme set by the   !
+                           ! user.                                                         !
+                           !---------------------------------------------------------------!
+                           cpatch%cb         (1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_lightmax(1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_moistmax(1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_mlmax   (1:12,ico) = cpatch%bstorage(ico)
+                           select case (iddmort_scheme)
+                           case (0)
+                              !------ Storage is not accounted. ---------------------------!
+                              cpatch%cb         (13,ico) = 0.0
+                              cpatch%cb_lightmax(13,ico) = 0.0
+                              cpatch%cb_moistmax(13,ico) = 0.0
+                              cpatch%cb_mlmax   (13,ico) = 0.0
+                              !------------------------------------------------------------!
+                           case (1)
+                              cpatch%cb         (13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+                           end select
+                           !---------------------------------------------------------------!
+                           cpatch%cbr_bar          (ico) = 1.0
                         end do
                         !------------------------------------------------------------------!
 
@@ -904,6 +913,7 @@ subroutine read_ed21_history_unstruct
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
                              , agf_bs                  & ! intent(in)
+                             , f_bstorage_init         & ! intent(in)
                              , min_cohort_size         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
@@ -923,7 +933,8 @@ subroutine read_ed21_history_unstruct
                              , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
                              , nzg                     ! ! intent(in)
-   use consts_coms    , only : pio4                    ! ! intent(in)
+   use consts_coms    , only : pio4                    & ! intent(in)
+                             , almost_zero             ! ! intent(in)
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
                              , dspace_id               & ! intent(in)
@@ -946,6 +957,7 @@ subroutine read_ed21_history_unstruct
                              , lu_rescale_file         & ! intent(in)
                              , min_patch_area          ! ! intent(in)
    use soil_coms      , only : soil                    ! ! intent(in)
+   use physiology_coms, only : iddmort_scheme          ! ! intent(in)
 
    implicit none
 
@@ -1828,6 +1840,9 @@ subroutine read_ed21_history_unstruct
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
 
+                           !---------------------------------------------------------------!
+                           !     Initialise size and structural pools.                     !
+                           !---------------------------------------------------------------!
                            if (igrass == 1 .and. is_grass(ipft)                            &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
@@ -1849,64 +1864,71 @@ subroutine read_ed21_history_unstruct
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
+                           !---------------------------------------------------------------!
 
-                           cpatch%bleaf(ico)  = size2bl( cpatch%dbh (ico)                  &
-                                                       , cpatch%hite(ico)                  &
-                                                       , ipft )
 
-                           !----- Find the other pools. -----------------------------------!
-                           salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
-                           salloci = 1.0 / salloc
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico)  * salloc
-                           cpatch%broot    (ico) = cpatch%balive(ico) * q(ipft) * salloci
+
+                           !---------------------------------------------------------------!
+                           !     Use allometry to define leaf and the other live biomass   !
+                           ! pools.                                                        !
+                           !---------------------------------------------------------------!
+                           salloc                = 1.0 + q(ipft)                           &
+                                                 + qsw(ipft) * cpatch%hite(ico)
+                           salloci               = 1.0 / salloc
+                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
+                                                          , cpatch%hite(ico)               &
+                                                          , ipft )
+                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
+                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
                            cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci * agf_bs(ipft)
                            cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci              &
                                                  * (1.-agf_bs(ipft))
-                           cpatch%bstorage(ico)  = 0.0
+                           cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
+                                                 * cpatch%balive(ico)
+                           !---------------------------------------------------------------!
+
+
+                           !---------------------------------------------------------------!
+                           !     Start plants with full phenology, we will take care of    !
+                           ! phenology after this sub-routine.                             !
+                           !---------------------------------------------------------------!
                            cpatch%phenology_status(ico) = 0
-                           
-                        end do
+                           !---------------------------------------------------------------!
 
-                        !------------------------------------------------------------------!
-                        !     Carbon balance variables.                                    !
-                        ! MLO.  I commented this out because a restart is likely to have   !
-                        !       different settings and different environment, so it's      !
-                        !       likely that the system will reach a different equilibrium. !
-                        !       For simplicity, we just use the typical initialisation in  !
-                        !       which we give plants one year to adjust to the new         !
-                        !       conditions.                                                !
-                        !------------------------------------------------------------------!
-                        ! dsetrank    = 2
-                        ! globdims(1) = 13_8
-                        ! chnkdims(1) = 13_8
-                        ! chnkoffs(1) = 0_8
-                        ! memdims(1)  = 13_8
-                        ! memsize(1)  = 13_8
-                        ! memoffs(2)  = 0_8
-                        ! globdims(2) = int(dset_ncohorts_global,8)
-                        ! chnkdims(2) = int(cpatch%ncohorts,8)
-                        ! chnkoffs(2) = int(paco_id(pa_index) - 1,8)
-                        ! memdims(2)  = int(cpatch%ncohorts,8)
-                        ! memsize(2)  = int(cpatch%ncohorts,8)
-                        ! memoffs(2)  = 0_8
 
-                        ! call hdf_getslab_r(cpatch%cb    ,'CB '                           &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        ! call hdf_getslab_r(cpatch%cb_lightmax,'CB_LIGHTMAX '             &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        ! call hdf_getslab_r(cpatch%cb_moistmax,'CB_MOISTMAX '             &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        do ico = 1, cpatch%ncohorts
-                           cpatch%cb          (1:12,ico) = 1.0
-                           cpatch%cb_lightmax (1:12,ico) = 1.0
-                           cpatch%cb_moistmax (1:12,ico) = 1.0
-                           cpatch%cb_mlmax    (1:12,ico) = 1.0
-                           cpatch%cb          (  13,ico) = 0.0
-                           cpatch%cb_lightmax (  13,ico) = 0.0
-                           cpatch%cb_moistmax (  13,ico) = 0.0
-                           cpatch%cb_mlmax    (  13,ico) = 0.0
+
+                           !---------------------------------------------------------------!
+                           !     Initialise the carbon balance.  We ignore the carbon      !
+                           ! balance from history files, the models are so different that  !
+                           ! there is no reason to use the stored value.  For initial      !
+                           ! conditions, we always assume storage biomass for the previous !
+                           ! months so the scale is correct (carbon balance is given in    !
+                           ! kgC/pl).  The current month carbon balance must be            !
+                           ! initialised consistently with the iddmort_scheme set by the   !
+                           ! user.                                                         !
+                           !---------------------------------------------------------------!
+                           cpatch%cb         (1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_lightmax(1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_moistmax(1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_mlmax   (1:12,ico) = cpatch%bstorage(ico)
+                           select case (iddmort_scheme)
+                           case (0)
+                              !------ Storage is not accounted. ---------------------------!
+                              cpatch%cb         (13,ico) = 0.0
+                              cpatch%cb_lightmax(13,ico) = 0.0
+                              cpatch%cb_moistmax(13,ico) = 0.0
+                              cpatch%cb_mlmax   (13,ico) = 0.0
+                              !------------------------------------------------------------!
+                           case (1)
+                              cpatch%cb         (13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+                           end select
+                           !---------------------------------------------------------------!
+                           cpatch%cbr_bar          (ico) = 1.0
                         end do
                         !------------------------------------------------------------------!
 
@@ -2141,6 +2163,7 @@ subroutine read_ed21_polyclone
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
                              , agf_bs                  & ! intent(in)
+                             , f_bstorage_init         & ! intent(in)
                              , min_cohort_size         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
@@ -2150,7 +2173,7 @@ subroutine read_ed21_polyclone
                              , itimeh                  & ! intent(in)
                              , ied_init_mode           & ! intent(in)
                              , max_poi99_dist          & ! intent(in)
-                             , igrass
+                             , igrass                  ! ! intent(in)
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
                              , patchtype               & ! variable type
@@ -2161,7 +2184,8 @@ subroutine read_ed21_polyclone
                              , allocate_patchtype      ! ! subroutine
    use grid_coms      , only : ngrids                  & ! intent(in)
                              , nzg                     ! ! intent(in)
-   use consts_coms    , only : pio4                    ! ! intent(in)
+   use consts_coms    , only : pio4                    & ! intent(in)
+                             , almost_zero             ! ! intent(in)
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
                              , dspace_id               & ! intent(in)
@@ -2184,9 +2208,9 @@ subroutine read_ed21_polyclone
                              , lu_rescale_file         & ! intent(in)
                              , min_patch_area          ! ! intent(in)
    use soil_coms      , only : soil                    & ! intent(in)
-                             , slzt                    &
-                             , isoilcol
-
+                             , slzt                    & ! intent(in)
+                             , isoilcol                ! ! intent(in)
+   use physiology_coms, only : iddmort_scheme          ! ! intent(in)
    implicit none
 
 #if (USE_HDF5)
@@ -3046,11 +3070,14 @@ subroutine read_ed21_polyclone
                         do ico=1,cpatch%ncohorts
                            ipft = cpatch%pft(ico)
 
+                           !---------------------------------------------------------------!
+                           !     Initialise size and structural pools.                     !
+                           !---------------------------------------------------------------!
                            if (igrass == 1 .and. is_grass(ipft)                            &
                                            .and. cpatch%bdead(ico)>0.0) then
                               !-- if the initial file was running with igrass = 0, bdead   !
                               ! should be nonzero.  If the new run has igrass = 1, bdead   !
-                              ! is set to zero and that biomass is discarded               !
+                              ! is set to zero and the mass is discarded                   !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
@@ -3067,14 +3094,20 @@ subroutine read_ed21_polyclone
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
+                           !---------------------------------------------------------------!
 
-                           cpatch%bleaf(ico)  = size2bl( cpatch%dbh (ico)                  &
-                                                       , cpatch%hite(ico)                  &
-                                                       , ipft )
 
-                           !----- Find the other pools. -----------------------------------!
-                           salloc  = (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))
-                           salloci = 1.0 / salloc
+
+                           !---------------------------------------------------------------!
+                           !     Use allometry to define leaf and the other live biomass   !
+                           ! pools.                                                        !
+                           !---------------------------------------------------------------!
+                           salloc                = 1.0 + q(ipft)                           &
+                                                 + qsw(ipft) * cpatch%hite(ico)
+                           salloci               = 1.0 / salloc
+                           cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
+                                                          , cpatch%hite(ico)               &
+                                                          , ipft )
                            cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
                            cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
                            cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
@@ -3082,48 +3115,49 @@ subroutine read_ed21_polyclone
                            cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
                                                  * cpatch%hite(ico) * salloci              &
                                                  * (1.-agf_bs(ipft))
-                           cpatch%bstorage(ico)  = 0.0
+                           cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
+                                                 * cpatch%balive(ico)
+                           !---------------------------------------------------------------!
+
+
+                           !---------------------------------------------------------------!
+                           !     Start plants with full phenology, we will take care of    !
+                           ! phenology after this sub-routine.                             !
+                           !---------------------------------------------------------------!
                            cpatch%phenology_status(ico) = 0
-                        end do
+                           !---------------------------------------------------------------!
 
-                        !------------------------------------------------------------------!
-                        !     Carbon balance variables.                                    !
-                        ! MLO.  I commented this out because a restart is likely to have   !
-                        !       different settings and different environment, so it's      !
-                        !       likely that the system will reach a different equilibrium. !
-                        !       For simplicity, we just use the typical initialisation in  !
-                        !       which we give plants one year to adjust to the new         !
-                        !       conditions.                                                !
-                        !------------------------------------------------------------------!
-                        ! dsetrank    = 2
-                        ! globdims(1) = 13_8
-                        ! chnkdims(1) = 13_8
-                        ! chnkoffs(1) = 0_8
-                        ! memdims(1)  = 13_8
-                        ! memsize(1)  = 13_8
-                        ! memoffs(2)  = 0_8
-                        ! globdims(2) = int(dset_ncohorts_global,8)
-                        ! chnkdims(2) = int(cpatch%ncohorts,8)
-                        ! chnkoffs(2) = int(paco_id(pa_index) - 1,8)
-                        ! memdims(2)  = int(cpatch%ncohorts,8)
-                        ! memsize(2)  = int(cpatch%ncohorts,8)
-                        ! memoffs(2)  = 0_8
 
-                        ! call hdf_getslab_r(cpatch%cb    ,'CB '                           &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        ! call hdf_getslab_r(cpatch%cb_lightmax,'CB_LIGHTMAX '             &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        ! call hdf_getslab_r(cpatch%cb_moistmax,'CB_MOISTMAX '             &
-                        !                   ,dsetrank,iparallel,.true.,foundvar)
-                        do ico = 1, cpatch%ncohorts
-                           cpatch%cb          (1:12,ico) = 1.0
-                           cpatch%cb_lightmax (1:12,ico) = 1.0
-                           cpatch%cb_moistmax (1:12,ico) = 1.0
-                           cpatch%cb_mlmax    (1:12,ico) = 1.0
-                           cpatch%cb          (  13,ico) = 0.0
-                           cpatch%cb_lightmax (  13,ico) = 0.0
-                           cpatch%cb_moistmax (  13,ico) = 0.0
-                           cpatch%cb_mlmax    (  13,ico) = 0.0
+
+                           !---------------------------------------------------------------!
+                           !     Initialise the carbon balance.  We ignore the carbon      !
+                           ! balance from history files, the models are so different that  !
+                           ! there is no reason to use the stored value.  For initial      !
+                           ! conditions, we always assume storage biomass for the previous !
+                           ! months so the scale is correct (carbon balance is given in    !
+                           ! kgC/pl).  The current month carbon balance must be            !
+                           ! initialised consistently with the iddmort_scheme set by the   !
+                           ! user.                                                         !
+                           !---------------------------------------------------------------!
+                           cpatch%cb         (1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_lightmax(1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_moistmax(1:12,ico) = cpatch%bstorage(ico)
+                           cpatch%cb_mlmax   (1:12,ico) = cpatch%bstorage(ico)
+                           select case (iddmort_scheme)
+                           case (0)
+                              !------ Storage is not accounted. ---------------------------!
+                              cpatch%cb         (13,ico) = 0.0
+                              cpatch%cb_lightmax(13,ico) = 0.0
+                              cpatch%cb_moistmax(13,ico) = 0.0
+                              cpatch%cb_mlmax   (13,ico) = 0.0
+                              !------------------------------------------------------------!
+                           case (1)
+                              cpatch%cb         (13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
+                              cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+                           end select
+                           cpatch%cbr_bar          (ico) = 1.0
                         end do
                         !------------------------------------------------------------------!
 

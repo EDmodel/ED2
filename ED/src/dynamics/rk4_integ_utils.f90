@@ -5,7 +5,7 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,isi,nsteps)
+subroutine odeint(csite,ipa,isi,nsteps)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
@@ -41,7 +41,6 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
    type(sitetype)            , target      :: csite            ! Current site
    integer                   , intent(in)  :: ipa              ! Current patch ID
    integer                   , intent(in)  :: isi              ! Current site ID
-   real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)           , pointer     :: cpatch           ! Current patch
@@ -49,22 +48,29 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
    integer                                 :: ksn              ! # of snow/water layers
    real(kind=8)                            :: x                ! Elapsed time
    real(kind=8)                            :: hgoal            ! Current delta-t attempt
+   real(kind=8)                            :: hbeg             ! Initial delta-t
    real(kind=8)                            :: h                ! Current delta-t attempt
    real(kind=8)                            :: hnext            ! Next delta-t
    real(kind=8)                            :: hdid             ! delta-t that worked (???)
    real(kind=8)                            :: qwfree           ! Free water internal energy
    real(kind=8)                            :: wfreeb           ! Free water 
    integer                                 :: ibuff
-
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
-   
    !---------------------------------------------------------------------------------------!
 
    ibuff = 1
    !$ ibuff = OMP_get_thread_num()+1
 
+
    cpatch => csite%patch(ipa)
+
+
+   !------------------------------------------------------------------------------------!
+   !      Initial step size.  Experience has shown that giving this too large a value   !
+   ! causes the integrator to fail (e.g., soil layers become supersaturated).           !
+   !------------------------------------------------------------------------------------!
+   hbeg = dble(csite%htry(ipa))
 
    !---------------------------------------------------------------------------------------!
    !     Copy the initial patch to the one we use for integration.                         !
@@ -77,8 +83,8 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
    ! Set initial time and stepsize.                                                        !
    !---------------------------------------------------------------------------------------!
    x = tbeg
-   h = h1
-   if (dtrk4 < 0.d0) h = -h1
+   h = hbeg
+   if (dtrk4 < 0.d0) h = -hbeg
    !---------------------------------------------------------------------------------------!
 
 

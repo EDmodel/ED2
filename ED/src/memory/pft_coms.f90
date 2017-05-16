@@ -608,6 +608,17 @@ module pft_coms
 
 
 
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Variables to control carbon stocks during initialisation.                         !
+   !---------------------------------------------------------------------------------------!
+   !------ Storage biomass, relative to on-allometry living biomass. ----------------------!
+   real, dimension(n_pft) :: f_bstorage_init
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
 
    !=======================================================================================!
    !=======================================================================================!
@@ -671,26 +682,31 @@ module pft_coms
    !    Structure containing information needed for recruits.                              !
    !---------------------------------------------------------------------------------------!
    type recruittype
-      integer :: pft
-      integer :: krdepth
-      integer :: phenology_status
-      real    :: leaf_temp
-      real    :: wood_temp
-      real    :: leaf_temp_pv
-      real    :: wood_temp_pv
-      real    :: leaf_vpdef
-      real    :: hite
-      real    :: dbh
-      real    :: bdead
-      real    :: bleaf
-      real    :: broot
-      real    :: bsapwooda
-      real    :: bsapwoodb
-      real    :: balive
-      real    :: paw_avg
-      real    :: elongf
-      real    :: bstorage
-      real    :: nplant
+      integer             :: pft
+      integer             :: krdepth
+      integer             :: phenology_status
+      real                :: leaf_temp
+      real                :: wood_temp
+      real                :: leaf_temp_pv
+      real                :: wood_temp_pv
+      real                :: leaf_vpdef
+      real                :: hite
+      real                :: dbh
+      real                :: bdead
+      real                :: bleaf
+      real                :: broot
+      real                :: bsapwooda
+      real                :: bsapwoodb
+      real                :: balive
+      real                :: paw_avg
+      real                :: elongf
+      real                :: bstorage
+      real                :: nplant
+      real, dimension(13) :: cb
+      real, dimension(13) :: cb_lightmax
+      real, dimension(13) :: cb_moistmax
+      real, dimension(13) :: cb_mlmax
+      real                :: cbr_bar
    end type recruittype
    !=======================================================================================!
    !=======================================================================================!
@@ -711,29 +727,37 @@ module pft_coms
       type(recruittype), dimension(maxp), intent(out) :: recruit
       !----- Local variable. --------------------------------------------------------------!
       integer                                         :: p
+      integer                                         :: imon
       !------------------------------------------------------------------------------------!
 
       do p=1,maxp
-         recruit(p)%pft              = 0
-         recruit(p)%krdepth          = 0
-         recruit(p)%phenology_status = 0
-         recruit(p)%leaf_temp        = 0.
-         recruit(p)%wood_temp        = 0.
-         recruit(p)%leaf_temp_pv     = 0.
-         recruit(p)%wood_temp_pv     = 0.
-         recruit(p)%leaf_vpdef       = 0.
-         recruit(p)%hite             = 0.
-         recruit(p)%dbh              = 0.
-         recruit(p)%bdead            = 0.
-         recruit(p)%bleaf            = 0.
-         recruit(p)%broot            = 0.
-         recruit(p)%bsapwooda        = 0.
-         recruit(p)%bsapwoodb        = 0.
-         recruit(p)%balive           = 0.
-         recruit(p)%paw_avg          = 0.
-         recruit(p)%elongf           = 0.
-         recruit(p)%bstorage         = 0.
-         recruit(p)%nplant           = 0.
+         recruit(p)%pft                  = 0
+         recruit(p)%krdepth              = 0
+         recruit(p)%phenology_status     = 0
+         recruit(p)%leaf_temp            = 0.
+         recruit(p)%wood_temp            = 0.
+         recruit(p)%leaf_temp_pv         = 0.
+         recruit(p)%wood_temp_pv         = 0.
+         recruit(p)%leaf_vpdef           = 0.
+         recruit(p)%hite                 = 0.
+         recruit(p)%dbh                  = 0.
+         recruit(p)%bdead                = 0.
+         recruit(p)%bleaf                = 0.
+         recruit(p)%broot                = 0.
+         recruit(p)%bsapwooda            = 0.
+         recruit(p)%bsapwoodb            = 0.
+         recruit(p)%balive               = 0.
+         recruit(p)%paw_avg              = 0.
+         recruit(p)%elongf               = 0.
+         recruit(p)%bstorage             = 0.
+         recruit(p)%nplant               = 0.
+         do imon=1,13
+            recruit(p)%cb         (imon) = 0.
+            recruit(p)%cb_lightmax(imon) = 0.
+            recruit(p)%cb_moistmax(imon) = 0.
+            recruit(p)%cb_mlmax   (imon) = 0.
+         end do
+         recruit(p)%cbr_bar              = 0.
       end do
 
       return
@@ -755,6 +779,8 @@ module pft_coms
       !----- Arguments. -------------------------------------------------------------------!
       type(recruittype), intent(in)  :: recsource
       type(recruittype), intent(out) :: rectarget
+      !----- Local variables. -------------------------------------------------------------!
+      integer                        :: imon
       !------------------------------------------------------------------------------------!
 
       rectarget%pft              = recsource%pft
@@ -777,6 +803,15 @@ module pft_coms
       rectarget%elongf           = recsource%elongf
       rectarget%bstorage         = recsource%bstorage
       rectarget%nplant           = recsource%nplant
+
+      do imon=1,13
+         rectarget%cb         (imon) = recsource%cb         (imon)
+         rectarget%cb_lightmax(imon) = recsource%cb_lightmax(imon)
+         rectarget%cb_moistmax(imon) = recsource%cb_moistmax(imon)
+         rectarget%cb_mlmax   (imon) = recsource%cb_mlmax   (imon)
+      end do
+
+      rectarget%cbr_bar          = recsource%cbr_bar
 
       return
    end subroutine copy_recruit

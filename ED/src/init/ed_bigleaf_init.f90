@@ -24,11 +24,14 @@ subroutine ed_bigleaf_init(cgrid)
                              , sla                  & ! intent(in)
                              , q                    & ! intent(in)
                              , qsw                  & ! intent(in)
-                             , agf_bs               ! ! intent(in)
+                             , agf_bs               & ! intent(in)
+                             , f_bstorage_init      ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
    use fuse_fiss_utils, only : sort_cohorts         & ! subroutine
                              , sort_patches         ! ! subroutine
-   use consts_coms    , only : pio4                 ! ! intent(in)
+   use consts_coms    , only : pio4                 & ! intent(in)
+                             , almost_zero          ! ! intent(in)
+   use physiology_coms, only : iddmort_scheme       ! ! intent(in)
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -273,6 +276,8 @@ subroutine ed_bigleaf_init(cgrid)
                      cpatch%nplant       (1) = lai (ipft,ilu)                              &
                                              / ( cpatch%sla(1) * cpatch%bleaf(1)           &
                                                * csite%area(ipa) )
+                     cpatch%bstorage     (1) = max(almost_zero,f_bstorage_init(ipft))      &
+                                             * cpatch%balive(ico)
                      !---------------------------------------------------------------------!
 
 
@@ -280,16 +285,39 @@ subroutine ed_bigleaf_init(cgrid)
                      !     Start plants with full phenology and in great carbon balance,   !
                      ! we will take care of phenology after this sub-routine.              !
                      !---------------------------------------------------------------------!
-                     cpatch%cb               (1:12,1) = 1.0
-                     cpatch%cb_lightmax      (1:12,1) = 1.0
-                     cpatch%cb_moistmax      (1:12,1) = 1.0
-                     cpatch%cb_mlmax         (1:12,1) = 1.0
-                     cpatch%cb                 (13,1) = 0.0
-                     cpatch%cb_lightmax        (13,1) = 0.0
-                     cpatch%cb_moistmax        (13,1) = 0.0
-                     cpatch%cb_mlmax           (13,1) = 0.0
                      cpatch%phenology_status      (1) = 0
-                     cpatch%bstorage              (1) = 0.0
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Initialise the carbon balance.  For initial conditions, we      !
+                     ! always assume storage biomass for the previous months so the scale  !
+                     ! is correct (carbon balance is given in kgC/pl).  The current month  !
+                     ! carbon balance must be initialised consistently with the            !
+                     ! iddmort_scheme set by the user.                                     !
+                     !---------------------------------------------------------------------!
+                     cpatch%cb               (1:12,1) = cpatch%bstorage(1)
+                     cpatch%cb_lightmax      (1:12,1) = cpatch%bstorage(1)
+                     cpatch%cb_moistmax      (1:12,1) = cpatch%bstorage(1)
+                     cpatch%cb_mlmax         (1:12,1) = cpatch%bstorage(1)
+                     select case (iddmort_scheme)
+                     case (0)
+                        !----- Storage is not accounted. ----------------------------------!
+                        cpatch%cb              (13,1) = cpatch%bstorage(1)
+                        cpatch%cb_lightmax     (13,1) = cpatch%bstorage(1)
+                        cpatch%cb_moistmax     (13,1) = cpatch%bstorage(1)
+                        cpatch%cb_mlmax        (13,1) = cpatch%bstorage(1)
+                        !------------------------------------------------------------------!
+                     case (1)
+                        !----- Storage is accounted. --------------------------------------!
+                        cpatch%cb              (13,1) = 0.0
+                        cpatch%cb_lightmax     (13,1) = 0.0
+                        cpatch%cb_moistmax     (13,1) = 0.0
+                        cpatch%cb_mlmax        (13,1) = 0.0
+                        !------------------------------------------------------------------!
+                     end select
+                     cpatch%cbr_bar               (1) = 1.0
                      !---------------------------------------------------------------------!
 
 

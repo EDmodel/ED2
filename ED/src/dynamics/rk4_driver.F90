@@ -333,15 +333,7 @@ module rk4_driver
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
       integer               , intent(out) :: nsteps
-      !----- Local variables --------------------------------------------------------------!
-      real(kind=8)                        :: hbeg
       !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !      Initial step size.  Experience has shown that giving this too large a value   !
-      ! causes the integrator to fail (e.g., soil layers become supersaturated).           !
-      !------------------------------------------------------------------------------------!
-      hbeg = dble(csite%htry(ipa))
 
 
       !------------------------------------------------------------------------------------!
@@ -355,8 +347,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-
-      call odeint(hbeg,csite,ipa,isi,nsteps)
+      call odeint(csite,ipa,isi,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !

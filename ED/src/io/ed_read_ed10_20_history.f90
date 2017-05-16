@@ -25,13 +25,15 @@ subroutine read_ed10_ed20_history_file
                              , include_pft_ag      & ! intent(in)
                              , pft_1st_check       & ! intent(in)
                              , agf_bs              & ! intent(in)
+                             , f_bstorage_init     & ! intent(in)
                              , include_these_pft   ! ! intent(in)
    use ed_misc_coms   , only : sfilin              & ! intent(in)
                              , ied_init_mode       ! ! intent(in)
    use mem_polygons   , only : grid_res            & ! intent(in)
                              , edres               ! ! intent(in)
    use consts_coms    , only : pio180              & ! intent(in)
-                             , pio4                ! ! intent(in)
+                             , pio4                & ! intent(in)
+                             , almost_zero         ! ! intent(in)
    use ed_misc_coms   , only : use_target_year     & ! intent(in)
                              , restart_target_year ! ! intent(in)
    use ed_state_vars  , only : polygontype         & ! variable type
@@ -52,6 +54,7 @@ subroutine read_ed10_ed20_history_file
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
                              , sort_patches        ! ! subroutine
    use disturb_coms   , only : ianth_disturb       ! ! intent(in)
+   use physiology_coms, only : iddmort_scheme      ! ! intent(in)
    implicit none
 
    !----- Local constants. ----------------------------------------------------------------!
@@ -805,14 +808,18 @@ subroutine read_ed10_ed20_history_file
                         cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &
                                               / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
                                                * cpatch%hite(ic2))
-                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic)) * cpatch%balive(ic2)                &
-                                             * qsw(ipft(ic))* cpatch%hite(ic2)             &
-                                             / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
+                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic)) * cpatch%balive(ic2)      &
+                                              * qsw(ipft(ic))* cpatch%hite(ic2)            &
+                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
+                                              * cpatch%hite(ic2))
+                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic))) * cpatch%balive(ic2) &
+                                              * qsw(ipft(ic))* cpatch%hite(ic2)            &
+                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
                                                * cpatch%hite(ic2))
-                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic))) * cpatch%balive(ic2)           &
-                                             * qsw(ipft(ic))* cpatch%hite(ic2)             &
-                                             / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))         &
-                                               * cpatch%hite(ic2))
+                        cpatch%bstorage(ic2)  = max(almost_zero,f_bstorage_init(ipft(ic))) &
+                                              * cpatch%balive(ic2)
+                        !------------------------------------------------------------------!
+
 
 
                         !------------------------------------------------------------------!
@@ -820,7 +827,6 @@ subroutine read_ed10_ed20_history_file
                         ! phenology after this sub-routine.                                !
                         !------------------------------------------------------------------!
                         cpatch%phenology_status(ic2) = 0
-                        cpatch%bstorage        (ic2) = 0.0
                         !------------------------------------------------------------------!
 
 
@@ -832,21 +838,42 @@ subroutine read_ed10_ed20_history_file
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
                                          ,cpatch%lai(ic2), cpatch%wai(ic2)                 &
                                          ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
+                        !------------------------------------------------------------------!
+
+
 
                         !------------------------------------------------------------------!
                         !     Initialise the carbon balance.  We ignore the carbon balance !
                         ! even for ED-1.0, the models are so different that there is no    !
-                        ! reason to use the stored value.                                  !
+                        ! reason to use the stored value.  For initial conditions, we      !
+                        ! always assume storage biomass for the previous months so         !
+                        ! the scale is correct (carbon balance is given in kgC/pl).        !
+                        ! similar to what is typically solved in the model.  The current   !
+                        ! month carbon balance must be initialised consistently with the   !
+                        ! iddmort_scheme we are using.                                     !
                         !------------------------------------------------------------------!
-                        cpatch%cb         (1:12,ic2) = 1.0
-                        cpatch%cb_lightmax(1:12,ic2) = 1.0
-                        cpatch%cb_moistmax(1:12,ic2) = 1.0
-                        cpatch%cb_mlmax   (1:12,ic2) = 1.0
-                        cpatch%cb         (  13,ic2) = 0.0
-                        cpatch%cb_lightmax(  13,ic2) = 0.0
-                        cpatch%cb_moistmax(  13,ic2) = 0.0
-                        cpatch%cb_mlmax   (  13,ic2) = 0.0
+                        cpatch%cb         (1:12,ic2) = cpatch%bstorage(ic2)
+                        cpatch%cb_lightmax(1:12,ic2) = cpatch%bstorage(ic2)
+                        cpatch%cb_moistmax(1:12,ic2) = cpatch%bstorage(ic2)
+                        cpatch%cb_mlmax   (1:12,ic2) = cpatch%bstorage(ic2)
+                        select case (iddmort_scheme)
+                        case (0)
+                           !------ Storage is not accounted. ------------------------------!
+                           cpatch%cb         (13,ic2) = 0.0
+                           cpatch%cb_lightmax(13,ic2) = 0.0
+                           cpatch%cb_moistmax(13,ic2) = 0.0
+                           cpatch%cb_mlmax   (13,ic2) = 0.0
+                           !---------------------------------------------------------------!
+                        case (1)
+                           cpatch%cb         (13,ic2) = cpatch%bstorage(ic2)
+                           cpatch%cb_lightmax(13,ic2) = cpatch%bstorage(ic2)
+                           cpatch%cb_moistmax(13,ic2) = cpatch%bstorage(ic2)
+                           cpatch%cb_mlmax   (13,ic2) = cpatch%bstorage(ic2)
+                        end select
+                        cpatch%cbr_bar          (ic2) = 1.0
                         !------------------------------------------------------------------!
+
+
 
                         !----- Above ground biomass, use the allometry. -------------------!
                         cpatch%agb    (ic2) = ed_biomass( cpatch%bdead     (ic2)           &

@@ -1133,7 +1133,6 @@ module fuse_fiss_utils
       integer                      :: imon              ! Month for cb loop
       integer                      :: t                 ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
-      real                         :: newni             ! Inverse of new nplants
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
       real                         :: rlai              ! LAI of receiver
@@ -1153,9 +1152,8 @@ module fuse_fiss_utils
       !  - If the unit is X/m2_wood, then we scale by WAI.                                 !
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
-      newni   = 1.0 / (cpatch%nplant(recc) + cpatch%nplant(donc))
       rnplant = cpatch%nplant(recc) / (cpatch%nplant(recc) + cpatch%nplant(donc))
-      dnplant = 1.d0 - dble(rnplant)
+      dnplant = 1.0 - rnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1316,13 +1314,7 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !     CB and CB_Xmax are scaled by population, as they are in kgC/plant/yr.          !
-      !------------------------------------------------------------------------------------!
-      ! RK: I think the below comment is no longer true. Per gh-24 reverting again to      !
-      ! calculate CBR from running means of CB and CB_Xmax. 
-      ! "The relative carbon balance, however, is no longer derived from the annual values !
-      ! of CB, CB_LightMax, and CB_MoistMax, but tracked independently as it used to be    !
-      ! done in ED-1.0."                                                                   !
+      !     CB and CB_Xmax are scaled by population, as they are in kgC/plant.             !
       !------------------------------------------------------------------------------------!
       do imon = 1,13
          cpatch%cb         (imon,recc) = cpatch%cb          (imon,recc) * rnplant          &
@@ -4143,6 +4135,12 @@ module fuse_fiss_utils
       csite%age(recp)                = newareai *                                          &
                                      ( csite%age(donp)                * csite%area(donp)   &
                                      + csite%age(recp)                * csite%area(recp) )
+      csite%htry(recp)               = newareai *                                          &
+                                     ( csite%htry(donp)               * csite%area(donp)   &
+                                     + csite%htry(recp)               * csite%area(recp) )
+      csite%hprev(recp)              = newareai *                                          &
+                                     ( csite%hprev(donp)              * csite%area(donp)   &
+                                     + csite%hprev(recp)              * csite%area(recp) )
 
       csite%fbeam(recp)              = newareai *                                          &
                                      ( csite%fbeam(donp)              * csite%area(donp)   &
@@ -4242,8 +4240,8 @@ module fuse_fiss_utils
                                          * csite%sfcwater_mass  (iii,donp)
       end do
       !------------------------------------------------------------------------------------!
-      ! 2. Squeeze all layers into one.  If needed, the layer will be split again next     !
-      !    time the Runge-Kutta integrator is called.  After adding the value to the first !
+      ! 2. Merge all layers into one.  If needed, the layer will be split again next time  !
+      !    the Runge-Kutta integrator is called.  After adding the value to the first      !
       !    layer, discard the value.                                                       !
       !------------------------------------------------------------------------------------!
       do iii=2,csite%nlev_sfcwater(recp)

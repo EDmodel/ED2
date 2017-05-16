@@ -812,10 +812,10 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
 
                !----- Initialize with 0 ---------------------------------------------------!
-                  cb_act       = 0.0
-                  cb_lightmax  = 0.0
-                  cb_moistmax  = 0.0
-                  cb_mlmax     = 0.0
+               cb_act       = 0.0
+               cb_lightmax  = 0.0
+               cb_moistmax  = 0.0
+               cb_mlmax     = 0.0
 
                !----- Compute the relative carbon balance. --------------------------------!
                if (is_grass(ipft).and. igrass==1) then  !!Grass loop, use past month's carbon balance only

@@ -404,7 +404,10 @@ module phenology_aux
                                                ,cpatch%bleaf(ico),cpatch%broot(ico)        &
                                                ,cpatch%bsapwooda(ico)                      &
                                                ,cpatch%bsapwoodb(ico)                      &
-                                               ,cpatch%balive(ico),cpatch%bstorage(ico))
+                                               ,cpatch%balive(ico),cpatch%bstorage(ico)    &
+                                               ,cpatch%cb(:,ico),cpatch%cb_lightmax(:,ico) &
+                                               ,cpatch%cb_moistmax(:,ico)                  &
+                                               ,cpatch%cb_mlmax(:,ico),cpatch%cbr_bar(ico))
                   !------------------------------------------------------------------------!
 
 
@@ -464,20 +467,24 @@ module phenology_aux
    !---------------------------------------------------------------------------------------!
    subroutine pheninit_balive_bstorage(mzg,ipft,kroot,height,dbh,soil_water,ntext_soil     &
                                       ,green_leaf_factor,paw_avg,elongf,phenology_status   &
-                                      ,bleaf,broot,bsapwooda,bsapwoodb,balive,bstorage)
-      use soil_coms     , only : soil                & ! intent(in), look-up table
-                               , slz                 & ! intent(in)
-                               , slzt                & ! intent(in)
-                               , dslz                ! ! intent(in)
-      use phenology_coms, only : spot_phen           & ! intent(in)
-                               , elongf_min          ! ! intent(in)
-      use pft_coms      , only : phenology           & ! intent(in)
-                               , q                   & ! intent(in)
-                               , qsw                 & ! intent(in)
-                               , agf_bs              ! ! intent(in)
-      use ed_max_dims   , only : n_pft               ! ! intent(in)
-      use allometry     , only : size2bl             & ! function
-                               , h2crownbh           ! ! function
+                                      ,bleaf,broot,bsapwooda,bsapwoodb,balive,bstorage     &
+                                      ,cb,cb_lightmax,cb_moistmax,cb_mlmax,cbr_bar)
+      use soil_coms      , only : soil                & ! intent(in), look-up table
+                                , slz                 & ! intent(in)
+                                , slzt                & ! intent(in)
+                                , dslz                ! ! intent(in)
+      use phenology_coms , only : spot_phen           & ! intent(in)
+                                , elongf_min          ! ! intent(in)
+      use pft_coms       , only : phenology           & ! intent(in)
+                                , q                   & ! intent(in)
+                                , qsw                 & ! intent(in)
+                                , agf_bs              & ! intent(in)
+                                , f_bstorage_init     ! ! intent(in)
+      use ed_max_dims    , only : n_pft               ! ! intent(in)
+      use consts_coms    , only : almost_zero         ! ! intent(in)
+      use physiology_coms, only : iddmort_scheme      ! ! intent(in)
+      use allometry      , only : size2bl             & ! function
+                                , h2crownbh           ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in)  :: mzg               ! # of soil layers
@@ -497,6 +504,11 @@ module phenology_aux
       real                     , intent(out) :: bsapwoodb         ! BG Sapwood biomass 
       real                     , intent(out) :: balive            ! Living tissue biomass
       real                     , intent(out) :: bstorage          ! Storage biomass
+      real   , dimension(13)   , intent(out) :: cb                ! Carbon balance
+      real   , dimension(13)   , intent(out) :: cb_lightmax       ! Light-plenty CB
+      real   , dimension(13)   , intent(out) :: cb_moistmax       ! Moisture-plenty CB
+      real   , dimension(13)   , intent(out) :: cb_mlmax          ! Moisture/light-plenty CB
+      real                     , intent(out) :: cbr_bar           ! Relative CB
       !----- Local variables --------------------------------------------------------------!
       integer                                :: k                 ! Layer counter
       integer                                :: nsoil             ! Soil texture class
@@ -588,7 +600,37 @@ module phenology_aux
       ! leaves in the storage.  This gives some extra chance for the plant whilst it       !
       ! conserves the total carbon.                                                        !
       !------------------------------------------------------------------------------------!
-      bstorage = max(0.0, bleaf_max - bleaf)
+      bstorage = max(f_bstorage_init(ipft),almost_zero) * balive_max                       &
+               + max(0.0, bleaf_max - bleaf)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise the carbon balance.  For initial conditions, we always assume       !
+      ! storage biomass for the previous months so the scale is correct (carbon balance is !
+      ! given in kgC/pl).  The current month carbon balance must be initialised            !
+      ! consistently with the iddmort_scheme set by the user.                              !
+      !------------------------------------------------------------------------------------!
+      cb         (1:12)  = bstorage
+      cb_lightmax(1:12)  = bstorage
+      cb_moistmax(1:12)  = bstorage
+      cb_mlmax   (1:12)  = bstorage
+      select case (iddmort_scheme)
+      case (0)
+         !------ Storage is not accounted. ------------------------------------------------!
+         cb         (13) = 0.0
+         cb_lightmax(13) = 0.0
+         cb_moistmax(13) = 0.0
+         cb_mlmax   (13) = 0.0
+         !---------------------------------------------------------------------------------!
+      case (1)
+         cb         (13) = bstorage
+         cb_lightmax(13) = bstorage
+         cb_moistmax(13) = bstorage
+         cb_mlmax   (13) = bstorage
+      end select
+      cbr_bar            = 1.0
       !------------------------------------------------------------------------------------!
 
       return
