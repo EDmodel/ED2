@@ -29,6 +29,7 @@ module rk4_stepper
                                , patchtype           ! ! structure
       use grid_coms     , only : nzg                 & ! intent(in)
                                , nzs                 ! ! intent(in)
+      use ed_misc_coms  , only : dtlsm               ! ! intent(in)
       !$ use omp_lib
 
       implicit none
@@ -43,6 +44,7 @@ module rk4_stepper
       real(kind=8)             , intent(out)   :: hnext
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                             :: h,errmax,xnew,newh,oldh
+      real(kind=8)                             :: fgrow
       logical                                  :: reject_step,reject_result
       logical                                  :: minstep,stuck,test_reject,pdo
       integer                                  :: k
@@ -181,7 +183,8 @@ module rk4_stepper
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
             !    and try something faster.                                                 !
             !------------------------------------------------------------------------------!
-            hnext = max(2.d0*hmin,min(5.d0,max(safety*errmax**pgrow,1.d0)) * hgoal)
+            fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
+            hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
             !------------------------------------------------------------------------------!
 
 

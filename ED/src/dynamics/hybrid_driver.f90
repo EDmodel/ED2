@@ -357,7 +357,8 @@ subroutine hybrid_timestep(cgrid)
                              , reset_rk4_fluxes       ! ! sub-routine
    use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
                              , print_sanity_check     ! ! subroutine
-   use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
+   use ed_misc_coms   , only : fast_diagnostics       & ! intent(in)
+                             , dtlsm                  ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
                              , nzs                    & ! intent(in)
@@ -403,6 +404,7 @@ subroutine hybrid_timestep(cgrid)
    real(kind=8)                            :: h            ! Current delta-t 
                                                            ! attempt
    real(kind=8)                            :: htrunc
+   real(kind=8)                            :: fgrow        ! Delta-t increase factor
    real(kind=8)                            :: hgoal        ! Delta-t ignoring overstep
    real(kind=8)                            :: hnext        ! Next delta-t
    real(kind=8)                            :: hdid         ! delta-t that 
@@ -597,11 +599,10 @@ subroutine hybrid_timestep(cgrid)
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
             !    and try something faster.                                                 !
             !------------------------------------------------------------------------------!
-            hnext = max( 2.d0*hmin                                                         &
-                       , min( 5.d0*hgoal                                                   &
-                            , (1.d0+sqrt(2.d0))*hgoal                                      &
-                            , safety*hgoal*errmax**pgrow) )
+            fgrow = min(5.d0,1.d0+sqrt(2.d0),max(safety*errmax**pgrow,1.d0))
+            hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
             !------------------------------------------------------------------------------!
+
 
             !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
             if (print_detailed) then

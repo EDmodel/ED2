@@ -370,7 +370,8 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
                              , reset_rk4_fluxes       ! ! sub-routine
    use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
                              , print_sanity_check     ! ! subroutine
-   use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
+   use ed_misc_coms   , only : fast_diagnostics       & ! intent(in)
+                             , dtlsm                  ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
                              , nzs                    & ! intent(in)
@@ -406,6 +407,7 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
    real(kind=8)                            :: newh             ! New time step suggested
    real(kind=8)                            :: oldh             ! Old time step
    real(kind=8)                            :: h                ! Current delta-t attempt
+   real(kind=8)                            :: fgrow            ! Delta-t increase factor
    real(kind=8)                            :: hgoal            ! Delta-t ignoring overstep
    real(kind=8)                            :: hnext            ! Next delta-t
    real(kind=8)                            :: hdid             ! delta-t that worked (???)
@@ -592,7 +594,8 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
             !    and try something faster.                                                 !
             !------------------------------------------------------------------------------!
-            hnext = max(2.d0*hmin,min(5.d0,max(safety*errmax**pgrow,1.d0)) * hgoal)
+            fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
+            hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
             !------------------------------------------------------------------------------!
 
 
