@@ -2227,6 +2227,11 @@ end do
         'Invalid ISFCLYRM, it must be between 0 and 4. Yours is set to',isfclyrm,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
+   else if (isfclyrm == 0 .and. ivegt_dynamics /= 0) then
+      write (reason,fmt='(a)')                                                             &
+            'ISFCLYRM can''t be set to 0 when vegetation dynamics is turned on...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
    end if
 
    if (ied_grndvap < 0 .or. ied_grndvap > 5) then

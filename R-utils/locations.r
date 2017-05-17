@@ -872,12 +872,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    flagvar[["ianth.disturb"]]    = list( descr  = "Anthropogenic disturbance"
                                        , numeric = TRUE
                                        , values = c(0,1,2)
-                                       , names  = c("OFF","ON","LOG")
-                                       )#end list
-   flagvar[["sl.type"]]          = list( descr  = "Logging type"
-                                       , numeric = FALSE
-                                       , values = c("ril","cvl")
-                                       , names  = c("Reduced-impact","Conventional")
+                                       , names  = c("OFF","ON","Logging")
                                        )#end list
    flagvar[["ianth.dataset"]]    = list( descr  = "LULCC dataset"
                                        , numeric = FALSE
@@ -1182,11 +1177,6 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.1f"
                                      , off   =   0.0
                                      , mult  =   0.1)
-   numvar[["bharvest"]]        = list( descr = "Harvest biomass (target)"
-                                     , unit  = "kgC/m2"
-                                     , fmt   = "%.2f"
-                                     , off   =   0.0
-                                     , mult  =   0.001)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1214,10 +1204,15 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          na     = c(         9)
          nz     = c(        11)
       }else if (lenici == 12){
+         nparms = 2
+         param  = c("met.forcing","isas")
+         na     = c(            6,    10)
+         nz     = c(            8,    12)
+      }else if (lenici == 13){
          nparms = 1
-         param  = c("ianth.disturb")
-         na     = c(             11)
-         nz     = c(             12)
+         param  = c("iustar")
+         na     = c(      12)
+         nz     = c(      13)
       }else if (lenici == 14){
          nparms = 1
          param  = c("icanrad")
@@ -1280,9 +1275,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(            12,  18,            25)
       }else if (lenici == 26){
          nparms = 3
-         param  = c("ianth.disturb","sl.type", "bharvest")
-         na     = c(             11,       14,         23)
-         nz     = c(             12,       16,         26)
+         param  = c("soil.depth","dd.mort.control", "iphen.scheme")
+         na     = c(          10,               17,             24)
+         nz     = c(          11,               18,             26)
       }else if (lenici == 27){
          nparms = 2
          param  = c("ivegt.dynamics","ihrzrad")

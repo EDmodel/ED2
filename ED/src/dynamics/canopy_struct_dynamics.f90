@@ -3024,6 +3024,9 @@ module canopy_struct_dynamics
    !    Two models are available, and the user can choose between them by setting the      !
    ! variable ISFCLYRM in ED2IN (if running the coupled model, this is done in ISTAR).     ! 
    !                                                                                       !
+   ! 0. Same as option 4 (see below), but u* is prescribed.  Not intended for long-term    !
+   !    simulations (where vegetation dynamics must affect u*), this should be used for    !
+   !    testing only.                                                                      !
    ! 1. Based on L79;                                                                      !
    ! 2. Based on: OD95, but with some terms computed as in L79 and B71 to avoid singular-  !
    !    ities (now using the iterative method to find zeta).                               !

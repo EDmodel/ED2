@@ -47,6 +47,7 @@ module rk4_stepper
       real(kind=8)                             :: fgrow
       logical                                  :: reject_step,reject_result
       logical                                  :: minstep,stuck,test_reject,pdo
+      logical                                  :: gapstep
       integer                                  :: k
       integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
@@ -54,6 +55,7 @@ module rk4_stepper
       ibuff=1
       !$ ibuff = OMP_get_thread_num()+1
 
+      gapstep     =  htry < hgoal
       h           =  htry
       reject_step =  .false.
       hstep:   do
@@ -95,16 +97,29 @@ module rk4_stepper
          !    time: x = x + h                                                              !
          !---------------------------------------------------------------------------------!
          if (errmax > 1.d0) then
-            !----- Defining new step and checking if it can be. ---------------------------!
+            !------------------------------------------------------------------------------!
+            !      We are about to shrink the time step, so this can't be considered gap   !
+            ! step.                                                                        !
+            !------------------------------------------------------------------------------!
+            gapstep = .false.
+            !------------------------------------------------------------------------------!
+
+
+            !----- Define new step and check whether it is sufficiently long or not. ------!
             oldh    = h
             newh    = safety * h * errmax**pshrnk
             minstep = (newh == h) .or. newh < hmin
+            !------------------------------------------------------------------------------!
 
-            !----- Defining next time, and checking if it really added something. ---------!
+
+            !----- Define next time, and check whether it is long enough to change time. --!
             h       = max(1.d-1*h, newh)
             hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             ! 3a. Here is the moment of truth... If we reached a tiny step and yet the     !
@@ -181,10 +196,15 @@ module rk4_stepper
 
             !------------------------------------------------------------------------------!
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
-            !    and try something faster.                                                 !
+            !    and try something faster, unless this is a "gap step" (shorter time step  !
+            !    just to close the full thermodynamic time step).                          !
             !------------------------------------------------------------------------------!
-            fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
-            hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+            if (gapstep) then
+               hnext = hgoal
+            else
+               fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
+               hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+            end if
             !------------------------------------------------------------------------------!
 
 

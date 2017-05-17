@@ -422,6 +422,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
    logical                                 :: minstep          ! Minimum time step reached
    logical                                 :: stuck            ! Tiny step, it won't advance
    logical                                 :: test_reject      ! Reject the test
+   logical                                 :: gapstep          ! This is a "gap-filler" step
    integer                                 :: i                ! Step counter
    integer                                 :: k                ! Format counter
    integer                                 :: ksn              ! # of snow/water layers
@@ -468,7 +469,12 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
 
       !----- Be sure not to overstep ------------------------------------------------------!
       hgoal = h
-      if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
+      if ((x+h-tend)*(x+h-tbeg) > 0.d0) then
+         h       = tend - x
+         gapstep = .true.
+      else 
+         gapstep = .false.
+      end if
 
       !------------------------------------------------------------------------------------!
       !     Here we will perform the Euler integration using the time step.  As in Runge-  !
@@ -517,16 +523,25 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
          ! 3. If the step failed, then calculate a new shorter step size to try.           !
          !---------------------------------------------------------------------------------!
          if (reject_step) then
-            !----- Defining new step and checking if it can be. ---------------------------!
+            !------------------------------------------------------------------------------!
+            !      We are about to shrink the time step, so this can't be considered gap   !
+            ! step.                                                                        !
+            !------------------------------------------------------------------------------!
+            gapstep = .false.
+            !------------------------------------------------------------------------------!
+
+            !----- Define new step and check whether it is sufficiently long or not. ------!
             oldh    = h
             newh    = safety * h * errmax**pshrnk
             minstep = (newh == h) .or. newh < hmin
+            !------------------------------------------------------------------------------!
 
-            !----- Defining next time, and checking if it really added something. ---------!
+            !----- Define next time, and check whether it is long enough to change time. --!
             h       = max(1.d-1*h, newh)
             hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
             ! 3a. Here is the moment of truth... If we reached a tiny step and yet the     !
@@ -578,10 +593,15 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
 
             !------------------------------------------------------------------------------!
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
-            !    and try something faster.                                                 !
+            !    and try something faster, unless this is a "gap step" (shorter time step  !
+            !    just to close the full thermodynamic time step).                          !
             !------------------------------------------------------------------------------!
-            fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
-            hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+            if (gapstep) then
+               hnext = hgoal
+            else
+               fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
+               hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+            end if
             !------------------------------------------------------------------------------!
 
             call leaf_derivs(ytemp,dydx,csite,ipa,hnext,.false.)

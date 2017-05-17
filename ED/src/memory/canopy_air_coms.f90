@@ -25,13 +25,17 @@ module canopy_air_coms
                             !     when zref<h
 
    integer :: isfclyrm      ! Surface layer model (used to compute ustar, tstar,...)
+                            !  0 - Same as option 4, except that ustar is prescribed.
+                            !      This should be used for testing only.
                             !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
                             !      This is the ED-2.0 default, also used in (B)RAMS
                             !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
                             !      This is used in MM5 and WRF.
                             !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 
                             !      328-341.
-                            !  4 - BH91, using OD95 to find zeta.
+                            !  4 - CLM (2004).  Similar to 2 and 3, but they have special
+                            !      functions to deal with very stable and very stable 
+                            !      cases.
 
 
    integer :: ied_grndvap   ! Methods to find the ground -> canopy conductance:
@@ -431,11 +435,11 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psim = - beta_s * zeta 
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psim = abh91 * zeta                                                            &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))                     &
                  + bcod
-         case (4) !----- CLM (2004) (including neglected terms). --------------------------!
+         case (0,4) !----- CLM (2004) (including neglected terms). ------------------------!
             if (zeta > zetac_sm) then
                !----- Very stable case. ---------------------------------------------------!
                psim = (1.0 - beta_vs) * log(zeta * zetac_smi)                              &
@@ -447,10 +451,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             xx   = sqrt(sqrt(1.0 - gamm * zeta))
             psim = log(0.125 * (1.0+xx) * (1.0+xx) * (1.0 + xx*xx)) - 2.0*atan(xx) + halfpi
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um) then
                !----- Very unstable case. -------------------------------------------------!
                psim = log(zeta * zetac_umi)                                                &
@@ -493,10 +497,10 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih = - beta_s * zeta 
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
                  + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + bcod
-         case (4) !----- CLM (2004). ------------------------------------------------------!
+         case (0,4) !----- CLM (2004). ----------------------------------------------------!
             if (zeta > zetac_sh) then
                !----- Very stable case. ---------------------------------------------------!
                psih = (1.0 - beta_vs) * log(zeta * zetac_shi)                              &
@@ -508,10 +512,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             yy   = sqrt(1.0 - gamh * zeta)
             psih = log(0.25 * (1.0+yy) * (1.0+yy))
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um) then
                !----- Very unstable case. -------------------------------------------------!
                psih = log(zeta * zetac_uhi)                                                &
@@ -552,11 +556,11 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psim8 = - beta_s8 * zeta 
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psim8 = abh918 * zeta                                                          &
                   + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta))               &
                   + bcod8
-         case (4) !----- CLM (2004) (including neglected terms). --------------------------!
+         case (0,4) !----- CLM (2004) (including neglected terms). ------------------------!
             if (zeta > zetac_sm8) then
                !----- Very stable case. ---------------------------------------------------!
                psim8 = (1.d0 - beta_vs8) * log(zeta * zetac_smi8)                          &
@@ -568,11 +572,11 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             xx   = sqrt(sqrt(1.d0 - gamm8 * zeta))
             psim8 = log(1.25d-1 * (1.d0+xx) * (1.d0+xx) * (1.d0 + xx*xx))                  &
                   - 2.d0*atan(xx) + halfpi8
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um8) then
                !----- Very unstable case. -------------------------------------------------!
                psim8 = log(zeta * zetac_umi8)                                              &
@@ -615,10 +619,10 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih8 = - beta_s8 * zeta 
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             psih8 = 1.d0 - (1.d0 + ate8 * zeta)**fbh918                                    &
                   + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta)) + bcod8
-         case (4) !----- CLM (2004). ------------------------------------------------------!
+         case (0,4) !----- CLM (2004). ----------------------------------------------------!
             if (zeta > zetac_sh8) then
                !----- Very stable case. ---------------------------------------------------!
                psih8 = (1.d0 - beta_vs8) * log(zeta * zetac_shi8)                          &
@@ -630,10 +634,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             yy    = sqrt(1.d0 - gamh8 * zeta)
             psih8 = log(2.5d-1 * (1.d0+yy) * (1.d0+yy))
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um) then
                !----- Very unstable case. -------------------------------------------------!
                psih8 = log(zeta * zetac_uhi8)                                              &
@@ -676,10 +680,10 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsimdzeta = - beta_s 
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
                                * exp(max(-38.,-dbh91 * zeta))
-         case (4) !----- CLM (2004). ------------------------------------------------------!
+         case (0,4) !----- CLM (2004). ----------------------------------------------------!
             if (zeta > zetac_sm) then
                !----- Very stable case. ---------------------------------------------------!
                dpsimdzeta = (1.0 - beta_vs) / zeta - 1.0
@@ -690,10 +694,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             xx         = sqrt(sqrt(1.0 - gamm * zeta))
             dpsimdzeta = - gamm / (xx * (1.0+xx) * (1.0 + xx*xx)) 
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um) then
                !----- Very unstable case. -------------------------------------------------!
                dpsimdzeta = (1.0 - chim * (-zeta)**onesixth) / zeta
@@ -733,11 +737,11 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta = - beta_s
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
                          + bbh91 * (1.0 - dbh91 * zeta + cbh91)                            &
                          * exp(max(-38.,-dbh91 * zeta))
-         case (4) !----- CLM (2004). ------------------------------------------------------!
+         case (0,4) !----- CLM (2004). ----------------------------------------------------!
             if (zeta > zetac_sh) then
                !----- Very stable case. ---------------------------------------------------!
                dpsihdzeta = (1.0 - beta_vs) / zeta - 1.0
@@ -748,10 +752,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             yy   = sqrt(1.0 - gamh * zeta)
             dpsihdzeta = -gamh / (yy * (1.0 + yy))
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um) then
                !----- Very unstable case. -------------------------------------------------!
                dpsihdzeta = (1.0 + chih / cbrt(zeta)) / zeta
@@ -793,11 +797,11 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsimdzeta8 = - beta_s8
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsimdzeta8 = abh918                                                           &
                         + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                         &
                         * exp(max(-3.8d1,-dbh918 * zeta))
-         case (4) !----- CLM (2004). ------------------------------------------------------!
+         case (0,4) !----- CLM (2004). ----------------------------------------------------!
             if (zeta > zetac_sm8) then
                !----- Very stable case. ---------------------------------------------------!
                dpsimdzeta8 = (1.d0 - beta_vs8) / zeta - 1.d0
@@ -808,10 +812,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             xx          = sqrt(sqrt(1.d0 - gamm8 * zeta))
             dpsimdzeta8 = - gamm8 / (xx * (1.d0+xx) * (1.d0 + xx*xx)) 
-         case (4)   !----- Modified CLM (2004). -------------------------------------------!
+         case (0,4)   !----- Modified CLM (2004). -----------------------------------------!
             if (zeta < zetac_um8) then
                !----- Very unstable case. -------------------------------------------------!
                dpsimdzeta8 = (1.d0 - chim8 * (-zeta)**onesixth8) / zeta
@@ -851,11 +855,11 @@ module canopy_air_coms
          select case (isfclyrm)
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta8 = - beta_s8
-         case (0,3) !----- Beljaars and Holtslag (1991). ----------------------------------!
+         case (3) !----- Beljaars and Holtslag (1991). ------------------------------------!
             dpsihdzeta8 = - atetf8 * (1.d0 + ate8 * zeta)**fm18                            &
                           + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                       &
                           * exp(max(-3.8d1,-dbh918 * zeta))
-         case (4) !----- CLM (2004). ------------------------------------------------------!
+         case (0,4) !----- CLM (2004). ----------------------------------------------------!
             if (zeta > zetac_sh8) then
                !----- Very stable case. ---------------------------------------------------!
                dpsihdzeta8 = (1.d0 - beta_vs8) / zeta - 1.d0
@@ -866,10 +870,10 @@ module canopy_air_coms
          end select
       else
          select case (isfclyrm)
-         case (0,2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). ---!
+         case (2,3) !----- Oncley and Dudhia (1995) and Beljaars and Holtslag (1991). -----!
             yy          = sqrt(1.d0 - gamh8 * zeta)
             dpsihdzeta8 = -gamh8 / (yy * (1.d0 + yy))
-         case (4)   !----- CLM (2004) (including neglected terms). ------------------------!
+         case (0,4)   !----- CLM (2004) (including neglected terms). ----------------------!
             if (zeta < zetac_um8) then
                !----- Very unstable case. -------------------------------------------------!
                dpsihdzeta8 = (1.d0 + chih8 / cbrt8(zeta)) / zeta
@@ -957,7 +961,7 @@ module canopy_air_coms
       ! or 4.  In these methods, there is a singularity that must be avoided.              !
       !------------------------------------------------------------------------------------!
       select case (isfclyrm)
-      case (2,4)
+      case (0,2,4)
          ribuse = min(rib, (1.0 - toler) * tprandtl / beta_s)
 
          !---------------------------------------------------------------------------------!
@@ -1339,7 +1343,7 @@ module canopy_air_coms
       ! or 4.  In these methods, there is a singularity that must be avoided.              !
       !------------------------------------------------------------------------------------!
       select case (isfclyrm)
-      case (2,4)
+      case (0,2,4)
          ribuse = min(rib, (1.d0 - toler8) * tprandtl8 / beta_s8 )
 
          !---------------------------------------------------------------------------------!

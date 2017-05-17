@@ -392,6 +392,7 @@ subroutine hybrid_timestep(cgrid)
    logical                                 :: minstep
    logical                                 :: stuck  
    logical                                 :: test_reject 
+   logical                                 :: gapstep
    integer                                 :: i         
    integer                                 :: k            ! Format counter
    integer                                 :: ksn          ! # of snow/water 
@@ -446,7 +447,12 @@ subroutine hybrid_timestep(cgrid)
 
       !----- Be sure not to overstep -----------------------------------------!
       hgoal = h
-      if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
+      if ( (x+h-tend)*(x+h-tbeg) > 0.d0 ) then
+         h       = tend - x
+         gapstep = .true.
+      else
+         gapstep = .false.
+      end if
 
       reject_step =  .false.
       hstep:   do
@@ -472,14 +478,26 @@ subroutine hybrid_timestep(cgrid)
                print*,htrunc,h
                stop
             end if
-            
-            !----- Defining next time, and checking if it really added something. !
+
+
+            !------------------------------------------------------------------------------!
+            !      We are about to shrink the time step, so this can't be considered gap   !
+            ! step.                                                                        !
+            !------------------------------------------------------------------------------!
+            gapstep = .false.
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Define new step and check whether it is sufficiently long or not. ------!
             h       = max(1.d-1*h, newh)
             hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
-            
-            cycle
+            !------------------------------------------------------------------------------!
+
+
+            cycle hstep
          end if
          
          !--------------------------------------------------------------------!
@@ -531,24 +549,35 @@ subroutine hybrid_timestep(cgrid)
          !---------------------------------------------------------------------------------!
 
          if (reject_step) then
+            !------------------------------------------------------------------------------!
+            !      We are about to shrink the time step, so this can't be considered gap   !
+            ! step.                                                                        !
+            !------------------------------------------------------------------------------!
+            gapstep = .false.
+            !------------------------------------------------------------------------------!
 
-            !----- Defining new step and checking if it can be. ---------------------------!
+
+            !----- Define new step and check whether it is sufficiently long or not. ------!
             oldh    = h
             newh    = safety * h * errmax**pshrnk
             minstep = (newh == h) .or. newh < hmin
+            !------------------------------------------------------------------------------!
 
-            !----- Defining next time, and checking if it really added something. ---------!
+
+            !----- Define next time, and check whether it is long enough to change time. --!
             h       = max(1.d-1*h, newh)
             hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             ! 3a. Here is the moment of truth... If we reached a tiny step and yet the     !
             !     model didn't converge, then we print various values to inform the user   !
             !     and abort the run.  Please, don't hate the messenger.                    !
             !------------------------------------------------------------------------------!
-
             if (minstep .or. stuck ) then 
 
                write (unit=*,fmt='(80a)')         ('=',k=1,80)
@@ -582,7 +611,6 @@ subroutine hybrid_timestep(cgrid)
             ! 3b.  Great, it worked, so now we can advance to the next step.  We just need !
             !      to do some minor adjustments before...                                  !
             !------------------------------------------------------------------------------!
-
             call adjust_veg_properties(ytemp,h,csite,ipa)
 
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
@@ -597,10 +625,15 @@ subroutine hybrid_timestep(cgrid)
 
             !------------------------------------------------------------------------------!
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
-            !    and try something faster.                                                 !
+            !    and try something faster, unless this is a "gap step" (shorter time step  !
+            !    just to close the full thermodynamic time step).                          !
             !------------------------------------------------------------------------------!
-            fgrow = min(5.d0,1.d0+sqrt(2.d0),max(safety*errmax**pgrow,1.d0))
-            hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+            if (gapstep) then
+               hnext = hgoal
+            else
+               fgrow = min(5.d0,1.d0+sqrt(2.d0),max(safety*errmax**pgrow,1.d0))
+               hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+            end if
             !------------------------------------------------------------------------------!
 
 
