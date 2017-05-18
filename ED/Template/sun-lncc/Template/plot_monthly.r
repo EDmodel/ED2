@@ -651,10 +651,15 @@ for (place in myplaces){
          cat("      + ",description," time series for all PFTs...","\n")
 
          #----- Load variable -------------------------------------------------------------#
-         thisvar = szpft[[vnam]][,ndbh+1,]
-         if (plog){
-            #----- Eliminate non-positive values in case it is a log plot. ----------------#
-            thisvar[thisvar <= 0] = NA
+         if (vnam %in% names(szpft)){
+            thisvar = szpft[[vnam]][,ndbh+1,]
+            if (plog){
+               #----- Eliminate non-positive values in case it is a log plot. -------------#
+               badlog          = ! (thisvar %>% 0)
+               thisvar[badlog] = NA
+            }#end if
+         }else{
+            thisvar = matrix(NA,ncol=npft+1,nrow=ntimes)
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -692,8 +697,8 @@ for (place in myplaces){
             ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
             if (plog){
                xylog    = "y"
-               ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-                           , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+               ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
+                           , exp(sqrt(ylimit[2]^3/ylimit[1]))
                            )#end c
             }else{
                xylog    = ""
@@ -791,8 +796,11 @@ for (place in myplaces){
    #      Time series by DBH, by PFT.                                                      #
    #---------------------------------------------------------------------------------------#
    #----- Find the PFTs to plot. ----------------------------------------------------------#
-   pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
-   pftuse  = pftuse[pftuse != (npft+1)]
+   pftmat  = apply( X      = szpft$nplant[,-(ndbh+1),-(npft+1),drop=FALSE]
+                  , MARGIN = c(1,3)
+                  , FUN    = function(x) sum(is.finite(x))
+                  )#end apply
+   pftuse  = which(apply(X=pftmat,MARGIN=2,FUN=function(x) max(x) > 1))
    for (v in sequence(ntspftdbh)){
       thistspftdbh   = tspftdbh[[v]]
       vnam           = thistspftdbh$vnam
@@ -802,13 +810,17 @@ for (place in myplaces){
       plotit         = thistspftdbh$pftdbh
       
       #----- Load variable ----------------------------------------------------------------#
-      thisvar = szpft[[vnam]]
-      if (plog){
-         xylog="y"
-         badlog = is.finite(thisvar) & thisvar <= 0
-         thisvar[badlog] = NA
+      if (vnam %in% names(szpft)){
+         thisvar = szpft[[vnam]]
+         if (plog){
+            xylog           = "y"
+            badlog          = ! (thisvar %>% 0)
+            thisvar[badlog] = NA
+         }else{
+            xylog           = ""
+         }#end if
       }else{
-         xylog=""
+         thisvar = array(NA,dim=c(ntimes,ndbh+1,npft+1))
       }#end if
       #----- Check whether the user wants to have this variable plotted. ------------------#
       if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
@@ -833,8 +845,8 @@ for (place in myplaces){
          ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
          if (plog){
             xylog    = "y"
-            ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-                        , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+            ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
+                        , exp(sqrt(ylimit[2]^3/ylimit[1]))
                         )#end c
          }else{
             xylog    = ""
@@ -1117,7 +1129,7 @@ for (place in myplaces){
             box()
             axis(side=1,at=whenplote$levels,labels=whenplote$labels,padj=whenplote$padj)
             axis(side=2,las=1)
-            title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+            title(main=letitre,xlab="Time",ylab=ley,cex.main=0.8)
             #------------------------------------------------------------------------------#
 
 
@@ -1350,7 +1362,7 @@ for (place in myplaces){
             points(x=montmont,y=obsmean ,col=lcolours[2],lwd=llwd[2],type=ltype
                   ,pch=16,cex=1.0)
             box()
-            title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+            title(main=letitre,xlab="Time",ylab=ley,cex.main=0.7)
             axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
             axis(side=2,las=1)
 
@@ -1598,7 +1610,7 @@ for (place in myplaces){
                points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
                      ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
                box()
-               title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+               title(main=letitre,xlab="Time",ylab=ley,cex.main=0.7)
                axis(side=1,at=uplot$levels,labels=uplot$labels,padj=uplot$padj)
                axis(side=2,las=1)
                #---------------------------------------------------------------------------#
@@ -1646,12 +1658,21 @@ for (place in myplaces){
 
 
          #----- Load variable -------------------------------------------------------------#
-         thisvar = lu[[vnam]]
-         if (plog){
-            #----- Eliminate non-positive values in case it is a log plot. ----------------#
-            thisvar[thisvar <= 0] = NA
+         if (vnam %in% names(lu)){
+            thisvar = lu[[vnam]]
+            if (plog){
+               xylog           = "y"
+               badlog          = ! (thisvar %>% 0)
+               thisvar[badlog] = NA
+            }else{
+               xylog           = ""
+            }#end if
+         }else{
+            thisvar = array(NA,dim=c(ntimes,nlu+1))
          }#end if
          #---------------------------------------------------------------------------------#
+
+
 
          #----- Loop over output formats. -------------------------------------------------#
          for (o in sequence(nout)){
@@ -1683,8 +1704,8 @@ for (place in myplaces){
             ylimit = pretty.xylim(u=thisvar[,sellu]          ,fracexp=0.0,is.log=plog )
             if (plog){
                xylog    = "y"
-               ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-                           , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+               ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
+                           , exp(sqrt(ylimit[2]^3/ylimit[1]))
                            )#end c
             }else{
                xylog    = ""
@@ -3384,7 +3405,7 @@ for (place in myplaces){
                barplot(height=t(thisvnam[m,,]),names.arg=dbhnames[1:ndbh],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border=grey.fg,xpd=FALSE,cex.main=cex.main,las=1)
+                      ,border=grey.fg,xpd=FALSE,cex.main=0.7,las=1)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+(1:ndbh)*(1+npftuse)
                   abline(v=xgrid,col=grid.colour,lty="solid")

@@ -2210,7 +2210,7 @@ compmodel[[n]] = list( vnam   = "nep"
                      , desc   = "Net Ecosystem Productivity"
                      , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
-                     , colour = c(green.fg,grey.fg)
+                     , colour = c(green.mg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
@@ -2229,7 +2229,7 @@ compmodel[[n]] = list( vnam   = "gpp"
                      , desc   = "Gross Primary Productivity"
                      , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
-                     , colour = c(green.fg,grey.fg)
+                     , colour = c(green.mg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
@@ -2248,7 +2248,7 @@ compmodel[[n]] = list( vnam   = "atm.co2"
                      , desc   = "Air CO2 mixing ratio"
                      , unit   = untab$umolcomol
                      , plotsd = TRUE
-                     , colour = c(green.fg,grey.fg)
+                     , colour = c(green.mg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
@@ -2286,8 +2286,8 @@ compmodel[[n]] = list( vnam   = "wflxca"
                      , desc   = "Water flux"
                      , unit   = untab$kgwom2oday
                      , plotsd = TRUE
-                     , colour = c(blue.fg,grey.fg)
-                     , errcol = c(blue.bg,grey.bg)
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
                      , angle  = c(          45,     -45)
                      , dens   = c(          40,      40)
                      , lwd    = c(         2.5,     2.5)
@@ -2343,8 +2343,8 @@ compmodel[[n]] = list( vnam   = "rlong"
                      , desc   = "Incoming longwave radiation"
                      , unit   = untab$wom2
                      , plotsd = TRUE
-                     , colour = c(blue.fg,grey.fg)
-                     , errcol = c(blue.bg,grey.bg)
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
                      , angle  = c(          45,     -45)
                      , dens   = c(          40,      40)
                      , lwd    = c(         2.5,     2.5)
@@ -2381,8 +2381,8 @@ compmodel[[n]] = list( vnam   = "atm.shv"
                      , desc   = "Air specific humidity"
                      , unit   = untab$gwokg
                      , plotsd = TRUE
-                     , colour = c(blue.fg,grey.fg)
-                     , errcol = c(blue.bg,grey.bg)
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
                      , angle  = c(          45,     -45)
                      , dens   = c(          40,      40)
                      , lwd    = c(         2.5,     2.5)
@@ -2400,8 +2400,8 @@ compmodel[[n]] = list( vnam   = "rain"
                      , desc   = "Precipitation rate"
                      , unit   = untab$mmoday
                      , plotsd = FALSE
-                     , colour = c(blue.fg,grey.fg)
-                     , errcol = c(blue.bg,grey.bg)
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
                      , angle  = c(          45,     -45)
                      , dens   = c(          40,      40)
                      , lwd    = c(         2.5,     2.5)
@@ -2419,7 +2419,7 @@ compmodel[[n]] = list( vnam   = "atm.vels"
                      , desc   = "Wind speed"
                      , unit   = untab$mos
                      , plotsd = TRUE
-                     , colour = c(indigo.fg,grey.fg)
+                     , colour = c(indigo.mg,grey.fg)
                      , errcol = c(indigo.bg,grey.bg)
                      , angle  = c(             45,     -45)
                      , dens   = c(             40,      40)
@@ -2438,7 +2438,7 @@ compmodel[[n]] = list( vnam   = "atm.prss"
                      , desc   = "Air pressure"
                      , unit   = untab$hpa
                      , plotsd = TRUE
-                     , colour = c(purple.fg,grey.fg)
+                     , colour = c(purple.mg,grey.fg)
                      , errcol = c(purple.bg,grey.bg)
                      , angle  = c(             45,     -45)
                      , dens   = c(             40,      40)
@@ -2457,7 +2457,7 @@ compmodel[[n]] = list( vnam   = "cflxca"
                      , desc   = "CO2 flux"
                      , unit   = untab$umolcom2os
                      , plotsd = TRUE
-                     , colour = c(green.fg,grey.fg)
+                     , colour = c(green.mg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
@@ -2495,7 +2495,7 @@ compmodel[[n]] = list( vnam   = "nee"
                      , desc   = "Net Ecosystem Exchange"
                      , unit   = untab$umolcom2os
                      , plotsd = TRUE
-                     , colour = c(green.fg,grey.fg)
+                     , colour = c(green.mg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
@@ -2514,7 +2514,7 @@ compmodel[[n]] = list( vnam   = "ustar"
                      , desc   = "Friction velocity"
                      , unit   = untab$mos
                      , plotsd = TRUE
-                     , colour = c(purple.fg,grey.fg)
+                     , colour = c(purple.mg,grey.fg)
                      , errcol = c(purple.bg,grey.bg)
                      , angle  = c(             45,     -45)
                      , dens   = c(             40,      40)
@@ -2533,7 +2533,7 @@ compmodel[[n]] = list( vnam   = "reco"
                      , desc   = "Ecosystem respiration"
                      , unit   = untab$kgcom2oyr
                      , plotsd = TRUE
-                     , colour = c(yellow.bg,grey.fg)
+                     , colour = c(yellow.mg,grey.fg)
                      , errcol = c(yellow.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
@@ -2571,8 +2571,8 @@ compmodel[[n]] = list( vnam   = "rshortup"
                      , desc   = "Outgoing SW Radiation"
                      , unit   = untab$wom2
                      , plotsd = TRUE
-                     , colour = c(blue.fg,grey.fg)
-                     , errcol = c(blue.bg,grey.bg)
+                     , colour = c(sky.fg,grey.fg)
+                     , errcol = c(sky.bg,grey.bg)
                      , angle  = c(          45,     -45)
                      , dens   = c(          40,      40)
                      , lwd    = c(         2.5,     2.5)
@@ -2609,7 +2609,7 @@ compmodel[[n]] = list( vnam   = "parup"
                      , desc   = "Outgoing PAR"
                      , unit   = untab$umolom2os
                      , plotsd = TRUE
-                     , colour = c(green.fg,grey.fg)
+                     , colour = c(green.mg,grey.fg)
                      , errcol = c(green.bg,grey.bg)
                      , angle  = c(               45,     -45)
                      , dens   = c(               40,      40)
@@ -2628,7 +2628,7 @@ compmodel[[n]] = list( vnam   = "rnet"
                      , desc   = "Net radiation"
                      , unit   = untab$wom2
                      , plotsd = TRUE
-                     , colour = c(yellow.bg,grey.fg)
+                     , colour = c(yellow.mg,grey.fg)
                      , errcol = c(yellow.bg,grey.bg)
                      , angle  = c(           45,     -45)
                      , dens   = c(           40,      40)
