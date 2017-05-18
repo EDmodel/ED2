@@ -182,7 +182,7 @@ default = list( run           = "unnamed"
               , klowco2       = 4000.
               , decomp.scheme = 2
               , rrffact       = 1.000
-              , growthresp    = 0.450
+              , growthresp    = 0.400
               , lwidth.grass  = 0.05
               , lwidth.bltree = 0.10
               , lwidth.nltree = 0.05

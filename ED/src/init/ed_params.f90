@@ -2394,17 +2394,9 @@ subroutine init_pft_mort_params()
    !     The following variables control the density-dependent mortality rates.            !
    !  DD = mort1 / (1 + exp(mort0 + mort2 * CB))                                           !
    !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-     if (is_tropical(ipft)) then
-        mort0(ipft) = -0.2
-        mort1(ipft) =  5.0
-        mort2(ipft) = 20.0
-     else
-        mort0(ipft) =  0.0
-        mort1(ipft) =  1.0
-        mort2(ipft) = 20.0
-     end if
-   end do
+   mort0(:) = merge(-0.5, 0.0,is_tropical(:))
+   mort1(:) = merge( 5.0, 1.0,is_tropical(:))
+   mort2(:) = merge(10.0,20.0,is_tropical(:))
    !---------------------------------------------------------------------------------------!
 
 
