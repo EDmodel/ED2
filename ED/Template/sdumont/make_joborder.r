@@ -198,7 +198,7 @@ default = list( run           = "unnamed"
               , ustmin        = 0.10
               , gamm          = 13.0
               , gamh          = 13.0
-              , tprandtl      = 0.74
+              , tprandtl      = 1.00
               , ribmax        = 0.50
               , atmco2        = 400.
               , thcrit        = -1.20
