@@ -1026,6 +1026,10 @@ subroutine fill_history_grid_p11dmean(cgrid,ipy,py_index)
                         ,'DMEAN_RK4STEP_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_available_water(ipy:ipy)                              &
                         ,'DMEAN_AVAILABLE_WATER_PY  ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_veg_displace   (ipy:ipy)                              &
+                        ,'DMEAN_VEG_DISPLACE_PY     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%dmean_rough          (ipy:ipy)                              &
+                        ,'DMEAN_ROUGH_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_can_theiv      (ipy:ipy)                              &
                         ,'DMEAN_CAN_THEIV_PY        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%dmean_can_theta      (ipy:ipy)                              &
@@ -1449,6 +1453,10 @@ subroutine fill_history_grid_p11mmean(cgrid,ipy,py_index)
                         ,'MMEAN_RK4STEP_PY          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_available_water(ipy:ipy)                              &
                         ,'MMEAN_AVAILABLE_WATER_PY  ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_veg_displace   (ipy:ipy)                              &
+                        ,'MMEAN_VEG_DISPLACE_PY     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%mmean_rough          (ipy:ipy)                              &
+                        ,'MMEAN_ROUGH_PY            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_can_theiv      (ipy:ipy)                              &
                         ,'MMEAN_CAN_THEIV_PY        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%mmean_can_theta      (ipy:ipy)                              &
@@ -2114,6 +2122,10 @@ subroutine fill_history_grid_m11(cgrid,ipy,py_index)
                         ,'QMEAN_RK4STEP_PY         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_available_water(:,ipy)                                &
                         ,'QMEAN_AVAILABLE_WATER_PY ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_veg_displace   (:,ipy)                                &
+                        ,'QMEAN_VEG_DISPLACE_PY    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(cgrid%qmean_rough          (:,ipy)                                &
+                        ,'QMEAN_ROUGH_PY           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_can_theiv      (:,ipy)                                &
                         ,'QMEAN_CAN_THEIV_PY       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(cgrid%qmean_can_theta      (:,ipy)                                &
@@ -4233,6 +4245,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                         ,'DMEAN_RK4STEP_PA          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_available_water                                       &
                         ,'DMEAN_AVAILABLE_WATER_PA  ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%dmean_veg_displace                                          &
+                        ,'DMEAN_VEG_DISPLACE_PA     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%dmean_rough                                                 &
+                        ,'DMEAN_ROUGH_PA            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_can_theiv                                             &
                         ,'DMEAN_CAN_THEIV_PA        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%dmean_can_theta                                             &
@@ -4356,6 +4372,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                         ,'MMEAN_RK4STEP_PA          ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_available_water                                       &
                         ,'MMEAN_AVAILABLE_WATER_PA  ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%mmean_veg_displace                                          &
+                        ,'MMEAN_VEG_DISPLACE_PA     ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%mmean_rough                                                 &
+                        ,'MMEAN_ROUGH_PA            ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_can_theiv                                             &
                         ,'MMEAN_CAN_THEIV_PA        ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%mmean_can_theta                                             &
@@ -4527,6 +4547,10 @@ subroutine fill_history_site(csite,sipa_index,npatches_global,is_burnt)
                         ,'QMEAN_RK4STEP_PA         ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%qmean_available_water                                       &
                         ,'QMEAN_AVAILABLE_WATER_PA ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%qmean_veg_displace                                          &
+                        ,'QMEAN_VEG_DISPLACE_PA    ',dsetrank,iparallel,.false.,foundvar)
+      call hdf_getslab_r(csite%qmean_rough                                                 &
+                        ,'QMEAN_ROUGH_PA           ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%qmean_can_theiv                                             &
                         ,'QMEAN_CAN_THEIV_PA       ',dsetrank,iparallel,.false.,foundvar)
       call hdf_getslab_r(csite%qmean_can_theta                                             &

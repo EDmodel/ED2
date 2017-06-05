@@ -570,12 +570,15 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
                              , nzg                  ! ! intent(in)
    use soil_coms      , only : slz                  ! ! intent(in)
    use canopy_air_coms, only : veg_height_min       & ! intent(in)
-                             , minimum_canopy_depth ! ! intent(in)
+                             , minimum_canopy_depth & ! intent(in)
+                             , ustmin               ! ! intent(in)
    use ed_misc_coms   , only : writing_long         & ! intent(in)
                              , writing_eorq         & ! intent(in)
                              , writing_dcyc         & ! intent(in)
                              , ied_init_mode        & ! intent(in)
-                             , dtlsm                ! ! intent(in)
+                             , integration_scheme   & ! intent(in)
+                             , dtlsm                & ! intent(in)
+                             , dteuler              ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)   , target     :: csite
@@ -591,14 +594,26 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
 
 
    !----- Current and previous time steps.  They cannot be set to zero... -----------------!
-   csite%htry (ipaa:ipaz) = dtlsm
-   csite%hprev(ipaa:ipaz) = 0.10 * dtlsm
+   select case (integration_scheme)
+   case (0)
+      csite%htry (ipaa:ipaz) = dteuler
+      csite%hprev(ipaa:ipaz) = 0.50 * dteuler
+   case default
+      csite%htry (ipaa:ipaz) = dtlsm
+      csite%hprev(ipaa:ipaz) = 0.10 * dtlsm
+   end select
    !---------------------------------------------------------------------------------------!
 
 
    !------ Set water table to the deepest soil layer. -------------------------------------!
    csite%watertable(ipaa:ipaz) = slz(lsl)
    !---------------------------------------------------------------------------------------!
+
+
+   !------ Previous u* is used to find z0m:z0h ratio, so we use ustmin instead. -----------!
+   csite%ustar     (ipaa:ipaz) = ustmin
+   !---------------------------------------------------------------------------------------!
+
 
 
    !------ Initialise hydrology variables. ------------------------------------------------!
@@ -730,7 +745,6 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%total_plant_nitrogen_uptake     (ipaa:ipaz) = 0.0
    csite%mineralized_N_loss              (ipaa:ipaz) = 0.0
    csite%mineralized_N_input             (ipaa:ipaz) = 0.0
-   csite%ustar                           (ipaa:ipaz) = 0.0
    csite%tstar                           (ipaa:ipaz) = 0.0
    csite%qstar                           (ipaa:ipaz) = 0.0
    csite%cstar                           (ipaa:ipaz) = 0.0
@@ -774,6 +788,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    csite%fmean_nep                       (ipaa:ipaz) = 0.0
    csite%fmean_rk4step                   (ipaa:ipaz) = 0.0
    csite%fmean_available_water           (ipaa:ipaz) = 0.0
+   csite%fmean_veg_displace              (ipaa:ipaz) = 0.0
+   csite%fmean_rough                     (ipaa:ipaz) = 0.0
    csite%fmean_can_theiv                 (ipaa:ipaz) = 0.0
    csite%fmean_can_theta                 (ipaa:ipaz) = 0.0
    csite%fmean_can_vpdef                 (ipaa:ipaz) = 0.0
@@ -845,6 +861,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%dmean_nep                    (ipaa:ipaz) = 0.0
       csite%dmean_rk4step                (ipaa:ipaz) = 0.0
       csite%dmean_available_water        (ipaa:ipaz) = 0.0
+      csite%dmean_veg_displace           (ipaa:ipaz) = 0.0
+      csite%dmean_rough                  (ipaa:ipaz) = 0.0
       csite%dmean_can_theiv              (ipaa:ipaz) = 0.0
       csite%dmean_can_theta              (ipaa:ipaz) = 0.0
       csite%dmean_can_vpdef              (ipaa:ipaz) = 0.0
@@ -912,6 +930,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%mmean_nep                    (ipaa:ipaz) = 0.0
       csite%mmean_rk4step                (ipaa:ipaz) = 0.0
       csite%mmean_available_water        (ipaa:ipaz) = 0.0
+      csite%mmean_veg_displace           (ipaa:ipaz) = 0.0
+      csite%mmean_rough                  (ipaa:ipaz) = 0.0
       csite%mmean_can_theiv              (ipaa:ipaz) = 0.0
       csite%mmean_can_theta              (ipaa:ipaz) = 0.0
       csite%mmean_can_vpdef              (ipaa:ipaz) = 0.0
@@ -1006,6 +1026,8 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
       csite%qmean_nep                  (:,ipaa:ipaz) = 0.0
       csite%qmean_rk4step              (:,ipaa:ipaz) = 0.0
       csite%qmean_available_water      (:,ipaa:ipaz) = 0.0
+      csite%qmean_veg_displace         (:,ipaa:ipaz) = 0.0
+      csite%qmean_rough                (:,ipaa:ipaz) = 0.0
       csite%qmean_can_theiv            (:,ipaa:ipaz) = 0.0
       csite%qmean_can_theta            (:,ipaa:ipaz) = 0.0
       csite%qmean_can_vpdef            (:,ipaa:ipaz) = 0.0
@@ -1540,6 +1562,8 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%fmean_nep                  (ipy) = 0.0
       cgrid%fmean_rk4step              (ipy) = 0.0
       cgrid%fmean_available_water      (ipy) = 0.0
+      cgrid%fmean_veg_displace         (ipy) = 0.0
+      cgrid%fmean_rough                (ipy) = 0.0
       cgrid%fmean_can_theiv            (ipy) = 0.0
       cgrid%fmean_can_theta            (ipy) = 0.0
       cgrid%fmean_can_vpdef            (ipy) = 0.0
@@ -1692,6 +1716,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%dmean_nep                  (ipy) = 0.0
          cgrid%dmean_rk4step              (ipy) = 0.0
          cgrid%dmean_available_water      (ipy) = 0.0
+         cgrid%dmean_veg_displace         (ipy) = 0.0
+         cgrid%dmean_rough                (ipy) = 0.0
          cgrid%dmean_can_theiv            (ipy) = 0.0
          cgrid%dmean_can_theta            (ipy) = 0.0
          cgrid%dmean_can_vpdef            (ipy) = 0.0
@@ -1831,6 +1857,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%mmean_nep                  (ipy) = 0.0
          cgrid%mmean_rk4step              (ipy) = 0.0
          cgrid%mmean_available_water      (ipy) = 0.0
+         cgrid%mmean_veg_displace         (ipy) = 0.0
+         cgrid%mmean_rough                (ipy) = 0.0
          cgrid%mmean_can_theiv            (ipy) = 0.0
          cgrid%mmean_can_theta            (ipy) = 0.0
          cgrid%mmean_can_vpdef            (ipy) = 0.0
@@ -2024,6 +2052,8 @@ subroutine init_ed_poly_vars(cgrid)
          cgrid%qmean_nep                (:,ipy) = 0.0
          cgrid%qmean_rk4step            (:,ipy) = 0.0
          cgrid%qmean_available_water    (:,ipy) = 0.0
+         cgrid%qmean_veg_displace       (:,ipy) = 0.0
+         cgrid%qmean_rough              (:,ipy) = 0.0
          cgrid%qmean_can_theiv          (:,ipy) = 0.0
          cgrid%qmean_can_theta          (:,ipy) = 0.0
          cgrid%qmean_can_vpdef          (:,ipy) = 0.0

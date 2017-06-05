@@ -1170,6 +1170,7 @@ subroutine ed_opspec_misc
                                     , ivegt_dynamics               & ! intent(in)
                                     , ibigleaf                     & ! intent(in)
                                     , integration_scheme           & ! intent(in)
+                                    , nsub_euler                   & ! intent(in)
                                     , iallom                       & ! intent(in)
                                     , igrass                       & ! intent(in)
                                     , growth_resp_scheme           & ! intent(in)
@@ -1654,7 +1655,8 @@ end do
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
-      
+      !------------------------------------------------------------------------------------!
+
       !------------------------------------------------------------------------------------!
       !   Check the Runge-Kutta tolerance.                                                 !
       !------------------------------------------------------------------------------------!
@@ -1665,6 +1667,24 @@ end do
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !   In case we are using forward Euler, check whether the number of substeps makes   !
+      ! sense.                                                                             !
+      !------------------------------------------------------------------------------------!
+      select case(integration_scheme)
+      case (0)
+         if (nsub_euler < 1 .or. nsub_euler > 1000) then
+            write (reason,fmt='(a,1x,i4,a)')                                               &
+                      'Invalid NSUB_EULER, it must be between 1 and 1000. Yours is set to' &
+                      ,nsub_euler,'...'
+            call opspec_fatal(reason,'opspec_misc')
+            ifaterr = ifaterr +1
+         end if
+      end select
+      !------------------------------------------------------------------------------------!
+
    case default
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                'Invalid INTEGRATION_SCHEME, it must be 0, 1, 2, or 3. Yours is set to'     &

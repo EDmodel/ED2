@@ -446,13 +446,9 @@ subroutine hybrid_timestep(cgrid)
    timesteploop: do i=1,maxstp
 
       !----- Be sure not to overstep -----------------------------------------!
-      hgoal = h
-      if ( (x+h-tend)*(x+h-tbeg) > 0.d0 ) then
-         h       = tend - x
-         gapstep = .true.
-      else
-         gapstep = .false.
-      end if
+      hgoal   = h
+      gapstep = (x+h-tend)*(x+h-tbeg) > 0.d0
+      if (gapstep) h = tend - x
 
       reject_step =  .false.
       hstep:   do

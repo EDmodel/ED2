@@ -2193,6 +2193,19 @@ $ED2_INFO
 
 
    !---------------------------------------------------------------------------------------!
+   ! NSUB_EULER -- The number of sub-steps in case we are running forward Euler.  The      !
+   !               maximum time step will then be DTLSM / NSUB_EULER.  This is needed to   !
+   !               make sure we don't take too long steps with Euler, as we cannot         !
+   !               estimate errors using first-order schemes.  This number is ignored      !
+   !               except when INTEGRATION_SCHEME is 0.                                    !
+   !---------------------------------------------------------------------------------------!
+   NSUB_EULER = 75,
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! RK4_TOLERANCE -- This is the relative tolerance for Runge-Kutta or Heun's             !
    !                  integration.  Larger numbers will make runs go faster, at the        !
    !                  expense of being less accurate.  Currently the valid range is        !

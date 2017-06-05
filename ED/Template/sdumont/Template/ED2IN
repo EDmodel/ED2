@@ -660,7 +660,20 @@ $ED_NL
    !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
    !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
-   NL%INTEGRATION_SCHEME = 1
+   NL%INTEGRATION_SCHEME = myintegscheme
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! NSUB_EULER -- The number of sub-steps in case we are running forward Euler.  The      !
+   !               maximum time step will then be DTLSM / NSUB_EULER.  This is needed to   !
+   !               make sure we don't take too long steps with Euler, as we cannot         !
+   !               estimate errors using first-order schemes.  This number is ignored      !
+   !               except when INTEGRATION_SCHEME is 0.                                    !
+   !---------------------------------------------------------------------------------------!
+   NL%NSUB_EULER = mynsubeuler
    !---------------------------------------------------------------------------------------!
 
 

@@ -1906,6 +1906,26 @@ theme[[n]] = list( vnam      = c(         "workload",                "specwork")
                  , ymean.lim = c(NA,NA)
                  )#end list
 n          = n + 1
+theme[[n]] = list( vnam      = c(                "rk4step")
+                 , desc      = c("Thermodynamic time step")
+                 , colour    = c(            "deepskyblue")
+                 , lwd       = c(                      2.5)
+                 , type      = "o"
+                 , plog      = TRUE
+                 , prefix    = "rk4step"
+                 , title     = "Thermodynamic time step"
+                 , unit      = untab$s
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = TRUE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
 theme[[n]] = list( vnam      = c(          "reco",    "plant.resp",      "het.resp"
                                 ,     "leaf.resp",     "stem.resp",     "root.resp")
                  , desc      = c(     "Ecosystem",   "Autotrophic", "Heterotrophic"

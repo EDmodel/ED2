@@ -268,25 +268,25 @@ subroutine read_ednl(iunit,filename)
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,ivegt_dynamics,ibigleaf  &
-                       ,integration_scheme,rk4_tolerance,ibranch_thermo,iphysiol,iallom    &
-                       ,igrass,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme        &
-                       ,crown_mod,icanrad,ihrzrad,ltrans_vis,ltrans_nir,lreflect_vis       &
-                       ,lreflect_nir,orient_tree,orient_grass,clump_tree,clump_grass       &
-                       ,decomp_scheme,h2o_plant_lim,iddmort_scheme,ddmort_const,vmfact_c3  &
-                       ,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4,bphoto_blc3            &
-                       ,bphoto_nlc3,bphoto_c4,kw_grass,kw_tree,gamma_c3,gamma_c4,d0_grass  &
-                       ,d0_tree,alpha_c3,alpha_c4,klowco2in,rrffact,growthresp             &
-                       ,lwidth_grass,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4,thetacrit   &
-                       ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
-                       ,fire_parameter,sm_fire,ianth_disturb,sl_scale,sl_yr_first,sl_nyrs  &
-                       ,sl_pft,sl_prob_harvest,sl_mindbh_harvest,sl_biomass_harvest        &
-                       ,sl_skid_rel_area,sl_skid_s_gtharv,sl_skid_s_ltharv                 &
-                       ,sl_felling_s_ltharv,cl_fseeds_harvest,cl_fstorage_harvest          &
-                       ,cl_fleaf_harvest,icanturb,include_these_pft,pasture_stock          &
-                       ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
-                       ,min_patch_area,treefall_disturbance_rate,time2canopy,iprintpolys   &
-                       ,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1,iphenysf     &
-                       ,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+                       ,integration_scheme,nsub_euler,rk4_tolerance,ibranch_thermo         &
+                       ,iphysiol,iallom,igrass,iphen_scheme,radint,radslp,repro_scheme     &
+                       ,lapse_scheme,crown_mod,icanrad,ihrzrad,ltrans_vis,ltrans_nir       &
+                       ,lreflect_vis,lreflect_nir,orient_tree,orient_grass,clump_tree      &
+                       ,clump_grass,decomp_scheme,h2o_plant_lim,iddmort_scheme             &
+                       ,ddmort_const,vmfact_c3,vmfact_c4,mphoto_trc3,mphoto_tec3,mphoto_c4 &
+                       ,bphoto_blc3,bphoto_nlc3,bphoto_c4,kw_grass,kw_tree,gamma_c3        &
+                       ,gamma_c4,d0_grass,d0_tree,alpha_c3,alpha_c4,klowco2in,rrffact      &
+                       ,growthresp,lwidth_grass,lwidth_bltree,lwidth_nltree,q10_c3,q10_c4  &
+                       ,thetacrit,quantum_efficiency_t,n_plant_lim,n_decomp_lim            &
+                       ,include_fire,fire_parameter,sm_fire,ianth_disturb,sl_scale         &
+                       ,sl_yr_first,sl_nyrs,sl_pft,sl_prob_harvest,sl_mindbh_harvest       &
+                       ,sl_biomass_harvest,sl_skid_rel_area,sl_skid_s_gtharv               &
+                       ,sl_skid_s_ltharv,sl_felling_s_ltharv,cl_fseeds_harvest             &
+                       ,cl_fstorage_harvest,cl_fleaf_harvest,icanturb,include_these_pft    &
+                       ,pasture_stock,agri_stock,plantation_stock,pft_1st_check,maxpatch   &
+                       ,maxcohort,min_patch_area,treefall_disturbance_rate,time2canopy     &
+                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1  &
+                       ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path

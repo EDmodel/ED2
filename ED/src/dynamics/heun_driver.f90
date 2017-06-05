@@ -456,13 +456,9 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
                     ,integration_buff(ibuff)%yscal,cpatch)
 
       !----- Be sure not to overstep ------------------------------------------------------!
-      hgoal = h
-      if ( (x+h-tend)*(x+h-tbeg) > 0.d0 ) then
-         h       = tend - x
-         gapstep = .true.
-      else
-         gapstep = .false.
-      end if
+      hgoal   = h
+      gapstep = (x+h-tend)*(x+h-tbeg) > 0.d0
+      if (gapstep) h = tend -x
       !------------------------------------------------------------------------------------!
 
 

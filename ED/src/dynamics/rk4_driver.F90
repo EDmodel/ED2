@@ -1383,24 +1383,28 @@ module rk4_driver
       ! we find the averaged value after we normalise the average of the prognostic        !
       ! variables.  Same thing for aggregated variables at the patch level.                !
       !------------------------------------------------------------------------------------!
-      csite%fmean_can_theiv  (ipa) = csite%fmean_can_theiv  (ipa)                          &
-                                   + csite%can_theiv        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_theta  (ipa) = csite%fmean_can_theta  (ipa)                          &
-                                   + csite%can_theta        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_vpdef  (ipa) = csite%fmean_can_vpdef  (ipa)                          &
-                                   + csite%can_vpdef        (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_shv    (ipa) = csite%fmean_can_shv    (ipa)                          &
-                                   + csite%can_shv          (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_co2    (ipa) = csite%fmean_can_co2    (ipa)                          &
-                                   + csite%can_co2          (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_prss   (ipa) = csite%fmean_can_prss   (ipa)                          &
-                                   + csite%can_prss         (ipa) * dtlsm_o_frqsum
-      csite%fmean_gnd_temp   (ipa) = csite%fmean_gnd_temp   (ipa)                          &
-                                   + csite%ground_temp      (ipa) * dtlsm_o_frqsum
-      csite%fmean_gnd_shv    (ipa) = csite%fmean_gnd_shv    (ipa)                          &
-                                   + csite%ground_shv       (ipa) * dtlsm_o_frqsum
-      csite%fmean_can_ggnd   (ipa) = csite%fmean_can_ggnd   (ipa)                          &
-                                   + csite%ggnet            (ipa) * dtlsm_o_frqsum
+      csite%fmean_veg_displace(ipa) = csite%fmean_veg_displace(ipa)                        &
+                                    + csite%veg_displace      (ipa) * dtlsm_o_frqsum
+      csite%fmean_rough       (ipa) = csite%fmean_rough       (ipa)                        &
+                                    + csite%rough             (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_theiv   (ipa) = csite%fmean_can_theiv   (ipa)                        &
+                                    + csite%can_theiv         (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_theta   (ipa) = csite%fmean_can_theta   (ipa)                        &
+                                    + csite%can_theta         (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_vpdef   (ipa) = csite%fmean_can_vpdef   (ipa)                        &
+                                    + csite%can_vpdef         (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_shv     (ipa) = csite%fmean_can_shv     (ipa)                        &
+                                    + csite%can_shv           (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_co2     (ipa) = csite%fmean_can_co2     (ipa)                        &
+                                    + csite%can_co2           (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_prss    (ipa) = csite%fmean_can_prss    (ipa)                        &
+                                    + csite%can_prss          (ipa) * dtlsm_o_frqsum
+      csite%fmean_gnd_temp    (ipa) = csite%fmean_gnd_temp    (ipa)                        &
+                                    + csite%ground_temp       (ipa) * dtlsm_o_frqsum
+      csite%fmean_gnd_shv     (ipa) = csite%fmean_gnd_shv     (ipa)                        &
+                                    + csite%ground_shv        (ipa) * dtlsm_o_frqsum
+      csite%fmean_can_ggnd    (ipa) = csite%fmean_can_ggnd    (ipa)                        &
+                                    + csite%ggnet             (ipa) * dtlsm_o_frqsum
       !------------------------------------------------------------------------------------!
       !       Snow/pounding layers.  We keep track of the total, not individual layers.    !
       ! Energy will be integrated as an extensive variable, we will convert it by the      !

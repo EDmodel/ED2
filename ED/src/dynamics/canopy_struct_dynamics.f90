@@ -329,10 +329,11 @@ module canopy_struct_dynamics
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
-                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
-                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
-                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),csite%can_temp(ipa),cmet%geoht                   &
+                      ,csite%veg_displace(ipa),cmet%atm_ustar,cmet%vels,csite%rough(ipa)   &
+                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -411,10 +412,11 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
-                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
-                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
-                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),csite%can_temp(ipa),cmet%geoht                   &
+                      ,csite%veg_displace(ipa),cmet%atm_ustar,cmet%vels,csite%rough(ipa)   &
+                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -617,10 +619,11 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
-                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
-                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
-                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),csite%can_temp(ipa),cmet%geoht                   &
+                      ,csite%veg_displace(ipa),cmet%atm_ustar,cmet%vels,csite%rough(ipa)   &
+                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -1031,10 +1034,11 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,atm_enthalpy,cmet%atm_shv,cmet%atm_co2               &
                       ,csite%can_theta(ipa),can_enthalpy,csite%can_shv(ipa)                &
-                      ,csite%can_co2(ipa),cmet%geoht,csite%veg_displace(ipa)               &
-                      ,cmet%atm_ustar,cmet%vels,csite%rough(ipa),csite%ustar(ipa)          &
-                      ,csite%tstar(ipa),estar,csite%qstar(ipa),csite%cstar(ipa)            &
-                      ,csite%zeta(ipa),csite%ribulk(ipa),csite%ggbare(ipa))
+                      ,csite%can_co2(ipa),csite%can_temp(ipa),cmet%geoht                   &
+                      ,csite%veg_displace(ipa),cmet%atm_ustar,cmet%vels,csite%rough(ipa)   &
+                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -1610,11 +1614,12 @@ module canopy_struct_dynamics
          initp%veg_displace = vh2dh8 * initp%rough / vh2vr8
          
          !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
-         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv               &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
-                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,initp%can_temp,rk4site%geoht,initp%veg_displace      &
+                       ,rk4site%atm_ustar,initp%vels,initp%rough,initp%ustar,initp%tstar   &
+                       ,initp%estar,initp%qstar,initp%cstar,initp%zeta,initp%ribulk        &
+                       ,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -1684,11 +1689,12 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv               &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
-                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,initp%can_temp,rk4site%geoht,initp%veg_displace      &
+                       ,rk4site%atm_ustar,initp%vels,initp%rough,initp%ustar,initp%tstar   &
+                       ,initp%estar,initp%qstar,initp%cstar,initp%zeta,initp%ribulk        &
+                       ,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -1891,11 +1897,12 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv               &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
-                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,initp%can_temp,rk4site%geoht,initp%veg_displace      &
+                       ,rk4site%atm_ustar,initp%vels,initp%rough,initp%ustar,initp%tstar   &
+                       ,initp%estar,initp%qstar,initp%cstar,initp%zeta,initp%ribulk        &
+                       ,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -2305,11 +2312,12 @@ module canopy_struct_dynamics
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
-         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv             &
+         call ed_stars8(rk4site%atm_theta,initp%atm_enthalpy,rk4site%atm_shv               &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy,initp%can_shv  &
-                       ,initp%can_co2,rk4site%geoht,initp%veg_displace,rk4site%atm_ustar   &
-                       ,initp%vels,initp%rough,initp%ustar,initp%tstar,initp%estar       &
-                       ,initp%qstar,initp%cstar,initp%zeta,initp%ribulk,initp%ggbare)
+                       ,initp%can_co2,initp%can_temp,rk4site%geoht,initp%veg_displace      &
+                       ,rk4site%atm_ustar,initp%vels,initp%rough,initp%ustar,initp%tstar   &
+                       ,initp%estar,initp%qstar,initp%cstar,initp%zeta,initp%ribulk        &
+                       ,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
 
@@ -2492,10 +2500,10 @@ module canopy_struct_dynamics
             ! greater than zcan.                                                           !
             !------------------------------------------------------------------------------!
             do k=zcan+1,zels
-               canstr(ibuff)%windlyr8(k) = &
-                     reduced_wind8(initp%ustar,initp%zeta,initp%ribulk             &
-                     ,rk4site%geoht,initp%veg_displace,zzmid8(k)      &
-                     ,initp%rough)
+               canstr(ibuff)%windlyr8(k) =  reduced_wind8(initp%ustar,initp%zeta           &
+                                                         ,initp%ribulk,rk4site%geoht       &
+                                                         ,initp%veg_displace,zzmid8(k)     &
+                                                         ,initp%rough)
             end do
             !------------------------------------------------------------------------------!
 
@@ -2686,15 +2694,19 @@ module canopy_struct_dynamics
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    ! CLM04. OLESON, K. W., et al.; Technical description of the community land model (CLM) !
    !           NCAR Technical Note NCAR/TN-461+STR, Boulder, CO, May 2004.                 !
-   !                                                                                       !
+   ! ZD98. ZENG, X.; DICKINSON, R.E.; Effect of surface sublayer on surface skin           !
+   !           temperature and fluxes. J. Climate, 11, 537-550, Apr 1998.                  !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,enthalpy_atm,shv_atm,co2_atm,theta_can,enthalpy_can       &
-                      ,shv_can,co2_can,zref,dheight,atm_ustar,uref,rough,ustar,tstar,estar &
-                      ,qstar,cstar,zeta,rib,ggbare)
+                      ,shv_can,co2_can,temp_can,zref,dheight,atm_ustar,uref,rough,ustar    &
+                      ,tstar,estar,qstar,cstar,zeta,rib,ggbare)
       use consts_coms     , only : grav            & ! intent(in)
                                  , vonk            & ! intent(in)
                                  , epim1           & ! intent(in)
-                                 , halfpi          ! ! intent(in)
+                                 , halfpi          & ! intent(in)
+                                 , t00             & ! intent(in)
+                                 , kin_visc0       & ! intent(in)
+                                 , dkin_visc       ! ! intent(in)
       use canopy_air_coms , only : isfclyrm        & ! intent(in)
                                  , ustmin          & ! intent(in)
                                  , bl79            & ! intent(in)
@@ -2703,8 +2715,9 @@ module canopy_struct_dynamics
                                  , dl79            & ! intent(in)
                                  , ribmax          & ! intent(in)
                                  , tprandtl        & ! intent(in)
-                                 , z0moz0h         & ! intent(in)
-                                 , z0hoz0m         & ! intent(in)
+                                 , zd98_a          & ! intent(in)
+                                 , zd98_b          & ! intent(in)
+                                 , zd98_emax       & ! intent(in)
                                  , psim            & ! function
                                  , psih            & ! function
                                  , zoobukhov       & ! function
@@ -2712,63 +2725,76 @@ module canopy_struct_dynamics
       use rk4_coms        , only : rk4_tolerance   ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=4), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
-      real(kind=4), intent(in)  :: enthalpy_atm ! Above can. air spec. enthalpy [ J/kg_air]
-      real(kind=4), intent(in)  :: shv_atm      ! Above can. vapour spec. hum.  [kg/kg_air]
-      real(kind=4), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ µmol/mol]
-      real(kind=4), intent(in)  :: theta_can    ! Canopy air pot. temperature   [        K]
-      real(kind=4), intent(in)  :: enthalpy_can ! Canopy air specific enthalpy  [ J/kg_air]
-      real(kind=4), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.  [kg/kg_air]
-      real(kind=4), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
-      real(kind=4), intent(in)  :: zref         ! Height at reference point     [        m]
-      real(kind=4), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
-      real(kind=4), intent(in)  :: atm_ustar    ! prescribed u*                 [      m/s]
-      real(kind=4), intent(in)  :: uref         ! Wind speed at reference hgt.  [      m/s]
-      real(kind=4), intent(in)  :: rough        ! Roughness                     [        m]
-      real(kind=4), intent(out) :: ustar        ! U*, friction velocity         [      m/s]
-      real(kind=4), intent(out) :: qstar        ! Specific humidity turb. scale [kg/kg_air]
-      real(kind=4), intent(out) :: tstar        ! Temperature turbulence scale  [        K]
-      real(kind=4), intent(out) :: estar        ! Spec. enthalpy turb. scale    [ J/kg_air]
-      real(kind=4), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ µmol/mol]
-      real(kind=4), intent(out) :: zeta         ! z/(Obukhov length).           [    -----]
-      real(kind=4), intent(out) :: rib          ! Bulk richardson number.       [    -----]
-      real(kind=4), intent(out) :: ggbare       ! Ground conductance            [      m/s]
+      real(kind=4), intent(in)    :: theta_atm    ! Free air pot. temp.         [        K]
+      real(kind=4), intent(in)    :: enthalpy_atm ! Free air spec. enthalpy     [ J/kg_air]
+      real(kind=4), intent(in)    :: shv_atm      ! Free air vapour spec. hum.  [kg/kg_air]
+      real(kind=4), intent(in)    :: co2_atm      ! CO2 mixing ratio            [ µmol/mol]
+      real(kind=4), intent(in)    :: theta_can    ! CAS pot. temperature        [        K]
+      real(kind=4), intent(in)    :: enthalpy_can ! CAS specific enthalpy       [ J/kg_air]
+      real(kind=4), intent(in)    :: shv_can      ! CAS vapour spec. hum.       [kg/kg_air]
+      real(kind=4), intent(in)    :: co2_can      ! CAS CO2 mixing ratio        [ µmol/mol]
+      real(kind=4), intent(in)    :: temp_can     ! CAS temperature             [        K]
+      real(kind=4), intent(in)    :: zref         ! Height at reference point   [        m]
+      real(kind=4), intent(in)    :: dheight      ! Zero-plane displace. hgt.   [        m]
+      real(kind=4), intent(in)    :: atm_ustar    ! prescribed u*               [      m/s]
+      real(kind=4), intent(in)    :: uref         ! Wind speed at ref. hgt.     [      m/s]
+      real(kind=4), intent(in)    :: rough        ! Roughness                   [        m]
+      real(kind=4), intent(inout) :: ustar        ! U*, friction velocity       [      m/s]
+      real(kind=4), intent(out)   :: qstar        ! Spec. humidity turb. scale  [kg/kg_air]
+      real(kind=4), intent(out)   :: tstar        ! Temp. turbulence scale      [        K]
+      real(kind=4), intent(out)   :: estar        ! Spec. enthalpy turb. scale  [ J/kg_air]
+      real(kind=4), intent(out)   :: cstar        ! CO2 mix. ratio turb. scale  [ µmol/mol]
+      real(kind=4), intent(out)   :: zeta         ! z/(Obukhov length).         [    -----]
+      real(kind=4), intent(out)   :: rib          ! Bulk richardson number.     [    -----]
+      real(kind=4), intent(out)   :: ggbare       ! Ground conductance          [      m/s]
       !----- Local variables. -------------------------------------------------------------!
-      logical                   :: stable       ! Stable state                  [      T|F]
-      real(kind=4)              :: zoz0m        ! zref/rough(momentum)          [    -----]
-      real(kind=4)              :: lnzoz0m      ! ln[zref/rough(momentum)]      [    -----]
-      real(kind=4)              :: zoz0h        ! zref/rough(heat)              [    -----]
-      real(kind=4)              :: lnzoz0h      ! ln[zref/rough(heat)]          [    -----]
-      real(kind=4)              :: c3           ! aux. coefficient              [    -----]
-      real(kind=4)              :: uuse         ! Wind for when (Rib > Ribmax)  [      m/s]
-      real(kind=4)              :: kuoustar     ! k * u / u*
+      logical                     :: stable       ! Stable state                [      T|F]
+      real(kind=4)                :: kin_visc     ! Kinematic viscosity         [     m2/s]
+      real(kind=4)                :: z0hoz0m      ! z0h:z0m ratio               [    -----]
+      real(kind=4)                :: z0moz0h      ! z0m:z0h ratio               [    -----]
+      real(kind=4)                :: zoz0m        ! zref/rough(momentum)        [    -----]
+      real(kind=4)                :: lnzoz0m      ! ln[zref/rough(momentum)]    [    -----]
+      real(kind=4)                :: zoz0h        ! zref/rough(heat)            [    -----]
+      real(kind=4)                :: lnzoz0h      ! ln[zref/rough(heat)]        [    -----]
+      real(kind=4)                :: c3           ! aux. coefficient            [    -----]
+      real(kind=4)                :: uuse         ! Wind when (Rib > Ribmax)    [      m/s]
+      real(kind=4)                :: kuoustar     ! k * u / u*
       !----- Local variables, used by L79. ------------------------------------------------!
-      real(kind=4)              :: a2           ! Drag coefficient in neutral conditions
-      real(kind=4)              :: c1           ! a2 * vels
-      real(kind=4)              :: fm           ! Stability parameter for momentum
-      real(kind=4)              :: fh           ! Stability parameter for heat
-      real(kind=4)              :: c2           ! Part of the c coefficient common
-                                                !      to momentum & heat.
-      real(kind=4)              :: cm           ! c times |Rib|^1/2 for momentum.
-      real(kind=4)              :: ch           ! c times |Rib|^1/2 for heat.
-      real(kind=4)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
+      real(kind=4)                :: a2           ! Drag coefficient in neutral conditions
+      real(kind=4)                :: c1           ! a2 * vels
+      real(kind=4)                :: fm           ! Stability parameter for momentum
+      real(kind=4)                :: fh           ! Stability parameter for heat
+      real(kind=4)                :: c2           ! Part of the c coefficient common
+                                                  !      to momentum & heat.
+      real(kind=4)                :: cm           ! c times |Rib|^1/2 for momentum.
+      real(kind=4)                :: ch           ! c times |Rib|^1/2 for heat.
+      real(kind=4)                :: ee           ! (z/z0)^1/3 -1. for eqn. 20
       !----- Local variables, used by other schemes. --------------------------------------!
-      real(kind=4)              :: zstar        ! height above displacement
-      real(kind=4)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
-      real(kind=4)              :: zeta0h       ! roughness(heat)/(Obukhov length).
-      real(kind=4)              :: utotal       ! Total wind (actual + convective)
-      real(kind=4)              :: uconv        ! Convective velocity
-      real(kind=4)              :: uconv_prev   ! Previous convective velocity
-      real(kind=4)              :: change       ! Difference in convective velocity
-      integer           :: icnt         ! Iteration counter
+      real(kind=4)                :: zstar        ! height above displacement
+      real(kind=4)                :: zeta0m       ! roughness(momentum)/(Obukhov length).
+      real(kind=4)                :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real(kind=4)                :: utotal       ! Total wind (actual + convective)
+      real(kind=4)                :: uconv        ! Convective velocity
+      real(kind=4)                :: uconv_prev   ! Previous convective velocity
+      real(kind=4)                :: change       ! Difference in convective velocity
+      integer                     :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
-      real(kind=4)              :: thetav_atm   ! Atmos. virtual pot. temp.     [        K]
-      real(kind=4)              :: thetav_can   ! Canopy air virtual pot. temp. [        K]
+      real(kind=4)                :: thetav_atm   ! Free air virtual pot. temp. [        K]
+      real(kind=4)                :: thetav_can   ! CAS virtual pot. temp.      [        K]
       !----- External functions. ----------------------------------------------------------!
-      real(kind=4), external    :: cbrt         ! Cubic root
+      real(kind=4), external      :: cbrt         ! Cubic root
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !      Use previous u* to estimate the ratio between roughness scales for momentum   !
+      ! (z0m) and roughness scale for enthalpy/vapour/CO2 (z0h), using the parametrisation !
+      ! from ZD98.                                                                         ! 
+      !------------------------------------------------------------------------------------!
+      kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( temp_can - t00 ) )
+      z0hoz0m  = exp( - min( zd98_emax, zd98_a * ( ustar * rough / kin_visc )**zd98_b ))
+      z0moz0h  = 1.0 / z0hoz0m
+      !------------------------------------------------------------------------------------!
 
       !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
@@ -2899,7 +2925,7 @@ module canopy_struct_dynamics
             ! the iterative case.                                                          !
             !------------------------------------------------------------------------------!
             !----- Find the dimensionless height. -----------------------------------------!
-            zeta   = zoobukhov(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            zeta   = zoobukhov(rib,zstar,rough,z0moz0h,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
             !------------------------------------------------------------------------------!
 
 
@@ -2939,7 +2965,8 @@ module canopy_struct_dynamics
 
 
                !----- Find the dimensionless height. --------------------------------------!
-               zeta   = zoobukhov(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+               zeta   = zoobukhov(rib,zstar,rough,z0moz0h,zoz0m,lnzoz0m,zoz0h,lnzoz0h      &
+                                 ,stable)
                !---------------------------------------------------------------------------!
 
 
@@ -3051,13 +3078,16 @@ module canopy_struct_dynamics
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,enthalpy_atm,shv_atm,co2_atm                             &
-                       ,theta_can,enthalpy_can,shv_can,co2_can                             &
+                       ,theta_can,enthalpy_can,shv_can,co2_can,temp_can                    &
                        ,zref,dheight,atm_ustar,uref,rough,ustar,tstar,estar,qstar,cstar    &
                        ,zeta,rib,ggbare)
       use consts_coms     , only : grav8            & ! intent(in)
                                  , vonk8            & ! intent(in)
                                  , epim18           & ! intent(in)
-                                 , halfpi8          ! ! intent(in)
+                                 , halfpi8          & ! intent(in)
+                                 , t008             & ! intent(in)
+                                 , kin_visc08       & ! intent(in)
+                                 , dkin_visc8       ! ! intent(in)
       use canopy_air_coms , only : isfclyrm         & ! intent(in)
                                  , ustmin8          & ! intent(in)
                                  , bl798            & ! intent(in)
@@ -3066,8 +3096,9 @@ module canopy_struct_dynamics
                                  , dl798            & ! intent(in)
                                  , ribmax8          & ! intent(in)
                                  , tprandtl8        & ! intent(in)
-                                 , z0moz0h8         & ! intent(in)
-                                 , z0hoz0m8         & ! intent(in)
+                                 , zd98_a8          & ! intent(in)
+                                 , zd98_b8          & ! intent(in)
+                                 , zd98_emax8       & ! intent(in)
                                  , psim8            & ! function
                                  , psih8            & ! function
                                  , zoobukhov8       & ! function
@@ -3075,60 +3106,75 @@ module canopy_struct_dynamics
       use rk4_coms        , only : rk4eps           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.   [        K]
-      real(kind=8), intent(in)  :: enthalpy_atm ! Above can. air spec. enthalpy [ J/kg_air]
-      real(kind=8), intent(in)  :: shv_atm      ! Above can. vapour spec. hum.  [kg/kg_air]
-      real(kind=8), intent(in)  :: co2_atm      ! CO2 mixing ratio              [ µmol/mol]
-      real(kind=8), intent(in)  :: theta_can    ! Canopy air pot. temperature   [        K]
-      real(kind=8), intent(in)  :: enthalpy_can ! Canopy air specific enthalpy  [ J/kg_air]
-      real(kind=8), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.  [kg/kg_air]
-      real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio   [ µmol/mol]
-      real(kind=8), intent(in)  :: zref         ! Height at reference point     [        m]
-      real(kind=8), intent(in)  :: dheight      ! Zero-plane displacement hgt.  [        m]
-      real(kind=8), intent(in)  :: atm_ustar    ! Prescribed u*                 [      m/s]
-      real(kind=8), intent(in)  :: uref         ! Wind speed at reference hgt.  [      m/s]
-      real(kind=8), intent(in)  :: rough        ! Roughness                     [        m]
-      real(kind=8), intent(out) :: ustar        ! U*, friction velocity         [      m/s]
-      real(kind=8), intent(out) :: qstar        ! Specific humidity turb. scale [kg/kg_air]
-      real(kind=8), intent(out) :: tstar        ! Temperature turbulence scale  [        K]
-      real(kind=8), intent(out) :: estar        ! Spec. enthalpy turb. scale    [ J/kg_air]
-      real(kind=8), intent(out) :: cstar        ! CO2 mixing ratio turb. scale  [ µmol/mol]
-      real(kind=8), intent(out) :: zeta         ! z/(Obukhov length).           [    -----]
-      real(kind=8), intent(out) :: rib          ! Bulk richardson number.       [    -----]
-      real(kind=8), intent(out) :: ggbare       ! Ground conductance            [      m/s]
+      real(kind=8), intent(in)    :: theta_atm    ! Free air pot. temp.         [        K]
+      real(kind=8), intent(in)    :: enthalpy_atm ! Free air spec. enthalpy     [ J/kg_air]
+      real(kind=8), intent(in)    :: shv_atm      ! Free air vapour spec. hum.  [kg/kg_air]
+      real(kind=8), intent(in)    :: co2_atm      ! Free air CO2 mixing ratio   [ µmol/mol]
+      real(kind=8), intent(in)    :: theta_can    ! CAS pot. temperature        [        K]
+      real(kind=8), intent(in)    :: enthalpy_can ! CAS specific enthalpy       [ J/kg_air]
+      real(kind=8), intent(in)    :: shv_can      ! CAS vapour spec. hum.       [kg/kg_air]
+      real(kind=8), intent(in)    :: co2_can      ! CAS CO2 mixing ratio        [ µmol/mol]
+      real(kind=8), intent(in)    :: temp_can     ! CAS temperature             [        K]
+      real(kind=8), intent(in)    :: zref         ! Height at reference point   [        m]
+      real(kind=8), intent(in)    :: dheight      ! Zero-plane displace. hgt.   [        m]
+      real(kind=8), intent(in)    :: atm_ustar    ! Prescribed u*               [      m/s]
+      real(kind=8), intent(in)    :: uref         ! Wind speed at ref. hgt.     [      m/s]
+      real(kind=8), intent(in)    :: rough        ! Roughness                   [        m]
+      real(kind=8), intent(inout) :: ustar        ! U*, friction velocity       [      m/s]
+      real(kind=8), intent(out)   :: qstar        ! Spec. humidity turb. scale  [kg/kg_air]
+      real(kind=8), intent(out)   :: tstar        ! Temp. turbulence scale      [        K]
+      real(kind=8), intent(out)   :: estar        ! Spec. enthalpy turb. scale  [ J/kg_air]
+      real(kind=8), intent(out)   :: cstar        ! CO2 mix. ratio turb. scale  [ µmol/mol]
+      real(kind=8), intent(out)   :: zeta         ! z/(Obukhov length).         [    -----]
+      real(kind=8), intent(out)   :: rib          ! Bulk richardson number.     [    -----]
+      real(kind=8), intent(out)   :: ggbare       ! Ground conductance          [      m/s]
       !----- Local variables --------------------------------------------------------------!
-      logical                   :: stable       ! Stable state                  [      T|F]
-      real(kind=8)              :: zoz0m        ! zref/rough(momentum)          [    -----]
-      real(kind=8)              :: lnzoz0m      ! ln[zref/rough(momentum)]      [    -----]
-      real(kind=8)              :: zoz0h        ! zref/rough(heat)              [    -----]
-      real(kind=8)              :: lnzoz0h      ! ln[zref/rough(heat)]          [    -----]
-      real(kind=8)              :: c3           ! aux. coefficient              [    -----]
-      real(kind=8)              :: uuse         ! Wind for when (Rib > Ribmax)  [      m/s]
-      real(kind=8)              :: kuoustar     ! k * u / u*
+      logical                     :: stable       ! Stable state                [      T|F]
+      real(kind=8)                :: kin_visc     ! Kinematic viscosity         [     m2/s]
+      real(kind=8)                :: z0hoz0m      ! z0h:z0m ratio               [    -----]
+      real(kind=8)                :: z0moz0h      ! z0m:z0h ratio               [    -----]
+      real(kind=8)                :: zoz0m        ! zref/rough(momentum)        [    -----]
+      real(kind=8)                :: lnzoz0m      ! ln[zref/rough(momentum)]    [    -----]
+      real(kind=8)                :: zoz0h        ! zref/rough(heat)            [    -----]
+      real(kind=8)                :: lnzoz0h      ! ln[zref/rough(heat)]        [    -----]
+      real(kind=8)                :: c3           ! aux. coefficient            [    -----]
+      real(kind=8)                :: uuse         ! Wind when (Rib > Ribmax)    [      m/s]
+      real(kind=8)                :: kuoustar     ! k * u / u*
       !----- Local variables, used by L79. ------------------------------------------------!
-      real(kind=8)              :: a2           ! Drag coefficient in neutral conditions
-      real(kind=8)              :: c1           ! a2 * vels
-      real(kind=8)              :: fm           ! Stability parameter for momentum
-      real(kind=8)              :: fh           ! Stability parameter for heat
-      real(kind=8)              :: c2           ! Part of the c coefficient common
-                                                !      to momentum & heat.
-      real(kind=8)              :: cm           ! c times |Rib|^1/2 for momentum.
-      real(kind=8)              :: ch           ! c times |Rib|^1/2 for heat.
-      real(kind=8)              :: ee           ! (z/z0)^1/3 -1. for eqn. 20
+      real(kind=8)                :: a2           ! Drag coefficient in neutral conditions
+      real(kind=8)                :: c1           ! a2 * vels
+      real(kind=8)                :: fm           ! Stability parameter for momentum
+      real(kind=8)                :: fh           ! Stability parameter for heat
+      real(kind=8)                :: c2           ! Part of the c coefficient common
+                                                  !      to momentum & heat.
+      real(kind=8)                :: cm           ! c times |Rib|^1/2 for momentum.
+      real(kind=8)                :: ch           ! c times |Rib|^1/2 for heat.
+      real(kind=8)                :: ee           ! (z/z0)^1/3 -1. for eqn. 20
       !----- Local variables, used by others. ---------------------------------------------!
-      real(kind=8)              :: zstar        ! Reference height above displacement
-      real(kind=8)              :: zeta0m       ! roughness(momentum)/(Obukhov length).
-      real(kind=8)              :: zeta0h       ! roughness(heat)/(Obukhov length).
-      real(kind=8)              :: utotal       ! Total wind (actual + convective)
-      real(kind=8)              :: uconv        ! Convective velocity
-      real(kind=8)              :: uconv_prev   ! Previous convective velocity
-      real(kind=8)              :: change       ! Difference in convective velocity
-      integer                   :: icnt         ! Iteration counter
+      real(kind=8)                :: zstar        ! Reference height above displacement
+      real(kind=8)                :: zeta0m       ! roughness(momentum)/(Obukhov length).
+      real(kind=8)                :: zeta0h       ! roughness(heat)/(Obukhov length).
+      real(kind=8)                :: utotal       ! Total wind (actual + convective)
+      real(kind=8)                :: uconv        ! Convective velocity
+      real(kind=8)                :: uconv_prev   ! Previous convective velocity
+      real(kind=8)                :: change       ! Difference in convective velocity
+      integer                     :: icnt         ! Iteration counter
       !----- Aux. environment conditions. -------------------------------------------------!
-      real(kind=8)              :: thetav_atm   ! Atmos. virtual pot. temp.     [        K]
-      real(kind=8)              :: thetav_can   ! Canopy air virtual pot. temp. [        K]
+      real(kind=8)                :: thetav_atm   ! Atmos. virtual pot. temp.     [      K]
+      real(kind=8)                :: thetav_can   ! Canopy air virtual pot. temp. [      K]
       !----- External functions. ----------------------------------------------------------!
-      real(kind=8), external    :: cbrt8              ! Cubic root
+      real(kind=8), external      :: cbrt8        ! Cubic root
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Use previous u* to estimate the ratio between roughness scales for momentum   !
+      ! (z0m) and roughness scale for enthalpy/vapour/CO2 (z0h), using the parametrisation !
+      ! from ZD98.                                                                         !
+      !------------------------------------------------------------------------------------!
+      kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( temp_can - t008 ) )
+      z0hoz0m  = exp(- min( zd98_emax8, zd98_a8 * ( ustar * rough / kin_visc )**zd98_b8 ) )
+      z0moz0h  = 1.d0 / z0hoz0m
       !------------------------------------------------------------------------------------!
 
 
@@ -3138,7 +3184,7 @@ module canopy_struct_dynamics
       zstar      = zref - dheight
       zoz0m      = zstar / rough
       lnzoz0m    = log(zoz0m)
-      zoz0h      = z0moz0h8 * zoz0m
+      zoz0h      = z0moz0h * zoz0m
       lnzoz0h    = log(zoz0h)
       !------------------------------------------------------------------------------------!
 
@@ -3193,7 +3239,7 @@ module canopy_struct_dynamics
 
          !----- Find the dimensionless roughness. -----------------------------------------!
          zeta0m = rough * zeta / zstar
-         zeta0h = z0hoz0m8 * zeta0m
+         zeta0h = z0hoz0m * zeta0m
          !---------------------------------------------------------------------------------!
 
 
@@ -3264,13 +3310,13 @@ module canopy_struct_dynamics
             ! the iterative case.                                                          !
             !------------------------------------------------------------------------------!
             !----- Find the dimensionless height. -----------------------------------------!
-            zeta   = zoobukhov8(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+            zeta   = zoobukhov8(rib,zstar,rough,z0moz0h,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
             !------------------------------------------------------------------------------!
 
 
             !----- Find the dimensionless roughness. --------------------------------------!
             zeta0m = rough * zeta / zstar
-            zeta0h = z0hoz0m8 * zeta0m
+            zeta0h = z0hoz0m * zeta0m
             !------------------------------------------------------------------------------!
 
 
@@ -3305,13 +3351,14 @@ module canopy_struct_dynamics
 
 
                !----- Find the dimensionless height. --------------------------------------!
-               zeta   = zoobukhov8(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+               zeta   = zoobukhov8(rib,zstar,rough,z0moz0h,zoz0m,lnzoz0m,zoz0h,lnzoz0h     &
+                                  ,stable)
                !---------------------------------------------------------------------------!
 
 
                !----- Find the dimensionless roughness. -----------------------------------!
                zeta0m = rough * zeta / zstar
-               zeta0h = z0hoz0m8 * zeta0m
+               zeta0h = z0hoz0m * zeta0m
                !---------------------------------------------------------------------------!
 
 

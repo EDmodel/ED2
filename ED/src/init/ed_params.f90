@@ -247,7 +247,7 @@ subroutine load_ed_ecosystem_params()
    !     This should be always the last one, since it depends on variables assigned in the !
    ! previous init_????_params.                                                            !
    !---------------------------------------------------------------------------------------!
-   call init_rk4_params()
+   call init_dt_thermo_params()
    !---------------------------------------------------------------------------------------!
 
    return
@@ -1018,8 +1018,6 @@ subroutine init_can_air_params()
                              , fm1                   & ! intent(out)
                              , ate                   & ! intent(out)
                              , atetf                 & ! intent(out)
-                             , z0moz0h               & ! intent(out)
-                             , z0hoz0m               & ! intent(out)
                              , beta_vs               & ! intent(out)
                              , chim                  & ! intent(out)
                              , chih                  & ! intent(out)
@@ -1035,6 +1033,9 @@ subroutine init_can_air_params()
                              , zetac_uhi13           & ! intent(out)
                              , psimc_um              & ! intent(out)
                              , psihc_uh              & ! intent(out)
+                             , zd98_a                & ! intent(out)
+                             , zd98_b                & ! intent(out)
+                             , zd98_emax             & ! intent(out)
                              , bl798                 & ! intent(out)
                              , csm8                  & ! intent(out)
                              , csh8                  & ! intent(out)
@@ -1055,8 +1056,6 @@ subroutine init_can_air_params()
                              , fm18                  & ! intent(out)
                              , ate8                  & ! intent(out)
                              , atetf8                & ! intent(out)
-                             , z0moz0h8              & ! intent(out)
-                             , z0hoz0m8              & ! intent(out)
                              , beta_vs8              & ! intent(out)
                              , chim8                 & ! intent(out)
                              , chih8                 & ! intent(out)
@@ -1072,6 +1071,9 @@ subroutine init_can_air_params()
                              , zetac_uhi138          & ! intent(out)
                              , psimc_um8             & ! intent(out)
                              , psihc_uh8             & ! intent(out)
+                             , zd98_a8               & ! intent(out)
+                             , zd98_b8               & ! intent(out)
+                             , zd98_emax8            & ! intent(out)
                              , aflat_turb            & ! intent(out)
                              , aflat_lami            & ! intent(out)
                              , bflat_turb            & ! intent(out)
@@ -1184,8 +1186,6 @@ subroutine init_can_air_params()
    fm1         = fbh91 - 1.0   ! f-1
    ate         = abh91 * ebh91 ! a * e
    atetf       = ate   * fbh91 ! a * e * f
-   z0moz0h     = 1.0           ! z0(M)/z0(h)
-   z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    !----- Similar to CLM (2004), but with different phi_m for very unstable case. ---------!
    zetac_um    = -1.5
    zetac_uh    = -0.5
@@ -1211,6 +1211,13 @@ subroutine init_can_air_params()
    psimc_um  = psim(zetac_um,.false.)
    psihc_uh  = 0.
    psihc_uh  = psih(zetac_uh,.false.)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Parameters for the z0m:z0h ratio, following Zeng and Dickinson (1998). ----------!
+   zd98_a    = 0.13 * tprandtl
+   zd98_b    = 0.45
+   zd98_emax = 10.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1376,8 +1383,6 @@ subroutine init_can_air_params()
    fm18                  = dble(fm1                 )
    ate8                  = dble(ate                 )
    atetf8                = dble(atetf               )
-   z0moz0h8              = dble(z0moz0h             )
-   z0hoz0m8              = dble(z0hoz0m             )
    aflat_lami8           = dble(aflat_lami          )
    nflat_lami8           = dble(nflat_lami          )
    aflat_turb8           = dble(aflat_turb          )
@@ -2394,9 +2399,9 @@ subroutine init_pft_mort_params()
    !     The following variables control the density-dependent mortality rates.            !
    !  DD = mort1 / (1 + exp(mort0 + mort2 * CB))                                           !
    !---------------------------------------------------------------------------------------!
-   mort0(:) = merge(-0.5, 0.0,is_tropical(:))
-   mort1(:) = merge( 5.0, 1.0,is_tropical(:))
-   mort2(:) = merge(10.0,20.0,is_tropical(:))
+   mort0(:) = merge(-0.25,  0.0,is_tropical(:))
+   mort1(:) = merge( 5.0 ,  1.0,is_tropical(:))
+   mort2(:) = merge(20.0 , 20.0,is_tropical(:))
    !---------------------------------------------------------------------------------------!
 
 
@@ -4011,7 +4016,9 @@ subroutine init_pft_repro_params()
    implicit none
 
    r_fract(1)              = 1.0
-   r_fract(2:4)            = 0.3
+   r_fract(2)              = 0.5
+   r_fract(3)              = 0.4
+   r_fract(4)              = 0.3
    r_fract(5)              = 0.3
    r_fract(6:11)           = 0.3
    r_fract(12:15)          = 0.3
@@ -5646,17 +5653,20 @@ end subroutine init_ff_coms
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine assigns various parameters for the Runge-Kutta solver.  It uses many  !
-! values previously assigned in other parameter initialisation, so this should be the last !
-! one called.                                                                              !
+!    This subroutine assigns various parameters for the thermodynamics solver (Euler,      !
+! Heun, Runge-Kutta or Hybrid).  It uses many values previously assigned in other          !
+! parameter initialisation, so this should be the last one called.                         !
 !------------------------------------------------------------------------------------------!
-subroutine init_rk4_params()
+subroutine init_dt_thermo_params()
    use soil_coms      , only : water_stab_thresh      & ! intent(in)
                              , snowmin                & ! intent(in)
                              , tiny_sfcwater_mass     ! ! intent(in)
    use canopy_air_coms, only : leaf_drywhc            & ! intent(in)
                              , leaf_maxwhc            ! ! intent(in)
-   use ed_misc_coms,only     : ffilout                ! ! intent(in)
+   use ed_misc_coms   , only : dtlsm                  & ! intent(in)
+                             , ffilout                & ! intent(in)
+                             , nsub_euler             & ! intent(in)
+                             , dteuler                ! ! intent(out)
    use met_driver_coms, only : prss_min               & ! intent(in)
                              , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
@@ -5716,7 +5726,15 @@ subroutine init_rk4_params()
    implicit none
 
    !---------------------------------------------------------------------------------------!
-   !     Copying some variables to the Runge-Kutta counterpart (double precision).         !
+   !     Define the maximum time step for forward Euler solver.  Because forward Euler is  !
+   ! lower order, the time step should be typically less than dtlsm.                       !
+   !---------------------------------------------------------------------------------------!
+   dteuler = dtlsm / real(nsub_euler)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Copy some variables to the Runge-Kutta counterpart (double precision).            !
    !---------------------------------------------------------------------------------------!
    rk4water_stab_thresh  = dble(water_stab_thresh )
    rk4tiny_sfcw_mass     = dble(tiny_sfcwater_mass)
@@ -5883,7 +5901,7 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine init_rk4_params
+end subroutine init_dt_thermo_params
 !==========================================================================================!
 !==========================================================================================!
 

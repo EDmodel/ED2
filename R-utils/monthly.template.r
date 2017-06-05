@@ -312,6 +312,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$area                    = rep(NA,times=ntimes)
    emean$workload                = rep(NA,times=ntimes)
    emean$specwork                = rep(NA,times=ntimes)
+   emean$rk4step                 = rep(NA,times=ntimes)
    emean$demand                  = rep(NA,times=ntimes)
    emean$supply                  = rep(NA,times=ntimes)
    emean$paw                     = rep(NA,times=ntimes)
@@ -703,6 +704,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qmean$leaf.gsw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$leaf.gbw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    qmean$wood.gbw       = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
+   qmean$rk4step        = matrix(data=NA,nrow=ntimes,ncol=ndcycle)
    #---------------------------------------------------------------------------------------#
 
 
@@ -829,6 +831,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$fast.soil.c   = list()
    patch$slow.soil.c   = list()
    patch$struct.soil.c = list()
+   patch$rk4step       = list()
    #---------------------------------------------------------------------------------------#
 
 
@@ -889,6 +892,7 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    qpatch$wflxwc        = list()
    qpatch$transp        = list()
    qpatch$soil.resp     = list()
+   qpatch$rk4step       = list()
    #---------------------------------------------------------------------------------------#
 
 
@@ -1185,6 +1189,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$gnd.shv           [idx ] = old.datum$emean$gnd.shv             [sel ]
    new.datum$emean$workload          [idx ] = old.datum$emean$workload            [sel ]
    new.datum$emean$specwork          [idx ] = old.datum$emean$specwork            [sel ]
+   new.datum$emean$rk4step           [idx ] = old.datum$emean$rk4step             [sel ]
    new.datum$emean$sm.stress         [idx ] = old.datum$emean$sm.stress           [sel ]
    new.datum$emean$phap.sms          [idx ] = old.datum$emean$phap.sms            [sel ]
    new.datum$emean$last.1yr.sms      [idx ] = old.datum$emean$last.1yr.sms        [sel ]
@@ -1579,6 +1584,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qmean$leaf.gsw      [idx,] = old.datum$qmean$leaf.gsw       [sel,]
    new.datum$qmean$leaf.gbw      [idx,] = old.datum$qmean$leaf.gbw       [sel,]
    new.datum$qmean$wood.gbw      [idx,] = old.datum$qmean$wood.gbw       [sel,]
+   new.datum$qmean$rk4step       [idx,] = old.datum$qmean$rk4step        [sel,]
    #---------------------------------------------------------------------------------------#
 
 
@@ -1703,6 +1709,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$fast.soil.c   = old.datum$patch$fast.soil.c
    new.datum$patch$slow.soil.c   = old.datum$patch$slow.soil.c
    new.datum$patch$struct.soil.c = old.datum$patch$struct.soil.c
+   new.datum$patch$rk4step       = old.datum$patch$rk4step
    #---------------------------------------------------------------------------------------#
 
 
@@ -1762,6 +1769,7 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$qpatch$wflxwc        = old.datum$qpatch$wflxwc
    new.datum$qpatch$transp        = old.datum$qpatch$transp
    new.datum$qpatch$soil.resp     = old.datum$qpatch$soil.resp
+   new.datum$qpatch$rk4step       = old.datum$qpatch$rk4step
    #---------------------------------------------------------------------------------------#
 
 

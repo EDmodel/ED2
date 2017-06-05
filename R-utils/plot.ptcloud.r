@@ -794,14 +794,14 @@ plot.ptcloud <<- function( pt.cloud
         error.bar( x    = mean(xdlim)
                  , y    = z.mean
                  , yerr = z.sdev
-                 , col  = col.metrics[2]
+                 , col  = col.metrics[1]
                  , pch  = 15
                  , cex  = 2
                  , add  = TRUE
                  )#end error.bar
         text     ( x      = xdlim[1] + c(0.4,0.5,0.5)*diff(xdlim)
                  , y      = c(z.mean,z.mean+c(-0.5,0.5)*z.sdev)
-                 , labels = parse(text=c("mu[z]","sigma[z]"))
+                 , labels = parse(text=c("mu[z]","sigma[z]","sigma[z]"))
                  , col    = col.metrics[1]
                  )#end text
       }#end if

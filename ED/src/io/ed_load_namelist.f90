@@ -191,6 +191,7 @@ subroutine copy_nl(copy_type)
                                    , ivegt_dynamics            & ! intent(out)
                                    , ibigleaf                  & ! intent(out)
                                    , integration_scheme        & ! intent(out)
+                                   , nsub_euler                & ! intent(out)
                                    , ffilout                   & ! intent(out)
                                    , idoutput                  & ! intent(out)
                                    , imoutput                  & ! intent(out)
@@ -390,6 +391,7 @@ subroutine copy_nl(copy_type)
       ivegt_dynamics            = nl%ivegt_dynamics
       ibigleaf                  = nl%ibigleaf
       integration_scheme        = nl%integration_scheme
+      nsub_euler                = nl%nsub_euler
       rk4_tolerance             = nl%rk4_tolerance
       ibranch_thermo            = nl%ibranch_thermo
       iphysiol                  = nl%iphysiol

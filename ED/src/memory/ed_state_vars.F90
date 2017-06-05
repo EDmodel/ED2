@@ -1339,6 +1339,8 @@ module ed_state_vars
       !----- State variables. -------------------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rk4step         ! RK4 time step      [        s]
       real,pointer,dimension(:)   :: fmean_available_water ! Available water    [    kg/m2]
+      real,pointer,dimension(:)   :: fmean_veg_displace    ! Displacement hgt   [        m]
+      real,pointer,dimension(:)   :: fmean_rough           ! Roughness          [        m]
       real,pointer,dimension(:)   :: fmean_can_theiv       ! CAS Theta_Eiv      [        K]
       real,pointer,dimension(:)   :: fmean_can_theta       ! CAS Potential temp.[        K]
       real,pointer,dimension(:)   :: fmean_can_vpdef       ! CAS Vap. Pres. Def.[       Pa]
@@ -1413,6 +1415,8 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
       real,pointer,dimension(:)     :: dmean_available_water
+      real,pointer,dimension(:)     :: dmean_veg_displace
+      real,pointer,dimension(:)     :: dmean_rough
       real,pointer,dimension(:)     :: dmean_can_theiv
       real,pointer,dimension(:)     :: dmean_can_theta
       real,pointer,dimension(:)     :: dmean_can_vpdef
@@ -1471,6 +1475,8 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
       real,pointer,dimension(:)     :: mmean_available_water
+      real,pointer,dimension(:)     :: mmean_veg_displace
+      real,pointer,dimension(:)     :: mmean_rough
       real,pointer,dimension(:)     :: mmean_can_theiv
       real,pointer,dimension(:)     :: mmean_can_theta
       real,pointer,dimension(:)     :: mmean_can_vpdef
@@ -1552,6 +1558,8 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_nep
       real,pointer,dimension(:,:)   :: qmean_rk4step
       real,pointer,dimension(:,:)   :: qmean_available_water
+      real,pointer,dimension(:,:)   :: qmean_veg_displace
+      real,pointer,dimension(:,:)   :: qmean_rough
       real,pointer,dimension(:,:)   :: qmean_can_theiv
       real,pointer,dimension(:,:)   :: qmean_can_theta
       real,pointer,dimension(:,:)   :: qmean_can_vpdef
@@ -2326,6 +2334,8 @@ module ed_state_vars
       !----- State variables. -------------------------------------------------------------!
       real,pointer,dimension(:)   :: fmean_rk4step         ! RK4 time step      [         s]
       real,pointer,dimension(:)   :: fmean_available_water ! Available water    [     kg/m2]
+      real,pointer,dimension(:)   :: fmean_veg_displace    ! Displacement hgt   [         m]
+      real,pointer,dimension(:)   :: fmean_rough           ! Roughness          [         m]
       real,pointer,dimension(:)   :: fmean_can_theiv       ! CAS Theta_Eiv      [         K]
       real,pointer,dimension(:)   :: fmean_can_theta       ! CAS Potential temp.[         K]
       real,pointer,dimension(:)   :: fmean_can_vpdef       ! CAS Vap. Pres. Def.[        Pa]
@@ -2498,6 +2508,8 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_nep
       real,pointer,dimension(:)     :: dmean_rk4step
       real,pointer,dimension(:)     :: dmean_available_water
+      real,pointer,dimension(:)     :: dmean_veg_displace
+      real,pointer,dimension(:)     :: dmean_rough
       real,pointer,dimension(:)     :: dmean_can_theiv
       real,pointer,dimension(:)     :: dmean_can_theta
       real,pointer,dimension(:)     :: dmean_can_vpdef
@@ -2628,6 +2640,8 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nep
       real,pointer,dimension(:)     :: mmean_rk4step
       real,pointer,dimension(:)     :: mmean_available_water
+      real,pointer,dimension(:)     :: mmean_veg_displace
+      real,pointer,dimension(:)     :: mmean_rough
       real,pointer,dimension(:)     :: mmean_can_theiv
       real,pointer,dimension(:)     :: mmean_can_theta
       real,pointer,dimension(:)     :: mmean_can_vpdef
@@ -2795,6 +2809,8 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_nep
       real,pointer,dimension(:,:)   :: qmean_rk4step
       real,pointer,dimension(:,:)   :: qmean_available_water
+      real,pointer,dimension(:,:)   :: qmean_veg_displace
+      real,pointer,dimension(:,:)   :: qmean_rough
       real,pointer,dimension(:,:)   :: qmean_can_theiv
       real,pointer,dimension(:,:)   :: qmean_can_theta
       real,pointer,dimension(:,:)   :: qmean_can_vpdef
@@ -3229,6 +3245,8 @@ module ed_state_vars
       allocate(cgrid%fmean_nep                  (                    npolygons))
       allocate(cgrid%fmean_rk4step              (                    npolygons))
       allocate(cgrid%fmean_available_water      (                    npolygons))
+      allocate(cgrid%fmean_veg_displace         (                    npolygons))
+      allocate(cgrid%fmean_rough                (                    npolygons))
       allocate(cgrid%fmean_can_theiv            (                    npolygons))
       allocate(cgrid%fmean_can_theta            (                    npolygons))
       allocate(cgrid%fmean_can_vpdef            (                    npolygons))
@@ -3382,6 +3400,8 @@ module ed_state_vars
          allocate(cgrid%dmean_nep              (                     npolygons))
          allocate(cgrid%dmean_rk4step          (                     npolygons))
          allocate(cgrid%dmean_available_water  (                     npolygons))
+         allocate(cgrid%dmean_veg_displace     (                     npolygons))
+         allocate(cgrid%dmean_rough            (                     npolygons))
          allocate(cgrid%dmean_can_theiv        (                     npolygons))
          allocate(cgrid%dmean_can_theta        (                     npolygons))
          allocate(cgrid%dmean_can_vpdef        (                     npolygons))
@@ -3540,6 +3560,8 @@ module ed_state_vars
          allocate(cgrid%mmean_nep              (                     npolygons)) 
          allocate(cgrid%mmean_rk4step          (                     npolygons)) 
          allocate(cgrid%mmean_available_water  (                     npolygons)) 
+         allocate(cgrid%mmean_veg_displace     (                     npolygons)) 
+         allocate(cgrid%mmean_rough            (                     npolygons)) 
          allocate(cgrid%mmean_can_theiv        (                     npolygons)) 
          allocate(cgrid%mmean_can_theta        (                     npolygons)) 
          allocate(cgrid%mmean_can_vpdef        (                     npolygons)) 
@@ -3716,6 +3738,8 @@ module ed_state_vars
          allocate(cgrid%qmean_nep              (             ndcycle,npolygons))
          allocate(cgrid%qmean_rk4step          (             ndcycle,npolygons))
          allocate(cgrid%qmean_available_water  (             ndcycle,npolygons))
+         allocate(cgrid%qmean_veg_displace     (             ndcycle,npolygons))
+         allocate(cgrid%qmean_rough            (             ndcycle,npolygons))
          allocate(cgrid%qmean_can_theiv        (             ndcycle,npolygons))
          allocate(cgrid%qmean_can_theta        (             ndcycle,npolygons))
          allocate(cgrid%qmean_can_vpdef        (             ndcycle,npolygons))
@@ -4217,6 +4241,8 @@ module ed_state_vars
       allocate(csite%fmean_nep                     (              npatches))
       allocate(csite%fmean_rk4step                 (              npatches))
       allocate(csite%fmean_available_water         (              npatches))
+      allocate(csite%fmean_veg_displace            (              npatches))
+      allocate(csite%fmean_rough                   (              npatches))
       allocate(csite%fmean_can_theiv               (              npatches))
       allocate(csite%fmean_can_theta               (              npatches))
       allocate(csite%fmean_can_vpdef               (              npatches))
@@ -4281,6 +4307,8 @@ module ed_state_vars
          allocate(csite%dmean_nep                  (              npatches))
          allocate(csite%dmean_rk4step              (              npatches))
          allocate(csite%dmean_available_water      (              npatches))
+         allocate(csite%dmean_veg_displace         (              npatches))
+         allocate(csite%dmean_rough                (              npatches))
          allocate(csite%dmean_can_theiv            (              npatches))
          allocate(csite%dmean_can_theta            (              npatches))
          allocate(csite%dmean_can_vpdef            (              npatches))
@@ -4351,6 +4379,8 @@ module ed_state_vars
          allocate(csite%mmean_Af_decomp            (              npatches))
          allocate(csite%mmean_rk4step              (              npatches))
          allocate(csite%mmean_available_water      (              npatches))
+         allocate(csite%mmean_veg_displace         (              npatches))
+         allocate(csite%mmean_rough                (              npatches))
          allocate(csite%mmean_can_theiv            (              npatches))
          allocate(csite%mmean_can_theta            (              npatches))
          allocate(csite%mmean_can_vpdef            (              npatches))
@@ -4431,6 +4461,8 @@ module ed_state_vars
          allocate(csite%qmean_nep                  (      ndcycle,npatches))
          allocate(csite%qmean_rk4step              (      ndcycle,npatches))
          allocate(csite%qmean_available_water      (      ndcycle,npatches))
+         allocate(csite%qmean_veg_displace         (      ndcycle,npatches))
+         allocate(csite%qmean_rough                (      ndcycle,npatches))
          allocate(csite%qmean_can_theiv            (      ndcycle,npatches))
          allocate(csite%qmean_can_theta            (      ndcycle,npatches))
          allocate(csite%qmean_can_vpdef            (      ndcycle,npatches))
@@ -5169,6 +5201,8 @@ module ed_state_vars
       nullify(cgrid%fmean_nep               )
       nullify(cgrid%fmean_rk4step           )
       nullify(cgrid%fmean_available_water   )
+      nullify(cgrid%fmean_veg_displace      )
+      nullify(cgrid%fmean_rough             )
       nullify(cgrid%fmean_can_theiv         )
       nullify(cgrid%fmean_can_theta         )
       nullify(cgrid%fmean_can_vpdef         )
@@ -5314,6 +5348,8 @@ module ed_state_vars
       nullify(cgrid%dmean_nep               )
       nullify(cgrid%dmean_rk4step           )
       nullify(cgrid%dmean_available_water   )
+      nullify(cgrid%dmean_veg_displace      )
+      nullify(cgrid%dmean_rough             )
       nullify(cgrid%dmean_can_theiv         )
       nullify(cgrid%dmean_can_theta         )
       nullify(cgrid%dmean_can_vpdef         )
@@ -5461,6 +5497,8 @@ module ed_state_vars
       nullify(cgrid%mmean_nep               )
       nullify(cgrid%mmean_rk4step           )
       nullify(cgrid%mmean_available_water   )
+      nullify(cgrid%mmean_veg_displace      )
+      nullify(cgrid%mmean_rough             )
       nullify(cgrid%mmean_can_theiv         )
       nullify(cgrid%mmean_can_theta         )
       nullify(cgrid%mmean_can_vpdef         )
@@ -5626,6 +5664,8 @@ module ed_state_vars
       nullify(cgrid%qmean_nep               )
       nullify(cgrid%qmean_rk4step           )
       nullify(cgrid%qmean_available_water   )
+      nullify(cgrid%qmean_veg_displace      )
+      nullify(cgrid%qmean_rough             )
       nullify(cgrid%qmean_can_theiv         )
       nullify(cgrid%qmean_can_theta         )
       nullify(cgrid%qmean_can_vpdef         )
@@ -6054,6 +6094,8 @@ module ed_state_vars
       nullify(csite%fmean_nep                  )
       nullify(csite%fmean_rk4step              )
       nullify(csite%fmean_available_water      )
+      nullify(csite%fmean_veg_displace         )
+      nullify(csite%fmean_rough                )
       nullify(csite%fmean_can_theiv            )
       nullify(csite%fmean_can_theta            )
       nullify(csite%fmean_can_vpdef            )
@@ -6116,6 +6158,8 @@ module ed_state_vars
       nullify(csite%dmean_nep                  )
       nullify(csite%dmean_rk4step              )
       nullify(csite%dmean_available_water      )
+      nullify(csite%dmean_veg_displace         )
+      nullify(csite%dmean_rough                )
       nullify(csite%dmean_can_theiv            )
       nullify(csite%dmean_can_theta            )
       nullify(csite%dmean_can_vpdef            )
@@ -6184,6 +6228,8 @@ module ed_state_vars
       nullify(csite%mmean_Af_decomp            )
       nullify(csite%mmean_rk4step              )
       nullify(csite%mmean_available_water      )
+      nullify(csite%mmean_veg_displace         )
+      nullify(csite%mmean_rough                )
       nullify(csite%mmean_can_theiv            )
       nullify(csite%mmean_can_theta            )
       nullify(csite%mmean_can_vpdef            )
@@ -6262,6 +6308,8 @@ module ed_state_vars
       nullify(csite%qmean_nep                  )
       nullify(csite%qmean_rk4step              )
       nullify(csite%qmean_available_water      )
+      nullify(csite%qmean_veg_displace         )
+      nullify(csite%qmean_rough                )
       nullify(csite%qmean_can_theiv            )
       nullify(csite%qmean_can_theta            )
       nullify(csite%qmean_can_vpdef            )
@@ -6977,6 +7025,8 @@ module ed_state_vars
       if(associated(cgrid%fmean_nep             )) deallocate(cgrid%fmean_nep             )
       if(associated(cgrid%fmean_rk4step         )) deallocate(cgrid%fmean_rk4step         )
       if(associated(cgrid%fmean_available_water )) deallocate(cgrid%fmean_available_water )
+      if(associated(cgrid%fmean_veg_displace    )) deallocate(cgrid%fmean_veg_displace    )
+      if(associated(cgrid%fmean_rough           )) deallocate(cgrid%fmean_rough           )
       if(associated(cgrid%fmean_can_theiv       )) deallocate(cgrid%fmean_can_theiv       )
       if(associated(cgrid%fmean_can_theta       )) deallocate(cgrid%fmean_can_theta       )
       if(associated(cgrid%fmean_can_vpdef       )) deallocate(cgrid%fmean_can_vpdef       )
@@ -7122,6 +7172,8 @@ module ed_state_vars
       if(associated(cgrid%dmean_nep             )) deallocate(cgrid%dmean_nep             )
       if(associated(cgrid%dmean_rk4step         )) deallocate(cgrid%dmean_rk4step         )
       if(associated(cgrid%dmean_available_water )) deallocate(cgrid%dmean_available_water )
+      if(associated(cgrid%dmean_veg_displace    )) deallocate(cgrid%dmean_veg_displace    )
+      if(associated(cgrid%dmean_rough           )) deallocate(cgrid%dmean_rough           )
       if(associated(cgrid%dmean_can_theiv       )) deallocate(cgrid%dmean_can_theiv       )
       if(associated(cgrid%dmean_can_theta       )) deallocate(cgrid%dmean_can_theta       )
       if(associated(cgrid%dmean_can_vpdef       )) deallocate(cgrid%dmean_can_vpdef       )
@@ -7269,6 +7321,8 @@ module ed_state_vars
       if(associated(cgrid%mmean_nep             )) deallocate(cgrid%mmean_nep             )
       if(associated(cgrid%mmean_rk4step         )) deallocate(cgrid%mmean_rk4step         )
       if(associated(cgrid%mmean_available_water )) deallocate(cgrid%mmean_available_water )
+      if(associated(cgrid%mmean_veg_displace    )) deallocate(cgrid%mmean_veg_displace    )
+      if(associated(cgrid%mmean_rough           )) deallocate(cgrid%mmean_rough           )
       if(associated(cgrid%mmean_can_theiv       )) deallocate(cgrid%mmean_can_theiv       )
       if(associated(cgrid%mmean_can_theta       )) deallocate(cgrid%mmean_can_theta       )
       if(associated(cgrid%mmean_can_vpdef       )) deallocate(cgrid%mmean_can_vpdef       )
@@ -7434,6 +7488,8 @@ module ed_state_vars
       if(associated(cgrid%qmean_nep             )) deallocate(cgrid%qmean_nep             )
       if(associated(cgrid%qmean_rk4step         )) deallocate(cgrid%qmean_rk4step         )
       if(associated(cgrid%qmean_available_water )) deallocate(cgrid%qmean_available_water )
+      if(associated(cgrid%qmean_veg_displace    )) deallocate(cgrid%qmean_veg_displace    )
+      if(associated(cgrid%qmean_rough           )) deallocate(cgrid%qmean_rough           )
       if(associated(cgrid%qmean_can_theiv       )) deallocate(cgrid%qmean_can_theiv       )
       if(associated(cgrid%qmean_can_theta       )) deallocate(cgrid%qmean_can_theta       )
       if(associated(cgrid%qmean_can_vpdef       )) deallocate(cgrid%qmean_can_vpdef       )
@@ -7895,6 +7951,8 @@ module ed_state_vars
       if(associated(csite%fmean_nep             )) deallocate(csite%fmean_nep             )
       if(associated(csite%fmean_rk4step         )) deallocate(csite%fmean_rk4step         )
       if(associated(csite%fmean_available_water )) deallocate(csite%fmean_available_water )
+      if(associated(csite%fmean_veg_displace    )) deallocate(csite%fmean_veg_displace    )
+      if(associated(csite%fmean_rough           )) deallocate(csite%fmean_rough           )
       if(associated(csite%fmean_can_theiv       )) deallocate(csite%fmean_can_theiv       )
       if(associated(csite%fmean_can_theta       )) deallocate(csite%fmean_can_theta       )
       if(associated(csite%fmean_can_vpdef       )) deallocate(csite%fmean_can_vpdef       )
@@ -7957,6 +8015,8 @@ module ed_state_vars
       if(associated(csite%dmean_nep             )) deallocate(csite%dmean_nep             )
       if(associated(csite%dmean_rk4step         )) deallocate(csite%dmean_rk4step         )
       if(associated(csite%dmean_available_water )) deallocate(csite%dmean_available_water )
+      if(associated(csite%dmean_veg_displace    )) deallocate(csite%dmean_veg_displace    )
+      if(associated(csite%dmean_rough           )) deallocate(csite%dmean_rough           )
       if(associated(csite%dmean_can_theiv       )) deallocate(csite%dmean_can_theiv       )
       if(associated(csite%dmean_can_theta       )) deallocate(csite%dmean_can_theta       )
       if(associated(csite%dmean_can_vpdef       )) deallocate(csite%dmean_can_vpdef       )
@@ -8025,6 +8085,8 @@ module ed_state_vars
       if(associated(csite%mmean_Af_decomp       )) deallocate(csite%mmean_Af_decomp       )
       if(associated(csite%mmean_rk4step         )) deallocate(csite%mmean_rk4step         )
       if(associated(csite%mmean_available_water )) deallocate(csite%mmean_available_water )
+      if(associated(csite%mmean_veg_displace    )) deallocate(csite%mmean_veg_displace    )
+      if(associated(csite%mmean_rough           )) deallocate(csite%mmean_rough           )
       if(associated(csite%mmean_can_theiv       )) deallocate(csite%mmean_can_theiv       )
       if(associated(csite%mmean_can_theta       )) deallocate(csite%mmean_can_theta       )
       if(associated(csite%mmean_can_vpdef       )) deallocate(csite%mmean_can_vpdef       )
@@ -8103,6 +8165,8 @@ module ed_state_vars
       if(associated(csite%qmean_nep             )) deallocate(csite%qmean_nep             )
       if(associated(csite%qmean_rk4step         )) deallocate(csite%qmean_rk4step         )
       if(associated(csite%qmean_available_water )) deallocate(csite%qmean_available_water )
+      if(associated(csite%qmean_veg_displace    )) deallocate(csite%qmean_veg_displace    )
+      if(associated(csite%qmean_rough           )) deallocate(csite%qmean_rough           )
       if(associated(csite%qmean_can_theiv       )) deallocate(csite%qmean_can_theiv       )
       if(associated(csite%qmean_can_theta       )) deallocate(csite%qmean_can_theta       )
       if(associated(csite%qmean_can_vpdef       )) deallocate(csite%qmean_can_vpdef       )
@@ -8842,6 +8906,8 @@ module ed_state_vars
          osite%fmean_nep                  (opa) = isite%fmean_nep                  (ipa)
          osite%fmean_rk4step              (opa) = isite%fmean_rk4step              (ipa)
          osite%fmean_available_water      (opa) = isite%fmean_available_water      (ipa)
+         osite%fmean_veg_displace         (opa) = isite%fmean_veg_displace         (ipa)
+         osite%fmean_rough                (opa) = isite%fmean_rough                (ipa)
          osite%fmean_can_theiv            (opa) = isite%fmean_can_theiv            (ipa)
          osite%fmean_can_theta            (opa) = isite%fmean_can_theta            (ipa)
          osite%fmean_can_vpdef            (opa) = isite%fmean_can_vpdef            (ipa)
@@ -8959,6 +9025,8 @@ module ed_state_vars
             osite%dmean_nep            (opa) = isite%dmean_nep            (ipa)
             osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (ipa)
             osite%dmean_available_water(opa) = isite%dmean_available_water(ipa)
+            osite%dmean_veg_displace   (opa) = isite%dmean_veg_displace   (ipa)
+            osite%dmean_rough          (opa) = isite%dmean_rough          (ipa)
             osite%dmean_can_theiv      (opa) = isite%dmean_can_theiv      (ipa)
             osite%dmean_can_theta      (opa) = isite%dmean_can_theta      (ipa)
             osite%dmean_can_vpdef      (opa) = isite%dmean_can_vpdef      (ipa)
@@ -9044,6 +9112,8 @@ module ed_state_vars
             osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
             osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
             osite%mmean_available_water(opa) = isite%mmean_available_water(ipa)
+            osite%mmean_veg_displace   (opa) = isite%mmean_veg_displace   (ipa)
+            osite%mmean_rough          (opa) = isite%mmean_rough          (ipa)
             osite%mmean_can_theiv      (opa) = isite%mmean_can_theiv      (ipa)
             osite%mmean_can_theta      (opa) = isite%mmean_can_theta      (ipa)
             osite%mmean_can_vpdef      (opa) = isite%mmean_can_vpdef      (ipa)
@@ -9140,6 +9210,8 @@ module ed_state_vars
                osite%qmean_nep            (n,opa) = isite%qmean_nep            (n,ipa)
                osite%qmean_rk4step        (n,opa) = isite%qmean_rk4step        (n,ipa)
                osite%qmean_available_water(n,opa) = isite%qmean_available_water(n,ipa)
+               osite%qmean_veg_displace   (n,opa) = isite%qmean_veg_displace   (n,ipa)
+               osite%qmean_rough          (n,opa) = isite%qmean_rough          (n,ipa)
                osite%qmean_can_theiv      (n,opa) = isite%qmean_can_theiv      (n,ipa)
                osite%qmean_can_theta      (n,opa) = isite%qmean_can_theta      (n,ipa)
                osite%qmean_can_vpdef      (n,opa) = isite%qmean_can_vpdef      (n,ipa)
@@ -9564,6 +9636,8 @@ module ed_state_vars
       osite%fmean_nep                 (1:z) = pack(isite%fmean_nep                 ,lmask)
       osite%fmean_rk4step             (1:z) = pack(isite%fmean_rk4step             ,lmask)
       osite%fmean_available_water     (1:z) = pack(isite%fmean_available_water     ,lmask)
+      osite%fmean_veg_displace        (1:z) = pack(isite%fmean_veg_displace        ,lmask)
+      osite%fmean_rough               (1:z) = pack(isite%fmean_rough               ,lmask)
       osite%fmean_can_theiv           (1:z) = pack(isite%fmean_can_theiv           ,lmask)
       osite%fmean_can_theta           (1:z) = pack(isite%fmean_can_theta           ,lmask)
       osite%fmean_can_vpdef           (1:z) = pack(isite%fmean_can_vpdef           ,lmask)
@@ -9671,6 +9745,8 @@ module ed_state_vars
       osite%dmean_nep            (1:z) = pack(isite%dmean_nep            (:),lmask)
       osite%dmean_rk4step        (1:z) = pack(isite%dmean_rk4step        (:),lmask)
       osite%dmean_available_water(1:z) = pack(isite%dmean_available_water(:),lmask)
+      osite%dmean_veg_displace   (1:z) = pack(isite%dmean_veg_displace   (:),lmask)
+      osite%dmean_rough          (1:z) = pack(isite%dmean_rough          (:),lmask)
       osite%dmean_can_theiv      (1:z) = pack(isite%dmean_can_theiv      (:),lmask)
       osite%dmean_can_theta      (1:z) = pack(isite%dmean_can_theta      (:),lmask)
       osite%dmean_can_vpdef      (1:z) = pack(isite%dmean_can_vpdef      (:),lmask)
@@ -9786,6 +9862,8 @@ module ed_state_vars
       osite%mmean_Af_decomp      (1:z) = pack(isite%mmean_Af_decomp      (:),lmask)
       osite%mmean_rk4step        (1:z) = pack(isite%mmean_rk4step        (:),lmask)
       osite%mmean_available_water(1:z) = pack(isite%mmean_available_water(:),lmask)
+      osite%mmean_veg_displace   (1:z) = pack(isite%mmean_veg_displace   (:),lmask)
+      osite%mmean_rough          (1:z) = pack(isite%mmean_rough          (:),lmask)
       osite%mmean_can_theiv      (1:z) = pack(isite%mmean_can_theiv      (:),lmask)
       osite%mmean_can_theta      (1:z) = pack(isite%mmean_can_theta      (:),lmask)
       osite%mmean_can_vpdef      (1:z) = pack(isite%mmean_can_vpdef      (:),lmask)
@@ -9905,71 +9983,73 @@ module ed_state_vars
 
       do n=1,ndcycle
          !----- Scalars. ------------------------------------------------------------------!
-         osite%qmean_rh            (n,1:z)  = pack(isite%qmean_rh             (n,:),lmask)
-         osite%qmean_cwd_rh        (n,1:z)  = pack(isite%qmean_cwd_rh         (n,:),lmask)
-         osite%qmean_nep           (n,1:z)  = pack(isite%qmean_nep            (n,:),lmask)
-         osite%qmean_rk4step       (n,1:z)  = pack(isite%qmean_rk4step        (n,:),lmask)
+         osite%qmean_rh             (n,1:z) = pack(isite%qmean_rh             (n,:),lmask)
+         osite%qmean_cwd_rh         (n,1:z) = pack(isite%qmean_cwd_rh         (n,:),lmask)
+         osite%qmean_nep            (n,1:z) = pack(isite%qmean_nep            (n,:),lmask)
+         osite%qmean_rk4step        (n,1:z) = pack(isite%qmean_rk4step        (n,:),lmask)
          osite%qmean_available_water(n,1:z) = pack(isite%qmean_available_water(n,:),lmask)
-         osite%qmean_can_theiv     (n,1:z)  = pack(isite%qmean_can_theiv      (n,:),lmask)
-         osite%qmean_can_theta     (n,1:z)  = pack(isite%qmean_can_theta      (n,:),lmask)
-         osite%qmean_can_vpdef     (n,1:z)  = pack(isite%qmean_can_vpdef      (n,:),lmask)
-         osite%qmean_can_temp      (n,1:z)  = pack(isite%qmean_can_temp       (n,:),lmask)
-         osite%qmean_can_shv       (n,1:z)  = pack(isite%qmean_can_shv        (n,:),lmask)
-         osite%qmean_can_co2       (n,1:z)  = pack(isite%qmean_can_co2        (n,:),lmask)
-         osite%qmean_can_rhos      (n,1:z)  = pack(isite%qmean_can_rhos       (n,:),lmask)
-         osite%qmean_can_prss      (n,1:z)  = pack(isite%qmean_can_prss       (n,:),lmask)
-         osite%qmean_gnd_temp      (n,1:z)  = pack(isite%qmean_gnd_temp       (n,:),lmask)
-         osite%qmean_gnd_shv       (n,1:z)  = pack(isite%qmean_gnd_shv        (n,:),lmask)
-         osite%qmean_can_ggnd      (n,1:z)  = pack(isite%qmean_can_ggnd       (n,:),lmask)
-         osite%qmean_sfcw_depth    (n,1:z)  = pack(isite%qmean_sfcw_depth     (n,:),lmask)
-         osite%qmean_sfcw_energy   (n,1:z)  = pack(isite%qmean_sfcw_energy    (n,:),lmask)
-         osite%qmean_sfcw_mass     (n,1:z)  = pack(isite%qmean_sfcw_mass      (n,:),lmask)
-         osite%qmean_sfcw_temp     (n,1:z)  = pack(isite%qmean_sfcw_temp      (n,:),lmask)
-         osite%qmean_sfcw_fliq     (n,1:z)  = pack(isite%qmean_sfcw_fliq      (n,:),lmask)
-         osite%qmean_rshort_gnd    (n,1:z)  = pack(isite%qmean_rshort_gnd     (n,:),lmask)
-         osite%qmean_par_gnd       (n,1:z)  = pack(isite%qmean_par_gnd        (n,:),lmask)
-         osite%qmean_rlong_gnd     (n,1:z)  = pack(isite%qmean_rlong_gnd      (n,:),lmask)
-         osite%qmean_rlongup       (n,1:z)  = pack(isite%qmean_rlongup        (n,:),lmask)
-         osite%qmean_parup         (n,1:z)  = pack(isite%qmean_parup          (n,:),lmask)
-         osite%qmean_nirup         (n,1:z)  = pack(isite%qmean_nirup          (n,:),lmask)
-         osite%qmean_rshortup      (n,1:z)  = pack(isite%qmean_rshortup       (n,:),lmask)
-         osite%qmean_rnet          (n,1:z)  = pack(isite%qmean_rnet           (n,:),lmask)
-         osite%qmean_albedo        (n,1:z)  = pack(isite%qmean_albedo         (n,:),lmask)
-         osite%qmean_albedo_par    (n,1:z)  = pack(isite%qmean_albedo_par     (n,:),lmask)
-         osite%qmean_albedo_nir    (n,1:z)  = pack(isite%qmean_albedo_nir     (n,:),lmask)
-         osite%qmean_rlong_albedo  (n,1:z)  = pack(isite%qmean_rlong_albedo   (n,:),lmask)
-         osite%qmean_ustar         (n,1:z)  = pack(isite%qmean_ustar          (n,:),lmask)
-         osite%qmean_tstar         (n,1:z)  = pack(isite%qmean_tstar          (n,:),lmask)
-         osite%qmean_qstar         (n,1:z)  = pack(isite%qmean_qstar          (n,:),lmask)
-         osite%qmean_cstar         (n,1:z)  = pack(isite%qmean_cstar          (n,:),lmask)
-         osite%qmean_carbon_ac     (n,1:z)  = pack(isite%qmean_carbon_ac      (n,:),lmask)
-         osite%qmean_carbon_st     (n,1:z)  = pack(isite%qmean_carbon_st      (n,:),lmask)
-         osite%qmean_vapor_gc      (n,1:z)  = pack(isite%qmean_vapor_gc       (n,:),lmask)
-         osite%qmean_vapor_ac      (n,1:z)  = pack(isite%qmean_vapor_ac       (n,:),lmask)
-         osite%qmean_throughfall   (n,1:z)  = pack(isite%qmean_throughfall    (n,:),lmask)
-         osite%qmean_runoff        (n,1:z)  = pack(isite%qmean_runoff         (n,:),lmask)
-         osite%qmean_drainage      (n,1:z)  = pack(isite%qmean_drainage       (n,:),lmask)
-         osite%qmean_sensible_gc   (n,1:z)  = pack(isite%qmean_sensible_gc    (n,:),lmask)
-         osite%qmean_sensible_ac   (n,1:z)  = pack(isite%qmean_sensible_ac    (n,:),lmask)
-         osite%qmean_qthroughfall  (n,1:z)  = pack(isite%qmean_qthroughfall   (n,:),lmask)
-         osite%qmean_qrunoff       (n,1:z)  = pack(isite%qmean_qrunoff        (n,:),lmask)
-         osite%qmean_qdrainage     (n,1:z)  = pack(isite%qmean_qdrainage      (n,:),lmask)
-         osite%qmsqu_rh            (n,1:z)  = pack(isite%qmsqu_rh             (n,:),lmask)
-         osite%qmsqu_cwd_rh        (n,1:z)  = pack(isite%qmsqu_cwd_rh         (n,:),lmask)
-         osite%qmsqu_nep           (n,1:z)  = pack(isite%qmsqu_nep            (n,:),lmask)
-         osite%qmsqu_rlongup       (n,1:z)  = pack(isite%qmsqu_rlongup        (n,:),lmask)
-         osite%qmsqu_parup         (n,1:z)  = pack(isite%qmsqu_parup          (n,:),lmask)
-         osite%qmsqu_nirup         (n,1:z)  = pack(isite%qmsqu_nirup          (n,:),lmask)
-         osite%qmsqu_rshortup      (n,1:z)  = pack(isite%qmsqu_rshortup       (n,:),lmask)
-         osite%qmsqu_rnet          (n,1:z)  = pack(isite%qmsqu_rnet           (n,:),lmask)
-         osite%qmsqu_albedo        (n,1:z)  = pack(isite%qmsqu_albedo         (n,:),lmask)
-         osite%qmsqu_ustar         (n,1:z)  = pack(isite%qmsqu_ustar          (n,:),lmask)
-         osite%qmsqu_carbon_ac     (n,1:z)  = pack(isite%qmsqu_carbon_ac      (n,:),lmask)
-         osite%qmsqu_carbon_st     (n,1:z)  = pack(isite%qmsqu_carbon_st      (n,:),lmask)
-         osite%qmsqu_vapor_gc      (n,1:z)  = pack(isite%qmsqu_vapor_gc       (n,:),lmask)
-         osite%qmsqu_vapor_ac      (n,1:z)  = pack(isite%qmsqu_vapor_ac       (n,:),lmask)
-         osite%qmsqu_sensible_gc   (n,1:z)  = pack(isite%qmsqu_sensible_gc    (n,:),lmask)
-         osite%qmsqu_sensible_ac   (n,1:z)  = pack(isite%qmsqu_sensible_ac    (n,:),lmask)
+         osite%qmean_veg_displace   (n,1:z) = pack(isite%qmean_veg_displace   (n,:),lmask)
+         osite%qmean_rough          (n,1:z) = pack(isite%qmean_rough          (n,:),lmask)
+         osite%qmean_can_theiv      (n,1:z) = pack(isite%qmean_can_theiv      (n,:),lmask)
+         osite%qmean_can_theta      (n,1:z) = pack(isite%qmean_can_theta      (n,:),lmask)
+         osite%qmean_can_vpdef      (n,1:z) = pack(isite%qmean_can_vpdef      (n,:),lmask)
+         osite%qmean_can_temp       (n,1:z) = pack(isite%qmean_can_temp       (n,:),lmask)
+         osite%qmean_can_shv        (n,1:z) = pack(isite%qmean_can_shv        (n,:),lmask)
+         osite%qmean_can_co2        (n,1:z) = pack(isite%qmean_can_co2        (n,:),lmask)
+         osite%qmean_can_rhos       (n,1:z) = pack(isite%qmean_can_rhos       (n,:),lmask)
+         osite%qmean_can_prss       (n,1:z) = pack(isite%qmean_can_prss       (n,:),lmask)
+         osite%qmean_gnd_temp       (n,1:z) = pack(isite%qmean_gnd_temp       (n,:),lmask)
+         osite%qmean_gnd_shv        (n,1:z) = pack(isite%qmean_gnd_shv        (n,:),lmask)
+         osite%qmean_can_ggnd       (n,1:z) = pack(isite%qmean_can_ggnd       (n,:),lmask)
+         osite%qmean_sfcw_depth     (n,1:z) = pack(isite%qmean_sfcw_depth     (n,:),lmask)
+         osite%qmean_sfcw_energy    (n,1:z) = pack(isite%qmean_sfcw_energy    (n,:),lmask)
+         osite%qmean_sfcw_mass      (n,1:z) = pack(isite%qmean_sfcw_mass      (n,:),lmask)
+         osite%qmean_sfcw_temp      (n,1:z) = pack(isite%qmean_sfcw_temp      (n,:),lmask)
+         osite%qmean_sfcw_fliq      (n,1:z) = pack(isite%qmean_sfcw_fliq      (n,:),lmask)
+         osite%qmean_rshort_gnd     (n,1:z) = pack(isite%qmean_rshort_gnd     (n,:),lmask)
+         osite%qmean_par_gnd        (n,1:z) = pack(isite%qmean_par_gnd        (n,:),lmask)
+         osite%qmean_rlong_gnd      (n,1:z) = pack(isite%qmean_rlong_gnd      (n,:),lmask)
+         osite%qmean_rlongup        (n,1:z) = pack(isite%qmean_rlongup        (n,:),lmask)
+         osite%qmean_parup          (n,1:z) = pack(isite%qmean_parup          (n,:),lmask)
+         osite%qmean_nirup          (n,1:z) = pack(isite%qmean_nirup          (n,:),lmask)
+         osite%qmean_rshortup       (n,1:z) = pack(isite%qmean_rshortup       (n,:),lmask)
+         osite%qmean_rnet           (n,1:z) = pack(isite%qmean_rnet           (n,:),lmask)
+         osite%qmean_albedo         (n,1:z) = pack(isite%qmean_albedo         (n,:),lmask)
+         osite%qmean_albedo_par     (n,1:z) = pack(isite%qmean_albedo_par     (n,:),lmask)
+         osite%qmean_albedo_nir     (n,1:z) = pack(isite%qmean_albedo_nir     (n,:),lmask)
+         osite%qmean_rlong_albedo   (n,1:z) = pack(isite%qmean_rlong_albedo   (n,:),lmask)
+         osite%qmean_ustar          (n,1:z) = pack(isite%qmean_ustar          (n,:),lmask)
+         osite%qmean_tstar          (n,1:z) = pack(isite%qmean_tstar          (n,:),lmask)
+         osite%qmean_qstar          (n,1:z) = pack(isite%qmean_qstar          (n,:),lmask)
+         osite%qmean_cstar          (n,1:z) = pack(isite%qmean_cstar          (n,:),lmask)
+         osite%qmean_carbon_ac      (n,1:z) = pack(isite%qmean_carbon_ac      (n,:),lmask)
+         osite%qmean_carbon_st      (n,1:z) = pack(isite%qmean_carbon_st      (n,:),lmask)
+         osite%qmean_vapor_gc       (n,1:z) = pack(isite%qmean_vapor_gc       (n,:),lmask)
+         osite%qmean_vapor_ac       (n,1:z) = pack(isite%qmean_vapor_ac       (n,:),lmask)
+         osite%qmean_throughfall    (n,1:z) = pack(isite%qmean_throughfall    (n,:),lmask)
+         osite%qmean_runoff         (n,1:z) = pack(isite%qmean_runoff         (n,:),lmask)
+         osite%qmean_drainage       (n,1:z) = pack(isite%qmean_drainage       (n,:),lmask)
+         osite%qmean_sensible_gc    (n,1:z) = pack(isite%qmean_sensible_gc    (n,:),lmask)
+         osite%qmean_sensible_ac    (n,1:z) = pack(isite%qmean_sensible_ac    (n,:),lmask)
+         osite%qmean_qthroughfall   (n,1:z) = pack(isite%qmean_qthroughfall   (n,:),lmask)
+         osite%qmean_qrunoff        (n,1:z) = pack(isite%qmean_qrunoff        (n,:),lmask)
+         osite%qmean_qdrainage      (n,1:z) = pack(isite%qmean_qdrainage      (n,:),lmask)
+         osite%qmsqu_rh             (n,1:z) = pack(isite%qmsqu_rh             (n,:),lmask)
+         osite%qmsqu_cwd_rh         (n,1:z) = pack(isite%qmsqu_cwd_rh         (n,:),lmask)
+         osite%qmsqu_nep            (n,1:z) = pack(isite%qmsqu_nep            (n,:),lmask)
+         osite%qmsqu_rlongup        (n,1:z) = pack(isite%qmsqu_rlongup        (n,:),lmask)
+         osite%qmsqu_parup          (n,1:z) = pack(isite%qmsqu_parup          (n,:),lmask)
+         osite%qmsqu_nirup          (n,1:z) = pack(isite%qmsqu_nirup          (n,:),lmask)
+         osite%qmsqu_rshortup       (n,1:z) = pack(isite%qmsqu_rshortup       (n,:),lmask)
+         osite%qmsqu_rnet           (n,1:z) = pack(isite%qmsqu_rnet           (n,:),lmask)
+         osite%qmsqu_albedo         (n,1:z) = pack(isite%qmsqu_albedo         (n,:),lmask)
+         osite%qmsqu_ustar          (n,1:z) = pack(isite%qmsqu_ustar          (n,:),lmask)
+         osite%qmsqu_carbon_ac      (n,1:z) = pack(isite%qmsqu_carbon_ac      (n,:),lmask)
+         osite%qmsqu_carbon_st      (n,1:z) = pack(isite%qmsqu_carbon_st      (n,:),lmask)
+         osite%qmsqu_vapor_gc       (n,1:z) = pack(isite%qmsqu_vapor_gc       (n,:),lmask)
+         osite%qmsqu_vapor_ac       (n,1:z) = pack(isite%qmsqu_vapor_ac       (n,:),lmask)
+         osite%qmsqu_sensible_gc    (n,1:z) = pack(isite%qmsqu_sensible_gc    (n,:),lmask)
+         osite%qmsqu_sensible_ac    (n,1:z) = pack(isite%qmsqu_sensible_ac    (n,:),lmask)
          !---------------------------------------------------------------------------------!
 
 
@@ -13073,6 +13153,24 @@ module ed_state_vars
                            ,'Sub-daily mean - Available water'                             &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_veg_displace                                  &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_VEG_DISPLACE_PY    :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Vegetation Displacement Height'              &
+                           ,'[          m]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_rough           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_rough                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_ROUGH_PY    :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Roughness Height'                            &
+                           ,'[          m]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_can_theiv       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_can_theiv                                     &
@@ -14362,6 +14460,24 @@ module ed_state_vars
                            ,'Daily mean - Available water'                                 &
                            ,'[      kg/m2]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_veg_displace                                  &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_VEG_DISPLACE_PY    :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Vegetation Displacement Height'                  &
+                           ,'[          m]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_rough           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_rough                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_ROUGH_PY    :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Roughness Height'                                &
+                           ,'[          m]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_can_theiv       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_can_theiv                                     &
@@ -15507,6 +15623,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Available water'                               &
                            ,'[      kg/m2]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_veg_displace                                  &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_VEG_DISPLACE_PY    :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Vegetation Displacement Height'                &
+                           ,'[          m]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_rough           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_rough                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_ROUGH_PY    :11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Roughness Height'                              &
+                           ,'[          m]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_can_theiv       )) then
          nvar = nvar+1
@@ -17038,6 +17172,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Available water'                                  &
                            ,'[      kg/m2]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_veg_displace                                  &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_VEG_DISPLACE_PY    :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Vegetation Displacement Height'                   &
+                           ,'[          m]','(ndcycle,ipoly)'            )
+      end if
+      if (associated(cgrid%qmean_rough           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_rough                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_ROUGH_PY    :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Roughness Height'                                 &
+                           ,'[          m]','(ndcycle,ipoly)'            )
       end if
       if (associated(cgrid%qmean_can_theiv       )) then
          nvar = nvar+1
@@ -20736,7 +20888,7 @@ module ed_state_vars
       if (associated(csite%can_depth)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%can_depth,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'CAN_DEPTH :31:hist') 
+           var_len,var_len_global,max_ptrs,'CAN_DEPTH :31:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Canopy depth','[m]','NA') 
       end if
      
@@ -21010,14 +21162,14 @@ module ed_state_vars
       if (associated(csite%veg_rough)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%veg_rough,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'VEG_ROUGH :31:hist') 
+           var_len,var_len_global,max_ptrs,'VEG_ROUGH :31:hist:anal:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
       if (associated(csite%veg_height)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%veg_height ,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'VEG_HEIGHT :31:hist') 
+           var_len,var_len_global,max_ptrs,'VEG_HEIGHT :31:hist:anal:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -21508,6 +21660,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Available water'                             &
                            ,'[      kg/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_veg_displace                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_VEG_DISPLACE_PA      :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Vegetation displacement height'              &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%fmean_rough       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%fmean_rough                                         &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_ROUGH_PA         :31:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Roughness height'                            &
+                           ,'[          m]','(ipatch)'            )
       end if
       if (associated(csite%fmean_can_theiv       )) then
          nvar = nvar+1
@@ -22050,6 +22220,24 @@ module ed_state_vars
                            ,'Daily mean - Available water'                                 &
                            ,'[      kg/m2]','(ipatch)'            )
       end if
+      if (associated(csite%dmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_veg_displace                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_VEG_DISPLACE_PA      :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Vegetation displacement height'                  &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%dmean_rough       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%dmean_rough                                         &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_ROUGH_PA         :31:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Roughness height'                                &
+                           ,'[          m]','(ipatch)'            )
+      end if
       if (associated(csite%dmean_can_theiv       )) then
          nvar = nvar+1
          call vtable_edio_r(npts,csite%dmean_can_theiv                                     &
@@ -22553,6 +22741,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Available water'                               &
                            ,'[      kg/m2]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_veg_displace                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_VEG_DISPLACE_PA      :31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Vegetation displacement height'                &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%mmean_rough       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%mmean_rough                                         &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_ROUGH_PA         :31:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Roughness height'                              &
+                           ,'[          m]','(ipatch)'            )
       end if
       if (associated(csite%mmean_can_theiv       )) then
          nvar = nvar+1
@@ -23305,6 +23511,24 @@ module ed_state_vars
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Available water'                                  &
                            ,'[      kg/m2]','(ndcycle,ipatch)'    )
+      end if
+      if (associated(csite%qmean_veg_displace    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_veg_displace                                  &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_VEG_DISPLACE_PA      :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Vegetation displacement height'                   &
+                           ,'[          m]','(ipatch)'            )
+      end if
+      if (associated(csite%qmean_rough       )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,csite%qmean_rough                                         &
+                           ,nvar,igr,init,csite%paglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_ROUGH_PA        :-31:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Roughness height'                                 &
+                           ,'[          m]','(ndcycle,ipatch)'    )
       end if
       if (associated(csite%qmean_can_theiv       )) then
          nvar = nvar+1

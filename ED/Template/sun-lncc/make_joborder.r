@@ -226,6 +226,8 @@ default = list( run           = "unnamed"
               , iphen         = -1
               , iallom        = 4
               , ibigleaf      = 0
+              , integ.scheme  = 1
+              , nsub.euler    = 50
               , irepro        = 2
               , treefall      = -0.0160
               , ianth.disturb = 0

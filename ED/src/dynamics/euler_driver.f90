@@ -391,7 +391,8 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
    use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
                              , print_sanity_check     ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       & ! intent(in)
-                             , dtlsm                  ! ! intent(in)
+                             , dtlsm                  & ! intent(in)
+                             , dteuler                ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
                              , nzs                    & ! intent(in)
@@ -468,13 +469,10 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
       call get_yscal(initp,dinitp,h,yscal,cpatch)
 
       !----- Be sure not to overstep ------------------------------------------------------!
-      hgoal = h
-      if ((x+h-tend)*(x+h-tbeg) > 0.d0) then
-         h       = tend - x
-         gapstep = .true.
-      else 
-         gapstep = .false.
-      end if
+      hgoal   = h
+      gapstep = (x+h-tend)*(x+h-tbeg) > 0.d0
+      if (gapstep) h = tend - x
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !     Here we will perform the Euler integration using the time step.  As in Runge-  !
@@ -497,26 +495,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
 
          !----- Perform a sanity check. ---------------------------------------------------!
          call rk4_sanity_check(ytemp,reject_step,csite,ipa,dinitp,h,print_diags)
-
          !---------------------------------------------------------------------------------!
-         !     Here we check the error of this step.  Three outcomes are possible:         !
-         ! 1.  The updated values make no sense.  Reject step, assign a large error and    !
-         !     try again with a smaller time step;                                         !
-         ! 2.  The updated values are reasonable, but the error is large.  Reject step and !
-         !     try again with a smaller time step;                                         !
-         ! 3.  The updated values are reasonable, and the error is small.  Accept step and !
-         !     try again with a larger time step.                                          !
-         !---------------------------------------------------------------------------------!
-         if (reject_step) then
-            !------------------------------------------------------------------------------!
-            !    If step was already rejected, that means the step had finished premature- !
-            ! ly, so we assign a standard large error (10.0).                              !
-            !------------------------------------------------------------------------------!
-            errmax = 1.d1
-         else
-
-            errmax = 1.d-1
-         end if
 
 
          !---------------------------------------------------------------------------------!
@@ -532,12 +511,12 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
 
             !----- Define new step and check whether it is sufficiently long or not. ------!
             oldh    = h
-            newh    = safety * h * errmax**pshrnk
+            newh    = 5.d-1 * h
             minstep = (newh == h) .or. newh < hmin
             !------------------------------------------------------------------------------!
 
             !----- Define next time, and check whether it is long enough to change time. --!
-            h       = max(1.d-1*h, newh)
+            h       = newh
             hgoal   = h
             xnew    = x + h
             stuck   = xnew == x
@@ -599,8 +578,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,isi,nstep
             if (gapstep) then
                hnext = hgoal
             else
-               fgrow = min(5.d0,max(safety*errmax**pgrow,1.d0))
-               hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
+               hnext = min(dble(dteuler), 2.d0 * hgoal)
             end if
             !------------------------------------------------------------------------------!
 

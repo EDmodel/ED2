@@ -90,6 +90,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp,vels)
    targetp%veg_height   = dble(sourcesite%veg_height  (ipa))
    targetp%veg_displace = dble(sourcesite%veg_displace(ipa))
    targetp%veg_rough    = dble(sourcesite%veg_rough   (ipa))
+   targetp%ustar        = dble(sourcesite%ustar       (ipa))
+   targetp%tstar        = dble(sourcesite%tstar       (ipa))
+   targetp%qstar        = dble(sourcesite%qstar       (ipa))
+   targetp%cstar        = dble(sourcesite%cstar       (ipa))
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

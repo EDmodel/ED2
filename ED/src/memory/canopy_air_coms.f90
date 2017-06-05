@@ -279,8 +279,6 @@ module canopy_air_coms
    real   :: fm1         ! f-1
    real   :: ate         ! a * e
    real   :: atetf       ! a * e * f
-   real   :: z0moz0h     ! z0(M)/z0(h)
-   real   :: z0hoz0m     ! z0(M)/z0(h)
    !----- Modified CLM (2004) model. ------------------------------------------------------!
    real   :: beta_vs     ! Beta for the very stable case (CLM eq. 5.30)
    real   :: chim        ! CLM coefficient for very unstable case (momentum)
@@ -297,6 +295,10 @@ module canopy_air_coms
    real   :: zetac_uhi13 ! 1/(-zetac_umi)^(1/6)
    real   :: psimc_um    ! psim evaluation at zetac_um
    real   :: psihc_uh    ! psih evaluation at zetac_uh
+   !----- Parameters for the z0m:z0h ratio, following Zeng and Dickinson (1998). ----------!
+   real   :: zd98_a       ! a term
+   real   :: zd98_b       ! b term
+   real   :: zd98_emax    ! Maximum number acceptable within the exponential term
    !---------------------------------------------------------------------------------------!
 
    !----- Double precision of all these variables. ----------------------------------------!
@@ -320,8 +322,6 @@ module canopy_air_coms
    real(kind=8)   :: fm18
    real(kind=8)   :: ate8
    real(kind=8)   :: atetf8
-   real(kind=8)   :: z0moz0h8
-   real(kind=8)   :: z0hoz0m8
    real(kind=8)   :: beta_vs8
    real(kind=8)   :: chim8
    real(kind=8)   :: chih8
@@ -337,6 +337,9 @@ module canopy_air_coms
    real(kind=8)   :: zetac_uhi138
    real(kind=8)   :: psimc_um8
    real(kind=8)   :: psihc_uh8
+   real(kind=8)   :: zd98_a8
+   real(kind=8)   :: zd98_b8
+   real(kind=8)   :: zd98_emax8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -904,7 +907,7 @@ module canopy_air_coms
    ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
    ! Falsi method (Illinois).                                                              !
    !---------------------------------------------------------------------------------------!
-   real function zoobukhov(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+   real function zoobukhov(rib,zstar,rough,z0moz0h,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
       use therm_lib, only : toler  & ! intent(in)
                           , maxfpo & ! intent(in)
                           , maxit  ! ! intent(in)
@@ -913,6 +916,7 @@ module canopy_air_coms
       real   , intent(in) :: rib       ! Bulk Richardson number                    [   ---]
       real   , intent(in) :: zstar     ! Reference height - displacement height    [     m]
       real   , intent(in) :: rough     ! Roughness length scale                    [     m]
+      real   , intent(in) :: z0moz0h   ! z0m:z0h ratio                             [   ---]
       real   , intent(in) :: zoz0m     ! zstar/roughness(momentum)                 [   ---]
       real   , intent(in) :: lnzoz0m   ! ln[zstar/roughness(momentum)]             [   ---]
       real   , intent(in) :: zoz0h     ! zstar/roughness(heat)                     [   ---]
@@ -1286,7 +1290,8 @@ module canopy_air_coms
    ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
    ! Falsi method (Illinois).                                                              !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function zoobukhov8(rib,zstar,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+   real(kind=8) function zoobukhov8(rib,zstar,rough,z0moz0h,zoz0m,lnzoz0m,zoz0h,lnzoz0h    &
+                                   ,stable)
       use therm_lib8, only : toler8 & ! intent(in)
                            , maxfpo & ! intent(in)
                            , maxit  ! ! intent(in)
@@ -1295,6 +1300,7 @@ module canopy_air_coms
       real(kind=8), intent(in) :: rib       ! Bulk Richardson number               [   ---]
       real(kind=8), intent(in) :: zstar     ! Reference height - displacement hgt. [     m]
       real(kind=8), intent(in) :: rough     ! Roughness length scale               [     m]
+      real(kind=8), intent(in) :: z0moz0h   ! z0m:z0h ratio                        [   ---]
       real(kind=8), intent(in) :: zoz0m     ! zstar/roughness(momentum)            [   ---]
       real(kind=8), intent(in) :: lnzoz0m   ! ln[zstar/roughness(momentum)]        [   ---]
       real(kind=8), intent(in) :: zoz0h     ! zstar/roughness(heat)                [   ---]

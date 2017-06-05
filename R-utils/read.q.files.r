@@ -472,6 +472,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #----- Read workload, and retrieve only the current month. --------------------------#
       emean$workload  [m] = mymont$WORKLOAD[thismonth]
       emean$specwork  [m] = mymont$WORKLOAD[thismonth] / sum(mymont$SIPA.N,na.rm=TRUE)
+      emean$rk4step   [m] = mymont$MMEAN.RK4STEP.PY
       #------------------------------------------------------------------------------------#
 
 
@@ -600,6 +601,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       qmean$leaf.gbw     [m,] =   mymont$QMEAN.LEAF.GBW.PY       * day.sec
       qmean$leaf.gsw     [m,] =   mymont$QMEAN.LEAF.GSW.PY       * day.sec
       qmean$wood.gbw     [m,] =   mymont$QMEAN.WOOD.GBW.PY       * day.sec
+      qmean$rk4step      [m,] =   mymont$QMEAN.RK4STEP.PY
       #------------------------------------------------------------------------------------#
 
 
@@ -1510,6 +1512,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$age          [[plab]] =   agepa
       patch$area         [[plab]] =   areapa
       patch$lu           [[plab]] =   lupa
+      patch$rk4step      [[plab]] =   mymont$MMEAN.RK4STEP.PA
       patch$nep          [[plab]] =   mymont$MMEAN.NEP.PA
       patch$het.resp     [[plab]] =   mymont$MMEAN.RH.PA
       patch$can.temp     [[plab]] =   mymont$MMEAN.CAN.TEMP.PA    - t00
@@ -1537,6 +1540,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       patch$par.gnd      [[plab]] =   mymont$MMEAN.PAR.GND.PA     * Watts.2.Ein * 1e6
       patch$rnet         [[plab]] =   mymont$MMEAN.RNET.PA
       #----- Bind the current mean diurnal cycle patch. -----------------------------------#
+      qpatch$rk4step      [[plab]] =   mymont$QMEAN.RK4STEP.PA
       qpatch$nep          [[plab]] =   mymont$QMEAN.NEP.PA
       qpatch$het.resp     [[plab]] =   mymont$QMEAN.RH.PA
       qpatch$can.temp     [[plab]] =   mymont$QMEAN.CAN.TEMP.PA    - t00

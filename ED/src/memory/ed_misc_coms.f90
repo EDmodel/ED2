@@ -35,8 +35,10 @@ Module ed_misc_coms
    integer :: imonthh
    integer :: idateh
 
-   real :: dtlsm
-   real :: radfrq
+   real    :: dtlsm
+   integer :: nsub_euler
+   real    :: dteuler
+   real    :: radfrq
 
    integer :: ifoutput
    integer :: idoutput

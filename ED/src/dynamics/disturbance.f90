@@ -1665,6 +1665,7 @@ module disturbance_utils
       csite%age                        (np) = 0.0
       csite%fbeam                      (np) = 1.0
       csite%light_type                 (np) = 1
+      csite%ustar                      (np) = 0.0
       csite%htry                       (np) = 0.0
       csite%hprev                      (np) = 0.0
       csite%fast_soil_C                (np) = 0.0
@@ -1766,6 +1767,18 @@ module disturbance_utils
                                             * area_fac
       csite%can_depth                  (np) = csite%can_depth                  (np)        &
                                             + csite%can_depth                  (cp)        &
+                                            * area_fac
+      csite%ustar                      (np) = csite%ustar                      (np)        &
+                                            + csite%ustar                      (cp)        &
+                                            * area_fac
+      csite%tstar                      (np) = csite%tstar                      (np)        &
+                                            + csite%tstar                      (cp)        &
+                                            * area_fac
+      csite%qstar                      (np) = csite%qstar                      (np)        &
+                                            + csite%qstar                      (cp)        &
+                                            * area_fac
+      csite%cstar                      (np) = csite%cstar                      (np)        &
+                                            + csite%cstar                      (cp)        &
                                             * area_fac
       csite%ggbare                     (np) = csite%ggbare                     (np)        &
                                             + csite%ggbare                     (cp)        &
@@ -1876,6 +1889,12 @@ module disturbance_utils
       csite%fmean_available_water(np) = csite%fmean_available_water(np)                    &
                                       + csite%fmean_available_water(cp)                    &
                                       * area_fac 
+      csite%fmean_veg_displace   (np) = csite%fmean_veg_displace   (np)                    &
+                                      + csite%fmean_veg_displace   (cp)                    &
+                                      * area_fac
+      csite%fmean_rough          (np) = csite%fmean_rough          (np)                    &
+                                      + csite%fmean_rough          (cp)                    &
+                                      * area_fac
       csite%fmean_can_theiv      (np) = csite%fmean_can_theiv      (np)                    &
                                       + csite%fmean_can_theiv      (cp)                    &
                                       * area_fac 
@@ -2054,6 +2073,12 @@ module disturbance_utils
                                              * area_fac
          csite%dmean_available_water(    np) = csite%dmean_available_water(    np)         &
                                              + csite%dmean_available_water(    cp)         &
+                                             * area_fac
+         csite%dmean_veg_displace   (    np) = csite%dmean_veg_displace   (    np)         &
+                                             + csite%dmean_veg_displace   (    cp)         &
+                                             * area_fac
+         csite%dmean_rough          (    np) = csite%dmean_rough          (    np)         &
+                                             + csite%dmean_rough          (    cp)         &
                                              * area_fac
          csite%dmean_can_theiv      (    np) = csite%dmean_can_theiv      (    np)         &
                                              + csite%dmean_can_theiv      (    cp)         &
@@ -2268,6 +2293,12 @@ module disturbance_utils
                                              * area_fac
          csite%mmean_available_water(    np) = csite%mmean_available_water(    np)         &
                                              + csite%mmean_available_water(    cp)         &
+                                             * area_fac
+         csite%mmean_veg_displace   (    np) = csite%mmean_veg_displace   (    np)         &
+                                             + csite%mmean_veg_displace   (    cp)         &
+                                             * area_fac
+         csite%mmean_rough          (    np) = csite%mmean_rough          (    np)         &
+                                             + csite%mmean_rough          (    cp)         &
                                              * area_fac
          csite%mmean_can_theiv      (    np) = csite%mmean_can_theiv      (    np)         &
                                              + csite%mmean_can_theiv      (    cp)         &
@@ -2512,6 +2543,12 @@ module disturbance_utils
                                              * area_fac
          csite%qmean_available_water(  :,np) = csite%qmean_available_water(  :,np)         &
                                              + csite%qmean_available_water(  :,cp)         &
+                                             * area_fac
+         csite%qmean_veg_displace   (  :,np) = csite%qmean_veg_displace   (  :,np)         &
+                                             + csite%qmean_veg_displace   (  :,cp)         &
+                                             * area_fac
+         csite%qmean_rough          (  :,np) = csite%qmean_rough          (  :,np)         &
+                                             + csite%qmean_rough          (  :,cp)         &
                                              * area_fac
          csite%qmean_can_theiv      (  :,np) = csite%qmean_can_theiv      (  :,np)         &
                                              + csite%qmean_can_theiv      (  :,cp)         &

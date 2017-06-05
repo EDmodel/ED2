@@ -385,6 +385,12 @@ module average_utils
                cgrid%fmean_available_water(ipy) = cgrid%fmean_available_water(ipy)         &
                                                 + csite%fmean_available_water(ipa)         &
                                                 * patch_wgt
+               cgrid%fmean_veg_displace   (ipy) = cgrid%fmean_veg_displace   (ipy)         &
+                                                + csite%fmean_veg_displace   (ipa)         &
+                                                * patch_wgt
+               cgrid%fmean_rough          (ipy) = cgrid%fmean_rough          (ipy)         &
+                                                + csite%fmean_rough          (ipa)         &
+                                                * patch_wgt
                cgrid%fmean_can_theiv      (ipy) = cgrid%fmean_can_theiv      (ipy)         &
                                                 + csite%fmean_can_theiv      (ipa)         &
                                                 * patch_wgt
@@ -1284,6 +1290,8 @@ module average_utils
          cgrid%fmean_nep             (  ipy) = 0.0
          cgrid%fmean_rk4step         (  ipy) = 0.0
          cgrid%fmean_available_water (  ipy) = 0.0
+         cgrid%fmean_veg_displace    (  ipy) = 0.0
+         cgrid%fmean_rough           (  ipy) = 0.0
          cgrid%fmean_can_theiv       (  ipy) = 0.0
          cgrid%fmean_can_theta       (  ipy) = 0.0
          cgrid%fmean_can_vpdef       (  ipy) = 0.0
@@ -1412,6 +1420,8 @@ module average_utils
                csite%fmean_nep            (  ipa) = 0.0
                csite%fmean_rk4step        (  ipa) = 0.0
                csite%fmean_available_water(  ipa) = 0.0
+               csite%fmean_veg_displace   (  ipa) = 0.0
+               csite%fmean_rough          (  ipa) = 0.0
                csite%fmean_can_theiv      (  ipa) = 0.0
                csite%fmean_can_theta      (  ipa) = 0.0
                csite%fmean_can_vpdef      (  ipa) = 0.0
@@ -1798,6 +1808,12 @@ module average_utils
          cgrid%dmean_available_water(ipy) = cgrid%dmean_available_water(ipy)               &
                                           + cgrid%fmean_available_water(ipy)               &
                                           * frqsum_o_daysec
+         cgrid%dmean_veg_displace   (ipy) = cgrid%dmean_veg_displace   (ipy)               &
+                                          + cgrid%fmean_veg_displace   (ipy)               &
+                                          * frqsum_o_daysec
+         cgrid%dmean_rough          (ipy) = cgrid%dmean_rough          (ipy)               &
+                                          + cgrid%fmean_rough          (ipy)               &
+                                          * frqsum_o_daysec
          cgrid%dmean_can_theiv      (ipy) = cgrid%dmean_can_theiv      (ipy)               &
                                           + cgrid%fmean_can_theiv      (ipy)               &
                                           * frqsum_o_daysec
@@ -2083,6 +2099,12 @@ module average_utils
                                                    * frqsum_o_daysec
                csite%dmean_available_water   (ipa) = csite%dmean_available_water   (ipa)   &
                                                    + csite%fmean_available_water   (ipa)   &
+                                                   * frqsum_o_daysec
+               csite%dmean_veg_displace      (ipa) = csite%dmean_veg_displace      (ipa)   &
+                                                   + csite%fmean_veg_displace      (ipa)   &
+                                                   * frqsum_o_daysec
+               csite%dmean_rough             (ipa) = csite%dmean_rough             (ipa)   &
+                                                   + csite%fmean_rough             (ipa)   &
                                                    * frqsum_o_daysec
                csite%dmean_can_theiv         (ipa) = csite%dmean_can_theiv         (ipa)   &
                                                    + csite%fmean_can_theiv         (ipa)   &
@@ -3245,6 +3267,8 @@ module average_utils
          cgrid%dmean_nep                (ipy) = 0.0
          cgrid%dmean_rk4step            (ipy) = 0.0
          cgrid%dmean_available_water    (ipy) = 0.0
+         cgrid%dmean_veg_displace       (ipy) = 0.0
+         cgrid%dmean_rough              (ipy) = 0.0
          cgrid%dmean_can_theiv          (ipy) = 0.0
          cgrid%dmean_can_theta          (ipy) = 0.0
          cgrid%dmean_can_vpdef          (ipy) = 0.0
@@ -3356,6 +3380,8 @@ module average_utils
                csite%dmean_nep              (ipa) = 0.0
                csite%dmean_rk4step          (ipa) = 0.0
                csite%dmean_available_water  (ipa) = 0.0
+               csite%dmean_veg_displace     (ipa) = 0.0
+               csite%dmean_rough            (ipa) = 0.0
                csite%dmean_can_theiv        (ipa) = 0.0
                csite%dmean_can_theta        (ipa) = 0.0
                csite%dmean_can_vpdef        (ipa) = 0.0
@@ -3837,6 +3863,12 @@ module average_utils
          cgrid%mmean_available_water  (ipy) = cgrid%mmean_available_water  (ipy)           &
                                             + cgrid%dmean_available_water  (ipy)           &
                                             * ndaysi
+         cgrid%mmean_veg_displace     (ipy) = cgrid%mmean_veg_displace     (ipy)           &
+                                            + cgrid%dmean_veg_displace     (ipy)           &
+                                            * ndaysi
+         cgrid%mmean_rough            (ipy) = cgrid%mmean_rough            (ipy)           &
+                                            + cgrid%dmean_rough            (ipy)           &
+                                            * ndaysi
          cgrid%mmean_can_theiv        (ipy) = cgrid%mmean_can_theiv        (ipy)           &
                                             + cgrid%dmean_can_theiv        (ipy)           &
                                             * ndaysi
@@ -4262,6 +4294,12 @@ module average_utils
                                                   * ndaysi
                csite%mmean_available_water  (ipa) = csite%mmean_available_water  (ipa)     &
                                                   + csite%dmean_available_water  (ipa)     &
+                                                  * ndaysi
+               csite%mmean_veg_displace     (ipa) = csite%mmean_veg_displace     (ipa)     &
+                                                  + csite%dmean_veg_displace     (ipa)     &
+                                                  * ndaysi
+               csite%mmean_rough            (ipa) = csite%mmean_rough            (ipa)     &
+                                                  + csite%dmean_rough            (ipa)     &
                                                   * ndaysi
                csite%mmean_can_theiv        (ipa) = csite%mmean_can_theiv        (ipa)     &
                                                   + csite%dmean_can_theiv        (ipa)     &
@@ -5226,6 +5264,8 @@ module average_utils
          cgrid%mmean_nep                 (ipy) = 0.0 
          cgrid%mmean_rk4step             (ipy) = 0.0 
          cgrid%mmean_available_water     (ipy) = 0.0 
+         cgrid%mmean_veg_displace        (ipy) = 0.0 
+         cgrid%mmean_rough               (ipy) = 0.0 
          cgrid%mmean_can_theiv           (ipy) = 0.0 
          cgrid%mmean_can_theta           (ipy) = 0.0 
          cgrid%mmean_can_vpdef           (ipy) = 0.0 
@@ -5380,6 +5420,8 @@ module average_utils
                csite%mmean_Af_decomp        (ipa) = 0.0
                csite%mmean_rk4step          (ipa) = 0.0
                csite%mmean_available_water  (ipa) = 0.0
+               csite%mmean_veg_displace     (ipa) = 0.0
+               csite%mmean_rough            (ipa) = 0.0
                csite%mmean_can_theiv        (ipa) = 0.0
                csite%mmean_can_theta        (ipa) = 0.0
                csite%mmean_can_vpdef        (ipa) = 0.0
@@ -5830,6 +5872,12 @@ module average_utils
          cgrid%qmean_available_water  (t,ipy) = cgrid%qmean_available_water  (t,ipy)       &
                                               + cgrid%fmean_available_water    (ipy)       &
                                               * ndaysi
+         cgrid%qmean_veg_displace     (t,ipy) = cgrid%qmean_veg_displace     (t,ipy)       &
+                                              + cgrid%fmean_veg_displace       (ipy)       &
+                                              * ndaysi
+         cgrid%qmean_rough            (t,ipy) = cgrid%qmean_rough            (t,ipy)       &
+                                              + cgrid%fmean_rough              (ipy)       &
+                                              * ndaysi
          cgrid%qmean_can_theiv        (t,ipy) = cgrid%qmean_can_theiv        (t,ipy)       &
                                               + cgrid%fmean_can_theiv          (ipy)       &
                                               * ndaysi
@@ -6173,6 +6221,12 @@ module average_utils
                                                     * ndaysi
                csite%qmean_available_water  (t,ipa) = csite%qmean_available_water  (t,ipa) &
                                                     + csite%fmean_available_water    (ipa) &
+                                                    * ndaysi
+               csite%qmean_veg_displace     (t,ipa) = csite%qmean_veg_displace     (t,ipa) &
+                                                    + csite%fmean_veg_displace       (ipa) &
+                                                    * ndaysi
+               csite%qmean_rough            (t,ipa) = csite%qmean_rough            (t,ipa) &
+                                                    + csite%fmean_rough              (ipa) &
                                                     * ndaysi
                csite%qmean_can_theiv        (t,ipa) = csite%qmean_can_theiv        (t,ipa) &
                                                     + csite%fmean_can_theiv          (ipa) &
@@ -7033,6 +7087,8 @@ module average_utils
          cgrid%qmean_nep                (:,ipy) = 0.0
          cgrid%qmean_rk4step            (:,ipy) = 0.0
          cgrid%qmean_available_water    (:,ipy) = 0.0
+         cgrid%qmean_veg_displace       (:,ipy) = 0.0
+         cgrid%qmean_rough              (:,ipy) = 0.0
          cgrid%qmean_can_theiv          (:,ipy) = 0.0
          cgrid%qmean_can_theta          (:,ipy) = 0.0
          cgrid%qmean_can_vpdef          (:,ipy) = 0.0
@@ -7162,6 +7218,8 @@ module average_utils
                csite%qmean_nep                    (:,ipa) = 0.0
                csite%qmean_rk4step                (:,ipa) = 0.0
                csite%qmean_available_water        (:,ipa) = 0.0
+               csite%qmean_veg_displace           (:,ipa) = 0.0
+               csite%qmean_rough                  (:,ipa) = 0.0
                csite%qmean_can_theiv              (:,ipa) = 0.0
                csite%qmean_can_theta              (:,ipa) = 0.0
                csite%qmean_can_vpdef              (:,ipa) = 0.0

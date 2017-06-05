@@ -566,7 +566,9 @@ module fuse_fiss_utils
                                      , hgt_max             & ! intent(in)
                                      , sla                 & ! intent(in)
                                      , is_grass            & ! intent(in)
-                                     , hgt_ref             ! ! intent(in)
+                                     , hgt_ref             & ! intent(in)
+                                     , veg_hcap_min        & ! intent(in)
+                                     , qsw                 ! ! intent(in)
       use fusion_fission_coms , only : niter_cohfus        & ! intent(in)
                                      , coh_size_tol_min    & ! intent(in)
                                      , coh_size_tol_mult   & ! intent(in)
@@ -577,6 +579,7 @@ module fuse_fiss_utils
       use allometry           , only : dbh2h               & ! function
                                      , size2bl             ! ! function
       use ed_misc_coms        , only : igrass              ! ! intent(in)
+      use ed_therm_lib        , only : calc_veg_hcap       ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -584,47 +587,45 @@ module fuse_fiss_utils
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
       integer                , intent(in)  :: lsl               ! Lowest soil level
       logical                , intent(in)  :: fuse_initial      ! Initialisation step?
-      !----- Local variables --------------------------------------------------------------!
+      !----- Local arrays -----------------------------------------------------------------!
       logical, dimension(:)  , allocatable :: fuse_table     ! Flag, remaining cohorts
       type(patchtype)        , pointer     :: cpatch         ! Current patch
       type(patchtype)        , pointer     :: temppatch      ! Scratch patch
-      integer                              :: donc           ! Index: donor cohort
-      integer                              :: recc           ! Index: receptor cohort
-      integer                              :: ico3           ! Cohort counter
-      logical                              :: donc_resolv    ! Flag: Donor cohort is
-                                                             !     resolvable
-      logical                              :: dr_sim_dbh     ! Flag: donor and receptor
-                                                             !    have similar size.
-      logical                              :: dr_sim_hgt     ! Flag: donor and receptor
-                                                             !    have similar size.
-      logical                              :: dr_sim_size    ! Flag: donor and receptor
-                                                             !    have similar size.
-      logical                              :: dr_eqv_recruit ! Flag: donor and receptor
-                                                             !    have same recruitment
-                                                             !    status.
-      logical                              :: dr_eqv_phen    ! Flag: donor and receptor
-                                                             !    have same phenology
-                                                             !    status.
-      logical                              :: dr_le_lai_max  ! Flag: donor and receptor
-                                                             !    do not exceed maximum
-                                                             !    LAI.
-      real                                 :: newn           ! new nplants of merged coh.
-      real                                 :: donc_lai_max   ! Maximum LAI: donor cohort
-      real                                 :: recc_lai_max   ! Maximum LAI: receptor cohort
-      real                                 :: total_size     ! Total size
-      real                                 :: coh_size_tol   ! Relative size tolerance
-      integer                              :: ncohorts_old   ! # of coh. before fusion test
-      real                                 :: diff_dbh       ! Absolute DBH difference
-      real                                 :: diff_hgt       ! Absolute height difference
-      real                                 :: new_size       ! New size
-      integer                              :: ifus           ! Counter: fusion iteractions
-      integer                              :: ntall          ! # of tall cohorts  (???)
-      integer                              :: nshort         ! # of short cohorts (???)
-      integer                              :: dpft           ! PFT of donor cohort
-      integer                              :: rpft           ! PFT of receptor cohort
-      logical                              :: any_fusion     ! Flag: was there any fusion?
+      !----- Local scalars. ---------------------------------------------------------------!
+      integer      :: donc           ! Index: donor cohort
+      integer      :: recc           ! Index: receptor cohort
+      integer      :: ico3           ! Cohort counter
+      logical      :: donc_resolv    ! Donor cohort is resolvable
+      logical      :: dr_sim_dbh     ! Donor and receptor have similar size.
+      logical      :: dr_sim_hgt     ! Donor and receptor have similar size.
+      logical      :: dr_may_fuse    ! Donor and receptor may be fused.
+      logical      :: dr_eqv_recruit ! Donor and receptor have same recruitmentstatus.
+      logical      :: dr_eqv_phen    ! Donor and receptor have same phenology status.
+      logical      :: dr_le_lai_max  ! Donor and receptordo not exceed maximum LAI.
+      real         :: newn           ! New nplants of merged coh.
+      real         :: donc_lai_max   ! Maximum LAI: donor cohort
+      real         :: donc_bleaf_max ! Maximum BLeaf: donor cohort
+      real         :: donc_bsapw_max ! Maximum BSapwood: donor cohort
+      real         :: donc_lhcap_max ! Maximum leaf heat capacity: donor cohort
+      real         :: donc_whcap_max ! Maximum wood heat capacity: donor cohort
+      real         :: recc_lai_max   ! Maximum LAI: receptor cohort
+      real         :: recc_bleaf_max ! Maximum BLeaf: receptor cohort
+      real         :: recc_bsapw_max ! Maximum BSapwood: receptor cohort
+      real         :: recc_lhcap_max ! Maximum leaf heat capacity: receptor cohort
+      real         :: recc_whcap_max ! Maximum wood heat capacity: receptor cohort
+      real         :: total_size     ! Total size
+      real         :: coh_size_tol   ! Relative size tolerance
+      integer      :: ncohorts_old   ! # of coh. before fusion test
+      real         :: diff_dbh       ! Absolute DBH difference
+      real         :: diff_hgt       ! Absolute height difference
+      real         :: new_size       ! New size
+      integer      :: ifus           ! Counter: fusion iteractions
+      integer      :: ntall          ! # of tall cohorts  (???)
+      integer      :: nshort         ! # of short cohorts (???)
+      integer      :: dpft           ! PFT of donor cohort
+      integer      :: rpft           ! PFT of receptor cohort
+      logical      :: any_fusion     ! Flag: was there any fusion?
       !------------------------------------------------------------------------------------!
-
 
 
       cpatch => csite%patch(ipa)
@@ -649,34 +650,59 @@ module fuse_fiss_utils
       coh_fusion: do ifus=1,niter_cohfus
          ncohorts_old =  count(fuse_table) ! Save current number of cohorts ---------------!
 
-         donloop:do donc = 1,cpatch%ncohorts-1
-            if (.not. fuse_table(donc)) cycle donloop ! This one is gone, move to next.
-            dpft        = cpatch%pft(donc)
-            donc_resolv = cpatch%leaf_resolvable(donc) .or. cpatch%wood_resolvable(donc)
 
-            recloop: do recc = donc+1,cpatch%ncohorts
-               rpft  = cpatch%pft(recc)
+
+         !---------------------------------------------------------------------------------!
+         !     Outer loop is the receptor cohort, which is more efficient to collect       !
+         ! multiple similar cohorts.                                                       !
+         !---------------------------------------------------------------------------------!
+         recloop: do recc = 1,cpatch%ncohorts-1
+            !------------------------------------------------------------------------------!
+            !      Make sure this cohort hasn't been fused yet, otherwise skip it (this    !
+            ! should never happen by the way).                                             !
+            !------------------------------------------------------------------------------!
+            if (.not. fuse_table(recc)) cycle recloop
+            !------------------------------------------------------------------------------!
+
+
+            !----- Handy aliases. ---------------------------------------------------------!
+            rpft          = cpatch%pft(recc)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Inner loop is the donor cohort loop.                                    !
+            !------------------------------------------------------------------------------!
+            donloop:do donc = recc+1,cpatch%ncohorts
+               !---------------------------------------------------------------------------!
+               !      Make sure this cohort hasn't been fused yet, otherwise skip it.      !
+               !---------------------------------------------------------------------------!
+               if (.not. fuse_table(donc)) cycle donloop
+               !---------------------------------------------------------------------------!
+
+
+               !----- Handy aliases. ------------------------------------------------------!
+               dpft        = cpatch%pft(donc)
+               donc_resolv = cpatch%leaf_resolvable(donc) .or. cpatch%wood_resolvable(donc)
+               !---------------------------------------------------------------------------!
+
+
 
 
                !---------------------------------------------------------------------------!
                !     Initial tests, so we don't compare cohort sizes between cohorts that  !
                ! can never be fused.                                                       !
                !                                                                           !
-               ! 1. Receptor cohort has been fused (it should never happen, though).       !
-               ! 2. Cohorts have different PFTs.                                           !
+               ! 1. Cohorts have different PFTs.                                           !
                !                                                                           !
                ! The following checks are only applied in case the donor cohort is         !
                !    resolvable or this is not called during initialisation.                !
-               !    3. Cohorts have different recruit statuses.                            !
-               !    4. Cohorts have different phenology statuses.                          !
+               !    2. Cohorts have different recruit statuses.                            !
+               !    3. Cohorts have different phenology statuses.                          !
                !                                                                           !
-               ! 5. Combined LAI shall not exceed maximum LAI for any cohort.  This is to  !
-               !    prevent bulky cohorts, which prevents self-thinning to work properly.  !
-               !    This check is not carried out during initialisation so tiny cohorts    !
-               !    can be fused with large ones, and thus improving carbon conservation.  !
                !---------------------------------------------------------------------------!
-               if (.not. fuse_table(recc)) cycle recloop
-               if (dpft /= rpft)           cycle recloop
+               if (dpft /= rpft) cycle donloop
                if (donc_resolv .or. (.not. fuse_initial)) then
                   dr_eqv_recruit =                                                         &
                      cpatch%first_census    (donc) == cpatch%first_census    (recc) .and.  &
@@ -685,40 +711,51 @@ module fuse_fiss_utils
                      cpatch%census_status   (donc) == cpatch%census_status   (recc)
                   dr_eqv_phen    =                                                         &
                      cpatch%phenology_status(donc) == cpatch%phenology_status(recc)
-                  if (.not. dr_eqv_recruit) cycle recloop
-                  if (.not. dr_eqv_phen   ) cycle recloop
+                  if (.not. dr_eqv_recruit) cycle donloop
+                  if (.not. dr_eqv_phen   ) cycle donloop
                end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Find maximum LAI.  Here we must check life form first.                !
+               !---------------------------------------------------------------------------!
+               if (is_grass(rpft) .and. igrass == 1) then
+                  !----- New grasses.  Use actual LAI. ------------------------------------!
+                  donc_lai_max = cpatch%lai(donc)
+                  recc_lai_max = cpatch%lai(recc)
+                  !------------------------------------------------------------------------!
+               else
+                  !----- Trees or old grasses. Use on-allometry LAI. ----------------------!
+                  donc_lai_max = cpatch%nplant(donc)                                       &
+                               * size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)          &
+                               * cpatch%sla(donc)
+                  recc_lai_max = cpatch%nplant(recc)                                       &
+                               * size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)          &
+                               * cpatch%sla(recc)
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               ! 4. Combined LAI shall not exceed maximum LAI for any cohort.  This is to  !
+               !    prevent bulky cohorts, which prevents self-thinning to work properly.  !
+               !    This check is not carried out during initialisation so tiny cohorts    !
+               !    can be fused with large ones, and thus improving carbon conservation.  !
+               !---------------------------------------------------------------------------!
                if (.not. fuse_initial) then
-                  !------------------------------------------------------------------------!
-                  !     Find maximum LAI.  Here we must check life form first.             !
-                  !------------------------------------------------------------------------!
-                  if (is_grass(rpft) .and. igrass == 1) then
-                     !----- New grasses.  Use actual LAI. ---------------------------------!
-                     donc_lai_max = cpatch%lai(donc)
-                     recc_lai_max = cpatch%lai(recc)
-                     !---------------------------------------------------------------------!
-                  else
-                     !----- Trees or old grasses. Use on-allometry LAI. -------------------!
-                     donc_lai_max = cpatch%nplant(donc)                                    &
-                                  * size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)       &
-                                  * cpatch%sla(donc)
-                     recc_lai_max = cpatch%nplant(recc)                                    &
-                                  * size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)       &
-                                  * cpatch%sla(recc)
-                     !---------------------------------------------------------------------!
-                  end if
-                  !------------------------------------------------------------------------!
-
-
-
                   !------------------------------------------------------------------------!
                   !      Prevent fusion in case the cohort would be too leafy.             !
                   !------------------------------------------------------------------------!
                   dr_le_lai_max = ( donc_lai_max + recc_lai_max ) <= lai_tol
-                  if (.not. dr_le_lai_max) cycle recloop
+                  if (.not. dr_le_lai_max) cycle donloop
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
+
 
 
                !---------------------------------------------------------------------------!
@@ -726,20 +763,60 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                diff_dbh    = abs ( cpatch%dbh (donc) - cpatch%dbh (recc) )
                diff_hgt    = abs ( cpatch%hite(donc) - cpatch%hite(recc) )
-               dr_sim_size = ( diff_dbh < (dbh_crit(dpft)  * coh_size_tol) ) .and.         &
+               dr_may_fuse = ( diff_dbh < (dbh_crit(dpft)  * coh_size_tol) ) .and.         &
                              ( diff_hgt < (hgt_max (dpft)  * coh_size_tol) )
                !---------------------------------------------------------------------------!
 
 
 
                !---------------------------------------------------------------------------!
-               !      We no longer check whether the LAI exceeds maximum LAI allowed for   !
-               ! any given cohort.  In case they do exceed, split_cohorts will split them  !
-               ! accordingly.  Split_cohorts is always called after fusion, and by allow-  !
-               ! ing fusion to happen we avoid cohort termination of those that are just   !
-               ! too similar to others but rather small.                                   !
+               !      In case this is the initialisation, we also check whether the donor  !
+               ! LAI is so small that it would be turned off.  In case so, we ignore the   !
+               ! size requirement and fuse them.  This reduces the number of initial       !
+               ! cohorts that would be killed otherwise just because of small population.  !
+               ! This situation frequently occurs when large plots or airborne lidar are   !
+               ! used to initialise the model.                                             !
                !---------------------------------------------------------------------------!
-               if (dr_sim_size) then
+               if (fuse_initial .and. (.not. dr_may_fuse)) then
+                  !------------------------------------------------------------------------!
+                  !    Find potential heat capacity -- Receptor cohort.  This is done      !
+                  ! inside the donor loop because the receptor may change when we fuse     !
+                  ! cohorts.                                                               !
+                  !------------------------------------------------------------------------!
+                  recc_bleaf_max = size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)
+                  recc_bsapw_max = recc_bleaf_max * qsw(rpft) * cpatch%hite(recc)
+                  call calc_veg_hcap(recc_bleaf_max,cpatch%bdead(recc),recc_bsapw_max      &
+                                    ,cpatch%nplant(recc),rpft,recc_lhcap_max,recc_whcap_max)
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !    Find potential heat capacity -- Donor cohort.                       !
+                  !------------------------------------------------------------------------!
+                  donc_bleaf_max = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
+                  donc_bsapw_max = donc_bleaf_max * qsw(dpft) * cpatch%hite(donc)
+                  call calc_veg_hcap(donc_bleaf_max,cpatch%bdead(donc),donc_bsapw_max      &
+                                    ,cpatch%nplant(donc),dpft,donc_lhcap_max,donc_whcap_max)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     In case heat capacity is less than minimum, ignore the size        !
+                  ! similarity and fuse the cohort.                                        !
+                  !------------------------------------------------------------------------!
+                  dr_may_fuse = ( recc_lhcap_max < veg_hcap_min(rpft) ) .or.               &
+                                ( donc_lhcap_max < veg_hcap_min(dpft) )
+                  !------------------------------------------------------------------------!
+               end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !      Fuse cohorts in case they are very similar.                          !
+               !---------------------------------------------------------------------------!
+               if (dr_may_fuse) then
 
                   !----- New cohort has the total number of plants ------------------------!
                   newn = cpatch%nplant(donc) + cpatch%nplant(recc)
@@ -781,13 +858,20 @@ module fuse_fiss_utils
                                      &,'fuse_2_cohorts','fuse_fiss_utils.f90')
                   end if
                   !------------------------------------------------------------------------!
-                  cycle donloop
+               else
+                  !------------------------------------------------------------------------!
+                  !      If we reach this point, it means that these two cohorts are too   !
+                  ! dissimilar in size.  Cohorts are sorted by size, so there is no point  !
+                  ! looking for other cohorts to be fused with this receptor.  We can move !
+                  ! on to the next receptor.                                               !
+                  !------------------------------------------------------------------------!
+                  cycle recloop
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
-            end do recloop
+            end do donloop
             !------------------------------------------------------------------------------!
-         end do donloop
+         end do recloop
          !---------------------------------------------------------------------------------!
 
 
@@ -4224,6 +4308,22 @@ module fuse_fiss_utils
                                      ( csite%ggsoil(donp)             * csite%area(donp)   &
                                      + csite%ggsoil(recp)             * csite%area(recp) )
 
+      csite%ustar (recp)             = newareai *                                          &
+                                     ( csite%ustar (donp)             * csite%area(donp)   &
+                                     + csite%ustar (recp)             * csite%area(recp) )
+
+      csite%tstar (recp)             = newareai *                                          &
+                                     ( csite%tstar (donp)             * csite%area(donp)   &
+                                     + csite%tstar (recp)             * csite%area(recp) )
+
+      csite%qstar (recp)             = newareai *                                          &
+                                     ( csite%qstar (donp)             * csite%area(donp)   &
+                                     + csite%qstar (recp)             * csite%area(recp) )
+
+      csite%cstar (recp)             = newareai *                                          &
+                                     ( csite%cstar (donp)             * csite%area(donp)   &
+                                     + csite%cstar (recp)             * csite%area(recp) )
+
       
       !------------------------------------------------------------------------------------!
       !    There is no guarantee that there will be a minimum amount of mass in the tempo- !
@@ -4499,6 +4599,16 @@ module fuse_fiss_utils
          csite%fmean_available_water      (recp) = ( csite%fmean_available_water   (recp)  &
                                                    * csite%area                    (recp)  &
                                                    + csite%fmean_available_water   (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_veg_displace         (recp) = ( csite%fmean_veg_displace      (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_veg_displace      (donp)  &
+                                                   * csite%area                    (donp)) &
+                                                 *   newareai
+         csite%fmean_rough                (recp) = ( csite%fmean_rough             (recp)  &
+                                                   * csite%area                    (recp)  &
+                                                   + csite%fmean_rough             (donp)  &
                                                    * csite%area                    (donp)) &
                                                  *   newareai
          csite%fmean_can_theiv            (recp) = ( csite%fmean_can_theiv         (recp)  &
@@ -4840,6 +4950,16 @@ module fuse_fiss_utils
          csite%dmean_available_water    (recp) = ( csite%dmean_available_water    (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%dmean_available_water    (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+         csite%dmean_veg_displace       (recp) = ( csite%dmean_veg_displace       (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_veg_displace       (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+         csite%dmean_rough              (recp) = ( csite%dmean_rough              (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%dmean_rough              (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%dmean_can_theiv          (recp) = ( csite%dmean_can_theiv          (recp)   &
@@ -5267,6 +5387,16 @@ module fuse_fiss_utils
          csite%mmean_available_water    (recp) = ( csite%mmean_available_water    (recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%mmean_available_water    (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+         csite%mmean_veg_displace       (recp) = ( csite%mmean_veg_displace       (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_veg_displace       (donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+         csite%mmean_rough              (recp) = ( csite%mmean_rough              (recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%mmean_rough              (donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%mmean_can_theiv          (recp) = ( csite%mmean_can_theiv          (recp)   &
@@ -5751,6 +5881,16 @@ module fuse_fiss_utils
          csite%qmean_available_water  (:,recp) = ( csite%qmean_available_water  (:,recp)   &
                                                  * csite%area                     (recp)   &
                                                  + csite%qmean_available_water  (:,donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+         csite%qmean_veg_displace     (:,recp) = ( csite%qmean_veg_displace     (:,recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%qmean_veg_displace     (:,donp)   &
+                                                 * csite%area                     (donp) ) &
+                                               *   newareai
+         csite%qmean_rough            (:,recp) = ( csite%qmean_rough            (:,recp)   &
+                                                 * csite%area                     (recp)   &
+                                                 + csite%qmean_rough            (:,donp)   &
                                                  * csite%area                     (donp) ) &
                                                *   newareai
          csite%qmean_can_theiv        (:,recp) = ( csite%qmean_can_theiv        (:,recp)   &

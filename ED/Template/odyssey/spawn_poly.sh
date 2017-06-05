@@ -336,18 +336,20 @@ do
    iphen=$(echo ${oi}        | awk '{print $92 }')
    iallom=$(echo ${oi}       | awk '{print $93 }')
    ibigleaf=$(echo ${oi}     | awk '{print $94 }')
-   irepro=$(echo ${oi}       | awk '{print $95 }')
-   treefall=$(echo ${oi}     | awk '{print $96 }')
-   ianthdisturb=$(echo ${oi} | awk '{print $97 }')
-   ianthdataset=$(echo ${oi} | awk '{print $98 }')
-   slscale=$(echo ${oi}      | awk '{print $99 }')
-   slyrfirst=$(echo ${oi}    | awk '{print $100}')
-   slnyrs=$(echo ${oi}       | awk '{print $101}')
-   bioharv=$(echo ${oi}      | awk '{print $102}')
-   skidarea=$(echo ${oi}     | awk '{print $103}')
-   skidsmall=$(echo ${oi}    | awk '{print $104}')
-   skidlarge=$(echo ${oi}    | awk '{print $105}')
-   fellingsmall=$(echo ${oi} | awk '{print $106}')
+   integscheme=$(echo ${oi}  | awk '{print $95 }')
+   nsubeuler=$(echo ${oi}    | awk '{print $96 }')
+   irepro=$(echo ${oi}       | awk '{print $97 }')
+   treefall=$(echo ${oi}     | awk '{print $98 }')
+   ianthdisturb=$(echo ${oi} | awk '{print $99 }')
+   ianthdataset=$(echo ${oi} | awk '{print $100}')
+   slscale=$(echo ${oi}      | awk '{print $101}')
+   slyrfirst=$(echo ${oi}    | awk '{print $102}')
+   slnyrs=$(echo ${oi}       | awk '{print $103}')
+   bioharv=$(echo ${oi}      | awk '{print $104}')
+   skidarea=$(echo ${oi}     | awk '{print $105}')
+   skidsmall=$(echo ${oi}    | awk '{print $106}')
+   skidlarge=$(echo ${oi}    | awk '{print $107}')
+   fellingsmall=$(echo ${oi} | awk '{print $108}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1610,6 +1612,8 @@ do
    sed -i s@mygpref@${gpref}@g                  ${ED2IN}
    sed -i s@myvegtdyn@${ivegtdyn}@g             ${ED2IN}
    sed -i s@mybigleaf@${ibigleaf}@g             ${ED2IN}
+   sed -i s@myintegscheme@${integscheme}@g      ${ED2IN}
+   sed -i s@mynsubeuler@${nsubeuler}@g          ${ED2IN}
    sed -i s@myrepro@${irepro}@g                 ${ED2IN}
    sed -i s@myubmin@${ubmin}@g                  ${ED2IN}
    sed -i s@myugbmin@${ugbmin}@g                ${ED2IN}
