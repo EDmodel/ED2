@@ -202,6 +202,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    emean$can.vpd                 = rep(NA,times=ntimes)
    emean$can.depth               = rep(NA,times=ntimes) 
    emean$can.area                = rep(NA,times=ntimes)
+   emean$veg.height              = rep(NA,times=ntimes)
+   emean$veg.displace            = rep(NA,times=ntimes)
+   emean$veg.rough               = rep(NA,times=ntimes)
+   emean$can.rough               = rep(NA,times=ntimes)
    emean$gnd.temp                = rep(NA,times=ntimes)
    emean$gnd.shv                 = rep(NA,times=ntimes)
    emean$leaf.temp               = rep(NA,times=ntimes)
@@ -798,6 +802,10 @@ create.monthly <<- function(ntimes,montha,yeara,inpref,slz.min){
    patch$wood.dens     = list()
    patch$can.depth     = list()
    patch$can.area      = list()
+   patch$veg.height    = list()
+   patch$veg.displace  = list()
+   patch$veg.rough     = list()
+   patch$can.rough     = list()
    patch$phap.lpar     = list()
    patch$phap.ltemp    = list()
    patch$phap.lwater   = list()
@@ -1124,6 +1132,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$emean$can.co2           [idx ] = old.datum$emean$can.co2             [sel ]
    new.datum$emean$can.depth         [idx ] = old.datum$emean$can.depth           [sel ]
    new.datum$emean$can.area          [idx ] = old.datum$emean$can.area            [sel ]
+   new.datum$emean$veg.height        [idx ] = old.datum$emean$veg.height          [sel ]
+   new.datum$emean$veg.displace      [idx ] = old.datum$emean$veg.displace        [sel ]
+   new.datum$emean$veg.rough         [idx ] = old.datum$emean$veg.rough           [sel ]
+   new.datum$emean$can.rough         [idx ] = old.datum$emean$can.rough           [sel ]
    new.datum$emean$leaf.temp         [idx ] = old.datum$emean$leaf.temp           [sel ]
    new.datum$emean$phap.ltemp        [idx ] = old.datum$emean$phap.ltemp          [sel ]
    new.datum$emean$last.1yr.ltemp    [idx ] = old.datum$emean$last.1yr.ltemp      [sel ]
@@ -1676,6 +1688,10 @@ update.monthly <<- function(new.ntimes,old.datum,montha,yeara,inpref,slz.min){
    new.datum$patch$wood.dens     = old.datum$patch$wood.dens
    new.datum$patch$can.depth     = old.datum$patch$can.depth
    new.datum$patch$can.area      = old.datum$patch$can.area
+   new.datum$patch$veg.height    = old.datum$patch$veg.height
+   new.datum$patch$veg.displace  = old.datum$patch$veg.displace
+   new.datum$patch$veg.rough     = old.datum$patch$veg.rough
+   new.datum$patch$can.rough     = old.datum$patch$can.rough
    new.datum$patch$phap.lpar     = old.datum$patch$phap.lpar
    new.datum$patch$phap.ltemp    = old.datum$patch$phap.ltemp
    new.datum$patch$phap.lwater   = old.datum$patch$phap.lwater

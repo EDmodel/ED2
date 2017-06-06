@@ -2178,7 +2178,7 @@ theme[[n]] = list( vnam      = c(        "par.tot",     "par.beam", "par.diff"
                                 ,        "par.gnd",        "parup")
                  , desc      = c("Down Top canopy",         "Beam",  "Diffuse"
                                 ,    "Abs. Ground","Up Top canopy")
-                 , colour    = c(    "deepskyblue",  "darkorange3","slateblue"
+                 , colour    = c(    "deepskyblue",    "firebrick","slateblue"
                                 ,  "darkgoldenrod",  "chartreuse3")
                  , lwd       = c(              2.5,            2.5,        2.5
                                 ,              2.5,            2.5)
@@ -2211,6 +2211,32 @@ theme[[n]] = list( vnam      = c(       "leaf.gsw",        "leaf.gbw",        "w
                  , emean     = TRUE
                  , mmean     = TRUE
                  , qmean     = TRUE
+                 , ymean     = TRUE
+                 , emean.lim = c(NA,NA)
+                 , mmean.lim = c(NA,NA)
+                 , qmean.lim = c(NA,NA)
+                 , ymean.lim = c(NA,NA)
+                 )#end list
+n          = n + 1
+theme[[n]] = list( vnam      = c(          "veg.height",           "can.depth"
+                                ,        "veg.displace",           "veg.rough"
+                                ,           "can.rough")
+                 , desc      = c(   "Vegetation height",        "Canopy depth"
+                                , "Displacement height","Vegetation Roughness"
+                                ,       "Net roughness")
+                 , colour    = c(         "deepskyblue",           "firebrick"
+                                ,           "slateblue",       "darkgoldenrod"
+                                ,         "chartreuse3")
+                 , lwd       = c(2.5,2.5,2.5,2.5,2.5)
+                 , type      = "o"
+                 , plog      = FALSE
+                 , prefix    = "can.struct"
+                 , title     = "Canopy structure"
+                 , unit      = untab$m
+                 , legpos    = "topleft"
+                 , emean     = TRUE
+                 , mmean     = TRUE
+                 , qmean     = FALSE
                  , ymean     = TRUE
                  , emean.lim = c(NA,NA)
                  , mmean.lim = c(NA,NA)

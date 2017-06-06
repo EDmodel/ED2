@@ -476,9 +476,6 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       #------------------------------------------------------------------------------------#
 
 
-
-
-
       #------------------------------------------------------------------------------------#
       #     Retrieve the sum of squares (that will be used to find standard deviation.     #
       #------------------------------------------------------------------------------------#
@@ -660,6 +657,16 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          emean$malhi.deficit [m] = max( 0., emean$malhi.deficit [m-1] 
                                           + et.malhi - emean$rain [m] )
       }#end if
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Aggregate canopy structure variables to polygon-level. -----------------------#
+      emean$can.depth    [m] = sum(mymont$CAN.DEPTH             * areapa)
+      emean$veg.height   [m] = sum(mymont$VEG.HEIGHT            * areapa)
+      emean$veg.displace [m] = sum(mymont$MMEAN.VEG.DISPLACE.PA * areapa)
+      emean$veg.rough    [m] = sum(mymont$VEG.ROUGH             * areapa)
+      emean$can.rough    [m] = sum(mymont$MMEAN.ROUGH.PA        * areapa)
       #------------------------------------------------------------------------------------#
 
 
@@ -1722,6 +1729,16 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          #---------------------------------------------------------------------------------#
 
 
+         #---------------------------------------------------------------------------------#
+         #      Load the patch-level properties of canopy structure.                       #
+         #---------------------------------------------------------------------------------#
+         can.depth.pa    = mymont$CAN.DEPTH
+         veg.height.pa   = mymont$VEG.HEIGHT
+         veg.displace.pa = mymont$MMEAN.VEG.DISPLACE.PA
+         veg.rough.pa    = mymont$VEG.ROUGH
+         can.rough.pa    = mymont$MMEAN.ROUGH.PA
+         #---------------------------------------------------------------------------------#
+
 
          #----- Find the temperature and liquid fraction of leaf and wood. ----------------#
          leaf.empty                = leaf.hcap.pa == 0
@@ -1936,6 +1953,10 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          patch$ba           [[plab]][idx     ] = ba.pa
          patch$can.depth    [[plab]][idx     ] = can.depth.pa
          patch$can.area     [[plab]][idx     ] = can.area.pa
+         patch$veg.height   [[plab]][idx     ] = veg.height.pa  
+         patch$veg.displace [[plab]][idx     ] = veg.displace.pa
+         patch$veg.rough    [[plab]][idx     ] = veg.rough.pa   
+         patch$can.rough    [[plab]][idx     ] = can.rough.pa   
          patch$wood.dens    [[plab]][idx     ] = wood.dens.pa
          patch$par.leaf     [[plab]][idx     ] = par.leaf.pa
          patch$par.leaf.beam[[plab]][idx     ] = par.leaf.beam.pa
@@ -2971,26 +2992,18 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          xconow        = heightconow  * nplantconow * baconow * useconow
          wconow        = nplantconow  * baconow * useconow
          oconow        = opencanconow * useconow
-         can.depth.idx = (    tapply(X = xconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
-                         /    tapply(X = wconow, INDEX = ipaconow, FUN = sum, na.rm = TRUE)
-                         )#end can.depth.pa
          can.area.idx  = 1. - tapply(X = oconow, INDEX = ipaconow, FUN = min, na.rm = TRUE)
          
-         can.depth.pa      = rep(NA,times=sum(npatches))
          can.area.pa       = rep(NA,times=sum(npatches))
 
-         idx               = as.numeric(names(can.depth.idx))
-         can.depth.pa[idx] = can.depth.idx
+         idx               = as.numeric(names(can.area.idx))
          can.area.pa [idx] = can.area.idx
 
-         emean$can.depth [m] = sum(can.depth.pa * areapa)
          emean$can.area  [m] = sum(can.area.pa  * areapa)
       }else{
-         emean$can.depth [m] = 0.
          emean$can.area  [m] = 0.
       }#end if
       #------------------------------------------------------------------------------------#
-
 
 
 
