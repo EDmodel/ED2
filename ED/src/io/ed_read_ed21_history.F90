@@ -678,10 +678,12 @@ subroutine read_ed21_history_file
                               cpatch%cb_mlmax   (13,ico) = 0.0
                               !------------------------------------------------------------!
                            case (1)
+                              !------ Storage is accounted. -------------------------------!
                               cpatch%cb         (13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+                              !------------------------------------------------------------!
                            end select
                            !---------------------------------------------------------------!
                            cpatch%cbr_bar          (ico) = 1.0
@@ -913,8 +915,7 @@ subroutine read_ed21_history_unstruct
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
                              , agf_bs                  & ! intent(in)
-                             , f_bstorage_init         & ! intent(in)
-                             , min_cohort_size         ! ! intent(in)
+                             , f_bstorage_init         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
                              , imonthh                 & ! intent(in)
@@ -1922,10 +1923,12 @@ subroutine read_ed21_history_unstruct
                               cpatch%cb_mlmax   (13,ico) = 0.0
                               !------------------------------------------------------------!
                            case (1)
+                              !------ Storage is accounted. -------------------------------!
                               cpatch%cb         (13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+                              !------------------------------------------------------------!
                            end select
                            !---------------------------------------------------------------!
                            cpatch%cbr_bar          (ico) = 1.0
@@ -2163,8 +2166,7 @@ subroutine read_ed21_polyclone
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
                              , agf_bs                  & ! intent(in)
-                             , f_bstorage_init         & ! intent(in)
-                             , min_cohort_size         ! ! intent(in)
+                             , f_bstorage_init         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
                              , imonthh                 & ! intent(in)
@@ -3152,10 +3154,12 @@ subroutine read_ed21_polyclone
                               cpatch%cb_mlmax   (13,ico) = 0.0
                               !------------------------------------------------------------!
                            case (1)
+                              !------ Storage is accounted. -------------------------------!
                               cpatch%cb         (13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
                               cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+                              !------------------------------------------------------------!
                            end select
                            cpatch%cbr_bar          (ico) = 1.0
                         end do

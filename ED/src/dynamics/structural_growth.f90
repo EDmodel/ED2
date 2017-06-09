@@ -967,6 +967,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
    use pft_coms      , only : phenology    & ! intent(in)
                             , repro_min_h  & ! intent(in)
                             , r_fract      & ! intent(in)
+                            , r_slope      & ! intent(in)
                             , st_fract     & ! intent(in)
                             , dbh_crit     & ! intent(in)
                             , hgt_max      & ! intent(in)
@@ -1062,7 +1063,7 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
             !------------------------------------------------------------------------------!
          else
             !----- Medium-sized tree, use prescribed reproduction rate. -------------------!
-            f_bseeds = r_fract(ipft)
+            f_bseeds = r_fract(ipft) + r_slope(ipft) * log( hite / repro_min_h(ipft))
             f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
             !------------------------------------------------------------------------------!
          end if

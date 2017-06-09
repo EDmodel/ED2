@@ -571,7 +571,7 @@ pft01 = list( name               = "C4 grass"
             , lr.high.temp       = lr.thot.c4    + t00
             , lr.decay.e.low     = lr.decay.ecold.c4
             , lr.decay.e.high    = lr.decay.ehot.c4
-            , vm0                = 16.1 * vmfact.c4 * umol.2.mol
+            , vm0                = 12.500 * vmfact.c4 * umol.2.mol
             , m                  = mphoto.c4
             , alpha              = alpha.c4
             , b                  = b.c4 * umol.2.mol
@@ -635,7 +635,7 @@ pft02 = list( name               = "Early tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 27.5 * vmfact.c3 * umol.2.mol
+            , vm0                = 18.750 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
@@ -699,7 +699,7 @@ pft03 = list( name               = "Mid tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 16.1 * vmfact.c3 * umol.2.mol
+            , vm0                = 12.500 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
@@ -763,7 +763,7 @@ pft04 = list( name               = "Late tropical"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 9.2 * vmfact.c3 * umol.2.mol
+            , vm0                = 6.250 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol
@@ -891,7 +891,7 @@ pft06 = list( name               = "North Pine"
             , lr.high.temp       = lr.thot.c3temp  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 15.625 * 0.7264 * umol.2.mol
+            , vm0                = 11.350 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
             , b                  = 1000. * umol.2.mol
@@ -955,7 +955,7 @@ pft07 = list( name               = "South Pine"
             , lr.high.temp       = lr.thot.c3temp  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 15.625 * 0.7264 * umol.2.mol
+            , vm0                = 11.350 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
             , b                  = 1000. * umol.2.mol
@@ -1019,7 +1019,7 @@ pft08 = list( name               = "Late conifer"
             , lr.high.temp       = lr.thot.c3temp  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 6.25 * 0.7264 * umol.2.mol
+            , vm0                = 4.540 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
             , b                  = 1000. * umol.2.mol
@@ -1083,7 +1083,7 @@ pft09 = list( name               = "Early hardwood"
             , lr.high.temp       = lr.thot.c3temp  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 18.25  * 1.1171 * umol.2.mol
+            , vm0                = 20.387 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
             , b                  = 20000. * umol.2.mol
@@ -1147,7 +1147,7 @@ pft10 = list( name               = "Mid hardwood"
             , lr.high.temp       = lr.thot.c3temp  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 15.625  * 1.1171 * umol.2.mol
+            , vm0                = 17.455 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
             , b                  = 20000. * umol.2.mol
@@ -1211,7 +1211,7 @@ pft11 = list( name               = "Late hardwood"
             , lr.high.temp       = lr.thot.c3temp  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 6.25  * 1.1171 * umol.2.mol
+            , vm0                = 6.982 * umol.2.mol
             , m                  = mphoto.c3 * 6.3949 / 8.0
             , alpha              = alpha.c3
             , b                  = 20000. * umol.2.mol
@@ -1280,7 +1280,7 @@ pft16 = list( name               = "C3 grass"
             , lr.high.temp       = lr.thot.c3trop  + t00
             , lr.decay.e.low     = lr.decay.ecold.c3
             , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 52.0 * vmfact.c3 * umol.2.mol
+            , vm0                = 18.750 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.c3
             , alpha              = alpha.c3
             , b                  = b.c3 * umol.2.mol

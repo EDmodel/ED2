@@ -44,7 +44,7 @@ if (! defjob && is.null(lonlat)){
                   , iage      = c(1,25)
                   , isizepft  = c(2 ,5)
                   , ivegtdyn  = 0
-                  , queue     = "general"
+                  , queue     = "linux.q"
                   )#end list
    varlabel = list( iata      = varrun$iata
                   , iscenario = varrun$iscenario
@@ -92,7 +92,6 @@ if (! defjob && is.null(lonlat)){
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
 #------------------------------------------------------------------------------------------#
-
 
 
 
@@ -158,7 +157,7 @@ default = list( run           = "unnamed"
               , isoilbc       = 1
               , sldrain       = 90.
               , scolour       = 16
-              , slzres        = 0
+              , slzres        = 1
               , queue         = "linux.q"
               , met.driver    = "tower"
               , dtlsm         = 600.
@@ -213,8 +212,8 @@ default = list( run           = "unnamed"
               , icanrad       = 2
               , ihrzrad       = 0
               , crown.mod     = 0
-              , ltrans.vis    = 1./30.
-              , lreflect.vis  = 1./15.
+              , ltrans.vis    = 0.05
+              , lreflect.vis  = 0.10
               , ltrans.nir    = 0.200
               , lreflect.nir  = 0.400
               , orient.tree   = 0.000
@@ -306,6 +305,12 @@ if ( "sl.type" %in% names(varrun)){
    redundant = joborder$ianth.disturb == 0 & myruns$sl.type != unique(myruns$sl.type)[1]
    forbidden = forbidden | redundant
 }#end if ("sl.type" %in% names(varrun))
+if ( "biomass.harv" %in% names(varrun)){
+   redundant = ( joborder$ianth.disturb == 0
+               & myruns$biomass.harv != unique(myruns$biomass.harv)[1]
+               )#end redundant
+   forbidden = forbidden | redundant
+}#end if ("biomass.harv" %in% names(varrun))
 joborder     = joborder[! forbidden,]
 myruns       = myruns[! forbidden,]
 nruns        = nrow(myruns)

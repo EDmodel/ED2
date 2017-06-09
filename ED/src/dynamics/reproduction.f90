@@ -258,40 +258,20 @@ subroutine reproduction(cgrid, month)
 
 
                      !---------------------------------------------------------------------!
-                     !      Create new recruit in case there is enough biomass.  In case   !
-                     ! repro_scheme is 3, plants do not reproduce when they are not on     !
-                     ! allometry.                                                          !
+                     !      Create new recruit in case there is enough biomass.            !
                      !---------------------------------------------------------------------!
-                     select case (repro_scheme)
-                     case (3)
-                        if ( rec_biomass              >=  min_recruit_size(ipft) .and.     &
-                             rectest%phenology_status == 0                      ) then
+                     if (rec_biomass >= min_recruit_size(ipft)) then
 
-                           !----- Add new recruit. ----------------------------------------!
-                           inew = inew + 1
-                           call copy_recruit(rectest,recruit(inew))
-                           !---------------------------------------------------------------!
-
-                           !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0                          
-                           !---------------------------------------------------------------!
-                        end if
+                        !----- Add new recruit. -------------------------------------------!
+                        inew = inew + 1
+                        call copy_recruit(rectest,recruit(inew))
                         !------------------------------------------------------------------!
 
-                     case default
-                        if (rec_biomass >= min_recruit_size(ipft)) then
 
-                           !----- Add new recruit. ----------------------------------------!
-                           inew = inew + 1
-                           call copy_recruit(rectest,recruit(inew))
-                           !---------------------------------------------------------------!
-
-
-                           !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0                          
-                           !---------------------------------------------------------------!
-                        end if
-                     end select
+                        !----- Reset the carbon available for reproduction. ---------------!
+                        csite%repro(ipft,ipa) = 0.0                          
+                        !------------------------------------------------------------------!
+                     end if
                      !---------------------------------------------------------------------!
                   else
                      !---------------------------------------------------------------------!

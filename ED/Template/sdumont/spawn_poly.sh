@@ -1125,6 +1125,27 @@ do
 
 
    #---------------------------------------------------------------------------------------#
+   #     Define whether we use the met cycle to define the first and last year, or the     #
+   # default year.                                                                         #
+   #---------------------------------------------------------------------------------------#
+   if [ ${yeara} -eq 0 ]
+   then
+      thisyeara=${metcyc1}
+   else
+      thisyeara=${yeara}
+   fi
+   if [ ${yearz} -eq 0 ]
+   then
+      thisyearz=${metcycf}
+   else
+      thisyearz=${yearz}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
    #     Determine which soil profile to use.  We have eight categories (A-H), and the     #
    # soil resolution.                                                                      #
    #---------------------------------------------------------------------------------------#
@@ -1395,27 +1416,6 @@ do
       esac
       ;;
    esac
-   #---------------------------------------------------------------------------------------#
-
-
-
-
-   #---------------------------------------------------------------------------------------#
-   #     Define whether we use the met cycle to define the first and last year, or the     #
-   # default year.                                                                         #
-   #---------------------------------------------------------------------------------------#
-   if [ ${yeara} -eq 0 ]
-   then
-      thisyeara=${metcyc1}
-   else
-      thisyeara=${yeara}
-   fi
-   if [ ${yearz} -eq 0 ]
-   then
-      thisyearz=${metcycf}
-   else
-      thisyearz=${yearz}
-   fi
    #---------------------------------------------------------------------------------------#
 
 

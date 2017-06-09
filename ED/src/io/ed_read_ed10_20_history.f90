@@ -865,10 +865,12 @@ subroutine read_ed10_ed20_history_file
                            cpatch%cb_mlmax   (13,ic2) = 0.0
                            !---------------------------------------------------------------!
                         case (1)
+                           !------ Storage is accounted. ----------------------------------!
                            cpatch%cb         (13,ic2) = cpatch%bstorage(ic2)
                            cpatch%cb_lightmax(13,ic2) = cpatch%bstorage(ic2)
                            cpatch%cb_moistmax(13,ic2) = cpatch%bstorage(ic2)
                            cpatch%cb_mlmax   (13,ic2) = cpatch%bstorage(ic2)
+                           !---------------------------------------------------------------!
                         end select
                         cpatch%cbr_bar          (ic2) = 1.0
                         !------------------------------------------------------------------!

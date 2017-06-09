@@ -948,6 +948,14 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Secondary and burned twice"
                                                    )#end c
                                        )#end list
+   flagvar[["logging.type" ]]    = list( descr  = "Logging type"
+                                       , numeric = FALSE
+                                       , values = c("ril","cvl","scl")
+                                       , names  = c("Reduced-Impact Logging"
+                                                   ,"Conventional Logging"
+                                                   ,"Stand clearing"
+                                                   )#end c
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1177,6 +1185,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.1f"
                                      , off   =   0.0
                                      , mult  =   0.1)
+   numvar[["bharvest"]]        = list( descr = "Target harvest"
+                                     , unit  = "kgC/m2"
+                                     , fmt   = "%.3f"
+                                     , off   = 0.0
+                                     , mult  = 0.001)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1260,9 +1273,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(       14,            22)
       }else if (lenici == 23){
          nparms = 2
-         param  = c("ihrzrad","h2o.plant.limit")
-         na     = c(       13,               22)
-         nz     = c(       14,               23)
+         param  = c("iustar","icanturb")
+         na     = c(      12,        22)
+         nz     = c(      13,        23)
       }else if (lenici == 24){
          nparms = 2
          param  = c("ihrzrad","imetrad")
@@ -1275,9 +1288,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(            12,  18,            25)
       }else if (lenici == 26){
          nparms = 3
-         param  = c("soil.depth","dd.mort.control", "iphen.scheme")
-         na     = c(          10,               17,             24)
-         nz     = c(          11,               18,             26)
+         param  = c("ianth.disturb","logging.type", "bharvest")
+         na     = c(             11,            14,         23)
+         nz     = c(             12,            16,         26)
       }else if (lenici == 27){
          nparms = 2
          param  = c("ivegt.dynamics","ihrzrad")

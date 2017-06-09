@@ -582,6 +582,8 @@ recursive subroutine read_ed_xml_config(filename)
 ! reproduction
            call getConfigREAL  ('r_fract','pft',i,rval,texist)
            if(texist) r_fract(myPFT) = real(rval)
+           call getConfigREAL  ('r_slope','pft',i,rval,texist)
+           if(texist) r_slope(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c_fract','pft',i,rval,texist)
 !!$           if(texist) c_fract(myPFT) = real(rval)
            call getConfigREAL  ('st_fract','pft',i,rval,texist)
@@ -1564,6 +1566,7 @@ subroutine write_ed_xml_config
 
      !! REPRODUCTION
         call putConfigREAL("r_fract", r_fract(i))
+        call putConfigREAL("r_slope", r_slope(i))
         call putConfigREAL("st_fract",st_fract(i))
         call putConfigREAL("nonlocal_dispersal",nonlocal_dispersal(i))
         call putConfigREAL("repro_min_h",repro_min_h(i))

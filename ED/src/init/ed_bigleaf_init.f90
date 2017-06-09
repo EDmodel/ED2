@@ -304,17 +304,17 @@ subroutine ed_bigleaf_init(cgrid)
                      select case (iddmort_scheme)
                      case (0)
                         !----- Storage is not accounted. ----------------------------------!
-                        cpatch%cb              (13,1) = cpatch%bstorage(1)
-                        cpatch%cb_lightmax     (13,1) = cpatch%bstorage(1)
-                        cpatch%cb_moistmax     (13,1) = cpatch%bstorage(1)
-                        cpatch%cb_mlmax        (13,1) = cpatch%bstorage(1)
-                        !------------------------------------------------------------------!
-                     case (1)
-                        !----- Storage is accounted. --------------------------------------!
                         cpatch%cb              (13,1) = 0.0
                         cpatch%cb_lightmax     (13,1) = 0.0
                         cpatch%cb_moistmax     (13,1) = 0.0
                         cpatch%cb_mlmax        (13,1) = 0.0
+                        !------------------------------------------------------------------!
+                     case (1)
+                        !----- Storage is accounted. --------------------------------------!
+                        cpatch%cb              (13,1) = cpatch%bstorage(1)
+                        cpatch%cb_lightmax     (13,1) = cpatch%bstorage(1)
+                        cpatch%cb_moistmax     (13,1) = cpatch%bstorage(1)
+                        cpatch%cb_mlmax        (13,1) = cpatch%bstorage(1)
                         !------------------------------------------------------------------!
                      end select
                      cpatch%cbr_bar               (1) = 1.0

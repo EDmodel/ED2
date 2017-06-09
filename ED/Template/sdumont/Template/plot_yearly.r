@@ -49,10 +49,10 @@ outform        = thisoutform            # Formats for output file.  Supported fo
                                         #   - "tif"    - for TIFF printing
                                         #   - "pdf"    - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
-paper          = "letter"               # Paper size, to define the plot shape
-ptsz           = 16                     # Font size.
+paper          = "square"               # Paper size, to define the plot shape
+ptsz           = 17                     # Font size.
 lwidth         = 2.5                    # Line width
-plotgrid       = TRUE                   # Should I plot the grid in the background? 
+plotgrid       = FALSE                  # Should I plot the grid in the background? 
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
                                         #    plots? (FALSE will set a suitable scale for
                                         #    each plot)
@@ -80,6 +80,12 @@ drought.yeara  = mydroughtyeara         # First year that has drought
 drought.yearz  = mydroughtyearz         # Last year that has drought
 months.drought = mymonthsdrought        # Months with drought
 ibackground    = mybackground           # Background settings (check load_everything.r)
+f.leg          = 1/6                    # Fraction of device for legend
+ymean.line     = TRUE                   # Use lines instead of points and lines for theme
+                                        #    plots? 
+                                        #    TRUE  - Lines only
+                                        #    FALSE - Use type defined in pmonthly_varlist.r
+                                        #    NA    - Let the script decide
 #------------------------------------------------------------------------------------------#
 
 
@@ -133,9 +139,15 @@ options(locatorBell=FALSE)
 #----- Load observations. -----------------------------------------------------------------#
 obsrfile = file.path(srcdir,"LBA_MIP.v8.RData")
 load(file=obsrfile)
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Define plot window size ------------------------------------------------------------#
-size = plotsize(proje=FALSE,paper=paper)
+f.ext  = f.leg / (1. - f.leg)
+sqsize = plotsize(proje=FALSE,paper=paper)
+exsize = plotsize(proje=FALSE,paper=paper,extendfc="lon",extfactor=f.ext)
+eysize = plotsize(proje=FALSE,paper=paper,extendfc="lat",extfactor=f.ext)
 #------------------------------------------------------------------------------------------#
 
 
@@ -172,10 +184,10 @@ for (place in myplaces){
    monthbeg = 1
    meszz    = 12
    if (yeara > yearz){
-      cat(" - Yeara:  ",yeara,"\n")
-      cat(" - Yearz:  ",yearz,"\n")
-      cat(" - Prefix: ",inpref,"\n")
-      cat(" - Invalid years, will not process data...","\n")
+      cat0(" - Yeara:  ",yeara,".")
+      cat0(" - Yearz:  ",yearz,".")
+      cat0(" - Prefix: ",inpref,".")
+      cat0(" - Invalid years, data cannot be processed this time!")
       q("no")
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -192,9 +204,11 @@ for (place in myplaces){
    if ((yearend - yearbeg + 1) <= nyears.long){
       sasmonth   = sasmonth.short
       plot.ycomp = TRUE
+      if (is.na(ymean.line)) ymean.line = FALSE
    }else{
       sasmonth   = sasmonth.long
       plot.ycomp = FALSE
+      if (is.na(ymean.line)) ymean.line = FALSE
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -202,7 +216,7 @@ for (place in myplaces){
 
 
    #----- Print a banner to entretain the user. -------------------------------------------#
-   cat(" + Post-processing output from ",lieu,"...","\n")
+   cat0(" + Post-process output from ",lieu,".")
 
 
    #---------------------------------------------------------------------------------------#
@@ -225,7 +239,7 @@ for (place in myplaces){
    ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
-      cat("   - Loading previous session...","\n")
+      cat0("   - Load previous session.")
       load(ed22.rdata)
       tresume = datum$ntimes + 1
       if (ntimes > datum$ntimes){
@@ -239,7 +253,7 @@ for (place in myplaces){
       }#end if
       #------------------------------------------------------------------------------------#
    }else{
-      cat("   - Starting new session...","\n")
+      cat0("   - Start new session.")
       tresume    = 1
       datum      = create.monthly( ntimes  = ntimes
                                  , montha  = monthbeg
@@ -294,7 +308,7 @@ for (place in myplaces){
 
 
       #------ Save the data to the R object. ----------------------------------------------#
-      cat(" + Saving data to ",basename(ed22.rdata),"...","\n")
+      cat0(" + Save data to ",basename(ed22.rdata),".")
       save(datum,file=ed22.rdata)
       #------------------------------------------------------------------------------------#
    }#end if (! complete)
@@ -525,14 +539,14 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"tspft")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      +",description,"time series for all PFTs...","\n")
+         cat0("      + ",description," time series for all PFTs.")
 
          #----- Load variable -------------------------------------------------------------#
          if (vnam %in% names(szpft)){
             thisvar = szpft[[vnam]][,ndbh+1,]
             if (plog){
                #----- Eliminate non-positive values in case it is a log plot. -------------#
-               badlog          = is.finite(thisvar) & thisvar <= 0
+               badlog          = ! (thisvar %>% 0)
                thisvar[badlog] = NA
             }#end if
          }else{
@@ -546,21 +560,21 @@ for (place in myplaces){
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
             if(outform[o] %in% "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
+               X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
             }else if(outform[o] %in% "quartz"){
-               quartz(width=size$width,height=size$height,pointsize=ptsz)
+               quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
             }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
+               png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent")
             }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+               tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=size$paper)
+               postscript(file=fichier,width=eysize$width,height=eysize$height
+                         ,pointsize=ptsz,paper=eysize$paper)
             }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
-                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                  ,width=eysize$width,height=eysize$height,pointsize=ptsz,paper=eysize$paper)
             }#end if
 
 
@@ -568,8 +582,8 @@ for (place in myplaces){
             #     Find the limit, make some room for the legend, and in case the field is  #
             # a constant, nudge the limits so the plot command will not complain.          #
             #------------------------------------------------------------------------------#
-            xlimit = pretty.xylim(u = datum$toyear    ,fracexp=0.0,is.log=FALSE)
-            ylimit = pretty.xylim(u = thisvar[,selpft],fracexp=0.0,is.log=plog )
+            xlimit = pretty.xylim(u=as.numeric(datum$toyear) ,fracexp=0.0,is.log=FALSE)
+            ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
             if (plog){
                xylog    = "y"
                ydrought = c( exp(sqrt(ylimit[1]^3/ylimit[2]))
@@ -577,7 +591,7 @@ for (place in myplaces){
                            )#end c
             }else{
                xylog    = ""
-               ydrought = c( ylimit[1] - 0.5 * diff(ylimit),ylimit[2] + 0.5 * diff(ylimit) )
+               ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -594,7 +608,7 @@ for (place in myplaces){
             #     Split the plot into two windows.                                         #
             #------------------------------------------------------------------------------#
             par(par.user)
-            layout(mat=rbind(2,1),heights=c(5,1))
+            layout(mat=rbind(2,1),heights=c(1-f.leg,f.leg))
             #------------------------------------------------------------------------------#
 
 
@@ -708,7 +722,7 @@ for (place in myplaces){
          if (! file.exists(outvar)) dir.create(outvar)
          #---------------------------------------------------------------------------------#
 
-         cat("      +",description,"time series for DBH class...","\n")
+         cat0("      + ",description," time series for DBH class.")
 
 
          #---------------------------------------------------------------------------------#
@@ -735,7 +749,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          for (p in pftuse){
             pftlab = paste0("pft-",sprintf("%2.2i",p))
-            cat("        - ",pft$name[p],"\n")
+            cat0("        - ",pft$name[p],".")
 
 
             #----- Loop over output formats. ----------------------------------------------#
@@ -745,21 +759,22 @@ for (place in myplaces){
                                   , paste0(vnam,"-",pftlab,"-",suffix,".",outform[o])
                                   )#end file.path
                if (outform[o] %in% "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
+                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "quartz"){
-                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                      ,pointsize=ptsz,res=depth,bg="transparent")
                }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
+                  postscript(file=fichier,width=eysize$width,height=eysize$height
+                            ,pointsize=ptsz,paper=eysize$paper)
                }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
+                     ,paper=eysize$paper)
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -775,7 +790,7 @@ for (place in myplaces){
                #     Split the plot into two windows.                                      #
                #---------------------------------------------------------------------------#
                par(par.user)
-               layout(mat=rbind(2,1),heights=c(5,1))
+               layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
                #---------------------------------------------------------------------------#
 
 
@@ -853,7 +868,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the comparison between observations and model.                                 #
    #---------------------------------------------------------------------------------------#
-   cat("    + Year-by-year comparisons of monthly means...","\n")
+   cat0("    + Year-by-year comparisons of monthly means.")
    for (cc in sequence(ncompmodel)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -907,7 +922,7 @@ for (place in myplaces){
          outvar   = file.path(outdir,vname)
          if (! file.exists(outdir)) dir.create(outdir)
          if (! file.exists(outvar)) dir.create(outvar)
-         cat("      - ",description,"comparison...","\n")
+         cat0("      - ",description," comparison.")
          #---------------------------------------------------------------------------------#
 
 
@@ -946,28 +961,29 @@ for (place in myplaces){
             for (o in sequence(nout)){
                fichier = file.path(outvar,paste0(vname,"-",cyear,".",outform[o]))
                if (outform[o] %in% "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
+                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "quartz"){
-                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                      ,pointsize=ptsz,res=depth,bg="transparent")
                }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
+                  postscript(file=fichier,width=eysize$width,height=eysize$height
+                            ,pointsize=ptsz,paper=eysize$paper)
                }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
+                     ,paper=eysize$paper)
                }#end if
 
 
 
                #----- Split plot into two windows. ----------------------------------------#
                par(par.user)
-               layout(mat=rbind(2,1),heights=c(5,1))
+               layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
                #---------------------------------------------------------------------------#
 
 
@@ -1026,7 +1042,7 @@ for (place in myplaces){
                      ,pch=16,cex=1.0)
                axis(side=1,at=mplot$levels,labels=mplot$labels,padj=mplot$padj)
                axis(side=2,las=1)
-               title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
+               title(main=letitre,xlab="Time",ylab=ley,cex.main=0.7)
                box()
                #---------------------------------------------------------------------------#
 
@@ -1073,15 +1089,22 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"tslu")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      +",description,"time series for all LUs...","\n")
+         cat0("      + ",description," time series for all LUs.")
 
 
 
          #----- Load variable -------------------------------------------------------------#
-         thisvar = lu[[vnam]]
-         if (plog){
-            #----- Eliminate non-positive values in case it is a log plot. ----------------#
-            thisvar[thisvar <= 0] = NA
+         if (vnam %in% names(lu)){
+            thisvar = lu[[vnam]]
+            if (plog){
+               xylog           = "y"
+               badlog          = ! (thisvar %>% 0)
+               thisvar[badlog] = NA
+            }else{
+               xylog           = ""
+            }#end if
+         }else{
+            thisvar = array(NA,dim=c(nyears,nlu+1))
          }#end if
          #---------------------------------------------------------------------------------#
 
@@ -1089,21 +1112,22 @@ for (place in myplaces){
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
             if (outform[o] %in% "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
+               X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
             }else if (outform[o] %in% "quartz"){
-               quartz(width=size$width,height=size$height,pointsize=ptsz)
+               quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
             }else if(outform[o] %in% "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
+               png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent")
             }else if(outform[o] %in% "tif"){
-               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+               tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if(outform[o] %in% "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=size$paper)
+               postscript(file=fichier,width=eysize$width,height=eysize$height
+                         ,pointsize=ptsz,paper=eysize$paper)
             }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
-                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                  ,width=eysize$width,height=eysize$height,pointsize=ptsz
+                  ,paper=eysize$paper)
             }#end if
 
 
@@ -1138,7 +1162,7 @@ for (place in myplaces){
             #     Split the plot into two windows.                                         #
             #------------------------------------------------------------------------------#
             par(par.user)
-            layout(mat=rbind(2,1),heights=c(5,1))
+            layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
             #------------------------------------------------------------------------------#
 
 
@@ -1217,25 +1241,25 @@ for (place in myplaces){
    #   Plot disturbance rate by disturbance transition.                                    #
    #---------------------------------------------------------------------------------------#
    if (tserdist && any(seldist)){
-      cat("      + Disturbance rate time series for all disturbances...","\n")
+      cat0("      + Disturbance rate time series for all disturbances.")
       for (o in sequence(nout)){
          fichier = file.path(outpref,paste0("disturb-",suffix,".",outform[o]))
          if (outform[o] %in% "x11"){
-            X11(width=size$width,height=size$height,pointsize=ptsz)
+            X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
          }else if (outform[o] %in% "quartz"){
-            quartz(width=size$width,height=size$height,pointsize=ptsz)
+            quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
          }else if(outform[o] %in% "png"){
-            png(filename=fichier,width=size$width*depth,height=size$height*depth
+            png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                ,pointsize=ptsz,res=depth,bg="transparent")
          }else if(outform[o] %in% "tif"){
-            tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+            tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                 ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
          }else if(outform[o] %in% "eps"){
-            postscript(file=fichier,width=size$width,height=size$height
-                      ,pointsize=ptsz,paper=size$paper)
+            postscript(file=fichier,width=eysize$width,height=eysize$height
+                      ,pointsize=ptsz,paper=eysize$paper)
          }else if(outform[o] %in% "pdf"){
             pdf(file=fichier,onefile=FALSE
-               ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+               ,width=eysize$width,height=eysize$height,pointsize=ptsz,paper=eysize$paper)
          }#end if
 
          #---------------------------------------------------------------------------------#
@@ -1272,7 +1296,7 @@ for (place in myplaces){
          #     Split the plot into two windows.                                            #
          #---------------------------------------------------------------------------------#
          par(par.user)
-         layout(mat=rbind(2,1),heights=c(5,1))
+         layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
          #---------------------------------------------------------------------------------#
 
 
@@ -1357,7 +1381,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the time series diagrams showing annual means.                                 #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot time series of groups of variables...","\n")
+   cat0("      * Plot time series of groups of variables.")
    for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -1366,7 +1390,11 @@ for (place in myplaces){
       description  = themenow$desc  
       lcolours     = themenow$colour
       llwd         = themenow$lwd
-      ltype        = themenow$type
+      if (ymean.line){
+         ltype     = "l"
+      }else{
+         ltype        = themenow$type
+      }#end if (ymean.line)
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title 
@@ -1382,7 +1410,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"theme_ymean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      +",group,"time series...","\n")
+         cat0("      + ",group," time series.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
@@ -1428,21 +1456,22 @@ for (place in myplaces){
             #------ Open file. ------------------------------------------------------------#
             fichier = file.path(outdir,paste0(prefix,"-",suffix,".",outform[o]))
             if (outform[o] %in% "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
+               X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
             }else if (outform[o] %in% "quartz"){
-               quartz(width=size$width,height=size$height,pointsize=ptsz)
+               quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
             }else if (outform[o] %in% "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
+               png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent")
             }else if (outform[o] %in% "tiff"){
-               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+               tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if (outform[o] %in% "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=size$paper)
+               postscript(file=fichier,width=eysize$width,height=eysize$height
+                         ,pointsize=ptsz,paper=eysize$paper)
             }else if (outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
-                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                  ,width=eysize$width,height=eysize$height,pointsize=ptsz
+                  ,paper=eysize$paper)
             }#end if
             #------------------------------------------------------------------------------#
 
@@ -1458,7 +1487,7 @@ for (place in myplaces){
             #     Split the plot into two windows.                                         #
             #------------------------------------------------------------------------------#
             par(par.user)
-            layout(mat=rbind(2,1),heights=c(5,1))
+            layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
             #------------------------------------------------------------------------------#
 
 
@@ -1534,7 +1563,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the climatology of the mean diurnal cycle.                                     #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot mean diel for groups of variables...","\n")
+   cat0("      * Plot mean diel for groups of variables.")
    for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -1566,7 +1595,7 @@ for (place in myplaces){
          if (! file.exists(outdir)) dir.create(outdir)
          outtheme = file.path(outdir,prefix)
          if (! file.exists(outtheme)) dir.create(outtheme)
-         cat("      +",group," diurnal cycle...","\n")
+         cat0("      + ",group," diurnal cycle.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
@@ -1600,21 +1629,22 @@ for (place in myplaces){
                                   , paste0(prefix,"-",cyear,"-",suffix,".",outform[o])
                                   )#end file.path
                if (outform[o] %in% "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
+                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "quartz"){
-                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                      ,pointsize=ptsz,res=depth,bg="transparent")
                }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
+                  postscript(file=fichier,width=eysize$width,height=eysize$height
+                            ,pointsize=ptsz,paper=eysize$paper)
                }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
+                     ,paper=eysize$paper)
                }#end if
                #---------------------------------------------------------------------------#
 
@@ -1630,7 +1660,7 @@ for (place in myplaces){
                #     Split the plot into two windows.                                      #
                #---------------------------------------------------------------------------#
                par(par.user)
-               layout(mat=rbind(2,1),heights=c(5,1))
+               layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
                #------------------------------------------------------------------------------#
 
 
@@ -1721,7 +1751,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"soil_ymean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + Climatology profile of ",description,"...","\n")
+         cat0("      + Climatology profile of ",description,".")
 
          #----- Find the number of rows and columns, and the axes. ------------------------#
          monaxis  = sort(unique(datum$year))
@@ -1771,21 +1801,22 @@ for (place in myplaces){
          for (o in sequence(nout)){
             fichier = file.path(outdir,paste0(vnam,"-",suffix,".",outform[o]))
             if (outform[o] %in% "x11"){
-               X11(width=size$width,height=size$height,pointsize=ptsz)
+               X11(width=exsize$width,height=exsize$height,pointsize=ptsz)
             }else if (outform[o] %in% "quartz"){
-               quartz(width=size$width,height=size$height,pointsize=ptsz)
+               quartz(width=exsize$width,height=exsize$height,pointsize=ptsz)
             }else if (outform[o] %in% "png"){
-               png(filename=fichier,width=size$width*depth,height=size$height*depth
+               png(filename=fichier,width=exsize$width*depth,height=exsize$height*depth
                   ,pointsize=ptsz,res=depth,bg="transparent")
             }else if (outform[o] %in% "tif"){
-               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+               tiff(filename=fichier,width=exsize$width*depth,height=exsize$height*depth
                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
             }else if (outform[o] %in% "eps"){
-               postscript(file=fichier,width=size$width,height=size$height
-                         ,pointsize=ptsz,paper=size$paper)
+               postscript(file=fichier,width=exsize$width,height=exsize$height
+                         ,pointsize=ptsz,paper=exsize$paper)
             }else if (outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
-                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                  ,width=exsize$width,height=exsize$height,pointsize=ptsz
+                  ,paper=exsize$paper)
             }#end if
 
             letitre = paste0(description,"\n",lieu)
@@ -1825,7 +1856,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Bar plot by DBH class.                                                           #
    #---------------------------------------------------------------------------------------#
-   cat("    + Bar plot by DBH classes...","\n")
+   cat0("    + Bar plot by DBH classes.")
    pftuse      = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0.)
    pftuse      = pftuse[pftuse != (npft+1)]
    npftuse     = length(pftuse)
@@ -1853,7 +1884,7 @@ for (place in myplaces){
       #      Check whether to plot this 
       #------------------------------------------------------------------------------------#
       if (plotit){
-         cat("      - ",description,"...","\n")
+         cat0("      - ",description,".")
 
 
          #---------------------------------------------------------------------------------#
@@ -1910,28 +1941,29 @@ for (place in myplaces){
                                   , paste0(vnam,"-",cyear,"-",suffix,".",outform[o])
                                   )#end file.path
                if (outform[o] %in% "x11"){
-                  X11(width=size$width,height=size$height,pointsize=ptsz)
+                  X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "quartz"){
-                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+                  quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
                }else if (outform[o] %in% "png"){
-                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  png(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                      ,pointsize=ptsz,res=depth,bg="transparent")
                }else if (outform[o] %in% "tif"){
-                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                  tiff(filename=fichier,width=eysize$width*depth,height=eysize$height*depth
                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                }else if (outform[o] %in% "eps"){
-                  postscript(file=fichier,width=size$width,height=size$height
-                            ,pointsize=ptsz,paper=size$paper)
+                  postscript(file=fichier,width=eysize$width,height=eysize$height
+                            ,pointsize=ptsz,paper=eysize$paper)
                }else if (outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
-                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+                     ,width=eysize$width,height=eysize$height,pointsize=ptsz
+                     ,paper=eysize$paper)
                }#end if
                #---------------------------------------------------------------------------#
 
 
                #----- Split plotting area into two. ---------------------------------------#
                par(par.user)
-               layout(mat=rbind(2,1),heights=c(5,1))
+               layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
                #---------------------------------------------------------------------------#
 
 
@@ -1965,7 +1997,7 @@ for (place in myplaces){
                barplot(height=t(thisvnam[y,,]),names.arg=dbhnames[sequence(ndbh)],width=1.0
                       ,main=letitre,xlab=lexlab,ylab=leylab,ylim=ylimit,legend.text=FALSE
                       ,beside=(! stacked),col=pftcol.use,log=xylog
-                      ,border=grid.colour,xpd=FALSE,cex.main=cex.main,las=1)
+                      ,border=grid.colour,xpd=FALSE,cex.main=0.7,las=1)
                if (plotgrid & (! stacked)){
                   xgrid=0.5+sequence(ndbh)*(1+npftuse)
                   abline(v=xgrid,col=grid.colour,lty="solid")
@@ -2014,7 +2046,7 @@ for (place in myplaces){
       #----- If this variable is to be plotted, then go through this if block. ------------#
       if (plotit){
 
-         cat("      + Size and age structure plot: ",description,"...","\n")
+         cat0("      + Size and age structure plot: ",description,".")
 
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #
@@ -2164,28 +2196,30 @@ for (place in myplaces){
                                              )#end paste0
                                      )#end file.path
                   if (outform[o] %in% "x11"){
-                     X11(width=size$width,height=size$height,pointsize=ptsz)
+                     X11(width=eysize$width,height=eysize$height,pointsize=ptsz)
                   }else if (outform[o] %in% "quartz"){
-                     quartz(width=size$width,height=size$height,pointsize=ptsz)
+                     quartz(width=eysize$width,height=eysize$height,pointsize=ptsz)
                   }else if(outform[o] %in% "png"){
-                     png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     png(filename=fichier,width=eysize$width*depth
+                        ,height=eysize$height*depth
                         ,pointsize=ptsz,res=depth,bg="transparent")
                   }else if(outform[o] %in% "tif"){
-                     tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                     tiff(filename=fichier,width=eysize$width*depth
+                         ,height=eysize$height*depth
                          ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
                   }else if(outform[o] %in% "eps"){
-                     postscript(file=fichier,width=size$width,height=size$height
-                               ,pointsize=ptsz,paper=size$paper)
+                     postscript(file=fichier,width=eysize$width,height=eysize$height
+                               ,pointsize=ptsz,paper=eysize$paper)
                   }else if(outform[o] %in% "pdf"){
-                     pdf(file=fichier,onefile=FALSE,width=size$width,height=size$height
-                        ,pointsize=ptsz,paper=size$paper)
+                     pdf(file=fichier,onefile=FALSE,width=eysize$width,height=eysize$height
+                        ,pointsize=ptsz,paper=eysize$paper)
                   }#end if
                   #------------------------------------------------------------------------#
 
 
                   #----- Split the domain into 2. -----------------------------------------#
                   par(par.user)
-                  layout(mat=rbind(2,1),heights=c(5,1))
+                  layout(mat=rbind(2,1),heights=c(1.-f.leg,f.leg))
                   #------------------------------------------------------------------------#
 
 

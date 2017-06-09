@@ -89,7 +89,7 @@ if (ibackground == 0){
    foreground    <<- "white"
    background    <<- "#282828"
 }else{
-   stop(paste(" Invalid ibackground value (",ibackground,")",sep=""))
+   stop(paste0(" Invalid ibackground value (",ibackground,")"))
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -252,7 +252,7 @@ loaded.package = unlist(loaded.package)
 if (! all(loaded.package)){
    miss = which(! loaded.package)
    cat(" You must install the following packages before using the scripts:","\n")
-   for (m in miss) cat(" -> ",names(loaded.package)[m],"\n")
+   for (m in miss) cat(" -> ",names(loaded.package)[m],"\n",sep="")
    risky = readline(" Are you sure you want to proceed [y|N]? ")
    risky = tolower(risky)
    if (! risky %in% c("y","yes")) stop("Missing packages!!!")
@@ -338,14 +338,14 @@ nscripts      = length(order.scripts)
 #------------------------------------------------------------------------------------------#
 warn.orig = getOption("warn")
 options(warn=2)
-cat(" + Loading scripts from ",srcdir,"...","\n")
+cat(" + Load scripts from ",srcdir,".","\n",sep="")
 for (iscript in sequence(nscripts)){
    script.now  = order.scripts[iscript]
    full        = file.path(srcdir,script.now)
    isok        = try(source(full),silent=TRUE)
    if ("try-error" %in% is(isok)){
       options(warn=warn.orig)
-      cat("   - Script ",script.now," has bugs!  Check the errors/warnings: ","\n")
+      cat("   - Script ",script.now," has bugs!  Check the errors/warnings: ","\n",sep="")
       source(full)
       stop("Source code problem")
    }#end if
@@ -377,15 +377,17 @@ for (if90 in sequence(nall.f90)){
    if (file.exists(flib.so)){
       dummy = try(dyn.load(flib.so))
       if ("try-error" %in% is(dummy)){
-         cat("   - Fortran library ",basename(flib.so)," must be recompiled here!","\n")
+         cat("   - Fortran library ",basename(flib.so)," must be recompiled here!","\n"
+            ,sep="")
       }#end if
    }else if (file.exists(flib.sl)){
       dyn.load(flib.sl)
       if ("try-error" %in% is(dummy)){
-         cat("   - Fortran library ",basename(flib.sl)," must be recompiled here!","\n")
+         cat("   - Fortran library ",basename(flib.sl)," must be recompiled here!","\n"
+            ,sep="")
       }#end if
    }else{
-      cat("   - Fortran file ",basename(fnow)," must be compiled here!","\n")
+      cat("   - Fortran file ",basename(fnow)," must be compiled here!","\n",sep="")
       nmiss = nmiss + 1
    }#end if (! file.exists(flib))
 }#end for

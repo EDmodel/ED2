@@ -1711,10 +1711,10 @@ subroutine init_pft_photo_params()
       end select
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
-   Vm0(1)     = 16.000000
-   Vm0(2)     = 24.000000 ! 18.750000
-   Vm0(3)     = 16.000000 ! 12.500000
-   Vm0(4)     =  8.000000 !  6.250000
+   Vm0(1)     = 12.500000
+   Vm0(2)     = 18.750000 ! 18.750000
+   Vm0(3)     = 12.500000 ! 12.500000
+   Vm0(4)     =  6.250000 !  6.250000
    Vm0(5)     = 18.300000
    Vm0(6)     = 11.350000
    Vm0(7)     = 11.350000
@@ -1724,7 +1724,7 @@ subroutine init_pft_photo_params()
    Vm0(11)    =  6.981875
    Vm0(12:13) = 18.300000
    Vm0(14:15) = 16.000000
-   Vm0(16)    = 24.000000 ! 18.750000
+   Vm0(16)    = 18.750000 ! 18.750000
    Vm0(17)    = 15.625000
    do ipft = 1, n_pft
       select case (photosyn_pathway(ipft))
@@ -4008,30 +4008,165 @@ end subroutine init_pft_leaf_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_repro_params()
 
-   use pft_coms, only : hgt_max            & ! intent(in)
-                      , r_fract            & ! intent(out)
-                      , st_fract           & ! intent(out)
-                      , nonlocal_dispersal & ! intent(out)
-                      , repro_min_h        ! ! intent(out)
+   use pft_coms      , only : hgt_max            & ! intent(in)
+                            , is_tropical        & ! intent(in)
+                            , is_grass           & ! intent(in)
+                            , r_fract            & ! intent(out)
+                            , r_slope            & ! intent(out)
+                            , st_fract           & ! intent(out)
+                            , nonlocal_dispersal & ! intent(out)
+                            , repro_min_h        ! ! intent(out)
+   use phenology_coms, only : repro_scheme       ! ! intent(in)
+   use ed_max_dims   , only : n_pft              ! ! intent(in)
    implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                 :: ipft
+   real(kind=4)            :: r_maximum
+   !---------------------------------------------------------------------------------------!
 
-   r_fract(1)              = 1.0
-   r_fract(2)              = 0.5
-   r_fract(3)              = 0.4
-   r_fract(4)              = 0.3
-   r_fract(5)              = 0.3
-   r_fract(6:11)           = 0.3
-   r_fract(12:15)          = 0.3
-   r_fract(16)             = 1.0
-   r_fract(17)             = 0.3
+   !---------------------------------------------------------------------------------------!
+   !      Allocation to storage (amount that is save in each month, not going to           !
+   ! reproduction or growth).                                                              !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         !----- Grass.  Life is too short to bother having a savings account. -------------!
+         st_fract(ipft) = 0.0
+         !---------------------------------------------------------------------------------!
+      else if (is_tropical(ipft)) then
+         !----- Tropical trees.  Assume 10% remains as storage for hard times. ------------!
+         st_fract(ipft) = 0.1
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Temperate trees. Currently assume that they don't save anything. ----------!
+         st_fract(ipft) = 0.0
+         !---------------------------------------------------------------------------------!
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
 
-   st_fract(1)             = 0.0
-   st_fract(2:4)           = 0.1
-   st_fract(5)             = 0.0
-   st_fract(6:11)          = 0.0
-   st_fract(12:15)         = 0.0
-   st_fract(16)            = 0.0
-   st_fract(17)            = 0.1
+   !----- Minimum height for a PFT to be considered mature for reproduction. --------------!
+   do ipft=1,n_pft
+      !------------------------------------------------------------------------------------!
+      if (is_tropical(ipft) .and. is_grass(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Tropical grass.  Grow to maximum height then reproduce.                     !
+         !---------------------------------------------------------------------------------!
+         repro_min_h(ipft) = hgt_max(ipft)
+         !---------------------------------------------------------------------------------!
+      else if (is_grass(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Temperate grass.  Original method, no minimum mature height.                !
+         !---------------------------------------------------------------------------------!
+         repro_min_h(ipft) = 0.0
+         !---------------------------------------------------------------------------------!
+      else if (is_tropical(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Tropical trees.  Minimum height based on average values from                !
+         !                                                                                 !
+         !  Wright, S. J., M. A. Jaramillo, J. Pavon, R. Condit, S. P. Hubbell, and        !
+         !     R. B. Foster. Reproductive size thresholds in tropical trees: variation     !
+         !     among individuals, species and forests. J. Trop. Ecol., 21(3):307-315,      !
+         !     May 2005. doi:10.1017/S0266467405002294.                                    !
+         !---------------------------------------------------------------------------------!
+         repro_min_h(ipft) = 18.0
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Tropical trees.  Minimum height based on the same ratio between             !
+         ! reproduction height and maximum height for tropical trees.   Better numbers     !
+         ! needed here, though.                                                            !
+         !---------------------------------------------------------------------------------!
+         repro_min_h(ipft) = 18.0 / hgt_max(4) * hgt_max(ipft)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Reproduction parameters.  Here we define two r_fract is the minimum reproduction !
+   ! fraction once the PFT is mature, and r_slope is a simple regression line with the     !
+   ! log of the height, to reach maturity.  In case r_slope is zero then r_fract is        !
+   ! constant ("partial big-bang", following Wenk and Falster 2015).  Otherwise, for the   !
+   ! time being we use a linear function of log-height (which is simpler than most         !
+   ! functional forms proposed by Wenk and Falster, but requires only one additional       !
+   ! parameter).                                                                           !
+   !                                                                                       !
+   ! Wenk, E. H., and D. S. Falster. Quantifying and understanding reproductive allocation !
+   !    schedules in plants. Ecol. Evol., 5(23):5521--5538, Nov 2015.                      !
+   !    doi:10.1002/ece3.1802.                                                             !
+   !---------------------------------------------------------------------------------------!
+   select case (repro_scheme)
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !     Assume minimum reproduction to be the original ED-2 values, an maximum to be   !
+      ! 0.9 for trees.  For grasses, we continue to use the big-bang approach.             !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         !---------------------------------------------------------------------------------!
+         !     Check habitat and life form.                                                !
+         !---------------------------------------------------------------------------------!
+         if (is_tropical(ipft) .and. is_grass(ipft)) then
+            !----- Tropical grasses, "big-bang". ------------------------------------------!
+            r_fract(ipft) = 1.0
+            r_slope(ipft) = 0.0
+            !------------------------------------------------------------------------------!
+         else if (is_grass(ipft)) then
+            !----- Temperate grasses, eventually allocate everything to reproduction. -----!
+            r_fract(ipft) = 0.3
+            r_maximum     = 1.0 - st_fract(ipft)
+            r_slope(ipft) = (r_maximum - r_fract(ipft))                                    &
+                          / log(hgt_max(ipft)/repro_min_h(ipft))
+            !------------------------------------------------------------------------------!
+         else
+            !----- Trees, increase allocation to reproduction but don't halt growth. ------!
+            r_fract(ipft) = 0.3
+            r_maximum     = 0.8 - st_fract(ipft)
+            r_slope(ipft) = (r_maximum - r_fract(ipft))                                    &
+                          / log(hgt_max(ipft)/repro_min_h(ipft))
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !      Reproduction fraction when PFT is mature.   Assume slope to be always zero.   !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_tropical(ipft) .and. is_grass(ipft)) then
+            !----- Tropical grass, invest 100% in reproduction once it's mature. ----------!
+            r_fract(ipft) = 1.00
+            r_slope(ipft) = 0.00
+            !------------------------------------------------------------------------------!
+         else if (is_tropical(ipft)) then
+            !------------------------------------------------------------------------------!
+            !    Tropical trees, use values from                                           !
+            !                                                                              !
+            ! Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox,          !
+            !    C. Huntingford, P. Meir, and F. Ian Woodward. Assessing uncertainties in  !
+            !    a second-generation dynamic vegetation model caused by ecological scale   !
+            !    limitations. New Phytol., 187(3):666--681, Aug 2010.                      !
+            !    doi:10.1111/j.1469-8137.2010.03340.x.                                     !
+            !                                                                              !
+            !------------------------------------------------------------------------------!
+            r_fract(ipft) = 0.37
+            r_slope(ipft) = 0.00
+            !------------------------------------------------------------------------------!
+         else
+            !----- Temperate plant. Use original ED-1 numbers. ----------------------------!
+            r_fract(ipft) = 0.30
+            r_slope(ipft) = 0.00
+            !------------------------------------------------------------------------------!
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    nonlocal_dispersal(1)   =  1.000 ! 1.000
    nonlocal_dispersal(2)   =  1.000 ! 0.900
@@ -4050,14 +4185,6 @@ subroutine init_pft_repro_params()
    nonlocal_dispersal(15)  =  1.000 ! 1.000
    nonlocal_dispersal(16)  =  1.000 ! 1.000
    nonlocal_dispersal(17)  =  0.766 ! 0.600
-
-   repro_min_h(1)          = hgt_max(1)
-   repro_min_h(2:4)        = 18.0
-   repro_min_h(5)          =  0.0
-   repro_min_h(6:11)       = 18.0
-   repro_min_h(12:15)      =  0.0
-   repro_min_h(16)         = hgt_max(16)
-   repro_min_h(17)         = 18.0
 
    return
 end subroutine init_pft_repro_params
@@ -4081,10 +4208,12 @@ subroutine init_pft_derived_params()
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , str_len              ! ! intent(in)
    use consts_coms          , only : onesixth             & ! intent(in)
-                                   , twothirds            ! ! intent(in)
+                                   , twothirds            & ! intent(in)
+                                   , almost_zero          ! ! intent(in)
    use pft_coms             , only : init_density         & ! intent(in)
                                    , c2n_leaf             & ! intent(in)
                                    , c2n_stem             & ! intent(in)
+                                   , c2n_storage          & ! intent(in)
                                    , b1Ht                 & ! intent(in)
                                    , b2Ht                 & ! intent(in)
                                    , hgt_min              & ! intent(in)
@@ -4096,6 +4225,7 @@ subroutine init_pft_derived_params()
                                    , hgt_max              & ! intent(in)
                                    , dbh_crit             & ! intent(in)
                                    , dbh_bigleaf          & ! intent(in)
+                                   , f_bstorage_init      & ! intent(in)
                                    , one_plant_c          & ! intent(out)
                                    , min_recruit_size     & ! intent(out)
                                    , min_cohort_size      & ! intent(out)
@@ -4125,20 +4255,23 @@ subroutine init_pft_derived_params()
    real                              :: bsapwood_min
    real                              :: balive_min
    real                              :: bdead_min
+   real                              :: bstorage_min
    real                              :: bleaf_max
    real                              :: broot_max
    real                              :: bsapwood_max
    real                              :: balive_max
    real                              :: bdead_max
+   real                              :: bstorage_max
    real                              :: bleaf_bl
    real                              :: broot_bl
    real                              :: bsapwood_bl
    real                              :: balive_bl
    real                              :: bdead_bl
+   real                              :: bstorage_bl
    real                              :: leaf_hcap_min
    real                              :: wood_hcap_min
    real                              :: lai_min
-   real                              :: min_plant_dens
+   real                              :: nplant_res_min
    real                              :: max_hgt_max
    logical                           :: print_zero_table
    character(len=str_len), parameter :: zero_table_fn    = 'pft_sizes.txt'
@@ -4157,23 +4290,27 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(29(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(32(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','  BALIVE_MIN'               &
-                                              ,'   BDEAD_MIN','    BLEAF_BL'               &
-                                              ,'    BROOT_BL',' BSAPWOOD_BL'               &
-                                              ,'   BALIVE_BL','    BDEAD_BL'               &
+                                              ,'   BDEAD_MIN','BSTORAGE_MIN'               &
+                                              ,'    BLEAF_BL','    BROOT_BL'               &
+                                              ,' BSAPWOOD_BL','   BALIVE_BL'               &
+                                              ,'    BDEAD_BL',' BSTORAGE_BL'               &
                                               ,'   BLEAF_MAX','   BROOT_MAX'               &
                                               ,'BSAPWOOD_MAX','  BALIVE_MAX'               &
-                                              ,'   BDEAD_MAX','   INIT_DENS'               &
-                                              ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
-                                              ,' NEGL_NPLANT','         SLA'               &
-                                              ,'VEG_HCAP_MIN','     LAI_MIN'               &
-                                              ,'     HGT_MAX','    DBH_CRIT'               &
-                                              ,' ONE_PLANT_C'
+                                              ,'   BDEAD_MAX','BSTORAGE_MAX'               &
+                                              ,'   INIT_DENS','MIN_REC_SIZE'               &
+                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
+                                              ,'         SLA','VEG_HCAP_MIN'               &
+                                              ,'     LAI_MIN','     HGT_MAX'               &
+                                              ,'    DBH_CRIT',' ONE_PLANT_C'
+                                              
    end if
-   min_plant_dens = 0.1 * minval(init_density)
+   !---------------------------------------------------------------------------------------!
+
+
    do ipft = 1,n_pft
 
       !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
@@ -4183,6 +4320,7 @@ subroutine init_pft_derived_params()
       bsapwood_min = bleaf_min * qsw(ipft) * hgt_min(ipft)
       balive_min   = bleaf_min + broot_min + bsapwood_min
       bdead_min    = dbh2bd(dbh,ipft)
+      bstorage_min = max(almost_zero,f_bstorage_init(ipft)) * balive_min
       !------------------------------------------------------------------------------------!
 
 
@@ -4198,17 +4336,19 @@ subroutine init_pft_derived_params()
       bsapwood_max = bleaf_max * qsw(ipft) * huge_height
       balive_max   = bleaf_max + broot_max + bsapwood_max
       bdead_max    = dbh2bd(huge_dbh,ipft)
+      bstorage_max = max(almost_zero,f_bstorage_init(ipft)) * balive_max
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !    Biomass of one individual plant at recruitment.                                 !
       !------------------------------------------------------------------------------------!
-      bleaf_bl          = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),ipft) 
-      broot_bl          = bleaf_bl * q(ipft)
-      bsapwood_bl       = bleaf_bl * qsw(ipft) * hgt_max(ipft)
-      balive_bl         = bleaf_bl + broot_bl + bsapwood_bl
-      bdead_bl          = dbh2bd(dbh_bigleaf(ipft),ipft)
+      bleaf_bl     = size2bl(dbh_bigleaf(ipft),hgt_min(ipft),ipft) 
+      broot_bl     = bleaf_bl * q(ipft)
+      bsapwood_bl  = bleaf_bl * qsw(ipft) * hgt_max(ipft)
+      balive_bl    = bleaf_bl + broot_bl + bsapwood_bl
+      bdead_bl     = dbh2bd(dbh_bigleaf(ipft),ipft)
+      bstorage_bl  = max(almost_zero,f_bstorage_init(ipft)) * balive_bl
       !------------------------------------------------------------------------------------!
 
 
@@ -4219,55 +4359,12 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       select case (ibigleaf)
       case (0)
-         one_plant_c(ipft) = bdead_min + balive_min
+         one_plant_c(ipft) = bdead_min + balive_min + bstorage_min
       case (1)
-         one_plant_c(ipft) = bdead_bl  + balive_bl
+         one_plant_c(ipft) = bdead_bl  + balive_bl  + bstorage_bl
       end select
       !------------------------------------------------------------------------------------!
 
-
-      !------------------------------------------------------------------------------------!
-      !    The definition of the minimum recruitment size is the minimum amount of biomass !
-      ! in kgC/m² is available for new recruits.  For the time being we use the near-bare  !
-      ! ground state value as the minimum recruitment size, but this may change depending  !
-      ! on how well it goes.                                                               !
-      !------------------------------------------------------------------------------------!
-      min_recruit_size(ipft) = min_plant_dens * one_plant_c(ipft)
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    Minimum size (measured as biomass of living and structural tissues) allowed in  !
-      ! a cohort.  Cohorts with less biomass than this are going to be terminated.         !
-      !------------------------------------------------------------------------------------! 
-      min_cohort_size(ipft)  = 0.1 * min_recruit_size(ipft)
-      !------------------------------------------------------------------------------------! 
-
-
-      !------------------------------------------------------------------------------------!
-      !    Seed_rain is the density of seedling that will be added from somewhere else.    !
-      !------------------------------------------------------------------------------------! 
-      seed_rain(ipft)  = 0.1 * init_density(ipft)
-      !------------------------------------------------------------------------------------! 
-
-
-
-      !------------------------------------------------------------------------------------! 
-      !    The following variable is the absolute minimum cohort population that a cohort  !
-      ! can have.  This should be used only to avoid nplant=0, but IMPORTANT: this will    !
-      ! lead to a ridiculously small cohort almost guaranteed to be extinct and SHOULD BE  !
-      ! USED ONLY IF THE AIM IS TO ELIMINATE THE COHORT.                                   !
-      !------------------------------------------------------------------------------------! 
-      negligible_nplant(ipft) = onesixth * min_cohort_size(ipft) / (bdead_max + balive_max)
-      !------------------------------------------------------------------------------------! 
-
-
-      !----- Find the recruit carbon to nitrogen ratio. -----------------------------------!
-      c2n_recruit(ipft)      = (balive_min + bdead_min)                                    &
-                             / (balive_min * ( f_labile(ipft) / c2n_leaf(ipft)             &
-                             + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
-                             + bdead_min/c2n_stem(ipft))
-      !------------------------------------------------------------------------------------! 
 
 
 
@@ -4278,21 +4375,73 @@ subroutine init_pft_derived_params()
       ! all PFTs have leaves (but not branches), we only consider the leaf heat capacity   !
       ! only for the minimum value.                                                        !
       !------------------------------------------------------------------------------------!
-      call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,init_density(ipft),ipft          &
+      nplant_res_min     = 0.25 * init_density(ipft)
+      call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,nplant_res_min,ipft              &
                         ,leaf_hcap_min,wood_hcap_min)
-      veg_hcap_min(ipft) = onesixth * leaf_hcap_min
-      lai_min            = onesixth * init_density(ipft) * bleaf_min * sla(ipft)
+      veg_hcap_min(ipft) = leaf_hcap_min
+      lai_min            = nplant_res_min * bleaf_min * sla(ipft)
       !------------------------------------------------------------------------------------!
 
 
+
+      !------------------------------------------------------------------------------------!
+      !    The definition of the minimum recruitment size is the minimum amount of biomass !
+      ! in kgC/m² is available for new recruits.  It does not make much sense to throw in  !
+      ! new recruits that cannot be resolved (as they would be initialised and gone), so   !
+      ! we define the initial size to be greater than the minimum resolvable nplant.       !
+      !------------------------------------------------------------------------------------!
+      min_recruit_size(ipft) = 2.0 * nplant_res_min * one_plant_c(ipft)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Minimum size (measured as biomass of living and structural tissues) allowed in  !
+      ! a cohort.  Cohorts with less biomass than this are going to be terminated.         !
+      !------------------------------------------------------------------------------------! 
+      min_cohort_size(ipft)  = 0.8 * nplant_res_min * one_plant_c(ipft)
+      !------------------------------------------------------------------------------------! 
+
+
+      !------------------------------------------------------------------------------------!
+      !    Seed_rain is the density of seedling that will be added from somewhere else.    !
+      !------------------------------------------------------------------------------------! 
+      seed_rain(ipft)  = nplant_res_min
+      !------------------------------------------------------------------------------------! 
+
+
+
+      !------------------------------------------------------------------------------------! 
+      !    The following variable is the absolute minimum cohort population that a cohort  !
+      ! can have.  This should be used only to avoid nplant=0, but IMPORTANT: this will    !
+      ! lead to a ridiculously small cohort almost guaranteed to be extinct and SHOULD BE  !
+      ! USED ONLY IF THE AIM IS TO ELIMINATE THE COHORT.                                   !
+      !------------------------------------------------------------------------------------! 
+      negligible_nplant(ipft) = onesixth * min_cohort_size(ipft)                           &
+                              / (bdead_max + balive_max + bstorage_max)
+      !------------------------------------------------------------------------------------! 
+
+
+      !----- Find the recruit carbon to nitrogen ratio. -----------------------------------!
+      c2n_recruit(ipft)      = (balive_min + bdead_min + bstorage_min)                     &
+                             / (balive_min * ( f_labile(ipft) / c2n_leaf(ipft)             &
+                             + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
+                             + bdead_min/c2n_stem(ipft)                                    &
+                             + bstorage_min/c2n_storage)
+      !------------------------------------------------------------------------------------! 
+
+
+      !------------------------------------------------------------------------------------!
+      !     Add PFT parameters to the reference table.                                     !
+      !------------------------------------------------------------------------------------! 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,27(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,30(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
-                                                    ,balive_min,bdead_min,bleaf_bl         &
-                                                    ,broot_bl,bsapwood_bl,balive_bl        &
-                                                    ,bdead_bl,bleaf_max,broot_max          &
-                                                    ,bsapwood_max,balive_max,bdead_max     &
+                                                    ,balive_min,bdead_min,bstorage_min     &
+                                                    ,bleaf_bl,broot_bl,bsapwood_bl         &
+                                                    ,balive_bl,bdead_bl,bstorage_bl        &
+                                                    ,bleaf_max,broot_max,bsapwood_max      &
+                                                    ,balive_max,bdead_max,bstorage_max     &
                                                     ,init_density(ipft)                    &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
@@ -4303,10 +4452,16 @@ subroutine init_pft_derived_params()
       end if
       !------------------------------------------------------------------------------------!
    end do
+   !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !    Neatly close the parameter table.                                                  !
+   !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       close (unit=61,status='keep')
    end if
+   !---------------------------------------------------------------------------------------!
 
 
 

@@ -82,6 +82,11 @@ drought.yearz  = mydroughtyearz         # Last year that has drought
 months.drought = mymonthsdrought        # Months with drought
 ibackground    = mybackground           # Background settings (check load_everything.r)
 f.leg          = 1/6                    # Fraction of device for legend
+emean.line     = TRUE                   # Use lines instead of points and lines for theme
+                                        #    plots? 
+                                        #    TRUE  - Lines only
+                                        #    FALSE - Use type defined in pmonthly_varlist.r
+                                        #    NA    - Let the script decide
 #------------------------------------------------------------------------------------------#
 
 
@@ -164,8 +169,8 @@ for (place in myplaces){
    thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                       ,monthbeg=monthbeg)
    inpref  = thispoi$pathin
-   outmain = paste(outroot,place,sep="/")
-   outpref = paste(outmain,"monthly",sep="/")
+   outmain = file.path(outroot,place)
+   outpref = file.path(outmain,"monthly")
    lieu    = thispoi$lieu
    iata    = thispoi$iata
    suffix  = thispoi$iata
@@ -184,12 +189,12 @@ for (place in myplaces){
 
 
    #----- Decide how frequently the cohort-level variables should be saved. ---------------#
-   if (yearend - yearbeg + 1 <= nyears.long){
+   if ((yearend - yearbeg + 1) <= nyears.long){
       sasmonth   = sasmonth.short
-      emean.line = TRUE
+      if (is.na(emean.line)) emean.line = FALSE
    }else{
       sasmonth   = sasmonth.long
-      emean.line = FALSE
+      if (is.na(emean.line)) emean.line = TRUE
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -204,7 +209,7 @@ for (place in myplaces){
 
 
    #----- Print a banner to entretain the user. -------------------------------------------#
-   cat(" + Post-processing output from ",lieu,"...","\n")
+   cat0(" + Post-process output from ",lieu,".")
    #---------------------------------------------------------------------------------------#
 
 
@@ -215,11 +220,11 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    path.data  = file.path(here,place,"rdata_month")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
-   ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
+   ed22.rdata  = file.path(path.data,paste0(place,".RData"))
+   ed22.status = file.path(path.data,paste0("status_",place,".txt"))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
-      cat("   - Loading previous session...","\n")
+      cat0("   - Load previous session.")
       load(ed22.rdata)
       tresume = datum$ntimes + 1
       datum   = update.monthly( new.ntimes = ntimes 
@@ -230,7 +235,7 @@ for (place in myplaces){
                               , slz.min    = slz.min
                               )#end update.monthly
    }else{
-      cat("   - Starting new session...","\n")
+      cat0("   - Start new session.")
       tresume    = 1
       datum      = create.monthly( ntimes  = ntimes
                                  , montha  = monthbeg
@@ -313,7 +318,7 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
 
       #------ Save the data to the R object. ----------------------------------------------#
-      cat(" + Saving data to ",basename(ed22.rdata),"...","\n")
+      cat0(" + Save data to ",basename(ed22.rdata),".")
       save(datum,file=ed22.rdata)
       #------------------------------------------------------------------------------------#
    }#end if (! complete)
@@ -648,7 +653,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"tspft")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",description," time series for all PFTs...","\n")
+         cat0("      + ",description," time series for all PFTs.")
 
          #----- Load variable -------------------------------------------------------------#
          if (vnam %in% names(szpft)){
@@ -834,7 +839,7 @@ for (place in myplaces){
          if (! file.exists(outvar)) dir.create(outvar)
          #---------------------------------------------------------------------------------#
 
-         cat("      + ",description," time series for DBH class...","\n")
+         cat0("      + ",description," time series for DBH class.")
 
 
          #---------------------------------------------------------------------------------#
@@ -861,9 +866,9 @@ for (place in myplaces){
          #       Loop over plant functional types.                                         #
          #---------------------------------------------------------------------------------#
          for (p in pftuse){
-            pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
+            pftlab = paste0("pft-",sprintf("%2.2i",p))
 
-            cat("        - ",pft$name[p],"\n")
+            cat0("        - ",pft$name[p],".")
 
 
             #----- Loop over output formats. ----------------------------------------------#
@@ -979,7 +984,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the comparison between observations and model.                                 #
    #---------------------------------------------------------------------------------------#
-   cat("    + Comparisons of time series (model vs. observations)...","\n")
+   cat0("    + Comparisons of time series (model vs. observations).")
    for (cc in sequence(ncompmodel)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -1045,7 +1050,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir   = file.path(outpref,"compemean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      - ",description," comparison...","\n")
+         cat0("      - ",description," comparison.")
          #---------------------------------------------------------------------------------#
 
 
@@ -1073,7 +1078,7 @@ for (place in myplaces){
 
 
          #----- Plot annotation. ----------------------------------------------------------#
-         letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+         letitre = paste0(description," - ",lieu,"\n","Monthly mean")
          ley     = desc.unit(desc=description,unit=unit)
          #---------------------------------------------------------------------------------#
 
@@ -1156,7 +1161,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the comparison between observations and model.                                 #
    #---------------------------------------------------------------------------------------#
-   cat("    + Comparisons of monthly means (model vs. observations)...","\n")
+   cat0("    + Comparisons of monthly means (model vs. observations).")
    for (cc in sequence(ncompmodel)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -1239,7 +1244,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir   = file.path(outpref,"compmmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      - ",description," comparison...","\n")
+         cat0("      - ",description," comparison.")
          #---------------------------------------------------------------------------------#
 
 
@@ -1275,7 +1280,7 @@ for (place in myplaces){
 
 
          #------  Plot annotation. --------------------------------------------------------#
-         letitre = paste(description," - ",lieu,"\n","Monthly mean",sep="")
+         letitre = paste0(description," - ",lieu,"\n","Monthly mean")
          ley     = desc.unit(desc=description,unit=unit)
          #---------------------------------------------------------------------------------#
 
@@ -1385,7 +1390,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the comparison between observations and model.                                 #
    #---------------------------------------------------------------------------------------#
-   cat("      * Comparisons of mean diurnal cycle (model vs. observations)...","\n")
+   cat0("      * Comparisons of mean diurnal cycle (model vs. observations).")
    for (cc in sequence(ncompmodel)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -1459,7 +1464,7 @@ for (place in myplaces){
          if (! file.exists(outdir)) dir.create(outdir)
          outtheme = file.path(outdir,vname)
          if (! file.exists(outtheme)) dir.create(outtheme)
-         cat("      + ",description," comparison...","\n")
+         cat0("      + ",description," comparison.")
          #---------------------------------------------------------------------------------#
 
 
@@ -1504,12 +1509,11 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Check if the directory exists.  If not, create it.                       #
             #------------------------------------------------------------------------------#
-            cat("        > ",description," time series - ",namemon,"...","\n")
+            cat0("        > ",description," time series - ",namemon,".")
 
 
             #------ Plot annotation. ------------------------------------------------------#
-            letitre = paste(description," - ",lieu,"\n"
-                           ,"Mean diurnal cycle - ",namemon,sep="")
+            letitre = paste0(description," - ",lieu,"\n","Mean diurnal cycle - ",namemon)
             ley     = desc.unit(desc=description,unit=unit)
             #------------------------------------------------------------------------------#
 
@@ -1653,7 +1657,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"tslu")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",description," time series for all LUs...","\n")
+         cat0("      + ",description," time series for all LUs.")
 
 
 
@@ -1806,7 +1810,7 @@ for (place in myplaces){
    #   Plot disturbance rate by disturbance transition.                                    #
    #---------------------------------------------------------------------------------------#
    if (tserdist && any(seldist)){
-      cat("      + Disturbance rate time series for all disturbances...","\n")
+      cat0("      + Disturbance rate time series for all disturbances.")
       for (o in sequence(nout)){
          fichier = file.path(outpref,paste0("disturb-",suffix,".",outform[o]))
          if (outform[o] %in% "x11"){
@@ -1946,7 +1950,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the time series diagrams showing months and years.                             #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot some time series with groups of variables...","\n")
+   cat0("      * Plot some time series with groups of variables.")
    for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -1975,7 +1979,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"theme_emean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",group," time series for several variables...","\n")
+         cat0("      + ",group," time series for several variables.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
@@ -2124,7 +2128,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the time series diagrams showing months and years.                             #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot some monthly means of groups of variables ...","\n")
+   cat0("      * Plot some monthly means of groups of variables.")
    for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -2149,7 +2153,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir = file.path(outpref,"theme_mmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",group," time series for several variables...","\n")
+         cat0("      + ",group," time series for several variables.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
@@ -2300,7 +2304,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #   Plot the climatology of the mean diurnal cycle.                                     #
    #---------------------------------------------------------------------------------------#
-   cat("      * Plot the mean diel of groups of variables...","\n")
+   cat0("      * Plot the mean diel of groups of variables.")
    for (hh in sequence(ntheme)){
 
       #----- Retrieve variable information from the list. ---------------------------------#
@@ -2332,7 +2336,7 @@ for (place in myplaces){
          if (! file.exists(outdir)) dir.create(outdir)
          outtheme = file.path(outdir,prefix)
          if (! file.exists(outtheme)) dir.create(outtheme)
-         cat("      + ",group," diurnal cycle for several variables...","\n")
+         cat0("      + ",group," diurnal cycle for several variables.")
 
 
          #----- Define the number of layers. ----------------------------------------------#
@@ -2490,7 +2494,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"soil_mmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + Climatology profile of ",description,"...","\n")
+         cat0("      + Climatology profile of ",description,".")
 
          #----- Find the number of rows and columns, and the axes. ------------------------#
          monaxis  = sort(unique(datum$month))
@@ -2554,7 +2558,7 @@ for (place in myplaces){
                   ,pointsize=ptsz,paper=exsize$paper)
             }#end if
 
-            letitre = paste(description," - ",lieu,sep="")
+            letitre = paste0(description," - ",lieu)
             ley     = desc.unit(desc="Soil depth",unit=untab$m)
             lacle   = desc.unit(desc=NULL,unit=unit)
             par(par.user)
@@ -2609,7 +2613,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"soil_emean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + Time series profile of ",description,"...","\n")
+         cat0("      + Time series profile of ",description,".")
 
          #----- Find the number of rows and columns, and the axes. ------------------------#
          timeaxis  = datum$tomonth
@@ -2748,7 +2752,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"fillc_mmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",description," time series in filled contour...","\n")
+         cat0("      + ",description," time series in filled contour.")
 
          #----- Load this variable into "thisvar". ----------------------------------------#
          thisvar = emean[[vnam]]
@@ -2865,7 +2869,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"fillc_qmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",description," time series of diurnal cycle...","\n")
+         cat0("      + ",description," time series of diurnal cycle.")
 
          #----- Load this variable into "thisvar". ----------------------------------------#
          vararr   = qmean[[vnam]]
@@ -2963,7 +2967,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"boxplot")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + ",description," box plot...","\n")
+         cat0("      + ",description," box plot.")
 
          #----- Load this variable into "thisvar". ----------------------------------------#
          thisvar = emean[[vnam]]
@@ -3049,7 +3053,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"patch_emean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + PDF plot of ",description,"...","\n")
+         cat0("      + PDF plot of ",description,".")
 
 
          #----- Loop over formats. --------------------------------------------------------#
@@ -3162,7 +3166,7 @@ for (place in myplaces){
          #---------------------------------------------------------------------------------#
          outdir  =  file.path(outpref,"patch_mmean")
          if (! file.exists(outdir)) dir.create(outdir)
-         cat("      + PDF plot of ",description,"...","\n")
+         cat0("      + PDF plot of ",description,".")
 
 
          #----- Find the month tick marks. ------------------------------------------------#
@@ -3257,7 +3261,7 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    #      Bar plot by DBH class.                                                           #
    #---------------------------------------------------------------------------------------#
-   cat("    + Bar plot by DBH classes...","\n")
+   cat0("    + Bar plot by DBH classes.")
    monbplot    = which(nummonths(datum$tomonth) %in% sasmonth)
    nmonbplot   = length(monbplot)
    pftuse      = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
@@ -3287,7 +3291,7 @@ for (place in myplaces){
       #      Check whether to plot this 
       #------------------------------------------------------------------------------------#
       if (plotit){
-         cat("      - ",description,"...","\n")
+         cat0("      - ",description,".")
 
 
          #---------------------------------------------------------------------------------#
@@ -3454,7 +3458,7 @@ for (place in myplaces){
       #----- If this variable is to be plotted, then go through this if block. ------------#
       if (plotit){
 
-         cat("      + Size and age structure plot: ",description,"...","\n")
+         cat0("      + Size and age structure plot: ",description,".")
 
          #---------------------------------------------------------------------------------#
          #     Check if the directory exists.  If not, create it.                          #

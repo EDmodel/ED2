@@ -22,8 +22,8 @@ subdirs="ED BRAMS Ramspost R-utils"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
-here="/n/home00/mlongo/EDBRAMS"
-there="/n/home00/mlongo/.backupscripts/.model_backup/EDBRAMS"
+here="/prj/bramsolam/marcos.longo/EDBRAMS"
+there="/prj/bramsolam/marcos.longo/2017-05-03_EDBRAMS"
 #------------------------------------------------------------------------------------------#
 
 

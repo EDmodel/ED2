@@ -260,10 +260,12 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
             cpatch%cb_mlmax   (13,ico) = 0.0
             !------------------------------------------------------------------------------!
          case (1)
+            !------ Storage is accounted. -------------------------------------------------!
             cpatch%cb         (13,ico) = cpatch%bstorage(ico)
             cpatch%cb_lightmax(13,ico) = cpatch%bstorage(ico)
             cpatch%cb_moistmax(13,ico) = cpatch%bstorage(ico)
             cpatch%cb_mlmax   (13,ico) = cpatch%bstorage(ico)
+            !------------------------------------------------------------------------------!
          end select
          cpatch%cbr_bar          (ico) = 1.0
          !---------------------------------------------------------------------------------!
