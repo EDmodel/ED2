@@ -549,16 +549,51 @@ agb2dbh.baker <<- function(agb,wdens,allom="baker.chave"){
 #     comparison of the common methods.  Biotropica, 38, 581-591                           #
 #     doi:10.1111/j.1744-7429.2006.00187.x                                                 #
 #                                                                                          #
+#                                                                                          #
+#                                                                                          #
+# Input:                                                                                   #
+# ---------------------------------------------------------------------------------------- #
+# dbh        --- Diameter at breast height [cm]                                            #
+# height     --- Height [m]                                                                #
+# wdens      --- Wood density [g/cm3]                                                      #
+# type       --- Plant type:                                                               #
+#                L - liana                                                                 #
+#                P - palm                                                                  #
+#                O - others (aka trees)                                                    #
+#                In case type = NULL, all plants are assumed to be trees.                  #
+# dead       --- Life status:                                                              #
+#                TRUE  - plant is dead                                                     #
+#                FALSE - plant is alive                                                    #
+#                In case dead = NULL, all plants are assumed to be alive.                  #
+# eps.dbh    --- Relative uncertainty for DBH [1 means 100%]                               #
+# eps.height --- Relative uncertainty for height [1 means 100%]                            #
+# eps.wdens  --- Relative uncertainty for wood density [1 means 100%]                      #
+# out.err    --- Output error in addition to the estimates of biomass/necromass?           #
+# ---------------------------------------------------------------------------------------- #
+#
+#
+#
+# ---------------------------------------------------------------------------------------- #
+# Output:
+# ---------------------------------------------------------------------------------------- #
+# - In case out.err is FALSE, the function returns a vector with biomass for each entry.   #
+# - In case out.err is TRUE, the output is a data frame with the following vectors         #
+#   with the same length as the entries:                                                   #
+#   * agb      -- biomass (necromass)                       [kgC]                          #
+#   * ae.agb   -- uncertainty in biomass due to allometry   [kgC, not relative]            #
+#   * me.agb   -- uncertainty in biomass due to measurement [kgC, not relative]            #
+#   * lnagb    -- log(biomass), used for error propagation.                                #
+#   * sd.lnagb -- standard error of log-biomass                                            #
 #------------------------------------------------------------------------------------------#
 agb.SL <<- function( dbh
                    , height
                    , wdens
-                   , type      = NULL
-                   , dead      = NULL
-                   , me.dbh    = NULL
-                   , me.height = NULL
-                   , me.wdens  = NULL
-                   , out.err   = FALSE
+                   , type       = NULL
+                   , dead       = NULL
+                   , eps.dbh    = 0.02
+                   , eps.height = 0.167
+                   , eps.wdens  = 0.10
+                   , out.err    = FALSE
                    ){
    #---------------------------------------------------------------------------------------#
    #     "type" and "dead" may not be present, in which case we use dummy values.          #
@@ -662,23 +697,25 @@ agb.SL <<- function( dbh
       #------------------------------------------------------------------------------------#
       #       Find error associated with measurements.                                     #
       #------------------------------------------------------------------------------------#
-      me.agb        = NA * agb
-      me.dh         = cor(x=dbh[tree|dead],y=height[tree|dead],use="pair")
+      me.agb  = NA * agb
+      eps.dh  = sqrt( cov(x=dbh[tree|dead],y=height[tree|dead])
+                    / ( mean(dbh[tree|dead])*mean(height[tree|dead]) )
+                    )#end sqrt
       #----- Living tree: Chave et al. (2014). --------------------------------------------#
-      me.agb[tree ] = agb[tree ] * sqrt( ( 2.0 * 0.976 * me.dbh    / dbh   [tree] )^2
-                                       + (       0.976 * me.height / height[tree] )^2
-                                       + (       0.976 * me.wdens  / wdens [tree] )^2
-                                       + 4.0 * 0.976^2 * me.dh^2 / dbh[tree] / height[tree]
+      me.agb[tree ] = agb[tree ] * sqrt( ( 2.0 * 0.976 * eps.dbh    )^2
+                                       + (       0.976 * eps.height )^2
+                                       + (       0.976 * eps.wdens  )^2
+                                       + 2.0 * (2.0 * 0.976) * 0.976 * eps.dh * eps.dh
                                        )#end sqrt
       #----- Palm: Goodman et al. (2013). -------------------------------------------------#
-      me.agb[palm ] = agb[palm ] * 2.7483 * me.dbh / dbh[palm ] 
+      me.agb[palm ] = agb[palm ] * 2.7483 * eps.dbh
       #----- Liana: Schnitzer et al. (2006). ----------------------------------------------#
-      me.agb[liana] = agb[liana] * 2.657  * me.dbh / dbh[liana]
+      me.agb[liana] = agb[liana] * 2.657  * eps.dbh
       #----- Standing dead: assumed the same as living trees. -----------------------------#
-      me.agb[dead ] = agb[dead ] * sqrt( ( 2.0 * me.dbh    / dbh   [dead] )^2
-                                       + ( a1  * me.height / height[dead] )^2
-                                       + (       me.wdens  / wdens [dead] )^2
-                                       + 4.0 * a1 * me.dh^2 / dbh[dead] / height[dead]
+      me.agb[dead ] = agb[dead ] * sqrt( ( 2.0 * eps.dbh    )^2
+                                       + ( a1  * eps.height )^2
+                                       + (       eps.wdens  )^2
+                                       + 2.0 * 2.0 * a1 * eps.dh
                                        )#end sqrt
       #------------------------------------------------------------------------------------#
 

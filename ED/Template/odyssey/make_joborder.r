@@ -157,7 +157,7 @@ default = list( run           = "unnamed"
               , isoilbc       = 1
               , sldrain       = 90.
               , scolour       = 16
-              , slzres        = 1
+              , slzres        = 0
               , queue         = "linux.q"
               , met.driver    = "tower"
               , dtlsm         = 600.
@@ -192,7 +192,7 @@ default = list( run           = "unnamed"
               , ddmort.const  = 0.8
               , cbr.scheme    = 0
               , isfclyrm      = 4
-              , icanturb      = 2
+              , icanturb      = 0
               , ubmin         = 1.00
               , ugbmin        = 0.40
               , ustmin        = 0.10

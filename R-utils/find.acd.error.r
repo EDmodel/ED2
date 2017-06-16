@@ -2,6 +2,50 @@
 #==========================================================================================#
 #      This function determines the plot aggregated error due to measurement and           #
 # allometry.                                                                               #
+#                                                                                          #
+# Input:                                                                                   #
+# ---------------------------------------------------------------------------------------- #
+# datum       - a data frame with all trees in this plot (note, you can't run this for all #
+#               plots at once, either use a for loop or mapply). The data frame must       #
+#               contain the following variables:                                           #
+#               * nplant   - 1/area sampled if tree is alive, zero if tree is dead [1/m2]  #
+#               * ntotal   - 1/area sampled                                        [1/m2]  #
+#                 For nplant/ntotal, if the sampled area was 2500 m2, the number should be #
+#                 0.0004.  In case a differential sampling effort was used, then nplant    #
+#                 varies.  For example, if trees with 10 <= DBH < 35 cm were measured in a #
+#                 50x5 subplot and trees with DBH >= 35 cm were measured in the entire     #
+#                 2500m2 plots, then nplant should be 0.004 for the trees with DBH < 35cm  #
+#                 and 0.0004 for trees with DBH >= 35cm.                                   #
+#               * AGC      - above-ground carbon                                   [ kgC]  #
+#               * ME.AGC   - measurement uncertainty of above-ground carbon        [ kgC]  #
+#               * LNAGC    - log of above-ground carbon                                    #
+#               * SD.LNAGC - allometry uncertainty, using the log-scale                    #
+#               * X        - x position in the plot (used only if epsilon.smp is NULL)     #
+#               * Y        - y position in the plot (used only if epsilon.smp is NULL)     #
+# xmax        - maximum size along the x axis (used only if epsilon.smp is NULL)           #
+# ymax        - maximum size along the y axis (used only if epsilon.smp is NULL)           #
+# subalong    - which axis has the subplot                                                 #
+# epsilon.smp - in case epsilon.smp is null, the function will try to estimate within-plot #
+#               sampling uncertainty.  This is unlikely to work unless you have large      #
+#               plots or at the very least have plots without sub-sampling.                #
+#               Alternatively, you may provide the number from previous studies.           #
+# n.sub       - number of subplot samples                                                  #
+# n.real      - number of replicates for estimating uncertainty.  Large numbers            #
+#               (10000 or more) are needed for stable results.                             #
+# ---------------------------------------------------------------------------------------- #
+#                                                                                          #
+#                                                                                          #
+#                                                                                          #
+# ---------------------------------------------------------------------------------------- #
+# Output:                                                                                  #
+# ---------------------------------------------------------------------------------------- #
+# A vector with 8 numbers:                                                                 #
+# se.agb.xxxxx - uncertainties for plot estimate of biomass (no standing dead) [kgC/m2]    #
+# se.acd.xxxxx - uncertainties for plot estimate of biomass+necromass          [kgC/m2]    #
+# se.xxx.measurement - contribution of measurement uncertainty to plot uncertainty         #
+# se.xxx.allometry   - contribution of allometry uncertainty to plot uncertainty           #
+# se.xxx.sampling    - contribution of sampling uncertainty to plot uncertainty            #
+# se.xxx.census      - total uncertainty (combining the three terms above).                #
 #------------------------------------------------------------------------------------------#
 find.acd.error <<- function(datum,xmax,ymax,subalong=c("x","y"),epsilon.smp=NULL
                            ,n.sub=25,n.real=10000){

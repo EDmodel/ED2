@@ -26,23 +26,23 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       lieu     = poilist$longname[pp]
       iata     = poilist$iata[pp]
       wmo      = poilist$wmo [pp]
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(here,ici,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(here,ici,"epost",sep="/")
+      pathroot = file.path(here,ici)
+      pathin   = file.path(here,ici,"analy",ici)
+      pathrst  = file.path(here,ici,"histo",ici)
+      pathout  = file.path(here,ici,"epost")
       lon      = poilist$lon[pp]
       lat      = poilist$lat[pp]
    }else if(nchar(ici) == 5 & substring(ici,1,2) == "kz")     {
       #----- Ke's list of polygons. -------------------------------------------------------#
        testpoi  = as.numeric(substring(ici,3,5))
 
-       lieu     = paste("KZ test - polygon ",testpoi,sep="")
+       lieu     = paste0("KZ test - polygon ",testpoi)
        iata     = ici
        wmo      = NA
-       pathroot = paste(here,ici,sep="/")
-       pathin   = paste(pathroot,"analy",ici,sep="/")
-       pathrst  = paste(here,ici,"histo",ici,sep="/")
-       pathout  = paste(pathroot,"epost",sep="/")
+       pathroot = file.path(here,ici)
+       pathin   = file.path(pathroot,"analy",ici)
+       pathrst  = file.path(here,ici,"histo",ici)
+       pathout  = file.path(pathroot,"epost")
        lon      = kzlist[[testpoi]]$lon
        lat      = kzlist[[testpoi]]$lat
 
@@ -62,20 +62,20 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       pp      = which(poilist$iata == iata)
 
       #----- Put the name of the place and the meteorological forcing. --------------------#
-      testpoi = paste(poilist$longname[pp],thismet,sep="")
+      testpoi = paste0(poilist$longname[pp],thismet)
       lon     = poilist$lon[pp]
       lat     = poilist$lat[pp]
       wmo     = poilist$wmo[pp]
 
       lieu     = simul.description(ici,testpoi,iata=TRUE)
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(pathroot,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(pathroot,"epost",sep="/")
+      pathroot = file.path(here,ici)
+      pathin   = file.path(pathroot,"analy",ici)
+      pathrst  = file.path(here,ici,"histo",ici)
+      pathout  = file.path(pathroot,"epost")
 
    }else if( substring(ici,4,4) == "_" & substring(ici,9,9) == "_"){
       #---- Convert back to upper case. ---------------------------------------------------#
-      ici      = paste(toupper(substring(ici,1,3)),substring(ici,4),sep="")
+      ici      = paste0(toupper(substring(ici,1,3)),substring(ici,4))
 
       #---- Regional polygon. -------------------------------------------------------------#
       pnumber  = as.numeric(substring(ici,5,8))
@@ -90,19 +90,19 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       wmo     = NA
 
       lieu     = simul.description(ici,testpoi,iata=FALSE)
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(pathroot,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(pathroot,"epost",sep="/")
+      pathroot = file.path(here,ici)
+      pathin   = file.path(pathroot,"analy",ici)
+      pathrst  = file.path(here,ici,"histo",ici)
+      pathout  = file.path(pathroot,"epost")
 
    }else if(ici == "rondonia")         {
        lieu     = "Rondonia"
        iata     = "RO"
        wmo      = NA
-       pathroot = paste(here,ici,sep="/")
-       pathin   = paste(here,"analy",ici,sep="/")
-       pathrst  = paste(here,"histo",ici,sep="/")
-       pathout  = paste(here,"epost",sep="/")
+       pathroot = file.path(here,ici)
+       pathin   = file.path(here,"analy",ici)
+       pathrst  = file.path(here,"histo",ici)
+       pathout  = file.path(here,"epost")
        lon      = NA
        lat      = NA
 
@@ -110,10 +110,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
        lieu     = "South America"
        iata     = "potveg"
        wmo      = NA
-       pathroot = paste(here,ici,sep="/")
-       pathin   = paste(here,"analy",ici,sep="/")
-       pathrst  = paste(here,"histo",ici,sep="/")
-       pathout  = paste(here,"epost",sep="/")
+       pathroot = file.path(here,ici)
+       pathin   = file.path(here,"analy",ici)
+       pathrst  = file.path(here,"histo",ici)
+       pathout  = file.path(here,"epost")
        lon      = NA
        lat      = NA
 
@@ -122,9 +122,9 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
        iata     = "coupled"
        wmo      = NA
        pathroot = here
-       pathin   = paste(here,"ecoss","coupled",sep="/")
-       pathrst  = paste(here,"ecort","coupled",sep="/")
-       pathout  = paste(here,"epost",sep="/")
+       pathin   = file.path(here,"ecoss","coupled")
+       pathrst  = file.path(here,"ecort","coupled")
+       pathout  = file.path(here,"epost")
        lon      = NA
        lat      = NA
 
@@ -160,10 +160,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             mona=1
          }#end if
-         cmon=substring(100+mona,2)
-         filename     = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon=sprintf("%2.2i",mona)
+         filename     = paste0(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-Q-",yr,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -173,10 +173,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       mo     = 13
       while (mo > mona){
          mo           = mo -1
-         cmon         = substring(100+mo,2)
-         filename     = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mo)
+         filename     = paste0(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-Q-",yearz,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -195,10 +195,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             mona=1
          }#end if
-         cmon         = substring(100+mona,2)
-         filename     = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mona)
+         filename     = paste0(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-E-",yr,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -208,10 +208,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       mo     = 13
       while (mo > mona){
          mo           = mo -1
-         cmon         = substring(100+mo,2)
-         filename     = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mo)
+         filename     = paste0(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-E-",yearz,"-",cmon,"-00-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -230,10 +230,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             mona=1
          }#end if
-         cmon=substring(100+mona,2)
-         filename     = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         cmon=sprintf("%2.2i",mona)
+         filename     = paste0(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5"    )
+         filename.bz2 = paste0(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathrst,"-S-",yr,"-",cmon,"-01-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -243,10 +243,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       mo     = 13
       while (mo > mona){
          mo           = mo -1
-         cmon         = substring(100+mo,2)
-         filename     = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mo)
+         filename     = paste0(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5"    )
+         filename.bz2 = paste0(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathrst,"-S-",yearz,"-",cmon,"-01-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -267,11 +267,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
             mona=1
             daya=1
          }#end if
-         cmon         = substring(100+mona,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mona)
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-D-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -287,13 +287,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             daya = 1
          }#end if
-         cmon         = substring(100+mo,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cmon         = sprintf("%2.2i",mo  )
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -302,15 +300,13 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 
       dayz = daya
       dy   = daymax(monz,yearz)
-      cmon = substring(100+monz,2)
+      cmon = sprintf("%2.2i",monz)
       while (dy > daya){
          dy           = dy - 1
-         cday         = substring(100+dy,2)
-         filename     = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cday         = sprintf("%2.2i",dy)
+         filename     = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-D-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             dayz = dy
             dy   = daya #----- This will make it leave the loop. -------------------------#
@@ -339,11 +335,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
             mona=1
             daya=1
          }#end if
-         cmon         = substring(100+mona,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    ,sep="")
-         filename.bz2 = paste(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2",sep="")
-         filename.gz  = paste(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" ,sep="")
+         cmon         = sprintf("%2.2i",mona)
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-I-",yr,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             yearz = yr
             yr    = yeara #----- This will make it leave the loop. ------------------------#
@@ -359,13 +355,11 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
          }else{
             daya = 1
          }#end if
-         cmon         = substring(100+mo,2)
-         cday         = substring(100+daya,2)
-         filename     = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cmon         = sprintf("%2.2i",mo  )
+         cday         = sprintf("%2.2i",daya)
+         filename     = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             monz = mo
             mo   = 1
@@ -374,15 +368,13 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
 
       dayz = daya
       dy   = daymax(monz,yearz)
-      cmon = substring(100+monz,2)
+      cmon = sprintf("%2.2i",monz)
       while (dy > daya){
          dy           = dy - 1
-         cday         = substring(100+dy,2)
-         filename     = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5",sep="")
-         filename.bz2 = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2"
-                             ,sep="")
-         filename.gz  = paste(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz"
-                             ,sep="")
+         cday         = sprintf("%2.2i",dy)
+         filename     = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5"    )
+         filename.bz2 = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.bz2")
+         filename.gz  = paste0(pathin,"-I-",yearz,"-",cmon,"-",cday,"-000000-g01.h5.gz" )
          if (any(file.exists(c(filename,filename.bz2,filename.gz)))){
             dayz = dy
             dy   = daya #----- This will make it leave the loop. -------------------------#
@@ -1012,9 +1004,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , mult  =    0.001 )
    numvar[["vm0"            ]] = list( descr = "Vm0fac"                   
                                      , unit  = ""                      
-                                     , fmt   = "%.3f"          
+                                     , fmt   = "%.1f"          
                                      , off   =    0.0
-                                     , mult  =    0.001 )
+                                     , mult  =    0.01 )
    numvar[["leaf.resp"      ]] = list( descr = "Leaf Resp. Factor"                   
                                      , unit  = ""                      
                                      , fmt   = "%.4f"          
@@ -1190,6 +1182,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.3f"
                                      , off   = 0.0
                                      , mult  = 0.001)
+   numvar[["topsoil" ]]        = list( descr = "Top soil thickness"
+                                     , unit  = "cm"
+                                     , fmt   = "%.1f"
+                                     , off   = 0.0
+                                     , mult  = -0.1)
    #---------------------------------------------------------------------------------------#
 
 
@@ -1321,11 +1318,21 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iage","ihrzrad","imetrad")
          na     = c(    10,       21,       31)
          nz     = c(    12,       22,       32)
-      }else if (lenici == 36){
+      }else if (lenici == 34){
+         nparms = 3
+         param  = c("ihrzrad","imetrad","vm0")
+         na     = c(       13,       23,   32)
+         nz     = c(       14,       24,   34)
+      }else if (lenici == 35){
          nparms = 4
          param  = c("include.fire","ianth.disturb","ianth.dataset","isoil.text")
-         na     = c(            11,             19,             22,          35)
-         nz     = c(            12,             20,             28,          36)
+         na     = c(            11,             19,             22,          34)
+         nz     = c(            12,             20,             28,          35)
+      }else if (lenici == 36){
+         nparms = 3
+         param  = c("iustar","icanturb","topsoil")
+         na     = c(      12,        22,       32)
+         nz     = c(      13,        23,       36)
       }else if (lenici == 37){
          nparms = 4
          param  = c("yeara","iphen.scheme","isoil.text","treefall")
@@ -1370,7 +1377,7 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
    #---------------------------------------------------------------------------------------#
    description = testpoi
    nchar.line  = nchar(description)
-   for (p in 1:nparms){
+   for (p in sequence(nparms)){
       #----- Retrieve the parameter value or flag. ----------------------------------------#
       mycharval  = substring(ici,na[p],nz[p])
       myval      = as.numeric(mycharval)
@@ -1385,20 +1392,18 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          }#end if
          if (is.na(n)){
             browser()
-            stop(paste(" Option ",myval," doesn't exist for",flagvar[[mytest]]$descr,"..."
-                      ,sep=""))
+            stop(paste0(" Option ",myval," doesn't exist for",flagvar[[mytest]]$descr,"!"))
          }else{
-            thisdesc = paste(flagvar[[mytest]]$descr,": ",flagvar[[mytest]]$names[n])
+            thisdesc = paste0(flagvar[[mytest]]$descr,": ",flagvar[[mytest]]$names[n])
          }
       }else if (mytest %in% names(numvar)){
          #----- Numeric variable, put the value in a nicer format. ------------------------#
          val.pretty = sprintf(numvar[[mytest]]$fmt
                              ,numvar[[mytest]]$off + myval*numvar[[mytest]]$mult)
 
-         thisdesc = paste(numvar[[mytest]]$descr," = ",val.pretty,numvar[[mytest]]$unit
-                         ,sep="")
+         thisdesc = paste0(numvar[[mytest]]$descr," = ",val.pretty,numvar[[mytest]]$unit)
       }else{
-         stop(paste(" Invalid parameter test: ",mytest,"...",sep=""))
+         stop(paste0(" Invalid parameter test: ",mytest,"!"))
       }#end if
       #------------------------------------------------------------------------------------#
 
@@ -4969,7 +4974,7 @@ poitmp[[u]] = list( short           = "yasuni"
 #----- Make the table global. -------------------------------------------------------------#
 npoi <<- length(poitmp)
 poilist = list()
-for (pp in 1:npoi){
+for (pp in sequence(npoi)){
    for (n in union(names(poilist),names(poitmp[[pp]]))){
       poilist[[n]] = c(poilist[[n]],poitmp[[pp]][[n]])
    }#end for
@@ -4987,137 +4992,138 @@ poilist <<- data.frame(poilist,stringsAsFactors=FALSE)
 #==========================================================================================#
 #     This list has the longitude and latitude of Ke's test polygons.                      #
 #------------------------------------------------------------------------------------------#
+u     = 0
 kztmp = list()
-kztmp[[  1]] = list(lon= -60.5,lat=   5.5)
-kztmp[[  2]] = list(lon= -61.5,lat=   4.5)
-kztmp[[  3]] = list(lon= -59.5,lat=   4.5)
-kztmp[[  4]] = list(lon= -60.5,lat=   3.5)
-kztmp[[  5]] = list(lon= -58.5,lat=   3.5)
-kztmp[[  6]] = list(lon= -56.5,lat=   3.5)
-kztmp[[  7]] = list(lon= -59.5,lat=   2.5)
-kztmp[[  8]] = list(lon= -57.5,lat=   2.5)
-kztmp[[  9]] = list(lon= -55.5,lat=   2.5)
-kztmp[[ 10]] = list(lon= -58.5,lat=   1.5)
-kztmp[[ 11]] = list(lon= -56.5,lat=   1.5)
-kztmp[[ 12]] = list(lon= -54.5,lat=   1.5)
-kztmp[[ 13]] = list(lon= -57.5,lat=   0.5)
-kztmp[[ 14]] = list(lon= -55.5,lat=   0.5)
-kztmp[[ 15]] = list(lon= -53.5,lat=   0.5)
-kztmp[[ 16]] = list(lon= -54.5,lat=  -0.5)
-kztmp[[ 17]] = list(lon= -52.5,lat=  -0.5)
-kztmp[[ 18]] = list(lon= -53.5,lat=  -1.5)
-kztmp[[ 19]] = list(lon= -51.5,lat=  -1.5)
-kztmp[[ 20]] = list(lon= -52.5,lat=  -2.5)
-kztmp[[ 21]] = list(lon= -50.5,lat=  -2.5)
-kztmp[[ 22]] = list(lon= -72.5,lat= -10.5)
-kztmp[[ 23]] = list(lon= -71.5,lat= -10.5)
-kztmp[[ 24]] = list(lon= -70.5,lat= -10.5)
-kztmp[[ 25]] = list(lon= -69.5,lat= -10.5)
-kztmp[[ 26]] = list(lon= -68.5,lat= -10.5)
-kztmp[[ 27]] = list(lon= -67.5,lat= -10.5)
-kztmp[[ 28]] = list(lon= -66.5,lat= -10.5)
-kztmp[[ 29]] = list(lon= -65.5,lat= -10.5)
-kztmp[[ 30]] = list(lon= -64.5,lat= -10.5)
-kztmp[[ 31]] = list(lon= -63.5,lat= -10.5)
-kztmp[[ 32]] = list(lon= -62.5,lat= -10.5)
-kztmp[[ 33]] = list(lon= -61.5,lat= -10.5)
-kztmp[[ 34]] = list(lon= -60.5,lat= -10.5)
-kztmp[[ 35]] = list(lon= -59.5,lat= -10.5)
-kztmp[[ 36]] = list(lon= -58.5,lat= -10.5)
-kztmp[[ 37]] = list(lon= -57.5,lat= -10.5)
-kztmp[[ 38]] = list(lon= -56.5,lat= -10.5)
-kztmp[[ 39]] = list(lon= -55.5,lat= -10.5)
-kztmp[[ 40]] = list(lon= -54.5,lat= -10.5)
-kztmp[[ 41]] = list(lon= -53.5,lat= -10.5)
-kztmp[[ 42]] = list(lon= -52.5,lat= -10.5)
-kztmp[[ 43]] = list(lon= -51.5,lat= -10.5)
-kztmp[[ 44]] = list(lon= -50.5,lat= -10.5)
-kztmp[[ 45]] = list(lon= -49.5,lat= -10.5)
-kztmp[[ 46]] = list(lon= -72.5,lat= -11.5)
-kztmp[[ 47]] = list(lon= -71.5,lat= -11.5)
-kztmp[[ 48]] = list(lon= -70.5,lat= -11.5)
-kztmp[[ 49]] = list(lon= -69.5,lat= -11.5)
-kztmp[[ 50]] = list(lon= -68.5,lat= -11.5)
-kztmp[[ 51]] = list(lon= -67.5,lat= -11.5)
-kztmp[[ 52]] = list(lon= -66.5,lat= -11.5)
-kztmp[[ 53]] = list(lon= -65.5,lat= -11.5)
-kztmp[[ 54]] = list(lon= -64.5,lat= -11.5)
-kztmp[[ 55]] = list(lon= -63.5,lat= -11.5)
-kztmp[[ 56]] = list(lon= -62.5,lat= -11.5)
-kztmp[[ 57]] = list(lon= -61.5,lat= -11.5)
-kztmp[[ 58]] = list(lon= -60.5,lat= -11.5)
-kztmp[[ 59]] = list(lon= -59.5,lat= -11.5)
-kztmp[[ 60]] = list(lon= -58.5,lat= -11.5)
-kztmp[[ 61]] = list(lon= -57.5,lat= -11.5)
-kztmp[[ 62]] = list(lon= -56.5,lat= -11.5)
-kztmp[[ 63]] = list(lon= -55.5,lat= -11.5)
-kztmp[[ 64]] = list(lon= -54.5,lat= -11.5)
-kztmp[[ 65]] = list(lon= -53.5,lat= -11.5)
-kztmp[[ 66]] = list(lon= -52.5,lat= -11.5)
-kztmp[[ 67]] = list(lon= -51.5,lat= -11.5)
-kztmp[[ 68]] = list(lon= -50.5,lat= -11.5)
-kztmp[[ 69]] = list(lon= -49.5,lat= -11.5)
-kztmp[[ 70]] = list(lon= -72.5,lat= -12.5)
-kztmp[[ 71]] = list(lon= -71.5,lat= -12.5)
-kztmp[[ 72]] = list(lon= -70.5,lat= -12.5)
-kztmp[[ 73]] = list(lon= -69.5,lat= -12.5)
-kztmp[[ 74]] = list(lon= -68.5,lat= -12.5)
-kztmp[[ 75]] = list(lon= -67.5,lat= -12.5)
-kztmp[[ 76]] = list(lon= -66.5,lat= -12.5)
-kztmp[[ 77]] = list(lon= -65.5,lat= -12.5)
-kztmp[[ 78]] = list(lon= -64.5,lat= -12.5)
-kztmp[[ 79]] = list(lon= -63.5,lat= -12.5)
-kztmp[[ 80]] = list(lon= -62.5,lat= -12.5)
-kztmp[[ 81]] = list(lon= -61.5,lat= -12.5)
-kztmp[[ 82]] = list(lon= -60.5,lat= -12.5)
-kztmp[[ 83]] = list(lon= -59.5,lat= -12.5)
-kztmp[[ 84]] = list(lon= -58.5,lat= -12.5)
-kztmp[[ 85]] = list(lon= -57.5,lat= -12.5)
-kztmp[[ 86]] = list(lon= -56.5,lat= -12.5)
-kztmp[[ 87]] = list(lon= -55.5,lat= -12.5)
-kztmp[[ 88]] = list(lon= -54.5,lat= -12.5)
-kztmp[[ 89]] = list(lon= -53.5,lat= -12.5)
-kztmp[[ 90]] = list(lon= -52.5,lat= -12.5)
-kztmp[[ 91]] = list(lon= -51.5,lat= -12.5)
-kztmp[[ 92]] = list(lon= -50.5,lat= -12.5)
-kztmp[[ 93]] = list(lon= -49.5,lat= -12.5)
-kztmp[[ 94]] = list(lon= -72.5,lat= -13.5)
-kztmp[[ 95]] = list(lon= -71.5,lat= -13.5)
-kztmp[[ 96]] = list(lon= -70.5,lat= -13.5)
-kztmp[[ 97]] = list(lon= -69.5,lat= -13.5)
-kztmp[[ 98]] = list(lon= -68.5,lat= -13.5)
-kztmp[[ 99]] = list(lon= -67.5,lat= -13.5)
-kztmp[[100]] = list(lon= -66.5,lat= -13.5)
-kztmp[[101]] = list(lon= -65.5,lat= -13.5)
-kztmp[[102]] = list(lon= -64.5,lat= -13.5)
-kztmp[[103]] = list(lon= -63.5,lat= -13.5)
-kztmp[[104]] = list(lon= -62.5,lat= -13.5)
-kztmp[[105]] = list(lon= -61.5,lat= -13.5)
-kztmp[[106]] = list(lon= -60.5,lat= -13.5)
-kztmp[[107]] = list(lon= -59.5,lat= -13.5)
-kztmp[[108]] = list(lon= -58.5,lat= -13.5)
-kztmp[[109]] = list(lon= -57.5,lat= -13.5)
-kztmp[[110]] = list(lon= -56.5,lat= -13.5)
-kztmp[[111]] = list(lon= -55.5,lat= -13.5)
-kztmp[[112]] = list(lon= -54.5,lat= -13.5)
-kztmp[[113]] = list(lon= -53.5,lat= -13.5)
-kztmp[[114]] = list(lon= -52.5,lat= -13.5)
-kztmp[[115]] = list(lon= -51.5,lat= -13.5)
-kztmp[[116]] = list(lon= -50.5,lat= -13.5)
-kztmp[[117]] = list(lon= -49.5,lat= -13.5)
-kztmp[[118]] = list(lon= -62.5,lat= -16.5)
-kztmp[[119]] = list(lon= -60.5,lat= -2.5 )
-kztmp[[120]] = list(lon= -54.5,lat= -2.5 )
-kztmp[[121]] = list(lon= -54.5,lat= -3.5 )
-kztmp[[122]] = list(lon= -50.5,lat= -9.5 )
-kztmp[[123]] = list(lon= -69.5,lat= -3.5 )
-kztmp[[124]] = list(lon= -69.5,lat= -4.5 )
-kztmp[[125]] = list(lon= -52.5,lat= -5.5 )
-kztmp[[126]] = list(lon= -73.5,lat= -5.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat=   5.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat=   4.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat=   4.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat=   3.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat=   3.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat=   3.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat=   2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat=   2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat=   2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat=   1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat=   1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat=   1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat=   0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat=   0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat=   0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat=  -0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat=  -0.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat=  -1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat=  -1.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat=  -2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat=  -2.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -10.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -11.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -12.5)
+u     = u + 1; kztmp[[u]] = list(lon= -72.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -71.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -70.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -68.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -67.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -66.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -65.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -64.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -63.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -61.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -59.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -58.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -57.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -56.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -55.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -53.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -51.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -49.5,lat= -13.5)
+u     = u + 1; kztmp[[u]] = list(lon= -62.5,lat= -16.5)
+u     = u + 1; kztmp[[u]] = list(lon= -60.5,lat= -2.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -2.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -54.5,lat= -3.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -50.5,lat= -9.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -3.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -69.5,lat= -4.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -52.5,lat= -5.5 )
+u     = u + 1; kztmp[[u]] = list(lon= -73.5,lat= -5.5 )
 #----- Make the table global. -------------------------------------------------------------#
 nkzpoly <<- length(kztmp)
 kzlist = list()
-for (kz in 1:nkzpoly){
+for (kz in sequence(nkzpoly)){
    for (n in union(names(kzlist),names(kztmp[[kz]]))){
       kzlist[[n]] = c(kzlist[[n]],kztmp[[kz]][[n]])
    }#end for
