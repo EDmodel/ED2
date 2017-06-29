@@ -20,7 +20,9 @@ subroutine vegetation_dynamics(new_month,new_year)
                                , rescale_patches            ! ! subroutine
    use ed_state_vars    , only : edgrid_g                   & ! intent(inout)
                                , edtype                     & ! variable type
-                               , polygontype                ! ! variable type
+                               , polygontype                & ! variable type!
+                               , sitetype                   & ! structure
+                               , patchtype                  ! ! structure!*
    use growth_balive    , only : dbalive_dt                 ! ! subroutine
    use consts_coms      , only : day_sec                    & ! intent(in)
                                , yr_day                     ! ! intent(in)
@@ -38,12 +40,20 @@ subroutine vegetation_dynamics(new_month,new_year)
    real                            :: dtlsm_o_day
    real                            :: one_o_year
    integer                         :: doy
-   integer                         :: ipy
-   integer                         :: isi
+!   integer                         :: ipy
+!   integer                         :: isi
    integer                         :: ifm
    !----- External functions. -------------------------------------------------------------!
    integer          , external     :: julday
    !---------------------------------------------------------------------------------------!
+!   type(polygontype), pointer    :: cpoly!
+   type(sitetype)   , pointer    :: csite
+   type(patchtype)  , pointer    :: cpatch
+   integer                       :: ipy
+   integer                       :: isi
+   integer                       :: ipa
+   integer                       :: ico
+   integer                       :: ipft!*
 
    !----- Find the day of year. -----------------------------------------------------------!
    doy = julday(current_time%month, current_time%date, current_time%year)
@@ -74,8 +84,30 @@ subroutine vegetation_dynamics(new_month,new_year)
       call dbalive_dt(cgrid,one_o_year)
       !------------------------------------------------------------------------------------!
 
+!*
+if(new_year) then
+   polyloop: do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
 
+      siteloop: do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
 
+         patchloop: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+write(*,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+write(*,*) "!!!BEFORE PATCH DYNAMIC!!!"
+write(*,*) "        PATCH N ", ipa
+            cohortloop: do ico = 1,cpatch%ncohorts
+               !----- Assigning an alias for PFT type. ------------------------------------!
+               ipft    = cpatch%pft(ico)
+
+write(*,*) "COHORT ", ico, "   pft is", cpatch%pft(ico), "   hite is ", cpatch%hite(ico)
+end do cohortloop
+write(*,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+end do patchloop
+end do siteloop
+end do polyloop
+end if!*
       !------------------------------------------------------------------------------------!
       !     The following block corresponds to the monthly time-step:                      !
       !------------------------------------------------------------------------------------!
@@ -168,6 +200,31 @@ subroutine vegetation_dynamics(new_month,new_year)
       !----- Print the carbon and nitrogen budget. ----------------------------------------!
       call print_C_and_N_budgets(cgrid)
       !------------------------------------------------------------------------------------!
+
+      !*
+if(new_year) then
+   polyloop2: do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+
+      siteloop2: do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
+
+         patchloop2: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+write(*,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+write(*,*) "!!!AFTER PATCH DYNAMIC!!!"
+write(*,*) "        PATCH N ", ipa
+            cohortloop2: do ico = 1,cpatch%ncohorts
+               !----- Assigning an alias for PFT type. ------------------------------------!
+               ipft    = cpatch%pft(ico)
+
+write(*,*) "COHORT ", ico, "   pft is", cpatch%pft(ico), "   hite is ", cpatch%hite(ico)
+end do cohortloop2
+write(*,*) "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+end do patchloop2
+end do siteloop2
+end do polyloop2
+end if!*
    end do
 
    return

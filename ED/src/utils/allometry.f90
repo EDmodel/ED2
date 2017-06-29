@@ -54,9 +54,8 @@ contains
 
    !=======================================================================================!
    !=======================================================================================!
-   real function dbh2h(ipft, dbh, maxh)
+   real function dbh2h(ipft, dbh)
       use pft_coms    , only : is_tropical & ! intent(in)
-         , is_liana    & ! intent(in)
          , dbh_crit    & ! intent(in)
          , b1Ht        & ! intent(in)
          , b2Ht        & ! intent(in)
@@ -69,17 +68,17 @@ contains
       !----- Arguments --------------------------------------------------------------------!
       integer       , intent(in) :: ipft
       real          , intent(in) :: dbh
-      real, optional, intent(in) :: maxh
+!      real, optional, intent(in) :: maxh
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
       !------------------------------------------------------------------------------------!
 
 
-      if (is_liana(ipft)) then
-         if(present(maxh))then
-            dbh_crit(ipft) = h2dbh(maxh, 17)
-         end if
-      end if
+!      if (is_liana(ipft)) then
+!         if(present(maxh))then
+!            dbh_crit(ipft) = h2dbh(maxh, 17)
+!         end if
+!      end if
 
 
       !------------------------------------------------------------------------------------!
@@ -162,10 +161,6 @@ contains
    !=======================================================================================!
 
 
-
-
-
-
    !=======================================================================================!
    !=======================================================================================!
    !     This function computes the diameter at the breast height given the structural     !
@@ -216,7 +211,7 @@ contains
    ! use DBH (old style) or height (new style).  This replaces dbh2bl and h2bl with a      !
    ! single generic function that should be used by all plants.                            !
    !---------------------------------------------------------------------------------------!
-   real function size2bl(dbh,hite,ipft, maxh)
+   real function size2bl(dbh,hite,ipft)
       use pft_coms    , only : dbh_adult   & ! intent(in), lookup table
          , dbh_crit    & ! intent(in), lookup table
          , C2B         & ! intent(in), lookup table
@@ -233,15 +228,17 @@ contains
       real          , intent(in) :: dbh
       real          , intent(in) :: hite
       integer       , intent(in) :: ipft
-      real, optional, intent(in) :: maxh
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
+      real                :: ldbh
       !------------------------------------------------------------------------------------!
 
-      if (present(maxh))then
-         if (is_liana(ipft)) then
-            dbh_crit(ipft) = h2dbh(maxh, 17)
-         end if
+      ! lianas dbh_crit would be too small for the leaf biomass. This is the one that makes
+      ! lianas have the same Bl_max as late (or mid?) successional
+      if (is_liana(ipft)) then
+         ldbh = 26.0
+      else
+         ldbh = dbh_crit(ipft)
       end if
       !------------------------------------------------------------------------------------!
       !     Get the DBH, or potential DBH in case of grasses.                              !
@@ -249,14 +246,12 @@ contains
 
       if (is_grass(ipft) .and. igrass == 1) then 
          !---- Use height for new grasses. ------------------------------------------------!
-         mdbh   = min(h2dbh(hite,ipft),dbh_crit(ipft))
+         mdbh   = min(h2dbh(hite,ipft),ldbh)
       else
          !---- Use dbh for trees. ---------------------------------------------------------!
-         mdbh   = min(dbh,dbh_crit(ipft))
+         mdbh   = min(dbh,ldbh)
       end if
       !------------------------------------------------------------------------------------!
-
-
 
       !------------------------------------------------------------------------------------!
       !     Find leaf biomass depending on the tree size.                                  !
@@ -357,7 +352,7 @@ contains
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
-   real function dbh2ca(dbh,hite,sla,ipft, maxh)
+   real function dbh2ca(dbh,hite,sla,ipft)
       use ed_misc_coms, only : iallom      ! ! intent(in)
       use pft_coms    , only : dbh_crit    & ! intent(in)
          , hgt_max     & ! intent(in)
@@ -372,7 +367,6 @@ contains
       real          , intent(in) :: hite
       real          , intent(in) :: sla
       integer       , intent(in) :: ipft
-      real, optional, intent(in) :: maxh
       !----- Internal variables -----------------------------------------------------------!
       real                :: loclai ! The maximum local LAI for a given DBH
       !------------------------------------------------------------------------------------!
@@ -382,11 +376,8 @@ contains
       else
 
          !----- make this function generic to size, not just dbh. -------------------------!
-         if(present(maxh)) then
-            loclai = sla * size2bl(dbh,hite,ipft, maxh)
-         else
-            loclai = sla * size2bl(dbh,hite,ipft)
-         end if
+
+         loclai = sla * size2bl(dbh,hite,ipft)
 
          select case (iallom)
             case (0)

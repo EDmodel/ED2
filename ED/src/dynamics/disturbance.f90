@@ -3408,6 +3408,17 @@ module disturbance_utils
       end do cohortloop2
       !attenzione al segno, probabilmente ci va un meno
 
+!      cohortloop3: do ico=1,cpatch%ncohorts
+
+         !----- Alias for current PFT. ----------------------------------------------------!
+!         ipft = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+         !---------- Loop over cohorts to find the maximum height for trees ---------------!
+!         write(*,*) "cohort number", ico, "    PFT", ipft, "    Cohort height", cpatch%hite(ico)
+!      end do cohortloop3
+
+
       !----- Sort the cohorts so that the new cohort is at the correct height bin. --------!
       call sort_cohorts(cpatch)
       !------------------------------------------------------------------------------------!

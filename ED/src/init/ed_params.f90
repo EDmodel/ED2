@@ -1596,12 +1596,7 @@ subroutine init_pft_photo_params()
          !----- SAS, use only the modification from the namelist. ----------------------------!
          ssfact = 1.0
       case (1)
-         select case (iallom)
-            case (0,1)
-               ssfact = 3.0
-            case default
-               ssfact = 3.0
-         end select
+         ssfact = 3.0
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
    Vm0(1)                    = 12.500000 * ssfact * vmfact_c4
@@ -2218,8 +2213,8 @@ subroutine init_pft_mort_params()
       m3_scale                  = treefall_disturbance_rate / tdr_default
    end if
    mort3(1)  = m3_scale * ( m3_slope * (1. - rho( 1) / rho( 4)) )
-   mort3(2)  = 0.01745203
-   mort3(3)  = 0.01002563
+   mort3(2)  = 0.07235222
+   mort3(3)  = 0.04156404
    mort3(4)  = 0.0!check
    mort3(5)  = 0.066
    mort3(6)  = 0.0033928
@@ -2233,7 +2228,7 @@ subroutine init_pft_mort_params()
    mort3(14) = m3_scale * ( m3_slope * (1. - rho(14) / rho( 4)) )
    mort3(15) = m3_scale * ( m3_slope * (1. - rho(15) / rho( 4)) )
    mort3(16) = m3_scale * ( m3_slope * (1. - rho(16) / rho( 4)) )
-   mort3(17) = 0.01522411
+   mort3(17) = 0.06311576
    !---------------------------------------------------------------------------------------!
 
 
@@ -2565,7 +2560,7 @@ subroutine init_pft_alloc_params()
    SLA(14) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(14))) * sla_scale
    SLA(15) = 22.7 ! 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(15))) * sla_scale
    SLA(16) = 22.7 !--value from Mike Dietze: mean: 22.7, median 19.1, 95% CI: 5.7, 78.6
-   SLA(17) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 17))) * sla_scale!16.02
+   SLA(17) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate( 17))) * sla_scale
 
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
@@ -2726,7 +2721,7 @@ subroutine init_pft_alloc_params()
    end select
 
    !-------------------- Liana allometry made up ------------------------------------------!
-   b1Ht(17) = 0.06422235
+   b1Ht(17) = 0.1136442
    b2Ht(17) = 0.8675
    !---------------------------------------------------------------------------------------!
 
@@ -2789,6 +2784,7 @@ subroutine init_pft_alloc_params()
    ! That is:         0.0856*(x)^2 = 0.1575*(x)^0.975   ---> x=1.81279                     !
    !---------------------------------------------------------------------------------------!
    dbh_adult(17) = 1.81
+   !dbh_crit (17) = 26.0
 
 
    !---------------------------------------------------------------------------------------!

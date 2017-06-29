@@ -165,3 +165,8 @@ RAPP/run/*
 RAPP/build/bin/include.mk.odyssey
 RAPP/*
 *include.mk*
+*CODE_COVERAGE.HTML
+*CodeCoverage
+*coverage.txt
+*files*
+*myprova.txt

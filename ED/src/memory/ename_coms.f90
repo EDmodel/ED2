@@ -259,9 +259,6 @@ module ename_coms
       real                                              :: min_site_area
       real                                              :: min_patch_area
 
-      !----- Directory for optimizer inputs. ----------------------------------------------!
-      character(len=str_len)                            :: ioptinpt
-
       !----- Roughness length. ------------------------------------------------------------!
       real                                              :: zrough
 
@@ -523,7 +520,6 @@ module ename_coms
       enl%min_site_area             = undef_real
       enl%min_patch_area            = undef_real
 
-      enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real
       enl%edres                     = undef_real 
 

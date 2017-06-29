@@ -4782,7 +4782,6 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global)
                                  , writing_eorq  & ! intent(in)
                                  , writing_dcyc  ! ! intent(in)
    use fusion_fission_coms, only : ff_nhgt       ! ! intent(in)
-   use allometry          , only : dbh2ca        ! ! function
    implicit none
    !----- Interfaces. ---------------------------------------------------------------------!
 #if USE_INTERF

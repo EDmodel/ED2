@@ -27,37 +27,6 @@ return
 end
 !***************************************************************************
 
-subroutine findln(text,ltext,order)
-implicit none
-character(len=*) :: text
-integer :: ltext,order
-integer :: i
-
-! find first non-blank character if order=0, last non-blank if order=1
-
-if(order.eq.1) then
-   do i=len(text),1,-1
-      if(text(i:i).ne.' ') then
-         ltext=i
-         goto 10
-      endif
-   enddo
-   10 continue
-else
-   do i=1,len(text)
-      if(text(i:i).ne.' ') then
-         ltext=i
-         goto 20
-      endif
-   enddo
-   20 continue
-endif
-
-return
-end
-
-!***************************************************************************
-
 subroutine parse(str,tokens,ntok)
 implicit none
 integer :: ntok

@@ -21,6 +21,7 @@ subroutine structural_growth(cgrid, month)
                              , negligible_nplant      & ! intent(in)
                              , is_grass               & ! intent(in)
                              , agf_bs                 & ! intent(in)
+                             , is_liana               & ! intent(in)
                              , cbr_severe_stress      ! ! intent(in)
    use decomp_coms    , only : f_labile               ! ! intent(in)
    use ed_max_dims    , only : n_pft                  & ! intent(in)
@@ -33,6 +34,7 @@ subroutine structural_growth(cgrid, month)
    use physiology_coms, only : ddmort_const           & ! intent(in)
                              , iddmort_scheme         & ! intent(in)
                              , cbr_scheme             ! ! intent(in)
+   use fuse_fiss_utils, only : sort_cohorts           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -48,6 +50,7 @@ subroutine structural_growth(cgrid, month)
    integer                       :: ipft
    integer                       :: prev_month
    integer                       :: imonth
+   integer                       :: imax
    real                          :: salloc
    real                          :: salloci
    real                          :: balive_in
@@ -79,6 +82,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: net_stem_N_uptake
    real                          :: old_leaf_hcap
    real                          :: old_wood_hcap
+   real                          :: maxh
    logical          , parameter  :: printout  = .false.
    character(len=17), parameter  :: fracfile  = 'struct_growth.txt'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -118,6 +122,19 @@ subroutine structural_growth(cgrid, month)
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
+
+!            call sort_cohorts(cpatch)!
+!write(*,*) "PATCH N ", ipa
+!The sistuation where all pft inside the patch are lianas is out of control here.
+!Needs to be fixed
+               maxh = 0.5
+               hcohortloop: do ico = 1,cpatch%ncohorts
+               if (.not. is_liana(cpatch%pft(ico)) .and. cpatch%hite(ico) > maxh) then
+               maxh = cpatch%hite(ico)
+!               write(*,*) "maxh is ", maxh, "Cohort is", ico
+               end if
+               end do hcohortloop
+               maxh = maxh + 0.5
 
             cohortloop: do ico = 1,cpatch%ncohorts
                !----- Assigning an alias for PFT type. ------------------------------------!
@@ -172,16 +189,17 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
 
 
-
                !----- Determine how to distribute what is in bstorage. --------------------!
                call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)           &
                                                ,cpatch%dbh(ico),cgrid%lat(ipy)             &
                                                ,cpatch%phenology_status(ico)               &
-                                               ,f_bseeds,f_bdead)
+                                               ,bdead_in, bstorage_in                      &
+                                               ,f_bseeds,f_bdead, maxh)
                !---------------------------------------------------------------------------!
-
-
-
+!if(ipa == 7) then
+!rite(*,*) "ICO ", ico, "   pft is", cpatch%pft(ico), "   hite is ", cpatch%hite(ico)
+!write(*,*) "fbdead is", f_bdead
+!end if
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
                !---------------------------------------------------------------------------!
@@ -282,7 +300,7 @@ subroutine structural_growth(cgrid, month)
                cpatch%cb          (prev_month,ico) = cpatch%cb          (13,ico)
                cpatch%cb_lightmax (prev_month,ico) = cpatch%cb_lightmax (13,ico)
                cpatch%cb_moistmax (prev_month,ico) = cpatch%cb_moistmax (13,ico)
-               cpatch%cb_mlmax    (prev_month,ico) = cpatch%cb_mlmax (13,ico)
+               cpatch%cb_mlmax    (prev_month,ico) = cpatch%cb_mlmax    (13,ico)
                !---------------------------------------------------------------------------!
 
 
@@ -631,7 +649,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)           &
                                                ,cpatch%dbh(ico),cgrid%lat(ipy)             &
                                                ,cpatch%phenology_status(ico)               &
-                                               ,f_bseeds,f_bdead)
+                                               ,f_bseeds,f_bdead, cpatch%hite(1))
                !---------------------------------------------------------------------------!
 
 
@@ -905,27 +923,34 @@ end subroutine structural_growth_eq_0
 !     This subroutine will decide the partition of storage biomass into seeds and dead     !
 ! (structural) biomass.                                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_bdead)
+subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status, bdead, bstorage, f_bseeds,f_bdead, maxh)
    use pft_coms      , only : phenology    & ! intent(in)
                             , repro_min_h  & ! intent(in)
                             , r_fract      & ! intent(in)
                             , st_fract     & ! intent(in)
                             , dbh_crit     & ! intent(in)
                             , hgt_max      & ! intent(in)
-                            , is_grass     ! ! intent(in)
+                            , is_grass     & ! intent(in)
+                            , is_liana     ! ! intent(in)
    use ed_misc_coms  , only : current_time & ! intent(in)
                             , igrass       ! ! intent(in)
    use ed_misc_coms  , only : ibigleaf     ! ! intent(in)
+   use allometry     , only : dbh2bd       & ! intent(in)
+                            , h2dbh        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer          , intent(in)  :: ipft
    real             , intent(in)  :: hite
    real             , intent(in)  :: dbh
    real             , intent(in)  :: lat
+   real             , intent(in)  :: bdead     !> Current dead biomass
+   real             , intent(in)  :: bstorage  !> Current storage pool
+   real             , intent(in)  :: maxh      !> Height of the tallest cohort in the patch
    integer          , intent(in)  :: phen_status
    real             , intent(out) :: f_bseeds
    real             , intent(out) :: f_bdead
    !----- Local variables -----------------------------------------------------------------!
+   real                           :: bd_target
    logical                        :: late_spring
    logical          , parameter   :: printout  = .false.
    character(len=13), parameter   :: fracfile  = 'storalloc.txt'
@@ -977,22 +1002,22 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
          !---------------------------------------------------------------------------------!
          if (is_grass(ipft)) then
             select case(igrass)
-            case (0)
-               !----- Bonsai grasses. -----------------------------------------------------!
-               if (dbh >= dbh_crit(ipft)) then
-                  !------------------------------------------------------------------------!
-                  !    Grasses have reached the maximum height, stop growing in size and   !
-                  ! send everything to reproduction.                                       !
-                  !------------------------------------------------------------------------!
-                  f_bseeds = 1.0 - st_fract(ipft)
-               elseif (hite <= repro_min_h(ipft)) then
-                  !----- The plant is too short, invest as much as it can in growth. ------!
-                  f_bseeds = 0.0
-               else
-                  !----- Medium-sized bonsai, use prescribed reproduction rate. -----------!
-                  f_bseeds = r_fract(ipft)
-               end if
-               f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+               case (0)
+                  !----- Bonsai grasses. -----------------------------------------------------!
+                  if (dbh >= dbh_crit(ipft)) then
+                     !------------------------------------------------------------------------!
+                     !    Grasses have reached the maximum height, stop growing in size and   !
+                     ! send everything to reproduction.                                       !
+                     !------------------------------------------------------------------------!
+                     f_bseeds = 1.0 - st_fract(ipft)
+                  else
+                     !------------------------------------------------------------------------!
+                     !    If Medium-sized bonsai, use prescribed reproduction rate otherwise  !
+                     !    invest all you can in growth.                                       !
+                     !------------------------------------------------------------------------!
+                     f_bseeds = merge(0.0, r_fract(ipft), hite <= repro_min_h(ipft))
+                  end if
+                  f_bdead  = 1.0 - st_fract(ipft) - f_bseeds
                !---------------------------------------------------------------------------!
 
 
@@ -1015,14 +1040,28 @@ subroutine plant_structural_allocation(ipft,hite,dbh,lat,phen_status,f_bseeds,f_
             end select
             !------------------------------------------------------------------------------!
 
-         elseif (hite <= repro_min_h(ipft)) then
-            !----- The tree is too short, invest as much as it can in growth. -------------!
-            f_bseeds = 0.0
-            f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
          else
-            !----- Medium-sized tree, use prescribed reproduction rate. -------------------!
-            f_bseeds = r_fract(ipft)
-            f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
+            !------------------------------------------------------------------------------!
+            !   If Medium-sized tree, use prescribed reproduction rate otherwise           !
+            !   invest all you can in growth. If you are a lianas however you first check  !
+            !   that you are not already at the top of the canopy. If this is the case     !
+            !   use half the storage for reproduction and leave the half left in the       !
+            !   storage. Basically don't grow bdead -> DBH -> Height                       !
+            !------------------------------------------------------------------------------!
+            if (is_liana(ipft)) then
+            if(hite > maxh) then
+               f_bseeds = merge(0.0, r_fract(ipft), hite <= repro_min_h(ipft))
+               f_bdead  = 0.0
+               else
+               !bd_target is the Bd that lianas should have in order to be maxh m tall
+               bd_target = dbh2bd(h2dbh(maxh,ipft),ipft)
+               f_bdead   = merge(0.0, min((bd_target - bdead) / bstorage, 1.0), bd_target - bdead <= 0.0 .or. bstorage == 0.0)
+               f_bseeds  = merge(0.0, merge(r_fract(ipft), 1.0 - f_bdead, r_fract(ipft) < 1.0 - f_bdead), hite <= repro_min_h(ipft))
+               end if
+            else
+               f_bseeds = merge(0.0, r_fract(ipft), hite <= repro_min_h(ipft))
+               f_bdead  = 1.0 - st_fract(ipft) - f_bseeds
+            end if
          end if
       else  !-- Plant should not allocate carbon to seeds or grow new biomass. ------------!
          f_bdead  = 0.0
@@ -1136,7 +1175,8 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    else 
        !---- Trees and old grasses get dbh from bdead. ------------------------------------!
        cpatch%dbh(ico)  = bd2dbh(ipft, cpatch%bdead(ico))
-       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico), cpatch%hite(1))
+       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico))
+!       cpatch%hite(ico) = dbh2h (ipft, cpatch%dbh  (ico), cpatch%hite(1))
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1167,7 +1207,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    if ((.not. is_grass(ipft)) .or. igrass /= 1) then
       select case (cpatch%phenology_status(ico))
       case (0)
-         bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch%hite(1))
+         bleaf_max = size2bl(cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico))
          if (cpatch%bleaf(ico) < bleaf_max) cpatch%phenology_status(ico) = 1
       end select
    end if

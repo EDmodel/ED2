@@ -16,16 +16,16 @@ graphics.off()
 
 #----- Paths. -----------------------------------------------------------------------------#
 here           = "/Users/manfredo/Documents/Eclipse_workspace/ED/Template/odyssey/Template/"     # Current directory.
-there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/liana_1_commit/"     # Directory where analyses/history are
+there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/new_scheme4/"     # Directory where analyses/history are
 srcdir         = "/Users/manfredo/Desktop/R-utils"  # Source  directory.
-outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/liana_1_commit/figures"  # Directory for figures
+outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/new_scheme4/figures"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
 #----- Time options. ----------------------------------------------------------------------#
 monthbeg       = 01   # First month to use
-yearbeg        = 2001    # First year to consider
-yearend        = 2010    # Maximum year to consider
+yearbeg        = 2004    # First year to consider (use observation years)
+yearend        = 2020    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
@@ -80,7 +80,7 @@ drought.mark   = F          # Put a background to highlight droughts?
 drought.yeara  = 1600         # First year that has drought
 drought.yearz  = 1601         # Last year that has drought
 months.drought = 1        # Months with drought
-ibackground    = 1          # Background settings (check load_everything.r)
+ibackground    = 0          # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
@@ -209,7 +209,7 @@ place = myplaces
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = paste(here,"rdata_month",sep="/")
+   path.data  = paste(there,"rdata_month",sep="/")
    if (! file.exists(path.data)) dir.create(path.data)
    ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
    ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
@@ -623,337 +623,337 @@ place = myplaces
 
 
 
-#
-#
-#    #---------------------------------------------------------------------------------------#
-#    #      Time series by PFT.                                                              #
-#    #---------------------------------------------------------------------------------------#
-#    for (v in 1:ntspftdbh){
-#       thistspft   = tspftdbh[[v]]
-#       vnam        = thistspft$vnam
-#       description = thistspft$desc
-#       unit        = thistspft$e.unit
-#       plog        = thistspft$plog
-#       plotit      = thistspft$pft
-#
-#       #----- Check whether the user wants to have this variable plotted. ------------------#
-#       if (plotit && any(selpft)){
-#
-#          #---------------------------------------------------------------------------------#
-#          #    Check whether the time series directory exists.  If not, create it.          #
-#          #---------------------------------------------------------------------------------#
-#          outdir = paste(outpref,"tspft",sep="/")
-#          if (! file.exists(outdir)) dir.create(outdir)
-#          cat("      + ",description," time series for all PFTs...","\n")
-#
-#          #----- Load variable -------------------------------------------------------------#
-#          thisvar = szpft[[vnam]][,ndbh+1,]
-#          if (plog){
-#             #----- Eliminate non-positive values in case it is a log plot. ----------------#
-#             thisvar[thisvar <= 0] = NA
-#          }#end if
-#          #---------------------------------------------------------------------------------#
-#
-#
-#
-#          #----- Loop over output formats. -------------------------------------------------#
-#          for (o in 1:nout){
-#             #----- Open file. -------------------------------------------------------------#
-#             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-#             if(outform[o] %in% "x11"){
-#                X11(width=size$width,height=size$height,pointsize=ptsz)
-#             }else if(outform[o] %in% "quartz"){
-#                quartz(width=size$width,height=size$height,pointsize=ptsz)
-#             }else if(outform[o] %in% "png"){
-#                png(filename=fichier,width=size$width*depth,height=size$height*depth
-#                   ,pointsize=ptsz,res=depth,bg="transparent")
-#             }else if(outform[o] %in% "tif"){
-#                tiff(filename=fichier,width=size$width*depth,height=size$height*depth
-#                    ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-#             }else if(outform[o] %in% "eps"){
-#                postscript(file=fichier,width=size$width,height=size$height
-#                          ,pointsize=ptsz,paper=size$paper)
-#             }else if(outform[o] %in% "pdf"){
-#                pdf(file=fichier,onefile=FALSE
-#                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-#             }#end if
-#             #------------------------------------------------------------------------------#
-#
-#
-#             #------------------------------------------------------------------------------#
-#             #     Find the limit, make some room for the legend, and in case the field is  #
-#             # a constant, nudge the limits so the plot command will not complain.          #
-#             #------------------------------------------------------------------------------#
-#             xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
-#             ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
-#             if (plog){
-#                xylog    = "y"
-#                ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-#                            , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
-#                            )#end c
-#             }else{
-#                xylog    = ""
-#                ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
-#             }#end if
-#             #------------------------------------------------------------------------------#
-#
-#
-#             #----- Plot settings. ---------------------------------------------------------#
-#             letitre       = paste(description,lieu,sep=" - ")
-#             ley           = desc.unit(desc=description,unit=unit)
-#             cols          = pft$colour[selpft]
-#             legs          = pft$name  [selpft]
-#             #------------------------------------------------------------------------------#
-#
-#
-#             #------------------------------------------------------------------------------#
-#             #     Split the plot into two windows.                                         #
-#             #------------------------------------------------------------------------------#
-#             par(par.user)
-#             layout(mat=rbind(2,1),heights=c(5,1))
-#             #------------------------------------------------------------------------------#
-#
-#
-#
-#             #------------------------------------------------------------------------------#
-#             #      First plot: legend.                                                     #
-#             #------------------------------------------------------------------------------#
-#             par(mar=c(0.1,4.6,0.1,2.1))
-#             plot.new()
-#             plot.window(xlim=c(0,1),ylim=c(0,1))
-#             legend( x      = "bottom"
-#                   , inset  = 0.0
-#                   , legend = legs
-#                   , col    = cols
-#                   , lwd    = lwidth
-#                   , ncol   = min(pretty.box(n.selpft)$ncol,3)
-#                   , title  = expression(bold("Plant Functional Type"))
-#                   )#end legend
-#             #------------------------------------------------------------------------------#
-#
-#
-#
-#
-#             #------------------------------------------------------------------------------#
-#             #      Main plot.                                                              #
-#             #------------------------------------------------------------------------------#
-#             par(mar=c(4.1,4.6,4.1,2.1))
-#             plot.new()
-#             plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
-#             axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-#             axis(side=2,las=1)
-#             box()
-#             title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
-#             if (drought.mark){
-#                for (n in 1:ndrought){
-#                   rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
-#                       ,xright = drought[[n]][2],ytop    = ydrought[2]
-#                       ,col    = grid.colour,border=NA)
-#                }#end for
-#             }#end if
-#             #----- Plot grid. -------------------------------------------------------------#
-#             if (plotgrid){
-#                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
-#             }#end if
-#             #----- Plot lines. ------------------------------------------------------------#
-#             for (n in 1:(npft+1)){
-#                if (selpft[n]){
-#                   lines(datum$tomonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
-#                }#end if
-#             }#end for
-#             #------------------------------------------------------------------------------#
-#
-#
-#             #----- Close the device. ------------------------------------------------------#
-#             if (outform[o] %in% c("x11","quartz")){
-#                locator(n=1)
-#                dev.off()
-#             }else{
-#                dev.off()
-#             }#end if
-#             dummy=clean.tmp()
-#             #------------------------------------------------------------------------------#
-#          } #end for outform
-#       }#end if (tseragbpft)
-#    } #end for tseries
-#    #---------------------------------------------------------------------------------------#
-#
-#
-#
-#
-#    #---------------------------------------------------------------------------------------#
-#    #      Time series by DBH, by PFT.                                                      #
-#    #---------------------------------------------------------------------------------------#
-#    #----- Find the PFTs to plot. ----------------------------------------------------------#
-#    pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
-#    pftuse  = pftuse[pftuse != (npft+1)]
-#    for (v in 1:ntspftdbh){
-#       thistspftdbh   = tspftdbh[[v]]
-#       vnam           = thistspftdbh$vnam
-#       description    = thistspftdbh$desc
-#       unit           = thistspftdbh$e.unit
-#       plog           = thistspftdbh$plog
-#       plotit         = thistspftdbh$pftdbh
-#
-#       #----- Load variable ----------------------------------------------------------------#
-#       thisvar = szpft[[vnam]]
-#       if (plog){
-#          xylog="y"
-#          badlog = is.finite(thisvar) & thisvar <= 0
-#          thisvar[badlog] = NA
-#       }else{
-#          xylog=""
-#       }#end if
-#       #----- Check whether the user wants to have this variable plotted. ------------------#
-#       if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
-#
-#          #---------------------------------------------------------------------------------#
-#          #    Check whether the time series directory exists.  If not, create it.          #
-#          #---------------------------------------------------------------------------------#
-#          outdir = paste(outpref,"tsdbh",sep="/")
-#          if (! file.exists(outdir)) dir.create(outdir)
-#          outvar = paste(outdir,vnam,sep="/")
-#          if (! file.exists(outvar)) dir.create(outvar)
-#          #---------------------------------------------------------------------------------#
-#
-#          cat("      + ",description," time series for DBH class...","\n")
-#
-#
-#          #---------------------------------------------------------------------------------#
-#          #     Find the limit, make some room for the legend, and in case the field is a   #
-#          # constant, nudge the limits so the plot command will not complain.               #
-#          #---------------------------------------------------------------------------------#
-#          xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
-#          ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
-#          if (plog){
-#             xylog    = "y"
-#             ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
-#                         , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
-#                         )#end c
-#          }else{
-#             xylog    = ""
-#             ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
-#          }#end if
-#          #---------------------------------------------------------------------------------#
-#
-#
-#
-#
-#          #---------------------------------------------------------------------------------#
-#          #       Loop over plant functional types.                                         #
-#          #---------------------------------------------------------------------------------#
-#          for (p in pftuse){
-#             pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
-#
-#             cat("        - ",pft$name[p],"\n")
-#
-#
-#             #----- Loop over output formats. ----------------------------------------------#
-#             for (o in 1:nout){
-#                #----- Open file. ----------------------------------------------------------#
-#                fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
-#                if(outform[o] %in% "x11"){
-#                   X11(width=size$width,height=size$height,pointsize=ptsz)
-#                }else if(outform[o] %in% "quartz"){
-#                   quartz(width=size$width,height=size$height,pointsize=ptsz)
-#                }else if(outform[o] %in% "png"){
-#                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-#                      ,pointsize=ptsz,res=depth,bg="transparent")
-#                }else if(outform[o] %in% "tif"){
-#                   tiff(filename=fichier,width=size$width*depth,height=size$height*depth
-#                       ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
-#                }else if(outform[o] %in% "eps"){
-#                   postscript(file=fichier,width=size$width,height=size$height
-#                             ,pointsize=ptsz,paper=size$paper)
-#                }else if(outform[o] %in% "pdf"){
-#                   pdf(file=fichier,onefile=FALSE
-#                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
-#                }#end if
-#                #---------------------------------------------------------------------------#
-#
-#
-#
-#                #-----  Plot annotation. ---------------------------------------------------#
-#                letitre = paste(description,pft$name[p],lieu,sep=" - ")
-#                ley     = desc.unit(desc=description,unit=unit)
-#                #---------------------------------------------------------------------------#
-#
-#
-#                #---------------------------------------------------------------------------#
-#                #     Split the plot into two windows.                                      #
-#                #---------------------------------------------------------------------------#
-#                par(par.user)
-#                layout(mat=rbind(2,1),heights=c(5,1))
-#                #---------------------------------------------------------------------------#
-#
-#
-#
-#                #---------------------------------------------------------------------------#
-#                #      First plot: legend.                                                  #
-#                #---------------------------------------------------------------------------#
-#                par(mar=c(0.1,4.6,0.1,2.1))
-#                plot.new()
-#                plot.window(xlim=c(0,1),ylim=c(0,1))
-#                legend( x      = "bottom"
-#                      , inset  = 0.0
-#                      , bg     = background
-#                      , legend = dbhnames
-#                      , col    = dbhcols
-#                      , ncol   = min(pretty.box(ndbh+1)$ncol,3)
-#                      , title  = expression(bold("DBH class"))
-#                      , lwd    = lwidth
-#                      )#end legend
-#                #---------------------------------------------------------------------------#
-#
-#
-#
-#                #---------------------------------------------------------------------------#
-#                #      Main plot.                                                           #
-#                #---------------------------------------------------------------------------#
-#                par(mar=c(4.1,4.6,4.1,2.1))
-#                plot.new()
-#                plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
-#                axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
-#                axis(side=2,las=1)
-#                box()
-#                title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
-#                if (drought.mark){
-#                   for (n in 1:ndrought){
-#                      rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
-#                          ,xright = drought[[n]][2],ytop    = ydrought[2]
-#                          ,col    = grid.colour,border=NA)
-#                   }#end for
-#                }#end if
-#                #----- Plot grid. ----------------------------------------------------------#
-#                if (plotgrid){
-#                   abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
-#                }#end if
-#                #----- Plot lines. ---------------------------------------------------------#
-#                for (d in seq(from=1,to=ndbh+1,by=1)){
-#                   lines(datum$tomonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
-#                }#end for
-#                #---------------------------------------------------------------------------#
-#
-#
-#                #----- Close the device. ---------------------------------------------------#
-#                if (outform[o] %in% c("x11","quartz")){
-#                   locator(n=1)
-#                   dev.off()
-#                }else{
-#                   dev.off()
-#                }#end if
-#                dummy=clean.tmp()
-#                #---------------------------------------------------------------------------#
-#             }#end for outform
-#             #------------------------------------------------------------------------------#
-#          }#end for (p in pftuse)
-#          #---------------------------------------------------------------------------------#
-#       }#end if (tseragbpft)
-#       #------------------------------------------------------------------------------------#
-#    } #end for tseries
-#    #---------------------------------------------------------------------------------------#
-#
-#
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Time series by PFT.                                                              #
+   #---------------------------------------------------------------------------------------#
+   for (v in 1:ntspftdbh){
+      thistspft   = tspftdbh[[v]]
+      vnam        = thistspft$vnam
+      description = thistspft$desc
+      unit        = thistspft$e.unit
+      plog        = thistspft$plog
+      plotit      = thistspft$pft
+
+      #----- Check whether the user wants to have this variable plotted. ------------------#
+      if (plotit && any(selpft)){
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir = paste(outpref,"tspft",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         cat("      + ",description," time series for all PFTs...","\n")
+
+         #----- Load variable -------------------------------------------------------------#
+         thisvar = szpft[[vnam]][,ndbh+1,]
+         if (plog){
+            #----- Eliminate non-positive values in case it is a log plot. ----------------#
+            thisvar[thisvar <= 0] = NA
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Loop over output formats. -------------------------------------------------#
+         for (o in 1:nout){
+            #----- Open file. -------------------------------------------------------------#
+            fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
+            if(outform[o] %in% "x11"){
+               X11(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
+               png(filename=fichier,width=size$width*depth,height=size$height*depth
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
+               postscript(file=fichier,width=size$width,height=size$height
+                         ,pointsize=ptsz,paper=size$paper)
+            }else if(outform[o] %in% "pdf"){
+               pdf(file=fichier,onefile=FALSE
+                  ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Find the limit, make some room for the legend, and in case the field is  #
+            # a constant, nudge the limits so the plot command will not complain.          #
+            #------------------------------------------------------------------------------#
+            xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+            ylimit = pretty.xylim(u=thisvar[,selpft]         ,fracexp=0.0,is.log=plog )
+            if (plog){
+               xylog    = "y"
+               ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
+                           , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+                           )#end c
+            }else{
+               xylog    = ""
+               ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
+            }#end if
+            #------------------------------------------------------------------------------#
+
+
+            #----- Plot settings. ---------------------------------------------------------#
+            letitre       = paste(description,lieu,sep=" - ")
+            ley           = desc.unit(desc=description,unit=unit)
+            cols          = pft$colour[selpft]
+            legs          = pft$name  [selpft]
+            #------------------------------------------------------------------------------#
+
+
+            #------------------------------------------------------------------------------#
+            #     Split the plot into two windows.                                         #
+            #------------------------------------------------------------------------------#
+            par(par.user)
+            layout(mat=rbind(2,1),heights=c(5,1))
+            #------------------------------------------------------------------------------#
+
+
+
+            #------------------------------------------------------------------------------#
+            #      First plot: legend.                                                     #
+            #------------------------------------------------------------------------------#
+            par(mar=c(0.1,4.6,0.1,2.1))
+            plot.new()
+            plot.window(xlim=c(0,1),ylim=c(0,1))
+            legend( x      = "bottom"
+                  , inset  = 0.0
+                  , legend = legs
+                  , col    = cols
+                  , lwd    = lwidth
+                  , ncol   = min(pretty.box(n.selpft)$ncol,3)
+                  , title  = expression(bold("Plant Functional Type"))
+                  )#end legend
+            #------------------------------------------------------------------------------#
+
+
+
+
+            #------------------------------------------------------------------------------#
+            #      Main plot.                                                              #
+            #------------------------------------------------------------------------------#
+            par(mar=c(4.1,4.6,4.1,2.1))
+            plot.new()
+            plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+            axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+            axis(side=2,las=1)
+            box()
+            title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
+            if (drought.mark){
+               for (n in 1:ndrought){
+                  rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                      ,xright = drought[[n]][2],ytop    = ydrought[2]
+                      ,col    = grid.colour,border=NA)
+               }#end for
+            }#end if
+            #----- Plot grid. -------------------------------------------------------------#
+            if (plotgrid){
+               abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
+            }#end if
+            #----- Plot lines. ------------------------------------------------------------#
+            for (n in 1:(npft+1)){
+               if (selpft[n]){
+                  lines(datum$tomonth,thisvar[,n],type="l",col=pft$colour[n],lwd=lwidth)
+               }#end if
+            }#end for
+            #------------------------------------------------------------------------------#
+
+
+            #----- Close the device. ------------------------------------------------------#
+            if (outform[o] %in% c("x11","quartz")){
+               locator(n=1)
+               dev.off()
+            }else{
+               dev.off()
+            }#end if
+            dummy=clean.tmp()
+            #------------------------------------------------------------------------------#
+         } #end for outform
+      }#end if (tseragbpft)
+   } #end for tseries
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Time series by DBH, by PFT.                                                      #
+   #---------------------------------------------------------------------------------------#
+   #----- Find the PFTs to plot. ----------------------------------------------------------#
+   pftuse  = which(apply(X=szpft$nplant,MARGIN=3,FUN=sum,na.rm=TRUE) > 0)
+   pftuse  = pftuse[pftuse != (npft+1)]
+   for (v in 1:ntspftdbh){
+      thistspftdbh   = tspftdbh[[v]]
+      vnam           = thistspftdbh$vnam
+      description    = thistspftdbh$desc
+      unit           = thistspftdbh$e.unit
+      plog           = thistspftdbh$plog
+      plotit         = thistspftdbh$pftdbh
+
+      #----- Load variable ----------------------------------------------------------------#
+      thisvar = szpft[[vnam]]
+      if (plog){
+         xylog="y"
+         badlog = is.finite(thisvar) & thisvar <= 0
+         thisvar[badlog] = NA
+      }else{
+         xylog=""
+      }#end if
+      #----- Check whether the user wants to have this variable plotted. ------------------#
+      if (plotit && length(pftuse) > 0 && any(is.finite(thisvar))){
+
+         #---------------------------------------------------------------------------------#
+         #    Check whether the time series directory exists.  If not, create it.          #
+         #---------------------------------------------------------------------------------#
+         outdir = paste(outpref,"tsdbh",sep="/")
+         if (! file.exists(outdir)) dir.create(outdir)
+         outvar = paste(outdir,vnam,sep="/")
+         if (! file.exists(outvar)) dir.create(outvar)
+         #---------------------------------------------------------------------------------#
+
+         cat("      + ",description," time series for DBH class...","\n")
+
+
+         #---------------------------------------------------------------------------------#
+         #     Find the limit, make some room for the legend, and in case the field is a   #
+         # constant, nudge the limits so the plot command will not complain.               #
+         #---------------------------------------------------------------------------------#
+         xlimit = pretty.xylim(u=as.numeric(datum$tomonth),fracexp=0.0,is.log=FALSE)
+         ylimit = pretty.xylim(u=thisvar[,,pftuse]        ,fracexp=0.0,is.log=plog )
+         if (plog){
+            xylog    = "y"
+            ydrought = c( exp(ylimit[1] * sqrt(ylimit[1]/ylimit[2]))
+                        , exp(ylimit[2] * sqrt(ylimit[2]/ylimit[1]))
+                        )#end c
+         }else{
+            xylog    = ""
+            ydrought = c(ylimit[1] - 0.5 * diff(ylimit), ylimit[2] + 0.5 * diff(ylimit))
+         }#end if
+         #---------------------------------------------------------------------------------#
+
+
+
+
+         #---------------------------------------------------------------------------------#
+         #       Loop over plant functional types.                                         #
+         #---------------------------------------------------------------------------------#
+         for (p in pftuse){
+            pftlab = paste("pft-",sprintf("%2.2i",p),sep="")
+
+            cat("        - ",pft$name[p],"\n")
+
+
+            #----- Loop over output formats. ----------------------------------------------#
+            for (o in 1:nout){
+               #----- Open file. ----------------------------------------------------------#
+               fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
+               if(outform[o] %in% "x11"){
+                  X11(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] %in% "png"){
+                  png(filename=fichier,width=size$width*depth,height=size$height*depth
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
+                  postscript(file=fichier,width=size$width,height=size$height
+                            ,pointsize=ptsz,paper=size$paper)
+               }else if(outform[o] %in% "pdf"){
+                  pdf(file=fichier,onefile=FALSE
+                     ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
+               }#end if
+               #---------------------------------------------------------------------------#
+
+
+
+               #-----  Plot annotation. ---------------------------------------------------#
+               letitre = paste(description,pft$name[p],lieu,sep=" - ")
+               ley     = desc.unit(desc=description,unit=unit)
+               #---------------------------------------------------------------------------#
+
+
+               #---------------------------------------------------------------------------#
+               #     Split the plot into two windows.                                      #
+               #---------------------------------------------------------------------------#
+               par(par.user)
+               layout(mat=rbind(2,1),heights=c(5,1))
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      First plot: legend.                                                  #
+               #---------------------------------------------------------------------------#
+               par(mar=c(0.1,4.6,0.1,2.1))
+               plot.new()
+               plot.window(xlim=c(0,1),ylim=c(0,1))
+               legend( x      = "bottom"
+                     , inset  = 0.0
+                     , bg     = background
+                     , legend = dbhnames
+                     , col    = dbhcols
+                     , ncol   = min(pretty.box(ndbh+1)$ncol,3)
+                     , title  = expression(bold("DBH class"))
+                     , lwd    = lwidth
+                     )#end legend
+               #---------------------------------------------------------------------------#
+
+
+
+               #---------------------------------------------------------------------------#
+               #      Main plot.                                                           #
+               #---------------------------------------------------------------------------#
+               par(mar=c(4.1,4.6,4.1,2.1))
+               plot.new()
+               plot.window(xlim=xlimit,ylim=ylimit,log=xylog)
+               axis(side=1,at=whenplot8$levels,labels=whenplot8$labels,padj=whenplot8$padj)
+               axis(side=2,las=1)
+               box()
+               title(main=letitre,xlab="Year",ylab=ley,cex.main=0.7)
+               if (drought.mark){
+                  for (n in 1:ndrought){
+                     rect(xleft  = drought[[n]][1],ybottom = ydrought[1]
+                         ,xright = drought[[n]][2],ytop    = ydrought[2]
+                         ,col    = grid.colour,border=NA)
+                  }#end for
+               }#end if
+               #----- Plot grid. ----------------------------------------------------------#
+               if (plotgrid){
+                  abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
+               }#end if
+               #----- Plot lines. ---------------------------------------------------------#
+               for (d in seq(from=1,to=ndbh+1,by=1)){
+                  lines(datum$tomonth,thisvar[,d,p],type="l",col=dbhcols[d],lwd=lwidth)
+               }#end for
+               #---------------------------------------------------------------------------#
+
+
+               #----- Close the device. ---------------------------------------------------#
+               if (outform[o] %in% c("x11","quartz")){
+                  locator(n=1)
+                  dev.off()
+               }else{
+                  dev.off()
+               }#end if
+               dummy=clean.tmp()
+               #---------------------------------------------------------------------------#
+            }#end for outform
+            #------------------------------------------------------------------------------#
+         }#end for (p in pftuse)
+         #---------------------------------------------------------------------------------#
+      }#end if (tseragbpft)
+      #------------------------------------------------------------------------------------#
+   } #end for tseries
+   #---------------------------------------------------------------------------------------#
+
+
 
 
    #---------------------------------------------------------------------------------------#
@@ -1553,9 +1553,11 @@ place = myplaces
                   #------ Find the periods with continous data. ---------------------------#
                   ok        = is.finite(obs.ylow[pmon,]) & is.finite(obs.yhigh[pmon,])
                   if (any(ok)){
-                     obs.x.now     = thisday       [ok]
-                     obs.ylow.now  = obs.ylow [pmon,ok]
-                     obs.yhigh.now = obs.yhigh[pmon,ok]
+                    obs.ndcycle = ncol(obs.ylow)
+                    obs.thisday = seq(from=0,to=24,length.out = obs.ndcycle)
+                    obs.x.now     = obs.thisday       [ok]
+                    obs.ylow.now  = obs.ylow [pmon,ok]
+                    obs.yhigh.now = obs.yhigh[pmon,ok]
                   }else{
                      obs.x.now     = NULL
                      obs.ylow.now  = NULL
@@ -1586,7 +1588,7 @@ place = myplaces
                }#end if
                points(x=thisday,y=thismean[pmon,],col=lcolours[1]
                      ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
-               points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
+               points(x=obs.thisday,y=obsmean[pmon,],col=lcolours[2]
                      ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
                box()
                title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
