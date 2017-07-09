@@ -30,6 +30,8 @@ module growth_balive
    !>          change it unless you really know what you are doing.
    !---------------------------------------------------------------------------------------!
    subroutine dbalive_dt(cgrid, tfact)
+      use stable_cohorts
+      use update_derived_props_module
       use ed_state_vars   , only : edtype                 & ! structure
                                  , polygontype            & ! structure
                                  , sitetype               & ! structure

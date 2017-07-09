@@ -1,3 +1,6 @@
+module ed_met_driver
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine is the main procedure that will take care of reading the meteoro-    !
@@ -109,7 +112,7 @@ end subroutine read_met_driver_head
 ! thing went wrong right away.                                                             !
 !------------------------------------------------------------------------------------------!
 subroutine init_met_drivers
-
+   use lapse
    use ed_max_dims     , only : max_met_vars
    use met_driver_coms , only : nformats          & ! intent(in)
                               , met_names         & ! intent(out)
@@ -799,7 +802,8 @@ end subroutine read_met_drivers
 !==========================================================================================!
 !==========================================================================================!
 subroutine update_met_drivers(cgrid)
-  
+   use lapse
+   use update_derived_props_module
    use ed_state_vars        , only : edtype            & ! structure
                                    , polygontype       ! ! structure
    use met_driver_coms      , only : met_frq           & ! intent(in)
@@ -3134,3 +3138,4 @@ end subroutine getll
 !==========================================================================================!
 !==========================================================================================!
 
+end module ed_met_driver

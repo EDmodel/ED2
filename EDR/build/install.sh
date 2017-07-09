@@ -1,3 +1,4 @@
+
 #!/bin/bash
 ################ COMPILER OPTIONS (INTEL, ODYSSEY, and EMBRAPA ONLY) #######################
 #------------------------------------------------------------------------------------------#
@@ -31,36 +32,105 @@ nargs=$#
 args=$@
 #------------------------------------------------------------------------------------------#
 
+# Initialize vars
+CLEAN=""
+KIND=""
+PLATFORM=""
+OPT=""
+USE_GIT=true
 
-#----- Default parameters. ----------------------------------------------------------------#
-kind="E"
-clean=""
-#------------------------------------------------------------------------------------------#
+# Argument parsing
+while [[ $# > 0 ]]
+do
+key="$1"
+   case $key in
+   -p|--platform)
+      PLATFORM="$2"
+      shift # past argument
+      ;;
+   -k|--kind)
+      KIND="$2"
+      shift # past argument
+      ;;
+   -c|--clean)
+      CLEAN="clean"
+      ;;
+   -g|--gitoff)
+      USE_GIT=false
+      ;;
+   *)
+      echo "Unknown key-value argument pair."
+      exit 2
+      ;;
+   esac
 
+   shift # past argument or value
+done
 
-
-#------------------------------------------------------------------------------------------#
-#     Check whether the user gave options.                                                 #
-#------------------------------------------------------------------------------------------#
-if [ ${nargs} -gt 0 ]
+if [ "${PLATFORM}" == "" ]
 then
-   for arg in ${args}
-   do
-      #----- Check whether which argument this is. ----------------------------------------#
-      if [ "x${arg}" == "xclean" ]
-      then
-         clean="clean"
-      else
-         kind=`echo ${arg} | tr '[:lower:]' '[:upper:]'`
-      fi
-      #------------------------------------------------------------------------------------#
-   done
-   #---------------------------------------------------------------------------------------#
+   echo "No platform specified, defaulting to gfortran."
+   PLATFORM="gfortran"
 fi
-#------------------------------------------------------------------------------------------#
+
+if [ "${KIND}" == "" ]
+then  
+   echo "No optimization level specified, defaulting to E."
+   KIND="E"
+fi
+
+# Set opt and bin
+case ${KIND} in
+['A','B','C','D']*)
+   OPT='dbg'
+   ;;
+['E']*)
+   OPT='opt'
+   ;;
+*)
+   # Default to opt
+   echo "Compiler optimization not recognized as opt or dbg."
+   exit 1
+   ;;
+esac
+
+# Tag executables with a git version and branch name if possible.
+GIT_EXIST=`git rev-parse --is-inside-work-tree`
+if [ ${GIT_EXIST} == "true" -a ${USE_GIT} ]
+then
+   GIT_TAG=`git branch -v | awk '/\*/ {print "-" $2 "-" $3}'`
+   GIT_TAG=`echo ${GIT_TAG} | tr -d '()/[]'`
+   echo "Git found, it will be used to tag things."
+   echo "To disable revision tagging, use --gitoff or -g."
+else
+   GIT_TAG=''
+fi
+
+BIN=bin-${OPT}-${KIND}${GIT_TAG}
+
+# Move to the binary directory
+if [ ! -d "$BIN" ]; then
+   mkdir ${BIN}
+fi
+cd ${BIN}
 
 
+# Link to makefiles, includes, and shell scripts
+ln -sf ../make/*.mk ./
+ln -sf ../make/Makefile ./
+ln -sf ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
+ln -sf ../../../ED/build/shell/* ./
+touch dependency.mk
 
 #----- Launch the compiler. ---------------------------------------------------------------#
-make OPT=opt KIND_COMP=${kind} ${clean}
+make OPT=${OPT} KIND_COMP=${KIND} ${CLEAN} GIT_TAG=${GIT_TAG}
+make_exit_code=$?
 #------------------------------------------------------------------------------------------#
+
+if [ ${make_exit_code} != 0 ]
+then
+   exit 1
+else
+   echo "Installation Complete."
+   exit 0
+fi

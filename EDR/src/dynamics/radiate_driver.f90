@@ -1,3 +1,5 @@
+module radiate_driver_module
+   contains
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will control the two-stream radiation scheme.  This is called every  !
@@ -79,9 +81,9 @@ subroutine radiate_driver(cgrid)
             !------------------------------------------------------------------------------!
             daytime  = cpoly%cosaoi(isi) > cosz_min .and.                                  &
                        cpoly%met(isi)%rshort > rshort_twilight_min
-            twilight = cpoly%met(isi)%rshort > rshort_twilight_min
+!            twilight = cpoly%met(isi)%rshort > rshort_twilight_min
+            twilight = rshort_twilight_min > 0.
             !------------------------------------------------------------------------------!
-
 
             !------------------------------------------------------------------------------!
             !      Update the daylight length and nighttime flag.                          !
@@ -151,15 +153,12 @@ subroutine radiate_driver(cgrid)
             end do
             !------------------------------------------------------------------------------!
 
-
             !----- Get unnormalized radiative transfer information. -----------------------!
             call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,nzg,nzs                 &
                           ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi),maxcohort,tuco     &
                           ,rshort_tot,cpoly%met(isi)%rshort_diffuse,cpoly%met(isi)%rlong   &
                           ,daytime,twilight)
             !------------------------------------------------------------------------------!
-
-
 
             !----- Normalize the absorbed radiations. -------------------------------------!
             call scale_ed_radiation(tuco,rshort_tot,cpoly%met(isi)%rshort_diffuse          &
@@ -232,11 +231,14 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                                    , radscr
    use soil_coms            , only : soil                 & ! intent(in)
                                    , soilcol              ! ! intent(in)
+   use pft_coms             , only : SLA                  ! ! intent(in)
    use consts_coms          , only : stefan               & ! intent(in)
                                    , lnexp_max            ! ! intent(in)
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , n_radprof            ! ! intent(in)
-   use allometry            , only : h2crownbh            ! ! intent(in)
+   use allometry            , only : h2crownbh            & ! intent(in)
+                                   , size2bl              & ! function
+                                   , area_indices         ! ! function 
    use ed_misc_coms         , only : ibigleaf             & ! intent(in)
                                    , radfrq               & ! intent(in)
                                    , current_time         ! ! intent(in)
@@ -319,8 +321,13 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    integer                                       :: ibuff
 
    integer                                       :: wlr, lvis, lnir
-   real    ,allocatable ,dimension(:)            :: ltv,lrv, alp
-   real    ,allocatable, dimension(:)            :: ltn,lrn, aln
+   integer                                       :: lpft, ii
+   integer ,allocatable ,dimension(:)            :: npft
+   real    ,allocatable ,dimension(:,:)          :: ltv,lrv
+   real    ,allocatable, dimension(:,:)          :: ltn,lrn
+   real    ,allocatable, dimension(:)            :: alp, aln
+   real    ,allocatable ,dimension(:)            :: wrv, srv
+   real    ,allocatable ,dimension(:)            :: wrn, srn
    !----- External function. --------------------------------------------------------------!
    real            , external                    :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
@@ -329,36 +336,78 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
    open(20,file='lengths.dat')
    read(20,*) lvis, lnir
+   read(20,*) lpft
+   allocate(npft(lpft))
+   
+   do ii = 1, lpft
+      read(20,*) npft(ii)
+   end do
    close(20)
 
-   allocate(ltv(lvis))
-   allocate(lrv(lvis))
+   allocate(ltv(lvis,lpft))
+   allocate(lrv(lvis,lpft))
    allocate(alp(lvis))
+   allocate(wrv(lvis))
+   allocate(srv(lvis))
 
-   allocate(ltn(lnir))
-   allocate(lrn(lnir))
+   allocate(ltn(lnir,lpft))
+   allocate(lrn(lnir,lpft))
    allocate(aln(lnir))
+   allocate(wrn(lnir))
+   allocate(srn(lnir))
 
    ltv = 0.
    ltn = 0.
    lrv = 0.
    lrn = 0.
+   wrv = 0.
+   wrn = 0.
+   srv = 0.
+   srn = 0.
+
+   alp = 0.
+   aln = 0.
 
    open(21,file='trans_par.dat')
-   read(21,*), ltv
+   do ii = 1, lpft
+      read(21,*), ltv(:,ii)
+   end do
    close(21)
 
    open(22,file='reflect_par.dat')
-   read(22,*), lrv
+   do ii = 1, lpft
+      read(22,*), lrv(:,ii)
+   end do
    close(22)
 
    open(23,file='trans_nir.dat')
-   read(23,*), ltn
+   do ii = 1, lpft
+      read(23,*), ltn(:,ii)
+   end do
    close(23)
 
    open(24,file='reflect_nir.dat')
-   read(24,*), lrn
+   do ii = 1, lpft
+      read(24,*), lrn(:,ii)
+   end do
    close(24)
+
+   open(25,file='wood_reflect_par.dat')
+   read(25,*), wrv
+   close(25)
+
+!   open(26,file='wood_reflect_nir.dat')
+!   read(26,*), wrn
+!   close(26)
+
+   open(27,file='soil_reflect_par.dat')
+   read(27,*), srv
+   close(27)
+
+!   open(28,file='soil_reflect_nir.dat')
+!   read(28,*), srn
+!   close(28)
+
 
    !---------------------------------------------------------------------------------------!
    !     Light extinction coefficients.   These are found following CLM technical manual,  !
@@ -464,7 +513,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       csite%par_l_max        (ipa) = 0.0
       !------------------------------------------------------------------------------------!
 
-
       !------------------------------------------------------------------------------------!
       !     Transfer information from linked lists to arrays.  Here we must check          !
       ! whether is running as a true size-and-age structure model, or as big leaf.         !
@@ -510,6 +558,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                cohort_count                          = cohort_count + 1
                radscr(ibuff)%pft_array(cohort_count) = cpatch%pft(ico)
 
+               cpatch%bleaf(ico) = size2bl(cpatch%dbh(ico),cpatch%hite(ico), cpatch%pft(ico))
+
+               cpatch%sla(ico) = SLA(cpatch%pft(ico))
+
+               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+
                !---------------------------------------------------------------------------!
                !     Here we only tell the true LAI if the leaf is resolvable, and the     !
                ! true WAI if the wood is resolvable.  Also, for photosynthesis, we must    !
@@ -552,12 +606,12 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                !      Decide whether to assume infinite crown, or the crown area allometry !
                ! method as in Dietze and Clark (2008).                                     !
                !---------------------------------------------------------------------------!
-               select case (crown_mod)
-               case (0)
-                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
-               case (1)
+!               select case (crown_mod)
+!               case (0)
+!                  radscr(ibuff)%CA_array(cohort_count) = 1.d0
+!               case (1)
                   radscr(ibuff)%CA_array(cohort_count) = dble(cpatch%crown_area(ico))
-               end select
+!               end select
                !---------------------------------------------------------------------------!
             end if
             !------------------------------------------------------------------------------!
@@ -915,16 +969,25 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          !---------------------------------------------------------------------------------!
          !     Compute short wave only if it is daytime or at least twilight.              !
          !---------------------------------------------------------------------------------!
+
          if (twilight) then
 
             upward_rshort_above_diffuse = 0.
             downward_rshort_below_beam = 0.
             downward_rshort_below_diffuse = 0.
 
-            do wlr = 1, size(lrv)
+            do wlr = 1, size(lrv(:,1))
 
-               leaf_reflect_vis = lrv(wlr)
-               leaf_trans_vis = ltv(wlr)
+               do ii = 1, lpft
+                  leaf_reflect_vis(npft(ii)) = lrv(wlr,ii)
+                  leaf_trans_vis(npft(ii)) = ltv(wlr,ii)
+               end do
+
+               wood_reflect_vis = wrv(wlr)
+               wood_trans_vis = 0.               
+
+               albedo_ground_par = srv(wlr)
+
 
                !---------------------------------------------------------------------------------------!
                !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
@@ -1076,6 +1139,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                ! possible PAR is just the PAR from the tallest resolvable cohort is good      !
                ! enough.                                                                      !
                !------------------------------------------------------------------------------!
+
                if (tuco_leaf /= 0) then
                   ipft      = radscr(ibuff)%pft_array(tuco_leaf)
                   wleaf_vis = sngloff( clumping_factor(ipft)                                  &
@@ -1117,14 +1181,15 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                     / sngloff( nir_beam_norm + nir_diff_norm, tiny_offset )
                csite%albedo     (ipa) = upward_rshort_above_diffuse
                !------------------------------------------------------------------------------!
-
                alp(wlr) = csite%albedo_par(ipa)
             end do
 
-            do wlr = 1, size(lrn)
+            do wlr = 1, size(lrn(:,1))
 
-               leaf_reflect_nir = lrn(wlr)
-               leaf_trans_nir = ltn(wlr)
+               do ii = 1, lpft
+                  leaf_reflect_nir(npft(ii)) = lrn(wlr,ii)
+                  leaf_trans_nir(npft(ii)) = ltn(wlr,ii)
+               end do
 
                !---------------------------------------------------------------------------------------!
                !     Scattering coefficients.  Contrary to ED-2.1, these values are based on the       !
@@ -1650,191 +1715,6 @@ end subroutine sfcrad_ed
 
 !==========================================================================================!
 !==========================================================================================!
-!     This function computes the cosine of the zenith angle.                               !
-!------------------------------------------------------------------------------------------!
-real function ed_zen(plon,plat,when)
-   use ed_misc_coms , only : simtime      ! ! structure
-   use consts_coms  , only : pio1808      & ! intent(in)
-                           , twopi8       & ! intent(in)
-                           , hr_sec8      & ! intent(in)
-                           , tiny_num8    ! ! intent(in)
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   real(kind=4) , intent(in) :: plon
-   real(kind=4) , intent(in) :: plat
-   type(simtime), intent(in) :: when
-   !------ Local variables. ---------------------------------------------------------------!
-   integer                   :: doy     ! Day of year ("Julian" day)
-   real(kind=8)              :: declin  ! Declination
-   real(kind=8)              :: sdec    ! Sine of declination
-   real(kind=8)              :: cdec    ! Cosine of declination
-   real(kind=8)              :: dayhr   ! Hour of day 
-   real(kind=8)              :: radlat  ! Latitude in radians
-   real(kind=8)              :: clat    ! Cosine of latitude 
-   real(kind=8)              :: slat    ! Sine of latitude
-   real(kind=8)              :: dayhrr  ! Hour of day in radians
-   real(kind=8)              :: hrangl  ! Hour angle
-   !----- Local constants. ----------------------------------------------------------------!
-   real(kind=8), parameter   :: capri    = -2.344d1 ! Tropic of Capricornium latitude
-   real(kind=8), parameter   :: ndaysnl  =  3.65d2  ! Number of days of year (no leap years)
-   real(kind=8), parameter   :: ndayslp  =  3.66d2  ! Number of days of year (leap years)
-   integer     , parameter   :: shsummer = -10      ! DoY of Southern Hemisphere summer
-   !----- External functions. -------------------------------------------------------------!
-   integer     , external    :: julday  ! Function to find day of year ("Julian" day)
-   logical     , external    :: isleap  ! Function to determine whether the year is leap
-   real        , external    :: sngloff ! Function to safely convert double to single prec.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find the day of the year. -------------------------------------------------------!
-   doy    = julday(when%month, when%date, when%year)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find the hour angle, then get cosine of zenith angle. ---------------------------!
-   dayhr = dble(when%time) / hr_sec8
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   declin is the solar latitude in degrees (also known as declination).                !
-   !   sdec - sine of declination                                                          !
-   !   cdec - cosine of declination.                                                       !
-   !---------------------------------------------------------------------------------------!
-   if (isleap(when%year)) then
-      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndaysnl) * pio1808
-   else
-      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndayslp) * pio1808
-   end if
-   sdec   = dsin(declin)
-   cdec   = dcos(declin)
-   !---------------------------------------------------------------------------------------!
-
-   !----- Find the latitude in radians. ---------------------------------------------------!
-   radlat = dble(plat) * pio1808
-   clat   = dcos(radlat)
-   slat   = dsin(radlat)
-   !---------------------------------------------------------------------------------------!
-
-   !------ Find the hour angle. -----------------------------------------------------------!
-   dayhrr = dmod(dayhr+dble(plon)/1.5d1+2.4d1,2.4d1)
-   hrangl = 1.5d1 * (dayhrr - 1.2d1) * pio1808
-
-   ed_zen = sngloff(slat * sdec + clat * cdec * dcos(hrangl),tiny_num8)
-
-   return
-end function ed_zen
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This function computes the average secant of the daytime zenith angle.  In case the  !
-! period of integration is that accounts for the zenith angle is 0. or less than one time  !
-! step, then the average is the actual value.  Night-time periods are ignored and if there !
-! is no daytime value, then we set it to 0.                                                !
-!------------------------------------------------------------------------------------------!
-real function mean_daysecz(plon,plat,whena,dt,tmax)
-   use ed_misc_coms         , only : simtime     ! ! structure
-   use canopy_radiation_coms, only : cosz_min    ! ! intent(in)
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   real(kind=4) , intent(in) :: plon
-   real(kind=4) , intent(in) :: plat
-   type(simtime), intent(in) :: whena
-   real(kind=4) , intent(in) :: dt
-   real(kind=4) , intent(in) :: tmax
-   !------ Local variables. ---------------------------------------------------------------!
-   type(simtime)             :: now          ! Current time
-   integer                   :: is           ! Step counter
-   integer                   :: nsteps       ! Number of steps to perform the average
-   real                      :: dtfit        ! Delta-t that nicely fits within tmax
-   real                      :: dtnow        ! Delta-t for this time
-   real                      :: cosz         ! Declination
-   real                      :: daytot       ! Total time that was daytime
-   real                      :: mean_daycosz ! Average cosine of zenith angle
-   !----- External functions. -------------------------------------------------------------!
-   real(kind=4), external    :: ed_zen   ! Function to find day of year ("Julian" day)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Check whether tmax is less than the time step.  In case it is, we only have one   !
-   ! time, so we don't need to do the average.                                             !
-   !---------------------------------------------------------------------------------------!
-   if (dt >= tmax) then
-      !----- Less than one time, no average necessary. ------------------------------------!
-      cosz = ed_zen(plon,plat,whena)
-      if (cosz > cosz_min) then
-         mean_daysecz = 1.0 / cosz
-      else
-         !----- Night-time, set the mean to zero. -----------------------------------------!
-         mean_daysecz = 0.0
-      end if
-
-   else
-      !------------------------------------------------------------------------------------!
-      !     Several times, first find the number of steps, then the delta-t that fits      !
-      ! nicely within the time span.                                                       !
-      !------------------------------------------------------------------------------------!
-      nsteps = ceiling(tmax / dt)
-      dtfit  = tmax / real(nsteps)
-      !------------------------------------------------------------------------------------!
-
-      mean_daycosz = 0.0
-      daytot       = 0.0
-      do is=1,nsteps
-         !----- Get the current time. -----------------------------------------------------!
-         now   = whena
-         dtnow = dtfit * (real(is) - 0.5)
-         call update_model_time_dm(now,dtnow)
-
-         !----- Get the cosine of the zenith angle. ---------------------------------------!
-         cosz = ed_zen(plon,plat,now)
-
-         !----- Add to the integral only if it this value is valid. -----------------------!
-         if (cosz > cosz_min) then
-            mean_daycosz = mean_daycosz + dtfit * cosz 
-            daytot       = daytot       + dtfit
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Find the normalisation factor.                                                 !
-      !------------------------------------------------------------------------------------!
-      if (daytot > 0.0 .and. mean_daycosz > 0.0) then
-         mean_daycosz = mean_daycosz / daytot
-         mean_daysecz = 1.0 / mean_daycosz
-      else
-         mean_daysecz = 0.0
-      end if
-      !------------------------------------------------------------------------------------!
-   end if
-
-   return
-end function mean_daysecz
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,nighttime,csite)
 
    use ed_state_vars        , only : sitetype             & ! intent(in)
@@ -2194,6 +2074,188 @@ subroutine angle_of_incid(aoi,cosz,solar_hour_aspect,slope,terrain_aspect)
 
    return
 end subroutine angle_of_incid
+!==========================================================================================!
+!==========================================================================================!
+
+end module radiate_driver_module
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function computes the cosine of the zenith angle.                               !
+!------------------------------------------------------------------------------------------!
+real function ed_zen(plon,plat,when)
+   use ed_misc_coms , only : simtime      ! ! structure
+   use consts_coms  , only : pio1808      & ! intent(in)
+                           , twopi8       & ! intent(in)
+                           , hr_sec8      & ! intent(in)
+                           , tiny_num8    ! ! intent(in)
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   real(kind=4) , intent(in) :: plon
+   real(kind=4) , intent(in) :: plat
+   type(simtime), intent(in) :: when
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                   :: doy     ! Day of year ("Julian" day)
+   real(kind=8)              :: declin  ! Declination
+   real(kind=8)              :: sdec    ! Sine of declination
+   real(kind=8)              :: cdec    ! Cosine of declination
+   real(kind=8)              :: dayhr   ! Hour of day 
+   real(kind=8)              :: radlat  ! Latitude in radians
+   real(kind=8)              :: clat    ! Cosine of latitude 
+   real(kind=8)              :: slat    ! Sine of latitude
+   real(kind=8)              :: dayhrr  ! Hour of day in radians
+   real(kind=8)              :: hrangl  ! Hour angle
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8), parameter   :: capri    = -2.344d1 ! Tropic of Capricornium latitude
+   real(kind=8), parameter   :: ndaysnl  =  3.65d2  ! Number of days of year (no leap years)
+   real(kind=8), parameter   :: ndayslp  =  3.66d2  ! Number of days of year (leap years)
+   integer     , parameter   :: shsummer = -10      ! DoY of Southern Hemisphere summer
+   !----- External functions. -------------------------------------------------------------!
+   integer     , external    :: julday  ! Function to find day of year ("Julian" day)
+   logical     , external    :: isleap  ! Function to determine whether the year is leap
+   real        , external    :: sngloff ! Function to safely convert double to single prec.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the day of the year. -------------------------------------------------------!
+   doy    = julday(when%month, when%date, when%year)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the hour angle, then get cosine of zenith angle. ---------------------------!
+   dayhr = dble(when%time) / hr_sec8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !   declin is the solar latitude in degrees (also known as declination).                !
+   !   sdec - sine of declination                                                          !
+   !   cdec - cosine of declination.                                                       !
+   !---------------------------------------------------------------------------------------!
+   if (isleap(when%year)) then
+      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndaysnl) * pio1808
+   else
+      declin = capri * cos(twopi8 * dble(doy - shsummer) / ndayslp) * pio1808
+   end if
+   sdec   = dsin(declin)
+   cdec   = dcos(declin)
+   !---------------------------------------------------------------------------------------!
+
+   !----- Find the latitude in radians. ---------------------------------------------------!
+   radlat = dble(plat) * pio1808
+   clat   = dcos(radlat)
+   slat   = dsin(radlat)
+   !---------------------------------------------------------------------------------------!
+
+   !------ Find the hour angle. -----------------------------------------------------------!
+   dayhrr = dmod(dayhr+dble(plon)/1.5d1+2.4d1,2.4d1)
+   hrangl = 1.5d1 * (dayhrr - 1.2d1) * pio1808
+
+   ed_zen = sngloff(slat * sdec + clat * cdec * dcos(hrangl),tiny_num8)
+
+   return
+end function ed_zen
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function computes the average secant of the daytime zenith angle.  In case the  !
+! period of integration is that accounts for the zenith angle is 0. or less than one time  !
+! step, then the average is the actual value.  Night-time periods are ignored and if there !
+! is no daytime value, then we set it to 0.                                                !
+!------------------------------------------------------------------------------------------!
+real function mean_daysecz(plon,plat,whena,dt,tmax)
+   use update_derived_props_module
+   use ed_misc_coms         , only : simtime     ! ! structure
+   use canopy_radiation_coms, only : cosz_min    ! ! intent(in)
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   real(kind=4) , intent(in) :: plon
+   real(kind=4) , intent(in) :: plat
+   type(simtime), intent(in) :: whena
+   real(kind=4) , intent(in) :: dt
+   real(kind=4) , intent(in) :: tmax
+   !------ Local variables. ---------------------------------------------------------------!
+   type(simtime)             :: now          ! Current time
+   integer                   :: is           ! Step counter
+   integer                   :: nsteps       ! Number of steps to perform the average
+   real                      :: dtfit        ! Delta-t that nicely fits within tmax
+   real                      :: dtnow        ! Delta-t for this time
+   real                      :: cosz         ! Declination
+   real                      :: daytot       ! Total time that was daytime
+   real                      :: mean_daycosz ! Average cosine of zenith angle
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4), external    :: ed_zen   ! Function to find day of year ("Julian" day)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether tmax is less than the time step.  In case it is, we only have one   !
+   ! time, so we don't need to do the average.                                             !
+   !---------------------------------------------------------------------------------------!
+   if (dt >= tmax) then
+      !----- Less than one time, no average necessary. ------------------------------------!
+      cosz = ed_zen(plon,plat,whena)
+      if (cosz > cosz_min) then
+         mean_daysecz = 1.0 / cosz
+      else
+         !----- Night-time, set the mean to zero. -----------------------------------------!
+         mean_daysecz = 0.0
+      end if
+
+   else
+      !------------------------------------------------------------------------------------!
+      !     Several times, first find the number of steps, then the delta-t that fits      !
+      ! nicely within the time span.                                                       !
+      !------------------------------------------------------------------------------------!
+      nsteps = ceiling(tmax / dt)
+      dtfit  = tmax / real(nsteps)
+      !------------------------------------------------------------------------------------!
+
+      mean_daycosz = 0.0
+      daytot       = 0.0
+      do is=1,nsteps
+         !----- Get the current time. -----------------------------------------------------!
+         now   = whena
+         dtnow = dtfit * (real(is) - 0.5)
+         call update_model_time_dm(now,dtnow)
+
+         !----- Get the cosine of the zenith angle. ---------------------------------------!
+         cosz = ed_zen(plon,plat,now)
+
+         !----- Add to the integral only if it this value is valid. -----------------------!
+         if (cosz > cosz_min) then
+            mean_daycosz = mean_daycosz + dtfit * cosz 
+            daytot       = daytot       + dtfit
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the normalisation factor.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (daytot > 0.0 .and. mean_daycosz > 0.0) then
+         mean_daycosz = mean_daycosz / daytot
+         mean_daysecz = 1.0 / mean_daycosz
+      else
+         mean_daysecz = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+   end if
+
+   return
+end function mean_daysecz
 !==========================================================================================!
 !==========================================================================================!
 

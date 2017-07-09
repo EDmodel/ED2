@@ -5,13 +5,12 @@
 MAKE=/usr/bin/make
 
 # libraries.
-BASE=$(ED_ROOT)/build/
+BASE=$(EDR_ROOT)/build/
 
 # HDF 5  Libraries
-HDF5_HOME=/data/software/hdf5/1.8.14
 USE_HDF5=1
-HDF5_INCS=-I${HDF5_HOME}/include
-HDF5_LIBS=-L${HDF5_HOME}/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+HDF5_INCS=
+HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 USE_COLLECTIVE_MPIO=0
  
 # netCDF libraries

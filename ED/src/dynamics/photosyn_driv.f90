@@ -1,3 +1,6 @@
+module photosyn_driv
+  contains
+
 !==========================================================================================!
 !==========================================================================================!
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
@@ -828,3 +831,5 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
 end subroutine print_photo_details
 !==========================================================================================!
 !==========================================================================================!
+
+end module photosyn_driv

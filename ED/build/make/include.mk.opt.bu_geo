@@ -25,12 +25,6 @@ BASE=$(ED_ROOT)/build/
 
 # Activate appropriate parts below, comment out others.
 
-#---------------------------------------------------------------
-# If you are using a real distribution of NCAR Graphics...
-#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
-#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
-#---------------------------------------------------------------
-
 # HDF libraries  -----------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
@@ -45,27 +39,13 @@ BASE=$(ED_ROOT)/build/
 
 USE_HDF5=1
 
-#HDF5_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
-#HDF5C_INCS=-I/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/include
-#HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ib-openpi-pgi72-nocxx/lib \
-#	-lhdf5_fortran -lhdf5 -lhdf5_hl
+HDF5_INCS=-I${SCC_HDF5_INCLUDE}
+HDF5C_INCS=-I${SCC_HDF5_INCLUDE}
+HDF5_LIBS=-L${SCC_HDF5_LIB} -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
-HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
-HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
-HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
-	-lhdf5_fortran -lhdf5 -lhdf5_hl
-
+USE_COLLECTIVE_MPIO=1
+ 
 #---------------------------------------------------------------
-# If you have a version of hdf5 compiled in parallel, then you
-# may benefit from collective I/O, then use this flag = 1
-# Otherwise, set it to zero.
-
-USE_COLLECTIVE_MPIO=0
-
-
-#---------------------------------------------------------------
-
-
 
 # netCDF libraries ---------------------------------------------
 # If you have netCDF set USENC=1 and type the lib folder
@@ -83,60 +63,60 @@ NC_LIBS=-L/dev/null
 # interfaces in the code.
 USE_INTERF=1
 
-
-# MPI_Wtime.  
+# MPI_Wtime. ---------------------------------------------------
 # If USE_MPIWTIME=1, then it will use MPI libraries to compute
 # the wall time (the only double-precision intrinsic).  In case
 # you don't have it, leave USE_MPIWTIME=0, in which case it will
 # use a simpler, single-precision function.
 USE_MPIWTIME=1
 
-#----------------- PGI Compiler on Linux x86_64 ----------------
-CMACH=PC_LINUX1
+
+# GFORTRAN DEVELOPERS: REMOVE ffree-line-length-0
+# CODE IS INTENDED TO BE LINE WIDTH COMPLIANT WITHIN 132 
+
+
+#----------------- gfortran on Linux (optimized build)-----------
+CMACH=PC_GFORTRAN
 F_COMP=mpif90
-F_OPTS=-O2
-#F_OPTS = -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check
-#F_OPTS= -Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
-#       -Mfree
-#  -Mbyteswapio
-# -tp athlonxp -fastsse
-#F_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
-#	-Mcache_align -Mconcur=nonuma -Msmartalloc
-#F_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf -Mbounds
+#F_OPTS=-g -ffree-line-length-none -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
+F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+
 C_COMP=mpicc 
-C_OPTS=-O2
-#C_OPTS= -g -Ktrap=divz,fp,inv,ovf,unf -Mbounds
-#C_OPTS= -fastsse -Mipa=fast,inline -tp amd64e -Mvect=sse \
-#	-Mcache_align -Msmartalloc
-#C_OPTS= -g -ffpe-trap=invalid,zero,underflow,overflow -fbounds-check
-USE_INTERF=1
-CPP_OPTS=
-LOADER=$(F_COMP)
-LOADER_OPTS=$(F_OPTS)
-C_LOADER=$(C_COMP)
-C_LOADER_OPTS=
+C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
+LOADER=mpif90
+LOADER_OPTS=${F_OPTS}
+C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod
-PAR_DEFS=-DRAMS_MPI
+
+# Ancillary Compiler options
+#USE_INTERF=1
+#F_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
+#C_OPTS= -O3 -DLITTLE 
+#LOADER_OPTS= -ffree-form -O3 -fconvert=little-endian -frecord-marker=4
+#C_LOADER_OPTS=-v 
 
 
-#-----------------  LINUX Portland Group pgf77/gcc ---------------
-#CMACH=PC_LINUX1
-#F_COMP=pgf90
-#F_OPTS=-Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 \
-#       -Mfree
-#  -Mbyteswapio
+# If compiling for a single-CPU platform only (without MPI):
 
-# -tp athlonxp -fastsse
-
-#C_COMP=gcc
-#C_COMP=pgcc
-#C_OPTS=-O3 -DUNDERSCORE -DLITTLE
-#LOADER=pgf90
-#LOADER_OPTS=-v -Wl,-static
-#LIBS=
+#-----------------------------------------------------------------
+#PAR_LIBS=
+#PAR_DEFS=
 #-----------------------------------------------------------------
 
-ARCHIVE=ar rs
+# Else if using MPI libraries:
 
+#---------------If using scritps 'mpicc' e 'mpif90'---------------'
+MPI_PATH=
+PAR_INCS=
+PAR_LIBS=
+PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+# For IBM,HP,SGI,ALPHA,LINUX use these:
+ARCHIVE=ar rs
+# For NEC SX-6
+#ARCHIVE=sxar rs
+# For SUN,CONVEX
+#ARCHIVE=ar r'
 

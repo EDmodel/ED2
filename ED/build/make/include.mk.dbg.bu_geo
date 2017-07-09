@@ -25,12 +25,6 @@ BASE=$(ED_ROOT)/build/
 
 # Activate appropriate parts below, comment out others.
 
-#---------------------------------------------------------------
-# If you are using a real distribution of NCAR Graphics...
-#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
-#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
-#---------------------------------------------------------------
-
 # HDF libraries  -----------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
@@ -45,13 +39,11 @@ BASE=$(ED_ROOT)/build/
 
 USE_HDF5=1
 
-HDF5_INCS=-I${HDF5_HOME}/include
-HDF5C_INCS=-I${HDF5_HOME}/include
-HDF5_LIBS=${HDF5_HOME}/lib/libhdf5_fortran.a \
-        ${HDF5_HOME}/lib/libhdf5.a \
-        ${HDF5_HOME}/lib/libhdf5_hl.a -lz
+HDF5_INCS=-I${SCC_HDF5_INCLUDE}
+HDF5C_INCS=-I${SCC_HDF5_INCLUDE}
+HDF5_LIBS=-L${SCC_HDF5_LIB} -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 
-USE_COLLECTIVE_MPIO=0
+USE_COLLECTIVE_MPIO=1
  
 #---------------------------------------------------------------
 
@@ -86,28 +78,17 @@ USE_MPIWTIME=1
 #----------------- gfortran on Linux (optimized build)-----------
 CMACH=PC_GFORTRAN
 F_COMP=mpif90
-F_OPTS=-g -ffree-line-length-none -fno-whole-file -O0 -fopenmp -ffpe-trap=invalid,zero,overflow -fbounds-check #-std=f2003
-C_COMP=mpicc -fopenmp
-C_OPTS=-g -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
+#F_OPTS=-g -ffree-line-length-none -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
+F_OPTS= -g -fopenmp -O0 -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+
+C_COMP=mpicc 
+#C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
+C_OPTS = -g -fopenmp -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
 LOADER=mpif90
 LOADER_OPTS=${F_OPTS}
 C_LOADER=mpicc
 LIBS=
 MOD_EXT=mod
-
-
-#----------------- gfortran on Linux (debugging build)-----------
-#CMACH=PC_GFORTRAN
-#F_COMP=mpif90
-#F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-0
-#C_COMP=mpicc
-#C_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-0
-#LOADER=mpif90
-#LOADER_OPTS=${F_OPTS}
-#C_LOADER=mpicc
-#LIBS=
-#MOD_EXT=mod
-
 
 # Ancillary Compiler options
 #USE_INTERF=1
@@ -125,45 +106,6 @@ MOD_EXT=mod
 #-----------------------------------------------------------------
 
 # Else if using MPI libraries:
-
-#---------------SGI-----------------------------------------------
-#with mpich parallel stuff
-#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib/IRIXN32/ch_shmem -lmpi
-#  or with SGI Parallel stuff
-#PAR_LIBS=-L/usr/lib32 -lmpi
-#  need this for both
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------IBM-----------------------------------------------
-#MPI_PATH=/usr/local/mpich
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib/rs6000/ch_p4 -lmpi 
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------Sun-----------------------------------------------
-#MPI_PATH=/usr/local/mpich
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib/solaris/ch_p4 -lmpi 
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------HP-Exemplar---------------------------------------
-#MPI_PATH=/opt/mpi
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=$(MPI_PATH)/lib/pa1.1/libmpi.a
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
-
-#---------------LINUX Portland Group pgf77/gcc--------------------
-#MPI_PATH=/n/Moorcroft_Lab/Users/mlongo/util/mpich-1.2.7p1/intel_9.1.036_64
-#PAR_INCS=-I$(MPI_PATH)/include
-#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
-#PAR_DEFS=-DRAMS_MPI
-#-----------------------------------------------------------------
 
 #---------------If using scritps 'mpicc' e 'mpif90'---------------'
 MPI_PATH=
