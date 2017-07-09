@@ -156,6 +156,8 @@ ED/build/Paracou*/*
 ED/build/post_process*/*
 ED/build/thermal_sums*/*
 ED/build/ED2IN*
+ED/build/allom_param.txt
+ED/build/pft_sizes.txt
 Doc/*
 Script*.sh
 src_script.sh
