@@ -157,7 +157,7 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
-            call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%lsl(isi)                   &
+            call canopy_photosynthesis(csite,cmet,nzg,ipa                                  &
                                       ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
@@ -215,7 +215,7 @@ subroutine heun_timestep(cgrid)
                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
                                ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
                                ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
-                               ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
+                               ,old_can_co2,old_can_rhos,old_can_prss)
             !------------------------------------------------------------------------------!
          end do patchloop
          !---------------------------------------------------------------------------------!
@@ -316,7 +316,7 @@ subroutine integrate_patch_heun(csite,ipa,isi,nighttime,wcurr_loss2atm,ecurr_net
                                       * integration_buff(ibuff)%initp%cpwp * dtrk4i
    integration_buff(ibuff)%initp%wpwp = integration_buff(ibuff)%initp%can_rhos             &
                                       * integration_buff(ibuff)%initp%wpwp * dtrk4i
-      
+
    !---------------------------------------------------------------------------------------!
    ! Move the state variables from the integrated patch to the model patch.                !
    !---------------------------------------------------------------------------------------!
@@ -410,14 +410,14 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
    real(kind=8)                            :: hnext            ! Next delta-t
    real(kind=8)                            :: hdid             ! delta-t that worked (???)
    real(kind=8)                            :: qwfree           ! Free water internal energy
-   real(kind=8)                            :: wfreeb           ! Free water 
+   real(kind=8)                            :: wfreeb           ! Free water
    real(kind=8)                            :: errmax           ! Maximum error of this step
    real(kind=8)                            :: elaptime         ! Absolute elapsed time.
    integer                                 :: ibuff
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
    !---------------------------------------------------------------------------------------!
-   
+
    ibuff = 1
 
    !----- Use some aliases for simplicity. ------------------------------------------------!
@@ -638,7 +638,7 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
          ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
-         
+
             if (integration_buff(ibuff)%y%sfcwater_mass(ksn)    > 0.d0  .and.              &
                 integration_buff(ibuff)%y%sfcwater_fracliq(ksn) > 1.d-1 ) then
 
@@ -698,7 +698,7 @@ subroutine heun_integ(h1,csite,ipa,isi,nsteps)
          nsteps = i
          return
       end if
-      
+
       !----- Use hnext as the next substep ------------------------------------------------!
       h = hnext
    end do timesteploop

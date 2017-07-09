@@ -10,7 +10,7 @@
 !> \author  Translated from ED1 by Ryan Knox and Marcos Longo
 !------------------------------------------------------------------------------------------!
 subroutine ed_model()
-  
+
    use ed_misc_coms  , only : ivegt_dynamics              & ! intent(in)
                             , integration_scheme          & ! intent(in)
                             , current_time                & ! intent(in)
@@ -20,10 +20,7 @@ subroutine ed_model()
                             , dtlsm                       & ! intent(in)
                             , ifoutput                    & ! intent(in)
                             , isoutput                    & ! intent(in)
-                            , idoutput                    & ! intent(in)
-                            , imoutput                    & ! intent(in)
                             , iqoutput                    & ! intent(in)
-                            , iyoutput                    & ! intent(in)
                             , itoutput                    & ! intent(in)
                             , frqsum                      & ! intent(in)
                             , unitfast                    & ! intent(in)
@@ -34,10 +31,8 @@ subroutine ed_model()
                             , outfast                     & ! intent(in)
                             , nrec_fast                   & ! intent(in)
                             , nrec_state                  & ! intent(in)
-                            , ffilout                     & ! intent(in)
                             , runtype                     ! ! intent(in)
    use ed_misc_coms  , only : outputMonth                 & ! intent(in)
-                            , fast_diagnostics            & ! intent(in)
                             , writing_dail                & ! intent(in)
                             , writing_mont                & ! intent(in)
                             , writing_dcyc                & ! intent(in)
@@ -47,19 +42,14 @@ subroutine ed_model()
    use grid_coms     , only : ngrids                      & ! intent(in)
                             , istp                        & ! intent(in)
                             , time                        & ! intent(in)
-                            , timmax                      & ! intent(in)
-                            , nnxp                        & ! intent(in)
-                            , nnyp                        & ! intent(in)
-                            , nzs                         & ! intent(in)
-                            , nzg                         ! ! intent(in)
+                            , timmax                      ! ! intent(in)
    use ed_state_vars , only : edgrid_g                    & ! intent(in)
                             , edtype                      & ! intent(in)
                             , patchtype                   & ! intent(in)
                             , filltab_alltypes            & ! intent(in)
                             , filltables                  ! ! intent(in)
    use rk4_driver    , only : rk4_timestep                ! ! intent(in)
-   use rk4_coms      , only : checkbudget                 & ! intent(in)
-                            , integ_err                   & ! intent(in)
+   use rk4_coms      , only : integ_err                   & ! intent(in)
                             , integ_lab                   & ! intent(in)
                             , record_err                  & ! intent(inout)
                             , print_detailed              & ! intent(inout)
@@ -72,9 +62,7 @@ subroutine ed_model()
    use ed_node_coms  , only : mynum                       & ! intent(in)
                             , nnodetot                    ! ! intent(in)
    use mem_polygons  , only : n_ed_region                 & ! intent(in)
-                            , n_poi                       & ! intent(in)
-                            , maxpatch                    & ! intent(in)
-                            , maxcohort                   ! ! intent(in)
+                            , n_poi                       ! ! intent(in)
    use consts_coms   , only : day_sec                     ! ! intent(in)
    use average_utils , only : update_ed_yearly_vars       & ! sub-routine
                             , zero_ed_dmean_vars          & ! sub-routine
@@ -92,15 +80,12 @@ subroutine ed_model()
    character(len=28)  :: fmthead
    character(len=32)  :: fmtcntr
    integer            :: ifm
-   integer            :: i
-   integer            :: ierr
    integer            :: nn
    integer            :: ndays
    logical            :: analysis_time
    logical            :: new_day
    logical            :: new_month
    logical            :: new_year
-   logical            :: the_end
    logical            :: history_time
    logical            :: dcycle_time
    logical            :: annual_time
@@ -118,9 +103,9 @@ subroutine ed_model()
    real               :: t2
    real               :: wtime_tot
    !----- Local constants. ----------------------------------------------------------------!
-   logical         , parameter :: whos_slow=.false. ! This will print out node numbers 
-                                                    !    during synchronization, so you 
-                                                    !    can find out which node is the 
+   logical         , parameter :: whos_slow=.false. ! This will print out node numbers
+                                                    !    during synchronization, so you
+                                                    !    can find out which node is the
                                                     !    slow one
    !----- External functions. -------------------------------------------------------------!
    real    , external :: walltime ! Wall time
@@ -130,7 +115,7 @@ subroutine ed_model()
    past_one_day   = .false.
    past_one_month = .false.
    filltables     = .false.
-   
+
    !----- Print the hour banner only for regional runs that aren't massively parallel. ----!
    printbanner = n_ed_region > 0 .and. edgrid_g(1)%npolygons > 50 .and. mynum == 1
 
@@ -171,7 +156,7 @@ subroutine ed_model()
    !      If this is not a history restart, then zero out the long term diagnostics.       !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
-      
+
       do ifm=1,ngrids
          if (writing_long) call zero_ed_dmean_vars(edgrid_g(ifm))
          if (writing_eorq) call zero_ed_mmean_vars(edgrid_g(ifm))
@@ -200,7 +185,7 @@ subroutine ed_model()
    !---------------------------------------------------------------------------------------!
    call initialize_rk4patches(.true.)
    !---------------------------------------------------------------------------------------!
-   
+
    !---------------------------------------------------------------------------------------!
    !    Initialize some stepping variables.                                                !
    !---------------------------------------------------------------------------------------!
@@ -305,7 +290,7 @@ subroutine ed_model()
       !----- Check whether it is some special time... -------------------------------------!
       new_day         = current_time%time < dtlsm
       if (.not. past_one_day .and. new_day) past_one_day=.true.
-      
+
       new_month       = current_time%date == 1  .and. new_day
       if (.not. past_one_month .and. new_month) past_one_month=.true.
 
@@ -314,7 +299,6 @@ subroutine ed_model()
       dail_analy_time = new_day   .and. writing_dail
       dcyc_analy_time = new_month .and. writing_dcyc
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
-      the_end         = mod(time,timmax) < dble(dtlsm)
       annual_time     = new_month .and. writing_year .and.                                 &
                         current_time%month == outputMonth
 
@@ -437,7 +421,7 @@ subroutine ed_model()
          end if
       end if
       !------------------------------------------------------------------------------------!
-      
+
 
       !------------------------------------------------------------------------------------!
       !      Update the yearly variables.                                                  !
@@ -454,7 +438,7 @@ subroutine ed_model()
       !     Call the model output driver.                                                  !
       !------------------------------------------------------------------------------------!
       call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,history_time,dcycle_time,the_end)
+                    ,annual_time,history_time,dcycle_time)
       !------------------------------------------------------------------------------------!
 
 
@@ -526,7 +510,7 @@ subroutine ed_model()
 
    wtime_tot=walltime(wtime_start)
    write(unit=*,fmt='(a,1x,f10.1,1x,a)') ' === Time integration ends; Total elapsed time=' &
-                                        ,wtime_tot," ===" 
+                                        ,wtime_tot," ==="
    return
 end subroutine ed_model
 !==========================================================================================!

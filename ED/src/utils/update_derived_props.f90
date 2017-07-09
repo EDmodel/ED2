@@ -57,7 +57,6 @@ subroutine update_patch_derived_props(csite,ipa)
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
                                   , minimum_canopy_depth       & ! intent(in)
-                                  , ez                         & ! intent(in)
                                   , vh2vr                      & ! intent(in)
                                   , vh2dh                      ! ! intent(in)
    use soil_coms           , only : soil_rough                 & ! intent(in)
@@ -469,10 +468,8 @@ subroutine update_polygon_derived_props(cgrid)
                                     , polygontype        & ! structure
                                     , sitetype           & ! structure
                                     , patchtype          ! ! structure
-   use soil_coms             , only : soil               & ! intent(in)
-                                    , dslz               ! ! intent(in)
-   use grid_coms             , only : nzg                & ! intent(in)
-                                    , nzs                ! ! intent(in)
+   use soil_coms             , only : dslz               ! ! intent(in)
+   use grid_coms             , only : nzg                ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use ed_misc_coms          , only : ddbhi              ! ! intent(in)
    use pft_coms              , only : c2n_leaf           & ! intent(in)
@@ -872,8 +869,7 @@ subroutine read_soil_moist_temp(cgrid)
                             , t3ple        ! ! intent(in)
    use therm_lib     , only : cmtl2uext    ! ! function
    use grid_coms     , only : nzg          & ! intent(in)
-                            , nzs          & ! intent(in)
-                            , ngrids       ! ! intent(in)
+                            , nzs          ! ! intent(in)
    use ed_therm_lib  , only : ed_grndvap   ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -1021,7 +1017,6 @@ subroutine read_soil_moist_temp(cgrid)
                                        ,csite%soil_tempk(nzg,ipa)                          &
                                        ,csite%soil_fracliq(nzg,ipa)                        &
                                        ,csite%sfcwater_tempk(nlsw1,ipa)                    &
-                                       ,csite%sfcwater_fracliq(nlsw1,ipa)                  &
                                        ,csite%snowfac(ipa),csite%can_prss(ipa)             &
                                        ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
                                        ,csite%ground_ssh(ipa),csite%ground_temp(ipa)       &

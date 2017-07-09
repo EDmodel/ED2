@@ -35,7 +35,6 @@ program main
    integer                               :: nslaves
    integer                               :: isingle
    integer                               :: n
-   integer                               :: ierr
    !------ Intrinsic function to return number of arguments (numarg). ---------------------!
    integer                               :: iargc
    !----- OMP information. ----------------------------------------------------------------!

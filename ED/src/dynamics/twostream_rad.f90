@@ -22,11 +22,8 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
                                    , n_radprof               ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
-                                   , orient_factor           & ! intent(in)
                                    , leaf_emiss_tir          & ! intent(in)
                                    , wood_emiss_tir          & ! intent(in)
-                                   , phi1                    & ! intent(in)
-                                   , phi2                    & ! intent(in)
                                    , mu_bar                  & ! intent(in)
                                    , leaf_backscatter_tir    & ! intent(in)
                                    , wood_backscatter_tir    ! ! intent(in)
@@ -53,7 +50,6 @@ subroutine lw_two_stream(grnd_emiss4,grnd_temp4,rlong_top4,ncoh,pft,lai,wai,cai,
    integer                                                   :: ipft
    integer                                                   :: nsiz
    integer                                                   :: i
-   integer                                                   :: im1
    integer                                                   :: ip1
    integer                                                   :: i2
    integer                                                   :: i2p1
@@ -371,7 +367,6 @@ subroutine sw_two_stream(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,ca
                                    , n_radprof               ! ! intent(in)
    use rk4_coms             , only : tiny_offset             ! ! intent(in)
    use canopy_radiation_coms, only : clumping_factor         & ! intent(in)
-                                   , orient_factor           & ! intent(in)
                                    , phi1                    & ! intent(in)
                                    , phi2                    & ! intent(in)
                                    , mu_bar                  & ! intent(in)

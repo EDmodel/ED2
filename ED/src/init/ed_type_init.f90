@@ -585,8 +585,6 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    use grid_coms      , only : nzs                  & ! intent(in)
                              , nzg                  ! ! intent(in)
    use soil_coms      , only : slz                  ! ! intent(in)
-   use canopy_air_coms, only : veg_height_min       & ! intent(in)
-                             , minimum_canopy_depth ! ! intent(in)
    use ed_misc_coms   , only : writing_long         & ! intent(in)
                              , writing_eorq         & ! intent(in)
                              , writing_dcyc         & ! intent(in)
@@ -598,7 +596,6 @@ subroutine init_ed_patch_vars(csite,ipaa,ipaz,lsl)
    integer          , intent(in) :: ipaz
    integer          , intent(in) :: lsl
    !----- Local variables. ----------------------------------------------------------------!
-   integer                       :: ipft
    integer                       :: ncohorts
    integer                       :: ipa
    !---------------------------------------------------------------------------------------!
@@ -1125,8 +1122,6 @@ subroutine init_ed_site_vars(cpoly, lat)
                            , n_dbh            ! ! intent(in)
    use pft_coms     , only : agri_stock       & ! intent(in)
                            , plantation_stock ! ! intent(in)
-   use grid_coms    , only : nzs              & ! intent(in)
-                           , nzg              ! ! intent(in)
    use ed_misc_coms , only : writing_long     & ! intent(in)
                            , writing_eorq     & ! intent(in)
                            , writing_dcyc     ! ! intent(in)
@@ -1332,24 +1327,22 @@ end subroutine init_ed_site_vars
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_ed_poly_vars(cgrid)
-  
+
    use ed_state_vars, only : edtype       & ! structure
                            , polygontype  & ! structure
                            , sitetype     ! ! structure
-   use ed_misc_coms , only : dtlsm        & ! intent(in)
-                           , writing_long & ! intent(in)
+   use ed_misc_coms , only : writing_long & ! intent(in)
                            , writing_eorq & ! intent(in)
                            , writing_dcyc ! ! intent(in)
    use consts_coms  , only : day_sec      ! ! intent(in)
    implicit none
-   !----- Arguments. ----------------------------------------------------------------------!  
+   !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
    !----- Local variables. ----------------------------------------------------------------!
    type(polygontype), pointer :: cpoly
    type(sitetype)   , pointer :: csite
    integer                    :: ipy
    integer                    :: isi
-   integer                    :: ipa
    real                       :: soil_C
    real                       :: soil_N
    real                       :: veg_C
@@ -2140,7 +2133,6 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    use ed_state_vars , only : sitetype           & ! structure
                             , patchtype          ! ! structure
    use soil_coms     , only : soil               & ! intent(in), look-up table
-                            , slz                & ! intent(in)
                             , tiny_sfcwater_mass & ! intent(in)
                             , soil_rough         & ! intent(in)
                             , ny07_eq04_a        & ! intent(in)
@@ -2160,9 +2152,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    integer                        , intent(in) :: mzs            ! # of sfc. water layers
    integer        , dimension(mzg), intent(in) :: ntext_soil     ! Soil texture
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)                , pointer    :: cpatch         ! Current patch
    integer                                     :: k              ! Layer counter
-   integer                                     :: ico            ! Cohort counter
    integer                                     :: nsoil          ! Soil texture class
    real                                        :: tot_sfcw_mass  ! Total mass
    real                                        :: bulk_sfcw_dens ! Bulk density
@@ -2179,15 +2169,15 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
                     ,soil(nsoil)%slcpd, csite%soil_tempk(k,ipa), csite%soil_fracliq(k,ipa))
       csite%soil_mstpot(k,ipa) = matric_potential(nsoil,csite%soil_water(k,ipa))
    end do
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !   Determine the number of temporary snow/surface water layers.  This is done by       !
    ! checking the mass.  In case there is a layer, we convert sfcwater_energy from J/m2 to !
    ! J/kg, and compute the temperature and liquid fraction.                                !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    csite%nlev_sfcwater   (ipa) = 0
    tot_sfcw_mass               = 0.
    csite%total_sfcw_depth(ipa) = 0.
@@ -2212,7 +2202,7 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
       csite%sfcwater_depth(k,ipa)  = 0.
       if (k == 1) then
          csite%sfcwater_tempk(k,ipa)   = csite%soil_tempk(mzg,ipa)
-         csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(mzg,ipa) 
+         csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(mzg,ipa)
       else
          csite%sfcwater_tempk(k,ipa)   = csite%sfcwater_tempk(k-1,ipa)
          csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
@@ -2244,16 +2234,16 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
    end if
    !---------------------------------------------------------------------------------------!
 
-   
+
    !----- Now we can compute the surface properties. --------------------------------------!
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),ntext_soil(mzg)                                &
                   ,csite%soil_water(mzg,ipa),csite%soil_tempk(mzg,ipa)                     &
                   ,csite%soil_fracliq(mzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
-                  ,csite%sfcwater_fracliq(k,ipa),csite%snowfac(ipa),csite%can_prss(ipa)    &
+                  ,csite%snowfac(ipa),csite%can_prss(ipa)                                  &
                   ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
                   ,csite%ground_temp(ipa),csite%ground_fliq(ipa),csite%ggsoil(ipa))
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine new_patch_sfc_props

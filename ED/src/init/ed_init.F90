@@ -4,8 +4,7 @@
 ! polygons.                                                                                !
 !------------------------------------------------------------------------------------------!
 subroutine set_polygon_coordinates()
-   use grid_coms     , only : ngrids    & ! intent(in)
-                            , nzg       ! ! intent(in)
+   use grid_coms     , only : ngrids    ! ! intent(in)
    use ed_work_vars  , only : work_v    ! ! structure
    use ed_node_coms  , only : mynum     ! ! intent(in)
    use ed_state_vars , only : edgrid_g  & ! structure
@@ -18,8 +17,6 @@ subroutine set_polygon_coordinates()
    integer               :: npoly
    type(edtype), pointer :: cgrid
    !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !  Ifort-11.0.083 complained about using edgrid_g(ifm) directly, replaced by cgrid.     !
@@ -59,7 +56,6 @@ subroutine set_site_defprops()
    use grid_coms     , only : ngrids               & ! intent(in)
                             , nzg                  ! ! intent(in)
    use ed_work_vars  , only : work_v               ! ! structure
-   use ed_node_coms  , only : mynum                ! ! intent(in)
    use ed_state_vars , only : edgrid_g             & ! structure
                             , edtype               & ! structure
                             , polygontype          & ! structure
@@ -76,7 +72,6 @@ subroutine set_site_defprops()
    integer                    :: ipy
    integer                    :: isi
    integer                    :: itext
-   integer                    :: npoly
    integer                    :: nsite
    integer                    :: k
    integer                    :: sc
@@ -305,18 +300,10 @@ end subroutine soil_default_fill
 ! bottleneck here. If the run is serial mynum=nnodetot, so I don't need to wait.           !
 !------------------------------------------------------------------------------------------!
 subroutine load_ecosystem_state()
-   use phenology_coms    , only : iphen_scheme    ! ! intent(in)
    use ed_misc_coms      , only : ied_init_mode   & ! intent(in)
                                 , ibigleaf        ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
-   use ed_node_coms      , only : mynum           & ! intent(in)
-                                , nmachs          & ! intent(in)
-                                , nnodetot        & ! intent(in)
-                                , mchnum          & ! intent(in)
-                                , machs           & ! intent(in)
-                                , master_num      & ! intent(in)
-                                , sendnum         & ! intent(in)
-                                , recvnum         ! ! intent(in)
+   use ed_node_coms      , only : mynum           ! ! intent(in)
    use grid_coms         , only : ngrids          ! ! intent(in)
    use ed_state_vars     , only : edgrid_g        ! ! structure
 
@@ -325,7 +312,6 @@ subroutine load_ecosystem_state()
    include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
-   integer                :: ierr
    integer                :: igr
    integer                :: ping 
    !---------------------------------------------------------------------------------------!

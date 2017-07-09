@@ -7,7 +7,7 @@ subroutine read_site_file(cgrid,igr)
   
     use soil_coms, only: soil,slz
     use grid_coms, only: nzg
-    use ed_misc_coms, only: ied_init_mode,sfilin, vary_elev, vary_rad, vary_hyd
+    use ed_misc_coms, only: sfilin, vary_elev, vary_rad, vary_hyd
     use mem_polygons, only: edres
     use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
     use ed_max_dims, only: max_site,n_pft,str_len
@@ -34,7 +34,7 @@ subroutine read_site_file(cgrid,igr)
     integer :: sitenum,get_site_line,get_mat_line,get_header,found_mat_header=0,lcount=0,mcount=0
     real :: area,TCI,elevation,slope,aspect
     integer,allocatable :: soilclass(:)
-    integer :: ipy,isi,k
+    integer :: ipy,isi
     integer :: ierr
 
     if(vary_elev == 0)  no_lapse = .true.

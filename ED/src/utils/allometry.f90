@@ -1,4 +1,3 @@
-!modified
 !==========================================================================================!
 !==========================================================================================!
 !    This module is a library with several allometric relationships.                       !
@@ -68,18 +67,9 @@ contains
       !----- Arguments --------------------------------------------------------------------!
       integer       , intent(in) :: ipft
       real          , intent(in) :: dbh
-!      real, optional, intent(in) :: maxh
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
       !------------------------------------------------------------------------------------!
-
-
-!      if (is_liana(ipft)) then
-!         if(present(maxh))then
-!            dbh_crit(ipft) = h2dbh(maxh, 17)
-!         end if
-!      end if
-
 
       !------------------------------------------------------------------------------------!
       !      Select which type of model we are running.                                    !
@@ -135,18 +125,6 @@ contains
       real   , intent(in) :: dbh
       integer, intent(in) :: ipft
       !------------------------------------------------------------------------------------!
-
-      ! This is an experimental value for dead biomass. The Schnitzer article provide an
-      ! allometric equation to relate AGB to DBH. Since here we are dealing with DB instead
-      ! of AGB I also subtracted the leaf biomass from AGB. Bl dbh allometry is the same
-      ! used in size2bl from Putz. I have dropped the intercept though. This is because
-      ! otherwise one would have DB != when plant has DBH = 0. At this point one would have
-      ! dbh2bd = (exp(-1.484 + 2.657 * log(dbh)) - 0.0856 * dbh * dbh) / C2B
-      ! Moreover since Schnitzer gives AGB we have to divide by agf_bs so that
-      ! when we calculate the above ground fraction multiplying by agf_bs we get the correct
-      ! AGB. I fitted this equation dbh2bd with a form dbh2bd = a*(dbh)**b because otherwise
-      ! the formula is not invertible (we need bd2dbh). I got a pretty good fit with for
-      ! a= 0.13745 and b=2.69373 .
 
          if (is_grass(ipft) .and. igrass==1) then
             dbh2bd = 0.0
@@ -233,17 +211,20 @@ contains
       real                :: ldbh
       !------------------------------------------------------------------------------------!
 
-      ! lianas dbh_crit would be too small for the leaf biomass. This is the one that makes
-      ! lianas have the same Bl_max as late (or mid?) successional
+      !------------------------------------------------------------------------------------!
+      ! lianas dbh_crit would be too small for the leaf biomass. We choose ldbh to be the  !
+      ! DBH that give lianas the same (~) Bl_max as late successionals                     !
+      !------------------------------------------------------------------------------------!
       if (is_liana(ipft)) then
          ldbh = 26.0
       else
          ldbh = dbh_crit(ipft)
       end if
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
       !     Get the DBH, or potential DBH in case of grasses.                              !
       !------------------------------------------------------------------------------------!
-
       if (is_grass(ipft) .and. igrass == 1) then 
          !---- Use height for new grasses. ------------------------------------------------!
          mdbh   = min(h2dbh(hite,ipft),ldbh)
@@ -256,7 +237,6 @@ contains
       !------------------------------------------------------------------------------------!
       !     Find leaf biomass depending on the tree size.                                  !
       !------------------------------------------------------------------------------------!
-
          if (mdbh < dbh_adult(ipft)) then
             size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
          else
@@ -297,7 +277,7 @@ contains
 
 
 
-      !----- Find out whether this is an adult tree or a sapling/grass. -------------------!
+         !----- Find out whether this is an adult tree or a sapling/grass. ----------------!
          if (bleaf < bleaf_adult(ipft)) then
             mdbh = (bleaf * C2B / b1Bl_small(ipft) ) ** (1./b2Bl_small(ipft))
          else
@@ -310,7 +290,7 @@ contains
          !     For grasses, limit maximum effective dbh by maximum height.                 !
          !---------------------------------------------------------------------------------!
          if (is_grass(ipft) .and. igrass == 1) then
-            bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft)) !@quite non sense
+            bl2dbh = min(mdbh, h2dbh(hgt_max(ipft),ipft))
          else
             bl2dbh = min(mdbh, dbh_crit(ipft))
       end if

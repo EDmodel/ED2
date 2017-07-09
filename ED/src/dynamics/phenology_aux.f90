@@ -40,7 +40,7 @@ module phenology_aux
       real(kind=8)                        :: elonDen
       integer                             :: pft
       !------------------------------------------------------------------------------------!
-     
+
       !------------------------------------------------------------------------------------!
       !     This assumes dropping/flushing based on the day of year and hemisphere.        !
       ! + Northern Hemisphere: dropping between August 1 and December 31;                  !
@@ -50,7 +50,7 @@ module phenology_aux
       !------------------------------------------------------------------------------------!
       if( (lat >= 0.0 .and. imonth <= 7) .or.                                              &
           (lat < 0.0  .and. (imonth > 7 .or. imonth == 1)) )then
-         
+
          !----- Get the year. -------------------------------------------------------------!
          n_recycle_years = iphenysf - iphenys1 + 1
 
@@ -74,7 +74,7 @@ module phenology_aux
          else
             elongf = sngl(elonDen)
          end if
-         delay = elongf     
+         delay = elongf
       else
          !---------------------------------------------------------------------------------!
          !      Leaves turning color.  Get the year.                                       !
@@ -110,7 +110,7 @@ module phenology_aux
             leaf_aging_factor(pft) = 1.0
          end select
       end do
-     
+
       return
    end subroutine prescribed_leaf_state
    !=======================================================================================!
@@ -128,7 +128,7 @@ module phenology_aux
    !  + Degree days - sum of daily average temperatures above 278.15 K.                    !
    !---------------------------------------------------------------------------------------!
    subroutine update_thermal_sums(month, cpoly, isi, lat)
-     
+
       use ed_state_vars ,only : polygontype & ! structure
                               , sitetype    ! ! structure
       implicit none
@@ -162,19 +162,19 @@ module phenology_aux
                 (lat <  0.0 .and. (month <= 2 .or. month >= 7))) then
                csite%sum_dgd(ipa) = csite%sum_dgd(ipa) + (csite%avg_daily_temp(ipa)-278.15)
             !----- Warm day during dropping season, set degree sum to zero... -------------!
-            else 
+            else
                csite%sum_dgd(ipa) = 0.0
             end if
          !---- Cold day, check whether it is dropping season and update chilling days... --!
          elseif ((lat >= 0.0 .and. (month >= 11 .or. month <= 6)) .or.                     &
-                 (lat <  0.0 .and.  month >= 5)                 ) then 
+                 (lat <  0.0 .and.  month >= 5)                 ) then
             csite%sum_chd(ipa) = csite%sum_chd(ipa) + 1.0
          !---- Cold day, but not during dropping season, set chilling days to zero... -----!
-         else 
+         else
             csite%sum_chd(ipa) = 0.0
          end if
       end do
-      
+
       return
    end subroutine update_thermal_sums
    !=======================================================================================!
@@ -194,27 +194,22 @@ module phenology_aux
       use ed_state_vars  , only : polygontype        & ! structure
                                 , sitetype           & ! structure
                                 , patchtype          ! ! structure
-      use pft_coms       , only : is_tropical        & ! intent(in)
-                                , phenology          & ! intent(in)
-                                , SLA                & ! intent(in)
+      use pft_coms       , only : phenology          & ! intent(in)
                                 , sla_scale          & ! intent(in)
                                 , sla_inter          & ! intent(in)
                                 , sla_slope          & ! intent(in)
                                 , leaf_turnover_rate ! ! intent(in)
       use phenology_coms , only : radint             & ! intent(in)
                                 , radslp             & ! intent(in)
-                                , turnamp_window     & ! intent(out)
                                 , turnamp_wgt        & ! intent(out)
                                 , turnamp_min        & ! intent(out)
                                 , turnamp_max        & ! intent(out)
                                 , radto_min          & ! intent(out)
                                 , radto_max          & ! intent(out)
-                                , llspan_window      & ! intent(out)
                                 , llspan_wgt         & ! intent(out)
                                 , llspan_min         & ! intent(out)
                                 , llspan_max         & ! intent(out)
                                 , llspan_inf         & ! intent(out)
-                                , vm0_window         & ! intent(out)
                                 , vm0_wgt            & ! intent(out)
                                 , vm0_tran           & ! intent(out)
                                 , vm0_slope          & ! intent(out)
@@ -243,7 +238,7 @@ module phenology_aux
       !----- Loop over patches. -----------------------------------------------------------!
       csite => cpoly%site(isi)
       patchloop: do ipa = 1,csite%npatches
-        
+
          cpatch => csite%patch(ipa)
          cohortloop: do ico = 1,cpatch%ncohorts
 
@@ -282,7 +277,7 @@ module phenology_aux
                   llspan_now = 12.0 / (cpatch%turnover_amp(ico) * leaf_turnover_rate(ipft))
                   !----- Make sure the life span is bounded. ------------------------------!
                   if ( llspan_now < llspan_min) then
-                      llspan_now = llspan_min 
+                      llspan_now = llspan_min
                   elseif (llspan_now > llspan_max) then
                       llspan_now = llspan_max
                   end if
@@ -398,7 +393,6 @@ module phenology_aux
                                                ,cpatch%hite(ico),cpatch%dbh(ico)           &
                                                ,csite%soil_water(:,ipa)                    &
                                                ,cpoly%ntext_soil(:,isi)                    &
-                                               ,cpoly%green_leaf_factor(:,isi)             &
                                                ,cpatch%paw_avg(ico),cpatch%elongf(ico)     &
                                                ,cpatch%phenology_status(ico)               &
                                                ,cpatch%bleaf(ico),cpatch%broot(ico)        &
@@ -459,7 +453,7 @@ module phenology_aux
    ! the fully flushed leaves.                                                             !
    !---------------------------------------------------------------------------------------!
    subroutine pheninit_balive_bstorage(mzg,ipft,kroot,height,dbh,soil_water,ntext_soil     &
-                                      ,green_leaf_factor,paw_avg,elongf,phenology_status   &
+                                      ,paw_avg,elongf,phenology_status                     &
                                       ,bleaf,broot,bsapwooda,bsapwoodb,balive,bstorage)
       use soil_coms     , only : soil                & ! intent(in), look-up table
                                , slz                 & ! intent(in)
@@ -483,7 +477,6 @@ module phenology_aux
       real                     , intent(in)  :: dbh               ! DBH
       integer, dimension(mzg)  , intent(in)  :: ntext_soil        ! Soil texture
       real   , dimension(mzg)  , intent(in)  :: soil_water        ! Soil water
-      real   , dimension(n_pft), intent(in)  :: green_leaf_factor ! Hardwood phenology
       real                     , intent(out) :: paw_avg           ! Pot. available water
       real                     , intent(out) :: elongf            ! Elongation factor
       integer                  , intent(out) :: phenology_status  ! phenology Flag
@@ -524,7 +517,7 @@ module phenology_aux
                                 / (soil(nsoil)%slpotld  - soil(nsoil)%slpotwp)
          end do
          paw_avg = paw_avg / abs(slz(kroot))
-      else 
+      else
          !----- Use soil moisture (mass) to determine phenology. --------------------------!
          paw_avg = 0.0
          do k = kroot, mzg

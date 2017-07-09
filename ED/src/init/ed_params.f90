@@ -1,6 +1,3 @@
-!@prova di lavoro per aggiungere liane!
-!@modified
-
 !==========================================================================================!
 !==========================================================================================!
 !     This is the main loader of ecosystem parameters.  Since some compilers do not under- !
@@ -20,9 +17,7 @@ subroutine load_ed_ecosystem_params()
       , is_liana            & ! intent(out)
       , include_pft         & ! intent(out)
       , include_pft_ag      & ! intent(out)
-      , include_pft_fp      & ! intent(out)
-      , C2B                 & ! intent(out)
-      , frost_mort          ! ! intent(out)
+      , include_pft_fp      ! ! intent(out)
    use disturb_coms, only : ianth_disturb       ! ! intent(in)
 
    implicit none
@@ -55,7 +50,7 @@ subroutine load_ed_ecosystem_params()
    !   14 | C4 pasture                                 |     yes |      yes |          yes !
    !   15 | C4 crop (e.g.,corn/maize)                  |     yes |      yes |          yes !
    !   16 | Tropical C3 grass                          |     yes |      yes |          yes !
-   !   17 | Araucaria (similar to 7, tropical allom.)  |      no |      yes |           no !
+   !   17 | Liana                                      |      no |      yes |           no !
    !------+--------------------------------------------+---------+----------+--------------!
 
    !----- Name the PFTs (no spaces, please). ----------------------------------------------!
@@ -87,17 +82,11 @@ subroutine load_ed_ecosystem_params()
    is_tropical(1:4)   = .true.
    is_tropical(5:11)  = .false.
    is_tropical(12:13) = .false.
-   is_tropical(14:15) = .true.
-   is_tropical(16)    = .true.
-   !---------------------------------------------------------------------------------------!
-   !     This uses tropical allometry for DBH->Bleaf and DBH->Bdead, but otherwise it uses !
-   ! the temperate properties.                                                             !
-   !---------------------------------------------------------------------------------------!
-   is_tropical(17)    = .true.
+   is_tropical(14:17) = .true.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !    This flag should be used to define whether the plant is a liana or not             !
+   !           This flag is used to define whether the plant is a liana or not             !
    !---------------------------------------------------------------------------------------!
    is_liana(1:16)  = .false.
    is_liana(17)    = .true.
@@ -537,30 +526,17 @@ subroutine init_can_rad_params()
       , clump_grass                 & ! intent(in)
       , leaf_reflect_nir            & ! intent(in)
       , leaf_trans_nir              & ! intent(in)
-      , leaf_scatter_nir            & ! intent(out)
       , leaf_reflect_vis            & ! intent(in)
       , leaf_trans_vis              & ! intent(in)
-      , leaf_scatter_vis            & ! intent(out)
-      , leaf_backscatter_vis        & ! intent(in)
-      , leaf_backscatter_nir        & ! intent(in)
       , leaf_backscatter_tir        & ! intent(out)
       , leaf_emiss_tir              & ! intent(out)
       , clumping_factor             & ! intent(out)
       , orient_factor               & ! intent(out)
-      , phi1                        & ! intent(out)
-      , phi2                        & ! intent(out)
-      , mu_bar                      & ! intent(out)
       , wood_reflect_nir            & ! intent(in)
       , wood_trans_nir              & ! intent(in)
-      , wood_scatter_nir            & ! intent(out)
       , wood_reflect_vis            & ! intent(in)
       , wood_trans_vis              & ! intent(in)
-      , wood_scatter_vis            & ! intent(out)
-      , wood_reflect_vis            & ! intent(in)
       , wood_trans_vis              & ! intent(in)
-      , wood_scatter_tir            & ! intent(out)
-      , wood_backscatter_vis        & ! intent(in)
-      , wood_backscatter_nir        & ! intent(in)
       , wood_backscatter_tir        & ! intent(out)
       , wood_emiss_tir              & ! intent(out)
       , fvis_beam_def               & ! intent(out)
@@ -646,7 +622,7 @@ subroutine init_can_rad_params()
    leaf_emiss_tir(9:11)  = 9.50d-1
    leaf_emiss_tir(12:15) = 9.60d-1
    leaf_emiss_tir(16)    = 9.60d-1
-   leaf_emiss_tir(17)    = 9.50d-1!parameter unchanged
+   leaf_emiss_tir(17)    = 9.50d-1
    !----- Branches. -----------------------------------------------------------------------!
    wood_emiss_tir(1)     = 9.60d-1
    wood_emiss_tir(2:4)   = 9.00d-1
@@ -655,7 +631,7 @@ subroutine init_can_rad_params()
    wood_emiss_tir(9:11)  = 9.00d-1
    wood_emiss_tir(12:15) = 9.60d-1
    wood_emiss_tir(16)    = 9.60d-1
-   wood_emiss_tir(17)    = 9.00d-1!parameter unchanged
+   wood_emiss_tir(17)    = 9.00d-1
    !---------------------------------------------------------------------------------------!
 
 
@@ -685,7 +661,7 @@ subroutine init_can_rad_params()
    leaf_reflect_vis(12:13) = 1.10d-1 ! 1.1d-1
    leaf_reflect_vis(14:15) = dble(lreflect_vis)
    leaf_reflect_vis(16)    = dble(lreflect_vis)
-   leaf_reflect_vis(17)    = dble(lreflect_vis) ! 9.0d-2
+   leaf_reflect_vis(17)    = dble(lreflect_vis)
    !----- Near infrared. ------------------------------------------------------------------!
    leaf_reflect_nir(1)     = dble(lreflect_nir)
    leaf_reflect_nir(2:4)   = dble(lreflect_nir)
@@ -754,7 +730,7 @@ subroutine init_can_rad_params()
    leaf_trans_vis(12:13) = 1.60d-1  ! 0.160
    leaf_trans_vis(14:15) = dble(ltrans_vis)
    leaf_trans_vis(   16) = dble(ltrans_vis)
-   leaf_trans_vis(   17) = dble(ltrans_vis)  ! 0.160
+   leaf_trans_vis(   17) = dble(ltrans_vis)
    !----- Near infrared. ------------------------------------------------------------------!
    leaf_trans_nir(    1) = dble(ltrans_nir)
    leaf_trans_nir(  2:4) = dble(ltrans_nir)
@@ -870,8 +846,7 @@ subroutine init_can_air_params()
       , twothirds             & ! intent(in)
       , onesixth              & ! intent(in)
       , vonk                  ! ! intent(in)
-   use pft_coms       , only : hgt_min               & ! intent(in)
-      , hgt_max               ! ! intent(in)
+   use pft_coms       , only : hgt_min               ! ! intent(in)
    use canopy_air_coms, only : psim                  & ! function
       , psih                  & ! function
       , ugbmin                & ! intent(in)
@@ -932,7 +907,6 @@ subroutine init_can_air_params()
       , nu_mw99_8             & ! intent(out)
       , infunc_8              & ! intent(out)
       , cs_dense08            & ! intent(out)
-      , gamma_clm48           & ! intent(out)
       , bl79                  & ! intent(out)
       , csm                   & ! intent(out)
       , csh                   & ! intent(out)
@@ -1469,8 +1443,7 @@ end subroutine init_can_lyr_params
 subroutine init_pft_photo_params()
 
    use ed_max_dims    , only : n_pft                   ! ! intent(in)
-   use ed_misc_coms   , only : ibigleaf                & ! intent(in)
-      , iallom                  ! ! intent(in)
+   use ed_misc_coms   , only : ibigleaf                ! ! intent(in)
    use pft_coms       , only : D0                      & ! intent(out)
       , Vm_low_temp             & ! intent(out)
       , Vm_high_temp            & ! intent(out)
@@ -1613,7 +1586,7 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.300000 * ssfact * vmfact_c3
    Vm0(14:15)                = 12.500000 * ssfact * vmfact_c4
    Vm0(16)                   = 18.750000 * ssfact * vmfact_c3
-   Vm0(17)                   = 9.0970000 * ssfact * vmfact_c3!27.29 coming from nancy data
+   Vm0(17)                   = 9.0970000 * ssfact * vmfact_c3
    !---------------------------------------------------------------------------------------!
 
 
@@ -1670,7 +1643,7 @@ subroutine init_pft_photo_params()
       case (0,1)
          !------ This should be simply gamma times Vm0. --------------------------------------!
          Rd0         (1:17) = dark_respiration_factor(1:17) * Vm0(1:17)
-         !for lianas it's Rd0 = 0.816
+         !for lianas Rd0 = 0.816
 
       case (2,3)
          !------------------------------------------------------------------------------------!
@@ -1974,7 +1947,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
    leaf_turnover_rate(16)         = 2.0
-   leaf_turnover_rate(17)         = 0.54! set by matching SLA withh Sanchez A. 2009
+   leaf_turnover_rate(17)         = 0.54! set by matching SLA with Sanchez A. 2009
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = leaf_turnover_rate(1)
@@ -2228,7 +2201,7 @@ subroutine init_pft_mort_params()
    mort3(14) = m3_scale * ( m3_slope * (1. - rho(14) / rho( 4)) )
    mort3(15) = m3_scale * ( m3_slope * (1. - rho(15) / rho( 4)) )
    mort3(16) = m3_scale * ( m3_slope * (1. - rho(16) / rho( 4)) )
-   mort3(17) = 0.06311576
+   mort3(17) = 0.06311576 ! O. Phillips (2005)
    !---------------------------------------------------------------------------------------!
 
 
@@ -2344,7 +2317,7 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    !----- Trees taller than treefall_hite_threshold. --------------------------------------!
    treefall_s_gtht(1:16)    = 0.00
-   treefall_s_gtht(17)      = 0.90
+   treefall_s_gtht(17)      = 0.80 !Putz (1983)
    !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
    treefall_s_ltht(1)       = 0.25
    treefall_s_ltht(2:4)     = 0.10
@@ -2394,7 +2367,6 @@ subroutine init_pft_alloc_params()
    use pft_coms     , only : leaf_turnover_rate    & ! intent(in)
       , is_tropical           & ! intent(in)
       , is_grass              & ! intent(in)
-      , is_liana              & ! intent(in)
       , rho                   & ! intent(out)
       , SLA                   & ! intent(out)
       , horiz_branch          & ! intent(out)
@@ -2525,7 +2497,7 @@ subroutine init_pft_alloc_params()
    rho(5)     = 0.20   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:16) = 0.20
-   rho(17)    = 0.46   ! Copied from BCITraits excel data
+   rho(17)    = 0.46   ! BCI Traits
    !---------------------------------------------------------------------------------------!
 
 
@@ -2720,7 +2692,7 @@ subroutine init_pft_alloc_params()
          end do
    end select
 
-   !-------------------- Liana allometry made up ------------------------------------------!
+   !--------------------- Liana allometry: 10cm lianas are 35m tall -----------------------!
    b1Ht(17) = 0.1136442
    b2Ht(17) = 0.8675
    !---------------------------------------------------------------------------------------!
@@ -2784,7 +2756,6 @@ subroutine init_pft_alloc_params()
    ! That is:         0.0856*(x)^2 = 0.1575*(x)^0.975   ---> x=1.81279                     !
    !---------------------------------------------------------------------------------------!
    dbh_adult(17) = 1.81
-   !dbh_crit (17) = 26.0
 
 
    !---------------------------------------------------------------------------------------!
@@ -3008,6 +2979,26 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
 
+      !--------------------------- Liana allometry -----------------------------------------!
+      ! This is an experimental value for dead biomass. The Schnitzer article provide an    !
+      ! allometric equation to relate AGB to DBH. Since here we are dealing with DB instead !
+      ! of AGB I also subtracted the leaf biomass from AGB. Bl dbh allometry is the same    !
+      ! used in size2bl from Putz. I have dropped the intercept though. This is because     !
+      ! otherwise one would have DB != when plant has DBH = 0. At this point one would have !
+      ! dbh2bd = (exp(-1.484 + 2.657 * log(dbh)) - 0.0856 * dbh * dbh) / C2B                !
+      ! Moreover since Schnitzer gives AGB we have to divide by agf_bs so that              !
+      ! when we calculate the above ground fraction multiplying by agf_bs we get the correct!
+      ! AGB. I fitted this equation dbh2bd with a form dbh2bd = a*(dbh)**b because otherwise!
+      ! the formula is not invertible (we need bd2dbh). Fit converges nicely with           !
+      ! a= 0.13745 and b=2.69373 .                                                          !
+      !-------------------------------------------------------------------------------------!
+       b1Bs_small(17) = 0.2749
+       b1Bs_large(17) = b1Bs_small(17)
+       b2Bs_small(17) = 2.69373
+       b2Bs_large(17) = b2Bs_small(17)
+      !-------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     In case we run big leaf model with IALLOM set to 0 or 1, we must change some of   !
@@ -3047,6 +3038,13 @@ subroutine init_pft_alloc_params()
       b1Bs_large    (:)  = b1Bs_small(:)
       b2Bs_large    (:)  = b2Bs_small(:)
    end if
+   !---------------------------------------------------------------------------------------!
+
+   !------------------------- Liana leaf Biomass (Putz, 1983) -----------------------------!
+   b1Bl_small(17) = b1Bl_small(2)
+   b2Bl_small(17) = b2Bl_small(2)
+   b1Bl_large(17) = 0.0856
+   b2Bl_large(17) = 2.0
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -3101,19 +3099,8 @@ subroutine init_pft_alloc_params()
             end if
          end do
    end select
-
-   !---------------------------- Liana allometry ------------------------------------------!
-   b1Bs_small(17) = 0.2749
-   b1Bs_large(17) = b1Bs_small(17)
-   b2Bs_small(17) = 2.69373
-   b2Bs_large(17) = b2Bs_small(17)
-
-   b1Bl_small(17) = b1Bl_small(2)
-   b2Bl_small(17) = b2Bl_small(2)
-   b1Bl_large(17) = 0.0856
-   b2Bl_large(17) = 2.0
-
-   b2Ca(17) = 1.26254364
+   !---------------------------------------------------------------------------------------!
+   b2Ca(17) = 1.26254364 ! Not so sure about this one...
    !---------------------------------------------------------------------------------------!
 
 
@@ -3298,8 +3285,7 @@ end subroutine init_pft_alloc_params
 subroutine init_pft_nitro_params()
 
    use pft_coms, only: c2n_leaf, Vm0, SLA, &
-      c2n_slow,c2n_structural,c2n_storage,c2n_stem,l2n_stem, &
-      C2B,plant_N_supply_scale
+      c2n_slow,c2n_structural,c2n_storage,c2n_stem,l2n_stem,plant_N_supply_scale
 
    implicit none
 
@@ -3341,7 +3327,6 @@ end subroutine init_pft_nitro_params
 subroutine init_pft_leaf_params()
    use phenology_coms , only : iphen_scheme         ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
-   use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
       , b1Cl                 & ! intent(out)
       , b2Cl                 & ! intent(out)
@@ -3595,10 +3580,7 @@ subroutine init_pft_derived_params()
    use pft_coms             , only : init_density         & ! intent(in)
       , c2n_leaf             & ! intent(in)
       , c2n_stem             & ! intent(in)
-      , b1Ht                 & ! intent(in)
-      , b2Ht                 & ! intent(in)
       , hgt_min              & ! intent(in)
-      , hgt_ref              & ! intent(in)
       , q                    & ! intent(in)
       , qsw                  & ! intent(in)
       , sla                  & ! intent(in)
@@ -3613,8 +3595,6 @@ subroutine init_pft_derived_params()
       , c2n_recruit          & ! intent(out)
       , veg_hcap_min         & ! intent(out)
       , seed_rain            ! ! intent(out)
-   use phenology_coms       , only : elongf_min           & ! intent(in)
-      , elongf_flush         ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
       , dbh2h                & ! function
       , size2bl          & ! function
@@ -4310,7 +4290,6 @@ subroutine init_soil_coms
    use soil_coms      , only : ed_nstyp              & ! intent(in)
       , isoilflg              & ! intent(in)
       , nslcon                & ! intent(in)
-      , isoilcol              & ! intent(in)
       , slxclay               & ! intent(in)
       , slxsand               & ! intent(in)
       , soil                  & ! intent(in)
@@ -5085,12 +5064,9 @@ subroutine init_rk4_params()
    use canopy_air_coms, only : leaf_drywhc            & ! intent(in)
       , leaf_maxwhc            ! ! intent(in)
    use ed_misc_coms,only     : ffilout                ! ! intent(in)
-   use met_driver_coms, only : prss_min               & ! intent(in)
-      , prss_max               ! ! intent(in)
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
    use detailed_coms  , only : idetailed              ! ! intent(in)
    use rk4_coms       , only : rk4_tolerance          & ! intent(in)
-      , ibranch_thermo         & ! intent(in)
       , maxstp                 & ! intent(out)
       , rk4eps                 & ! intent(out)
       , rk4eps2                & ! intent(out)
@@ -5113,7 +5089,6 @@ subroutine init_rk4_params()
       , rk4max_can_temp        & ! intent(out)
       , rk4min_can_shv         & ! intent(out)
       , rk4max_can_shv         & ! intent(out)
-      , rk4min_can_rhv         & ! intent(out)
       , rk4max_can_rhv         & ! intent(out)
       , rk4min_can_co2         & ! intent(out)
       , rk4max_can_co2         & ! intent(out)

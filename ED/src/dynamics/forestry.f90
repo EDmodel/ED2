@@ -23,14 +23,10 @@ subroutine find_harvest_area(cpoly,isi,onsp,harvestable_agb,pot_area_harv)
    use disturb_coms         , only : ianth_disturb              & ! intent(in)
                                    , lutime                     & ! intent(in)
                                    , min_patch_area             & ! intent(in)
-                                   , plantation_rotation        & ! intent(in)
-                                   , min_harvest_biomass        & ! intent(in)
-                                   , mature_harvest_age         ! ! intent(in)
+                                   , min_harvest_biomass        ! ! intent(in)
    use fuse_fiss_utils      , only : terminate_patches          ! ! subroutine
    use ed_max_dims          , only : n_pft                      & ! intent(in)
                                    , n_dbh                      ! ! intent(in)
-   use grid_coms            , only : nzg                        & ! intent(in)
-                                   , nzs                        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)             , target        :: cpoly

@@ -1258,12 +1258,10 @@ subroutine write_ed_xml_config
 
   implicit none
 !  integer :: ival
-  integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival
+  integer(4) :: i,ival
   character(512) :: xfilout 
 !  integer :: i
-  real(8) :: rval
 !  character*(*) :: filename
-  character(len=str_len)  :: cval
   integer             :: ng
 
   write(xfilout,"(a)") trim(sfilout)//".xml"

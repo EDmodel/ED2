@@ -43,7 +43,6 @@ subroutine initHydrology()
 
   use hydrology_constants
   use grid_coms,only: ngrids
-  use hydrology_coms, only: useTOPMODEL, useRUNOFF
   use ed_state_vars, only : edgrid_g
   use ed_node_coms, only: mynum
   implicit none
@@ -685,7 +684,7 @@ subroutine updateWatertableAdd(cpoly,isi,ipa,dw,sheat)
   !!         dw    - change in water content (m3/m2)
   !!         sheat - heat content of added water (J/m3)
   use ed_state_vars, only: sitetype,polygontype
-  use soil_coms, only: soil,slz,dslz,dslzi
+  use soil_coms, only: soil,dslz,dslzi
   use grid_coms, only: nzg
   use therm_lib, only: uextcm2tl
   use consts_coms, only: wdns
@@ -836,7 +835,7 @@ subroutine updateWatertableSubtract(cpoly,isi,ipa,dz,sheat,swater)
    use hydrology_coms, only: MoistSatThresh
    use ed_state_vars,  only: polygontype, sitetype 
    use consts_coms, only : wdns
-   use soil_coms, only: soil,slz,dslz,dslzi
+   use soil_coms, only: soil,dslz,dslzi
    use grid_coms, only: nzg
    use therm_lib, only : uextcm2tl,tl2uint
 
@@ -963,7 +962,7 @@ end subroutine updateWatertableSubtract
 !==========================================================================================!
 subroutine updateWatertableBaseflow(cpoly,isi,ipa,baseflow)
    use ed_state_vars, only: polygontype, sitetype
-   use soil_coms, only: soil,slz,dslz,dslzi,slcons1
+   use soil_coms, only: soil,dslz,dslzi,slcons1
    use ed_misc_coms, only: dtlsm
    use consts_coms, only: wdns
    use therm_lib, only : uextcm2tl,tl2uint

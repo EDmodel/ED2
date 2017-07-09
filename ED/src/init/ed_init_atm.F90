@@ -29,11 +29,6 @@ subroutine ed_init_atm()
                                     , fuse_cohorts           & ! subroutine
                                     , terminate_cohorts      & ! subroutine
                                     , split_cohorts          ! ! subroutine
-   use ed_node_coms          , only : nnodetot               & ! intent(in)
-                                    , mynum                  & ! intent(in)
-                                    , sendnum                & ! intent(in)
-                                    , recvnum                ! ! intent(in)
-   use pft_coms              , only : sla                    ! ! intent(in)
    use ed_therm_lib          , only : calc_veg_hcap          & ! subroutine
                                     , ed_grndvap             ! ! subroutine
    use canopy_layer_coms     , only : canstr                 & ! intent(out)
@@ -68,9 +63,7 @@ subroutine ed_init_atm()
    integer                        :: nlsw1
    integer                        :: ncohorts
    integer                        :: npatches
-   integer                        :: ix
-   integer                        :: iy
-   integer                        :: ping,ierr
+   integer                        :: ping
    real                           :: site_area_i
    real                           :: poly_area_i
    real                           :: poly_lai
@@ -347,7 +340,7 @@ subroutine ed_init_atm()
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
                                  ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
-                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%snowfac(ipa)     &
+                                 ,csite%snowfac(ipa)                                       &
                                  ,csite%can_prss(ipa),csite%can_shv(ipa)                   &
                                  ,csite%ground_shv(ipa),csite%ground_ssh(ipa)              &
                                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa)            &
@@ -362,7 +355,7 @@ subroutine ed_init_atm()
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
                                  ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
-                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%snowfac(ipa)     &
+                                 ,csite%snowfac(ipa)                                       &
                                  ,csite%can_prss(ipa),csite%can_shv(ipa)                   &
                                  ,csite%ground_shv(ipa),csite%ground_ssh(ipa)              &
                                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa)            &
@@ -417,11 +410,9 @@ subroutine ed_init_atm()
                   cpatch => csite%patch(ipa)
 
                   if (cpatch%ncohorts > 0) then
-                     call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi)            &
-                                      ,cpoly%lsl(isi),.true.)
+                     call fuse_cohorts(csite,ipa,cpoly%lsl(isi),.true.)
                      call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-                     call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi)              &
-                                       ,cpoly%lsl(isi))
+                     call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                   end if
 
                   cohortloop3: do ico = 1,cpatch%ncohorts

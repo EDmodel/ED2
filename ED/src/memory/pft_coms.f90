@@ -1,4 +1,3 @@
-!@modified
 !==========================================================================================!
 !==========================================================================================!
 !   This module contains a list of plant-functional type dependent properties.             !
@@ -29,7 +28,9 @@ module pft_coms
    !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |                 yes !
    !   14 | C4 pasture                          |     yes |      yes |                 yes !
    !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |                 yes !
-   !------+-------------------------------------+---------+----------+---------------------!
+   !   16 | Tropical C3 grass                   |     yes |      yes |                 yes !
+   !   17 | Liana                               |      no |      yes |                  no !
+   !------+--------------------------------------------+---------+----------+--------------!
 
 
 
@@ -123,9 +124,9 @@ module pft_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    The following logical flags will tell whether the PFTs are tropical and also       !
-   ! check whether it is a grass or tree PFT (this may need to be switched to integer if   !
-   ! we start adding bush-like PFTs).                                                      !
+   !    The following logical flags will tell whether the PFTs are tropical (liana) and    !
+   ! also check whether it is a grass or tree PFT (this may need to be switched to         !
+   ! integer if we start adding bush-like PFTs).                                           !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft)    :: is_tropical
    logical, dimension(n_pft)    :: is_grass

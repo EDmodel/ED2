@@ -12,14 +12,11 @@ subroutine fire_frequency(cgrid)
                             , current_time           & ! intent(in)
                             , dtlsm                  ! ! intent(in)
    use grid_coms     , only : nzg                    ! ! intent(in)
-   use soil_coms     , only : slz                    & ! intent(in)
-                            , soil                   & ! intent(in)
-                            , dslz                   & ! intent(in)
-                            , dslzi                  ! ! intent(in)
+   use soil_coms     , only : soil                   & ! intent(in)
+                            , dslz                   ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
                             , sm_fire                & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
-                            , fire_smoist_depth      & ! intent(in)
                             , k_fire_first           & ! intent(in)
                             , fire_parameter         ! ! intent(in)
    use consts_coms   , only : wdns                   & ! intent(in)
@@ -45,10 +42,7 @@ subroutine fire_frequency(cgrid)
    real                           :: fire_wmass_threshold
    real                           :: fire_intensity
    real                           :: fuel
-   real                           :: avg_slmst
-   real                           :: avg_slpot
    real                           :: ignition_rate
-   real                           :: fire_scale
    real                           :: mean_fire_intensity
    real                           :: sum_pcpg
    !---------------------------------------------------------------------------------------!

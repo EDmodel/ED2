@@ -41,7 +41,6 @@ subroutine landuse_init
    character(len=str_len)                     :: cdum
    integer                                    :: nharvest
    integer               , dimension(n_pft)   :: harvest_pft
-   integer                                    :: ierr
    integer                                    :: nf
    integer                                    :: nflist
    integer                                    :: nfllu
@@ -53,11 +52,9 @@ subroutine landuse_init
    integer                                    :: ipft
    integer                                    :: h
    integer                                    :: sim_years
-   integer                                    :: lu_years
    integer                                    :: yd_1st
    integer                                    :: yd_this
    integer                                    :: yd_last
-   integer                                    :: yd_tot
    logical                                    :: inside
    real                  , dimension(n_pft)   :: mindbh_1ary
    real                  , dimension(n_pft)   :: harvprob_1ary
@@ -445,7 +442,6 @@ subroutine read_plantation_fractions(cpoly,polylon,polylat,igr)
    real                  , intent(in)  :: polylat
    integer               , intent(in)  :: igr
    !----- Local variables -----------------------------------------------------------------!
-   character(len=str_len)              :: fname
    logical                             :: exans
    integer                             :: ierr
    integer                             :: isi

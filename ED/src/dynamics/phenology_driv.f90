@@ -653,7 +653,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use pft_coms       , only : phenology                & ! intent(in)
                              , q                        & ! intent(in)
                              , qsw                      ! ! intent(in)
-   use decomp_coms    , only : f_labile                 ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
                              , iphen_scheme             & ! intent(in)
                              , elongf_min               & ! intent(in)
@@ -661,7 +660,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use ed_therm_lib   , only : calc_veg_hcap            & ! function
                              , update_veg_energy_cweh   ! ! subroutine
    use ed_max_dims    , only : n_pft                    ! ! intent(in)
-   use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
                              , size2bl                  ! ! function
@@ -1029,9 +1027,6 @@ end subroutine update_phenology_eq_0
 subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd,sum_dgd   &
                                ,drop_cold,leaf_out_cold,lsl)
    use grid_coms     , only : nzg          ! ! intent(in)
-   use soil_coms     , only : soil         & ! intent(in)
-                            , dslz         & ! intent(in)
-                            , slz          ! ! intent(in)
    use phenology_coms, only : dl_tr        & ! intent(in)
                             , st_tr1       & ! intent(in)
                             , st_tr2       & ! intent(in)
@@ -1052,10 +1047,6 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    logical                , intent(out)   :: leaf_out_cold !
    !----- Local variables -----------------------------------------------------------------!
    real                                   :: gdd_threshold
-   integer                                :: k1
-   integer                                :: k2
-   integer                                :: topsoil
-   integer                                :: nsoil
    !---------------------------------------------------------------------------------------!
 
    !----- Initialize variables. -----------------------------------------------------------!

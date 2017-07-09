@@ -5,7 +5,7 @@
 !------------------------------------------------------------------------------------------!
 module rk4_stepper
 
-   contains 
+   contains
    !=======================================================================================!
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
@@ -22,7 +22,6 @@ module rk4_stepper
                                , pgrow               & ! intent(in)
                                , pshrnk              & ! intent(in)
                                , errcon              & ! intent(in)
-                               , print_diags         & ! intent(in)
                                , print_detailed      & ! intent(in)
                                , norm_rk4_fluxes     & ! intent(in)
                                , reset_rk4_fluxes    ! ! intent(in)
@@ -43,7 +42,7 @@ module rk4_stepper
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                             :: h,errmax,xnew,newh,oldh
       logical                                  :: reject_step,reject_result
-      logical                                  :: minstep,stuck,test_reject,pdo
+      logical                                  :: minstep,stuck,test_reject
       integer                                  :: k
       integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
@@ -158,7 +157,7 @@ module rk4_stepper
                end if
                call print_rk4patch(integration_buff(ibuff)%y, csite,ipa)
             endif
-         
+
          else
 
             !------------------------------------------------------------------------------!
@@ -234,7 +233,6 @@ module rk4_stepper
 
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_vars    & ! structure
-                               , rk4site             & ! intent(in)
                                , print_diags         & ! intent(in)
                                , rk4_a2              & ! intent(in)
                                , rk4_a3              & ! intent(in)
@@ -269,8 +267,6 @@ module rk4_stepper
                                , zero_rk4_cohort     ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
-      use grid_coms     , only : nzg                 & ! intent(in)
-                               , nzs                 ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -458,9 +454,7 @@ module rk4_stepper
       use rk4_coms              , only : rk4patchtype          & ! structure
                                        , integration_vars      & ! structure
                                        , rk4site               & ! intent(in)
-                                       , rk4eps                & ! intent(in)
                                        , rk4aux                & ! intent(in)
-                                       , toocold               & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
                                        , rk4min_can_shv        & ! intent(in)
                                        , rk4min_can_rhv        & ! intent(in)
@@ -478,7 +472,6 @@ module rk4_stepper
                                        , rk4min_soil_temp      & ! intent(in)
                                        , rk4min_sfcw_mass      & ! intent(in)
                                        , rk4min_virt_water     & ! intent(in)
-                                       , rk4tiny_sfcw_mass     & ! intent(in)
                                        , rk4water_stab_thresh  & ! intent(in)
                                        , integ_err             & ! intent(inout)
                                        , record_err            & ! intent(in)
@@ -1161,7 +1154,6 @@ module rk4_stepper
       use ed_state_vars         , only : sitetype      & ! structure
                                        , patchtype     ! ! structure
       use grid_coms             , only : nzg           ! ! intent(in)
-      use soil_coms             , only : soil8         ! ! intent(in), look-up table
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: y

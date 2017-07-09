@@ -12,10 +12,8 @@ subroutine read_ed21_history_file
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
                              , str_len                 ! ! intent(in)
-   use pft_coms       , only : SLA                     & ! intent(in)
-                             , q                       & ! intent(in)
+   use pft_coms       , only : q                       & ! intent(in)
                              , qsw                     & ! intent(in)
-                             , hgt_min                 & ! intent(in)
                              , min_dbh                 & ! intent(in)
                              , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
@@ -25,7 +23,6 @@ subroutine read_ed21_history_file
                              , agf_bs                  & ! intent(in)
                              , include_these_pft       ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
-                             , current_time            & ! intent(in)
                              , imonthh                 & ! intent(in)
                              , iyearh                  & ! intent(in)
                              , idateh                  & ! intent(in)
@@ -45,7 +42,6 @@ subroutine read_ed21_history_file
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
                              , dspace_id               & ! intent(in)
-                             , plist_id                & ! intent(in)
                              , globdims                & ! intent(in)
                              , chnkdims                & ! intent(in)
                              , chnkoffs                & ! intent(in)
@@ -71,7 +67,7 @@ subroutine read_ed21_history_file
    type(patchtype)       , pointer     :: cpatch
    character(len=3)                    :: cgr
    character(len=str_len)              :: hnamel
-   
+
    integer, dimension(:) , allocatable :: pysi_n
    integer, dimension(:) , allocatable :: pysi_id
    integer, dimension(:) , allocatable :: sipa_n
@@ -80,7 +76,6 @@ subroutine read_ed21_history_file
    integer, dimension(:) , allocatable :: paco_id
    integer, dimension(:) , allocatable :: islakesite
    integer, dimension(:) , allocatable :: plantation
-   integer                             :: year
    integer                             :: igr
    integer                             :: ipy
    integer                             :: isi
@@ -94,7 +89,6 @@ subroutine read_ed21_history_file
    integer                             :: dset_ncohorts_global
    integer                             :: dset_nzg
    integer                             :: hdferr
-   integer                             :: ngr
    integer                             :: ifpy
    integer                             :: ipft
    integer                             :: py_index
@@ -134,14 +128,14 @@ subroutine read_ed21_history_file
    chnkoffs = 0_8
    memoffs  = 0_8
    memdims  = 0_8
-   memsize  = 1_8  
+   memsize  = 1_8
 
 
    !---------------------------------------------------------------------------------------!
    !     Walk the tree and pull data from the dataset.                                     !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
-      
+
       cgrid => edgrid_g(igr)
 
 
@@ -198,75 +192,75 @@ subroutine read_ed21_history_file
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nzg,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NSITES_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_nsites_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NPATCHES_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npatches_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'NCOHORTS_GLOBAL', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_ncohorts_global,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       globdims(1) = int(dset_npolygons_global,8)
 
       allocate(pysi_n(dset_npolygons_global))
       allocate(pysi_id(dset_npolygons_global))
-      
+
       call h5dopen_f(file_id,'PYSI_N', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_n,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'PYSI_ID', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,pysi_id,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       globdims(1) = int(dset_nsites_global,8)
-      
+
       allocate(sipa_n(dset_nsites_global))
       allocate(sipa_id(dset_nsites_global))
-      
+
       call h5dopen_f(file_id,'SIPA_N', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_n,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'SIPA_ID', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,sipa_id,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       globdims(1) = int(dset_npatches_global,8)
       allocate(paco_n(dset_npatches_global))
       allocate(paco_id(dset_npatches_global))
-      
+
       call h5dopen_f(file_id,'PACO_N', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_n,globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'PACO_ID', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_INTEGER,paco_id,globdims, hdferr)
@@ -277,7 +271,7 @@ subroutine read_ed21_history_file
       globdims(1) = int(dset_npolygons_global,8)
       allocate(file_lats(dset_npolygons_global))
       allocate(file_lons(dset_npolygons_global))
-      
+
       call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
       call h5dread_f(dset_id, H5T_NATIVE_REAL,file_lats,globdims, hdferr)
@@ -299,7 +293,7 @@ subroutine read_ed21_history_file
          !----- Initialise polygon map and start closes polygon with a huge distance. -----!
          py_index = 0
          minrad = 1.e20
-         
+
          !---------------------------------------------------------------------------------!
          !     Loop over all input polygons and find the one that is the closest to this   !
          ! current polygon.                                                                !
@@ -317,7 +311,7 @@ subroutine read_ed21_history_file
          ! values, and its children values in sites, patchs and cohorts.                   !
          !---------------------------------------------------------------------------------!
          iparallel = 0
-         
+
          !---------------------------------------------------------------------------------!
          !      POLYGON level variables.                                                   !
          !---------------------------------------------------------------------------------!
@@ -333,7 +327,7 @@ subroutine read_ed21_history_file
          call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '                &
                            ,dsetrank,iparallel,.true.,foundvar)
          call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.,foundvar)
-         
+
          !----- Load the workload (2D). ---------------------------------------------------!
          dsetrank    = 2
          globdims(1) = int(13,8)
@@ -363,7 +357,7 @@ subroutine read_ed21_history_file
          chnkoffs(1) = int(pysi_id(py_index) - 1,8)
          memdims(1)  = int(pysi_n(py_index),8)
          memsize(1)  = int(pysi_n(py_index),8)
-         memoffs(1)  = 0_8  
+         memoffs(1)  = 0_8
          call hdf_getslab_i(islakesite,'ISLAKESITE ',dsetrank,iparallel,.false.,foundvar)
 
          ndry_sites = int(pysi_n(py_index))-sum(islakesite)
@@ -431,7 +425,7 @@ subroutine read_ed21_history_file
                memsize(1)   = int(1,8)            ! On both sides
                chnkoffs(1)  = int(dset_nzg - 1,8) ! Take the top layer, not the bottom
                memoffs(1)   = 0_8
-   
+
                globdims(2)  = int(dset_nsites_global,8)
                chnkdims(2)  = int(1,8)
                chnkoffs(2)  = int(pysi_id(py_index) - 2 + isi,8)
@@ -463,7 +457,7 @@ subroutine read_ed21_history_file
                   !------------------------------------------------------------------------!
 
                   iparallel = 0
-                  
+
                   dsetrank = 1
                   globdims(1) = int(dset_npatches_global,8)
                   chnkdims(1) = int(csite%npatches,8)
@@ -597,13 +591,13 @@ subroutine read_ed21_history_file
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
-                              
+
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                           else 
+                           else
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
@@ -627,8 +621,8 @@ subroutine read_ed21_history_file
                                                  * (1.-agf_bs(ipft))
                            cpatch%bstorage(ico) = 0.0
                            cpatch%phenology_status(ico) = 0
-                           
-                           
+
+
                         end do
 
 
@@ -764,7 +758,7 @@ subroutine read_ed21_history_file
                            cpatch%agb(ico) = ed_biomass(cpatch, ico)
                            cpatch%basarea(ico)  = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-                            
+
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch, ico)
 
@@ -830,9 +824,9 @@ subroutine read_ed21_history_file
       deallocate(sipa_id  )
       deallocate(pysi_n   )
       deallocate(pysi_id  )
-      
+
    end do gridloop
-   
+
    !----- Reset auto error printing to "on". ----------------------------------------------!
    call h5eset_auto_f(1,hdferr)
 
@@ -842,7 +836,7 @@ subroutine read_ed21_history_file
 #else
    call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
                     ,'read_ed21_history_file','ed_read_ed21_history.F90')
-#endif   
+#endif
 
    return
 end subroutine read_ed21_history_file
@@ -873,10 +867,8 @@ subroutine read_ed21_history_unstruct
                              , n_dist_types            & ! intent(in)
                              , maxfiles                & ! intent(in)
                              , maxlist                 ! ! intent(in)
-   use pft_coms       , only : SLA                     & ! intent(in)
-                             , q                       & ! intent(in)
+   use pft_coms       , only : q                       & ! intent(in)
                              , qsw                     & ! intent(in)
-                             , hgt_min                 & ! intent(in)
                              , min_dbh                 & ! intent(in)
                              , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
@@ -884,14 +876,8 @@ subroutine read_ed21_history_unstruct
                              , include_pft_ag          & ! intent(in)
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
-                             , agf_bs                  & ! intent(in)
-                             , min_cohort_size         ! ! intent(in)
+                             , agf_bs                  ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
-                             , current_time            & ! intent(in)
-                             , imonthh                 & ! intent(in)
-                             , iyearh                  & ! intent(in)
-                             , idateh                  & ! intent(in)
-                             , itimeh                  & ! intent(in)
                              , ied_init_mode           & ! intent(in)
                              , igrass                  & ! intent(in)
                              , max_poi99_dist          ! ! intent(in)
@@ -908,7 +894,6 @@ subroutine read_ed21_history_unstruct
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
                              , dspace_id               & ! intent(in)
-                             , plist_id                & ! intent(in)
                              , globdims                & ! intent(in)
                              , chnkdims                & ! intent(in)
                              , chnkoffs                & ! intent(in)
@@ -937,8 +922,6 @@ subroutine read_ed21_history_unstruct
    type(patchtype)       , pointer                              :: cpatch
    character(len=str_len), dimension(maxlist)                   :: full_list
    character(len=str_len), dimension(maxfiles)                  :: histo_list
-   character(len=1)                                             :: vnam
-   character(len=3)                                             :: cgr
    character(len=str_len)                                       :: hnamel
    integer               , dimension(maxfiles)                  :: ngridpoly
    integer               , dimension(huge_polygon)              :: pyfile_list
@@ -964,7 +947,6 @@ subroutine read_ed21_history_unstruct
    integer               , dimension(  :)         , allocatable :: tpoly_patch_count
    integer               , dimension(  :)         , allocatable :: tpoly_lsl
    integer               , dimension(:,:)         , allocatable :: tpoly_ntext_soil
-   integer                                                      :: year
    integer                                                      :: igr
    integer                                                      :: ipy
    integer                                                      :: isi
@@ -989,7 +971,6 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: dset_npatches_global
    integer                                                      :: dset_ncohorts_global
    integer                                                      :: dset_nzg
-   integer                                                      :: ngr
    integer                                                      :: ifpy
    integer                                                      :: ipft
    integer                                                      :: ipya
@@ -1031,7 +1012,7 @@ subroutine read_ed21_history_unstruct
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
-   real                                           , external    :: dist_gc 
+   real                                           , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
 
 
@@ -1060,7 +1041,7 @@ subroutine read_ed21_history_unstruct
       chnkoffs = 0_8
       memoffs  = 0_8
       memdims  = 0_8
-      memsize  = 1_8  
+      memsize  = 1_8
 
       !------------------------------------------------------------------------------------!
       !     First thing, we go through every file, open, and retrieve only some polygon-   !
@@ -1088,7 +1069,7 @@ subroutine read_ed21_history_unstruct
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
+
          !----- Determine the global position of these polygons. --------------------------!
          ipya = ipyz + 1
          ipyz = ipyz + dset_npolygons_global
@@ -1112,13 +1093,13 @@ subroutine read_ed21_history_unstruct
          call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
+
          call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
          call h5dget_space_f(dset_id, dspace_id, hdferr)
          call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
+
          call h5fclose_f(file_id, hdferr)
          if (hdferr /= 0) then
             write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
@@ -1193,10 +1174,10 @@ subroutine read_ed21_history_unstruct
       allocate (pclosest(cgrid%npolygons),psrcfile(cgrid%npolygons))
       allocate(pdist(total_grid_py))
       nneighloop: do ipy=1,cgrid%npolygons
-         
+
 
          !----- Reset pdist to a very large number. ---------------------------------------!
-         
+
          pdist(1:total_grid_py)   = 1.e20
 
          do ifpy=1,total_grid_py
@@ -1217,16 +1198,16 @@ subroutine read_ed21_history_unstruct
             ngp1          = ngridpoly(1)
             pclosest(ipy) = pyindx_list(minloc(pdist(1:ngp1),dim=1))
             psrcfile(ipy) = pyfile_list(1)
-            
+
             poi_minloc    = minloc(pdist(ngp1+1:total_grid_py),dim=1) + ngp1
-            
+
             if( pdist(poi_minloc) < max_poi99_dist ) then
                pclosest(ipy)  = pyindx_list(poi_minloc)
                psrcfile(ipy)  = pyfile_list(poi_minloc)
             end if
          end select
       end do nneighloop
-      
+
       deallocate(pdist)
       !------------------------------------------------------------------------------------!
       !     Now that we have all polygons matched with their nearest neighbours, we will   !
@@ -1369,14 +1350,14 @@ subroutine read_ed21_history_unstruct
             ! current polygon.                                                             !
             !------------------------------------------------------------------------------!
             !----- Initialise distance and co-ordinates to non-sense numbers. -------------!
-            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense 
+            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense
             if (rescale_glob) then
                neighbour: do k=1,nrescale
                   dist_rscl(k) = dist_gc(clon_rscl(k),cgrid%lon(ipy)                       &
                                         ,clat_rscl(k),cgrid%lat(ipy))
                end do neighbour
                xclosest = minloc(dist_rscl,dim=1)
-               
+
                rescale_loc = cgrid%lon(ipy) > wlon_rscl(xclosest) .and.                    &
                              cgrid%lon(ipy) < elon_rscl(xclosest) .and.                    &
                              cgrid%lat(ipy) > slat_rscl(xclosest) .and.                    &
@@ -1386,7 +1367,7 @@ subroutine read_ed21_history_unstruct
             end if
 
             iparallel = 0
-            
+
             !------------------------------------------------------------------------------!
             !      POLYGON level variables.                                                !
             !------------------------------------------------------------------------------!
@@ -1405,7 +1386,7 @@ subroutine read_ed21_history_unstruct
                               ,dsetrank,iparallel,.true.,foundvar)
             call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.       &
                               ,foundvar)
-            
+
             !----- Load the workload (2D). ------------------------------------------------!
             dsetrank    = 2
             globdims(1) = int(13,8)
@@ -1550,7 +1531,7 @@ subroutine read_ed21_history_unstruct
                   !------------------------------------------------------------------------!
 
                   tpoly_ntext_soil(nzg,is) = this_ntext(dset_nzg,is)
-                  
+
                   !------------------------------------------------------------------------!
                end if
                !---------------------------------------------------------------------------!
@@ -1636,7 +1617,7 @@ subroutine read_ed21_history_unstruct
                   call allocate_sitetype(csite,sipa_n(si_index))
 
                   iparallel = 0
-                  
+
                   dsetrank = 1
                   globdims(1) = int(dset_npatches_global,8)
                   chnkdims(1) = int(csite%npatches,8)
@@ -1730,7 +1711,7 @@ subroutine read_ed21_history_unstruct
                      oldarea(:)          = oldarea(:)          / sum(oldarea)
                      newarea(:,xclosest) = newarea(:,xclosest)                             &
                                          / sum(newarea(:,xclosest:xclosest))
-                     
+
                      !----- Re-scale the areas of every patch. ----------------------------!
                      do ipa=1,csite%npatches
                         ilu = csite%dist_type(ipa)
@@ -1811,13 +1792,13 @@ subroutine read_ed21_history_unstruct
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
-                              
+
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                           else 
+                           else
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
@@ -1841,7 +1822,7 @@ subroutine read_ed21_history_unstruct
                                                  * (1.-agf_bs(ipft))
                            cpatch%bstorage(ico)  = 0.0
                            cpatch%phenology_status(ico) = 0
-                           
+
                         end do
 
                         !------------------------------------------------------------------!
@@ -2043,11 +2024,11 @@ subroutine read_ed21_history_unstruct
 
       !----- Initialise the other polygon-level variables. --------------------------------!
       call init_ed_poly_vars(cgrid)
-     
+
       !----- Deallocate the closest index vector. -----------------------------------------!
       deallocate(pclosest,psrcfile)
    end do gridloop
-   
+
    !----- Turn off automatic error printing. ----------------------------------------------!
    call h5eset_auto_f(1,hdferr)
 
@@ -2057,7 +2038,7 @@ subroutine read_ed21_history_unstruct
 #else
    call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
                     ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
-#endif   
+#endif
 
 
    return
@@ -2082,7 +2063,7 @@ end subroutine read_ed21_history_unstruct
 subroutine read_ed21_polyclone
 
 #if USE_HDF5
-   use hdf5    
+   use hdf5
 #endif
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
@@ -2090,10 +2071,8 @@ subroutine read_ed21_polyclone
                              , n_dist_types            & ! intent(in)
                              , maxfiles                & ! intent(in)
                              , maxlist                 ! ! intent(in)
-   use pft_coms       , only : SLA                     & ! intent(in)
-                             , q                       & ! intent(in)
+   use pft_coms       , only : q                       & ! intent(in)
                              , qsw                     & ! intent(in)
-                             , hgt_min                 & ! intent(in)
                              , min_dbh                 & ! intent(in)
                              , min_bdead               & ! intent(in)
                              , is_grass                & ! intent(in)
@@ -2101,16 +2080,8 @@ subroutine read_ed21_polyclone
                              , include_pft_ag          & ! intent(in)
                              , pft_1st_check           & ! intent(in)
                              , include_these_pft       & ! intent(in)
-                             , agf_bs                  & ! intent(in)
-                             , min_cohort_size         ! ! intent(in)
+                             , agf_bs                  ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
-                             , current_time            & ! intent(in)
-                             , imonthh                 & ! intent(in)
-                             , iyearh                  & ! intent(in)
-                             , idateh                  & ! intent(in)
-                             , itimeh                  & ! intent(in)
-                             , ied_init_mode           & ! intent(in)
-                             , max_poi99_dist          & ! intent(in)
                              , igrass
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
@@ -2126,7 +2097,6 @@ subroutine read_ed21_polyclone
    use hdf5_coms      , only : file_id                 & ! intent(in)
                              , dset_id                 & ! intent(in)
                              , dspace_id               & ! intent(in)
-                             , plist_id                & ! intent(in)
                              , globdims                & ! intent(in)
                              , chnkdims                & ! intent(in)
                              , chnkoffs                & ! intent(in)
@@ -2157,8 +2127,6 @@ subroutine read_ed21_polyclone
    type(patchtype)       , pointer                              :: cpatch
    character(len=str_len), dimension(maxlist)                   :: full_list
    character(len=str_len), dimension(maxfiles)                  :: histo_list
-   character(len=1)                                             :: vnam
-   character(len=3)                                             :: cgr
    character(len=str_len)                                       :: hnamel
    integer               , dimension(maxfiles)                  :: ngridpoly
    integer               , dimension(huge_polygon)              :: pyfile_list
@@ -2179,15 +2147,12 @@ subroutine read_ed21_polyclone
    real                  ,  dimension(:, :)        , allocatable :: this_soil_water
    real                  ,  dimension(  :)        , allocatable :: dset_slzm
    integer                , dimension(  :)        , allocatable :: slz_match
-   integer                                                      :: year
    integer                                                      :: igr
    integer                                                      :: ipy
    integer                                                      :: isi
    integer                                                      :: is
    integer                                                      :: ipa
    integer                                                      :: ico
-   integer                                                      :: nsoil
-   integer                                                      :: nsites_inp
    integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
@@ -2199,7 +2164,6 @@ subroutine read_ed21_polyclone
    integer                                                      :: dset_npatches_global
    integer                                                      :: dset_ncohorts_global
    integer                                                      :: dset_nzg
-   integer                                                      :: ngr
    integer                                                      :: ifpy
    integer                                                      :: ipft
    integer                                                      :: ipya
@@ -2212,8 +2176,6 @@ subroutine read_ed21_polyclone
    integer                                                      :: dsetrank,iparallel
    integer                                                      :: hdferr
    integer                                                      :: total_grid_py
-   integer                                                      :: poi_minloc
-   integer                                                      :: ngp1
    integer                                                      :: ndry_sites
    logical                                                      :: exists
    logical                                                      :: rescale_glob
@@ -2232,17 +2194,12 @@ subroutine read_ed21_polyclone
    real                  , dimension(huge_polygon)              :: nlat_rscl
    real                  , dimension(n_dist_types,huge_polygon) :: newarea
    real                  , dimension(n_dist_types)              :: oldarea
-   real                                                         :: textdist_try
-   real                                                         :: textdist_min
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
    real                                                         :: salloc
    real                                                         :: salloci
    real                                                         :: sum_poly_area
-   real                       :: zmin
-   real                       :: fa
-   real                       :: fb
    real                       :: te
    real                       :: t0
    real                       :: k0
@@ -2252,7 +2209,7 @@ subroutine read_ed21_polyclone
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
-   real                                           , external    :: dist_gc 
+   real                                           , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
 
    !----- Open the HDF environment. -------------------------------------------------------!
@@ -2277,7 +2234,7 @@ subroutine read_ed21_polyclone
       chnkoffs = 0_8
       memoffs  = 0_8
       memdims  = 0_8
-      memsize  = 1_8  
+      memsize  = 1_8
 
       !------------------------------------------------------------------------------------!
       !     First thing, we go through every file, open, and retrieve only some polygon-   !
@@ -2305,7 +2262,7 @@ subroutine read_ed21_polyclone
          call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
+
          !----- Determine the global position of these polygons. --------------------------!
          ipya = ipyz + 1
          ipyz = ipyz + dset_npolygons_global
@@ -2329,13 +2286,13 @@ subroutine read_ed21_polyclone
          call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
+
          call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
          call h5dget_space_f(dset_id, dspace_id, hdferr)
          call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
          call h5sclose_f(dspace_id, hdferr)
          call h5dclose_f(dset_id, hdferr)
-         
+
          call h5fclose_f(file_id, hdferr)
          if (hdferr /= 0) then
             write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
@@ -2371,7 +2328,7 @@ subroutine read_ed21_polyclone
                  ,clon_rscl(nrescale),clat_rscl(nrescale)      &
                  ,dummy,(newarea(ilu,nrescale),ilu=1           &
                  ,n_dist_types)
-            
+
             if (ierr /= 0) then
                nrescale = nrescale - 1
                exit readrescale
@@ -2396,7 +2353,7 @@ subroutine read_ed21_polyclone
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
       end if
       !------------------------------------------------------------------------------------!
-      
+
       cgrid => edgrid_g(igr)
 
       !------------------------------------------------------------------------------------!
@@ -2416,8 +2373,8 @@ subroutine read_ed21_polyclone
 
          pclosest(ipy) = pyindx_list(minloc(pdist,dim=1))
          psrcfile(ipy) = pyfile_list(minloc(pdist,dim=1))
-         
- 
+
+
       end do nneighloop
       deallocate(pdist)
 
@@ -2543,14 +2500,14 @@ subroutine read_ed21_polyclone
          globdims(1) = dset_nzg
          chnkdims(1) = dset_nzg
          chnkoffs(1) = 0_8
-         memdims(1)  = dset_nzg 
+         memdims(1)  = dset_nzg
          memsize(1)  = dset_nzg
          memoffs(1)  = 0_8
-        
+
 
          allocate(this_ntext(dset_nzg))
          allocate(dset_slzm(dset_nzg))
-         
+
          call hdf_getslab_r(dset_slzm,'SLZ',dsetrank                  &
               ,iparallel,.true.,foundvar)
 
@@ -2580,14 +2537,14 @@ subroutine read_ed21_polyclone
             ! current polygon.                                                             !
             !------------------------------------------------------------------------------!
             !----- Initialise distance and co-ordinates to non-sense numbers. -------------!
-            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense 
+            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense
             if (rescale_glob) then
                neighbour: do k=1,nrescale
                   dist_rscl(k) = dist_gc(clon_rscl(k),cgrid%lon(ipy)                       &
                        ,clat_rscl(k),cgrid%lat(ipy))
                end do neighbour
                xclosest = minloc(dist_rscl,dim=1)
-               
+
                rescale_loc = cgrid%lon(ipy) > wlon_rscl(xclosest) .and.                    &
                     cgrid%lon(ipy) < elon_rscl(xclosest) .and.                    &
                     cgrid%lat(ipy) > slat_rscl(xclosest) .and.                    &
@@ -2595,10 +2552,10 @@ subroutine read_ed21_polyclone
             else
                rescale_loc = .false.
             end if
- 
+
 
             iparallel = 0
-            
+
             !------------------------------------------------------------------------------!
             !      POLYGON level variables.                                                !
             !------------------------------------------------------------------------------!
@@ -2616,7 +2573,7 @@ subroutine read_ed21_polyclone
             call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '             &
                               ,dsetrank,iparallel,.true.,foundvar)
             call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.,foundvar)
-            
+
             !----- Load the workload (2D). ------------------------------------------------!
             dsetrank    = 2
             globdims(1) = int(13,8)
@@ -2672,11 +2629,11 @@ subroutine read_ed21_polyclone
                   is = is + 1
 
                   csite => cpoly%site(is)
-                  
+
                   si_index = pysi_id(py_index)+isi-1
 
                   iparallel = 0
-                     
+
                   dsetrank = 1_8
                   globdims = 0_8
                   chnkdims = 0_8
@@ -2684,7 +2641,7 @@ subroutine read_ed21_polyclone
                   memoffs  = 0_8
                   memdims  = 0_8
                   memsize  = 1_8
-                  
+
                   globdims(1) = int(dset_nsites_global,8)
                   chnkdims(1) = int(1,8)
                   chnkoffs(1) = int(si_index-1,8)
@@ -2692,9 +2649,9 @@ subroutine read_ed21_polyclone
                   memsize(1)  = int(1,8)
                   memoffs(1)  = 0_8
 
-                  call hdf_getslab_i(cpoly%patch_count(is:is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)  
+                  call hdf_getslab_i(cpoly%patch_count(is:is),'PATCH_COUNT ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_i(cpoly%sitenum(is:is),'SITENUM ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_i(cpoly%lsl(is:is),'LSL ',dsetrank,iparallel,.true.,foundvar)   
+                  call hdf_getslab_i(cpoly%lsl(is:is),'LSL ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_i(cpoly%ncol_soil(is:is),'NCOL_SOIL ',dsetrank,iparallel,.false.,foundvar)
 
                   ! If this data is not available in the dataset, we should really just use
@@ -2707,7 +2664,7 @@ subroutine read_ed21_polyclone
                           'Soil color info not in ED2.1 state file, using ISOILCOL=',isoilcol
                      cpoly%ncol_soil(is)  = isoilcol
                   end if
-                  
+
 
                   call hdf_getslab_r(cpoly%area(is:is),'AREA_SI ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%patch_area(is:is),'PATCH_AREA ',dsetrank,iparallel,.true.,foundvar)
@@ -2718,9 +2675,9 @@ subroutine read_ed21_polyclone
                   call hdf_getslab_i(cpoly%hydro_next(is:is),'HYDRO_NEXT ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_i(cpoly%hydro_prev(is:is),'HYDRO_PREV ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%moist_W(is:is),'MOIST_W ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%moist_f(is:is),'MOIST_F ',dsetrank,iparallel,.true.,foundvar)  
+                  call hdf_getslab_r(cpoly%moist_f(is:is),'MOIST_F ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%moist_tau(is:is),'MOIST_TAU ',dsetrank,iparallel,.true.,foundvar)
-                  call hdf_getslab_r(cpoly%moist_zi(is:is),'MOIST_ZI ',dsetrank,iparallel,.true.,foundvar) 
+                  call hdf_getslab_r(cpoly%moist_zi(is:is),'MOIST_ZI ',dsetrank,iparallel,.true.,foundvar)
                   call hdf_getslab_r(cpoly%baseflow(is:is),'BASEFLOW_SI ',dsetrank,iparallel,.true.,foundvar)
 
                   sum_poly_area = sum_poly_area+cpoly%area(is)
@@ -2743,7 +2700,7 @@ subroutine read_ed21_polyclone
                   call hdf_getslab_i( this_ntext(:), &
                        'NTEXT_SOIL ',dsetrank, iparallel, .true.,foundvar)
 
-                  
+
 
                   !------------------------------------------------------------------------!
                   !      The input file may have different number of soil layers than this !
@@ -2781,18 +2738,18 @@ subroutine read_ed21_polyclone
                   else
                      cpoly%lsl(is) = slz_match(cpoly%lsl(is))
                   end if
-                  
+
 
                   ! We also need to set all the default properties because they were bypassed
                   ! in ed_init
 
                   if (sipa_n(si_index) > 0) then
-                     
+
                      !----- Fill 1D polygon (site unique) level variables. -------------------!
                      call allocate_sitetype(csite,sipa_n(si_index))
-                     
+
                      iparallel = 0
-                     
+
                      dsetrank = 1
                      globdims(1) = int(dset_npatches_global,8)
                      chnkdims(1) = int(csite%npatches,8)
@@ -2800,7 +2757,7 @@ subroutine read_ed21_polyclone
                      memdims(1)  = int(csite%npatches,8)
                      memsize(1)  = int(csite%npatches,8)
                      memoffs(1)  = 0
-                     
+
                      call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
                           ,dsetrank,iparallel,.true.,foundvar)
                      call hdf_getslab_r(csite%age               ,'AGE '                       &
@@ -2860,7 +2817,7 @@ subroutine read_ed21_polyclone
                      deallocate(plantation)
                      !------------------------------------------------------------------------!
 
-                     
+
                      !----- Load 2D soil water
                      dsetrank     = 2_8
                      globdims(1)  = int(dset_nzg,8)
@@ -2875,7 +2832,7 @@ subroutine read_ed21_polyclone
                      memdims(2)   = int(csite%npatches,8)
                      memsize(2)   = int(csite%npatches,8)
                      memoffs(2)   = 0_8
-                     
+
                      allocate(this_soil_water(dset_nzg,csite%npatches))
                      call hdf_getslab_r(this_soil_water,'SOIL_WATER_PA '        &
                           ,dsetrank,iparallel,.true.,foundvar)
@@ -2887,7 +2844,7 @@ subroutine read_ed21_polyclone
                      ! ----------------------------------------------------------
                      do ipa=1,csite%npatches
                         do km=1,nzg
-                           
+
 !                           if( this_soil_water(slz_match(km),ipa) .gt.     &
 !                                soil(cpoly%ntext_soil(km,is))%slmsts .or.  &
 !                                this_soil_water(slz_match(km),ipa).le.0.0 ) then
@@ -2927,7 +2884,7 @@ subroutine read_ed21_polyclone
                      oldarea(:)          = oldarea(:)          / sum(oldarea)
                      newarea(:,xclosest) = newarea(:,xclosest)                             &
                                          / sum(newarea(:,xclosest:xclosest))
-                     
+
                      !----- Re-scale the areas of every patch. ----------------------------!
                      do ipa=1,csite%npatches
                         ilu = csite%dist_type(ipa)
@@ -3008,13 +2965,13 @@ subroutine read_ed21_polyclone
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
                               cpatch%bdead(ico) = 0.0
-                              
+
                            else if (cpatch%bdead(ico) > 0.0 .and. igrass == 0) then
                               ! grasses have bdead in both input and current run (igrass=0)
                               cpatch%bdead(ico) = max(cpatch%bdead(ico),min_bdead(ipft))
                               cpatch%dbh(ico)   = bd2dbh(ipft,cpatch%bdead(ico))
                               cpatch%hite(ico)  = dbh2h (ipft,cpatch%dbh  (ico))
-                           else 
+                           else
                               ! it is either a new grass (igrass=1) in the initial file,   !
                               ! or the value for bdead is missing from the files           !
                               cpatch%dbh(ico)   = max(cpatch%dbh(ico),min_dbh(ipft))
@@ -3204,13 +3161,13 @@ subroutine read_ed21_polyclone
             end if
 
          end do siteloop
-         
-         
+
+
          !---------------------------------------------------------------------------------!
          !     Not sure what these things do, just copying from hydrology...               !
          !---------------------------------------------------------------------------------!
          !----- Part 1. -------------------------------------------------------------------!
-         Te = 0.0 
+         Te = 0.0
          do isi = 1,cpoly%nsites
             sc = cpoly%ntext_soil(nzg-1,isi)
             K0 = soil(sc)%slcons0
@@ -3228,25 +3185,25 @@ subroutine read_ed21_polyclone
             cgrid%wbar(ipy)    = cgrid%wbar(ipy) + cpoly%moist_W(isi) * cpoly%area(isi)
          end do
          !---------------------------------------------------------------------------------!
-         
+
          ! Normalize the site area in-case not all sites were read in
-         
+
          if (sum_poly_area>0.) then
             cpoly%area = cpoly%area/sum_poly_area
          else
             call fatal_error('Site Areas Are Nill'                                &
                  ,'read_ed21_polyclone','ed_read_ed21_history.F90')
          end if
-         
+
          !----- Initialise some site-level variables. ----------------------------------!
          call init_ed_site_vars(cpoly,cgrid%lat(ipy))
          !------------------------------------------------------------------------------!
-         
+
          deallocate (islakesite        )
          !------------------------------------------------------------------------------!
 
       end do polyloop
-      
+
       !----- Close the dataset. --------------------------------------------------------!
       call h5fclose_f(file_id, hdferr)
       if (hdferr /= 0) then
@@ -3256,19 +3213,19 @@ subroutine read_ed21_polyclone
          call fatal_error('Could not close the HDF file'                                &
               ,'read_ed21_history_file','ed_read_ed21_history.F90')
       end if
-      
+
       deallocate(paco_n    ,paco_id  )
       deallocate(sipa_n    ,sipa_id  )
       deallocate(pysi_n    ,pysi_id  )
       deallocate(this_ntext          )
       deallocate(dset_slzm           )
-      
+
    end do rstfileloop
-   
+
    !----- Initialise the other polygon-level variables. --------------------------------!
    call init_ed_poly_vars(cgrid)
 
-   
+
    !----- Deallocate the closest index vector. -----------------------------------------!
    deallocate(pclosest,psrcfile)
 end do gridloop
@@ -3282,34 +3239,9 @@ call h5close_f(hdferr)
 #else
    call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
                     ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
-#endif   
+#endif
 
 
    return
  end subroutine read_ed21_polyclone
 
-
-
- subroutine check_rescale()
-
-
-   implicit none
-
-   
-
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
- end subroutine check_rescale

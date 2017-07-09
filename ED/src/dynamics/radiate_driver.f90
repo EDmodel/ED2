@@ -119,7 +119,7 @@ subroutine radiate_driver(cgrid)
                                         / dble(cpoly%met(isi)%rshort     ) )
                sum_norm      = par_beam_norm + par_diff_norm                               &
                              + nir_beam_norm + nir_diff_norm
-            else 
+            else
                !---------------------------------------------------------------------------!
                !     Night-time, nothing will happen, fill split equally to the 4          !
                ! components.                                                               !
@@ -198,7 +198,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    use canopy_layer_coms    , only : crown_mod            & ! intent(in)
                                    , tai_lyr_max          ! ! intent(in)
    use canopy_radiation_coms, only : icanrad              & ! intent(in)
-                                   , cosz_min             & ! intent(in)
                                    , clumping_factor      & ! intent(in)
                                    , par_beam_norm        & ! intent(in)
                                    , par_diff_norm        & ! intent(in)
@@ -237,9 +236,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    use ed_max_dims          , only : n_pft                & ! intent(in)
                                    , n_radprof            ! ! intent(in)
    use allometry            , only : h2crownbh            ! ! intent(in)
-   use ed_misc_coms         , only : ibigleaf             & ! intent(in)
-                                   , radfrq               & ! intent(in)
-                                   , current_time         ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf             ! ! intent(in)
    !$ use omp_lib
 
    implicit none
@@ -265,7 +262,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    integer                                       :: ico
    integer                                       :: ipft
    integer                                       :: cohort_count
-   integer                                       :: max_cohort_count
    integer                                       :: nsoil
    integer                                       :: colour
    integer                                       :: k
@@ -294,7 +290,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: downward_par_below_diffuse
    real                                          :: upward_par_above_diffuse
    real                                          :: downward_nir_below_diffuse
-   real                                          :: upward_nir_above_diffuse 
+   real                                          :: upward_nir_above_diffuse
    real                                          :: T_surface
    real                                          :: emissivity
    real                                          :: downward_lw_below
@@ -314,8 +310,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    real                                          :: wwood_tir
    real                                          :: bl_lai_each
    real                                          :: bl_wai_each
-   real                                          :: ground_par_check
-   real                                          :: ground_nir_check
    integer                                       :: ibuff
    !----- External function. --------------------------------------------------------------!
    real            , external                    :: sngloff
@@ -340,7 +334,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    leaf_scatter_nir(:) = leaf_reflect_nir(:) + leaf_trans_nir(:)
    wood_scatter_nir(:) = wood_reflect_nir(:) + wood_trans_nir(:)
    !---------------------------------------------------------------------------------------!
-   
+
    !---------------------------------------------------------------------------------------!
    !      Back-scattering coefficients following CLM.                                      !
    !---------------------------------------------------------------------------------------!
@@ -415,13 +409,13 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
    !$OMP downward_rshort_below_beam,                  &
    !$OMP downward_rshort_below_diffuse,               &
    !$OMP il,nir_v_beam,nir_v_diffuse,                 &
-   !$OMP abs_ground_par,abs_ground_nir )                
+   !$OMP abs_ground_par,abs_ground_nir )
 
-   
+
    !----- Loop over the patches -----------------------------------------------------------!
    do ipa = 1,csite%npatches
       cpatch => csite%patch(ipa)
-      
+
       ibuff = 1
       !$ ibuff = OMP_get_thread_num()+1
 
@@ -609,7 +603,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                if (cpatch%leaf_resolvable(1) .and. cpatch%wood_resolvable(1)) then
                   cohort_count = ceiling( (cpatch%lai(1) + cpatch%wai(1)) / tai_lyr_max )
                   bl_lai_each  = cpatch%lai(1) / real(cohort_count)
-                  bl_wai_each  = cpatch%wai(1) / real(cohort_count) 
+                  bl_wai_each  = cpatch%wai(1) / real(cohort_count)
                   tuco_leaf    = cohort_count
                elseif (cpatch%leaf_resolvable(1)) then
                   cohort_count = ceiling( cpatch%lai(1) / tai_lyr_max )
@@ -725,7 +719,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
       !------------------------------------------------------------------------------------!
 
 
-      
+
 
       !------------------------------------------------------------------------------------!
       !     Decide what is our surface temperature.  When the soil is exposed, then that   !
@@ -846,14 +840,14 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
          ! two-stream or multiple scattering.                                              !
          !---------------------------------------------------------------------------------!
          select case (icanrad)
-         case (0) 
+         case (0)
             !------------------------------------------------------------------------------!
             !    Original two-stream model.                                                !
             !------------------------------------------------------------------------------!
             call old_lw_two_stream(emissivity,T_surface,rlong,cohort_count,                &
                                    radscr(ibuff)%pft_array(1:cohort_count),                &
                                    radscr(ibuff)%LAI_array(1:cohort_count),                &
-                                   radscr(ibuff)%WAI_array(1:cohort_count),                & 
+                                   radscr(ibuff)%WAI_array(1:cohort_count),                &
                                    radscr(ibuff)%CA_array(1:cohort_count),                 &
                                    radscr(ibuff)%leaf_temp_array(1:cohort_count),          &
                                    radscr(ibuff)%wood_temp_array(1:cohort_count),          &
@@ -876,7 +870,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
             call lw_multiple_scatter(emissivity,T_surface,rlong,cohort_count,              &
                                    radscr(ibuff)%pft_array(1:cohort_count),                &
                                    radscr(ibuff)%LAI_array(1:cohort_count),                &
-                                   radscr(ibuff)%WAI_array(1:cohort_count),                & 
+                                   radscr(ibuff)%WAI_array(1:cohort_count),                &
                                    radscr(ibuff)%CA_array(1:cohort_count),                 &
                                    radscr(ibuff)%leaf_temp_array(1:cohort_count),          &
                                    radscr(ibuff)%wood_temp_array(1:cohort_count),          &
@@ -890,15 +884,14 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
 
 
 
-
-         case (2) 
+         case (2)
             !------------------------------------------------------------------------------!
             !    Updated two-stream model.                                                 !
             !------------------------------------------------------------------------------!
             call lw_two_stream(emissivity,T_surface,rlong,cohort_count,                    &
                                    radscr(ibuff)%pft_array(1:cohort_count),                &
                                    radscr(ibuff)%LAI_array(1:cohort_count),                &
-                                   radscr(ibuff)%WAI_array(1:cohort_count),                & 
+                                   radscr(ibuff)%WAI_array(1:cohort_count),                &
                                    radscr(ibuff)%CA_array(1:cohort_count),                 &
                                    radscr(ibuff)%leaf_temp_array(1:cohort_count),          &
                                    radscr(ibuff)%wood_temp_array(1:cohort_count),          &
@@ -1247,7 +1240,7 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,ncol_soil,maxcohort,tu
                   wwood_nir = 1. - wleaf_nir
                   wwood_tir = 1. - wleaf_tir
                   !------------------------------------------------------------------------!
-            
+
 
 
                   !------------------------------------------------------------------------!
@@ -1412,9 +1405,9 @@ real function ed_zen(plon,plat,when)
    real(kind=8)              :: declin  ! Declination
    real(kind=8)              :: sdec    ! Sine of declination
    real(kind=8)              :: cdec    ! Cosine of declination
-   real(kind=8)              :: dayhr   ! Hour of day 
+   real(kind=8)              :: dayhr   ! Hour of day
    real(kind=8)              :: radlat  ! Latitude in radians
-   real(kind=8)              :: clat    ! Cosine of latitude 
+   real(kind=8)              :: clat    ! Cosine of latitude
    real(kind=8)              :: slat    ! Sine of latitude
    real(kind=8)              :: dayhrr  ! Hour of day in radians
    real(kind=8)              :: hrangl  ! Hour angle
@@ -1546,7 +1539,7 @@ real function mean_daysecz(plon,plat,whena,dt,tmax)
 
          !----- Add to the integral only if it this value is valid. -----------------------!
          if (cosz > cosz_min) then
-            mean_daycosz = mean_daycosz + dtfit * cosz 
+            mean_daycosz = mean_daycosz + dtfit * cosz
             daytot       = daytot       + dtfit
          end if
          !---------------------------------------------------------------------------------!
@@ -1586,7 +1579,6 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,nighttime,csite)
    use ed_misc_coms         , only : writing_long         & ! intent(in)
                                    , radfrq               & ! intent(in)
                                    , frqsum               ! ! intent(in)
-   use canopy_radiation_coms, only : cosz_min             ! ! intent(in)
    !$ use omp_lib
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -1667,7 +1659,7 @@ subroutine scale_ed_radiation(tuco,rshort,rshort_diffuse,rlong,nighttime,csite)
             csite%par_s_beam      (k,ipa) = 0.
             csite%par_s_diffuse   (k,ipa) = 0.
             csite%par_s           (k,ipa) = 0.
-         end do 
+         end do
 
          csite%rlong_s(ipa)       = 0.
          csite%rlong_g(ipa)       = 0.
@@ -1920,7 +1912,7 @@ subroutine angle_of_incid(aoi,cosz,solar_hour_aspect,slope,terrain_aspect)
    !----- Local parameters. ---------------------------------------------------------------!
    real(kind=8), parameter :: tiny_offset=1.d-20
    !----- External functions. -------------------------------------------------------------!
-   real        , external  :: sngloff           
+   real        , external  :: sngloff
    !---------------------------------------------------------------------------------------!
 
    cosz8     = dble(cosz)
@@ -1934,7 +1926,7 @@ subroutine angle_of_incid(aoi,cosz,solar_hour_aspect,slope,terrain_aspect)
       aoi8 = max(0.d0, cosz8*dcos(slope8) + sinz8*dsin(slope8)*dcos(sh_asp8-terr_asp8))
    end if
 
-   aoi = sngloff(aoi8,tiny_offset) 
+   aoi = sngloff(aoi8,tiny_offset)
 
    return
 end subroutine angle_of_incid

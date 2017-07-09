@@ -15,18 +15,13 @@
 subroutine print_fields(ifm,cgrid)
  
    use ed_node_coms , only : mynum         & ! intent(in)
-                           , nnodetot      & ! intent(in)
-                           , sendnum       & ! intent(in)
-                           , recvnum       & ! intent(in)
-                           , master_num    & ! intent(in)
-                           , machs         ! ! intent(in)
+                           , nnodetot      ! ! intent(in)
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
    use ed_misc_coms , only : printvars     & ! intent(in)
                            , ipmax         & ! intent(in)
                            , ipmin         & ! intent(in)
-                           , pfmtstr       & ! intent(in)
-                           , iprintpolys   ! ! intent(in)
+                           , pfmtstr       ! ! intent(in)
    use ed_var_tables, only : vt_info       & ! intent(in)
                            , num_var       ! ! intent(in)
    use ed_max_dims  , only : str_len_short ! ! intent(in)
@@ -56,20 +51,15 @@ subroutine print_fields(ifm,cgrid)
    integer                                         :: g_idmax
    integer                                         :: l_idmin
    integer                                         :: l_idmax
-   integer                                         :: ierr
    integer                                         :: node_idmin
    integer                                         :: node_idmax
-   integer                                         :: mast_idmin
-   integer                                         :: mast_idmax
    integer                                         :: g_id
    integer                                         :: g_ln
-   integer                                         :: nm
    integer                                         :: ncols
    integer                                         :: row
    integer                                         :: maxrows
    integer                                         :: col
    logical                                         :: pvartrue
-   logical                                         :: ptr_recv
    logical                                         :: ptr_send
    !----- Local constants. ----------------------------------------------------------------!
    integer                            , parameter  :: maxcols  = 10
