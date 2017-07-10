@@ -158,17 +158,13 @@ ED/build/thermal_sums*/*
 ED/build/ED2IN*
 Script*.sh
 src_script.sh
-ED/build/make/*
 Doxyfile
 RAPP/*
 BRAMS/*
 EDTS/*
 Doc/*
 EDR/*
-*include.mk*
 *CODE_COVERAGE.HTML
 *CodeCoverage
 *coverage.txt
-*files*
-*myprova.txt
 temp_orig*
