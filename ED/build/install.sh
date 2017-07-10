@@ -122,7 +122,7 @@ cd ${BIN}
 # Link to makefiles, includes, and shell scripts
 ln -sf ../make/*.mk ./
 ln -sf ../make/Makefile ./
-ln -sf ../make/include.mk.${PLATFORM} ./include.mk
+ln -sf ../make/include.mk.${OPT}.{PLATFORM} ./include.mk
 ln -sf ../shell/* ./
 touch dependency.mk
 
