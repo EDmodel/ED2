@@ -1,6 +1,0 @@
-<map id="init_cohorts_by_layers" name="init_cohorts_by_layers">
-<area shape="rect" id="node2" href="$ed__nbg__init_8f90.html#a9bc82bf4faa4da0286c424058d8519a1" title="near_bare_ground_init" alt="" coords="205,5,355,32"/>
-<area shape="rect" id="node3" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="403,5,556,32"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="604,5,677,32"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="725,5,776,32"/>
-</map>
