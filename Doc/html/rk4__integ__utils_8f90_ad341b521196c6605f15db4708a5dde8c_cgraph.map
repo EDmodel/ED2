@@ -1,6 +1,0 @@
-<map id="initialize_rk4patches" name="initialize_rk4patches">
-<area shape="rect" id="node2" href="$namespacecanopy__layer__coms.html#ae9d291b6afeedf9357cb7a2b6fa55c89" title="canopy_layer_coms::\lalloc_canopy_layer_mbs" alt="" coords="193,5,359,47"/>
-<area shape="rect" id="node3" href="$namespacecanopy__radiation__coms.html#abf436863eec6f51fbcad29f1a0ad8833" title="canopy_radiation_coms\l::alloc_radscratch" alt="" coords="197,71,355,112"/>
-<area shape="rect" id="node4" href="$namespacecanopy__radiation__coms.html#a5d6cfa703bca9703874fe55efaf4f05d" title="canopy_radiation_coms\l::nullify_radscratch" alt="" coords="407,100,565,141"/>
-<area shape="rect" id="node5" href="$namespacecanopy__radiation__coms.html#abbcda361926e277937b84aa18b779d72" title="canopy_radiation_coms\l::dealloc_radscratch" alt="" coords="197,188,355,229"/>
-</map>

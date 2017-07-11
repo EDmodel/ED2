@@ -1,9 +1,0 @@
-<map id="h5_output" name="h5_output">
-<area shape="rect" id="node2" href="$dateutils_8f90.html#a058d13b6be70177c02578d5e989fa8e9" title="date_add_to" alt="" coords="275,27,368,53"/>
-<area shape="rect" id="node5" href="$utils__f_8f90.html#a8918adb41c1a9ae40d85373da53742db" title="makefnam" alt="" coords="132,27,215,53"/>
-<area shape="rect" id="node6" href="$dateutils_8f90.html#a6e1601cbd2ee1d2c2aae57cf1a9cba68" title="date_2_seconds" alt="" coords="263,77,380,104"/>
-<area shape="rect" id="node7" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="282,153,361,180"/>
-<area shape="rect" id="node8" href="$h5__output_8_f90.html#ad794a6442a5767c451a6c3949a6734ff" title="geth5dims" alt="" coords="132,179,215,205"/>
-<area shape="rect" id="node3" href="$dateutils_8f90.html#a56423cc8c95e08c48faaadf0ae9a2100" title="date_abs_secs2" alt="" coords="429,77,546,104"/>
-<area shape="rect" id="node4" href="$dateutils_8f90.html#abd0aaee09a0949cfef32003dae34f41d" title="date_secs_ymdt" alt="" coords="428,27,547,53"/>
-</map>

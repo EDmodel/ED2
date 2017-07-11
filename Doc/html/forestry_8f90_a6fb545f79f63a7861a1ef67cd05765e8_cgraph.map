@@ -1,8 +1,0 @@
-<map id="find_harvest_area" name="find_harvest_area">
-<area shape="rect" id="node2" href="$namespacefuse__fiss__utils.html#a480df748f946b24daa940c15d72abfe2" title="fuse_fiss_utils::terminate\l_patches" alt="" coords="176,5,343,47"/>
-<area shape="rect" id="node4" href="$forestry_8f90.html#a275d946887eb0b8f69712d9750c5fe29" title="inventory_mat_forests" alt="" coords="185,71,333,98"/>
-<area shape="rect" id="node5" href="$forestry_8f90.html#a898715995f682282189cfebd9d1fc175" title="mat_forest_harv_rates" alt="" coords="185,122,334,149"/>
-<area shape="rect" id="node6" href="$forestry_8f90.html#aea9fd00455e0cfc3684786e2f9bd3234" title="area_harvest_mature" alt="" coords="188,173,331,199"/>
-<area shape="rect" id="node7" href="$forestry_8f90.html#a1928a95bbba75392b833f067732a6d7e" title="area_harvest_immature" alt="" coords="181,223,337,250"/>
-<area shape="rect" id="node3" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="391,13,469,39"/>
-</map>

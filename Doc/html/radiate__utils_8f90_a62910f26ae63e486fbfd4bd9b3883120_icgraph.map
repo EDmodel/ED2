@@ -1,7 +1,0 @@
-<map id="short_bdown_weissnorman" name="short_bdown_weissnorman">
-<area shape="rect" id="node2" href="$radiate__utils_8f90.html#a672952348e79808e2b0f947194522dce" title="solar_radiation_breakdown" alt="" coords="232,5,407,32"/>
-<area shape="rect" id="node3" href="$ed__met__driver_8f90.html#a733afbe45244033876caaa6e09cb053c" title="update_met_drivers" alt="" coords="455,5,589,32"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="764,5,837,32"/>
-<area shape="rect" id="node6" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="637,31,716,57"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="885,5,936,32"/>
-</map>

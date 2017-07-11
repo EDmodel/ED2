@@ -1,5 +1,0 @@
-<map id="init_disturb_params" name="init_disturb_params">
-<area shape="rect" id="node2" href="$ed__params_8f90.html#af74bdb1b6959fc9b59288f80e8832f14" title="load_ed_ecosystem_params" alt="" coords="188,5,376,32"/>
-<area shape="rect" id="node3" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="424,5,497,32"/>
-<area shape="rect" id="node4" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="545,5,596,32"/>
-</map>

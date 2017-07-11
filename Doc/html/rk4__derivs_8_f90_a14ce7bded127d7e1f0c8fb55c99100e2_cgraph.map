@@ -1,7 +1,0 @@
-<map id="canopy_derivs_two" name="canopy_derivs_two">
-<area shape="rect" id="node2" href="$namespacetherm__lib8.html#aa9d6ede67f0021ccc80049f582b3177b" title="therm_lib8::qslif8" alt="" coords="207,31,327,57"/>
-<area shape="rect" id="node5" href="$namespacecanopy__struct__dynamics.html#a146012cfe95a2719d6fbe6bf3589174d" title="canopy_struct_dynamics\l::vertical_vel_flux8" alt="" coords="184,82,351,123"/>
-<area shape="rect" id="node6" href="$namespacebudget__utils.html#a6111a1c211ecef562368c8635f64af45" title="budget_utils::compute\l_netrad" alt="" coords="192,147,343,189"/>
-<area shape="rect" id="node3" href="$namespacetherm__lib8.html#a4c2e61543813926681cd581b4c72f0a9" title="therm_lib8::esif8" alt="" coords="399,5,516,32"/>
-<area shape="rect" id="node4" href="$namespacetherm__lib8.html#aa7a527bdf772238306801f7f86e6db58" title="therm_lib8::eslf8" alt="" coords="399,56,516,83"/>
-</map>
