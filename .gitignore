@@ -145,17 +145,18 @@ R-utils/read.q.temporary.r
 
 #Manfredo ignores
 .*
-.metadata*/*
-*.DS_Store
-ED/build/csspss*/*
-ED/build/analy*/*
-ED/build/histo*/*
-ED/build/OGE2*/*
-ED/build/FAO*/*
-ED/build/Paracou*/*
-ED/build/post_process*/*
-ED/build/thermal_sums*/*
+!.gitignore
+ED/build/csspss/*
+ED/build/analy/*
+ED/build/histo/*
+ED/build/OGE2/*
+ED/build/FAO/*
+ED/build/Paracou/*
+ED/build/post_process/*
+ED/build/thermal_sums/*
 ED/build/ED2IN*
+ED/build/allom_param.txt
+ED/build/pft_sizes.txt
 Script*.sh
 src_script.sh
 Doxyfile
@@ -164,6 +165,7 @@ BRAMS/*
 EDTS/*
 Doc/*
 EDR/*
+Ramspost/*
 *CODE_COVERAGE.HTML
 *CodeCoverage
 *coverage.txt
