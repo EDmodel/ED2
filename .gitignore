@@ -67,7 +67,7 @@ ED/build/bin/Make.depend.1.old
 abarca
 bbarca
 ED/dbgbuild
-BRAMS/dbgbuild
+#BRAMS/dbgbuild
 edbbarca
 auxedbbarca
 regional
@@ -131,7 +131,7 @@ BRAMS/i10dbg/*.F90
 BRAMS/i10dbg/*.c
 BRAMS/i10dbg/edbrams-opt
 BRAMS/i12dbg/edbrams-opt
-BRAMS/build
+#BRAMS/build
 BRAMS/build/edbrams-srf
 BRAMS/i10dbg/bin/include.mk.opt
 BRAMS/i12build
@@ -144,10 +144,10 @@ ED/slurmdbg
 R-utils/read.q.temporary.r
 
 #Manfredo ignores
-*.DS_Store
-*.metadata/
-*.Rdata
-*.Rhistory
+.*
+!.gitignore
+!.travis.yml
+!.gitattributes
 ED/build/csspss/*
 ED/build/analy/*
 ED/build/histo/*
