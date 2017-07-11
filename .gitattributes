@@ -1,0 +1,16 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+*       text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+.f90    text diff=fortran
+.F90    text diff=fortran
+.r      text
+.c      text diff=cpp
+.csv    text
+.xml    text
+.txt    text
+.mk     text
+.m      text diff=matlab
+.mat    binary
+.sh     text

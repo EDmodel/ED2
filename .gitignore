@@ -144,8 +144,10 @@ ED/slurmdbg
 R-utils/read.q.temporary.r
 
 #Manfredo ignores
-.*
-!.gitignore
+*.DS_Store
+*.metadata/
+*.Rdata
+*.Rhistory
 ED/build/csspss/*
 ED/build/analy/*
 ED/build/histo/*
@@ -157,18 +159,3 @@ ED/build/thermal_sums/*
 ED/build/ED2IN*
 ED/build/allom_param.txt
 ED/build/pft_sizes.txt
-Script*.sh
-src_script.sh
-Doxyfile
-#RAPP/*
-#BRAMS/*
-#EDTS/*
-#Doc/*
-#EDR/*
-#Ramspost/*
-*CODE_COVERAGE.HTML
-*CodeCoverage
-*coverage.txt
-temp_orig*
-cnt_lines.sh
-diff_version.sh
