@@ -170,3 +170,5 @@ Ramspost/*
 *CodeCoverage
 *coverage.txt
 temp_orig*
+cnt_lines.sh
+diff_version.sh
