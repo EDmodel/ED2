@@ -1,0 +1,535 @@
+\hypertarget{ed__init__full__history_8_f90}{}\section{ed\+\_\+init\+\_\+full\+\_\+history.\+F90 File Reference}
+\label{ed__init__full__history_8_f90}\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_aae7df21bdc388f535c22bf77f8acb93f}{init\+\_\+full\+\_\+history\+\_\+restart} ()
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a8ef30add9a4d7b956d161cef5d36f08b}{fill\+\_\+history\+\_\+grid} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a38c5f3d4db7c22d95ce01d1accfc0f69}{fill\+\_\+history\+\_\+grid\+\_\+p11} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a04d2991f5602f06253a82ee6ccc4bc66}{fill\+\_\+history\+\_\+grid\+\_\+p11dmean} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a37e992ce3f847de0f41b0df90f76e42a}{fill\+\_\+history\+\_\+grid\+\_\+p11mmean} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a90c23553d125ef5f321e55c1c53a1553}{fill\+\_\+history\+\_\+grid\+\_\+p12} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a33cc0e01e253a845379cb936f508ddbd}{fill\+\_\+history\+\_\+grid\+\_\+m11} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_ac9ef08b798e202f52554fd56b5f04e2f}{fill\+\_\+history\+\_\+grid\+\_\+p19} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a72c491dcb725e21eef99aa7b690a8cae}{fill\+\_\+history\+\_\+grid\+\_\+m12} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_aaa801ea9c90a43ece7465948d12546cd}{fill\+\_\+history\+\_\+grid\+\_\+p146} (cgrid, ipy, py\+\_\+index)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_ae43d1ca768b505068559251a279d2d0c}{fill\+\_\+history\+\_\+polygon} (cpoly, pysi\+\_\+index, nsites\+\_\+global, nsites\+\_\+now, is\+\_\+burnt)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a07202d4d72fcb13dc2c06bc593efc968}{fill\+\_\+history\+\_\+site} (csite, sipa\+\_\+index, npatches\+\_\+global, is\+\_\+burnt)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_aff47f588c6dece0a134235650b158928}{fill\+\_\+history\+\_\+patch} (cpatch, paco\+\_\+index, ncohorts\+\_\+global)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a15e4e046a5f79a8896788c4644744ac6}{hdf\+\_\+getslab\+\_\+r} (buff, varn, dsetrank, iparallel, required, foundvar)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_ab4ad5cfc7008d2e72395a2a2a8a52e4e}{hdf\+\_\+getslab\+\_\+d} (buff, varn, dsetrank, iparallel, required, foundvar)
+\item 
+subroutine \hyperlink{ed__init__full__history_8_f90_a0e667e597f5c2cc67896b8b398b630bf}{hdf\+\_\+getslab\+\_\+i} (buff, varn, dsetrank, iparallel, required, foundvar)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid@{fill\+\_\+history\+\_\+grid}}
+\index{fill\+\_\+history\+\_\+grid@{fill\+\_\+history\+\_\+grid}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid(cgrid, ipy, py\+\_\+index)}{fill_history_grid(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a8ef30add9a4d7b956d161cef5d36f08b}{}\label{ed__init__full__history_8_f90_a8ef30add9a4d7b956d161cef5d36f08b}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a8ef30add9a4d7b956d161cef5d36f08b_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a8ef30add9a4d7b956d161cef5d36f08b_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+m11@{fill\+\_\+history\+\_\+grid\+\_\+m11}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+m11@{fill\+\_\+history\+\_\+grid\+\_\+m11}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+m11(cgrid, ipy, py\+\_\+index)}{fill_history_grid_m11(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+m11 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a33cc0e01e253a845379cb936f508ddbd}{}\label{ed__init__full__history_8_f90_a33cc0e01e253a845379cb936f508ddbd}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a33cc0e01e253a845379cb936f508ddbd_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a33cc0e01e253a845379cb936f508ddbd_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+m12@{fill\+\_\+history\+\_\+grid\+\_\+m12}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+m12@{fill\+\_\+history\+\_\+grid\+\_\+m12}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+m12(cgrid, ipy, py\+\_\+index)}{fill_history_grid_m12(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+m12 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a72c491dcb725e21eef99aa7b690a8cae}{}\label{ed__init__full__history_8_f90_a72c491dcb725e21eef99aa7b690a8cae}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a72c491dcb725e21eef99aa7b690a8cae_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a72c491dcb725e21eef99aa7b690a8cae_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+p11@{fill\+\_\+history\+\_\+grid\+\_\+p11}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+p11@{fill\+\_\+history\+\_\+grid\+\_\+p11}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+p11(cgrid, ipy, py\+\_\+index)}{fill_history_grid_p11(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+p11 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a38c5f3d4db7c22d95ce01d1accfc0f69}{}\label{ed__init__full__history_8_f90_a38c5f3d4db7c22d95ce01d1accfc0f69}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a38c5f3d4db7c22d95ce01d1accfc0f69_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a38c5f3d4db7c22d95ce01d1accfc0f69_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+p11dmean@{fill\+\_\+history\+\_\+grid\+\_\+p11dmean}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+p11dmean@{fill\+\_\+history\+\_\+grid\+\_\+p11dmean}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+p11dmean(cgrid, ipy, py\+\_\+index)}{fill_history_grid_p11dmean(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+p11dmean (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a04d2991f5602f06253a82ee6ccc4bc66}{}\label{ed__init__full__history_8_f90_a04d2991f5602f06253a82ee6ccc4bc66}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a04d2991f5602f06253a82ee6ccc4bc66_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a04d2991f5602f06253a82ee6ccc4bc66_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+p11mmean@{fill\+\_\+history\+\_\+grid\+\_\+p11mmean}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+p11mmean@{fill\+\_\+history\+\_\+grid\+\_\+p11mmean}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+p11mmean(cgrid, ipy, py\+\_\+index)}{fill_history_grid_p11mmean(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+p11mmean (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a37e992ce3f847de0f41b0df90f76e42a}{}\label{ed__init__full__history_8_f90_a37e992ce3f847de0f41b0df90f76e42a}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a37e992ce3f847de0f41b0df90f76e42a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a37e992ce3f847de0f41b0df90f76e42a_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+p12@{fill\+\_\+history\+\_\+grid\+\_\+p12}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+p12@{fill\+\_\+history\+\_\+grid\+\_\+p12}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+p12(cgrid, ipy, py\+\_\+index)}{fill_history_grid_p12(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+p12 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a90c23553d125ef5f321e55c1c53a1553}{}\label{ed__init__full__history_8_f90_a90c23553d125ef5f321e55c1c53a1553}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a90c23553d125ef5f321e55c1c53a1553_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a90c23553d125ef5f321e55c1c53a1553_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+p146@{fill\+\_\+history\+\_\+grid\+\_\+p146}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+p146@{fill\+\_\+history\+\_\+grid\+\_\+p146}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+p146(cgrid, ipy, py\+\_\+index)}{fill_history_grid_p146(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+p146 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_aaa801ea9c90a43ece7465948d12546cd}{}\label{ed__init__full__history_8_f90_aaa801ea9c90a43ece7465948d12546cd}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_aaa801ea9c90a43ece7465948d12546cd_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_aaa801ea9c90a43ece7465948d12546cd_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+grid\+\_\+p19@{fill\+\_\+history\+\_\+grid\+\_\+p19}}
+\index{fill\+\_\+history\+\_\+grid\+\_\+p19@{fill\+\_\+history\+\_\+grid\+\_\+p19}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+grid\+\_\+p19(cgrid, ipy, py\+\_\+index)}{fill_history_grid_p19(cgrid, ipy, py_index)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+grid\+\_\+p19 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{ipy, }
+\item[{integer, intent(in)}]{py\+\_\+index}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_ac9ef08b798e202f52554fd56b5f04e2f}{}\label{ed__init__full__history_8_f90_ac9ef08b798e202f52554fd56b5f04e2f}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_ac9ef08b798e202f52554fd56b5f04e2f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_ac9ef08b798e202f52554fd56b5f04e2f_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+patch@{fill\+\_\+history\+\_\+patch}}
+\index{fill\+\_\+history\+\_\+patch@{fill\+\_\+history\+\_\+patch}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+patch(cpatch, paco\+\_\+index, ncohorts\+\_\+global)}{fill_history_patch(cpatch, paco_index, ncohorts_global)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+patch (
+\begin{DoxyParamCaption}
+\item[{type({\bf patchtype}), target}]{cpatch, }
+\item[{integer, intent(in)}]{paco\+\_\+index, }
+\item[{integer, intent(in)}]{ncohorts\+\_\+global}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_aff47f588c6dece0a134235650b158928}{}\label{ed__init__full__history_8_f90_aff47f588c6dece0a134235650b158928}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_aff47f588c6dece0a134235650b158928_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_aff47f588c6dece0a134235650b158928_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+polygon@{fill\+\_\+history\+\_\+polygon}}
+\index{fill\+\_\+history\+\_\+polygon@{fill\+\_\+history\+\_\+polygon}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+polygon(cpoly, pysi\+\_\+index, nsites\+\_\+global, nsites\+\_\+now, is\+\_\+burnt)}{fill_history_polygon(cpoly, pysi_index, nsites_global, nsites_now, is_burnt)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+polygon (
+\begin{DoxyParamCaption}
+\item[{type({\bf polygontype}), target}]{cpoly, }
+\item[{integer, intent(in)}]{pysi\+\_\+index, }
+\item[{integer, intent(in)}]{nsites\+\_\+global, }
+\item[{integer, intent(in)}]{nsites\+\_\+now, }
+\item[{logical, dimension(nsites\+\_\+now), intent(inout)}]{is\+\_\+burnt}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_ae43d1ca768b505068559251a279d2d0c}{}\label{ed__init__full__history_8_f90_ae43d1ca768b505068559251a279d2d0c}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_ae43d1ca768b505068559251a279d2d0c_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_ae43d1ca768b505068559251a279d2d0c_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!fill\+\_\+history\+\_\+site@{fill\+\_\+history\+\_\+site}}
+\index{fill\+\_\+history\+\_\+site@{fill\+\_\+history\+\_\+site}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{fill\+\_\+history\+\_\+site(csite, sipa\+\_\+index, npatches\+\_\+global, is\+\_\+burnt)}{fill_history_site(csite, sipa_index, npatches_global, is_burnt)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine fill\+\_\+history\+\_\+site (
+\begin{DoxyParamCaption}
+\item[{type({\bf sitetype}), target}]{csite, }
+\item[{integer, intent(in)}]{sipa\+\_\+index, }
+\item[{integer, intent(in)}]{npatches\+\_\+global, }
+\item[{logical, intent(in)}]{is\+\_\+burnt}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a07202d4d72fcb13dc2c06bc593efc968}{}\label{ed__init__full__history_8_f90_a07202d4d72fcb13dc2c06bc593efc968}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a07202d4d72fcb13dc2c06bc593efc968_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a07202d4d72fcb13dc2c06bc593efc968_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!hdf\+\_\+getslab\+\_\+d@{hdf\+\_\+getslab\+\_\+d}}
+\index{hdf\+\_\+getslab\+\_\+d@{hdf\+\_\+getslab\+\_\+d}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{hdf\+\_\+getslab\+\_\+d(buff, varn, dsetrank, iparallel, required, foundvar)}{hdf_getslab_d(buff, varn, dsetrank, iparallel, required, foundvar)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine hdf\+\_\+getslab\+\_\+d (
+\begin{DoxyParamCaption}
+\item[{real(kind=8), dimension(memsize(1),memsize(2),memsize(3),memsize(4)), intent(inout)}]{buff, }
+\item[{character(len=$\ast$), intent(in)}]{varn, }
+\item[{integer, intent(in)}]{dsetrank, }
+\item[{integer, intent(in)}]{iparallel, }
+\item[{logical, intent(in)}]{required, }
+\item[{logical, intent(out)}]{foundvar}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_ab4ad5cfc7008d2e72395a2a2a8a52e4e}{}\label{ed__init__full__history_8_f90_ab4ad5cfc7008d2e72395a2a2a8a52e4e}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=252pt]{ed__init__full__history_8_f90_ab4ad5cfc7008d2e72395a2a2a8a52e4e_cgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!hdf\+\_\+getslab\+\_\+i@{hdf\+\_\+getslab\+\_\+i}}
+\index{hdf\+\_\+getslab\+\_\+i@{hdf\+\_\+getslab\+\_\+i}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{hdf\+\_\+getslab\+\_\+i(buff, varn, dsetrank, iparallel, required, foundvar)}{hdf_getslab_i(buff, varn, dsetrank, iparallel, required, foundvar)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine hdf\+\_\+getslab\+\_\+i (
+\begin{DoxyParamCaption}
+\item[{integer, dimension(memsize(1),memsize(2),memsize(3),memsize(4)), intent(inout)}]{buff, }
+\item[{character(len=$\ast$), intent(in)}]{varn, }
+\item[{integer, intent(in)}]{dsetrank, }
+\item[{integer, intent(in)}]{iparallel, }
+\item[{logical, intent(in)}]{required, }
+\item[{logical, intent(out)}]{foundvar}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a0e667e597f5c2cc67896b8b398b630bf}{}\label{ed__init__full__history_8_f90_a0e667e597f5c2cc67896b8b398b630bf}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=249pt]{ed__init__full__history_8_f90_a0e667e597f5c2cc67896b8b398b630bf_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a0e667e597f5c2cc67896b8b398b630bf_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!hdf\+\_\+getslab\+\_\+r@{hdf\+\_\+getslab\+\_\+r}}
+\index{hdf\+\_\+getslab\+\_\+r@{hdf\+\_\+getslab\+\_\+r}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{hdf\+\_\+getslab\+\_\+r(buff, varn, dsetrank, iparallel, required, foundvar)}{hdf_getslab_r(buff, varn, dsetrank, iparallel, required, foundvar)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine hdf\+\_\+getslab\+\_\+r (
+\begin{DoxyParamCaption}
+\item[{real(kind=4), dimension(memsize(1),memsize(2),memsize(3),memsize(4)), intent(inout)}]{buff, }
+\item[{character(len=$\ast$), intent(in)}]{varn, }
+\item[{integer, intent(in)}]{dsetrank, }
+\item[{integer, intent(in)}]{iparallel, }
+\item[{logical, intent(in)}]{required, }
+\item[{logical, intent(out)}]{foundvar}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_a15e4e046a5f79a8896788c4644744ac6}{}\label{ed__init__full__history_8_f90_a15e4e046a5f79a8896788c4644744ac6}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=249pt]{ed__init__full__history_8_f90_a15e4e046a5f79a8896788c4644744ac6_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_a15e4e046a5f79a8896788c4644744ac6_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}!init\+\_\+full\+\_\+history\+\_\+restart@{init\+\_\+full\+\_\+history\+\_\+restart}}
+\index{init\+\_\+full\+\_\+history\+\_\+restart@{init\+\_\+full\+\_\+history\+\_\+restart}!ed\+\_\+init\+\_\+full\+\_\+history.\+F90@{ed\+\_\+init\+\_\+full\+\_\+history.\+F90}}
+\subsubsection[{\texorpdfstring{init\+\_\+full\+\_\+history\+\_\+restart()}{init_full_history_restart()}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine init\+\_\+full\+\_\+history\+\_\+restart (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__init__full__history_8_f90_aae7df21bdc388f535c22bf77f8acb93f}{}\label{ed__init__full__history_8_f90_aae7df21bdc388f535c22bf77f8acb93f}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_aae7df21bdc388f535c22bf77f8acb93f_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__init__full__history_8_f90_aae7df21bdc388f535c22bf77f8acb93f_icgraph}
+\end{center}
+\end{figure}
+
+

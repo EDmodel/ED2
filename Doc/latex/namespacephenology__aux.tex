@@ -1,0 +1,155 @@
+\hypertarget{namespacephenology__aux}{}\section{phenology\+\_\+aux Module Reference}
+\label{namespacephenology__aux}\index{phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespacephenology__aux_ac2a698e44f1d2308f845a66ad92600e1}{prescribed\+\_\+leaf\+\_\+state} (lat, imonth, iyear, doy, green\+\_\+leaf\+\_\+factor                                                                                                                                                                                                       ,leaf\+\_\+aging\+\_\+factor, phen\+\_\+pars)
+\item 
+subroutine \hyperlink{namespacephenology__aux_a227cf46507f7976ea4dd53e724e157c0}{update\+\_\+thermal\+\_\+sums} (month, cpoly, isi, lat)
+\item 
+subroutine \hyperlink{namespacephenology__aux_a7a199ed988a720b2e56c3b5e1407995a}{update\+\_\+turnover} (cpoly, isi)
+\item 
+subroutine \hyperlink{namespacephenology__aux_ac9c11ddf83cd16439262bc9c7c72bf2e}{first\+\_\+phenology} (cgrid)
+\item 
+subroutine \hyperlink{namespacephenology__aux_a678dc0aeea995ed48f816c0588d15965}{pheninit\+\_\+balive\+\_\+bstorage} (mzg, ipft, kroot, height, dbh, soil\+\_\+water, ntext\+\_\+soil                                                                                                                                                                   ,green\+\_\+leaf\+\_\+factor, paw\+\_\+avg, elongf, phenology\+\_\+status                                                                                                                                                           ,bleaf, broot, bsapwooda, bsapwoodb, balive, bstorage)
+\item 
+real function \hyperlink{namespacephenology__aux_a6fd36340ae7c75f11750adbf09d700d9}{daylength} (lat, doy)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{phenology\+\_\+aux@{phenology\+\_\+aux}!daylength@{daylength}}
+\index{daylength@{daylength}!phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsubsection[{\texorpdfstring{daylength(lat, doy)}{daylength(lat, doy)}}]{\setlength{\rightskip}{0pt plus 5cm}real function phenology\+\_\+aux\+::daylength (
+\begin{DoxyParamCaption}
+\item[{real, intent(in)}]{lat, }
+\item[{integer, intent(in)}]{doy}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacephenology__aux_a6fd36340ae7c75f11750adbf09d700d9}{}\label{namespacephenology__aux_a6fd36340ae7c75f11750adbf09d700d9}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacephenology__aux_a6fd36340ae7c75f11750adbf09d700d9_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+aux@{phenology\+\_\+aux}!first\+\_\+phenology@{first\+\_\+phenology}}
+\index{first\+\_\+phenology@{first\+\_\+phenology}!phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsubsection[{\texorpdfstring{first\+\_\+phenology(cgrid)}{first_phenology(cgrid)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+aux\+::first\+\_\+phenology (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacephenology__aux_ac9c11ddf83cd16439262bc9c7c72bf2e}{}\label{namespacephenology__aux_ac9c11ddf83cd16439262bc9c7c72bf2e}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacephenology__aux_ac9c11ddf83cd16439262bc9c7c72bf2e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=349pt]{namespacephenology__aux_ac9c11ddf83cd16439262bc9c7c72bf2e_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+aux@{phenology\+\_\+aux}!pheninit\+\_\+balive\+\_\+bstorage@{pheninit\+\_\+balive\+\_\+bstorage}}
+\index{pheninit\+\_\+balive\+\_\+bstorage@{pheninit\+\_\+balive\+\_\+bstorage}!phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsubsection[{\texorpdfstring{pheninit\+\_\+balive\+\_\+bstorage(mzg, ipft, kroot, height, dbh, soil\+\_\+water, ntext\+\_\+soil                                                                                                                                                                   ,green\+\_\+leaf\+\_\+factor, paw\+\_\+avg, elongf, phenology\+\_\+status                                                                                                                                                           ,bleaf, broot, bsapwooda, bsapwoodb, balive, bstorage)}{pheninit_balive_bstorage(mzg, ipft, kroot, height, dbh, soil_water, ntext_soil                                                                                                                                                                   ,green_leaf_factor, paw_avg, elongf, phenology_status                                                                                                                                                           ,bleaf, broot, bsapwooda, bsapwoodb, balive, bstorage)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+aux\+::pheninit\+\_\+balive\+\_\+bstorage (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{mzg, }
+\item[{integer, intent(in)}]{ipft, }
+\item[{integer, intent(in)}]{kroot, }
+\item[{real, intent(in)}]{height, }
+\item[{real, intent(in)}]{dbh, }
+\item[{real, dimension(mzg), intent(in)}]{soil\+\_\+water, }
+\item[{integer, dimension(mzg), intent(in)}]{ntext\+\_\+soil, }
+\item[{real, dimension(n\+\_\+pft), intent(in)}]{green\+\_\+leaf\+\_\+factor, }
+\item[{real, intent(out)}]{paw\+\_\+avg, }
+\item[{real, intent(out)}]{elongf, }
+\item[{integer, intent(out)}]{phenology\+\_\+status, }
+\item[{real, intent(out)}]{bleaf, }
+\item[{real, intent(out)}]{broot, }
+\item[{real, intent(out)}]{bsapwooda, }
+\item[{real, intent(out)}]{bsapwoodb, }
+\item[{real, intent(out)}]{balive, }
+\item[{real, intent(out)}]{bstorage}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacephenology__aux_a678dc0aeea995ed48f816c0588d15965}{}\label{namespacephenology__aux_a678dc0aeea995ed48f816c0588d15965}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacephenology__aux_a678dc0aeea995ed48f816c0588d15965_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacephenology__aux_a678dc0aeea995ed48f816c0588d15965_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+aux@{phenology\+\_\+aux}!prescribed\+\_\+leaf\+\_\+state@{prescribed\+\_\+leaf\+\_\+state}}
+\index{prescribed\+\_\+leaf\+\_\+state@{prescribed\+\_\+leaf\+\_\+state}!phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsubsection[{\texorpdfstring{prescribed\+\_\+leaf\+\_\+state(lat, imonth, iyear, doy, green\+\_\+leaf\+\_\+factor                                                                                                                                                                                                       ,leaf\+\_\+aging\+\_\+factor, phen\+\_\+pars)}{prescribed_leaf_state(lat, imonth, iyear, doy, green_leaf_factor                                                                                                                                                                                                       ,leaf_aging_factor, phen_pars)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+aux\+::prescribed\+\_\+leaf\+\_\+state (
+\begin{DoxyParamCaption}
+\item[{real, intent(in)}]{lat, }
+\item[{integer, intent(in)}]{imonth, }
+\item[{integer, intent(in)}]{iyear, }
+\item[{integer, intent(in)}]{doy, }
+\item[{real, dimension(n\+\_\+pft), intent(out)}]{green\+\_\+leaf\+\_\+factor, }
+\item[{real, dimension(n\+\_\+pft), intent(out)}]{leaf\+\_\+aging\+\_\+factor, }
+\item[{type({\bf prescribed\+\_\+phen}), intent(in)}]{phen\+\_\+pars}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacephenology__aux_ac2a698e44f1d2308f845a66ad92600e1}{}\label{namespacephenology__aux_ac2a698e44f1d2308f845a66ad92600e1}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacephenology__aux_ac2a698e44f1d2308f845a66ad92600e1_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+aux@{phenology\+\_\+aux}!update\+\_\+thermal\+\_\+sums@{update\+\_\+thermal\+\_\+sums}}
+\index{update\+\_\+thermal\+\_\+sums@{update\+\_\+thermal\+\_\+sums}!phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsubsection[{\texorpdfstring{update\+\_\+thermal\+\_\+sums(month, cpoly, isi, lat)}{update_thermal_sums(month, cpoly, isi, lat)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+aux\+::update\+\_\+thermal\+\_\+sums (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{month, }
+\item[{type({\bf polygontype}), target}]{cpoly, }
+\item[{integer, intent(in)}]{isi, }
+\item[{real, intent(in)}]{lat}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacephenology__aux_a227cf46507f7976ea4dd53e724e157c0}{}\label{namespacephenology__aux_a227cf46507f7976ea4dd53e724e157c0}
+\index{phenology\+\_\+aux@{phenology\+\_\+aux}!update\+\_\+turnover@{update\+\_\+turnover}}
+\index{update\+\_\+turnover@{update\+\_\+turnover}!phenology\+\_\+aux@{phenology\+\_\+aux}}
+\subsubsection[{\texorpdfstring{update\+\_\+turnover(cpoly, isi)}{update_turnover(cpoly, isi)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+aux\+::update\+\_\+turnover (
+\begin{DoxyParamCaption}
+\item[{type({\bf polygontype}), target}]{cpoly, }
+\item[{integer, intent(in)}]{isi}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacephenology__aux_a7a199ed988a720b2e56c3b5e1407995a}{}\label{namespacephenology__aux_a7a199ed988a720b2e56c3b5e1407995a}

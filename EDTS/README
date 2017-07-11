@@ -1,0 +1,27 @@
+THIS IS THE ED TEST SUIT
+
+DIRECTIONS:
+
+1) make a copy of and edit exec_test_carver_serial.sh
+   This is a bash script that will make a working directory and generate
+   a number of execution scripts and such in the working directory.  
+   The working directory will be labeled according to the test name you
+   choose.
+
+2) execute the script
+
+3) The working directory will now be full of stuff. Check it over.  Make sure the ED2IN files look the way you want them.  Modify these as you see fit.
+
+4) create a symbolic link in the working directory called edts_datasets, link it to the folder where the edts_datsets archive is kept.  You will need to download this, maybe ask Ryan.
+
+5) create symbolic links from your build directories for the test version, the control (or mainline) version and your debug version (same code as test version).  These links should be placed in the working directory and called ed_2.1-test, ed_2.1-main and ed_2.1-dbug respectively.
+
+5) if everything in your working directory looks good, then you are ready to submit the runs to your queueing system.  The script submit_batch.sh will set up all of the queues.  Take at the queue scripts that it calls "batch_xxxx_xxx" and see if they look right.
+
+6) when you simulations are done, drop down below the working directory and edit MATLAB file dev_test.m
+
+7) run the matlab script, if on a cluster, recommend using ./matlab -nodesktop -nosplash.  Another tip: make sure that the system fonts that matlab uses are enable.
+
+8) The matlab script will (hopefully) generte a full report in the working directory: ./report/xxxxx.pdf
+
+

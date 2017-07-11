@@ -1,0 +1,11 @@
+<map id="ed_state_vars::copy_sitetype_mask" name="ed_state_vars::copy_sitetype_mask">
+<area shape="rect" id="node2" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="436,23,515,50"/>
+<area shape="rect" id="node3" href="$namespaceed__state__vars.html#a4837fc010e19721a127c9a8b04874594" title="ed_state_vars::allocate\l_patchtype" alt="" coords="197,110,351,152"/>
+<area shape="rect" id="node5" href="$namespaceed__state__vars.html#accd794e0e8d71ba375c3669097ae5c8d" title="ed_state_vars::copy\l_patchtype" alt="" coords="205,45,343,86"/>
+<area shape="rect" id="node6" href="$namespaceed__state__vars.html#a1df5eb7cbed41bfe98b1c6ac5686b8cb" title="ed_state_vars::copy\l_sitetype_mask_inst" alt="" coords="203,176,345,217"/>
+<area shape="rect" id="node7" href="$namespaceed__state__vars.html#aa441ba026af189af30a9464c62ad25d3" title="ed_state_vars::copy\l_sitetype_mask_fmean" alt="" coords="196,241,352,282"/>
+<area shape="rect" id="node8" href="$namespaceed__state__vars.html#a1589be18b91e5861e128f61854e408a6" title="ed_state_vars::copy\l_sitetype_mask_dmean" alt="" coords="194,306,354,348"/>
+<area shape="rect" id="node9" href="$namespaceed__state__vars.html#a37a6591c81160dba788b7db2a66003d1" title="ed_state_vars::copy\l_sitetype_mask_mmean" alt="" coords="192,372,356,413"/>
+<area shape="rect" id="node10" href="$namespaceed__state__vars.html#a3cf450bc1662a96c51b849a2b95f4d97" title="ed_state_vars::copy\l_sitetype_mask_qmean" alt="" coords="194,437,354,478"/>
+<area shape="rect" id="node4" href="$namespaceed__state__vars.html#af1a07724c13a8dceb6ba2d3dab21b899" title="ed_state_vars::nullify\l_patchtype" alt="" coords="404,110,547,152"/>
+</map>

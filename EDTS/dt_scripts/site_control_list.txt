@@ -1,0 +1,137 @@
+
+The developer has completed the following tests to verify the integrity of their submision:
+
+1) Manaus KM34 50 year, SOI, IED_INIT_MODE=5
+2) Santarem KM67,50 year, NBG
+3) SOI Harvard Forest 50 year standard bare ground
+%4) SOI Reserva Jaru 2 year type 5 initialization
+%5) SOI Reserva Jaru 2 year history restart
+6) 10x10 Gridded Manaus 2 year type 7 Initialization (32 core)
+%7) SOI Bartlett 50 year type 2,3,4? initialization
+
+It is understood that each of these simulations completed without error.
+
+
+The simulation control parameters are detailed below.
+
+Manaus KM34 (SOI)
+
+IED_INIT_MODE: 5 (/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/potveget/P)
+NZG: 16 (8m/0.02m)
+NSZ: 4
+ISOILFLG: 2 (68% Clay, 20% Sand, 12% Loam)
+ED_MET_DRIVER_DB = '/n/moorcroft_data/data/southam_shef_driver/SHEF_NCEP_DRIVER_DS314'
+ISOILBC: 1
+IBIGLEAF: OFF
+IVEGT_DYNAMICS: ON
+INTEGRATION_SCHEME: 3 (Hybrid - 180s)
+IBRANCH_THERMO: 1 (Leaves and stems are pooled)
+IPHYSIOL: 2 (Collatz 1991)
+IALLOM: 2 
+IGRASS: 1 (Grasses like grasses)
+IPHEN_SCHEME: 2
+REPRO_SCHEME: 2 (seed exchange cross patches)
+LAPSE_SCHEME: 0 (off)
+CROWN_MOD: 1 (Dietze Model)
+ICANRAD: 0  (2-stream, Medvigy)
+DECOMP_SCHEME: 0 (original exponential)
+H2O_PLANT_LIM: 2 (Original FSW=1/(1+D/S))
+IDDMORT_SCHEME: 0 (original)
+QUANTUM_EFFICIENCY_T: 0 (original constant)
+N_PLANT_LIM: 0 (no N limitation)
+N_DECOMP_LIM: 0 (no N limitation)
+INCLUDE_FIRE: 2 (fire off)
+IANTH_DISTURB: 0 (no anthro dist)
+ICANTURB: 3 (Massman 99)
+ISFCLYRM: 1 (Louis 1979)
+IED_GRNDVAP: 0 (Lee+Pielke 1992)
+IPERCOL: 1 (Default)
+INCLUDE_THESE_PFT: 1,2,3,4,16
+AGRI_STOCK,PLANTATION_STOCK: 1,3
+MAXSITE,MAXPATCH,MAXCOHORT: 1,20,80
+ISHUFFLE: 0 (no shuffling, use data sequence)
+IMETAVG: 1 (ave ends at ref time)
+IMETRAD: 2 (sum it, then break with Weiss+Norman - Par/Nir Diff/Dir)
+
+
+
+Santarem KM67  (SOI)
+
+IED_INIT_MODE: 0 (NBG)
+NZG: 16 (8m/0.02m)
+NSZ: 4
+ISOILFLG: 2 (90% Clay, 2% Sand, 8% Loam)
+ED_MET_DRIVER_DB: /n/moorcroft_data/nlevine/data/site_met_driver/Santarem_KM67/Santarem_KM67_HEADER
+ISOILBC: 1
+IBIGLEAF: OFF
+IVEGT_DYNAMICS: ON
+INTEGRATION_SCHEME: 1 (RK4 - 0.01)
+IBRANCH_THERMO: 0 (off)
+IPHYSIOL: 2 (Collatz 1991)
+IALLOM: 2 
+IGRASS: 0 (Grasses like trees)
+IPHEN_SCHEME: 2
+REPRO_SCHEME: 2 (seed exchange cross patches)
+LAPSE_SCHEME: 0 (off)
+CROWN_MOD: 0 (even spread)
+ICANRAD: 0  (2-stream, Medvigy)
+DECOMP_SCHEME: 0 (original exponential)
+H2O_PLANT_LIM: 1 (Original FSW=1/(1+D/S))
+IDDMORT_SCHEME: 0 (original)
+QUANTUM_EFFICIENCY_T: 0 (original constant)
+N_PLANT_LIM: 0 (no N limitation)
+N_DECOMP_LIM: 0 (no N limitation)
+INCLUDE_FIRE: 0 (fire off)
+IANTH_DISTURB: 0 (no anthro dist)
+ICANTURB: 2 (Massman 97)
+ISFCLYRM: 3 (Beljaars+Holtslag)
+IED_GRNDVAP: 0 (Lee+Pielke 1992)
+IPERCOL: 1 (Default)
+INCLUDE_THESE_PFT: 1,2,3,4,16
+AGRI_STOCK: 1
+MAXSITE,MAXPATCH,MAXCOHORT: 1,20,80
+ISHUFFLE: 0 (no shuffling, use data sequence)
+IMETAVG: 2 (ave begins at ref time)
+IMETRAD: 0 (use radiation as provided - Par/Nir Diff/Dir)
+
+
+Rio Jaru (10x10 Polar-Stereographic Grid)
+
+IED_INIT_MODE: 7 (/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/sa1.2008/SA1)
+NZG: 16 (8m/0.02m)
+NSZ: 4
+ISOILFLG: 1 (/n/moorcroft_data/data/ed2_data/soil_ed22/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_)
+ED_MET_DRIVER_DB = '/n/moorcroft_data/data/southam_shef_driver/SHEF_NCEP_DRIVER_DS314'
+ISOILBC: 2
+SLDRAIN: 10
+IBIGLEAF: OFF
+IVEGT_DYNAMICS: ON
+INTEGRATION_SCHEME: 1 (RK4 - 300s)
+IBRANCH_THERMO: 1 (Leaves and stems are pooled)
+IPHYSIOL: 2 (Collatz 1991)
+IALLOM: 2 
+IGRASS: 1 (Grasses like grasses)
+IPHEN_SCHEME: 2
+REPRO_SCHEME: 2 (seed exchange cross patches)
+LAPSE_SCHEME: 0 (off)
+CROWN_MOD: 1 (Dietze Model)
+ICANRAD: 0  (2-stream, Medvigy)
+DECOMP_SCHEME: 0 (original exponential)
+H2O_PLANT_LIM: 1 (Original FSW=1/(1+D/S))
+IDDMORT_SCHEME: 0 (original)
+QUANTUM_EFFICIENCY_T: 1 (original constant)
+N_PLANT_LIM: 0 (no N limitation)
+N_DECOMP_LIM: 0 (no N limitation)
+INCLUDE_FIRE: 2 (fire off)
+IANTH_DISTURB: 1 (no anthro dist)
+ICANTURB: 3 (Massman 99)
+ISFCLYRM: 1 (Louis 1979)
+IED_GRNDVAP: 0 (Lee+Pielke 1992)
+IPERCOL: 1 (Default)
+INCLUDE_THESE_PFT: 1,2,3,4,16
+AGRI_STOCK,PLANTATION_STOCK: 1,3
+MAXSITE,MAXPATCH,MAXCOHORT: 1,20,80
+ISHUFFLE: 0 (no shuffling, use data sequence)
+IMETAVG: 1 (ave ends at ref time)
+IMETRAD: 2 (sum it, then break with Weiss+Norman - Par/Nir Diff/Dir)
+

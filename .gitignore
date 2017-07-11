@@ -160,12 +160,12 @@ ED/build/pft_sizes.txt
 Script*.sh
 src_script.sh
 Doxyfile
-RAPP/*
+#RAPP/*
 #BRAMS/*
-EDTS/*
-Doc/*
-EDR/*
-Ramspost/*
+#EDTS/*
+#Doc/*
+#EDR/*
+#Ramspost/*
 *CODE_COVERAGE.HTML
 *CodeCoverage
 *coverage.txt

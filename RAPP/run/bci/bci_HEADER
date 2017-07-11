@@ -1,0 +1,81 @@
+# See README at the bottom of this file.
+3
+/Users/manfredo/Documents/Eclipse_workspace/RAPP/run/bci/bci_OL1_
+    2     5     1.8750     1.9047   279.3750    -0.9524
+10
+ 'lon' 'lat' 'hgt' 'tmp' 'pres' 'sh' 'ugrd' 'vgrd' 'prate' 'dlwrf'
+ 21600. 21600. 21600. 21600. 21600. 21600. 21600. 21600. 21600. 21600.
+  2  2  2  1  1  1  1  1  1  0
+/Users/manfredo/Documents/Eclipse_workspace/RAPP/run/bci/bci_OL2_
+    2     5     1.8750     1.9047   279.3750    -0.9524
+ 6
+ 'lon' 'lat' 'nbdsf' 'nddsf' 'vbdsf' 'vddsf'
+  2700.  2700.  2700.  2700.  2700.  2700.
+  2  2  0  0  0  0
+/Users/manfredo/Documents/Eclipse_workspace/RAPP/run/bci/bci_R01_
+    2     5     1.8750     1.9047   279.3750    -0.9524
+ 3
+ 'lon' 'lat' 'prate'
+  2700.  2700.  2700.
+  2  2  0
+ 
+ 
+!===========================================================!
+! README                                                    !
+!===========================================================!
+!     The header of the meteorological driver must contain  !
+! the following lines:                                      !
+!                                                           !
+! Line  1 : Banner, it will not be read;                    !
+! Line  2 : Number of file formats, hereafter N;            !
+! Lines 3+: For each of the N formats, add the following    !
+!           lines, going through a-f for the first format,  !
+!           then through a-f for the second format and so   !
+!            on:                                            !
+!    a. Prefixes of the file format;                        !
+!    b. nlon, nlat, deltalon, deltalat, lon0, lat0.  If     !
+!       lon and lat are also variables, only nlon and nlat  !
+!       will be used;                                       !
+!    c. Number of variables contained in this format;       !
+!    d. List of variables for each format (see Table 1);    !
+!    e. Frequency at which vares are updated, or the        !
+!       constant value if the variable type is 4;           !
+!    f. Variable type (see Table 2);                        !
+!                                                           !
+!===========================================================!
+! Table 1. Variable names recognized by ED.                 !
+!===========================================================!
+! -> lon    -  Longitude                        [    deg]   !
+! -> lat    -  Latitude                         [    deg]   !
+! -> hgt    -  Reference height                 [  m AGL]   !
+! -> tmp    -  Air temperature                  [      K]   !
+! -> pres   -  Pressure                         [     Pa]   !
+! -> sh     -  Specific humidity                [  kg/kg]   !
+! -> ugrd   -  Zonal wind                       [    m/s]   !
+! -> vgrd   -  Zonal wind                       [    m/s]   !
+! -> prate  -  Precipitation rate               [kg/m2/s]   !
+! -> dlwrf  -  Downward long wave radiation     [   W/m2]   !
+! -> nbdsf  -  Near-IR beam radiation           [   W/m2]   !
+! -> nddsf  -  Near-IR diffuse radiation        [   W/m2]   !
+! -> vbdsf  -  Visible beam radiation           [   W/m2]   !
+! -> vddsf  -  Visible beam radiation           [   W/m2]   !
+!===========================================================!
+!                                                           !
+!===========================================================!
+! Table 2. Variable types recognized by ED.                 !
+!===========================================================!
+!                                                           !
+! 0. Read gridded data - no time interpolation;             !
+! 1. Read gridded data - with time interpolatation;         !
+! 2. Read gridded data that is constant in time.            !
+!    If any of this is lon or lat, then deltalon, deltalat  !
+!    lon0, and lat0 will be ignored;                        !
+! 5. Specify a variable that is constant in space, but      !
+!    varying in time.  Do not interpolate the values        !
+!    over time.    !
+! 4. Specify a constant for all polygons, constant in time. !
+!    In this case, give the constant value at line "e"      !
+!    instead of the frequency.                              !
+! 5. Specify a variable that is constant in space, but      !
+!    varying in time.  Interpolate the values over time.    !
+!===========================================================!

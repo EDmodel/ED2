@@ -1,0 +1,33 @@
+<map id="fuse_fiss_utils::fuse_patches" name="fuse_fiss_utils::fuse_patches">
+<area shape="rect" id="node2" href="$namespacefuse__fiss__utils.html#ac7660eaa2d7565040ef120ac454ef406" title="fuse_fiss_utils::patch\l_pft_size_profile" alt="" coords="601,201,745,243"/>
+<area shape="rect" id="node5" href="$namespacefuse__fiss__utils.html#ac265957681eedff0e33bd5c3cdeca31d" title="fuse_fiss_utils::fuse\l_2_patches" alt="" coords="189,513,325,555"/>
+<area shape="rect" id="node27" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="633,861,712,887"/>
+<area shape="rect" id="node32" href="$namespacefuse__fiss__utils.html#a546d7beff2f991a07c8fbba91921ce5f" title="fuse_fiss_utils::sort\l_patches" alt="" coords="190,921,325,963"/>
+<area shape="rect" id="node3" href="$namespaceallometry.html#a45ced9bf9ccd03debe8def35b579f4bd" title="allometry::size2bl" alt="" coords="831,209,955,235"/>
+<area shape="rect" id="node4" href="$namespaceallometry.html#a31aa8db06e86ec74efb5e692417399df" title="allometry::h2dbh" alt="" coords="1032,209,1151,235"/>
+<area shape="rect" id="node6" href="$namespacetherm__lib.html#ac588ab0dc1c0c52c4c41b847be134ee9" title="therm_lib::uextcm2tl" alt="" coords="823,470,963,497"/>
+<area shape="rect" id="node7" href="$namespacebudget__utils.html#ad8835ee763cd964432b44e0a3d00e3da" title="budget_utils::update\l_budget" alt="" coords="387,96,526,137"/>
+<area shape="rect" id="node12" href="$ed__type__init_8f90.html#aa6a689a6e6981ff6c33afcb419db9b28" title="new_patch_sfc_props" alt="" coords="383,419,530,446"/>
+<area shape="rect" id="node17" href="$namespacefuse__fiss__utils.html#aae52213c98fe3ffb3ecde24d8ffc6e03" title="fuse_fiss_utils::fuse_msqu" alt="" coords="805,635,980,662"/>
+<area shape="rect" id="node18" href="$update__derived__props_8f90.html#a0133c9a113de9a317445ba7ecf008905" title="update_patch_thermo\l_props" alt="" coords="383,353,530,395"/>
+<area shape="rect" id="node20" href="$update__derived__props_8f90.html#a2f20573c21f9be1d6c291f6c7f2af59e" title="update_cohort_extensive\l_props" alt="" coords="590,589,755,631"/>
+<area shape="rect" id="node21" href="$namespacefuse__fiss__utils.html#a31e4835d2465d1400c7cbbb51976b341" title="fuse_fiss_utils::sort\l_cohorts" alt="" coords="605,675,740,716"/>
+<area shape="rect" id="node22" href="$namespacefuse__fiss__utils.html#adebb5663823fc54b5e7f28ce1e365afe" title="fuse_fiss_utils::fuse\l_cohorts" alt="" coords="389,804,525,845"/>
+<area shape="rect" id="node28" href="$namespacefuse__fiss__utils.html#a5dc8f0ad95ff159ac69570ac55856524" title="fuse_fiss_utils::terminate\l_cohorts" alt="" coords="373,673,540,715"/>
+<area shape="rect" id="node29" href="$namespacefuse__fiss__utils.html#a57242703afe9eb00a9aa836ff925bffc" title="fuse_fiss_utils::split\l_cohorts" alt="" coords="389,739,525,780"/>
+<area shape="rect" id="node30" href="$update__derived__props_8f90.html#a4ec6edacfccb9d8d6f5a6d6e8f2c30a0" title="update_patch_derived\l_props" alt="" coords="383,288,530,329"/>
+<area shape="rect" id="node8" href="$namespacebudget__utils.html#aa1c4f8466010b1673f2914f1bfe9b6ee" title="budget_utils::compute\l_co2_storage" alt="" coords="597,136,748,177"/>
+<area shape="rect" id="node9" href="$namespacebudget__utils.html#ad0c764047c557100b3a3cdcd836103a0" title="budget_utils::compute\l_water_storage" alt="" coords="597,5,748,47"/>
+<area shape="rect" id="node10" href="$namespacebudget__utils.html#a319c5f7252c344bcebbd162593e25ec8" title="budget_utils::compute\l_energy_storage" alt="" coords="597,71,748,112"/>
+<area shape="rect" id="node11" href="$namespacetherm__lib.html#addd05382298a8487d09d7f6e2664dd62" title="therm_lib::tq2enthalpy" alt="" coords="817,78,968,105"/>
+<area shape="rect" id="node13" href="$namespaceed__therm__lib.html#ad7497e216325854214ab9dd57a26f6ee" title="ed_therm_lib::ed_grndvap" alt="" coords="588,369,757,395"/>
+<area shape="rect" id="node14" href="$namespacetherm__lib.html#a44ab3a68e6060bf4afbfc504e3a8c633" title="therm_lib::qslif" alt="" coords="839,369,946,395"/>
+<area shape="rect" id="node15" href="$namespacetherm__lib.html#a109004866b1542dfcfa1da1e5130d3c9" title="therm_lib::esif" alt="" coords="1040,343,1143,370"/>
+<area shape="rect" id="node16" href="$namespacetherm__lib.html#a82ae02323247d6435153002a309552fb" title="therm_lib::eslf" alt="" coords="1040,394,1143,421"/>
+<area shape="rect" id="node19" href="$namespacetherm__lib.html#a60b714e3ae5457604df59afaf6904acd" title="therm_lib::idealdenssh" alt="" coords="597,318,749,345"/>
+<area shape="rect" id="node23" href="$namespaceallometry.html#a56f11dc07da4d5e7114dc37d6cc5f2cc" title="allometry::dbh2h" alt="" coords="613,743,732,770"/>
+<area shape="rect" id="node24" href="$namespacefuse__fiss__utils.html#ad49d6cf9affbac930e3d5be9c8baae39" title="fuse_fiss_utils::fuse\l_2_cohorts" alt="" coords="605,795,741,836"/>
+<area shape="rect" id="node25" href="$namespaceallometry.html#ac1523ea0e0ef8d2dd6a429f61a013c1c" title="allometry::dbh2krdepth" alt="" coords="815,802,970,829"/>
+<area shape="rect" id="node26" href="$namespaceallometry.html#aab2b2cee61cac31529246b043121c7de" title="allometry::dbh2vol" alt="" coords="1028,802,1155,829"/>
+<area shape="rect" id="node31" href="$namespaceallometry.html#ab99b16f69dafaf5ff3e69c7514b9e7b6" title="allometry::ed_biomass" alt="" coords="596,267,749,294"/>
+</map>

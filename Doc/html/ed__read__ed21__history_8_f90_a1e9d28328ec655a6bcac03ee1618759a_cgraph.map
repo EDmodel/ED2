@@ -1,0 +1,20 @@
+<map id="read_ed21_polyclone" name="read_ed21_polyclone">
+<area shape="rect" id="node2" href="$namespaceallometry.html#af723dc0f45a94b8812583457c53d4308" title="allometry::area_indices" alt="" coords="203,56,359,83"/>
+<area shape="rect" id="node6" href="$namespacefuse__fiss__utils.html#a5dc8f0ad95ff159ac69570ac55856524" title="fuse_fiss_utils::terminate\l_cohorts" alt="" coords="197,107,364,149"/>
+<area shape="rect" id="node8" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="462,224,541,251"/>
+<area shape="rect" id="node9" href="$ed__init__full__history_8_f90.html#a15e4e046a5f79a8896788c4644744ac6" title="hdf_getslab_r" alt="" coords="231,224,330,251"/>
+<area shape="rect" id="node10" href="$ed__init__full__history_8_f90.html#a0e667e597f5c2cc67896b8b398b630bf" title="hdf_getslab_i" alt="" coords="231,275,330,301"/>
+<area shape="rect" id="node11" href="$ed__init_8_f90.html#abd21b4ecdd7fccba297059af9e5a6f4f" title="soil_default_fill" alt="" coords="227,325,334,352"/>
+<area shape="rect" id="node12" href="$numutils_8f90.html#a0ce70697995bdbb28ca0f7de92ba5210" title="sort_up" alt="" coords="248,376,313,403"/>
+<area shape="rect" id="node13" href="$ed__type__init_8f90.html#af7c8e0a520dfca016f7eb7cf1c08b6ca" title="init_ed_cohort_vars" alt="" coords="214,427,347,453"/>
+<area shape="rect" id="node16" href="$ed__type__init_8f90.html#ad4cd2d9291dc969b63d1592d0f2a3164" title="init_ed_patch_vars" alt="" coords="216,477,345,504"/>
+<area shape="rect" id="node17" href="$ed__type__init_8f90.html#ab95c7280a3c8ff39333ac7145d0ccecf" title="init_ed_site_vars" alt="" coords="221,528,340,555"/>
+<area shape="rect" id="node18" href="$ed__type__init_8f90.html#a67afe21be4346c13ced583c229e2bb4c" title="init_ed_poly_vars" alt="" coords="220,579,341,605"/>
+<area shape="rect" id="node3" href="$namespaceallometry.html#abacdf8e8e585ce8d788a1fc2be133243" title="allometry::dbh2ca" alt="" coords="439,56,564,83"/>
+<area shape="rect" id="node4" href="$namespaceallometry.html#a45ced9bf9ccd03debe8def35b579f4bd" title="allometry::size2bl" alt="" coords="640,5,764,32"/>
+<area shape="rect" id="node5" href="$namespaceallometry.html#a31aa8db06e86ec74efb5e692417399df" title="allometry::h2dbh" alt="" coords="813,31,932,57"/>
+<area shape="rect" id="node7" href="$namespacefuse__fiss__utils.html#a31e4835d2465d1400c7cbbb51976b341" title="fuse_fiss_utils::sort\l_cohorts" alt="" coords="434,107,569,149"/>
+<area shape="rect" id="node14" href="$namespaceallometry.html#ac1523ea0e0ef8d2dd6a429f61a013c1c" title="allometry::dbh2krdepth" alt="" coords="424,427,579,453"/>
+<area shape="rect" id="node15" href="$namespaceallometry.html#aab2b2cee61cac31529246b043121c7de" title="allometry::dbh2vol" alt="" coords="639,427,765,453"/>
+<area shape="rect" id="node19" href="$structural__growth_8f90.html#a5e03a88fee4cb247574e235c96e27716" title="compute_c_and_n_storage" alt="" coords="412,579,591,605"/>
+</map>
