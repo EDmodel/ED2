@@ -161,7 +161,7 @@ Script*.sh
 src_script.sh
 Doxyfile
 RAPP/*
-BRAMS/*
+#BRAMS/*
 EDTS/*
 Doc/*
 EDR/*

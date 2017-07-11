@@ -1,0 +1,26 @@
+#Makefile Make.ncarg
+
+.$(SILENT):
+
+# compiler commands
+
+F_COMMAND = $(FC) -c $(FFLAGS)
+C_COMMAND = $(CC) -c $(CFLAGS)
+
+# source
+
+F_SRC  = $(NCARGD)/ncarg_dummy.f
+
+FC_SRC =
+
+C_SRC  =
+
+# targets
+
+include targets.mk
+
+$(EXE): $(ARC)
+	rm -f *.o
+
+include targs_lib.mk
+
