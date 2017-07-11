@@ -1,0 +1,314 @@
+\hypertarget{ed__mpass__init_8_f90}{}\section{ed\+\_\+mpass\+\_\+init.\+F90 File Reference}
+\label{ed__mpass__init_8_f90}\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a78fbd18a00870b2ba2577524102b6730}{ed\+\_\+masterput\+\_\+processid} (nproc, headnode\+\_\+num, masterworks, par\+\_\+run)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a240d6cf9664c6058b39e17a9d98b8dc1}{ed\+\_\+masterput\+\_\+nl} (par\+\_\+run)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a8f64604ca973c6e8458295ee11bef097}{ed\+\_\+masterput\+\_\+met\+\_\+header} (par\+\_\+run)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_ab8edb5262c6398dd001aecd5144ff6ad}{ed\+\_\+masterput\+\_\+poly\+\_\+dims} (par\+\_\+run, masterworks)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a92ea90e711dba589f46d6e84f21526c8}{ed\+\_\+masterput\+\_\+worklist\+\_\+info} (par\+\_\+run)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a1c980ac7ad5de486780a351778cfb786}{ed\+\_\+nodeget\+\_\+processid} (init)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a71a6170aace1990f255b9da08adc81cf}{ed\+\_\+nodeget\+\_\+nl}
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a7c43c6c7ffb1ec5ba35396470e532068}{ed\+\_\+nodeget\+\_\+met\+\_\+header} ()
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_aa2fb2a5427c2e9a8ae20d387ca95a66e}{ed\+\_\+nodeget\+\_\+poly\+\_\+dims}
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a5ad92c335f14b12bdba706f520c2e3e8}{ed\+\_\+nodeget\+\_\+worklist\+\_\+info}
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a823841fc5517128f18a832c05da17bd2}{mk\+\_\+2\+\_\+buff} (a, b, n1, n2, m1, m2, i1, i2, j1, j2)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_ac4c9e3770866998347e7e25b8bc4bc0e}{mk\+\_\+2p\+\_\+buff} (a, b, n1, n2, n3, m1, m2, m3, i1, i2, j1, j2)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_ac82cfd8beb6e947b6fae3ee783654464}{mk\+\_\+3\+\_\+buff} (a, b, n1, n2, n3, m1, m2, m3, i1, i2, j1, j2)
+\item 
+subroutine \hyperlink{ed__mpass__init_8_f90_a19a019e7fd726ea88eeb517f9e1db3cb}{mk\+\_\+4\+\_\+buff} (a, b, n1, n2, n3, n4, m1, m2, m3, m4, i1, i2, j1, j2)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+masterput\+\_\+met\+\_\+header@{ed\+\_\+masterput\+\_\+met\+\_\+header}}
+\index{ed\+\_\+masterput\+\_\+met\+\_\+header@{ed\+\_\+masterput\+\_\+met\+\_\+header}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+masterput\+\_\+met\+\_\+header(par\+\_\+run)}{ed_masterput_met_header(par_run)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+masterput\+\_\+met\+\_\+header (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{par\+\_\+run}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a8f64604ca973c6e8458295ee11bef097}{}\label{ed__mpass__init_8_f90_a8f64604ca973c6e8458295ee11bef097}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a8f64604ca973c6e8458295ee11bef097_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+masterput\+\_\+nl@{ed\+\_\+masterput\+\_\+nl}}
+\index{ed\+\_\+masterput\+\_\+nl@{ed\+\_\+masterput\+\_\+nl}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+masterput\+\_\+nl(par\+\_\+run)}{ed_masterput_nl(par_run)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+masterput\+\_\+nl (
+\begin{DoxyParamCaption}
+\item[{integer}]{par\+\_\+run}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a240d6cf9664c6058b39e17a9d98b8dc1}{}\label{ed__mpass__init_8_f90_a240d6cf9664c6058b39e17a9d98b8dc1}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a240d6cf9664c6058b39e17a9d98b8dc1_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+masterput\+\_\+poly\+\_\+dims@{ed\+\_\+masterput\+\_\+poly\+\_\+dims}}
+\index{ed\+\_\+masterput\+\_\+poly\+\_\+dims@{ed\+\_\+masterput\+\_\+poly\+\_\+dims}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+masterput\+\_\+poly\+\_\+dims(par\+\_\+run, masterworks)}{ed_masterput_poly_dims(par_run, masterworks)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+masterput\+\_\+poly\+\_\+dims (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{par\+\_\+run, }
+\item[{logical, intent(in)}]{masterworks}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_ab8edb5262c6398dd001aecd5144ff6ad}{}\label{ed__mpass__init_8_f90_ab8edb5262c6398dd001aecd5144ff6ad}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=300pt]{ed__mpass__init_8_f90_ab8edb5262c6398dd001aecd5144ff6ad_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_ab8edb5262c6398dd001aecd5144ff6ad_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+masterput\+\_\+processid@{ed\+\_\+masterput\+\_\+processid}}
+\index{ed\+\_\+masterput\+\_\+processid@{ed\+\_\+masterput\+\_\+processid}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+masterput\+\_\+processid(nproc, headnode\+\_\+num, masterworks, par\+\_\+run)}{ed_masterput_processid(nproc, headnode_num, masterworks, par_run)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+masterput\+\_\+processid (
+\begin{DoxyParamCaption}
+\item[{integer}]{nproc, }
+\item[{integer}]{headnode\+\_\+num, }
+\item[{logical}]{masterworks, }
+\item[{integer}]{par\+\_\+run}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a78fbd18a00870b2ba2577524102b6730}{}\label{ed__mpass__init_8_f90_a78fbd18a00870b2ba2577524102b6730}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a78fbd18a00870b2ba2577524102b6730_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+masterput\+\_\+worklist\+\_\+info@{ed\+\_\+masterput\+\_\+worklist\+\_\+info}}
+\index{ed\+\_\+masterput\+\_\+worklist\+\_\+info@{ed\+\_\+masterput\+\_\+worklist\+\_\+info}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+masterput\+\_\+worklist\+\_\+info(par\+\_\+run)}{ed_masterput_worklist_info(par_run)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+masterput\+\_\+worklist\+\_\+info (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{par\+\_\+run}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a92ea90e711dba589f46d6e84f21526c8}{}\label{ed__mpass__init_8_f90_a92ea90e711dba589f46d6e84f21526c8}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a92ea90e711dba589f46d6e84f21526c8_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a92ea90e711dba589f46d6e84f21526c8_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+nodeget\+\_\+met\+\_\+header@{ed\+\_\+nodeget\+\_\+met\+\_\+header}}
+\index{ed\+\_\+nodeget\+\_\+met\+\_\+header@{ed\+\_\+nodeget\+\_\+met\+\_\+header}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nodeget\+\_\+met\+\_\+header()}{ed_nodeget_met_header()}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+nodeget\+\_\+met\+\_\+header (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a7c43c6c7ffb1ec5ba35396470e532068}{}\label{ed__mpass__init_8_f90_a7c43c6c7ffb1ec5ba35396470e532068}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a7c43c6c7ffb1ec5ba35396470e532068_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+nodeget\+\_\+nl@{ed\+\_\+nodeget\+\_\+nl}}
+\index{ed\+\_\+nodeget\+\_\+nl@{ed\+\_\+nodeget\+\_\+nl}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nodeget\+\_\+nl}{ed_nodeget_nl}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+nodeget\+\_\+nl (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a71a6170aace1990f255b9da08adc81cf}{}\label{ed__mpass__init_8_f90_a71a6170aace1990f255b9da08adc81cf}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=342pt]{ed__mpass__init_8_f90_a71a6170aace1990f255b9da08adc81cf_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+nodeget\+\_\+poly\+\_\+dims@{ed\+\_\+nodeget\+\_\+poly\+\_\+dims}}
+\index{ed\+\_\+nodeget\+\_\+poly\+\_\+dims@{ed\+\_\+nodeget\+\_\+poly\+\_\+dims}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nodeget\+\_\+poly\+\_\+dims}{ed_nodeget_poly_dims}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+nodeget\+\_\+poly\+\_\+dims (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_aa2fb2a5427c2e9a8ae20d387ca95a66e}{}\label{ed__mpass__init_8_f90_aa2fb2a5427c2e9a8ae20d387ca95a66e}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_aa2fb2a5427c2e9a8ae20d387ca95a66e_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+nodeget\+\_\+processid@{ed\+\_\+nodeget\+\_\+processid}}
+\index{ed\+\_\+nodeget\+\_\+processid@{ed\+\_\+nodeget\+\_\+processid}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nodeget\+\_\+processid(init)}{ed_nodeget_processid(init)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+nodeget\+\_\+processid (
+\begin{DoxyParamCaption}
+\item[{integer}]{init}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a1c980ac7ad5de486780a351778cfb786}{}\label{ed__mpass__init_8_f90_a1c980ac7ad5de486780a351778cfb786}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a1c980ac7ad5de486780a351778cfb786_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!ed\+\_\+nodeget\+\_\+worklist\+\_\+info@{ed\+\_\+nodeget\+\_\+worklist\+\_\+info}}
+\index{ed\+\_\+nodeget\+\_\+worklist\+\_\+info@{ed\+\_\+nodeget\+\_\+worklist\+\_\+info}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{ed\+\_\+nodeget\+\_\+worklist\+\_\+info}{ed_nodeget_worklist_info}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine ed\+\_\+nodeget\+\_\+worklist\+\_\+info (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a5ad92c335f14b12bdba706f520c2e3e8}{}\label{ed__mpass__init_8_f90_a5ad92c335f14b12bdba706f520c2e3e8}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{ed__mpass__init_8_f90_a5ad92c335f14b12bdba706f520c2e3e8_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!mk\+\_\+2\+\_\+buff@{mk\+\_\+2\+\_\+buff}}
+\index{mk\+\_\+2\+\_\+buff@{mk\+\_\+2\+\_\+buff}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{mk\+\_\+2\+\_\+buff(a, b, n1, n2, m1, m2, i1, i2, j1, j2)}{mk_2_buff(a, b, n1, n2, m1, m2, i1, i2, j1, j2)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mk\+\_\+2\+\_\+buff (
+\begin{DoxyParamCaption}
+\item[{real, dimension(n1,n2)}]{a, }
+\item[{real, dimension(m1,m2)}]{b, }
+\item[{integer}]{n1, }
+\item[{integer}]{n2, }
+\item[{integer}]{m1, }
+\item[{integer}]{m2, }
+\item[{integer}]{i1, }
+\item[{integer}]{i2, }
+\item[{integer}]{j1, }
+\item[{integer}]{j2}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a823841fc5517128f18a832c05da17bd2}{}\label{ed__mpass__init_8_f90_a823841fc5517128f18a832c05da17bd2}
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!mk\+\_\+2p\+\_\+buff@{mk\+\_\+2p\+\_\+buff}}
+\index{mk\+\_\+2p\+\_\+buff@{mk\+\_\+2p\+\_\+buff}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{mk\+\_\+2p\+\_\+buff(a, b, n1, n2, n3, m1, m2, m3, i1, i2, j1, j2)}{mk_2p_buff(a, b, n1, n2, n3, m1, m2, m3, i1, i2, j1, j2)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mk\+\_\+2p\+\_\+buff (
+\begin{DoxyParamCaption}
+\item[{real, dimension(n1,n2,n3)}]{a, }
+\item[{real, dimension(m1,m2,m3)}]{b, }
+\item[{integer}]{n1, }
+\item[{integer}]{n2, }
+\item[{integer}]{n3, }
+\item[{integer}]{m1, }
+\item[{integer}]{m2, }
+\item[{integer}]{m3, }
+\item[{integer}]{i1, }
+\item[{integer}]{i2, }
+\item[{integer}]{j1, }
+\item[{integer}]{j2}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_ac4c9e3770866998347e7e25b8bc4bc0e}{}\label{ed__mpass__init_8_f90_ac4c9e3770866998347e7e25b8bc4bc0e}
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!mk\+\_\+3\+\_\+buff@{mk\+\_\+3\+\_\+buff}}
+\index{mk\+\_\+3\+\_\+buff@{mk\+\_\+3\+\_\+buff}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{mk\+\_\+3\+\_\+buff(a, b, n1, n2, n3, m1, m2, m3, i1, i2, j1, j2)}{mk_3_buff(a, b, n1, n2, n3, m1, m2, m3, i1, i2, j1, j2)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mk\+\_\+3\+\_\+buff (
+\begin{DoxyParamCaption}
+\item[{real, dimension(n1,n2,n3)}]{a, }
+\item[{real, dimension(m1,m2,m3)}]{b, }
+\item[{integer}]{n1, }
+\item[{integer}]{n2, }
+\item[{integer}]{n3, }
+\item[{integer}]{m1, }
+\item[{integer}]{m2, }
+\item[{integer}]{m3, }
+\item[{integer}]{i1, }
+\item[{integer}]{i2, }
+\item[{integer}]{j1, }
+\item[{integer}]{j2}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_ac82cfd8beb6e947b6fae3ee783654464}{}\label{ed__mpass__init_8_f90_ac82cfd8beb6e947b6fae3ee783654464}
+\index{ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}!mk\+\_\+4\+\_\+buff@{mk\+\_\+4\+\_\+buff}}
+\index{mk\+\_\+4\+\_\+buff@{mk\+\_\+4\+\_\+buff}!ed\+\_\+mpass\+\_\+init.\+F90@{ed\+\_\+mpass\+\_\+init.\+F90}}
+\subsubsection[{\texorpdfstring{mk\+\_\+4\+\_\+buff(a, b, n1, n2, n3, n4, m1, m2, m3, m4, i1, i2, j1, j2)}{mk_4_buff(a, b, n1, n2, n3, n4, m1, m2, m3, m4, i1, i2, j1, j2)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mk\+\_\+4\+\_\+buff (
+\begin{DoxyParamCaption}
+\item[{real, dimension(n1,n2,n3,m4)}]{a, }
+\item[{real, dimension(m1,m2,m3,m4)}]{b, }
+\item[{integer}]{n1, }
+\item[{integer}]{n2, }
+\item[{integer}]{n3, }
+\item[{integer}]{n4, }
+\item[{integer}]{m1, }
+\item[{integer}]{m2, }
+\item[{integer}]{m3, }
+\item[{integer}]{m4, }
+\item[{integer}]{i1, }
+\item[{integer}]{i2, }
+\item[{integer}]{j1, }
+\item[{integer}]{j2}
+\end{DoxyParamCaption}
+)}\hypertarget{ed__mpass__init_8_f90_a19a019e7fd726ea88eeb517f9e1db3cb}{}\label{ed__mpass__init_8_f90_a19a019e7fd726ea88eeb517f9e1db3cb}

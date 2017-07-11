@@ -1,0 +1,453 @@
+<?xml version="1.0"?>
+<!DOCTYPE config SYSTEM "defaults">
+<!-- Default parameter sets. These settings -->
+<!-- should give you the same results as if they -->
+<!-- were not used at all. -->
+<!-- EXEPTION: the default root_respiration_factor -->
+<!-- is for Collatz type physiology. -->
+<config>
+  <pft>
+    <num> 1 </num>
+    <name> c4_grass </name>
+    <Vm0> 12.50 </Vm0>
+    <stomatal_slope> 5.2 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.040 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.055 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.028 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.160 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor>  1.000 </clumping_factor>
+    <orient_factor> -0.100 </orient_factor>
+  </pft>
+  <pft>
+    <num> 2 </num>
+    <name> tropical_early_succesional </name>
+    <Vm0> 18.75 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.10 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor>  0.80 </clumping_factor>
+    <orient_factor> 0.1 </orient_factor>
+  </pft>
+  <pft>
+    <num> 3 </num>
+    <name> tropical_mid_succesional </name>
+    <Vm0> 12.500000 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.10 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor>  0.80 </clumping_factor>
+    <orient_factor> 0.1 </orient_factor>
+  </pft>
+  <pft>
+    <num> 4 </num>
+    <name> tropical_late_succesional </name>
+    <Vm0> 6.250000 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.10 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor>  0.80 </clumping_factor>
+    <orient_factor> 0.1 </orient_factor>
+  </pft>
+  <pft>
+    <num> 5 </num>
+    <name> c3_grass </name>
+    <Vm0> 18.300000 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.028 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.160 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.840 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 6 </num>
+    <name> northern_pine </name>
+    <Vm0> 11.350000 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 1000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.4503 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.735 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 7 </num>
+    <name> southern_pine </name>
+    <Vm0> 11.350000 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 1000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.4503 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.735 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 8 </num>
+    <name> late_conifer </name>
+    <Vm0> 4.540000 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 1000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.4503 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.735 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 9 </num>
+    <name> early_hardwood </name>
+    <Vm0> 20.387075 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.0 </growth_resp_factor>
+    <leaf_width> 0.10 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.840 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 10 </num>
+    <name> mid_hardwood </name>
+    <Vm0> 17.454687 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.0 </growth_resp_factor>
+    <leaf_width> 0.10 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.840 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 11 </num>
+    <name> late_hardwood </name>
+    <Vm0> 6.981875 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.0 </growth_resp_factor>
+    <leaf_width> 0.10 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.840 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 12 </num>
+    <name> c3_pasture </name>
+    <Vm0> 18.300000 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.220 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.160 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.840 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 13 </num>
+    <name> c3_crop </name>
+    <Vm0> 18.300000 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.160 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.220 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.110 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.160 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.840 </clumping_factor>
+    <orient_factor> 0.000 </orient_factor>
+  </pft>
+  <pft>
+    <num> 14 </num>
+    <name> c4_pasture </name>
+    <Vm0> 12.500000 </Vm0>
+    <stomatal_slope> 5.2 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.040 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.055 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.220 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 1.000 </clumping_factor>
+    <orient_factor> -0.100 </orient_factor>
+  </pft>
+  <pft>
+    <num> 15 </num>
+    <name> c4_crop </name>
+    <Vm0> 12.500000 </Vm0>
+    <stomatal_slope> 5.2 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.040 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.055 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.220 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 1.000 </clumping_factor>
+    <orient_factor> -0.100 </orient_factor>
+  </pft>
+  <pft>
+    <num> 16 </num>
+    <name> tropical_c3_grass </name>
+    <Vm0> 20.833333 </Vm0>
+    <stomatal_slope> 9.0 </stomatal_slope>
+    <cuticular_cond> 10000.0 </cuticular_cond>
+    <water_conductance> 900.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.333 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.270 </leaf_trans_nir>
+    <wood_trans_vis> 0.028 </wood_trans_vis>
+    <wood_trans_nir> 0.248 </wood_trans_nir>
+    <leaf_reflect_vis> 0.100 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.540 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.160 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 1.000 </clumping_factor>
+    <orient_factor> -0.100 </orient_factor>
+  </pft>
+  <pft>
+    <num> 17 </num>
+    <name> araucaria </name>
+    <Vm0> 15.625000 </Vm0>
+    <stomatal_slope> 7.2 </stomatal_slope>
+    <cuticular_cond> 1000.0 </cuticular_cond>
+    <water_conductance> 600.0 </water_conductance>
+    <dark_respiration_factor> 0.015 </dark_respiration_factor>
+    <D0> 0.016 </D0>
+    <quantum_efficiency> 0.080 </quantum_efficiency>
+    <root_respiration_factor> 0.280 </root_respiration_factor>
+    <growth_resp_factor> 0.4503 </growth_resp_factor>
+    <leaf_width> 0.05 </leaf_width>
+    <vm_q10> 2.4 </vm_q10>
+    <leaf_trans_vis> 0.050 </leaf_trans_vis>
+    <leaf_trans_nir> 0.248 </leaf_trans_nir>
+    <wood_trans_vis> 0.001 </wood_trans_vis>
+    <wood_trans_nir> 0.001 </wood_trans_nir>
+    <leaf_reflect_vis> 0.090 </leaf_reflect_vis>
+    <leaf_reflect_nir> 0.577 </leaf_reflect_nir>
+    <wood_reflect_vis> 0.110 </wood_reflect_vis>
+    <wood_reflect_nir> 0.250 </wood_reflect_nir>
+    <clumping_factor> 0.735 </clumping_factor>
+    <orient_factor> 0.01 </orient_factor>
+  </pft>
+  <misc>
+    <gamm> 13.0 </gamm>
+    <gamh> 13.0 </gamh>
+    <tprandtl> 0.74 </tprandtl>
+    <ribmax> 0.50 </ribmax>
+    <leaf_maxwhc> 0.11 </leaf_maxwhc>
+    <ubmin>  0.65 </ubmin>
+    <ugbmin> 0.25 </ugbmin>
+    <ustmin> 0.05 </ustmin>
+  </misc>
+  <physiology>
+    <klowco2> 6076.561960649 </klowco2>
+    <ddmort_const> 0.8 </ddmort_const>
+  </physiology>
+  <phenology>
+    <radint> -11.3868 </radint>
+    <radslp> 0.0824 </radslp>
+  </phenology>
+</config>
+   

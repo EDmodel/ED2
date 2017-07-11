@@ -1,0 +1,9 @@
+<map id="allometry::dbh2bd" name="allometry::dbh2bd">
+<area shape="rect" id="node2" href="$ed__nbg__init_8f90.html#ae233eb5a6f6ba6ec38dc130b00231ba7" title="near_bare_ground_big\l_leaf_init" alt="" coords="179,5,328,47"/>
+<area shape="rect" id="node6" href="$reproduction_8f90.html#ab93bbb9a2c0f8aa6853ede0ae86d0a20" title="reproduction" alt="" coords="207,71,300,98"/>
+<area shape="rect" id="node3" href="$ed__init_8_f90.html#a700ec73689c2c4dd726b318ed1a7fcf5" title="load_ecosystem_state" alt="" coords="567,15,720,42"/>
+<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="768,42,841,69"/>
+<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="889,42,940,69"/>
+<area shape="rect" id="node7" href="$vegetation__dynamics_8f90.html#ab9ef01736ecab74cd0da4df6c2b63c0f" title="Handles vegetation growth, phenology, reproduction, and disturbance. " alt="" coords="376,67,519,94"/>
+<area shape="rect" id="node8" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="604,67,683,94"/>
+</map>

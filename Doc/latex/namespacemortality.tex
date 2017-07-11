@@ -1,0 +1,91 @@
+\hypertarget{namespacemortality}{}\section{mortality Module Reference}
+\label{namespacemortality}\index{mortality@{mortality}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{namespacemortality_af7ebabdd3dd650224f2a5ddfac2f888e}{mortality\+\_\+rates} (cpatch, ico, avg\+\_\+daily\+\_\+temp, patch\+\_\+age)
+\item 
+subroutine \hyperlink{namespacemortality_aaa157cb2fd70d8ed380faf7ea77a1fd3}{disturbance\+\_\+mortality} (csite, ipa, disturbance\+\_\+rate, new\+\_\+lu, dist\+\_\+path                                                                                                                                                                                   ,mindbh\+\_\+harvest)
+\item 
+real function \hyperlink{namespacemortality_aae8b4072e1f5c7c59cc76370de99d271}{survivorship} (new\+\_\+lu, dist\+\_\+path, mindbh\+\_\+harvest, cpatch, ico)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{mortality@{mortality}!disturbance\+\_\+mortality@{disturbance\+\_\+mortality}}
+\index{disturbance\+\_\+mortality@{disturbance\+\_\+mortality}!mortality@{mortality}}
+\subsubsection[{\texorpdfstring{disturbance\+\_\+mortality(csite, ipa, disturbance\+\_\+rate, new\+\_\+lu, dist\+\_\+path                                                                                                                                                                                   ,mindbh\+\_\+harvest)}{disturbance_mortality(csite, ipa, disturbance_rate, new_lu, dist_path                                                                                                                                                                                   ,mindbh_harvest)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mortality\+::disturbance\+\_\+mortality (
+\begin{DoxyParamCaption}
+\item[{type({\bf sitetype}), target}]{csite, }
+\item[{integer, intent(in)}]{ipa, }
+\item[{real, intent(in)}]{disturbance\+\_\+rate, }
+\item[{integer, intent(in)}]{new\+\_\+lu, }
+\item[{integer, intent(in)}]{dist\+\_\+path, }
+\item[{real, dimension(n\+\_\+pft), intent(in)}]{mindbh\+\_\+harvest}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacemortality_aaa157cb2fd70d8ed380faf7ea77a1fd3}{}\label{namespacemortality_aaa157cb2fd70d8ed380faf7ea77a1fd3}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=336pt]{namespacemortality_aaa157cb2fd70d8ed380faf7ea77a1fd3_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacemortality_aaa157cb2fd70d8ed380faf7ea77a1fd3_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{mortality@{mortality}!mortality\+\_\+rates@{mortality\+\_\+rates}}
+\index{mortality\+\_\+rates@{mortality\+\_\+rates}!mortality@{mortality}}
+\subsubsection[{\texorpdfstring{mortality\+\_\+rates(cpatch, ico, avg\+\_\+daily\+\_\+temp, patch\+\_\+age)}{mortality_rates(cpatch, ico, avg_daily_temp, patch_age)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine mortality\+::mortality\+\_\+rates (
+\begin{DoxyParamCaption}
+\item[{type({\bf patchtype}), target}]{cpatch, }
+\item[{integer, intent(in)}]{ico, }
+\item[{real, intent(in)}]{avg\+\_\+daily\+\_\+temp, }
+\item[{real, intent(in)}]{patch\+\_\+age}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacemortality_af7ebabdd3dd650224f2a5ddfac2f888e}{}\label{namespacemortality_af7ebabdd3dd650224f2a5ddfac2f888e}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacemortality_af7ebabdd3dd650224f2a5ddfac2f888e_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{mortality@{mortality}!survivorship@{survivorship}}
+\index{survivorship@{survivorship}!mortality@{mortality}}
+\subsubsection[{\texorpdfstring{survivorship(new\+\_\+lu, dist\+\_\+path, mindbh\+\_\+harvest, cpatch, ico)}{survivorship(new_lu, dist_path, mindbh_harvest, cpatch, ico)}}]{\setlength{\rightskip}{0pt plus 5cm}real function mortality\+::survivorship (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{new\+\_\+lu, }
+\item[{integer, intent(in)}]{dist\+\_\+path, }
+\item[{real, dimension(n\+\_\+pft), intent(in)}]{mindbh\+\_\+harvest, }
+\item[{type({\bf patchtype}), target}]{cpatch, }
+\item[{integer, intent(in)}]{ico}
+\end{DoxyParamCaption}
+)}\hypertarget{namespacemortality_aae8b4072e1f5c7c59cc76370de99d271}{}\label{namespacemortality_aae8b4072e1f5c7c59cc76370de99d271}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{namespacemortality_aae8b4072e1f5c7c59cc76370de99d271_icgraph}
+\end{center}
+\end{figure}
+
+

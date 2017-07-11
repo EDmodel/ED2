@@ -1,0 +1,88 @@
+$RP_INPUT
+    !--------------------------------------------------------------------------------------!
+    ! FPREFIX -- Prefix of the input files.                                                !
+    !--------------------------------------------------------------------------------------!
+    FPREFIX = '/n/moorcroftfs2/mlongo/EDBRAMS/coupled/monotonic-test/analy/monotonic-test-A-',
+    !--------------------------------------------------------------------------------------!
+
+    !--------------------------------------------------------------------------------------!
+    !   NVP -- List of variables to be printed.                                            !
+    !   VP  -- Variable names (only the first NVP variables will be used)                  !
+    !--------------------------------------------------------------------------------------!
+    NVP = 82,
+    VP  =    'longitude',    'latitude',       'press',       'tempc',       'theta',
+                 'theiv',         'co2',          'rv',      'liquid',         'ice',
+               'cuprliq',     'cuprice',      'areadn',      'areaup',    'wdndraft',
+              'wupdraft',       'thsrc',       'rtsrc',      'co2src',      'ue_avg',
+                've_avg',       'w_avg',         'tke',        'sigw',      'conprr',
+                  'dnmf',        'upmf',         'edt',        'ierr',        'aadn',
+                  'aaup',     'pcprate',      'acccon',      'totpcp',      'pblhgt',
+                   'zen',      'rshort',   'rshorttoa',     'rshortd',      'albedt',
+                 'rlong',     'rlongup',           'h',        'evap',      'transp',
+                'hflxca',     'qwflxca',      'cflxca',        'land',         'sst',
+                  'topo',      'lai_ps',      'agb_ps',     'tcan_ps',    'thcan_ps',
+              'rvcan_ps',     'pcan_ps',   'co2can_ps',     'tveg_ps',    'ustar_ps',
+              'tstar_ps',    'rstar_ps',    'cstar_ps',     'tempc2m',     'tdewc2m',
+                  'u10m',   'smoist_ps',   'smfrac_ps',    'tsoil_ps',    'sltex_bp',
+              'vtype_bp',   'sfcw_mass',  'sfcw_depth',   'sfcw_temp',    'vegz0_ps',
+                 'z0_ps',      'rib_ps',     'zeta_ps',         'gpp',      'plresp',
+               'resphet',       'mynum',
+    !--------------------------------------------------------------------------------------!
+
+
+    !--------------------------------------------------------------------------------------!
+    ! GPREFIX -- Prefix of the output files.                                               !
+    !--------------------------------------------------------------------------------------!
+    GPREFIX  = 'binary/ecuador',
+    !--------------------------------------------------------------------------------------!
+
+
+
+    !--------------------------------------------------------------------------------------!
+    ! NSTEP   -- number of steps to use.  If 1, every step is used; if 2, every other step !
+    !            is used; if 3, one step is used and two are skipped; and so on...         !
+    !--------------------------------------------------------------------------------------!
+    NSTEP    =     1,
+    !--------------------------------------------------------------------------------------!
+
+
+
+    !--------------------------------------------------------------------------------------!
+    !  PROJ  -- Should the files be projected to true lon/lat grid points (yes or no, case !
+    !           insensitive).                                                              !
+    !--------------------------------------------------------------------------------------!
+    PROJ      = 'no',
+    !--------------------------------------------------------------------------------------!
+
+
+    !--------------------------------------------------------------------------------------!
+    !  LATI  -- Southernmost latitude to consider (one value per grid).                    !
+    !  LATF  -- Northernmost latitude to consider (one value per grid).                    !
+    !  LONI  -- Westernmost longitude to consider (one value per grid).                    !
+    !  LONI  -- Easternmost longitude to consider (one value per grid).                    !
+    !--------------------------------------------------------------------------------------!
+    LATI      =  -90., -90.,  -90.,
+    LATF      =  +90., +90.,  +90., 
+    LONI      = -180.,-180., -180.,
+    LONF      =  180., 180.,  180.,
+    !--------------------------------------------------------------------------------------!
+    
+    
+    !--------------------------------------------------------------------------------------!
+    !  ZLEVMAX -- Maximum number of levels to output                                       !
+    !  IPRESSLEV -- Type of vertical coordinate:                                           !
+    !               0.  Native (sigma-z or shaved-eta)                                     !
+    !               1.  Pressure levels                                                    !
+    !               2.  Height levels                                                      !
+    !  INPLEVS   -- In case ipresslev is 1 or 2, the number of prescribed levels           !
+    !  IPLEVS    -- The height levels (N.B. they must be integers)                         !
+    !               If IPRESSLEV = 1, IPLEVS are pressure levels in hPa                    !
+    !                  IPRESSLEV = 2, IPLEVS are the height levels in m above sea level.   !
+    !--------------------------------------------------------------------------------------!
+    ZLEVMAX   =   51, 51, 51,
+    IPRESSLEV =    0,
+    INPLEVS   =   19,
+    IPLEVS    = 1000, 975, 950, 925, 900, 850, 800, 750, 700, 600,
+                 500, 400, 300, 250, 200, 150, 100,  85,  70,
+    !--------------------------------------------------------------------------------------!
+$END

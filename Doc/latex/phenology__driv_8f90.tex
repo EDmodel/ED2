@@ -1,0 +1,210 @@
+\hypertarget{phenology__driv_8f90}{}\section{phenology\+\_\+driv.\+f90 File Reference}
+\label{phenology__driv_8f90}\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+subroutine \hyperlink{phenology__driv_8f90_aebe550e627508a275e8a1000e3bc9c13}{phenology\+\_\+driver} (cgrid, doy, month, tfact)
+\item 
+subroutine \hyperlink{phenology__driv_8f90_ab9a0459d8cb63117c39488527da2a451}{phenology\+\_\+driver\+\_\+eq\+\_\+0} (cgrid, doy, month, tfact)
+\item 
+subroutine \hyperlink{phenology__driv_8f90_a133c291d6ae8cda0fb270023203ff229}{update\+\_\+phenology} (doy, cpoly, isi, lat)
+\item 
+subroutine \hyperlink{phenology__driv_8f90_aad3dbb3ae553616293acf71ccc09158a}{update\+\_\+phenology\+\_\+eq\+\_\+0} (doy, cpoly, isi, lat)
+\item 
+subroutine \hyperlink{phenology__driv_8f90_aa404fdf30b88343b2c85cd24c096a06e}{phenology\+\_\+thresholds} (daylight, soil\+\_\+temp, soil\+\_\+water, \hyperlink{structsoil__coms_1_1soil__class}{soil\+\_\+class}, sum\+\_\+chd, sum\+\_\+dgd                                                                                                                               ,drop\+\_\+cold, leaf\+\_\+out\+\_\+cold, lsl)
+\item 
+subroutine \hyperlink{phenology__driv_8f90_aabac28b5c2ec4bdad019f3e1b716033e}{assign\+\_\+prescribed\+\_\+phen} (green\+\_\+leaf\+\_\+factor, leaf\+\_\+aging\+\_\+factor, dbh, height, pft                                                                                                                                                       ,drop\+\_\+cold, leaf\+\_\+out\+\_\+cold, bl\+\_\+max)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function/\+Subroutine Documentation}
+\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}!assign\+\_\+prescribed\+\_\+phen@{assign\+\_\+prescribed\+\_\+phen}}
+\index{assign\+\_\+prescribed\+\_\+phen@{assign\+\_\+prescribed\+\_\+phen}!phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsubsection[{\texorpdfstring{assign\+\_\+prescribed\+\_\+phen(green\+\_\+leaf\+\_\+factor, leaf\+\_\+aging\+\_\+factor, dbh, height, pft                                                                                                                                                       ,drop\+\_\+cold, leaf\+\_\+out\+\_\+cold, bl\+\_\+max)}{assign_prescribed_phen(green_leaf_factor, leaf_aging_factor, dbh, height, pft                                                                                                                                                       ,drop_cold, leaf_out_cold, bl_max)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine assign\+\_\+prescribed\+\_\+phen (
+\begin{DoxyParamCaption}
+\item[{real, intent(in)}]{green\+\_\+leaf\+\_\+factor, }
+\item[{real, intent(in)}]{leaf\+\_\+aging\+\_\+factor, }
+\item[{real, intent(in)}]{dbh, }
+\item[{real, intent(in)}]{height, }
+\item[{integer, intent(in)}]{pft, }
+\item[{logical, intent(out)}]{drop\+\_\+cold, }
+\item[{logical, intent(out)}]{leaf\+\_\+out\+\_\+cold, }
+\item[{real, intent(out)}]{bl\+\_\+max}
+\end{DoxyParamCaption}
+)}\hypertarget{phenology__driv_8f90_aabac28b5c2ec4bdad019f3e1b716033e}{}\label{phenology__driv_8f90_aabac28b5c2ec4bdad019f3e1b716033e}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aabac28b5c2ec4bdad019f3e1b716033e_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aabac28b5c2ec4bdad019f3e1b716033e_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}!phenology\+\_\+driver@{phenology\+\_\+driver}}
+\index{phenology\+\_\+driver@{phenology\+\_\+driver}!phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsubsection[{\texorpdfstring{phenology\+\_\+driver(cgrid, doy, month, tfact)}{phenology_driver(cgrid, doy, month, tfact)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+driver (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{doy, }
+\item[{integer, intent(in)}]{month, }
+\item[{real, intent(in)}]{tfact}
+\end{DoxyParamCaption}
+)}\hypertarget{phenology__driv_8f90_aebe550e627508a275e8a1000e3bc9c13}{}\label{phenology__driv_8f90_aebe550e627508a275e8a1000e3bc9c13}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aebe550e627508a275e8a1000e3bc9c13_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aebe550e627508a275e8a1000e3bc9c13_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}!phenology\+\_\+driver\+\_\+eq\+\_\+0@{phenology\+\_\+driver\+\_\+eq\+\_\+0}}
+\index{phenology\+\_\+driver\+\_\+eq\+\_\+0@{phenology\+\_\+driver\+\_\+eq\+\_\+0}!phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsubsection[{\texorpdfstring{phenology\+\_\+driver\+\_\+eq\+\_\+0(cgrid, doy, month, tfact)}{phenology_driver_eq_0(cgrid, doy, month, tfact)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+driver\+\_\+eq\+\_\+0 (
+\begin{DoxyParamCaption}
+\item[{type({\bf edtype}), target}]{cgrid, }
+\item[{integer, intent(in)}]{doy, }
+\item[{integer, intent(in)}]{month, }
+\item[{real, intent(in)}]{tfact}
+\end{DoxyParamCaption}
+)}\hypertarget{phenology__driv_8f90_ab9a0459d8cb63117c39488527da2a451}{}\label{phenology__driv_8f90_ab9a0459d8cb63117c39488527da2a451}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_ab9a0459d8cb63117c39488527da2a451_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_ab9a0459d8cb63117c39488527da2a451_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}!phenology\+\_\+thresholds@{phenology\+\_\+thresholds}}
+\index{phenology\+\_\+thresholds@{phenology\+\_\+thresholds}!phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsubsection[{\texorpdfstring{phenology\+\_\+thresholds(daylight, soil\+\_\+temp, soil\+\_\+water, soil\+\_\+class, sum\+\_\+chd, sum\+\_\+dgd                                                                                                                               ,drop\+\_\+cold, leaf\+\_\+out\+\_\+cold, lsl)}{phenology_thresholds(daylight, soil_temp, soil_water, soil_class, sum_chd, sum_dgd                                                                                                                               ,drop_cold, leaf_out_cold, lsl)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine phenology\+\_\+thresholds (
+\begin{DoxyParamCaption}
+\item[{real, intent(in)}]{daylight, }
+\item[{real, intent(in)}]{soil\+\_\+temp, }
+\item[{real, dimension(nzg), intent(in)}]{soil\+\_\+water, }
+\item[{integer, dimension(nzg), intent(in)}]{soil\+\_\+class, }
+\item[{real, intent(inout)}]{sum\+\_\+chd, }
+\item[{real, intent(inout)}]{sum\+\_\+dgd, }
+\item[{logical, intent(out)}]{drop\+\_\+cold, }
+\item[{logical, intent(out)}]{leaf\+\_\+out\+\_\+cold, }
+\item[{integer, intent(in)}]{lsl}
+\end{DoxyParamCaption}
+)}\hypertarget{phenology__driv_8f90_aa404fdf30b88343b2c85cd24c096a06e}{}\label{phenology__driv_8f90_aa404fdf30b88343b2c85cd24c096a06e}
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aa404fdf30b88343b2c85cd24c096a06e_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}!update\+\_\+phenology@{update\+\_\+phenology}}
+\index{update\+\_\+phenology@{update\+\_\+phenology}!phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsubsection[{\texorpdfstring{update\+\_\+phenology(doy, cpoly, isi, lat)}{update_phenology(doy, cpoly, isi, lat)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine update\+\_\+phenology (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{doy, }
+\item[{type({\bf polygontype}), target}]{cpoly, }
+\item[{integer, intent(in)}]{isi, }
+\item[{real, intent(in)}]{lat}
+\end{DoxyParamCaption}
+)}\hypertarget{phenology__driv_8f90_a133c291d6ae8cda0fb270023203ff229}{}\label{phenology__driv_8f90_a133c291d6ae8cda0fb270023203ff229}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_a133c291d6ae8cda0fb270023203ff229_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_a133c291d6ae8cda0fb270023203ff229_icgraph}
+\end{center}
+\end{figure}
+
+
+\index{phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}!update\+\_\+phenology\+\_\+eq\+\_\+0@{update\+\_\+phenology\+\_\+eq\+\_\+0}}
+\index{update\+\_\+phenology\+\_\+eq\+\_\+0@{update\+\_\+phenology\+\_\+eq\+\_\+0}!phenology\+\_\+driv.\+f90@{phenology\+\_\+driv.\+f90}}
+\subsubsection[{\texorpdfstring{update\+\_\+phenology\+\_\+eq\+\_\+0(doy, cpoly, isi, lat)}{update_phenology_eq_0(doy, cpoly, isi, lat)}}]{\setlength{\rightskip}{0pt plus 5cm}subroutine update\+\_\+phenology\+\_\+eq\+\_\+0 (
+\begin{DoxyParamCaption}
+\item[{integer, intent(in)}]{doy, }
+\item[{type({\bf polygontype}), target}]{cpoly, }
+\item[{integer, intent(in)}]{isi, }
+\item[{real, intent(in)}]{lat}
+\end{DoxyParamCaption}
+)}\hypertarget{phenology__driv_8f90_aad3dbb3ae553616293acf71ccc09158a}{}\label{phenology__driv_8f90_aad3dbb3ae553616293acf71ccc09158a}
+
+
+Here is the call graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aad3dbb3ae553616293acf71ccc09158a_cgraph}
+\end{center}
+\end{figure}
+
+
+
+
+Here is the caller graph for this function\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{phenology__driv_8f90_aad3dbb3ae553616293acf71ccc09158a_icgraph}
+\end{center}
+\end{figure}
+
+
