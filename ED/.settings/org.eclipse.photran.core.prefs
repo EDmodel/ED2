@@ -1,5 +1,0 @@
-EnableVPG=false
-FortranIncludePaths=/ED\n
-FortranModulePaths=/ED\n
-SourceForms=*.F\=Fixed Form - INCLUDE lines ignored\n*.F03\=Free Form - C Preprocessed\n*.F08\=Free Form - C Preprocessed\n*.F77\=Fixed Form - INCLUDE lines ignored\n*.F90\=Free Form\n*.F95\=Free Form - C Preprocessed\n*.FIX\=Fixed Form - INCLUDE lines ignored\n*.FOR\=Fixed Form - INCLUDE lines ignored\n*.FPP\=Fixed Form - INCLUDE lines ignored\n*.FTN\=Fixed Form - INCLUDE lines ignored\n*.f\=Fixed Form - INCLUDE lines ignored\n*.f03\=Free Form\n*.f08\=Free Form\n*.f77\=Fixed Form - INCLUDE lines ignored\n*.f90\=Free Form\n*.f95\=Free Form\n*.fix\=Fixed Form - INCLUDE lines ignored\n*.for\=Fixed Form - INCLUDE lines ignored\n*.fpp\=Fixed Form - INCLUDE lines ignored\n*.ftn\=Fixed Form - INCLUDE lines ignored\n
-eclipse.preferences.version=1
