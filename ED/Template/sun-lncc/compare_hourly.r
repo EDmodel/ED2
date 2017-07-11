@@ -14,7 +14,7 @@ graphics.off()
 #      Here is the user defined variable section.                                          #
 #------------------------------------------------------------------------------------------#
 here    = getwd()                               #   Current directory
-srcdir  = "/Users/manfredo/Documents/Eclipse_workspace/R-utils"      #   Script directory
+srcdir  = "/prj/prjidfca/marcosl/Util/Rsc"      #   Script directory
 ibackground    = 0                              # Make figures compatible to background
                                                 # 0 -- white
                                                 # 1 -- black
@@ -140,7 +140,7 @@ sites[[n]] = list( iata = "cax"
                  , drya = "08/19"
                  , dryz = "11/29"
                  )#end list
-use.sites = c("gyf")
+#use.sites = c("gyf")
 
 #use.sites = c("s67")
 #use.sites = c("m34")
@@ -151,7 +151,7 @@ use.sites = c("gyf")
 #use.sites = c("rja","ban")
 #use.sites = c("s83","pdg","rja","ban")
 #use.sites = c("gyf","s83","pdg","m34")
-#use.sites = c("gyf","s67","s83","pdg","rja","m34")
+use.sites = c("gyf","s67","s83","pdg","rja","m34")
 #------------------------------------------------------------------------------------------#
 
 
@@ -217,9 +217,9 @@ paper             = "letter"  # Paper size, to define the plot shape
 wpaper            = "legal"   # Wide paper size, to define the plot shape
 ptsz              = 18        # Font size.
 
-st.cex.min        = 1.0       # Minimum and maximum sizes for points in the
+st.cex.min        = 1.0       # Minimum and maximum sizes for points in the 
 st.cex.max        = 2.5       #     Skill and Taylor diagrams
-st.lwd.min        = 1.3       # Minimum and maximum sizes for points in the
+st.lwd.min        = 1.3       # Minimum and maximum sizes for points in the 
 st.lwd.max        = 3.0       #     Skill and Taylor diagrams
 
 
@@ -230,7 +230,7 @@ ftnight.n.boot    = 1000      # # of bootstrap iterations (fn mean)
 
 n.quant           = 1024      # # of quantiles to produce the density function.
                               #    We strongly advise to choose a number that is
-                              #    a power of two, especially when using EDF
+                              #    a power of two, especially when using EDF 
                               #    (otherwise distributions will be interpolated).
 nhour.min         = 16        # Minimum number of hours to use the data.
 ust.key.frac      = 1/9       # Fraction of u* plot width used for key
@@ -826,11 +826,11 @@ compvar.col  = list.2.data.frame(compvar)$col
 compvar.sym  = parse(text=list.2.data.frame(compvar)$symbol)
 good.key     = list.2.data.frame(good   )$vnam
 season.key   = season.list
-diel.key     = c("night"  ,"rise.set","day"    ,"all.hrs"  ,"dmean"
+diel.key     = c("night"  ,"rise.set","day"    ,"all.hrs"  ,"dmean"     
                 ,"fnmean")
 diel.desc    = c("Night"  ,"Rise/Set","Day"    ,"All hours","Daily mean"
                 ,"Semi-monthly mean")
-diel.default = c(TRUE     ,FALSE     ,TRUE     ,TRUE       ,FALSE
+diel.default = c(TRUE     ,FALSE     ,TRUE     ,TRUE       ,FALSE       
                 ,FALSE    )
 diel.col     = c("#3B24B3","#990F0F","#E65C17","#A3CC52","#2996CC"
                 ,"#306614")
@@ -2276,7 +2276,7 @@ for (p in loop.sites){
                                         , dimnames = dimnames(obser$ust.nee)
                                         )#end matrix
                                 + 0. * obser[[this.ust]]
-                                )#end
+                                )#end 
             #------------------------------------------------------------------------------#
 
 
@@ -2293,7 +2293,7 @@ for (p in loop.sites){
                                           , na.rm = TRUE
                                           )#end tapply
                                   + 0. * obser[[ust.dmean]]
-                                  )#end
+                                  )#end 
             #------------------------------------------------------------------------------#
 
 
@@ -2440,8 +2440,8 @@ for (p in loop.sites){
 
 
          #----- Save the data. ------------------------------------------------------------#
-         model[[this.vnam  ]] = mod.now
-         model[[this.dmean ]] = dmean.model
+         model[[this.vnam  ]] = mod.now     
+         model[[this.dmean ]] = dmean.model 
          model[[this.fnmean]] = fnmean.model
          model[[this.fnq025]] = fnq025.model
          model[[this.fnq975]] = fnq975.model
@@ -4981,7 +4981,7 @@ if (plot.ust.ftnight){
                #---------------------------------------------------------------------------#
                #     Split the device into multiple panels.                                #
                #---------------------------------------------------------------------------#
-               par(par.user)
+               par(par.user) 
                image.map( x              = x.bg
                         , y              = y.bg
                         , z              = z.bg
@@ -5595,7 +5595,7 @@ if (plot.ust.bias){
                #---------------------------------------------------------------------------#
                #     Split the device into multiple panels.                                #
                #---------------------------------------------------------------------------#
-               par(par.user)
+               par(par.user) 
                image.map( x              = x.bg
                         , y              = y.bg
                         , z              = z.bg
@@ -8280,7 +8280,7 @@ if (plot.spider){
       cat("   - ",desc.good,"...","\n")
       web = array( dim      = c   (nsimul,nsites,ncompvar,ndiel,nseason)
                  , dimnames = list(simul.key,sites$iata,compvar.key,diel.key,season.key)
-                 )#end array
+                 )#end array 
       for (v in sequence(ncompvar)){
          this.vnam     = compvar[[v]]$vnam
          this.soilvar  = compvar[[v]]$soilvar
@@ -9062,7 +9062,7 @@ if (plot.skill.taylor){
          #---------------------------------------------------------------------------------#
          #     Plot Taylor and skill plots only if there is anything to plot.              #
          #---------------------------------------------------------------------------------#
-         ok.taylor.skill = (  length(unlist(obs.diel)) > 0  && any(cnt.diel > 0)
+         ok.taylor.skill = (  length(unlist(obs.diel)) > 0  && any(cnt.diel > 0)           
                            && any(is.finite(bias.range))    && any(is.finite(sigma.range)))
          if (ok.taylor.skill){
             #---- Fix ranges. -------------------------------------------------------------#
@@ -9277,7 +9277,7 @@ if (plot.skill.taylor){
                }#end if
                dummy = clean.tmp()
                #---------------------------------------------------------------------------#
-            }#end for (o in 1:nout)
+            }#end for (o in 1:nout) 
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -9403,7 +9403,7 @@ if (plot.skill.taylor){
                   iata = sites$iata[p]
 
                   #----- Skip the site if there is no data. -------------------------------#
-                  ok.iata = (  length(obs.diel[[iata]]) > 0
+                  ok.iata = (  length(obs.diel[[iata]]) > 0 
                             && any(is.finite(obs.diel[[iata]])) )
                   ok.iata = ok.iata && ( ! is.na(ok.iata))
                   if (ok.iata){
@@ -9691,7 +9691,7 @@ if (plot.skill.taylor){
                   bias.range.use = bias.range
                   r2.range.use   = r2.range
                }#end if
-
+         
                #----- Make the file name. -------------------------------------------------#
                out.skill = out[[outform[o]]]$skill$default.diel
                fichier   = file.path(out.skill,paste("skill-",this.vnam,"-",simul$name[s]
@@ -10014,7 +10014,7 @@ if (plot.skill.taylor){
             }#end if
             dummy = clean.tmp()
             #------------------------------------------------------------------------------#
-         }#end for (o in 1:nout)
+         }#end for (o in 1:nout) 
          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -10753,7 +10753,7 @@ if (plot.skill.taylor){
             }#end if
             dummy = clean.tmp()
             #------------------------------------------------------------------------------#
-         }#end for (o in 1:nout)
+         }#end for (o in 1:nout) 
          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
@@ -11150,7 +11150,7 @@ if (plot.soil.skill.taylor){
                   lwd.diel   = list()
                   for (cc in seq_along(cnt.now)){
                      cex.diel[[cc]] = pmax( st.cex.min
-                                          , ( st.cex.min
+                                          , ( st.cex.min 
                                             + ( st.cex.max     - st.cex.min )
                                             * ( cnt.now[[cc]]  - st.cnt.min )
                                             / ( st.cnt.max     - st.cnt.min )
@@ -11593,7 +11593,7 @@ if (plot.soil.skill.taylor){
                   cnt.now    = cnt.diel[[iata]]
                   for (cc in seq_along(cnt.now)){
                      cex.diel[[iata]][[cc]] = pmax( st.cex.min
-                                                  , ( st.cex.min
+                                                  , ( st.cex.min 
                                                     + ( st.cex.max     - st.cex.min )
                                                     * ( cnt.now[[cc]]  - st.cnt.min )
                                                     / ( st.cnt.max     - st.cnt.min )

@@ -1,7 +1,7 @@
 #!/bin/sh
 here=$(pwd)
 moi=$(whoami)
-diskthere=""
+diskthere="/n/moorcroftfs2"
 lonlat="${here}/joborder.txt"
 
 desc=$(basename ${here})
@@ -12,9 +12,6 @@ execsrc="${HOME}/EDBRAMS/ED/build"
 #------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#    If diskthere is empty, assume 
-
 #----- Find the output path (both local and remote paths will be cleaned). ----------------#
 basehere=$(basename ${here})
 dirhere=$(dirname ${here})
@@ -24,23 +21,6 @@ do
    dirhere=$(dirname ${dirhere})
 done
 diskhere=${dirhere}
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#    If diskthere is empty, assume diskthere=diskhere.                                     #
-#------------------------------------------------------------------------------------------#
-if [ "x${diskthere}" == "x" ]
-then
-   diskthere=${diskhere}
-fi
-#------------------------------------------------------------------------------------------#
-   
-
-
-#------------------------------------------------------------------------------------------#
-#     Find where stuff to be delete are located.                                           #
-#------------------------------------------------------------------------------------------#
 echo "-------------------------------------------------------------------------------"
 echo " - Simulation control on disk: ${diskhere}"
 echo " - Output on disk:             ${diskthere}"
@@ -186,28 +166,27 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   ihrzrad=$(echo ${oi}      | awk '{print $77}')
-   crown=$(echo   ${oi}      | awk '{print $78}')
-   ltransvis=$(echo ${oi}    | awk '{print $79}')
-   lreflectvis=$(echo ${oi}  | awk '{print $80}')
-   ltransnir=$(echo ${oi}    | awk '{print $81}')
-   lreflectnir=$(echo ${oi}  | awk '{print $82}')
-   orienttree=$(echo ${oi}   | awk '{print $83}')
-   orientgrass=$(echo ${oi}  | awk '{print $84}')
-   clumptree=$(echo ${oi}    | awk '{print $85}')
-   clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   crown=$(echo   ${oi}      | awk '{print $77}')
+   ltransvis=$(echo ${oi}    | awk '{print $78}')
+   lreflectvis=$(echo ${oi}  | awk '{print $79}')
+   ltransnir=$(echo ${oi}    | awk '{print $80}')
+   lreflectnir=$(echo ${oi}  | awk '{print $81}')
+   orienttree=$(echo ${oi}   | awk '{print $82}')
+   orientgrass=$(echo ${oi}  | awk '{print $83}')
+   clumptree=$(echo ${oi}    | awk '{print $84}')
+   clumpgrass=$(echo ${oi}   | awk '{print $85}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
+   igndvap=$(echo ${oi}      | awk '{print $87}')
+   iphen=$(echo ${oi}        | awk '{print $88}')
+   iallom=$(echo ${oi}       | awk '{print $89}')
+   ibigleaf=$(echo ${oi}     | awk '{print $90}')
+   irepro=$(echo ${oi}       | awk '{print $91}')
+   treefall=$(echo ${oi}     | awk '{print $92}')
+   ianthdisturb=$(echo ${oi} | awk '{print $93}')
+   ianthdataset=$(echo ${oi} | awk '{print $94}')
    #---------------------------------------------------------------------------------------#
 
-   qdel ${desc}-${polyname}
+   scancel -n ${desc}-${polyname} -p ${queue}
 done
 #------------------------------------------------------------------------------------------#
 
@@ -311,25 +290,24 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   ihrzrad=$(echo ${oi}      | awk '{print $77}')
-   crown=$(echo   ${oi}      | awk '{print $78}')
-   ltransvis=$(echo ${oi}    | awk '{print $79}')
-   lreflectvis=$(echo ${oi}  | awk '{print $80}')
-   ltransnir=$(echo ${oi}    | awk '{print $81}')
-   lreflectnir=$(echo ${oi}  | awk '{print $82}')
-   orienttree=$(echo ${oi}   | awk '{print $83}')
-   orientgrass=$(echo ${oi}  | awk '{print $84}')
-   clumptree=$(echo ${oi}    | awk '{print $85}')
-   clumpgrass=$(echo ${oi}   | awk '{print $86}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
-   igndvap=$(echo ${oi}      | awk '{print $88}')
-   iphen=$(echo ${oi}        | awk '{print $89}')
-   iallom=$(echo ${oi}       | awk '{print $90}')
-   ibigleaf=$(echo ${oi}     | awk '{print $91}')
-   irepro=$(echo ${oi}       | awk '{print $92}')
-   treefall=$(echo ${oi}     | awk '{print $93}')
-   ianthdisturb=$(echo ${oi} | awk '{print $94}')
-   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   crown=$(echo   ${oi}      | awk '{print $77}')
+   ltransvis=$(echo ${oi}    | awk '{print $78}')
+   lreflectvis=$(echo ${oi}  | awk '{print $79}')
+   ltransnir=$(echo ${oi}    | awk '{print $80}')
+   lreflectnir=$(echo ${oi}  | awk '{print $81}')
+   orienttree=$(echo ${oi}   | awk '{print $82}')
+   orientgrass=$(echo ${oi}  | awk '{print $83}')
+   clumptree=$(echo ${oi}    | awk '{print $84}')
+   clumpgrass=$(echo ${oi}   | awk '{print $85}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
+   igndvap=$(echo ${oi}      | awk '{print $87}')
+   iphen=$(echo ${oi}        | awk '{print $88}')
+   iallom=$(echo ${oi}       | awk '{print $89}')
+   ibigleaf=$(echo ${oi}     | awk '{print $90}')
+   irepro=$(echo ${oi}       | awk '{print $91}')
+   treefall=$(echo ${oi}     | awk '{print $92}')
+   ianthdisturb=$(echo ${oi} | awk '{print $93}')
+   ianthdataset=$(echo ${oi} | awk '{print $94}')
    #---------------------------------------------------------------------------------------#
 
 

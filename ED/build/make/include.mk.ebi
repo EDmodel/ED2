@@ -1,0 +1,158 @@
+#Makefile include include.mk.opt
+############################## Change Log ##################################
+# 1.0.0.2
+#
+# 000908 MJB include.mk-mrc ##
+#            Added MAKE environment varaible.
+#            Added free format option to F_OPTS for some platforms. ##
+# 000907 MJB include.mk-mrc ##
+#            Changed the defualts to no NCAR Graphics and no parallel.
+#            Also commented out the machine specifics to force the user to
+#            select the appropriate machine for them. ##
+# 000823 MJB include.mk-mrc ##
+#            New - defines all make environment varaibles and is included
+#            in all make files. ##
+#
+############################################################################
+
+# Define make (gnu make works best).
+
+MAKE=/usr/bin/make
+
+# libraries.
+
+BASE=$(ED_ROOT)/build/
+LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
+
+# Activate appropriate parts below, comment out others.
+
+#---------------------------------------------------------------
+# If you are using a real distribution of NCAR Graphics...
+#NCARG_DIR=/usr/local/ncarg-4.3.0/lib
+#LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
+#---------------------------------------------------------------
+
+# HDF libraries  -----------------------------------------------
+# HDF4 library: Instructions to install: www.cptec.inpe.br/brams
+# If you run "configure" script, you don't need to edit line bellow
+#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+# --------------------------------------------------------------
+
+# HDF 5  Libraries
+# ED2 HAS OPTIONAL HDF 5 I/O
+# If you wish to use this functionality specify USE_HDF5=1
+# and specify the location of the include directory
+# library files. Make sure you include the zlib.a location too.
+
+USE_HDF5=1
+USE_COLLECTIVE_MPIO=0
+HDF5_INCS=-I/home/mdietze/hdf5-1.8.1/hdf5/include
+HDF5_LIBS=-L/home/mdietze/hdf5-1.8.1/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl \
+          -lz
+
+
+# netCDF libraries ---------------------------------------------
+# If you have netCDF set USENC=1 and type the lib folder
+# at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
+# If you don't have it, leave USENC=0 and type a dummy
+# folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
+USENC=0
+NC_LIBS=-L/dev/null
+# --------------------------------------------------------------
+
+# interface ----------------------------------------------------
+# This should be 1 unless you are running with -gen-interfaces.
+# Interfaces usually make the compilation to crash when the 
+# -gen-interfaces option are on, so this flag bypass all 
+# interfaces in the code.
+USE_INTERF=1
+
+# MPI_Wtime. ---------------------------------------------------
+# If USE_MPIWTIME=1, then it will use MPI libraries to compute
+# the wall time (the only double-precision intrinsic).  In case
+# you don't have it, leave USE_MPIWTIME=0, in which case it will
+# use a simpler, single-precision function.
+USE_MPIWTIME=0
+
+
+#-----------------  LINUX Portland Group pgf77/gcc ---------------
+#CMACH=PC_LINUX1
+#F_COMP=mpif90
+#C_COMP=mpicc
+#LOADER=mpif90
+#C_LOADER=mpicc
+#LIBS=
+#MOD_EXT=mod
+#Compiler options:
+#F_OPTS=-Mvect=cachesize:262144,sse -Munroll -Mnoframe -O2 -pc 64 -Mfree 
+#If using AMD Athlon
+# -tp athlonxp -fastsse
+#C_OPTS=-O3 -DUNDERSCORE -DLITTLE
+#LOADER_OPTS=-v -Wl,-static
+#-----------------------------------------------------------------
+
+#-----------------  LINUX INTEL FORTRAN-95 Compiler/GCC  ---------
+#CMACH=PC_LINUX1
+#F_COMP=mpif90
+#C_COMP=mpicc
+#LOADER=mpif90
+#C_LOADER=mpicc
+#LIBS=
+#MOD_EXT=mod
+#Compiler options
+#F_OPTS=-tpp6 -FR -O3 -Vaxlib -static
+#C_OPTS=-tpp6 -O3 -DLITTLE
+#LOADER_OPTS=-tpp6 -O3 -static -Vaxlib
+#C_LOADER_OPTS=-v
+#-----------------------------------------------------------------
+
+#-----------------  LINUX G95 compiler g95/gcc  ------------------
+CMACH=PC_LINUX1
+F_COMP=mpif90
+#F_COMP=/home/mdietze/bin/gcc-build/bin/gfortran \
+#	-I/usr/include/openmpi/1.2.3-gcc/64 \
+#	-I/usr/include/openmpi/1.2.3-gcc -m64 -pthread \
+#	-I/usr/lib64/openmpi/1.2.3-gcc -L/usr/lib64/openmpi/1.2.3-gcc \
+#	-lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl \
+#	-Wl,--export-dynamic -lnsl -lutil -lm -ldl
+C_COMP=mpicc
+LOADER=mpif90
+#LOADER=$(FCOMP)
+C_LOADER=mpicc
+LIBS=
+MOD_EXT=mod
+#Compiler options
+### debugging
+#F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check #-fbacktrace -fdump-core
+## FAST
+F_OPTS= -O3 ##-static -fno-second-underscore
+C_OPTS=-O3 -DLITTLE
+LOADER_OPTS= -g -Wl,-rpath -Wl,/home/mdietze/hdf5-1.8.1/hdf5/lib
+#LOADER_OPTS=-O3 -static -fno-second-underscore
+C_LOADER_OPTS=-v -static
+#MPI_PATH=/n/Moorcroft_Lab/Lab/apps/i91
+#PAR_INCS=-I$(MPI_PATH)/include
+#PAR_LIBS=-L$(MPI_PATH)/lib -lmpich -lpmpich
+#PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+# If compiling for a single-CPU platform only (without MPI):
+
+#-----------------------------------------------------------------
+#PAR_LIBS=
+#PAR_DEFS=
+#-----------------------------------------------------------------
+
+# Else if using MPI libraries:
+
+#---------------If using scritps 'mpicc' e 'mpif90'---------------'
+PAR_DEFS=-DRAMS_MPI
+#-----------------------------------------------------------------
+
+# For IBM,HP,SGI,ALPHA,LINUX use these:
+ARCHIVE=ar rs
+# For NEC SX-6
+#ARCHIVE=sxar rs
+# For SUN,CONVEX
+#ARCHIVE=ar r'
+
