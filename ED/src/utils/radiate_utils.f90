@@ -6,7 +6,6 @@
 !------------------------------------------------------------------------------------------!
 subroutine solar_radiation_breakdown(cgrid,ipy)
    use ed_state_vars        , only : edtype        ! ! intent(in)
-   use ed_misc_coms         , only : current_time  ! ! intent(in)
    use met_driver_coms      , only : imetrad       ! ! intent(in)
    use canopy_radiation_coms, only : fvis_beam_def & ! intent(in)
                                    , fvis_diff_def & ! intent(in)
@@ -148,7 +147,6 @@ subroutine short2diff_sib(rshort_tot,cosz,rshort_diff)
    real, intent(in)    :: cosz        ! Cosine of the zenith distance
    real, intent(out)   :: rshort_diff ! Surface incident diffuse shortwave radiation.
    !----- Local variables. ----------------------------------------------------------------!
-   real                :: stemp
    real                :: cloud
    real                :: difrat
    real                :: vnrat
@@ -203,25 +201,25 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
                                    , fnir_diff_def ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)    :: rshort_full          ! Incident SW radiation   (total)   [  W/m²]
+   real, intent(in)    :: rshort_full          ! Incident SW radiation   (total)   [  W/mï¿½]
    real, intent(in)    :: atm_prss             ! Atmospheric pressure              [    Pa]
    real, intent(in)    :: cosz                 ! cos(zenith distance)              [   ---]
-   real, intent(out)   :: par_beam             ! Incident PAR            (direct ) [  W/m²]
-   real, intent(out)   :: par_diff             ! Incident PAR            (diffuse) [  W/m²]
-   real, intent(out)   :: nir_beam             ! Incident near-infrared  (direct ) [  W/m²]
-   real, intent(out)   :: nir_diff             ! Incident near-infrared  (diffuse) [  W/m²]
-   real, intent(out)   :: rshort_diff          ! Incident SW radiation   (diffuse) [  W/m²]
+   real, intent(out)   :: par_beam             ! Incident PAR            (direct ) [  W/mï¿½]
+   real, intent(out)   :: par_diff             ! Incident PAR            (diffuse) [  W/mï¿½]
+   real, intent(out)   :: nir_beam             ! Incident near-infrared  (direct ) [  W/mï¿½]
+   real, intent(out)   :: nir_diff             ! Incident near-infrared  (diffuse) [  W/mï¿½]
+   real, intent(out)   :: rshort_diff          ! Incident SW radiation   (diffuse) [  W/mï¿½]
    !----- Local variables. ----------------------------------------------------------------!
-   real                :: par_beam_top         ! PAR at the top of atmosphere      [  W/m²]
-   real                :: nir_beam_top         ! NIR at the top of atmosphere      [  W/m²]
-   real                :: par_beam_pot         ! Potential incident PAR  (direct)  [  W/m²]
-   real                :: par_diff_pot         ! Potential incident PAR  (diffuse) [  W/m²]
-   real                :: par_full_pot         ! Potential incident PAR  (total)   [  W/m²]
-   real                :: nir_beam_pot         ! Potential  PAR          (direct)  [  W/m²]
-   real                :: nir_diff_pot         ! Potential  PAR          (diffuse) [  W/m²]
-   real                :: nir_full_pot         ! Potential  PAR          (total)   [  W/m²]
-   real                :: par_full             ! Actual incident PAR     (total)   [  W/m²]
-   real                :: nir_full             ! Actual incident NIR     (total)   [  W/m²]
+   real                :: par_beam_top         ! PAR at the top of atmosphere      [  W/mï¿½]
+   real                :: nir_beam_top         ! NIR at the top of atmosphere      [  W/mï¿½]
+   real                :: par_beam_pot         ! Potential incident PAR  (direct)  [  W/mï¿½]
+   real                :: par_diff_pot         ! Potential incident PAR  (diffuse) [  W/mï¿½]
+   real                :: par_full_pot         ! Potential incident PAR  (total)   [  W/mï¿½]
+   real                :: nir_beam_pot         ! Potential  PAR          (direct)  [  W/mï¿½]
+   real                :: nir_diff_pot         ! Potential  PAR          (diffuse) [  W/mï¿½]
+   real                :: nir_full_pot         ! Potential  PAR          (total)   [  W/mï¿½]
+   real                :: par_full             ! Actual incident PAR     (total)   [  W/mï¿½]
+   real                :: nir_full             ! Actual incident NIR     (total)   [  W/mï¿½]
    real                :: fvis_beam_act        ! Actual beam fraction - PAR        [   ---]
    real                :: fnir_beam_act        ! Actual beam fraction - NIR        [   ---]
    real                :: fvis_diff_act        ! Actual diffuse fraction - PAR     [   ---]
@@ -231,7 +229,7 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
    real                :: aux_nir              ! Auxiliary variable                [   ---]
    real                :: secz                 ! sec(zenith distance)              [   ---]
    real                :: log10secz            ! log10[sec(zenith distance)]       [   ---]
-   real                :: w10                  ! Minimum Water absorption          [  W/m²]
+   real                :: w10                  ! Minimum Water absorption          [  W/mï¿½]
    !---------------------------------------------------------------------------------------!
    !    Local constants.                                                                   !
    !---------------------------------------------------------------------------------------!
@@ -267,7 +265,7 @@ subroutine short_bdown_weissnorman(rshort_full,atm_prss,cosz,par_beam,par_diff,n
       !------------------------------------------------------------------------------------!
 
 
-      !----- Total radiation at the top [  W/m²], using ED defaults. ----------------------!
+      !----- Total radiation at the top [  W/mï¿½], using ED defaults. ----------------------!
       par_beam_top = fvis_beam_def * solar
       nir_beam_top = fnir_beam_def * solar
       !------------------------------------------------------------------------------------!
@@ -370,7 +368,6 @@ subroutine update_rad_avg(cgrid)
    type(edtype)     , target    :: cgrid
    !----- Local variables. ----------------------------------------------------------------!
    type(polygontype), pointer   :: cpoly
-   type(sitetype)   , pointer   :: csite
    integer                      :: ipy
    integer                      :: isi
    real                         :: tfact

@@ -278,24 +278,25 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   crown=$(echo   ${oi}      | awk '{print $77}')
-   ltransvis=$(echo ${oi}    | awk '{print $78}')
-   lreflectvis=$(echo ${oi}  | awk '{print $79}')
-   ltransnir=$(echo ${oi}    | awk '{print $80}')
-   lreflectnir=$(echo ${oi}  | awk '{print $81}')
-   orienttree=$(echo ${oi}   | awk '{print $82}')
-   orientgrass=$(echo ${oi}  | awk '{print $83}')
-   clumptree=$(echo ${oi}    | awk '{print $84}')
-   clumpgrass=$(echo ${oi}   | awk '{print $85}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
-   igndvap=$(echo ${oi}      | awk '{print $87}')
-   iphen=$(echo ${oi}        | awk '{print $88}')
-   iallom=$(echo ${oi}       | awk '{print $89}')
-   ibigleaf=$(echo ${oi}     | awk '{print $90}')
-   irepro=$(echo ${oi}       | awk '{print $91}')
-   treefall=$(echo ${oi}     | awk '{print $92}')
-   ianthdisturb=$(echo ${oi} | awk '{print $93}')
-   ianthdataset=$(echo ${oi} | awk '{print $94}')
+   ihrzrad=$(echo ${oi}      | awk '{print $77}')
+   crown=$(echo   ${oi}      | awk '{print $78}')
+   ltransvis=$(echo ${oi}    | awk '{print $79}')
+   lreflectvis=$(echo ${oi}  | awk '{print $80}')
+   ltransnir=$(echo ${oi}    | awk '{print $81}')
+   lreflectnir=$(echo ${oi}  | awk '{print $82}')
+   orienttree=$(echo ${oi}   | awk '{print $83}')
+   orientgrass=$(echo ${oi}  | awk '{print $84}')
+   clumptree=$(echo ${oi}    | awk '{print $85}')
+   clumpgrass=$(echo ${oi}   | awk '{print $86}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
+   igndvap=$(echo ${oi}      | awk '{print $88}')
+   iphen=$(echo ${oi}        | awk '{print $89}')
+   iallom=$(echo ${oi}       | awk '{print $90}')
+   ibigleaf=$(echo ${oi}     | awk '{print $91}')
+   irepro=$(echo ${oi}       | awk '{print $92}')
+   treefall=$(echo ${oi}     | awk '{print $93}')
+   ianthdisturb=$(echo ${oi} | awk '{print $94}')
+   ianthdataset=$(echo ${oi} | awk '{print $95}')
    #---------------------------------------------------------------------------------------#
 
 
@@ -1290,6 +1291,7 @@ do
    sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
    sed -i s@mybranch@${ibranch}@g               ${ED2IN}
    sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+   sed -i s@myhrzrad@${ihrzrad}@g               ${ED2IN}
    sed -i s@mycrown@${crown}@g                  ${ED2IN}
    sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
    sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
@@ -1393,32 +1395,61 @@ do
 
 
          #----- Submit job. ---------------------------------------------------------------#
-         blah="  Polygon job submitted."
          qsub ${callserial} 1> /dev/null 2> /dev/null
          #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #     Submit, then check whether it went through.  If not, keep trying until it   #
+         # works (or give up after 10 attempts).                                           #
+         #---------------------------------------------------------------------------------#
+         sleep 3
+         nfail=$(qclean | wc -l)
+         if [ ${nfail} -eq 0 ]
+         then
+            echo "  Polygon job submitted."
+         else
+            echo "  Failed submission... Trying again:"
+            attempt=0
+            while [ ${nfail} -gt 0 ] && [ ${attempt} -lt 10 ]
+            do
+                let attempt=${attempt}+1
+                echo -n "  + Attempt number: ${attempt}..."
+                qsub ${callserial} 1> /dev/null 2> /dev/null
+                sleep 3
+                nfail=$(qclean | wc -l)
+                if [ ${nfail} -gt 0 ] && [ ${attempt} -eq 10 ]
+                then
+                   echo "  Failed.  Giving up, looks like a more serious problem..."
+                elif [ ${nfail} -eq 0 ]
+                then
+                   echo "          - Success!!!"
+                else
+                   echo "  Failed."
+                fi
+            done
+         fi
+         #---------------------------------------------------------------------------------#
+
+
       else
          #----- Check whether I should submit from this path or not. ----------------------#
-         blah="  Polygon is running.  Do not submit this time."
+         echo "  Polygon is running.  Do not submit this time."
          #---------------------------------------------------------------------------------#
       fi
    elif [ ${runt} == "THE_END" ]
    then
-      blah="  Polygon has already finished."
+      echo "  Polygon has already finished."
    elif [ ${runt} == "STSTATE" ]
    then
-      blah="  Polygon has already reached steady state."
+      echo "  Polygon has already reached steady state."
    elif [ ${runt} == "EXTINCT" ]
    then
-      blah="  Polygon has gone extinct."
+      echo "  Polygon has gone extinct."
    else
-      blah="  Polygon is seriously messed up."
+      echo "  Polygon is seriously messed up."
    fi
    #---------------------------------------------------------------------------------------#
 
-   echo ${blah}
-
-   #----- Take a quick nap to avoid submitting too many jobs at once. ---------------------#
-   sleep 5
-   #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#

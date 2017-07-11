@@ -10,6 +10,8 @@ here=$(pwd)
 moi=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
+#----- Output format for squeue. ----------------------------------------------------------#
+outform="%.200j %.8T"
 #----- Path where biomass initialisation files are: ---------------------------------------#
 bioinit='/n/home00/mlongo/data/ed2_data/site_bio_data'
 biotype=0      # 0 -- "default" setting (isizepft controls default/nounder)
@@ -21,7 +23,7 @@ lonlat="${here}/joborder.txt"
 #----- Should the output be in a disk other than the one set in "here"? -------------------#
 outthere="n"
 #----- Disk name (usually just the path until right before your own directory). -----------#
-diskthere="/n/moorcroftfs2"
+diskthere="/n/moorcroftfs4"
 #----- This is the header with the Sheffield data. ----------------------------------------#
 shefhead='SHEF_NCEP_DRIVER_DS314'
 #----- Path with drivers for each scenario. -----------------------------------------------#
@@ -32,11 +34,13 @@ lumain="/n/gstore/Labs/moorcroft_lab_protected/mlongo/scenarios"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch="n"
 #----- Requested memory and time. ---------------------------------------------------------#
-memory=2048                 # Requested memory per cpu
+memory=4196                 # Requested memory per cpu
 runtime_own="30-00:00:00"   # Runtime for lab owned nodes
 runtime_gen="7-00:00:00"    # Runtime for general nodes
 #----- Force submit? Or just submit those that would normally be submitted?. --------------#
 forcesubmit="n"
+#----- Skip submit altogether? ------------------------------------------------------------#
+skipsubmit="n"
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -54,7 +58,8 @@ timeh="0000"  # Hour
 #----- Default tolerance. -----------------------------------------------------------------#
 toldef="0.01"
 #----- Executable names. ------------------------------------------------------------------#
-execname="ed_2.1-opt"             # Normal executable, for most queues
+execname_def="ed_2.1-opt" # Default executable, for most queues
+execname_m61="ed_2.1-m61" # Executable for moorcroft_6100 queues
 #----- Initialisation scripts. ------------------------------------------------------------#
 initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #------------------------------------------------------------------------------------------#
@@ -108,20 +113,6 @@ fi
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
 echo "Number of polygons: ${npolys}..."
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#   Check whether the executable is copied.  If not, let the user know and stop the        #
-# script.                                                                                  #
-#------------------------------------------------------------------------------------------#
-if [ ! -s ${here}/executable/${execname} ]
-then
-   echo "Executable file : ${execname} is not in the executable directory"
-   echo "Copy the executable to the file before running this script!"
-   exit 99
-fi
 #------------------------------------------------------------------------------------------#
 
 
@@ -324,24 +315,49 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   crown=$(echo   ${oi}      | awk '{print $77}')
-   ltransvis=$(echo ${oi}    | awk '{print $78}')
-   lreflectvis=$(echo ${oi}  | awk '{print $79}')
-   ltransnir=$(echo ${oi}    | awk '{print $80}')
-   lreflectnir=$(echo ${oi}  | awk '{print $81}')
-   orienttree=$(echo ${oi}   | awk '{print $82}')
-   orientgrass=$(echo ${oi}  | awk '{print $83}')
-   clumptree=$(echo ${oi}    | awk '{print $84}')
-   clumpgrass=$(echo ${oi}   | awk '{print $85}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
-   igndvap=$(echo ${oi}      | awk '{print $87}')
-   iphen=$(echo ${oi}        | awk '{print $88}')
-   iallom=$(echo ${oi}       | awk '{print $89}')
-   ibigleaf=$(echo ${oi}     | awk '{print $90}')
-   irepro=$(echo ${oi}       | awk '{print $91}')
-   treefall=$(echo ${oi}     | awk '{print $92}')
-   ianthdisturb=$(echo ${oi} | awk '{print $93}')
-   ianthdataset=$(echo ${oi} | awk '{print $94}')
+   ihrzrad=$(echo ${oi}      | awk '{print $77}')
+   crown=$(echo   ${oi}      | awk '{print $78}')
+   ltransvis=$(echo ${oi}    | awk '{print $79}')
+   lreflectvis=$(echo ${oi}  | awk '{print $80}')
+   ltransnir=$(echo ${oi}    | awk '{print $81}')
+   lreflectnir=$(echo ${oi}  | awk '{print $82}')
+   orienttree=$(echo ${oi}   | awk '{print $83}')
+   orientgrass=$(echo ${oi}  | awk '{print $84}')
+   clumptree=$(echo ${oi}    | awk '{print $85}')
+   clumpgrass=$(echo ${oi}   | awk '{print $86}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
+   igndvap=$(echo ${oi}      | awk '{print $88}')
+   iphen=$(echo ${oi}        | awk '{print $89}')
+   iallom=$(echo ${oi}       | awk '{print $90}')
+   ibigleaf=$(echo ${oi}     | awk '{print $91}')
+   irepro=$(echo ${oi}       | awk '{print $92}')
+   treefall=$(echo ${oi}     | awk '{print $93}')
+   ianthdisturb=$(echo ${oi} | awk '{print $94}')
+   ianthdataset=$(echo ${oi} | awk '{print $95}')
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Decide the executable name based on queue.                                        #
+   #---------------------------------------------------------------------------------------#
+   if [ "x${queue}" == "xmoorcroft_6100" ]
+   then
+      execname=${execname_m61}
+   else
+      execname=${execname_def}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #   Check whether the executable is copied.  If not, let the user know and stop the     #
+   # script.                                                                               #
+   #---------------------------------------------------------------------------------------#
+   if [ ! -s ${here}/executable/${execname} ]
+   then
+      echo "Executable file : ${execname} is not in the executable directory"
+      echo "Copy the executable to the file before running this script!"
+      exit 99
+   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -466,10 +482,6 @@ do
    date=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $4}')
    time=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $5}')
    runt=$(cat ${here}/${polyname}/statusrun.txt  | awk '{print $6}')
-   if [ ${runt} != "INITIAL" ]
-   then
-      runt="HISTORY"
-   fi
    #---------------------------------------------------------------------------------------#
 
 
@@ -1335,6 +1347,7 @@ do
    sed -i s@mymetrad@${imetrad}@g               ${ED2IN}
    sed -i s@mybranch@${ibranch}@g               ${ED2IN}
    sed -i s@mycanrad@${icanrad}@g               ${ED2IN}
+   sed -i s@myhrzrad@${ihrzrad}@g               ${ED2IN}
    sed -i s@mycrown@${crown}@g                  ${ED2IN}
    sed -i s@myltransvis@${ltransvis}@g          ${ED2IN}
    sed -i s@myltransnir@${ltransnir}@g          ${ED2IN}
@@ -1398,60 +1411,85 @@ do
    if [ ${runt} == "INITIAL" ] || [ ${runt} == "HISTORY" ] ||
       [ ${forcesubmit} == "y" -o ${forcesubmit} == "Y" ]
    then
+      #------------------------------------------------------------------------------------#
+      #     Check whether the job is still running
+      #------------------------------------------------------------------------------------#
+      jobname="${desc}-${polyname}"
+      squeue="squeue --noheader -u ${moi}"
+      queued=$(${squeue} -o "${outform}" | grep ${jobname} | wc -l)
+      #------------------------------------------------------------------------------------#
 
-      #---- Decide which runtime to request. ----------------------------------------------#
-      if [ "x${queue}" == "xgeneral" ]
+
+
+      #------------------------------------------------------------------------------------#
+      #     Submit the job only in case the job is not running.                            #
+      #------------------------------------------------------------------------------------#
+      if [ ${queued} -eq 0 ]
       then
-         runtime=${runtime_gen}
+
+         #---- Decide which runtime to request. -------------------------------------------#
+         if [ "x${queue}" == "xgeneral" ]
+         then
+            runtime=${runtime_gen}
+         else
+            runtime=${runtime_own}
+         fi
+         #---------------------------------------------------------------------------------#
+
+
+         #---------------------------------------------------------------------------------#
+         #      Reset srun.sh and callserial.sh.                                           #
+         #---------------------------------------------------------------------------------#
+         srun="${here}/${polyname}/srun.sh"
+         callserial="${here}/${polyname}/callserial.sh"
+         rm -f ${srun}
+         rm -f ${callserial}
+         cp -f ${here}/Template/srun.sh       ${srun}
+         cp -f ${here}/Template/callserial.sh ${callserial}
+         #---------------------------------------------------------------------------------#
+
+         #----- Change the srun.sh file. --------------------------------------------------#
+         sed -i s@pathhere@${here}@g      ${srun}
+         sed -i s@paththere@${there}@g    ${srun}
+         sed -i s@thispoly@${polyname}@g  ${srun}
+         sed -i s@thisdesc@${desc}@g      ${srun}
+         sed -i s@zzzzzzzz@${wtime}@g     ${srun}
+         sed -i s@myorder@${ff}@g         ${srun}
+         sed -i s@myinitrc@${initrc}@g    ${srun}
+         sed -i s@thisqueue@${queue}@g    ${srun}
+         sed -i s@thismemory@${memory}@g  ${srun}
+         sed -i s@thistime@${runtime}@g   ${srun}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Change the callserial.sh file. --------------------------------------------#
+         sed -i s@thisroot@${here}@g          ${callserial}
+         sed -i s@thispoly@${polyname}@g      ${callserial}
+         sed -i s@myexec@${execname}@g        ${callserial}
+         sed -i s@myinitrc@${initrc}@g        ${callserial}
+         sed -i s@myname@${moi}@g             ${callserial}
+         sed -i s@mypackdata@${packdatasrc}@g ${callserial}
+         sed -i s@myscenario@${iscenario}@g   ${callserial}
+         sed -i s@myscenmain@${scentype}@g    ${callserial}
+         #---------------------------------------------------------------------------------#
+
+
+
+         #----- Check whether I should submit from this path or not. ----------------------#
+         if [ "x${skipsubmit}" == "xy" ] || [ "x${skipsubmit}" == "xY" ]
+         then
+            blah="  Ready to submit, but not submitted."
+         else
+            blah="  Polygon job submitted."
+            ${here}/${polyname}/srun.sh 1> /dev/null 2> /dev/null
+         fi
+         #---------------------------------------------------------------------------------#
       else
-         runtime=${runtime_own}
+         #----- Check whether I should submit from this path or not. ----------------------#
+         blah="  Polygon job exists.  Do not submit this time."
+         #---------------------------------------------------------------------------------#
       fi
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #      Reset srun.sh and callserial.sh.                                              #
-      #------------------------------------------------------------------------------------#
-      srun="${here}/${polyname}/srun.sh"
-      callserial="${here}/${polyname}/callserial.sh"
-      rm -f ${srun}
-      rm -f ${callserial}
-      cp -f ${here}/Template/srun.sh       ${srun}
-      cp -f ${here}/Template/callserial.sh ${callserial}
-      #------------------------------------------------------------------------------------#
-
-      #----- Change the srun.sh file. -----------------------------------------------------#
-      sed -i s@pathhere@${here}@g      ${srun}
-      sed -i s@paththere@${there}@g    ${srun}
-      sed -i s@thispoly@${polyname}@g  ${srun}
-      sed -i s@thisdesc@${desc}@g      ${srun}
-      sed -i s@zzzzzzzz@${wtime}@g     ${srun}
-      sed -i s@myorder@${ff}@g         ${srun}
-      sed -i s@myinitrc@${initrc}@g    ${srun}
-      sed -i s@thisqueue@${queue}@g    ${srun}
-      sed -i s@thismemory@${memory}@g  ${srun}
-      sed -i s@thistime@${runtime}@g   ${srun}
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Change the callserial.sh file. -----------------------------------------------#
-      sed -i s@thisroot@${here}@g          ${callserial}
-      sed -i s@thispoly@${polyname}@g      ${callserial}
-      sed -i s@myexec@${execname}@g        ${callserial}
-      sed -i s@myinitrc@${initrc}@g        ${callserial}
-      sed -i s@myname@${moi}@g             ${callserial}
-      sed -i s@mypackdata@${packdatasrc}@g ${callserial}
-      sed -i s@myscenario@${iscenario}@g   ${callserial}
-      sed -i s@myscenmain@${scentype}@g    ${callserial}
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Check whether I should submit from this path or not. -------------------------#
-      blah="  Polygon job submitted."
-      ${here}/${polyname}/srun.sh 1> /dev/null 2> /dev/null
-      #------------------------------------------------------------------------------------#
    elif [ ${runt} == "THE_END" ]
    then
       blah="  Polygon has already finished."

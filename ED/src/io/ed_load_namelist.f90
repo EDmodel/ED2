@@ -242,7 +242,6 @@ subroutine copy_nl(copy_type)
                                    , tprandtl                  & ! intent(out)
                                    , ribmax                    & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
                                    , ltrans_vis                & ! intent(out)
@@ -479,7 +478,6 @@ subroutine copy_nl(copy_type)
       maxcohort                 = nl%maxcohort
       min_site_area             = nl%min_site_area
       min_patch_area            = nl%min_patch_area
-      ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
 
       dt_census                 = nl%dt_census

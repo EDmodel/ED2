@@ -1170,8 +1170,8 @@ pft16 = list( name               = "C3 grass"
             , veg.hcap.min       = 3.68093E+00
             )
 
-pft17 = list( name               = "Araucaria"
-            , key                = "ARC"
+pft17 = list( name               = "Lianas"
+            , key                = "Lia"
             , colour             = "#BF60A7"
             , tropical           = TRUE
             , pathway            = 3
@@ -1188,19 +1188,19 @@ pft17 = list( name               = "Araucaria"
             , lr.low.temp        = lr.tcold.aa + t00
             , lr.high.temp       = lr.thot.aa  + t00
             , lr.decay.e         = lr.decay.e.aa
-            , vm0                = 15.625  * vmfact.c3 * umol.2.mol
+            , vm0                = 18.75 * vmfact.c3 * umol.2.mol
             , m                  = mphoto.aa
             , alpha              = alpha.c3
             , b                  = b.aa * umol.2.mol
             , gamma.resp         = gamma.aa
-            , effarea.transp     = 2.0
-            , rho                = 0.59
-            , leaf.turnover.rate = 1./6.
-            , root.turnover.rate = 1./6.
-            , SLA                = 10.0
+            , effarea.transp     = 1.0
+            , rho                = 0.46
+            , leaf.turnover.rate = 2.
+            , root.turnover.rate = 2.
+            , SLA                = 22.0
             , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
+            , b1Ht               = b1Ht.trop * 0.5
+            , b2Ht               = b2Ht.trop / 0.8
             , b1Bl.small         = NA
             , b2Bl.small         = NA
             , b1Bl.large         = NA
@@ -1211,17 +1211,17 @@ pft17 = list( name               = "Araucaria"
             , b1Bs.large         = NA
             , b2Bs.large         = NA
             , b1Ca               = 2.490154
-            , b2Ca               = 0.8068806
+            , b2Ca               = 0.8068806 * 1.2
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
-            , b1WAI              = 0.0553 * 0.5
-            , b2WAI              = 1.9769
+            , b1WAI              = 0.0192 * 0.5
+            , b2WAI              = 2.0947
             , b1Vol              = 0.65 * pi * 0.11 * 0.11
             , b2Vol              = 0.65 * pi * 0.11 * 0.11
             , hgt.min            = 0.5
             , hgt.max            = 35.0
             , qroot              = 1.0
-            , qsw                = 10.0 / 3900.
+            , qsw                = 22.0 / 3900.
             , agf.bs             = 0.7
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa

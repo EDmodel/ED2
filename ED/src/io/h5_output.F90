@@ -21,12 +21,8 @@ subroutine h5_output(vtype)
                            , iyeara                & ! intent(in)
                            , iclobber              & ! intent(in)
                            , nrec_fast             & ! intent(in)
-                           , nrec_state            & ! intent(in)
                            , irec_fast             & ! intent(in)
-                           , irec_state            & ! intent(in)
                            , out_time_fast         & ! intent(in)
-                           , out_time_state        & ! intent(in)
-                           , outstate              & ! intent(in)
                            , outfast               & ! intent(in)
                            , frqfast               ! ! intent(in)
    use ed_misc_coms , only : attach_metadata       ! ! intent(in)
@@ -38,16 +34,13 @@ subroutine h5_output(vtype)
                            , stride                & ! intent(in)
                            , globdims              ! ! intent(in)
    use ed_node_coms , only : mynum                 & ! intent(in)
-                           , nnodetot              & ! intent(in)
-                           , recvnum               & ! intent(in)
-                           , sendnum               ! ! intent(in)
+                           , nnodetot              ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
                            , n_dist_types          & ! intent(in)
                            , n_dbh                 & ! intent(in)
                            , maxgrds               & ! intent(in)
                            , str_len               ! ! intent(in)
-   use ed_state_vars, only : edgrid_g              & ! structure
-                           , edtype                & ! structure
+   use ed_state_vars, only : edtype                & ! structure
                            , polygontype           & ! structure
                            , sitetype              & ! structure
                            , patchtype             & ! structure
@@ -81,12 +74,8 @@ subroutine h5_output(vtype)
    integer                                                       :: outhour
    integer                                                       :: irec
    integer                                                       :: nrec
-   integer                                                       :: mpierror
    integer                                                       :: comm
    integer                                                       :: info
-   integer                                                       :: mpi_size
-   integer                                                       :: mpi_rank
-   integer                                                       :: ierr
    logical                                                       :: exans
    logical                                                       :: new_file
    real(kind=8)                                                  :: dsec

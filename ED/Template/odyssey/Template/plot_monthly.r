@@ -15,17 +15,17 @@ graphics.off()
 #------------------------------------------------------------------------------------------#
 
 #----- Paths. -----------------------------------------------------------------------------#
-here           = "thispath"     # Current directory.
-there          = "thatpath"     # Directory where analyses/history are 
-srcdir         = "thisrscpath"  # Source  directory.
-outroot        = "thisoutroot"  # Directory for figures
+here           = "/Users/manfredo/Documents/Eclipse_workspace/ED/Template/odyssey/Template/"     # Current directory.
+there          = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/new_scheme4/"     # Directory where analyses/history are
+srcdir         = "/Users/manfredo/Desktop/R-utils"  # Source  directory.
+outroot        = "/Users/manfredo/Documents/Eclipse_workspace/ED/build/post_process/paracou/new_scheme4/figures"  # Directory for figures
 #------------------------------------------------------------------------------------------#
 
 
 #----- Time options. ----------------------------------------------------------------------#
-monthbeg       = thismontha   # First month to use
-yearbeg        = thisyeara    # First year to consider
-yearend        = thisyearz    # Maximum year to consider
+monthbeg       = 01   # First month to use
+yearbeg        = 2004    # First year to consider (use observation years)
+yearend        = 2020    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
 sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
@@ -36,22 +36,24 @@ n.density      = 256          # Number of density points
 
 
 #----- Name of the simulations. -----------------------------------------------------------#
-myplaces       = c("thispoly")
+myplaces       = c("paracou")
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- Plot options. ----------------------------------------------------------------------#
-outform        = thisoutform            # Formats for output file.  Supported formats are:
-                                        #   - "X11" - for printing on screen
-                                        #   - "eps" - for postscript printing
-                                        #   - "png" - for PNG printing
-                                        #   - "pdf" - for PDF printing
+outform        = "pdf"          # Formats for output file.  Supported formats are:
+                                        #   - "X11"    - for printing on screen
+                                        #   - "quartz" - for printing on Mac OS screen
+                                        #   - "eps"    - for postscript printing
+                                        #   - "png"    - for PNG printing
+                                        #   - "tif"    - for TIFF printing
+                                        #   - "pdf"    - for PDF printing
 depth          = 96                     # PNG resolution, in pixels per inch
 paper          = "letter"               # Paper size, to define the plot shape
 ptsz           = 17                     # Font size.
 lwidth         = 2.5                    # Line width
-plotgrid       = TRUE                   # Should I plot the grid in the background? 
+plotgrid       = TRUE                   # Should I plot the grid in the background?
 sasfixlimits   = FALSE                  # Use a fixed scale for size and age-structure
                                         #    plots? (FALSE will set a suitable scale for
                                         #    each plot)
@@ -74,23 +76,24 @@ ylnudge         = 0.05                  # Nudging factor for ylimit
 ptype          = "l"                    # Type of plot
 ptyped         = "p"                    # Type of plot
 ptypeb         = "o"                    # Type of plot
-drought.mark   = mydroughtmark          # Put a background to highlight droughts?
-drought.yeara  = mydroughtyeara         # First year that has drought
-drought.yearz  = mydroughtyearz         # Last year that has drought
-months.drought = mymonthsdrought        # Months with drought
-ibackground    = mybackground           # Background settings (check load_everything.r)
+drought.mark   = F          # Put a background to highlight droughts?
+drought.yeara  = 1600         # First year that has drought
+drought.yearz  = 1601         # Last year that has drought
+months.drought = 1        # Months with drought
+ibackground    = 0          # Background settings (check load_everything.r)
 #------------------------------------------------------------------------------------------#
 
 
 #------ Miscellaneous settings. -----------------------------------------------------------#
 slz.min             = -5.0         # The deepest depth that trees access water.
-idbh.type           = myidbhtype   # Type of DBH class
+idbh.type           = 3   # Type of DBH class
                                    # 1 -- Every 10 cm until 100cm; > 100cm
                                    # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
                                    # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
-klight              = myklight     # Weighting factor for maximum carbon balance
-corr.growth.storage = mycorrection # Correction factor to be applied to growth and
+klight              = 0.8     # Weighting factor for maximum carbon balance
+corr.growth.storage = 1 # Correction factor to be applied to growth and
                                    #   storage respiration
+iallom              = 3      # Allometry to use
 #------------------------------------------------------------------------------------------#
 
 
@@ -151,8 +154,8 @@ if (! file.exists(outroot)) dir.create(outroot)
 #------------------------------------------------------------------------------------------#
 #     Big place loop starts here...                                                        #
 #------------------------------------------------------------------------------------------#
-for (place in myplaces){
-
+#for (place in myplaces){
+place = myplaces
    #----- Retrieve default information about this place and set up some variables. --------#
    thispoi = locations(where=place,here=there,yearbeg=yearbeg,yearend=yearend
                       ,monthbeg=monthbeg)
@@ -206,15 +209,16 @@ for (place in myplaces){
    #      Make the RData file name, then we check whether we must read the files again     #
    # or use the stored RData.                                                              #
    #---------------------------------------------------------------------------------------#
-   path.data  = paste(here,place,"rdata_month",sep="/")
+   path.data  = paste(there,"rdata_month",sep="/")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata = paste(path.data,paste(place,"RData",sep="."),sep="/")
+   ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
+   ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
       cat("   - Loading previous session...","\n")
       load(ed22.rdata)
       tresume = datum$ntimes + 1
-      datum   = update.monthly( new.ntimes = ntimes 
+      datum   = update.monthly( new.ntimes = ntimes
                               , old.datum  = datum
                               , montha     = monthbeg
                               , yeara      = yeara
@@ -247,7 +251,7 @@ for (place in myplaces){
    overyear = months.drought[1] > months.drought[ndrought]
    for (year in seq(from=drought.yeara,to=drought.yearz-as.integer(overyear),by=1)){
       n             = n + 1
-      
+
       #----- Define the beginning and the end of the drought. -----------------------------#
       month.start   = months.drought[1]
       month.end     = 1 + (months.drought[ndrought] %% 12)
@@ -311,6 +315,11 @@ for (place in myplaces){
    }#end if (! complete)
    #---------------------------------------------------------------------------------------#
 
+
+   #----- Update status file with latest data converted into R. ---------------------------#
+   latest = paste(datum$year[ntimes],datum$month[ntimes],sep=" ")
+   dummy  = write(x=latest,file=ed22.status,append=FALSE)
+   #---------------------------------------------------------------------------------------#
 
 
    #---------------------------------------------------------------------------------------#
@@ -573,7 +582,7 @@ for (place in myplaces){
       mdfun$z[bye] = NA
       #------------------------------------------------------------------------------------#
       patchpdf[[vname]] = list(edensity=edfun,mdensity=mdfun)
-   }#end for 
+   }#end for
    #---------------------------------------------------------------------------------------#
 
 
@@ -585,7 +594,7 @@ for (place in myplaces){
                   , FUN    = mean
                   , na.rm  = TRUE
                   )#end apply
-   luave   = apply( X      = lu$agb 
+   luave   = apply( X      = lu$agb
                   , MARGIN = 2
                   , FUN    = mean
                   , na.rm  = TRUE
@@ -651,15 +660,20 @@ for (place in myplaces){
          for (o in 1:nout){
             #----- Open file. -------------------------------------------------------------#
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -738,7 +752,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -751,7 +765,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -780,7 +794,7 @@ for (place in myplaces){
       unit           = thistspftdbh$e.unit
       plog           = thistspftdbh$plog
       plotit         = thistspftdbh$pftdbh
-      
+
       #----- Load variable ----------------------------------------------------------------#
       thisvar = szpft[[vnam]]
       if (plog){
@@ -838,15 +852,20 @@ for (place in myplaces){
             for (o in 1:nout){
                #----- Open file. ----------------------------------------------------------#
                fichier = paste(outvar,"/",vnam,"-",pftlab,"-",suffix,".",outform[o],sep="")
-               if(outform[o] == "x11"){
+               if(outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if(outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -906,7 +925,7 @@ for (place in myplaces){
                   }#end for
                }#end if
                #----- Plot grid. ----------------------------------------------------------#
-               if (plotgrid){ 
+               if (plotgrid){
                   abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                #----- Plot lines. ---------------------------------------------------------#
@@ -917,7 +936,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -945,9 +964,9 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
+      vname        = compnow$vnam
+      description  = compnow$desc
+      unit         = compnow$unit
       lcolours     = compnow$colour
       llwd         = compnow$lwd
       llwd         = compnow$lwd
@@ -1014,7 +1033,7 @@ for (place in myplaces){
          #----- Define the number of layers. ----------------------------------------------#
          thiswhen  = datum$tomonth [sel]
          thismean  = emean[[vname]][sel]
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
 
 
 
@@ -1042,15 +1061,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vname,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -1091,7 +1115,7 @@ for (place in myplaces){
 
 
             #----- Close plot. ------------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -1117,9 +1141,9 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
+      vname        = compnow$vnam
+      description  = compnow$desc
+      unit         = compnow$unit
       plotsd       = compnow$plotsd
       lcolours     = compnow$colour
       errcolours   = compnow$errcol
@@ -1199,10 +1223,10 @@ for (place in myplaces){
 
 
 
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          #    Define the number of layers.  Some variables have no standard deviation in   #
          # the model, so Make them 0 if this is the case.                                  #
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          thismean = mmean[[vname]]
          thissdev = msdev[[vname]]
          if (length(msdev[[vname]]) == 0){
@@ -1212,8 +1236,8 @@ for (place in myplaces){
          }#end if
          mod.x     = montmont
          mod.ylow  = thismean - thissdev
-         mod.yhigh = thismean + thissdev 
-         #---------------------------------------------------------------------------------# 
+         mod.yhigh = thismean + thissdev
+         #---------------------------------------------------------------------------------#
 
 
 
@@ -1240,15 +1264,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vname,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -1281,7 +1310,7 @@ for (place in myplaces){
             par(mar=c(4.1,4.6,4.1,2.1))
             plot.new()
             plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             if (plotsd){
@@ -1317,7 +1346,7 @@ for (place in myplaces){
             axis(side=2,las=1)
 
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -1340,9 +1369,9 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       compnow      = compmodel[[cc]]
-      vname        = compnow$vnam  
-      description  = compnow$desc  
-      unit         = compnow$unit  
+      vname        = compnow$vnam
+      description  = compnow$desc
+      unit         = compnow$unit
       plotsd       = compnow$plotsd
       lcolours     = compnow$colour
       errcolours   = compnow$errcol
@@ -1414,11 +1443,11 @@ for (place in myplaces){
 
 
 
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          #    Define the number of layers.  Some variables have no standard deviation in   #
          # the model, so Make them 0 if this is the case.  We also append the last hour    #
          # before the first one so 00 UTC appears in the left.                             #
-         #---------------------------------------------------------------------------------# 
+         #---------------------------------------------------------------------------------#
          thismean  = umean[[vname]]
          thismean  = cbind(thismean[,ndcycle],thismean)
          if (length(usdev[[vname]]) == 0){
@@ -1428,8 +1457,8 @@ for (place in myplaces){
             thissdev  = cbind(thissdev[,ndcycle],thissdev)
          }#end if
          mod.ylow  = thismean - thissdev
-         mod.yhigh = thismean + thissdev 
-         #---------------------------------------------------------------------------------# 
+         mod.yhigh = thismean + thissdev
+         #---------------------------------------------------------------------------------#
 
 
          #----- Find the plot range. ------------------------------------------------------#
@@ -1467,15 +1496,20 @@ for (place in myplaces){
             for (o in 1:nout){
                fichier = paste(outtheme,"/",vname,"-",cmon,".",outform[o]
                               ,sep="")
-               if(outform[o] == "x11"){
+               if(outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if(outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -1509,7 +1543,7 @@ for (place in myplaces){
                par(mar=c(4.1,4.6,4.1,2.1))
                plot.new()
                plot.window(xlim=xlimit,ylim=ylimit,log=plog)
-               if (plotgrid){ 
+               if (plotgrid){
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                if (plotsd){
@@ -1519,9 +1553,11 @@ for (place in myplaces){
                   #------ Find the periods with continous data. ---------------------------#
                   ok        = is.finite(obs.ylow[pmon,]) & is.finite(obs.yhigh[pmon,])
                   if (any(ok)){
-                     obs.x.now     = thisday       [ok]
-                     obs.ylow.now  = obs.ylow [pmon,ok]
-                     obs.yhigh.now = obs.yhigh[pmon,ok]
+                    obs.ndcycle = ncol(obs.ylow)
+                    obs.thisday = seq(from=0,to=24,length.out = obs.ndcycle)
+                    obs.x.now     = obs.thisday       [ok]
+                    obs.ylow.now  = obs.ylow [pmon,ok]
+                    obs.yhigh.now = obs.yhigh[pmon,ok]
                   }else{
                      obs.x.now     = NULL
                      obs.ylow.now  = NULL
@@ -1552,7 +1588,7 @@ for (place in myplaces){
                }#end if
                points(x=thisday,y=thismean[pmon,],col=lcolours[1]
                      ,lwd=llwd[1],type=ltype,pch=16,cex=1.0)
-               points(x=thisday,y=obsmean[pmon,],col=lcolours[2]
+               points(x=obs.thisday,y=obsmean[pmon,],col=lcolours[2]
                      ,lwd=llwd[2],type=ltype,pch=16,cex=1.0)
                box()
                title(main=letitre,xlab="Time",ylab=ley,cex.main=cex.main)
@@ -1562,7 +1598,7 @@ for (place in myplaces){
 
 
 
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -1613,15 +1649,20 @@ for (place in myplaces){
          #----- Loop over output formats. -------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -1700,7 +1741,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -1713,7 +1754,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -1739,15 +1780,20 @@ for (place in myplaces){
       cat("      + Disturbance rate time series for all disturbances...","\n")
       for (o in 1:nout){
          fichier = paste(outpref,"/disturb-",suffix,".",outform[o],sep="")
-         if (outform[o] == "x11"){
+         if (outform[o] %in% "x11"){
             X11(width=size$width,height=size$height,pointsize=ptsz)
-         }else if(outform[o] == "png"){
+         }else if (outform[o] %in% "quartz"){
+            quartz(width=size$width,height=size$height,pointsize=ptsz)
+         }else if(outform[o] %in% "png"){
             png(filename=fichier,width=size$width*depth,height=size$height*depth
-               ,pointsize=ptsz,res=depth)
-         }else if(outform[o] == "eps"){
+               ,pointsize=ptsz,res=depth,bg="transparent")
+         }else if(outform[o] %in% "tif"){
+            tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+         }else if(outform[o] %in% "eps"){
             postscript(file=fichier,width=size$width,height=size$height
                       ,pointsize=ptsz,paper=size$paper)
-         }else if(outform[o] == "pdf"){
+         }else if(outform[o] %in% "pdf"){
             pdf(file=fichier,onefile=FALSE
                ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
          }#end if
@@ -1833,7 +1879,7 @@ for (place in myplaces){
             }#end for
          }#end if
          #----- Plot grid. ----------------------------------------------------------------#
-         if (plotgrid){ 
+         if (plotgrid){
             abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
          }#end if
          #----- Plot lines. ---------------------------------------------------------------#
@@ -1851,7 +1897,7 @@ for (place in myplaces){
 
 
          #----- Close the device. ---------------------------------------------------------#
-         if (outform[o] == "x11"){
+         if (outform[o] %in% c("x11","quartz")){
             locator(n=1)
             dev.off()
          }else{
@@ -1875,23 +1921,23 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
-      vnames       = themenow$vnam  
-      description  = themenow$desc  
+      vnames       = themenow$vnam
+      description  = themenow$desc
       lcolours     = themenow$colour
       llwd         = themenow$lwd
       if (emean.line){
          ltype        = "l"
       }else{
-         ltype        = themenow$type 
+         ltype        = themenow$type
       }#end if
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title
-      unit         = themenow$unit  
+      unit         = themenow$unit
       legpos       = themenow$legpos
       plotit       = themenow$emean
       ylimit.fix   = themenow$emean.lim
-   
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -1941,15 +1987,20 @@ for (place in myplaces){
          for (o in 1:nout){
             #------ Open file. ------------------------------------------------------------#
             fichier = paste(outdir,"/",prefix,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -1959,7 +2010,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
-            ley     = desc.unit(desc=description,unit=unit)
+            ley     = desc.unit(desc=group,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -2008,7 +2059,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=whenplot8$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -2021,7 +2072,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2047,19 +2098,19 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
-      vnames       = themenow$vnam  
-      description  = themenow$desc  
+      vnames       = themenow$vnam
+      description  = themenow$desc
       lcolours     = themenow$colour
       llwd         = themenow$lwd
       ltype        = themenow$type
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title
-      unit         = themenow$unit  
+      unit         = themenow$unit
       legpos       = themenow$legpos
       plotit       = themenow$mmean
       ylimit.fix   = themenow$mmean.lim
-   
+
       if (plotit){
 
          #---------------------------------------------------------------------------------#
@@ -2109,15 +2160,20 @@ for (place in myplaces){
          for (o in 1:nout){
             #------ Open file. ------------------------------------------------------------#
             fichier = paste(outdir,"/",prefix,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2127,7 +2183,7 @@ for (place in myplaces){
 
             #----- Plot settings. ---------------------------------------------------------#
             letitre = paste(" Time series: ",group,"\n",lieu,sep="")
-            ley     = desc.unit(desc=description,unit=unit)
+            ley     = desc.unit(desc=group,unit=unit)
             #------------------------------------------------------------------------------#
 
 
@@ -2178,7 +2234,7 @@ for (place in myplaces){
                }#end for
             }#end if
             #----- Plot grid. -------------------------------------------------------------#
-            if (plotgrid){ 
+            if (plotgrid){
                abline(v=mplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
             }#end if
             #----- Plot lines. ------------------------------------------------------------#
@@ -2191,7 +2247,7 @@ for (place in myplaces){
 
 
             #----- Close the device. ------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2217,18 +2273,18 @@ for (place in myplaces){
 
       #----- Retrieve variable information from the list. ---------------------------------#
       themenow     = theme[[hh]]
-      vnames       = themenow$vnam  
-      description  = themenow$desc  
+      vnames       = themenow$vnam
+      description  = themenow$desc
       lcolours     = themenow$colour
       llwd         = themenow$lwd
       ltype        = themenow$type
       plog         = themenow$plog
       prefix       = themenow$prefix
       group        = themenow$title
-      unit         = themenow$unit  
+      unit         = themenow$unit
       legpos       = themenow$legpos
-      plotit       = themenow$qmean 
-      if (plog){ 
+      plotit       = themenow$qmean
+      if (plog){
          xylog = "y"
       }else{
          xylog = ""
@@ -2272,15 +2328,20 @@ for (place in myplaces){
                #------ Open file. ---------------------------------------------------------#
                fichier = paste(outtheme,"/",prefix,"-",cmon,"-",suffix,".",outform[o]
                               ,sep="")
-               if(outform[o] == "x11"){
+               if(outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if(outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -2291,7 +2352,7 @@ for (place in myplaces){
                #----- Plot settings. ------------------------------------------------------#
                letitre = paste(group," - ",lieu,"\n"
                               ,"Mean diurnal cycle - ",namemon,sep="")
-               ley     = desc.unit(desc=description,unit=unit)
+               ley     = desc.unit(desc=group,unit=unit)
                #---------------------------------------------------------------------------#
 
 
@@ -2340,7 +2401,7 @@ for (place in myplaces){
                   }#end for
                }#end if
                #----- Plot grid. ----------------------------------------------------------#
-               if (plotgrid){ 
+               if (plotgrid){
                   abline(v=uplot$levels,h=axTicks(side=2),col=grid.colour,lty="solid")
                }#end if
                #----- Plot lines. ---------------------------------------------------------#
@@ -2354,7 +2415,7 @@ for (place in myplaces){
 
 
                #----- Close the device. ---------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -2442,15 +2503,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2473,7 +2539,7 @@ for (place in myplaces){
                                 }#end plot.axes
                      )
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2557,15 +2623,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2590,7 +2661,7 @@ for (place in myplaces){
                                 }#end plot.axes
                      )#end sombreado
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2685,15 +2756,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2719,7 +2795,7 @@ for (place in myplaces){
                                 }#end plot.axes
                      )
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2785,15 +2861,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2816,7 +2897,7 @@ for (place in myplaces){
                                 }#end plot.axes
                      )
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2856,15 +2937,20 @@ for (place in myplaces){
 
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2877,7 +2963,7 @@ for (place in myplaces){
             plot(mmonth,thisvar,main=letitre,ylim=ylimit,cex.main=0.7
                 ,xlab="Time",ylab=ley,las=1)
 
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -2910,7 +2996,7 @@ for (place in myplaces){
 
       this        = patchpdf[[vnam]]$edensity
       plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
-                             && any(is.finite(this$y),na.rm=TRUE) 
+                             && any(is.finite(this$y),na.rm=TRUE)
                              && any(is.finite(this$z),na.rm=TRUE) )
 
       #------------------------------------------------------------------------------------#
@@ -2937,15 +3023,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if (outform[o] == "x11"){
+            if (outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if (outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -2966,7 +3057,7 @@ for (place in myplaces){
                      , colour.palette = get(vcscheme)
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
-                     , key.log        = plog 
+                     , key.log        = plog
                      , useRaster      = TRUE
                      , plot.axes      = {  axis( side   = 1
                                                , at     = whenplot8$levels
@@ -2992,7 +3083,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Close the device.                                                        #
             #------------------------------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -3029,7 +3120,7 @@ for (place in myplaces){
 
       this        = patchpdf[[vnam]]$mdensity
       plotit      = ( plotit && any(is.finite(this$x),na.rm=TRUE)
-                             && any(is.finite(this$y),na.rm=TRUE) 
+                             && any(is.finite(this$y),na.rm=TRUE)
                              && any(is.finite(this$z),na.rm=TRUE) )
 
       if (plotit){
@@ -3051,15 +3142,20 @@ for (place in myplaces){
          #----- Loop over formats. --------------------------------------------------------#
          for (o in 1:nout){
             fichier = paste(outdir,"/",vnam,"-",suffix,".",outform[o],sep="")
-            if(outform[o] == "x11"){
+            if(outform[o] %in% "x11"){
                X11(width=size$width,height=size$height,pointsize=ptsz)
-            }else if(outform[o] == "png"){
+            }else if(outform[o] %in% "quartz"){
+               quartz(width=size$width,height=size$height,pointsize=ptsz)
+            }else if(outform[o] %in% "png"){
                png(filename=fichier,width=size$width*depth,height=size$height*depth
-                  ,pointsize=ptsz,res=depth)
-            }else if(outform[o] == "eps"){
+                  ,pointsize=ptsz,res=depth,bg="transparent")
+            }else if(outform[o] %in% "tif"){
+               tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                   ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+            }else if(outform[o] %in% "eps"){
                postscript(file=fichier,width=size$width,height=size$height
                          ,pointsize=ptsz,paper=size$paper)
-            }else if(outform[o] == "pdf"){
+            }else if(outform[o] %in% "pdf"){
                pdf(file=fichier,onefile=FALSE
                   ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
             }#end if
@@ -3080,7 +3176,7 @@ for (place in myplaces){
                      , colour.palette = get(vcscheme)
                      , plot.title     = title(main=letitre,xlab=lex,ylab=ley,cex.main=0.7)
                      , key.title      = title(main="Density",cex.main=0.8)
-                     , key.log        = plog 
+                     , key.log        = plog
                      , useRaster      = TRUE
                      , plot.axes      = {  axis( side   = 1
                                                , at     = monat
@@ -3105,7 +3201,7 @@ for (place in myplaces){
             #------------------------------------------------------------------------------#
             #     Close the device.                                                        #
             #------------------------------------------------------------------------------#
-            if (outform[o] == "x11"){
+            if (outform[o] %in% c("x11","quartz")){
                locator(n=1)
                dev.off()
             }else{
@@ -3156,7 +3252,7 @@ for (place in myplaces){
 
 
       #------------------------------------------------------------------------------------#
-      #      Check whether to plot this 
+      #      Check whether to plot this
       #------------------------------------------------------------------------------------#
       if (plotit){
          cat("      - ",description,"...","\n")
@@ -3168,11 +3264,11 @@ for (place in myplaces){
          thisvnam                  = szpft[[vnam]][monbplot,,]
          thisvnam                  = thisvnam [,,pftuse]
          thisvnam                  = thisvnam [,-(ndbh+1),]
-         
+
          thisvnam[is.na(thisvnam)] = 0.
          thiswhen                  = datum$tomonth[monbplot]
          #---------------------------------------------------------------------------------#
-       
+
 
          #---------------------------------------------------------------------------------#
          #      Find the limits for the plots.  We use the same axis so it is easier to    #
@@ -3218,15 +3314,20 @@ for (place in myplaces){
                #------ Open the plot. -----------------------------------------------------#
                fichier = paste(outdir,"/",vnam,"-",cyear,"-",cmonth,"-",suffix
                                          ,".",outform[o],sep="")
-               if (outform[o] == "x11"){
+               if (outform[o] %in% "x11"){
                   X11(width=size$width,height=size$height,pointsize=ptsz)
-               }else if(outform[o] == "png"){
+               }else if (outform[o] %in% "quartz"){
+                  quartz(width=size$width,height=size$height,pointsize=ptsz)
+               }else if(outform[o] %in% "png"){
                   png(filename=fichier,width=size$width*depth,height=size$height*depth
-                     ,pointsize=ptsz,res=depth)
-               }else if(outform[o] == "eps"){
+                     ,pointsize=ptsz,res=depth,bg="transparent")
+               }else if(outform[o] %in% "tif"){
+                  tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                      ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+               }else if(outform[o] %in% "eps"){
                   postscript(file=fichier,width=size$width,height=size$height
                             ,pointsize=ptsz,paper=size$paper)
-               }else if(outform[o] == "pdf"){
+               }else if(outform[o] %in% "pdf"){
                   pdf(file=fichier,onefile=FALSE
                      ,width=size$width,height=size$height,pointsize=ptsz,paper=size$paper)
                }#end if
@@ -3282,7 +3383,7 @@ for (place in myplaces){
                #---------------------------------------------------------------------------#
                #     Close the device.                                                     #
                #---------------------------------------------------------------------------#
-               if (outform[o] == "x11"){
+               if (outform[o] %in% c("x11","quartz")){
                   locator(n=1)
                   dev.off()
                }else{
@@ -3454,15 +3555,20 @@ for (place in myplaces){
                   #----- Open file. -------------------------------------------------------#
                   fichier = paste(outdir,"/",vnam,"-",thisyear,"-",cmonth,"-",suffix
                                             ,".",outform[o],sep="")
-                  if (outform[o] == "x11"){
+                  if (outform[o] %in% "x11"){
                      X11(width=size$width,height=size$height,pointsize=ptsz)
-                  }else if(outform[o] == "png"){
+                  }else if (outform[o] %in% "quartz"){
+                     quartz(width=size$width,height=size$height,pointsize=ptsz)
+                  }else if(outform[o] %in% "png"){
                      png(filename=fichier,width=size$width*depth,height=size$height*depth
-                        ,pointsize=ptsz,res=depth)
-                  }else if(outform[o] == "eps"){
+                        ,pointsize=ptsz,res=depth,bg="transparent")
+                  }else if(outform[o] %in% "tif"){
+                     tiff(filename=fichier,width=size$width*depth,height=size$height*depth
+                         ,pointsize=ptsz,res=depth,bg="transparent",compression="lzw")
+                  }else if(outform[o] %in% "eps"){
                      postscript(file=fichier,width=size$width,height=size$height
                                ,pointsize=ptsz,paper=size$paper)
-                  }else if(outform[o] == "pdf"){
+                  }else if(outform[o] %in% "pdf"){
                      pdf(file=fichier,onefile=FALSE
                         ,width=size$width,height=size$height,pointsize=ptsz
                         ,paper=size$paper)
@@ -3535,7 +3641,7 @@ for (place in myplaces){
 
 
                   #----- Close the device. ------------------------------------------------#
-                  if (outform[o] == "x11"){
+                  if (outform[o] %in% c("x11","quartz")){
                      locator(n=1)
                      dev.off()
                   }else{
@@ -3553,6 +3659,6 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
    }#end for npsas
    #---------------------------------------------------------------------------------------#
-}#end for places
+#}#end for places
 #==========================================================================================#
 #==========================================================================================#

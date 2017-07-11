@@ -126,7 +126,6 @@ subroutine init_met_drivers
                               , met_vars          & ! intent(out)
                               , met_frq           & ! intent(out)
                               , met_interp        & ! intent(out)
-                              , ed_met_driver_db  & ! intent(out)
                               , no_ll             & ! intent(out)
                               , has_co2           & ! intent(out)
                               , has_ustar         ! ! intent(out)
@@ -213,37 +212,37 @@ subroutine init_met_drivers
                ! assigning an appropriate number.                                          !
                !---------------------------------------------------------------------------!
                select case (trim(met_vars(iformat,iv)))
-               case ('nbdsf')   !----- Near IR beam downward shortwave flux. -- [   W/m²] -!
+               case ('nbdsf')   !----- Near IR beam downward shortwave flux. -- [   W/mï¿½] -!
                   nullify(cgrid%metinput(ipy)%nbdsf)
                   allocate(cgrid%metinput(ipy)%nbdsf(mem_size))
                   cgrid%metinput(ipy)%nbdsf = huge(1.)
 
-               case ('nddsf')   !----- Near IR diffuse downward shortwave flux. [   W/m²] -!
+               case ('nddsf')   !----- Near IR diffuse downward shortwave flux. [   W/mï¿½] -!
                   nullify(cgrid%metinput(ipy)%nddsf)
                   allocate(cgrid%metinput(ipy)%nddsf(mem_size))
                   cgrid%metinput(ipy)%nddsf = huge(1.)
 
-               case ('vbdsf')   !----- Visible beam downward shortwave flux. -- [   W/m²] -!
+               case ('vbdsf')   !----- Visible beam downward shortwave flux. -- [   W/mï¿½] -!
                   nullify(cgrid%metinput(ipy)%vbdsf)
                   allocate(cgrid%metinput(ipy)%vbdsf(mem_size))
                   cgrid%metinput(ipy)%vbdsf = huge(1.)
 
-               case ('vddsf')   !----- Visible diffuse downward shortwave flux. [   W/m²] -!
+               case ('vddsf')   !----- Visible diffuse downward shortwave flux. [   W/mï¿½] -!
                   nullify(cgrid%metinput(ipy)%vddsf)
                   allocate(cgrid%metinput(ipy)%vddsf(mem_size))
                   cgrid%metinput(ipy)%vddsf = huge(1.)
 
-               case ('prate')   !----- Precipitation rate. -------------------- [kg/m²/s] -!
+               case ('prate')   !----- Precipitation rate. -------------------- [kg/mï¿½/s] -!
                   nullify(cgrid%metinput(ipy)%prate)
                   allocate(cgrid%metinput(ipy)%prate(mem_size))
                   cgrid%metinput(ipy)%prate = huge(1.)
 
-               case ('dlwrf')   !----- Downwelling longwave radiation. -------- [   W/m²] -!
+               case ('dlwrf')   !----- Downwelling longwave radiation. -------- [   W/mï¿½] -!
                   nullify(cgrid%metinput(ipy)%dlwrf)
                   allocate(cgrid%metinput(ipy)%dlwrf(mem_size))
                   cgrid%metinput(ipy)%dlwrf = huge(1.)
 
-               case ('pres')   !----- Air pressure. --------------------------- [   N/m²] -!
+               case ('pres')   !----- Air pressure. --------------------------- [   N/mï¿½] -!
                   nullify(cgrid%metinput(ipy)%pres)
                   allocate(cgrid%metinput(ipy)%pres(mem_size))
                   cgrid%metinput(ipy)%pres = huge(1.)
@@ -338,7 +337,6 @@ subroutine read_met_drivers_init
                                 , metcyc1        & ! intent(in)
                                 , metcycf        & ! intent(in)
                                 , metyears       ! ! intent(inout)
-   use mem_polygons      , only : grid_type      ! ! intent(in)
    use ed_misc_coms      , only : current_time   & ! intent(in)
                                 , iyeara         & ! intent(in)
                                 , iyearz         & ! intent(in)
@@ -557,7 +555,7 @@ subroutine read_met_drivers_init
          !----- Loop over variables. and read the data. -----------------------------------!
          do iv = 1, met_nv(iformat)
             offset = 0
-            call read_ol_file(infile,iformat, iv, year_use, mname(current_time%month)      &
+            call read_ol_file(infile,iformat, iv, mname(current_time%month)      &
                              ,current_time%year, offset, cgrid)
          end do
 
@@ -604,7 +602,7 @@ subroutine read_met_drivers_init
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
 
                !----- Read the file. ------------------------------------------------------!
-               call read_ol_file(infile,iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
+               call read_ol_file(infile,iformat,iv,mname(m2),y2,offset,cgrid)
             end select
 
          end do varloop
@@ -633,7 +631,6 @@ subroutine read_met_drivers
    use ed_state_vars  , only : edgrid_g      & ! structure
                              , edtype        & ! structure
                              , polygontype   ! ! structure
-   use mem_polygons   , only : grid_type     ! ! structure
    use met_driver_coms, only : nformats      & ! intent(in)
                              , met_names     & ! intent(in)
                              , met_nv        & ! intent(in)
@@ -720,7 +717,7 @@ subroutine read_met_drivers
             case (0,2,3,4)
                !----- If not, things are simple.  Just read in the month. -----------------!
                offset = 0
-               call read_ol_file(infile,iformat,iv,year_use,mname(current_time%month)      &
+               call read_ol_file(infile,iformat,iv,mname(current_time%month)      &
                                 ,current_time%year,offset,cgrid)
             case (1,5)
                !----- Here, just transfer future to current month.  -----------------------!
@@ -779,7 +776,7 @@ subroutine read_met_drivers
             case (1,5)
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
                !----- Read the file. ------------------------------------------------------!
-               call read_ol_file(infile,iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
+               call read_ol_file(infile,iformat,iv,mname(m2),y2,offset,cgrid)
             end select
          end do
          
@@ -825,8 +822,7 @@ subroutine update_met_drivers(cgrid)
                                    , atm_rhv_max       & ! intent(in)
                                    , print_radinterp   ! ! intent(in)
    use ed_misc_coms         , only : simtime           & ! intent(in)
-                                   , current_time      & ! intent(in)
-                                   , dtlsm             ! ! intent(in)
+                                   , current_time      ! ! intent(in)
    use canopy_air_coms      , only : ubmin             & ! intent(in)
                                    , ustmin            ! ! intent(in)
    use canopy_radiation_coms, only : cosz_min          ! ! intent(in)
@@ -872,8 +868,6 @@ subroutine update_met_drivers(cgrid)
    real(kind=4)               :: dtnext
    real(kind=4)               :: dtprev
    real(kind=4)               :: rvaux
-   real(kind=4)               :: rvsat
-   real(kind=4)               :: min_shv 
    real(kind=4)               :: temp0
    real(kind=4)               :: relhum
    real(kind=4)               :: snden            ! snow density (kg/m3)
@@ -975,7 +969,7 @@ subroutine update_met_drivers(cgrid)
 
             !----- Find which variable it is, and then fill the polygons. -----------------!
             select case (trim(met_vars(iformat,iv)))
-            case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!
+            case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/mï¿½] -!
 
                !---------------------------------------------------------------------------!
                !    Decide whether to interpolate or not.                                  !
@@ -1086,7 +1080,7 @@ subroutine update_met_drivers(cgrid)
                end if
                !---------------------------------------------------------------------------!
 
-            case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/m²] -!
+            case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/mï¿½] -!
 
                !---------------------------------------------------------------------------!
                !    Decide whether to interpolate or not.                                  !
@@ -1198,7 +1192,7 @@ subroutine update_met_drivers(cgrid)
                end if
                !---------------------------------------------------------------------------!
 
-            case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/m²] -!
+            case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/mï¿½] -!
                !---------------------------------------------------------------------------!
                !    Decide whether to interpolate or not.                                  !
                !---------------------------------------------------------------------------!
@@ -1309,7 +1303,7 @@ subroutine update_met_drivers(cgrid)
                end if
                !---------------------------------------------------------------------------!
 
-            case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/m²] -!
+            case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/mï¿½] -!
 
                !---------------------------------------------------------------------------!
                !    Decide whether to interpolate or not.                                  !
@@ -1421,19 +1415,19 @@ subroutine update_met_drivers(cgrid)
                end if
                !---------------------------------------------------------------------------!
 
-            case('prate')   !----- Precipitation rate. ------------------------ [kg/m²/s] -!
+            case('prate')   !----- Precipitation rate. ------------------------ [kg/mï¿½/s] -!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%pcpg = cgrid%metinput(ipy)%prate(mprev)
                end do
 
-            case('dlwrf')   !----- Downwelling longwave radiation. ------------ [   W/m²] -!
+            case('dlwrf')   !----- Downwelling longwave radiation. ------------ [   W/mï¿½] -!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%rlong = cgrid%metinput(ipy)%dlwrf(mprev)
                end do
 
             case('pres')    
                !---------------------------------------------------------------------------!
-               !     Air pressure [   N/m²] and Exner function [J/kg/K].                   !
+               !     Air pressure [   N/mï¿½] and Exner function [J/kg/K].                   !
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%prss  = cgrid%metinput(ipy)%pres(mprev)
@@ -1629,13 +1623,13 @@ subroutine update_met_drivers(cgrid)
 
             !----- Find the variable and fill the sites. ----------------------------------!
             select case (trim(met_vars(iformat,iv)))
-            case('prate')   !----- Precipitation rate. ------------------------ [kg/m²/s] -!
+            case('prate')   !----- Precipitation rate. ------------------------ [kg/mï¿½/s] -!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%pcpg = cgrid%metinput(ipy)%prate(mnext) * wnext           &
                                       + cgrid%metinput(ipy)%prate(mprev) * wprev
                end do
 
-            case('dlwrf')   !----- Downwelling longwave radiation. ------------ [   W/m²] -!
+            case('dlwrf')   !----- Downwelling longwave radiation. ------------ [   W/mï¿½] -!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%rlong = cgrid%metinput(ipy)%dlwrf(mnext) * wnext          &
                                        + cgrid%metinput(ipy)%dlwrf(mprev) * wprev
@@ -1643,7 +1637,7 @@ subroutine update_met_drivers(cgrid)
 
             case('pres')
                !---------------------------------------------------------------------------!
-               !     Air pressure [   N/m²] and Exner function [J/kg/K].                   !
+               !     Air pressure [   N/mï¿½] and Exner function [J/kg/K].                   !
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%prss  = cgrid%metinput(ipy)%pres(mnext) * wnext           &
@@ -1730,7 +1724,7 @@ subroutine update_met_drivers(cgrid)
                   !------------------------------------------------------------------------!
                end do
 
-            case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!
+            case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/mï¿½] -!
 
                select case (imetavg)
                case (-1)
@@ -1854,7 +1848,7 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
 
 
-            case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/m²] -!
+            case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/mï¿½] -!
 
                select case (imetavg)
                case (-1)
@@ -1977,7 +1971,7 @@ subroutine update_met_drivers(cgrid)
                end select
                !---------------------------------------------------------------------------!
 
-            case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/m²] -!
+            case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/mï¿½] -!
 
                select case (imetavg)
                case (-1)
@@ -2101,7 +2095,7 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
 
 
-            case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/m²] -!
+            case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/mï¿½] -!
 
                select case (imetavg)
                case (-1)
@@ -2544,10 +2538,9 @@ end subroutine update_met_drivers
 ! model year may not match that of the simulation year, therefore this must be taken into  !
 ! account.                                                                                 !
 !==========================================================================================!
-subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid)
+subroutine read_ol_file(infile,iformat, iv, mname, year, offset, cgrid)
    use ed_max_dims    , only : str_len       ! ! intent(in)
-   use ed_state_vars  , only : edgrid_g      & ! structure
-                             , edtype        & ! structure
+   use ed_state_vars  , only : edtype        & ! structure
                              , polygontype   ! ! structure
    use met_driver_coms, only : met_frq       & ! intent(in)
                              , met_nlon      & ! intent(in)
@@ -2561,7 +2554,6 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
                              , no_ll         ! ! intent(in)
    use hdf5_utils     , only : shdf5_irec_f  & ! subroutine
                              , shdf5_info_f  ! ! subroutine
-   use mem_polygons   , only : grid_type     ! ! intent(in)
    use consts_coms    , only : day_sec       ! ! intent(in)
   
    implicit none
@@ -2570,7 +2562,6 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
    type(edtype)          , target      :: cgrid
    integer               , intent(in)  :: iformat
    integer               , intent(in)  :: iv
-   integer               , intent(in)  :: year_use
    character(len=3)      , intent(in)  :: mname
    integer               , intent(in)  :: year
    integer               , intent(in)  :: offset
@@ -3048,16 +3039,10 @@ end subroutine match_poly_grid
 !==========================================================================================!
 subroutine getll(cgrid,iformat)
 
-   use met_driver_coms, only: met_nv, &
-        met_vars, &
-        met_nlon, &
+   use met_driver_coms, only: met_nlon, &
         met_nlat, &
         lat2d,    &
         lon2d,    &
-        met_xmin, &
-        met_ymin, &
-        met_dx,   &
-        met_dy,   &
         no_ll
    
    use hdf5_utils,only : shdf5_info_f,shdf5_irec_f

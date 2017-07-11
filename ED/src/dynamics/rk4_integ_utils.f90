@@ -16,24 +16,17 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
                              , polygontype
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! intent(inout)
-                             , rk4site                & ! intent(in)
-                             , rk4tiny_sfcw_mass      & ! intent(in)
                              , maxstp                 & ! intent(in)
                              , tbeg                   & ! intent(in)
                              , tend                   & ! intent(in)
                              , dtrk4                  & ! intent(in)
-                             , dtrk4i                 & ! intent(in)
                              , tiny_offset            & ! intent(in)
                              , checkbudget            & ! intent(in)
-                             , print_detailed         & ! intent(in)
                              , norm_rk4_fluxes        ! ! sub-routine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
-   use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
                              , nzs                    ! ! intent(in)
-   use soil_coms      , only : dslz8                  & ! intent(in)
-                             , runoff_time            & ! intent(in)
-                             , runoff_time_i          &
+   use soil_coms      , only : runoff_time_i          &
                              , simplerunoff
    use consts_coms    , only : wdnsi8                 ! ! intent(in)
    use therm_lib8     , only : tl2uint8               ! ! intent(in)
@@ -136,7 +129,7 @@ subroutine odeint(h1,csite,ipa,isi,nsteps)
                integration_buff(ibuff)%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff(ibuff)%y%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%y,dtrk4,csite)
                call update_diagnostic_vars(integration_buff(ibuff)%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -242,8 +235,7 @@ subroutine copy_met_2_rk4site(mzg,                                            &
 
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
-   use canopy_air_coms, only : ubmin8        & ! intent(in)
-                             , ustmin8       ! ! intent(in) 
+   use canopy_air_coms, only : ustmin8       ! ! intent(in)
    use therm_lib8     , only : rehuil8       & ! function
                              , reducedpress8 & ! function
                              , tq2enthalpy8  & ! function
@@ -368,8 +360,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
                             , rk4site            & ! intent(in)
                             , checkbudget        & ! intent(in)
                             , print_detailed     ! ! intent(in)
-   use grid_coms     , only : nzg                & ! intent(in)
-                            , nzs                ! ! intent(in)
+   use grid_coms     , only : nzg                ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics   ! ! intent(in)
    implicit none
 
@@ -1217,11 +1208,9 @@ subroutine initialize_rk4patches(init)
                             , allocate_rk4_aux      & ! structure
                             , allocate_bdf2_patch   &
                             , deallocate_bdf2_patch & 
-                            , rk4aux                &
-                            , rk4site
+                            , rk4aux
 
-   use canopy_layer_coms,only : canstr              & 
-                              , alloc_canopy_layer_mbs &
+   use canopy_layer_coms,only : alloc_canopy_layer_mbs &
                               , tai_lyr_max          ! ! intent(in)
    use ed_misc_coms  , only : integration_scheme,    & ! intent(in)
                               ibigleaf
@@ -1568,7 +1557,6 @@ end subroutine initialize_rk4patches
 !        this.  It would overwrite in case of multiple sites per run, but I fixed this.    !
 !------------------------------------------------------------------------------------------!
 subroutine initialize_misc_stepvars()
-   use ed_misc_coms  , only  : integration_scheme  ! ! intent(in)
    use rk4_coms      , only  : tbeg                & ! intent(inout)
                              , tend                & ! intent(inout)
                              , dtrk4               & ! intent(inout)
@@ -1714,7 +1702,6 @@ end subroutine initialize_misc_stepvars
                                , pgrow               & ! intent(in)
                                , pshrnk              & ! intent(in)
                                , errcon              & ! intent(in)
-                               , print_diags         & ! intent(in)
                                , print_detailed      & ! intent(in)
                                , norm_rk4_fluxes     & ! intent(in)
                                , reset_rk4_fluxes    ! ! intent(in)
@@ -1735,7 +1722,7 @@ end subroutine initialize_misc_stepvars
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                             :: h,errmax,xnew,newh,oldh
       logical                                  :: reject_step,reject_result
-      logical                                  :: minstep,stuck,test_reject,pdo
+      logical                                  :: minstep,stuck,test_reject
       integer                                  :: k
       integer                                  :: ibuff
       !------------------------------------------------------------------------------------!
@@ -1754,7 +1741,7 @@ end subroutine initialize_misc_stepvars
                   ,integration_buff(ibuff)%ytemp,integration_buff(ibuff)%yerr              &
                   ,integration_buff(ibuff)%ak2,integration_buff(ibuff)%ak3                 &
                   ,integration_buff(ibuff)%ak4,integration_buff(ibuff)%ak5                 &
-                  ,integration_buff(ibuff)%ak6,integration_buff(ibuff)%ak7,x,h,csite,ipa   &
+                  ,integration_buff(ibuff)%ak6,integration_buff(ibuff)%ak7,h,csite,ipa     &
                   ,reject_step,reject_result)
 
          !---------------------------------------------------------------------------------!
@@ -1860,9 +1847,9 @@ end subroutine initialize_misc_stepvars
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(integration_buff(ibuff)%ytemp,h,csite)
             !----- iii. Make temporary surface water stable and positively defined. -------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h, csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff(ibuff)%ytemp, h, csite)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
             call update_diagnostic_vars(integration_buff(ibuff)%ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
@@ -1921,13 +1908,12 @@ end subroutine initialize_misc_stepvars
    !=======================================================================================!
    !    This subroutine will update the variables and perform the actual time stepping.    !
    !---------------------------------------------------------------------------------------!
-   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa                  &
+   subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,h,csite,ipa                  &
                   ,reject_step,reject_result)
       use rk4_misc
       use rk4_copy_patch
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_vars    & ! structure
-                               , rk4site             & ! intent(in)
                                , print_diags         & ! intent(in)
                                , rk4_a2              & ! intent(in)
                                , rk4_a3              & ! intent(in)
@@ -1962,13 +1948,11 @@ end subroutine initialize_misc_stepvars
                                , zero_rk4_cohort     ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
-      use grid_coms     , only : nzg                 & ! intent(in)
-                               , nzs                 ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
       integer           , intent(in)  :: ipa
-      real(kind=8)      , intent(in)  :: x,h
+      real(kind=8)      , intent(in)  :: h
       type(rk4patchtype), target      :: y,dydx,yout,yerr
       type(rk4patchtype), target      :: ak2,ak3,ak4,ak5,ak6,ak7
       type(sitetype)    , target      :: csite
@@ -2151,9 +2135,7 @@ end subroutine initialize_misc_stepvars
       use rk4_coms              , only : rk4patchtype          & ! structure
                                        , integration_vars      & ! structure
                                        , rk4site               & ! intent(in)
-                                       , rk4eps                & ! intent(in)
                                        , rk4aux                & ! intent(in)
-                                       , toocold               & ! intent(in)
                                        , rk4max_can_shv        & ! intent(in)
                                        , rk4min_can_shv        & ! intent(in)
                                        , rk4min_can_rhv        & ! intent(in)
@@ -2171,7 +2153,6 @@ end subroutine initialize_misc_stepvars
                                        , rk4min_soil_temp      & ! intent(in)
                                        , rk4min_sfcw_mass      & ! intent(in)
                                        , rk4min_virt_water     & ! intent(in)
-                                       , rk4tiny_sfcw_mass     & ! intent(in)
                                        , rk4water_stab_thresh  & ! intent(in)
                                        , integ_err             & ! intent(inout)
                                        , record_err            & ! intent(in)
@@ -2854,7 +2835,6 @@ end subroutine initialize_misc_stepvars
       use ed_state_vars         , only : sitetype      & ! structure
                                        , patchtype     ! ! structure
       use grid_coms             , only : nzg           ! ! intent(in)
-      use soil_coms             , only : soil8         ! ! intent(in), look-up table
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype) , target     :: y

@@ -24,7 +24,6 @@ subroutine ed_bigleaf_init(cgrid)
                              , q                    & ! intent(in)
                              , qsw                  & ! intent(in)
                              , agf_bs               ! ! intent(in)
-   use ed_misc_coms   , only : igrass               ! ! intent(in)
    use fuse_fiss_utils, only : sort_cohorts         & ! subroutine
                              , sort_patches         ! ! subroutine
    use consts_coms    , only : pio4                 ! ! intent(in)
@@ -48,8 +47,6 @@ subroutine ed_bigleaf_init(cgrid)
    integer                                          :: npatchco
    integer                                          :: nsitepat
    integer                                          :: k
-   logical          , dimension(n_pft)              :: pft_mask
-   logical          , dimension(n_dist_types)       :: lu_mask
    logical          , dimension(n_dist_types)       :: lu_desert
    real             , dimension(n_pft)              :: pft_area
    real             , dimension(n_pft,n_dist_types) :: lai
@@ -62,9 +59,6 @@ subroutine ed_bigleaf_init(cgrid)
    real             , dimension(n_dist_types)       :: fsn
    real             , dimension(n_dist_types)       :: sum_dgd
    real             , dimension(n_dist_types)       :: sum_chd
-   real                                             :: lu_area
-   real                                             :: site_area
-   real                                             :: new_area
    real                                             :: area_sum
    real                                             :: area_tot
    real                                             :: patch_lai
@@ -105,7 +99,7 @@ subroutine ed_bigleaf_init(cgrid)
 
       cpoly => cgrid%polygon(ipy)
       firstsiteloop: do isi=1,cpoly%nsites
-      
+
          !----- Reset all structures before loop over paches. -----------------------------!
          lai     (:,:) = 0.
          area      (:) = 0.
@@ -290,15 +284,10 @@ subroutine ed_bigleaf_init(cgrid)
 
 
                      !----- Assign LAI, WAI, and CAI --------------------------------------!
-                     call area_indices(cpatch%nplant(1),cpatch%bleaf(1),cpatch%bdead(1)    &
-                                      ,cpatch%balive(1),cpatch%dbh(1), cpatch%hite(1)      &
-                                      ,cpatch%pft(1),cpatch%sla(1),cpatch%lai(1)           &
-                                      ,cpatch%wai(1),cpatch%crown_area(1)                  &
-                                      ,cpatch%bsapwooda(1))
+                     call area_indices(cpatch, 1)
 
                      !----- Above ground biomass, use the allometry. ----------------------!
-                     cpatch%agb(1)     = ed_biomass(cpatch%bdead(1),cpatch%bleaf(1)        &
-                                               ,cpatch%bsapwooda(1),cpatch%pft(1))
+                     cpatch%agb(1)     = ed_biomass(cpatch, 1)
                      cpatch%basarea(1) = pio4 * cpatch%dbh(1) * cpatch%dbh(1)
 
                      !----- Growth rates, start with zero. --------------------------------!
@@ -308,7 +297,7 @@ subroutine ed_bigleaf_init(cgrid)
                      cpatch%dlnba_dt (1)  = 0.
                      cpatch%ddbh_dt  (1)  = 0.
                      cpatch%dlndbh_dt(1)  = 0.
-                     
+
                      !---------------------------------------------------------------------!
                      !      Initialise other cohort variables.  Some of them won't be      !
                      ! updated unless the lai exceeds lai_min.                             !
@@ -363,7 +352,7 @@ subroutine ed_bigleaf_init(cgrid)
          !----- Initialise the cohort variables, then sort them by size. ------------------!
          do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
-            do ico = 1,cpatch%ncohorts                 
+            do ico = 1,cpatch%ncohorts
                call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
             end do
 
@@ -382,7 +371,7 @@ subroutine ed_bigleaf_init(cgrid)
 
 
       !----- Initialise site-level variables. ---------------------------------------------!
-      call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+      call init_ed_site_vars(cpoly)
 
 
       !----- Get a diagnostic on the polygon's vegetation. --------------------------------!

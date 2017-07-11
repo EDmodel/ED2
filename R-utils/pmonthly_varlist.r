@@ -154,8 +154,8 @@ tspftdbh[[n]]     = list( vnam     = "balive"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -180,8 +180,8 @@ tspftdbh[[n]]     = list( vnam     = "bleaf"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -194,8 +194,8 @@ tspftdbh[[n]]     = list( vnam     = "broot"
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
                         , pft      = FALSE
-                        , pftdbh   = FALSE
-                        , sas      = FALSE
+                        , pftdbh   = T
+                        , sas      = T
                         , bar.plot = FALSE
                         , stack    = TRUE
                         , scsout   = TRUE
@@ -206,8 +206,8 @@ tspftdbh[[n]]     = list( vnam     = "bstem"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = T
+                        , pftdbh   = T
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -219,8 +219,8 @@ tspftdbh[[n]]     = list( vnam     = "bsapwood"
                         , e.unit   = untab$kgcom2
                         , i.unit   = untab$kgcopl
                         , plog     = FALSE
-                        , pft      = FALSE
-                        , pftdbh   = FALSE
+                        , pft      = T
+                        , pftdbh   = T
                         , sas      = FALSE
                         , bar.plot = FALSE
                         , stack    = TRUE
@@ -309,12 +309,12 @@ tspftdbh[[n]]     = list( vnam     = "nplant"
                         , desc     = "Plant density"
                         , e.unit   = untab$plom2
                         , i.unit   = untab$plom2
-                        , plog     = TRUE
+                        , plog     = T
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = FALSE
-                        , stack    = TRUE
+                        , bar.plot = TRUE
+                        , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
@@ -326,7 +326,7 @@ tspftdbh[[n]]     = list( vnam     = "sm.stress"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
-                        , bar.plot = FALSE
+                        , bar.plot = TRUE
                         , stack    = FALSE
                         , scsout   = TRUE
                         )#end list
@@ -528,6 +528,97 @@ tspftdbh[[n]]     = list( vnam     = "agb.growth"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "agb.change"
+                        , desc     = "Change rate"
+                        , e.unit   = untab$pcagboyr
+                        , i.unit   = untab$pcagboyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.change"
+                        , desc     = "Change rate"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.mort"
+                        , desc     = "Mortality rate"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.ncbmort"
+                        , desc     = "Mortality rate - Neg. C balance"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.dimort"
+                        , desc     = "Mortality rate - Density independent"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.recr"
+                        , desc     = "Recruitment rate"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "acc.growth"
+                        , desc     = "Growth rate"
+                        , e.unit   = untab$kgcom2oyr
+                        , i.unit   = untab$kgcoployr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "cbamax"
                         , desc     = "Maximum Carbon balance"
                         , e.unit   = untab$kgcom2oyr
@@ -623,6 +714,32 @@ tspftdbh[[n]]     = list( vnam     = "wue"
                         , desc     = "Water use efficiency"
                         , e.unit   = untab$gcokgw
                         , i.unit   = untab$gcokgw
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "cue"
+                        , desc     = "Carbon use efficiency"
+                        , e.unit   = untab$kgcokgc
+                        , i.unit   = untab$kgcokgc
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = FALSE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "ecue"
+                        , desc     = "Effective carbon use efficiency"
+                        , e.unit   = untab$kgcokgc
+                        , i.unit   = untab$kgcokgc
                         , plog     = FALSE
                         , pft      = TRUE
                         , pftdbh   = TRUE
@@ -906,7 +1023,7 @@ tspftdbh[[n]]     = list( vnam     = "f.bseeds"
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.par"
-                        , desc     = "Absorbed PAR - Leaf"
+                        , desc     = "Norm. Absorbed PAR - Leaf"
                         , e.unit   = untab$umolom2los
                         , i.unit   = untab$umolom2los
                         , plog     = FALSE
@@ -918,8 +1035,34 @@ tspftdbh[[n]]     = list( vnam     = "leaf.par"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "par.leaf"
+                        , desc     = "Absolute Absorbed PAR - Leaf"
+                        , e.unit   = untab$umolom2os
+                        , i.unit   = untab$umolom2los
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "leaf.gpp"
+                        , desc     = "Leaf-level GPP"
+                        , e.unit   = untab$kgcom2loyr
+                        , i.unit   = untab$kgcom2loyr
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
-                        , desc     = "Absorbed SW - Leaf"
+                        , desc     = "Norm. Absorbed SW - Leaf"
                         , e.unit   = untab$wom2l
                         , i.unit   = untab$wom2l
                         , plog     = FALSE
@@ -932,7 +1075,7 @@ tspftdbh[[n]]     = list( vnam     = "leaf.rshort"
                         )#end list
 n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.rlong"
-                        , desc     = "Net absorbed LW - Leaf"
+                        , desc     = "Norm. Net absorbed LW - Leaf"
                         , e.unit   = untab$wom2l
                         , i.unit   = untab$wom2l
                         , plog     = FALSE
@@ -3186,16 +3329,7 @@ yc.xyzvar$yvar = list( list ( vname = "rshort"
 #------------------------------------------------------------------------------------------#
 #     Define the number of plots of each kind, and make the lists global.                  #
 #------------------------------------------------------------------------------------------#
-tspftdbh    <<- tspftdbh
 tserdist    <<- TRUE                  # Time series of disturbance rates
-tslu        <<- tslu
-squeeze     <<- squeeze
-theme       <<- theme
-compmodel   <<- compmodel
-soilplot    <<- soilplot
-plotpatch   <<- plotpatch
-yc.tvar     <<- yc.tvar
-yc.xyzvar   <<- yc.xyzvar
 ntspftdbh   <<- length(tspftdbh      )
 ntslu       <<- length(tslu          )
 nsqueeze    <<- length(squeeze       )

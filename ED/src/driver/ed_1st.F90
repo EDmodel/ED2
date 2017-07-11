@@ -18,11 +18,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    use ed_met_driver
    use ed_para_coms , only : iparallel          & ! intent(inout)
                            , machsize           ! ! intent(in)
-   use ed_misc_coms , only : runtype            & ! intent(inout)
-                           , iyeara             & ! intent(inout)
-                           , imontha            & ! intent(inout)
-                           , idatea             & ! intent(inout)
-                           , itimea             ! ! intent(inout)
+   use ed_misc_coms , only : runtype            ! ! intent(inout)
    use ed_state_vars, only : allocate_edglobals & ! subroutine
                            , filltab_alltypes   ! ! subroutine
 
@@ -39,8 +35,6 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    integer         , intent(in) :: headnode_num ! this process rank on a parallel run
    character(len=*), intent(in) :: name_name    ! namelist file name
    !----- Local variables. ----------------------------------------------------------------!
-   integer                      :: nndtflg
-   integer                      :: ierr
    real                         :: w1
    real                         :: wtime_start 
    !----- Local parameters, this sub-routine shan't ever be called by coupled runs. -------!
@@ -175,10 +169,7 @@ subroutine ed_1st_node(init)
 #endif
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: init
-   !----- Local variables. ----------------------------------------------------------------!
-   integer             :: ierr
    !---------------------------------------------------------------------------------------!
-
 
    !----- Make sure the node is synchronised with all fellows. ----------------------------!
 #if defined(RAMS_MPI)

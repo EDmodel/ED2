@@ -27,19 +27,15 @@ module average_utils
                                        , polygontype        & ! structure
                                        , sitetype           & ! structure
                                        , patchtype          ! ! structure
-      use grid_coms             , only : ngrids             & ! intent(in)
-                                       , nzg                & ! intent(in)
-                                       , nzs                ! ! intent(in)
+      use grid_coms             , only : nzg                ! ! intent(in)
       use consts_coms           , only : wdns               & ! intent(in)
                                        , t00                ! ! intent(in)
-      use ed_misc_coms          , only : frqsum             ! ! intent(in)
       use therm_lib             , only : uextcm2tl          & ! subroutine
                                        , uint2tl            & ! subroutine
                                        , idealdenssh        & ! function
                                        , press2exner        & ! function
                                        , extheta2temp       ! ! function
       use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
-                                       , isoilbc            & ! intent(in)
                                        , soil               & ! intent(in)
                                        , dslz               ! ! intent(in)
       use ed_max_dims           , only : n_pft              ! ! intent(in)
@@ -876,8 +872,7 @@ module average_utils
       use grid_coms    , only : nzg                ! ! intent(in)
       use ed_misc_coms , only : dtlsm              & ! intent(in)
                               , frqsum             & ! intent(in)
-                              , radfrq             & ! intent(in)
-                              , current_time       ! ! intent(in)
+                              , radfrq             ! ! intent(in)
       use ed_state_vars, only : edtype             & ! structure
                               , polygontype        & ! structure
                               , sitetype           & ! structure
@@ -890,9 +885,7 @@ module average_utils
       use consts_coms  , only : t00                & ! intent(in)
                               , wdns               ! ! intent(in)
       use soil_coms    , only : tiny_sfcwater_mass & ! intent(in)
-                              , isoilbc            & ! intent(in)
                               , soil               & ! intent(in)
-                              , dslz               & ! intent(in)
                               , matric_potential   ! ! function
       implicit none
       !----- Arguments.  ------------------------------------------------------------------!
@@ -1088,7 +1081,7 @@ module average_utils
                   !------------------------------------------------------------------------!
                   !    Energy and water fluxes were integrated over the past frqsum        !
                   ! interval.   Use frqsumi to normalise them.  Energy fluxes will become  !
-                  ! W/m², and water fluxes will become kg/m²/s.                            !
+                  ! W/mï¿½, and water fluxes will become kg/mï¿½/s.                            !
                   !------------------------------------------------------------------------!
                   cpatch%fmean_sensible_lc   (ico) = cpatch%fmean_sensible_lc   (ico)      &
                                                    * frqsumi
@@ -2464,8 +2457,6 @@ module average_utils
                                , n_age         & ! intent(in)
                                , n_dbh         ! ! intent(in)
       use ed_misc_coms  , only : writing_long  & ! intent(in)
-                               , writing_eorq  & ! intent(in)
-                               , writing_dcyc  & ! intent(in)
                                , dtlsm         ! ! intent(in)
       use consts_coms   , only : umols_2_kgCyr & ! intent(in)
                                , day_sec       ! ! intent(in)
@@ -2556,9 +2547,7 @@ module average_utils
                                , polygontype   & ! structure
                                , sitetype      & ! structure
                                , patchtype     ! ! structure
-      use ed_misc_coms  , only : writing_long  & ! intent(in)
-                               , writing_eorq  & ! intent(in)
-                               , writing_dcyc  ! ! intent(in)
+      use ed_misc_coms  , only : writing_long  ! ! intent(in)
       use consts_coms   , only : yr_day ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -4832,7 +4821,6 @@ module average_utils
                                       , sitetype           & ! structure
                                       , patchtype          ! ! structure
       use grid_coms            , only : nzg                ! ! intent(in)
-      use ed_misc_coms         , only : dtlsm              ! ! intent(in)
       use therm_lib            , only : press2exner        & ! function
                                       , extheta2temp       & ! function
                                       , uextcm2tl          & ! subroutine
@@ -5652,7 +5640,6 @@ module average_utils
                               , sitetype            & ! structure
                               , patchtype           ! ! structure
       use ed_misc_coms , only : frqfast             & ! intent(in)
-                              , ndcycle             & ! intent(in)
                               , current_time        & ! intent(in)
                               , simtime             ! ! structure
       use consts_coms  , only : day_sec             ! ! intent(in)
@@ -6654,9 +6641,7 @@ module average_utils
                                       , uint2tl            & ! subroutine
                                       , idealdenssh        ! ! function
       use soil_coms            , only : tiny_sfcwater_mass & ! intent(in)
-                                      , isoilbc            & ! intent(in)
-                                      , soil               & ! intent(in)
-                                      , dslz               ! ! intent(in)
+                                      , soil               ! ! intent(in)
       use consts_coms          , only : t00                & ! intent(in)
                                       , wdns               ! ! intent(in)
       use grid_coms            , only : nzg                ! ! intent(in)

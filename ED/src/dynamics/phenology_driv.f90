@@ -238,10 +238,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
       csite%ssl_in(ipa) = 0.0
 
       !----- Determine what phenology thresholds have been crossed. -----------------------!
-      call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                   &
-                               ,csite%soil_water(:,ipa),cpoly%ntext_soil(:,isi)            &
-                               ,csite%sum_chd(ipa),csite%sum_dgd(ipa),drop_cold            &
-                               ,leaf_out_cold,cpoly%lsl(isi))
+      call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa),csite%sum_chd(ipa)&
+                               ,csite%sum_dgd(ipa),drop_cold,leaf_out_cold)
 
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft    = cpatch%pft(ico)
@@ -592,18 +590,14 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
          !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch, ico)
          !---------------------------------------------------------------------------------!
 
 
 
 
          !----- Update above-ground biomass. ----------------------------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
+         cpatch%agb(ico) = ed_biomass(cpatch, ico)
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -660,7 +654,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use pft_coms       , only : phenology                & ! intent(in)
                              , q                        & ! intent(in)
                              , qsw                      ! ! intent(in)
-   use decomp_coms    , only : f_labile                 ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
                              , iphen_scheme             & ! intent(in)
                              , elongf_min               & ! intent(in)
@@ -668,7 +661,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    use ed_therm_lib   , only : calc_veg_hcap            & ! function
                              , update_veg_energy_cweh   ! ! subroutine
    use ed_max_dims    , only : n_pft                    ! ! intent(in)
-   use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
                              , ed_biomass               & ! function
                              , size2bl                  ! ! function
@@ -716,9 +708,8 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
       !----- Determine what phenology thresholds have been crossed. -----------------------!
       call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                   &
-                               ,csite%soil_water(:,ipa),cpoly%ntext_soil(:,isi)            &
                                ,csite%sum_chd(ipa),csite%sum_dgd(ipa),drop_cold            &
-                               ,leaf_out_cold,cpoly%lsl(isi))
+                               ,leaf_out_cold)
 
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft    = cpatch%pft(ico)
@@ -998,14 +989,10 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
 
          !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch, ico)
 
          !----- Update above-ground biomass. ----------------------------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
+         cpatch%agb(ico) = ed_biomass(cpatch, ico)
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -1032,17 +1019,12 @@ end subroutine update_phenology_eq_0
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine establishes whether it´s time to drop leaves or start flushing them  !
+!     This subroutine establishes whether itÂ´s time to drop leaves or start flushing them  !
 ! for cold deciduous or temperate drought deciduous.                                       !
-! MLO. Shouldn´t we have a similar criterion for both tropical and temperate, based on a   !
+! MLO. ShouldnÂ´t we have a similar criterion for both tropical and temperate, based on a   !
 !      long term dry condition?                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd,sum_dgd   &
-                               ,drop_cold,leaf_out_cold,lsl)
-   use grid_coms     , only : nzg          ! ! intent(in)
-   use soil_coms     , only : soil         & ! intent(in)
-                            , dslz         & ! intent(in)
-                            , slz          ! ! intent(in)
+subroutine phenology_thresholds(daylight,soil_temp,sum_chd,sum_dgd,drop_cold,leaf_out_cold)
    use phenology_coms, only : dl_tr        & ! intent(in)
                             , st_tr1       & ! intent(in)
                             , st_tr2       & ! intent(in)
@@ -1052,21 +1034,14 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
                             , iphen_scheme ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, dimension(nzg), intent(in)    :: soil_class    ! Soil class
-   integer                , intent(in)    :: lsl           ! Lowest soil level
    real                   , intent(in)    :: daylight      ! Daytime Length
    real                   , intent(in)    :: soil_temp     ! 
-   real   , dimension(nzg), intent(in)    :: soil_water    !
    real                   , intent(inout) :: sum_dgd       !
    real                   , intent(inout) :: sum_chd       !
    logical                , intent(out)   :: drop_cold     !
    logical                , intent(out)   :: leaf_out_cold !
    !----- Local variables -----------------------------------------------------------------!
    real                                   :: gdd_threshold
-   integer                                :: k1
-   integer                                :: k2
-   integer                                :: topsoil
-   integer                                :: nsoil
    !---------------------------------------------------------------------------------------!
 
    !----- Initialize variables. -----------------------------------------------------------!

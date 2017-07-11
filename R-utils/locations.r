@@ -26,10 +26,10 @@ locations <<- function(where,here=getwd(),yearbeg=1500,yearend=2008,monthbeg=1,d
       lieu     = poilist$longname[pp]
       iata     = poilist$iata[pp]
       wmo      = poilist$wmo [pp]
-      pathroot = paste(here,ici,sep="/")
-      pathin   = paste(here,ici,"analy",ici,sep="/")
-      pathrst  = paste(here,ici,"histo",ici,sep="/")
-      pathout  = paste(here,ici,"epost",sep="/")
+      pathroot = paste(here)
+      pathin   = paste(here,"analy",ici,sep="/")
+      pathrst  = paste(here,"histo",ici,sep="/")
+      pathout  = paste(here,"epost",sep="/")
       lon      = poilist$lon[pp]
       lat      = poilist$lat[pp]
    }else if(nchar(ici) == 5 & substring(ici,1,2) == "kz")     {

@@ -22,9 +22,9 @@
 
 subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
-  use grid_coms,only         : nzg,nzs
-  use rk4_coms,only          : effarea_evap,effarea_heat,effarea_transp, &
-       rk4site,rk4patchtype,rk4aux,bdf2patchtype,checkbudget,ibranch_thermo
+  use grid_coms,only         : nzg
+  use rk4_coms,only          : effarea_heat,rk4site,rk4patchtype,rk4aux &
+                             , bdf2patchtype,checkbudget,ibranch_thermo
   use ed_misc_coms,only    : fast_diagnostics
   use ed_state_vars,only   : patchtype
   use therm_lib8,only      : reducedpress8,idealdenssh8
@@ -33,7 +33,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
        rocv8,cpocv8,cliq8,cice8,rocp8,cpocv,epim1,   &
        alli8,t3ple8,alvi38,wdns8,cph2o8,tsupercool_liq8,pi18
   use therm_lib8,only      : uint2tl8,uextcm2tl8,tq2enthalpy8, tl2uint8, cmtl2uext8
-  use soil_coms, only      : soil8,dslz8
+  use soil_coms, only      : soil8
   !$ use omp_lib
   implicit none
   
@@ -67,10 +67,8 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   real(kind=8)                  :: dqcdt ! time partial of qc      [kg/kg/s]
   real(kind=8)                  :: xc    ! lumped term (canopy)    [-]
   real(kind=8)                  :: href  ! reference spec. enth.   [J/kg]
-  real(kind=8)                  :: gv    ! veg-canopy conductivity [m/s]
   real(kind=8),dimension(300)   :: gv_hfa   ! effective area of heat times g
   real(kind=8),dimension(300)   :: mlc   ! mass flux leaf->can      [kg/m2/s]
-  real(kind=8),dimension(300)   :: mwc   ! mass flux wood->can
   real(kind=8),dimension(300)   :: mtr   ! mass flux transp veg->can [kg/m2/s]
   real(kind=8),dimension(300)   :: fliq  ! liquid fraction leaf surf [kg/kg]
   real(kind=8),dimension(300)   :: qv    ! water mass on vegetation  [kg/m2]
@@ -79,7 +77,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
   real(kind=8),dimension(300)   :: hflx  ! enth flux from bunch of stuff
   logical,dimension(300)        :: resolve ! self-explanatory
 
-  real(kind=8)  :: veg_temp,leaf_temp,wood_temp
+  real(kind=8)  :: veg_temp
   real(kind=8)  :: eflxac
   real(kind=8)  :: qwflxac
   real(kind=8)  :: hflxac
@@ -144,7 +142,7 @@ subroutine bdf2_solver(cpatch,yprev,ycurr,ynext,dydt,dtf,dtb)
 
   call ed_grndvap8(ksn,ynext%soil_water(nzg),ynext%soil_tempk(nzg)        &
        ,ynext%soil_fracliq(nzg),ycurr%sfcwater_tempk(k)                   &
-       ,ycurr%sfcwater_fracliq(k),ycurr%snowfac,ycurr%can_prss,ynext%can_shv &
+       ,ycurr%snowfac,ycurr%can_prss,ynext%can_shv                        &
        ,ynext%ground_shv,ynext%ground_ssh,ynext%ground_temp               &
        ,ynext%ground_fliq,ynext%ggsoil)
   

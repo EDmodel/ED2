@@ -443,9 +443,7 @@ subroutine ed_opspec_times
                            , isoutput         & ! intent(in)
                            , idoutput         & ! intent(in)
                            , imoutput         & ! intent(in)
-                           , iyoutput         & ! intent(in)
                            , iqoutput         & ! intent(in)
-                           , itoutput         & ! intent(in)
                            , nrec_fast        & ! intent(in)
                            , nrec_state       & ! intent(in)
                            , outfast          & ! intent(in)
@@ -455,7 +453,6 @@ subroutine ed_opspec_times
    use consts_coms  , only : day_sec          & ! intent(in)
                            , hr_sec           ! ! intent(in)
    use grid_coms    , only : timmax           ! ! intent(in)
-   use ed_misc_coms , only : fast_diagnostics ! ! intent(in)
    use ed_max_dims  , only : str_len          ! ! intent(in)
 
    implicit none

@@ -14,7 +14,7 @@
 #ifdef CRAY
 #include <stdlib.h>
 #endif
-#ifdef IBM
+#if defined(IBM) || defined(__APPLE__)
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
@@ -530,11 +530,21 @@ void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirle
 
 /* This is for the omp thread/processor pinning check. */
 /* MLO.  This didn't work in the SUNHPC cluster, disabling it for now */
+#if defined(SUNHPC) || defined(__APPLE__)
 int findmycpu_ ()
 {
 	int cpu;
 	cpu = 0;
 	return cpu;
 }
-
+#else
+#include <utmpx.h>
+int sched_getcpu();
+int findmycpu_ ()
+{
+    int cpu;
+    cpu = sched_getcpu();
+    return cpu;
+}
+#endif
 

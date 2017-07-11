@@ -12,7 +12,7 @@ here=$(pwd)
 lonlat="${here}/joborder.txt"
 desc=$(basename ${here})
 moi=$(whoami)
-
+outform="%.200j %.8T"
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${lonlat} | awk '{print $1 }')-3
 echo "Number of polygons: ${npolys}..."
@@ -143,24 +143,25 @@ do
    imetrad=$(echo ${oi}      | awk '{print $74}')
    ibranch=$(echo ${oi}      | awk '{print $75}')
    icanrad=$(echo ${oi}      | awk '{print $76}')
-   crown=$(echo   ${oi}      | awk '{print $77}')
-   ltransvis=$(echo ${oi}    | awk '{print $78}')
-   lreflectvis=$(echo ${oi}  | awk '{print $79}')
-   ltransnir=$(echo ${oi}    | awk '{print $80}')
-   lreflectnir=$(echo ${oi}  | awk '{print $81}')
-   orienttree=$(echo ${oi}   | awk '{print $82}')
-   orientgrass=$(echo ${oi}  | awk '{print $83}')
-   clumptree=$(echo ${oi}    | awk '{print $84}')
-   clumpgrass=$(echo ${oi}   | awk '{print $85}')
-   ivegtdyn=$(echo ${oi}     | awk '{print $86}')
-   igndvap=$(echo ${oi}      | awk '{print $87}')
-   iphen=$(echo ${oi}        | awk '{print $88}')
-   iallom=$(echo ${oi}       | awk '{print $89}')
-   ibigleaf=$(echo ${oi}     | awk '{print $90}')
-   irepro=$(echo ${oi}       | awk '{print $91}')
-   treefall=$(echo ${oi}     | awk '{print $92}')
-   ianthdisturb=$(echo ${oi} | awk '{print $93}')
-   ianthdataset=$(echo ${oi} | awk '{print $94}')
+   ihrzrad=$(echo ${oi}      | awk '{print $77}')
+   crown=$(echo   ${oi}      | awk '{print $78}')
+   ltransvis=$(echo ${oi}    | awk '{print $79}')
+   lreflectvis=$(echo ${oi}  | awk '{print $80}')
+   ltransnir=$(echo ${oi}    | awk '{print $81}')
+   lreflectnir=$(echo ${oi}  | awk '{print $82}')
+   orienttree=$(echo ${oi}   | awk '{print $83}')
+   orientgrass=$(echo ${oi}  | awk '{print $84}')
+   clumptree=$(echo ${oi}    | awk '{print $85}')
+   clumpgrass=$(echo ${oi}   | awk '{print $86}')
+   ivegtdyn=$(echo ${oi}     | awk '{print $87}')
+   igndvap=$(echo ${oi}      | awk '{print $88}')
+   iphen=$(echo ${oi}        | awk '{print $89}')
+   iallom=$(echo ${oi}       | awk '{print $90}')
+   ibigleaf=$(echo ${oi}     | awk '{print $91}')
+   irepro=$(echo ${oi}       | awk '{print $92}')
+   treefall=$(echo ${oi}     | awk '{print $93}')
+   ianthdisturb=$(echo ${oi} | awk '{print $94}')
+   ianthdataset=$(echo ${oi} | awk '{print $95}')
    #---------------------------------------------------------------------------------------#
 
    #---------------------------------------------------------------------------------------#
@@ -180,7 +181,10 @@ do
    if [ -s ${stdout} ]
    then
       #----- Check whether the simulation is running, and when in model time it is. -------#
-      running=$(squeue -h -u ${moi} -n ${jobname} -t RUNNING | wc -l)
+      squeue="squeue --noheader -u ${moi}"
+      running=$(${squeue}   -o "${outform}" -t RUNNING   | grep ${jobname} | wc -l)
+      pending=$(${squeue}   -o "${outform}" -t PENDING   | grep ${jobname} | wc -l)
+      suspended=$(${squeue} -o "${outform}" -t SUSPENDED | grep ${jobname} | wc -l)
       simline=$(grep "Simulating: "   ${stdout} | tail -1)
       runtime=$(echo ${simline} | awk '{print $3}')
       #------------------------------------------------------------------------------------#
@@ -219,7 +223,13 @@ do
       #------------------------------------------------------------------------------------#
       #     Plot a message so the user knows what is going on.                             #
       #------------------------------------------------------------------------------------#
-      if [ ${running} -gt 0 ] || [ -s ${skipper} ] && [ ${sigsegv} -eq 0 ]
+      if [ ${pending} -gt 0 ]
+      then
+         echo -e ${opt} "${off} ${ffout}: ${polyname} is pending..."
+      elif [ ${suspended} -gt 0 ]
+      then
+         echo -e ${opt} "${off} ${ffout}: ${polyname} is suspended!!!"
+      elif [ ${running} -gt 0 ] || [ -s ${skipper} ] && [ ${sigsegv} -eq 0 ]
       then
          echo -e ${opt} "${off} ${ffout}: ${polyname} is running (${runtime})..."
       elif [ ${sigsegv} -gt 0 ]
