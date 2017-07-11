@@ -302,20 +302,6 @@ if (idbh.type == 1){
                    ,         "yellow3",      "darkorange1",       "firebrick"
                    ,        all.colour
                    )#end c
-}else if (idbh.type == 5){
-  ndbh       <<-  17
-  classdbh   <<- c(0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20)
-  breakdbh   <<- c(-Inf,classdbh[-1],Inf)
-  dbhlabel   <<- "07_szclss"
-  dbhkeys    <<- paste(classdbh,"-",c(classdbh[-1],Inf),sep="")
-  dbhnames   <<- paste( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
-                        , c(classdbh[-1],classdbh[ndbh]),"cm"
-                        , sep=""
-  )#end paste
-  dbhcols    <<- c(         "purple3",       "royalblue3",     "chartreuse3"
-                  ,         "yellow3",      "darkorange1",       "firebrick"
-                  ,        all.colour
-  )#end c
 }else{
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")
