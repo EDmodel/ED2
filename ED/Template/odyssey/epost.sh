@@ -1,17 +1,21 @@
 #!/bin/bash
 . ${HOME}/.bashrc
-here="/nowhere"                       # ! Main path
-myself=$(whoami)                      # ! You
-diskthere=""                          # ! Disk where the output files are
-thisqueue="anyqueue"                  # ! Queue where jobs should be submitted
-runtime="7-00:00:00"                  # ! Run time request
-memory=2048                           # ! Requested memory (Mb)
-sbatch=$(which sbatch)                # ! SLURM command to submit job.
+#----- Main path, usually set by $(pwd) so you don't need to change it. -------------------#
+here=$(pwd)
+#----- User name, usually set by $(whoami) so you don't need to change it. ----------------#
+myself=$(whoami)
+#----- Description of this simulation, used to create unique job names. -------------------#
+desc=$(basename ${here})
+#----- Queue to which the current post-processing array should be submitted. --------------#
+global_queue="cpu_dev"
+#----- Path with modules. -----------------------------------------------------------------#
+modpath="${SCRATCH}/Modules"
+#----- File containing the list of jobs and their settings: -------------------------------#
 joborder="${here}/joborder.txt"         # ! File with the job instructions
-#----- Outroot is the main output directory. ----------------------------------------------#
-outroot="/nowhere"
-submit="y"       # y = Submit the script; n = Copy the script
-#----- Plot only one meteorological cycle. ------------------------------------------------#
+#----- How should the post-processing be handled? -----------------------------------------#
+submit=false     # true -- Try to submit the script to the queue
+                 # false -- Prepare script for batch, but don't dispatch job.
+#----- Time frame for post-processing. ----------------------------------------------------#
 useperiod="a"    # Which bounds should I use? (Ignored by plot_eval_ed.r)
                  # "a" -- All period
                  # "t" -- One eddy flux tower met cycle
@@ -32,12 +36,13 @@ usedistrib="edf" # Which distribution to plot on top of histograms:
 #----- Output format. ---------------------------------------------------------------------#
 outform="c(\"pdf\")"           # x11 - On screen (deprecated on shell scripts)
                                # png - Portable Network Graphics
+                               # tif - 
                                # eps - Encapsulated Post Script
                                # pdf - Portable Document Format
 #----- DBH classes. -----------------------------------------------------------------------#
 idbhtype=4                     # Type of DBH class
                                # 1 -- Every 10 cm until 100cm; > 100cm
-                               # 2 -- 0-10; 10-20; 20-35; 35-50; 50-70; > 70 (cm)
+                               # 2 -- 0-10; 10-20; 20-35; 35-55; 55-80; > 80 (cm)
                                # 3 -- 0-10; 10-35; 35-55; > 55 (cm)
                                # 4 -- 0-10; 10-30; 30-50; 50-80; > 80 (cm)
 #----- Default background colour. ---------------------------------------------------------#
@@ -55,11 +60,16 @@ correct_gs=1.0                 # Correction factor for growth and storage respir
 oldgrowth="FALSE"
 #----- Path with R scripts that are useful. -----------------------------------------------#
 rscpath="${HOME}/EDBRAMS/R-utils"
+rlibs="${HOME}/R"
+#----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
+initrc="${HOME}/.bashrc"
+#----- Memory per post-processing. --------------------------------------------------------#
+sim_memory=2500
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
-#     Which scripts to run.                                                                #
+#     Which script to run (multiple scripts are not allowed).                              #
 #                                                                                          #
 #   - read_monthly.r - This reads the monthly mean files (results can then be used for     #
 #                      plot_monthly.r, plot_yearly.r, and others, but it doesn't plot any- #
@@ -89,7 +99,12 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscripts="nothing"
+rscript="plot_monthly.r"
+#rscript="yearly_ascii.r"
+#rscript="plot_monthly.r"
+#rscript="plot_census.r" 
+#rscript="plot_ycomp.r"
+#rscript="plot_eval_ed.r"
 #------------------------------------------------------------------------------------------#
 
 
@@ -109,86 +124,217 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 
 
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#     Unless you are going to modify the way jobs are submitted, you don't need to change  #
+# anything beyond this point.                                                              #
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+#==========================================================================================#
+
+
+#----- Load settings. ---------------------------------------------------------------------#
+if [ -s ${initrc} ]
+then
+   . ${initrc}
+fi
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     Configurations depend on the global_queue.                                           #
+#------------------------------------------------------------------------------------------#
+case ${global_queue} in
+   cpu_long|nvidia_long)
+      n_nodes_max=10
+      n_cpt=1
+      n_tpn=24
+      runtime="31-00:00:00"
+      node_memory=64000
+      ;;
+   cpu|nvidia|phi)
+      n_nodes_max=50
+      n_cpt=1
+      n_tpn=24
+      runtime="2-00:00:00"
+      node_memory=64000
+      ;;
+   cpu_dev)
+      n_nodes_max=20
+      n_cpt=1
+      n_tpn=24
+      runtime="02:00:00"
+      node_memory=64000
+      ;;
+   nvidia_dev|phi_dev)
+      n_nodes_max=2
+      n_cpt=1
+      n_tpn=24
+      runtime="02:00:00"
+      node_memory=64000
+      ;;
+   cpu_scal|nvidia_scal)
+      n_nodes_max=128
+      n_cpt=1
+      n_tpn=24
+      runtime="18:00:00"
+      node_memory=64000
+      ;;
+   *)
+      echo "Global queue ${global_queue} is not recognised!"
+      exit
+      ;;
+esac
+let n_tasks_max=${n_nodes_max}*${n_tpn}
+#------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "mlongo" ]
+if [ ${myself} == "marcos.longo" ]
 then
-   rscpath="/n/home00/mlongo/util/Rsc"
+   rscpath="${SCRATCH}/Util/Rsc"
+   rlibs="${SCRATCH}/Util/Rlibs"
+   rsync -Prutv ${R_SCRP}/* ${rscpath}
 fi
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
-#     Make sure the main path is set.                                                      #
+#      Define the job name, and the names of the output files.                             #
 #------------------------------------------------------------------------------------------#
-if [ "x${here}" == "x/nowhere" ]
-then
-   echo "You must set variable \"here\"!"
-   exit 91
-fi
+case ${rscript} in
+read_monthly.r)
+   epostkey="rmon"
+   ;;
+yearly_ascii.r)
+   epostkey="yasc"
+   ;;
+r10_monthly.r)
+   epostkey="rm10"
+   ;;
+plot_monthly.r)
+   epostkey="pmon"
+   ;;
+plot_yearly.r)
+   epostkey="pyrs"
+   ;;
+plot_ycomp.r)
+   epostkey="pycp"
+   ;;
+plot_census.r)
+   epostkey="pcen"
+   ;;
+plot_povray.r)
+   epostkey="ppov"
+   ;;
+plot_eval_ed.r)
+   epostkey="peed"
+   ;;
+plot_budget.r)
+   epostkey="pbdg"
+   ;;
+plot_rk4.r)
+   epostkey="prk4"
+   ;;
+plot_rk4pc.r)
+   epostkey="prpc"
+   ;;
+plot_photo.r)
+   epostkey="ppht"
+   ;;
+reject_ed.r)
+   epostkey="prej"
+   ;;
+patchprops.r)
+  epostkey="ppro"
+  ;;
+whichrun.r)
+  epostkey="pwhr"
+  ;;
+plot_daily.r)
+   epostkey="pday"
+   ;;
+plot_fast.r)
+   epostkey="pfst"
+   ;;
+*)
+   #---------------------------------------------------------------------------------------#
+   #     If the script is here, then it could not find the script... And this should never #
+   # happen, so interrupt the script!                                                      #
+   #---------------------------------------------------------------------------------------#
+   echo " Script ${script} is not recognised by epost.sh!"
+   exit 1
+   #---------------------------------------------------------------------------------------#
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#     Make sure the queue is set.                                                          #
-#------------------------------------------------------------------------------------------#
-if [ "x${queue}" == "xanyqueue" ]
-then
-   echo "You must set variable \"queue\"!"
-   exit 91
-fi
-#------------------------------------------------------------------------------------------#
 
 
-#------------------------------------------------------------------------------------------#
-#     Make sure the R script is set.                                                       #
-#------------------------------------------------------------------------------------------#
-if [ "x${rscript}" == "xrscript" ]
-then
-   echo "You must set variable \"rscript\"!"
-   exit 91
-fi
+#----- Set script information. ------------------------------------------------------------#
+epoststo="${epostkey}_epost.sto"
+epostste="${epostkey}_epost.ste"
+epostout="${epostkey}_epost.out"
+epostjob="${epostkey}-${desc}"
+epostexe="R CMD BATCH --no-save --no-restore ${rscript} ${epostout}"
 #------------------------------------------------------------------------------------------#
 
 
 
-#------------------------------------------------------------------------------------------#
-#    Make sure that the directory there exists, if not, create all parent directories      #
-# needed.                                                                                  #
-#------------------------------------------------------------------------------------------#
-if [ "x${outroot}" == "x" ]
-then
-   outroot=${here}
-elif [ "x${outroot}" == "x/nowhere" ]
-then
-   echo "You must set variable \"outroot\"!"
-   exit 91
-elif [ ! -s ${outroot} ]
-then
-   mkdir -p ${outroot}
-fi
-#------------------------------------------------------------------------------------------#
 
-
-#----- Find the disk here to create the "there" path. -------------------------------------#
-moi=$(whoami)
-namehere=$(basename ${here})
-diskhere=$(dirname ${here})
-while [ ${namehere} != ${moi} ]
-do
-   namehere=$(basename ${diskhere})
-   diskhere=$(dirname ${diskhere})
-done
-if [ "x${diskthere}" == "x" ]
-then
-   there=${here}
+#------------------------------------------------------------------------------------------#
+#   Make sure memory does not exceed maximum amount that can be requested.                 #
+#------------------------------------------------------------------------------------------#
+if [ ${sim_memory} -gt ${node_memory} ]
+then 
+   echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
+   exit 99
 else
-   there=$(echo ${here} | sed s@${diskhere}@${diskthere}@g)
+   #------ Set memory and number of CPUs per task. ----------------------------------------#
+   let n_tpn_try=${node_memory}/${sim_memory}
+   if [ ${n_tpn_try} -le ${n_tpn} ]
+   then
+      n_tpn=${n_tpn_try}
+      let sim_memory=${node_memory}/${n_tpn}
+   else
+      let node_memory=${n_tpn}*${sim_memory}
+   fi
+   #---------------------------------------------------------------------------------------#
 fi
 #------------------------------------------------------------------------------------------#
+
+
+
+
 
 
 #----- Determine the number of polygons to run. -------------------------------------------#
@@ -198,17 +344,107 @@ echo "Number of polygons: ${npolys}..."
 
 
 
+#------------------------------------------------------------------------------------------#
+#    Initialise executable.                                                                #
+#------------------------------------------------------------------------------------------#
+sbatch="${here}/sub_$(basename ${rscript} .r).sh"
+rm -fr ${sbatch}
+touch ${sbatch}
+chmod u+x ${sbatch}
+echo "#!/bin/bash" >> ${sbatch}
+echo "#SBATCH --nodes=mynnodes                # Node count"                    >> ${sbatch}
+echo "#SBATCH --ntasks-per-node=myntasks      # Number of tasks per node"      >> ${sbatch}
+echo "#SBATCH --cpus-per-task=1               # Number of CPUs per task"       >> ${sbatch}
+echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
+echo "#SBATCH --job-name=${epostjob}          # Job name"                      >> ${sbatch}
+echo "#SBATCH --mem-per-cpu=${sim_memory}     # Memory per CPU"                >> ${sbatch}
+echo "#SBATCH --time=${runtime}               # Time for job"                  >> ${sbatch}
+echo "#SBATCH --output=${here}/out_epost.out  # Standard output path"          >> ${sbatch}
+echo "#SBATCH --error=${here}/out_epost.err   # Standard error path"           >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Get plenty of memory."                                              >> ${sbatch}
+echo "ulimit -s unlimited"                                                     >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Initial settings."                                                  >> ${sbatch}
+echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
+echo "nodehome=\"${SCRATCH}\"                     # Node home"                 >> ${sbatch}
+echo "modpath=\"${modpath}\"                      # Module path"               >> ${sbatch}
+echo "rscript=\"${rscript}\"                      # R Script"                  >> ${sbatch}
+echo "rstdout=\"${epostout}\"                     # Standard output"           >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Print information about this job."                                  >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"----- Summary of current job ---------------------------------\"" >> ${sbatch}
+echo "echo \" CPUs per task:   \${SLURM_CPUS_PER_TASK}\""                      >> ${sbatch}
+echo "echo \" Job:             \${SLURM_JOB_NAME} (\${SLURM_JOB_ID})\""        >> ${sbatch}
+echo "echo \" Queue:           \${SLURM_JOB_PARTITION}\""                      >> ${sbatch}
+echo "echo \" Number of nodes: \${SLURM_NNODES}\""                             >> ${sbatch}
+echo "echo \" Number of tasks: \${SLURM_NTASKS}\""                             >> ${sbatch}
+echo "echo \" Memory per CPU:  \${SLURM_MEM_PER_CPU}\""                        >> ${sbatch}
+echo "echo \" Memory per node: \${SLURM_MEM_PER_NODE}\""                       >> ${sbatch}
+echo "echo \" Node list:       \${SLURM_JOB_NODELIST}\""                       >> ${sbatch}
+echo "echo \" Time limit:      \${SLURM_TIMELIMIT}\""                          >> ${sbatch}
+echo "echo \" Std. Output:     \${SLURM_STDOUTMODE}\""                         >> ${sbatch}
+echo "echo \" Std. Error:      \${SLURM_STDERRMODE}\""                         >> ${sbatch}
+echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Set nodes."                                                         >> ${sbatch}
+echo "nodeset -e \${SLURM_JOB_NODELIST}"                                       >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#--- Load modules and settings."                                         >> ${sbatch}
+echo ". \${nodehome}/.bashrc"                                                  >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"\""                                                               >> ${sbatch}
+echo "echo \"----- Global settings for this array of post-processing ------\"" >> ${sbatch}
+echo "echo \" Main path:       \${here}\""                                     >> ${sbatch}
+echo "echo \" Module path:     \${modpath}\""                                  >> ${sbatch}
+echo "echo \" R script:        \${rscript}\""                                  >> ${sbatch}
+echo "echo \" R libraries:     \${R_LIBS}\""                                   >> ${sbatch}
+echo "echo \" R utilities:     \${R_SCRP}\""                                   >> ${sbatch}
+echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#----- Task list."                                                       >> ${sbatch}
+#------------------------------------------------------------------------------------------#
+
+
+
 
 #------------------------------------------------------------------------------------------#
 #      Loop over all polygons.                                                             #
 #------------------------------------------------------------------------------------------#
 ff=0
+n_submit=0
 while [ ${ff} -lt ${npolys} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
-   
-   fflab="${ff}/${npolys}"
+
+
+   #---------------------------------------------------------------------------------------#
+   #    Format count.                                                                      #
+   #---------------------------------------------------------------------------------------#
+   if   [ ${npolys} -ge 10   ] && [ ${npolys} -lt 100   ]
+   then
+      ffout=$(printf '%2.2i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 1000  ]
+   then
+      ffout=$(printf '%3.3i' ${ff})
+   elif [ ${npolys} -ge 100  ] && [ ${npolys} -lt 10000 ]
+   then
+      ffout=$(printf '%4.4i' ${ff})
+   else
+      ffout=${ff}
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+
 
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
@@ -473,503 +709,352 @@ do
    #---------------------------------------------------------------------------------------#
 
 
+
+   #----- Print a banner. -----------------------------------------------------------------#
+   if [ ${rscript} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
+   then
+      echo "${ffout} - Skipping submission of ${rscript} for polygon: ${polyname}..."
+   else
+      echo "${ffout} - Copying script ${rscript} to polygon: ${polyname}..."
+   fi
    #---------------------------------------------------------------------------------------#
-   #     Loop over all scripts.                                                            #
+
+
+
    #---------------------------------------------------------------------------------------#
-   for script in ${rscripts}
-   do
-      #----- Print a banner. --------------------------------------------------------------#
-      if [ ${script} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
+   #     Set up the time and output variables according to the script.                     #
+   #---------------------------------------------------------------------------------------#
+   case ${rscript} in
+   read_monthly.r|yearly_ascii.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
+      #------------------------------------------------------------------------------------#
+      #     Scripts that are based on monthly means.  The set up is the same, the only     #
+      # difference is in the output names.                                                 #
+      #------------------------------------------------------------------------------------#
+      #------ Check which period to use. --------------------------------------------------#
+      if [ ${useperiod} == "t" ]
       then
-         echo "${fflab} - Skipping submission of ${script} for polygon: ${polyname}..."
-      elif [ "x${submit}" == "xy" ] || [ "x${submit}" == "xY" ]
+         #------ One meteorological cycle.  Check the type of meteorological driver. ------#
+         if [ ${metdriver} != "Sheffield" ]
+         then
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+            for i in ${shiftiata}
+            do
+               if [ "x${i}" == "x${polyiata}" ]
+               then
+                  echo "     -> Shifting met cycle"
+                  let metcycle=${metcycz}-${metcyca}+1
+                  let deltayr=${shiftcycle}*${metcycle}
+                  let thisyeara=${metcyca}+${deltayr}
+                  let thisyearz=${metcycz}+${deltayr}
+               fi # end [ ${i} == ${iata} ]
+            done #end for i in ${shiftiata}
+         else
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+         fi # end [ ${metdriver} != "Sheffield" ]
+         #---------------------------------------------------------------------------------#
+
+      elif [ ${useperiod} == "u" ]
       then
-         echo "${fflab} - Submitting script ${script} for polygon: ${polyname}..."
+         #----- The user said which period to use. ----------------------------------------#
+         thisyeara=${yusera}
+         thisyearz=${yuserz}
+         #---------------------------------------------------------------------------------#
+
+      elif [ ${useperiod} == "f" ]
+      then
+         #----- The user said to use the eddy flux period. --------------------------------#
+         thisyeara=${eftyeara}
+         thisyearz=${eftyearz}
+         #---------------------------------------------------------------------------------#
+
+      elif [ ${useperiod} == "b" ]
+      then
+         #----- The user said to use the eddy flux period. --------------------------------#
+         thisyeara=${bioyeara}
+         thisyearz=${bioyearz}
+         #---------------------------------------------------------------------------------#
+
       else
-         echo "${fflab} - Copying script ${script} to polygon: ${polyname}..."
-      fi
+         #----- Grab all years that the simulation is supposed to run. --------------------#
+         thisyeara=${yeara}
+         thisyearz=${yearz}
+         #---------------------------------------------------------------------------------#
+      fi # end [ ${useperiod} == "t" ]
       #------------------------------------------------------------------------------------#
 
 
 
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=${montha}
+      thismonthz=${monthz}
+      thisdatea=${datea}
       #------------------------------------------------------------------------------------#
-      #     Set up the time and output variables according to the script.                  #
+      ;;
+   plot_eval_ed.r)
       #------------------------------------------------------------------------------------#
-      case ${script} in
-      read_monthly.r|yearly_ascii.r|plot_monthly.r|plot_yearly.r|plot_ycomp.r|plot_census.r|plot_povray.r|r10_monthly.r)
-         #---------------------------------------------------------------------------------#
-         #     Scripts that are based on monthly means.  The set up is the same, the only  #
-         # difference is in the output names.                                              #
-         #---------------------------------------------------------------------------------#
-         #------ Check which period to use. -----------------------------------------------#
-         if [ ${useperiod} == "t" ]
-         then
-            #------ One meteorological cycle.  Check the type of meteorological driver. ---#
-            if [ ${metdriver} != "Sheffield" ]
-            then
-               thisyeara=${metcyca}
-               thisyearz=${metcycz}
-               for i in ${shiftiata}
-               do
-                  if [ "x${i}" == "x${polyiata}" ]
-                  then
-                     echo "     -> Shifting met cycle"
-                     let metcycle=${metcycz}-${metcyca}+1
-                     let deltayr=${shiftcycle}*${metcycle}
-                     let thisyeara=${metcyca}+${deltayr}
-                     let thisyearz=${metcycz}+${deltayr}
-                  fi # end [ ${i} == ${iata} ]
-               done #end for i in ${shiftiata}
-            else
-               thisyeara=${metcyca}
-               thisyearz=${metcycz}
-            fi # end [ ${metdriver} != "Sheffield" ]
-            #------------------------------------------------------------------------------#
-
-         elif [ ${useperiod} == "u" ]
-         then
-            #----- The user said which period to use. -------------------------------------#
-            thisyeara=${yusera}
-            thisyearz=${yuserz}
-            #------------------------------------------------------------------------------#
-
-         elif [ ${useperiod} == "f" ]
-         then
-            #----- The user said to use the eddy flux period. -----------------------------#
-            thisyeara=${eftyeara}
-            thisyearz=${eftyearz}
-            #------------------------------------------------------------------------------#
-
-         elif [ ${useperiod} == "b" ]
-         then
-            #----- The user said to use the eddy flux period. -----------------------------#
-            thisyeara=${bioyeara}
-            thisyearz=${bioyearz}
-            #------------------------------------------------------------------------------#
-
-         else
-            #----- Grab all years that the simulation is supposed to run. -----------------#
-            thisyeara=${yeara}
-            thisyearz=${yearz}
-            #------------------------------------------------------------------------------#
-         fi # end [ ${useperiod} == "t" ]
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Set up months and days. ---------------------------------------------------#
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #      Define the job name, and the names of the output files.                    #
-         #---------------------------------------------------------------------------------#
-         case ${script} in
-         read_monthly.r)
-            epostout="rmon_epost.out"
-            epostsh="rmon_epost.sh"
-            epostlsf="rmon_epost.lsf"
-            epostjob="eb-rmon-${polyname}"
-            ;;
-         yearly_ascii.r)
-            epostout="yasc_epost.out"
-            epostsh="yasc_epost.sh"
-            epostlsf="yasc_epost.lsf"
-            epostjob="eb-yasc-${polyname}"
-            ;;
-         r10_monthly.r)
-            epostout="rm10_epost.out"
-            epostsh="rm10_epost.sh"
-            epostlsf="rm10_epost.lsf"
-            epostjob="eb-rm10-${polyname}"
-            ;;
-         plot_monthly.r)
-            epostout="pmon_epost.out"
-            epostsh="pmon_epost.sh"
-            epostlsf="pmon_epost.lsf"
-            epostjob="eb-pmon-${polyname}"
-            ;;
-         plot_yearly.r)
-            epostout="pyrs_epost.out"
-            epostsh="pyrs_epost.sh"
-            epostlsf="pyrs_epost.lsf"
-            epostjob="eb-pyrs-${polyname}"
-            ;;
-         plot_ycomp.r)
-            epostout="pycp_epost.out"
-            epostsh="pycp_epost.sh"
-            epostlsf="pycp_epost.lsf"
-            epostjob="eb-pycp-${polyname}"
-            ;;
-         plot_census.r)
-            epostout="pcen_epost.out"
-            epostsh="pcen_epost.sh"
-            epostlsf="pcen_epost.lsf"
-            epostjob="eb-pcen-${polyname}"
-            ;;
-         plot_povray.r)
-            epostout="ppov_epost.out"
-            epostsh="ppov_epost.sh"
-            epostlsf="ppov_epost.lsf"
-            epostjob="eb-ppov-${polyname}"
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-
-
-      plot_eval_ed.r)
-         #---------------------------------------------------------------------------------#
-         #     Cheat by changing metcyca and metcycz in case the meteorological driver is  #
-         # Petrolina (output variables exist only for 2004, so we don't need to process    #
-         # all years).                                                                     #
-         #---------------------------------------------------------------------------------#
-         if [ ${metdriver} == "Petrolina" ]
-         then 
-            thismetcyca=2004
-            thismetcycz=2004
-         else
-            thismetcyca=${metcyca}
-            thismetcycz=${metcycz}
-         fi
-         #---------------------------------------------------------------------------------#
-
-
-         #---------------------------------------------------------------------------------#
-         #     The period should be equivalent to one meteorological driver period, so we  #
-         # compare apples to apples.  The ED2 years don't need to match as long as we pick #
-         # one cycle.                                                                      #
-         #---------------------------------------------------------------------------------#
-         thisyeara=${thismetcyca}
-         thisyearz=${thismetcycz}
-         for i in ${shiftiata}
-         do
-            if [ "x${i}" == "x${polyiata}" ]
-            then
-               #----- Always use the true met driver to find the cycle shift. -------------#
-               echo "     -> Shifting met cycle"
-               let metcycle=${metcycz}-${metcyca}+1
-               let deltayr=${shiftcycle}*${metcycle}
-               let thisyeara=${thismetcyca}+${deltayr}
-               let thisyearz=${thismetcycz}+${deltayr}
-               #---------------------------------------------------------------------------#
-            fi # end [ ${i} == ${iata} ]
-         done #end for i in ${shiftiata}
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Set up months and days. ---------------------------------------------------#
-         thismontha=1
-         thismonthz=12
-         thisdatea=${datea}
-         #---------------------------------------------------------------------------------#
-
-
-         #----- Define the job name, and the names of the output files. -------------------#
-         epostout="peed_epost.out"
-         epostsh="peed_epost.sh"
-         epostlsf="peed_epost.lsf"
-         epostjob="eb-peed-${polyname}"
-         #---------------------------------------------------------------------------------#
-
-         ;;
-
-      plot_budget.r|plot_rk4.r|plot_rk4pc.r|plot_photo.r|reject_ed.r)
-         #---------------------------------------------------------------------------------#
-         #     Scripts with very high frequency output (dtlsm or shorter).  The first day  #
-         # usually has initialisation problems (for example incoming longwave may be zero  #
-         # at the first time step), so we normally skip the first day.                     #
-         #---------------------------------------------------------------------------------#
-         #----- Check whether to use the user choice of year or the default. --------------#
-         if [ ${useperiod} == "u" ]
-         then
-            thisyeara=${yusera}
-            thisyearz=${yuserz}
-         else
-            thisyeara=${yeara}
-            thisyearz=${yearz}
-         fi
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Set up months and days. ---------------------------------------------------#
-         thismontha=${montha}
-         thismonthz=${monthz}
-         let thisdatea=${datea}+1
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Define the job name, and the names of the output files. -------------------#
-         case ${script} in 
-         plot_budget.r)
-            epostout="pbdg_epost.out"
-            epostsh="pbdg_epost.sh"
-            epostlsf="pbdg_epost.lsf"
-            epostjob="eb-pbdg-${polyname}"
-            ;;
-         plot_rk4.r)
-            epostout="prk4_epost.out"
-            epostsh="prk4_epost.sh"
-            epostlsf="prk4_epost.lsf"
-            epostjob="eb-prk4-${polyname}"
-            ;;
-         plot_rk4pc.r)
-            epostout="prpc_epost.out"
-            epostsh="prpc_epost.sh"
-            epostlsf="prpc_epost.lsf"
-            epostjob="eb-prpc-${polyname}"
-            ;;
-         plot_photo.r)
-            epostout="ppht_epost.out"
-            epostsh="ppht_epost.sh"
-            epostlsf="ppht_epost.lsf"
-            epostjob="eb-ppht-${polyname}"
-            ;;
-         reject_ed.r)
-            epostout="prej_epost.out"
-            epostsh="prej_epost.sh"
-            epostlsf="prej_epost.lsf"
-            epostjob="eb-prej-${polyname}"
-            ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-
-
-      whichrun.r|patchprops.r)
-         #---------------------------------------------------------------------------------#
-         #     Script with time-independent patch properties.  No need to skip anything.   #
-         #---------------------------------------------------------------------------------#
-         #----- Check whether to use the user choice of year or the default. --------------#
-         if [ ${useperiod} == "u" ]
-         then
-            thisyeara=${yusera}
-            thisyearz=${yuserz}
-         else
-            thisyeara=${yeara}
-            thisyearz=${yearz}
-         fi
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Set up months and days. ---------------------------------------------------#
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Define the job name, and the names of the output files. -------------------#
-         case ${script} in
-         patchprops.r)
-           epostout="ppro_epost.out"
-           epostsh="ppro_epost.sh"
-           epostlsf="ppro_epost.lsf"
-           epostjob="eb-ppro-${polyname}"
-           ;;
-         whichrun.r)
-           epostout="pwhr_epost.out"
-           epostsh="pwhr_epost.sh"
-           epostlsf="pwhr_epost.lsf"
-           epostjob="eb-pwhr-${polyname}"
-           ;;
-         esac
-         #---------------------------------------------------------------------------------#
-         ;;
-      plot_daily.r)
-         #---------------------------------------------------------------------------------#
-         #     Script with daily means.  No need to skip anything.                         #
-         #---------------------------------------------------------------------------------#
-         #----- Check whether to use the user choice of year or the default. --------------#
-         if [ ${useperiod} == "u" ]
-         then
-            thisyeara=${yusera}
-            thisyearz=${yuserz}
-         else
-            thisyeara=${yeara}
-            thisyearz=${yearz}
-         fi
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Set up months and days. ---------------------------------------------------#
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Define the job name, and the names of the output files. -------------------#
-         epostout="pday_epost.out"
-         epostsh="pday_epost.sh"
-         epostlsf="pday_epost.lsf"
-         epostjob="eb-pday-${polyname}"
-         #---------------------------------------------------------------------------------#
-         ;;
-
-      plot_fast.r)
-         #---------------------------------------------------------------------------------#
-         #     Script with short-term averages (usually hourly).  No need to skip any-     #
-         # thing.                                                                          #
-         #---------------------------------------------------------------------------------#
-         if [ ${useperiod} == "u" ]
-         then
-            thisyeara=${yusera}
-            thisyearz=${yuserz}
-         else
-            thisyeara=${yeara}
-            thisyearz=${yearz}
-         fi
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Set up months and days. ---------------------------------------------------#
-         thismontha=${montha}
-         thismonthz=${monthz}
-         thisdatea=${datea}
-         #---------------------------------------------------------------------------------#
-
-
-
-         #----- Define the job name, and the names of the output files. -------------------#
-         epostout="pfst_epost.out"
-         epostsh="pfst_epost.sh"
-         epostlsf="pfst_epost.lsf"
-         epostjob="eb-pfst-${polyname}"
-         #---------------------------------------------------------------------------------#
-
-         ;;
-      *)
-         #---------------------------------------------------------------------------------#
-         #     If the script is here, then it could not find the script... And this should #
-         # never happen, crash!                                                            #
-         #---------------------------------------------------------------------------------#
-         echo " Script ${script} is not recognised by epost.sh!"
-         exit 193
-         #---------------------------------------------------------------------------------#
-         ;;
-      esac
+      #     Cheat by changing metcyca and metcycz in case the meteorological driver is     #
+      # Petrolina (output variables exist only for 2004, so we don't need to process       #
+      # all years).                                                                        #
       #------------------------------------------------------------------------------------#
-
-
-
-      #----- Copy the R script from the Template folder to the local path. ----------------#
-      cp -f ${here}/Template/${script} ${here}/${polyname}
-      scriptnow="${here}/${polyname}/${script}"
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Switch the keywords by the current settings. ---------------------------------#
-      sed -i s@thispoly@${polyname}@g             ${scriptnow}
-      sed -i s@thisoutroot@${outroot}@g           ${scriptnow}
-      sed -i s@thispath@${here}@g                 ${scriptnow}
-      sed -i s@thatpath@${there}@g                ${scriptnow}
-      sed -i s@thisrscpath@${rscpath}@g           ${scriptnow}
-      sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
-      sed -i s@thismontha@${thismontha}@g         ${scriptnow}
-      sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}
-      sed -i s@thishoura@${houra}@g               ${scriptnow}
-      sed -i s@thisminua@${minua}@g               ${scriptnow}
-      sed -i s@thisyearz@${thisyearz}@g           ${scriptnow}
-      sed -i s@thismonthz@${thismonthz}@g         ${scriptnow}
-      sed -i s@thisdatez@${datez}@g               ${scriptnow}
-      sed -i s@thishourz@${hourz}@g               ${scriptnow}
-      sed -i s@thisminuz@${minuz}@g               ${scriptnow}
-      sed -i s@thisseasonmona@${seasonmona}@g     ${scriptnow}
-      sed -i s@myphysiol@${iphysiol}@g            ${scriptnow}
-      sed -i s@myallom@${iallom}@g                ${scriptnow}
-      sed -i s@mydroughtmark@${droughtmark}@g     ${scriptnow}
-      sed -i s@mydroughtyeara@${droughtyeara}@g   ${scriptnow}
-      sed -i s@mydroughtyearz@${droughtyearz}@g   ${scriptnow}
-      sed -i s@mymonthsdrought@${monthsdrought}@g ${scriptnow}
-      sed -i s@myvarcycle@${varcycle}@g           ${scriptnow}
-      sed -i s@thisoutform@${outform}@g           ${scriptnow}
-      sed -i s@mydistrib@${usedistrib}@g          ${scriptnow}
-      sed -i s@mymetcyca@${metcyca}@g             ${scriptnow}
-      sed -i s@mymetcycz@${metcycz}@g             ${scriptnow}
-      sed -i s@mybiocyca@${biocyca}@g             ${scriptnow}
-      sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
-      sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
-      sed -i s@mybackground@${background}@g       ${scriptnow}
-      sed -i s@mycorrection@${correct_gs}@g       ${scriptnow}
-      sed -i s@myiintphoto@${iint_photo}@g        ${scriptnow}
-      sed -i s@myklight@${klight}@g               ${scriptnow}
-      sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
-      sed -i s@myoldgrowth@${oldgrowth}@g         ${scriptnow}
-      sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}
-      sed -i s@myeftyearz@${eftyearz}@g           ${scriptnow}
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Run R to get the plots. ------------------------------------------------------#
-      rbin="R CMD BATCH --no-save --no-restore"
-      comm="${rbin} ${scriptnow} ${here}/${polyname}/${epostout}"
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #      plot_eval_ed won't run all at once due to the sheer number of HDF5 files.     #
-      # Run it several times until it is complete.                                         #
-      #------------------------------------------------------------------------------------#
-      case ${script} in
-      plot_eval_ed.r)
-         complete="${here}/${polyname}/eval_load_complete.txt"
-         echo "#!/bin/bash"                >  ${here}/${polyname}/${epostsh}
-         echo "/bin/rm -fr ${complete}"    >> ${here}/${polyname}/${epostsh}
-         echo "while [ ! -s ${complete} ]" >> ${here}/${polyname}/${epostsh}
-         echo "do"                         >> ${here}/${polyname}/${epostsh}
-         echo "   sleep 3"                 >> ${here}/${polyname}/${epostsh}
-         echo "   ${comm}"                 >> ${here}/${polyname}/${epostsh}
-         echo "done"                       >> ${here}/${polyname}/${epostsh}
-         chmod +x ${here}/${polyname}/${epostsh}
-         ;;
-      *)
-         echo "#!/bin/bash" > ${here}/${polyname}/${epostsh}
-         echo ${comm} >> ${here}/${polyname}/${epostsh}
-         chmod +x ${here}/${polyname}/${epostsh}
-         ;;
-      esac
-      #------------------------------------------------------------------------------------#
-
-
-
-      #----- Make sure this is not the census script for a site we don't have census. -----#
-      if [ ${script} == "plot_census.r" ] && [ ${subcens} -eq 0 ]
-      then
-         submitnow="n"
+      if [ ${metdriver} == "Petrolina" ]
+      then 
+         thismetcyca=2004
+         thismetcycz=2004
       else
-         submitnow=${submit}
+         thismetcyca=${metcyca}
+         thismetcycz=${metcycz}
       fi
       #------------------------------------------------------------------------------------#
 
 
+      #------------------------------------------------------------------------------------#
+      #     The period should be equivalent to one meteorological driver period, so we     #
+      # compare apples to apples.  The ED2 years don't need to match as long as we pick    #
+      # one cycle.                                                                         #
+      #------------------------------------------------------------------------------------#
+      thisyeara=${thismetcyca}
+      thisyearz=${thismetcycz}
+      for i in ${shiftiata}
+      do
+         if [ "x${i}" == "x${polyiata}" ]
+         then
+            #----- Always use the true met driver to find the cycle shift. ----------------#
+            echo "     -> Shifting met cycle"
+            let metcycle=${metcycz}-${metcyca}+1
+            let deltayr=${shiftcycle}*${metcycle}
+            let thisyeara=${thismetcyca}+${deltayr}
+            let thisyearz=${thismetcycz}+${deltayr}
+            #------------------------------------------------------------------------------#
+         fi # end [ ${i} == ${iata} ]
+      done #end for i in ${shiftiata}
+      #------------------------------------------------------------------------------------#
 
+
+
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=1
+      thismonthz=12
+      thisdatea=${datea}
       #------------------------------------------------------------------------------------#
-      #     Submit the job.                                                                #
+      ;;
+
+   plot_budget.r|plot_rk4.r|plot_rk4pc.r|plot_photo.r|reject_ed.r)
       #------------------------------------------------------------------------------------#
-      if [ "x${submitnow}" == "xy" ] || [ "x${submitnow}" == "xY" ]
+      #     Scripts with very high frequency output (dtlsm or shorter).  The first day     #
+      # usually has initialisation problems (for example incoming longwave may be zero     #
+      # at the first time step), so we normally skip the first day.                        #
+      #------------------------------------------------------------------------------------#
+      #----- Check whether to use the user choice of year or the default. -----------------#
+      if [ ${useperiod} == "u" ]
       then
-         sbatchout="${here}/${polyname}/${epostlsf}"
-         epostnow="${here}/${polyname}/${epostsh}"
-         sbatch -p ${thisqueue} --mem-per-cpu=${memory} -t ${runtime} -J ${epostjob}       \
-             -o ${sbatchout} -n 1 --wrap="${epostnow}"
+         thisyeara=${yusera}
+         thisyearz=${yuserz}
+      else
+         thisyeara=${yeara}
+         thisyearz=${yearz}
       fi
       #------------------------------------------------------------------------------------#
-   done
+
+
+
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=${montha}
+      thismonthz=${monthz}
+      let thisdatea=${datea}+1
+      #------------------------------------------------------------------------------------#
+      ;;
+
+
+   whichrun.r|patchprops.r)
+      #------------------------------------------------------------------------------------#
+      #     Script with time-independent patch properties.  No need to skip anything.      #
+      #------------------------------------------------------------------------------------#
+      #----- Check whether to use the user choice of year or the default. -----------------#
+      if [ ${useperiod} == "u" ]
+      then
+         thisyeara=${yusera}
+         thisyearz=${yuserz}
+      else
+         thisyeara=${yeara}
+         thisyearz=${yearz}
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=${montha}
+      thismonthz=${monthz}
+      thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+      ;;
+   plot_daily.r)
+      #------------------------------------------------------------------------------------#
+      #     Script with daily means.  No need to skip anything.                            #
+      #------------------------------------------------------------------------------------#
+      #----- Check whether to use the user choice of year or the default. -----------------#
+      if [ ${useperiod} == "u" ]
+      then
+         thisyeara=${yusera}
+         thisyearz=${yuserz}
+      else
+         thisyeara=${yeara}
+         thisyearz=${yearz}
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=${montha}
+      thismonthz=${monthz}
+      thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+      ;;
+
+   plot_fast.r)
+      #------------------------------------------------------------------------------------#
+      #     Script with short-term averages (usually hourly).  No need to skip any-        #
+      # thing.                                                                             #
+      #------------------------------------------------------------------------------------#
+      if [ ${useperiod} == "u" ]
+      then
+         thisyeara=${yusera}
+         thisyearz=${yuserz}
+      else
+         thisyeara=${yeara}
+         thisyearz=${yearz}
+      fi
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Set up months and days. ------------------------------------------------------#
+      thismontha=${montha}
+      thismonthz=${monthz}
+      thisdatea=${datea}
+      #------------------------------------------------------------------------------------#
+      ;;
+   esac
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Copy the R script from the Template folder to the local path. -------------------#
+   cp -f ${here}/Template/${rscript} ${here}/${polyname}
+   scriptnow="${here}/${polyname}/${rscript}"
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Switch the keywords by the current settings. ------------------------------------#
+   sed -i s@thispoly@${polyname}@g             ${scriptnow}
+   sed -i s@thisoutroot@${here}@g              ${scriptnow}
+   sed -i s@thispath@${here}@g                 ${scriptnow}
+   sed -i s@thatpath@${here}@g                 ${scriptnow}
+   sed -i s@thisrscpath@${rscpath}@g           ${scriptnow}
+   sed -i s@thisyeara@${thisyeara}@g           ${scriptnow}
+   sed -i s@thismontha@${thismontha}@g         ${scriptnow}
+   sed -i s@thisdatea@${thisdatea}@g           ${scriptnow}
+   sed -i s@thishoura@${houra}@g               ${scriptnow}
+   sed -i s@thisminua@${minua}@g               ${scriptnow}
+   sed -i s@thisyearz@${thisyearz}@g           ${scriptnow}
+   sed -i s@thismonthz@${thismonthz}@g         ${scriptnow}
+   sed -i s@thisdatez@${datez}@g               ${scriptnow}
+   sed -i s@thishourz@${hourz}@g               ${scriptnow}
+   sed -i s@thisminuz@${minuz}@g               ${scriptnow}
+   sed -i s@thisseasonmona@${seasonmona}@g     ${scriptnow}
+   sed -i s@myphysiol@${iphysiol}@g            ${scriptnow}
+   sed -i s@myallom@${iallom}@g                ${scriptnow}
+   sed -i s@mydroughtmark@${droughtmark}@g     ${scriptnow}
+   sed -i s@mydroughtyeara@${droughtyeara}@g   ${scriptnow}
+   sed -i s@mydroughtyearz@${droughtyearz}@g   ${scriptnow}
+   sed -i s@mymonthsdrought@${monthsdrought}@g ${scriptnow}
+   sed -i s@myvarcycle@${varcycle}@g           ${scriptnow}
+   sed -i s@thisoutform@${outform}@g           ${scriptnow}
+   sed -i s@mydistrib@${usedistrib}@g          ${scriptnow}
+   sed -i s@mymetcyca@${metcyca}@g             ${scriptnow}
+   sed -i s@mymetcycz@${metcycz}@g             ${scriptnow}
+   sed -i s@mybiocyca@${biocyca}@g             ${scriptnow}
+   sed -i s@mybiocycz@${biocycz}@g             ${scriptnow}
+   sed -i s@myidbhtype@${idbhtype}@g           ${scriptnow}
+   sed -i s@mybackground@${background}@g       ${scriptnow}
+   sed -i s@mycorrection@${correct_gs}@g       ${scriptnow}
+   sed -i s@myiintphoto@${iint_photo}@g        ${scriptnow}
+   sed -i s@myklight@${klight}@g               ${scriptnow}
+   sed -i s@myefttrim@${efttrim}@g             ${scriptnow}
+   sed -i s@myoldgrowth@${oldgrowth}@g         ${scriptnow}
+   sed -i s@myeftyeara@${eftyeara}@g           ${scriptnow}
+   sed -i s@myeftyearz@${eftyearz}@g           ${scriptnow}
+   #---------------------------------------------------------------------------------------#
+
+
+
+
+   #----- Make sure this is not the census script for a site we don't have census. --------#
+   if [ ${rscript} != "plot_census.r" ] || [ ${subcens} -ne 0 ]
+   then
+      #----- Update the list of scripts to be included in the batch. ----------------------#
+      let n_submit=${n_submit}+1
+      rexec="R CMD BATCH --no-save --no-restore ${rscript} ${epostout}"
+      #------------------------------------------------------------------------------------#
+
+
+
+
+      #----- Append job to submission list. -----------------------------------------------#
+      srun="srun --nodes=1 --ntasks=1"
+      srun="${srun} --cpus-per-task=\${SLURM_CPUS_PER_TASK}"
+      srun="${srun} --mem-per-cpu=\${SLURM_MEM_PER_CPU}"
+      srun="${srun} --job-name=${polyname}"
+      srun="${srun} --chdir=\${here}/${polyname}"
+      srun="${srun} --output=\${here}/${polyname}/${epoststo}"
+      srun="${srun} --error=\${here}/${polyname}/${epostste}"
+      echo "${srun} ${epostexe} &" >> ${sbatch}
+      #------------------------------------------------------------------------------------#
+   fi
    #---------------------------------------------------------------------------------------#
 done
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#      Make sure job list doesn't request too many nodes.                                  #
+#------------------------------------------------------------------------------------------#
+if [ ${n_submit} -gt ${n_tasks_max} ]
+then
+   echo " Number of jobs to submit: ${n_submit}"
+   echo " Maximum number of tasks in queue ${global_queue}: ${n_tasks_max}"
+   echo " Reduce the number of simulations or try another queue..."
+   exit 99
+else
+   #----- Find the right number of nodes to submit. ---------------------------------------#
+   let n_nodes=(${n_submit}+${n_tpn}-1)/${n_tpn}
+   let n_tasks=(${n_submit}+${n_nodes}-1)/${n_nodes}
+   sed -i~ s@mynnodes@${n_nodes}@g ${sbatch}
+   sed -i~ s@myntasks@${n_tasks}@g ${sbatch}
+   #---------------------------------------------------------------------------------------#
+fi
+#------------------------------------------------------------------------------------------#
+
+
+#----- Make sure the script waits until all tasks are completed... ------------------------#
+echo ""                                                                        >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+echo "#----- Make sure that jobs complete before terminating script"           >> ${sbatch}
+echo "wait"                                                                    >> ${sbatch}
+echo ""                                                                        >> ${sbatch}
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    In case all looks good, go for it!                                                    #
+#------------------------------------------------------------------------------------------#
+if ${submit}
+then
+   sbatch ${sbatch} 
+fi
 #------------------------------------------------------------------------------------------#

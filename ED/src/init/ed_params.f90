@@ -4123,7 +4123,7 @@ subroutine init_pft_repro_params()
          else
             !----- Trees, increase allocation to reproduction but don't halt growth. ------!
             r_fract(ipft) = 0.3
-            r_maximum     = 0.8 - st_fract(ipft)
+            r_maximum     = 1.0 - st_fract(ipft) - r_fract(ipft) ! 0.6
             r_slope(ipft) = (r_maximum - r_fract(ipft))                                    &
                           / log(hgt_max(ipft)/repro_min_h(ipft))
             !------------------------------------------------------------------------------!
