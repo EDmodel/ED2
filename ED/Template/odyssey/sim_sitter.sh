@@ -1,15 +1,16 @@
 #!/bin/bash
 
 #----- Main settings.  Do look at run_sitter.sh and epost.sh for additional settings. -----#
-here=$(pwd)            # Current path.
-email="none"           # Your e-mail. Put a backslash before the @
-queue="anyqueue"       # Queue to run run_sitter.sh and epost.sh
-runtime="infinite"     # Run time request
-memory=2048            # Requested memory (Mb)
-sbatch=$(which sbatch) # SLURM command to submit job.
-rscript="nothing"      # Which script to run with epost.sh.  See options below. 
-                       #     Multiple scripts are allowed, put spaces between them.
-                       #     (e.g. rscript="plot_monthly.r plot_fast.r")
+here=$(pwd)                        # Current path.
+there="/path/to/permanent/storage" # Permanent storage path
+email="myself\@myserver.com"       # Your e-mail. Put a backslash before the @
+queue="myqueue"                    # Queue to run run_sitter.sh and epost.sh
+runtime="infinite"                 # Run time request
+memory=2048                        # Requested memory (Mb)
+sbatch=$(which sbatch)             # SLURM command to submit job.
+rscript="read_monthly.r"           # Which script to run with epost.sh.  See options below. 
+                                   #    Multiple scripts are allowed, put spaces between
+                                   #    them. (e.g. rscript="plot_monthly.r plot_fast.r")
 #------------------------------------------------------------------------------------------#
 #     Which scripts to run.                                                                #
 #                                                                                          #
@@ -44,17 +45,17 @@ rscript="nothing"      # Which script to run with epost.sh.  See options below.
 
 
 #----- Make sure e-mail and queue are pre-defined. ----------------------------------------#
-if [ "x${email}" == "xnone" ]
+if [ "x${email}" == "x" ]
 then
    echo " You must set up variable \"email\" before running sim_sitter.sh"
    exit 99
 fi
-if [ "x${queue}" == "xanyqueue" ]
+if [ "x${queue}" == "x" ]
 then
    echo " You must set up variable \"queue\" before running sim_sitter.sh"
    exit 99
 fi
-if [ "x${rscript}" == "xnothing" ]
+if [ "x${rscript}" == "x" ]
 then
    echo " You must set up variable \"rscript\" before running sim_sitter.sh"
    exit 99
@@ -64,24 +65,51 @@ fi
 
 
 #----- Make substitutions. ----------------------------------------------------------------#
-sed -i~ s@"here=\"/nowhere\""@"here=\"${here}\""@g          ${here}/run_sitter.sh
-sed -i~ s@"recipient=\"none\""@"recipient=\"${email}\""@g   ${here}/run_sitter.sh
-sed -i~ s@"here=\"/nowhere\""@"here=\"${here}\""@g          ${here}/epost.sh
-sed -i~ s@"outroot=\"/nowhere\""@"outroot=\"${here}\""@g    ${here}/epost.sh
-sed -i~ s@"queue=\"anyqueue\""@"queue=\"${queue}\""@g       ${here}/epost.sh
-sed -i~ s@"rscript=\"nothing\""@"rscript=\"${rscript}\""@g  ${here}/epost.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                   ${here}/run_sitter.sh
+sed -i~ s@"recipient=\"\""@"recipient=\"${email}\""@g        ${here}/run_sitter.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                   ${here}/epost.sh
+sed -i~ s@"global_queue=\"\""@"global_queue=\"${queue}\""@g  ${here}/epost.sh
+sed -i~ s@"rscript=\"\""@"rscript=\"${rscript}\""@g          ${here}/epost.sh
+sed -i~ s@"here=\"\""@"here=\"${here}\""@g                   ${here}/transfer.sh
+sed -i~ s@"there=\"\""@"there=\"${there}\""@g                ${here}/transfer.sh
 #------------------------------------------------------------------------------------------#
 
 
 #----- Job preferences. -------------------------------------------------------------------#
 joblog="${here}/out_sitter.out"
 jobpref=$(basename ${here})
-jobname="${jobpref}-sitter"
+jobname="${jobpref}-control"
 #------------------------------------------------------------------------------------------#
 
 
+if [ -s "${here}/run_sitter.lock" ] || [ -s "${here}/transfer.lock" ]
+then
+   echo " Lock file found for run_sitter.sh and/or transfer.lock."
+   echo " The scripts may be already running."
+   echo " Submit the script anyway [y|N]?"
+   read goahead
+else
+   goahead="y"
+fi
+goahead="$(echo ${goahead} | tr '[:upper:]' '[:lower:]')"
+
 
 #----- Submit run_sitter.sh in batch mode. ------------------------------------------------#
-${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog} -J ${jobname}     \
-   -n 1 --wrap="${here}/run_sitter.sh"
+case ${goahead} in
+y|yes)
+   /bin/rm -f ${here}/run_sitter.lock
+   /bin/rm -f ${here}/transfer.lock
+   ${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog} -J ${jobname}  \
+      -n 1 --wrap="${here}/run_sitter.sh"
+   ;;
+*)
+   bann="Script run_sitter was not submitted.  In case you want to submit manually"
+   bann="${bann} this is the command:"
+   comm="${sbatch} -p ${queue} --mem-per-cpu=${memory} -t ${runtime} -o ${joblog}"
+   comm="${comm} -J ${jobname} -n 1 --wrap=\"${here}/run_sitter.sh\""
+   echo ${bann}
+   echo " "
+   echo ${comm}
+   ;;
+esac
 #------------------------------------------------------------------------------------------#

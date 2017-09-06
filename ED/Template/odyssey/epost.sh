@@ -1,15 +1,11 @@
 #!/bin/bash
 . ${HOME}/.bashrc
 #----- Main path, usually set by $(pwd) so you don't need to change it. -------------------#
-here=$(pwd)
+here=""
 #----- User name, usually set by $(whoami) so you don't need to change it. ----------------#
 myself=$(whoami)
 #----- Description of this simulation, used to create unique job names. -------------------#
 desc=$(basename ${here})
-#----- Queue to which the current post-processing array should be submitted. --------------#
-global_queue="cpu_dev"
-#----- Path with modules. -----------------------------------------------------------------#
-modpath="${SCRATCH}/Modules"
 #----- File containing the list of jobs and their settings: -------------------------------#
 joborder="${here}/joborder.txt"         # ! File with the job instructions
 #----- How should the post-processing be handled? -----------------------------------------#
@@ -63,8 +59,18 @@ rscpath="${HOME}/EDBRAMS/R-utils"
 rlibs="${HOME}/R"
 #----- bashrc (usually ${HOME}/.bashrc). --------------------------------------------------#
 initrc="${HOME}/.bashrc"
-#----- Memory per post-processing. --------------------------------------------------------#
-sim_memory=2500
+#----- Settings for this group of polygons. -----------------------------------------------#
+global_queue=""               # Queue
+partial=false                 # Partial submission (false will ignore polya and npartial
+                              #    and send all polygons.
+polya=501                     # First polygon to submit
+npartial=100                  # Maximum number of polygons to include in this bundle
+                              #    (actual number will be adjusted for total number of 
+                              #     polygons if needed be).
+dttask=2                      # Time to wait between task submission
+sim_memory=0                  # Memory per simulation.  If zero, then it will be 
+                              #    automatically determined by the maximum number of tasks
+                              #    per node.
 #------------------------------------------------------------------------------------------#
 
 
@@ -99,7 +105,7 @@ sim_memory=2500
 #   - reject_ed.r    - This tracks the number of steps that were rejected, and what caused #
 #                      the step to be rejected.                                            #
 #------------------------------------------------------------------------------------------#
-rscript="plot_monthly.r"
+rscript=""
 #rscript="yearly_ascii.r"
 #rscript="plot_monthly.r"
 #rscript="plot_census.r" 
@@ -159,6 +165,18 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #==========================================================================================#
 
 
+#------------------------------------------------------------------------------------------#
+#       First check that the main path and e-mail have been set.  If not, don't run.       #
+#------------------------------------------------------------------------------------------#
+if [ "x${here}" == "x" ] || [ "x${global_queue}" == "x" ] || [ "x${rscript}" == "x" ]
+then
+   echo " You must set some variables before running the script:"
+   echo " Check variables \"here\", \"global_queue\" and \"rscript\"!"
+   exit 99
+fi
+#------------------------------------------------------------------------------------------#
+
+
 #----- Load settings. ---------------------------------------------------------------------#
 if [ -s ${initrc} ]
 then
@@ -171,40 +189,47 @@ fi
 #     Configurations depend on the global_queue.                                           #
 #------------------------------------------------------------------------------------------#
 case ${global_queue} in
-   cpu_long|nvidia_long)
-      n_nodes_max=10
+   bigmem)
+      n_nodes_max=6
       n_cpt=1
-      n_tpn=24
+      n_tpn=64
       runtime="31-00:00:00"
-      node_memory=64000
+      node_memory=514842
       ;;
-   cpu|nvidia|phi)
-      n_nodes_max=50
+   general)
+      n_nodes_max=166
       n_cpt=1
-      n_tpn=24
-      runtime="2-00:00:00"
-      node_memory=64000
+      n_tpn=32
+      runtime="7-00:00:00"
+      node_memory=262499
       ;;
-   cpu_dev)
-      n_nodes_max=20
+   moorcroft_amd)
+      n_nodes_max=8
       n_cpt=1
-      n_tpn=24
-      runtime="02:00:00"
-      node_memory=64000
+      n_tpn=64
+      runtime="infinite"
+      node_memory=256302
       ;;
-   nvidia_dev|phi_dev)
+   moorcroft_6100)
+      n_nodes_max=35
+      n_cpt=1
+      n_tpn=12
+      runtime="infinite"
+      node_memory=22150
+      ;;
+   unrestricted)
+      n_nodes_max=8
+      n_cpt=1
+      n_tpn=64
+      runtime="31-00:00:00"
+      node_memory=262499
+      ;;
+   wofsy)
       n_nodes_max=2
       n_cpt=1
-      n_tpn=24
-      runtime="02:00:00"
-      node_memory=64000
-      ;;
-   cpu_scal|nvidia_scal)
-      n_nodes_max=128
-      n_cpt=1
-      n_tpn=24
-      runtime="18:00:00"
-      node_memory=64000
+      n_tpn=32
+      runtime="infinite"
+      node_memory=262499
       ;;
    *)
       echo "Global queue ${global_queue} is not recognised!"
@@ -218,11 +243,10 @@ let n_tasks_max=${n_nodes_max}*${n_tpn}
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "marcos.longo" ]
+if [ ${myself} == "mlongo" ]
 then
-   rscpath="${SCRATCH}/Util/Rsc"
-   rlibs="${SCRATCH}/Util/Rlibs"
-   rsync -Prutv ${R_SCRP}/* ${rscpath}
+   rscpath="${HOME}/util/Rsc"
+   rlibs="${SCRATCH}/util/R-3.1.2/lib"
 fi
 #------------------------------------------------------------------------------------------#
 
@@ -318,6 +342,9 @@ if [ ${sim_memory} -gt ${node_memory} ]
 then 
    echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
    exit 99
+elif [ ${sim_memory} -eq 0 ]
+then
+   let sim_memory=${node_memory}/${n_tpn}
 else
    #------ Set memory and number of CPUs per task. ----------------------------------------#
    let n_tpn_try=${node_memory}/${sim_memory}
@@ -330,6 +357,32 @@ else
    fi
    #---------------------------------------------------------------------------------------#
 fi
+#------------------------------------------------------------------------------------------#
+
+
+
+#---- Partial or complete. ----------------------------------------------------------------#
+rprefix=$(basename ${rscript} .r)
+if ${partial}
+then
+   let ff=${polya}-1
+   let polyz=${ff}+${npartial}
+   if [ ${polyz} -gt ${npolys} ]
+   then
+      polyz=${npolys}
+   fi
+   partlabel="$(printf '%3.3i' ${polya})-$(printf '%3.3i' ${polyz})"
+   sbatch="${here}/sub_${rprefix}_${partlabel}.sh"
+   obatch="${here}/out_${rprefix}_${partlabel}.log"
+   ebatch="${here}/err_${rprefix}_${partlabel}.log"
+else
+   ff=0
+   polyz=${npolys}
+   sbatch="${here}/sub_${rprefix}.sh"
+   obatch="${here}/out_${rprefix}.log"
+   ebatch="${here}/err_${rprefix}.log"
+fi
+let ntasks=1+${polyz}-${polya}
 #------------------------------------------------------------------------------------------#
 
 
@@ -347,13 +400,11 @@ echo "Number of polygons: ${npolys}..."
 #------------------------------------------------------------------------------------------#
 #    Initialise executable.                                                                #
 #------------------------------------------------------------------------------------------#
-sbatch="${here}/sub_$(basename ${rscript} .r).sh"
 rm -fr ${sbatch}
 touch ${sbatch}
 chmod u+x ${sbatch}
 echo "#!/bin/bash" >> ${sbatch}
-echo "#SBATCH --nodes=mynnodes                # Node count"                    >> ${sbatch}
-echo "#SBATCH --ntasks-per-node=myntasks      # Number of tasks per node"      >> ${sbatch}
+echo "#SBATCH --ntasks=${ntasks}              # Number of tasks"               >> ${sbatch}
 echo "#SBATCH --cpus-per-task=1               # Number of CPUs per task"       >> ${sbatch}
 echo "#SBATCH --partition=${global_queue}     # Queue that will run job"       >> ${sbatch}
 echo "#SBATCH --job-name=${epostjob}          # Job name"                      >> ${sbatch}
@@ -367,8 +418,6 @@ echo "ulimit -s unlimited"                                                     >
 echo ""                                                                        >> ${sbatch}
 echo "#--- Initial settings."                                                  >> ${sbatch}
 echo "here=\"${here}\"                            # Main path"                 >> ${sbatch}
-echo "nodehome=\"${SCRATCH}\"                     # Node home"                 >> ${sbatch}
-echo "modpath=\"${modpath}\"                      # Module path"               >> ${sbatch}
 echo "rscript=\"${rscript}\"                      # R Script"                  >> ${sbatch}
 echo "rstdout=\"${epostout}\"                     # Standard output"           >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
@@ -393,21 +442,8 @@ echo "echo \"\""                                                               >
 echo "echo \"\""                                                               >> ${sbatch}
 echo "echo \"\""                                                               >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
-echo "#--- Set nodes."                                                         >> ${sbatch}
-echo "nodeset -e \${SLURM_JOB_NODELIST}"                                       >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
 echo "#--- Load modules and settings."                                         >> ${sbatch}
-echo ". \${nodehome}/.bashrc"                                                  >> ${sbatch}
-echo ""                                                                        >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"\""                                                               >> ${sbatch}
-echo "echo \"----- Global settings for this array of post-processing ------\"" >> ${sbatch}
-echo "echo \" Main path:       \${here}\""                                     >> ${sbatch}
-echo "echo \" Module path:     \${modpath}\""                                  >> ${sbatch}
-echo "echo \" R script:        \${rscript}\""                                  >> ${sbatch}
-echo "echo \" R libraries:     \${R_LIBS}\""                                   >> ${sbatch}
-echo "echo \" R utilities:     \${R_SCRP}\""                                   >> ${sbatch}
-echo "echo \"--------------------------------------------------------------\"" >> ${sbatch}
+echo ". \${HOME}/.bashrc"                                                      >> ${sbatch}
 echo ""                                                                        >> ${sbatch}
 echo "#----- Task list."                                                       >> ${sbatch}
 #------------------------------------------------------------------------------------------#
@@ -418,9 +454,8 @@ echo "#----- Task list."                                                       >
 #------------------------------------------------------------------------------------------#
 #      Loop over all polygons.                                                             #
 #------------------------------------------------------------------------------------------#
-ff=0
 n_submit=0
-while [ ${ff} -lt ${npolys} ]
+while [ ${ff} -lt ${polyz} ]
 do
    let ff=${ff}+1
    let line=${ff}+3

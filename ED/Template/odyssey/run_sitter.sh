@@ -17,7 +17,7 @@
 
 
 #----- Main path, you must actually type the path in case you add to chron. ---------------#
-here="/n/regal/moorcroft_lab/mlongo/pve+sas"
+here=""
 #------------------------------------------------------------------------------------------#
 
 
@@ -32,7 +32,7 @@ situtils="${here}/sit_utils"
 #   runtitle -- Full name of this simulation, this is used only in the e-mail subject.     #
 #------------------------------------------------------------------------------------------#
 desc=$(basename ${here})
-runtitle="ED-2 potential vegetation simulation"
+runtitle="ED-2 last PVE cycle"
 #------------------------------------------------------------------------------------------#
 
 
@@ -58,7 +58,7 @@ ccc="${HOME}/util/calc.sh"  # Calculator
 #------------------------------------------------------------------------------------------#
 #      Variables that tell whether to check for steady state and deserts.                  #
 #------------------------------------------------------------------------------------------#
-checksteady="TRUE"    #   Check whether to stop simulations? (TRUE of FALSE, R style)
+checksteady="FALSE"   #   Check whether to stop simulations? (TRUE of FALSE, R style)
 nyearmin=160          #   Minimum number of years before we check
 ststcrit=0.01         #   Maximum change allowed between two cycles
 #------------------------------------------------------------------------------------------#
@@ -71,6 +71,7 @@ ststcrit=0.01         #   Maximum change allowed between two cycles
 #    mailprog     -- Which e-mail program to use? mutt works best, I installed in my util  #
 #                    directory.  Give a try, if it doesn't work you may need to install    #
 #                    locally on your directory.                                            #
+#    frqemail     -- minimum time interval between emails (in seconds).                    #
 #    plotstatus   -- Plot the current status of the run (you will need to create some R    #
 #                    script for each simulation). 0: no; 1: yes                            #
 #    Rscript_plot -- Script that you want to run to generate some plots.                   #
@@ -85,8 +86,9 @@ ststcrit=0.01         #   Maximum change allowed between two cycles
 #    email1day    -- Reminder so the script knows whether an e-mail has been sent or not.  #
 #------------------------------------------------------------------------------------------#
 email1day=1
-recipient="mdplongo@gmail.com"
+recipient=""
 mailprog="${HOME}/util/mutt"
+frqemail=43200
 plotstatus=true
 Rscript_plot="${situtils}/plot.region.r"
 R_figlist="${situtils}/status_region.png
@@ -154,7 +156,8 @@ outform="JobName%200,State%12"
 #------------------------------------------------------------------------------------------#
 if [ "x${here}" == "x" ] || [ "x${recipient}" == "x" ]
 then
-   echo " + Set variables \"here\" and \"recipient\" in your script before running!"
+   echo " You must set some variables before running the script:"
+   echo " Check variables \"here\" and \"recipient\"!"
    exit 99
 fi
 #------------------------------------------------------------------------------------------#
@@ -174,7 +177,15 @@ fi
 
 
 #------ Move to the current directory. ----------------------------------------------------#
-cd ${main}
+cd ${here}
+#------------------------------------------------------------------------------------------#
+
+
+#------ Make sure transfer is set up at the right path. -----------------------------------#
+transfer="${here}/transfer.sh"
+translock="${here}/transfer.lock"
+hereline=$(cat ${here}/transfer.sh | grep "^here=")
+sed -i~ s@"${hereline}"@"here=\"${here}\""@g ${transfer}
 #------------------------------------------------------------------------------------------#
 
 
@@ -212,15 +223,17 @@ do
 
 
    #---------------------------------------------------------------------------------------#
-   #     Check whether it's time to touch files.                                           #
+   #     Check whether it's time to update simulation setting files.                       #
    #---------------------------------------------------------------------------------------#
    if [ ${frqtouch} -gt 0 ]
    then
       let xtouch=${iter}%${frqtouch}
       if [ ${xtouch} -eq 0 ]
       then
-         echo " Touch files."
-         touch ${here}/*
+         echo " Touch main files."
+         touch ${here}/*.sh
+         touch ${here}/*.r
+         touch ${here}/*.txt
          touch ${here}/Template/*
          touch ${here}/executable/*
          touch ${here}/sit_utils/*
@@ -231,6 +244,16 @@ do
    #---------------------------------------------------------------------------------------#
 
 
+   #----- Transfer files. -----------------------------------------------------------------#
+   if [ ! -s ${translock} ]
+   then
+      echo " Backup files."
+      nice nohup ${transfer} 1> ${here}/out_transfer.out 2>&1 &
+   fi
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Move current check to the last check. -------------------------------------------#
    rm -f ${lastcheck}
    mv ${outcheck} ${lastcheck}
    touch ${outcheck}
@@ -384,12 +407,124 @@ do
 
 
 
-      #----- Check whether the directories exist or not. ----------------------------------#
-      if [ ${xtouch} -eq 0 ]
+
+
+      #------------------------------------------------------------------------------------#
+      #     Determine the scenario paths.                                                  #
+      #------------------------------------------------------------------------------------#
+      case ${iscenario} in
+      default)
+         case ${metdriver} in
+         Sheffield)
+            #----- Sheffield. -------------------------------------------------------------#
+            scentype="sheffield"
+            iscenario="sheffield"
+            ;;
+         *)
+            #----- Tower data. ------------------------------------------------------------#
+            scentype="wmo+eft"
+            iscenario="eft"
+            ;;
+         esac
+         ;;
+      eft|wmo|shr)
+         #----- Tower data, keep scenario as is. ------------------------------------------#
+         scentype="wmo+eft"
+         ;;
+      *)
+         #----- Rainfall scenario, keep scenario as is. -----------------------------------#
+         scentype="realisation_scen_driver"
+         ;;
+      esac
+      #------------------------------------------------------------------------------------#
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    Check year range.                                                               #
+      #------------------------------------------------------------------------------------#
+      case ${metdriver} in
+      Bananal)
+         metcyc1=2004
+         metcycf=2006
+         ;;
+      Brasilia)
+         metcyc1=2006
+         metcycf=2012
+         ;;
+      Caxiuana)
+         metcyc1=1999
+         metcycf=2003
+         ;;
+      Fazenda_Nossa_Senhora)
+         metcyc1=1999
+         metcycf=2002
+         ;;
+      Harvard)
+         metcyc1=1992
+         metcycf=2003
+         ;;
+      Manaus_Km34)
+         metcyc1=1999
+         metcycf=2006
+         ;;
+      Natal)
+         metcyc1=2009
+         metcycf=2012
+         ;;
+      Paracou)
+         metcyc1=2004
+         metcycf=2014
+         ;;
+      Pe-de-Gigante)
+         metcyc1=2001
+         metcycf=2003
+         ;;
+      Petrolina)
+         metcyc1=2004
+         metcycf=2012
+         ;;
+      Rebio_Jaru)
+         metcyc1=1999
+         metcycf=2002
+         ;;
+      Santarem_Km67)
+         metcyc1=2001
+         metcycf=2011
+         ;;
+      Santarem_Km77)
+         metcyc1=2001
+         metcycf=2005
+         ;;
+      Santarem_Km83)
+         metcyc1=2000
+         metcycf=2003
+         ;;
+      Sheffield)
+         metcyc1=1969
+         metcycf=2008
+         ;;
+      Tonzi)
+         metcyc1=2000
+         metcycf=2010
+         ;;
+      *)
+         echo "Met driver: ${metdriver}"
+         echo "Sorry, this met driver is not valid for regular runs"
+         exit 85
+         ;;
+      esac
+      #---------------------------------------------------------------------------------------#
+
+
+      #---------------------------------------------------------------------------------------#
+      #     Correct years so it is not tower-based or Sheffield.                              #
+      #---------------------------------------------------------------------------------------#
+      if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
+         [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ]
       then
-         touch ${here}/${polyname}/analy/*
-         touch ${here}/${polyname}/histo/*
-         touch ${here}/${polyname}/*
+         metcyc1=1972
+         metcycf=2012
       fi
       #---------------------------------------------------------------------------------------#
 
@@ -431,6 +566,45 @@ do
       statrun=${here}/${polyname}/statusrun.txt
       if [ -s ${statrun} ]
       then
+         yearh_old=$(cat ${statrun}  | awk '{print  $2}')
+         monthh_old=$(cat ${statrun} | awk '{print  $3}')
+         dateh_old=$(cat ${statrun}  | awk '{print  $4}')
+         timeh_old=$(cat ${statrun}  | awk '{print  $5}')
+         runt_old=$(cat ${statrun}   | awk '{print  $6}')
+         agb_old=$(cat ${statrun}    | awk '{print  $7}')
+         bsa_old=$(cat ${statrun}    | awk '{print  $8}')
+         lai_old=$(cat ${statrun}    | awk '{print  $9}')
+         scb_old=$(cat ${statrun}    | awk '{print $10}')
+         npa_old=$(cat ${statrun}    | awk '{print $11}')
+      else
+         yearh_old=${yeara}
+         monthh_old=${montha}
+         dateh_old=${datea}
+         timeh_old=${timea}
+         runt_old="INITIAL"
+         agb_old="NA"
+         bsa_old="NA"
+         lai_old="NA"
+         scb_old="NA"
+         npa_old="NA"
+      fi
+      #---------------------------------------------------------------------------------------#
+
+
+
+
+      #------------------------------------------------------------------------------------#
+      #    We only check those polygons that may be running, so the check doesn't take too #
+      # long.  Once a polygon has reached a steady state / gone extinct / finished, then   #
+      # its  #
+      # status should remain the same.                                                        #
+      #------------------------------------------------------------------------------------#
+      #----- Call R to check status. ------------------------------------------------------#
+      whichrun=${here}/${polyname}/whichrun.r
+      outwhich=${here}/${polyname}/outwhich.txt
+      R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
+      if [ -s ${statrun} ]
+      then
          yearh=$(cat ${statrun}  | awk '{print  $2}')
          monthh=$(cat ${statrun} | awk '{print  $3}')
          dateh=$(cat ${statrun}  | awk '{print  $4}')
@@ -453,39 +627,52 @@ do
          scb="NA"
          npa="NA"
       fi
-      #---------------------------------------------------------------------------------------#
-
+      #------------------------------------------------------------------------------------#
 
 
 
       #------------------------------------------------------------------------------------#
-      #    We only check those polygons that may be running, so the check doesn't take too #
-      # long.  Once a polygon has reached a steady state / gone extinct / finished, then   #
-      # its  #
-      # status should remain the same.                                                        #
+      #      Check whether the simulations are stalled.                                    #
       #------------------------------------------------------------------------------------#
-      #----- Call R to check status. ------------------------------------------------------#
-      whichrun=${here}/${polyname}/whichrun.r
-      outwhich=${here}/${polyname}/outwhich.txt
-      R CMD BATCH --no-save --no-restore ${whichrun} ${outwhich}
-      yearh=$(cat ${statrun}  | awk '{print  $2}')
-      monthh=$(cat ${statrun} | awk '{print  $3}')
-      dateh=$(cat ${statrun}  | awk '{print  $4}')
-      timeh=$(cat ${statrun}  | awk '{print  $5}')
-      runt=$(cat ${statrun}   | awk '{print  $6}')
-      agb=$(cat ${statrun}    | awk '{print  $7}')
-      bsa=$(cat ${statrun}    | awk '{print  $8}')
-      lai=$(cat ${statrun}    | awk '{print  $9}')
-      scb=$(cat ${statrun}    | awk '{print $10}')
-      npa=$(cat ${statrun}    | awk '{print $11}')
+      case ${runt} in
+      "HISTORY")
+         #----- Check whether the runs are stalled. ---------------------------------------#
+         if [ ${yearh} == ${yearh_old} ] && [ ${monthh} == ${monthh_old} ] &&
+            [ ${dateh} == ${dateh_old} ] && [ ${timeh}  == ${timeh_old}  ]
+         then
+            stall_old=$(cat ${lastcheck} | grep ${polyname} | awk '{print $8}')
+            let stall=${stall_old}+1
+         else
+            stall=0
+         fi
+         #---------------------------------------------------------------------------------#
+         ;;
+      *)
+         #----- Not in history, simulations are unlikely to be stalled. -------------------#
+         stall=0
+         #---------------------------------------------------------------------------------#
+         ;;
+      esac
       #------------------------------------------------------------------------------------#
-
 
 
       #----- Write polygon check into a single table. -------------------------------------#
       output="${polyname} ${polylon} ${polylat} ${yearh} ${monthh} ${dateh} ${timeh}"
-      output="${output} ${runt} ${agb} ${bsa} ${lai} ${scb} ${npa}"
+      output="${output} ${stall} ${runt} ${agb} ${bsa} ${lai} ${scb} ${npa}"
       echo ${output} >> ${outcheck}
+      #------------------------------------------------------------------------------------#
+
+
+
+      #----- Update files that may be used to check status or to re-submit. ---------------#
+      if [ ${xtouch} -eq 0 ]
+      then
+         touch ${here}/${polyname}/*.r
+         touch ${here}/${polyname}/ED2IN
+         touch ${here}/${polyname}/*.sh
+         touch ${here}/${polyname}/SHEF_NCEP_DRIVER_DS314
+         touch ${here}/${polyname}/statusrun.txt
+      fi
       #------------------------------------------------------------------------------------#
 
 
@@ -495,7 +682,7 @@ do
       if [ -s ${stdout} ]
       then
          #----- Check whether the simulation is running, and when in model time it is. ----#
-         stask="stask --noheader -u $(whoami) -t ${polyname} -j ${jobname}"
+         stask="stask --noheader -u $(whoami) -t ${polyname} -j ${jobname} "
          running=$(${stask}   -o "${outform}" | grep "RUNNING"   | wc -l)
          pending=$(${stask}   -o "${outform}" | grep "PENDING"   | wc -l)
          suspended=$(${stask} -o "${outform}" | grep "SUSPENDED" | wc -l)
@@ -543,39 +730,39 @@ do
          elif [ ${suspended} -gt 0 ]
          then
             let n_suspend=${n_suspend}+1
-            echo -e "${ffout}: ${polyname} is suspended!!!"
-         elif [ ${running} -gt 0 ] || [ -s ${skipper} ] && [ ${sigsegv} -eq 0 ]
+            echo -e "${ffout}: ${polyname} is SUSPENDED."
+         elif [ ${running} -gt 0 ] && [ ${sigsegv} -eq 0 ]
          then
             let n_running=${n_running}+1
-            echo -e "${ffout}: ${polyname} is running (${runtime})..."
+            echo -e "${ffout}: ${polyname} is running (${runtime})."
          elif [ ${sigsegv} -gt 0 ]
          then
             let n_sigsegv=${n_sigsegv}+1
-            echo -e "${ffout}: ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+            echo -e "${ffout}: ${polyname} HAD SEGMENTATION VIOLATION."
          elif [ ${crashed} -gt 0 ]
          then 
             let n_crashed=${n_crashed}+1
-            echo -e "${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
+            echo -e "${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)."
          elif [ ${metmiss} -gt 0 ]
          then 
             let n_metmiss=${n_metmiss}+1
-            echo -e "${ffout}: ${polyname} DID NOT FIND MET DRIVERS... <==========="
+            echo -e "${ffout}: ${polyname} DID NOT FIND MET DRIVERS."
          elif [ ${stopped} -gt 0 ]
          then
             let n_stopped=${n_stopped}+1
-            echo -e "${ffout}: ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+            echo -e "${ffout}: ${polyname} STOPPED (UNKNOWN REASON)."
          elif [ ${the_end} -gt 0 ]
          then
             let n_the_end=${n_the_end}+1
-            echo -e "${ffout}: ${polyname} has finished o/\o..."
+            echo -e "${ffout}: ${polyname} has finished."
          else
             let n_unknown=${n_unknown}+1
-            echo -e "${ffout}: ${polyname} status is unknown..."
+            echo -e "${ffout}: ${polyname} status is UNKNOWN."
          fi
          #---------------------------------------------------------------------------------#
       else
          let n_pending=${n_pending}+1
-         echo -e "${ffout}: ${polyname} is pending ..."
+         echo -e "${ffout}: ${polyname} is pending."
       fi
       #------------------------------------------------------------------------------------#
 
@@ -623,9 +810,14 @@ do
 
    #----- Current simulation status. ------------------------------------------------------#
    n_initial=$(grep INITIAL ${outcheck} | wc -l)
+   n_history=$(grep HISTORY ${outcheck} | wc -l)
+   n_metmiss=$(grep METMISS ${outcheck} | wc -l)
    n_bad_met=$(grep BAD_MET ${outcheck} | wc -l)
+   n_crashed=$(grep CRASHED ${outcheck} | wc -l)
+   n_stopped=$(grep STOPPED ${outcheck} | wc -l)
    n_extinct=$(grep EXTINCT ${outcheck} | wc -l)
    n_ststate=$(grep STSTATE ${outcheck} | wc -l)
+   n_the_end=$(grep THE_END ${outcheck} | wc -l)
    let n_ongoing=${n_polygon}-${n_the_end}-${n_extinct}-${n_ststate}
    /bin/rm -f ${statfile}
    touch ${statfile}
@@ -681,7 +873,7 @@ do
    #     Create the subject for the e-mail.                                                #
    #---------------------------------------------------------------------------------------#
    when=$(date +'%d %B %Y - %R %Z')
-   today=$(date +'%Y-%m-%d')
+   elapsed=$(date +'%s')
    subject="${runtitle} run status as of ${when}"
    #---------------------------------------------------------------------------------------#
 
@@ -698,8 +890,9 @@ do
    elif [ -s ${emailday} ]
    then
       #----- E-mail has been sent.  Check whether it is time to send again. ---------------#
-      lastemail=$(cat ${emailday})
-      if [ ${today} != ${lastemail} ]
+      elast=$(cat ${emailday})
+      let elast=${elapsed}-${elast}
+      if [ ${elast} -gt ${frqemail} ]
       then
          #----- Time to send another e-mail. ----------------------------------------------#
          sendemail=true
@@ -723,7 +916,7 @@ do
    #---------------------------------------------------------------------------------------#
    if ${sendemail}
    then
-      echo ${today} > ${emailday}
+      echo ${elapsed} > ${emailday}
       echo "     + Send e-mail."
       ${mailprog} -s "${subject}" ${attach} ${recipient} < ${emailbody}
    else
@@ -789,6 +982,26 @@ do
    #---------------------------------------------------------------------------------------#
 done
 #------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Run backup one last time before we end the execution.  Mind that the script may be   #
+# transferring the files.                                                                  #
+#------------------------------------------------------------------------------------------#
+nwait=0
+while [ -s ${translock} ]
+do
+   let nwait=${nwait}+1
+   echo " + Attempt ${nwait}, script transfer is running.  Wait 10 minutes and try again."
+   sleep 10m
+done
+#---- This time we don't run in background.  ----------------------------------------------#
+echo " Backup files one last time."
+${transfer}
+#------------------------------------------------------------------------------------------#
+
+
 
 #----- Clean-up stuff. --------------------------------------------------------------------#
 echo " Unlock run_sitter.sh."

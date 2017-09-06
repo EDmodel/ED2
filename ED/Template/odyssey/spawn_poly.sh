@@ -36,6 +36,8 @@ packdatasrc="${d_path}/to_scratch"
 lumain="${d_path}/ed2_data/land_use"
 #----- Should the met driver be copied to local scratch disks? ----------------------------#
 copy2scratch=true
+#----- Memory per simulation. -------------------------------------------------------------#
+sim_memory=4000
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -59,17 +61,14 @@ initrc="${HOME}/.bashrc"          # Initialisation script for most nodes
 #----- Submit job automatically? (It may become false if something prevents submission). --#
 submit=false
 #----- Settings for this group of polygons. -----------------------------------------------#
-global_queue="unrestricted"   # Queue
+global_queue="moorcroft_amd"  # Queue
 partial=true                  # Partial submission (false will ignore polya and npartial
                               #    and send all polygons.
-polya=351                     # First polygon to submit
-npartial=25                   # Maximum number of polygons to include in this bundle
+polya=21                      # First polygon to submit
+npartial=300                  # Maximum number of polygons to include in this bundle
                               #    (actual number will be adjusted for total number of 
                               #     polygons if needed be).
 dttask=8                      # Time to wait between task submission
-sim_memory=0                  # Memory per simulation.  If zero, then it will be 
-                              #    automatically determined by the maximum number of tasks
-                              #    per node.
 #------------------------------------------------------------------------------------------#
 
 #==========================================================================================#
@@ -223,9 +222,6 @@ if [ ${sim_memory} -gt ${node_memory} ]
 then 
    echo "Simulation memory ${sim_memory} cannot exceed node memory ${node_memory}!"
    exit 99
-elif [ ${sim_memory} -eq 0 ]
-then
-   let sim_memory=${node_memory}/${n_tpn}
 else
    #------ Set memory and number of CPUs per task. ----------------------------------------#
    let n_tpn_try=${node_memory}/${sim_memory}
