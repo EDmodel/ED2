@@ -549,6 +549,7 @@ contains
    subroutine area_indices(cpatch, ico)
       use ed_state_vars, only : patchtype     ! ! Structure
       use pft_coms     , only : dbh_crit        & ! intent(in)
+                              , SLA             & ! intent(in)
                               , b1WAI           & ! intent(in)
                               , b2WAI           ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
@@ -562,7 +563,6 @@ contains
       !----- Local variables --------------------------------------------------------------!
       real                    :: bleaf
       real                    :: nplant
-      real                    :: sla
       real                    :: hite
       real                    :: dbh
       integer                 :: ipft
@@ -570,16 +570,15 @@ contains
       
       bleaf  = cpatch%bleaf(ico)
       nplant = cpatch%nplant(ico)
-      sla    = cpatch%sla(ico)
       hite   = cpatch%hite(ico)
       ipft   = cpatch%pft(ico)
       dbh    = cpatch%dbh(ico)
 
       !----- First, we compute the LAI ----------------------------------------------------!
-      cpatch%lai(ico) = bleaf * nplant * sla
+      cpatch%lai(ico) = bleaf * nplant * SLA(ipft)
 
       !----- Find the crown area. ---------------------------------------------------------!
-      cpatch%crown_area(ico) = min(1.0, nplant * dbh2ca(dbh,hite,sla,ipft))
+      cpatch%crown_area(ico) = min(1.0, nplant * dbh2ca(dbh,hite,SLA(ipft),ipft))
 
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !
@@ -602,7 +601,7 @@ contains
             !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
             ! always 11% of the potential LAI.                                             !
             !------------------------------------------------------------------------------!
-            cpatch%wai(ico) = 0.11 * nplant * sla * size2bl(dbh,hite,ipft)
+            cpatch%wai(ico) = 0.11 * nplant * SLA(ipft) * size2bl(dbh,hite,ipft)
             !------------------------------------------------------------------------------!
          case default
             !----- Solve branches using the equations from Hormann et al. (2003) ----------!
