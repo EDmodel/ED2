@@ -80,6 +80,7 @@ subroutine structural_growth(cgrid, month)
    real                          :: bstorage_mort_litter
    real                          :: struct_litter
    real                          :: maxh !< maximum patch height
+   real                          :: h_edge !< maximum height advantage for lianas
    real                          :: mort_litter
    real                          :: seed_litter
    real                          :: net_seed_N_uptake
@@ -128,11 +129,11 @@ subroutine structural_growth(cgrid, month)
 
        !-----------------------------------------------------------------------------------!
        ! Here we must get the tallest tree cohort iside the patch. This will be then used  !
-       ! to set the maximum height that lianas should aim at.                              !
+       ! to set the maximum height that lianas should aim at. Now h_edge is set at 0.5m    !
        ! The arrested succession (only lianas inside the patch is a bit of a limit case:   !
        ! the maximum height will be set to (0.5 + 0.5)m. It might still be reasonable.     !
        !-----------------------------------------------------------------------------------!
-            maxh = 0.5
+            maxh = h_edge
             hcohortloop: do ico = 1,cpatch%ncohorts
                if (.not. is_liana(cpatch%pft(ico)) .and. cpatch%hite(ico) > maxh) then
                   maxh = cpatch%hite(ico)
@@ -144,7 +145,7 @@ subroutine structural_growth(cgrid, month)
             ! Adding 0.5 to maxh has the effect of letting lianas grow 0.5 m above the     !
             ! tallest tree cohort. This number could be tweaked...                         !
             !------------------------------------------------------------------------------!
-            maxh = maxh + 0.5
+            maxh = maxh + h_edge
             !------------------------------------------------------------------------------!
 
             cohortloop: do ico = 1,cpatch%ncohorts
