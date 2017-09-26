@@ -209,6 +209,7 @@ contains
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
       real                :: ldbh
+      real                :: liana_dbh_crit = 26.0 !< liana specific critical dbh
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -216,7 +217,7 @@ contains
       ! DBH that give lianas the same (~) Bl_max as late successionals                     !
       !------------------------------------------------------------------------------------!
       if (is_liana(ipft)) then
-         ldbh = 26.0
+         ldbh = liana_dbh_crit
       else
          ldbh = dbh_crit(ipft)
       end if
@@ -337,6 +338,7 @@ contains
       use pft_coms    , only : dbh_crit    & ! intent(in)
          , hgt_max     & ! intent(in)
          , is_grass    & ! intent(in)
+         , is_liana    & ! intent(in)
          , b1Ca        & ! intent(in)
          , b2Ca        ! ! intent(in)
       use ed_misc_coms, only : igrass      ! ! intent(in)
@@ -349,7 +351,21 @@ contains
       integer       , intent(in) :: ipft
       !----- Internal variables -----------------------------------------------------------!
       real                :: loclai ! The maximum local LAI for a given DBH
+      real                :: ldbh
+      real                :: liana_dbh_crit = 26.0 !< liana specific critical dbh
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      ! lianas dbh_crit would be too small for the leaf biomass. We choose ldbh to be the  !
+      ! DBH that give lianas the same (~) Bl_max as late successionals                     !
+      !------------------------------------------------------------------------------------!
+      if (is_liana(ipft)) then
+         ldbh = liana_dbh_crit
+      else
+         ldbh = dbh_crit(ipft)
+      end if
+      !------------------------------------------------------------------------------------!
+
       if (dbh < tiny(1.0)) then
          loclai = 0.0
          dbh2ca = 0.0
@@ -369,7 +385,7 @@ contains
                if (is_grass(ipft) .and. igrass==1) then
                   dbh2ca = b1Ca(ipft) * min(dbh,h2dbh(hgt_max(ipft),ipft) ) ** b2Ca(ipft)
                else
-                  dbh2ca = b1Ca(ipft) * min(dbh,dbh_crit(ipft)            ) ** b2Ca(ipft)
+                  dbh2ca = b1Ca(ipft) * min(dbh, ldbh                     ) ** b2Ca(ipft)
                end if
          end select
       end if
