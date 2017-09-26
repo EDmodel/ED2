@@ -284,7 +284,7 @@ module soil_coms
    real   , dimension(nzgmax,ed_nvtyp) :: root     ! root depth                     [    m]
    real, allocatable, dimension(:,:)   :: slcons1  ! z-dep. soil sat hydraul cond   [  m/s]
    real, allocatable, dimension(:)     :: dslz     ! soil layer thickness at T pt   [    m]
-   real, allocatable, dimension(:)     :: dslzo2   ! ½ soil layer thick. at T pt    [    m]
+   real, allocatable, dimension(:)     :: dslzo2   ! Â½ soil layer thick. at T pt    [    m]
    real, allocatable, dimension(:)     :: dslzi    ! 1/dslz                         [  1/m]
    real, allocatable, dimension(:)     :: dslzidt  ! dtll / dslz                    [  s/m]
    real, allocatable, dimension(:)     :: slzt     ! soil depth at T pt             [    m]
@@ -500,8 +500,6 @@ module soil_coms
       real                :: sand
       real                :: clay
       real                :: silt
-      real                :: sandline
-      real                :: loamysandline
       !------------------------------------------------------------------------------------!
 
 

@@ -7,8 +7,7 @@ module ed_init
 ! polygons.                                                                                !
 !------------------------------------------------------------------------------------------!
 subroutine set_polygon_coordinates()
-   use grid_coms     , only : ngrids    & ! intent(in)
-                            , nzg       ! ! intent(in)
+   use grid_coms     , only : ngrids    ! ! intent(in)
    use ed_work_vars  , only : work_v    ! ! structure
    use ed_node_coms  , only : mynum     ! ! intent(in)
    use ed_state_vars , only : edgrid_g  & ! structure
@@ -21,8 +20,6 @@ subroutine set_polygon_coordinates()
    integer               :: npoly
    type(edtype), pointer :: cgrid
    !---------------------------------------------------------------------------------------!
-
-
 
    !---------------------------------------------------------------------------------------!
    !  Ifort-11.0.083 complained about using edgrid_g(ifm) directly, replaced by cgrid.     !
@@ -62,7 +59,6 @@ subroutine set_site_defprops()
    use grid_coms     , only : ngrids               & ! intent(in)
                             , nzg                  ! ! intent(in)
    use ed_work_vars  , only : work_v               ! ! structure
-   use ed_node_coms  , only : mynum                ! ! intent(in)
    use ed_state_vars , only : edgrid_g             & ! structure
                             , edtype               & ! structure
                             , polygontype          & ! structure
@@ -79,7 +75,6 @@ subroutine set_site_defprops()
    integer                    :: ipy
    integer                    :: isi
    integer                    :: itext
-   integer                    :: npoly
    integer                    :: nsite
    integer                    :: k
    integer                    :: sc
@@ -310,18 +305,10 @@ end subroutine soil_default_fill
 subroutine load_ecosystem_state()
    use landuse_init_module
    use ed_nbg_init
-   use phenology_coms    , only : iphen_scheme    ! ! intent(in)
    use ed_misc_coms      , only : ied_init_mode   & ! intent(in)
                                 , ibigleaf        ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
-   use ed_node_coms      , only : mynum           & ! intent(in)
-                                , nmachs          & ! intent(in)
-                                , nnodetot        & ! intent(in)
-                                , mchnum          & ! intent(in)
-                                , machs           & ! intent(in)
-                                , master_num      & ! intent(in)
-                                , sendnum         & ! intent(in)
-                                , recvnum         ! ! intent(in)
+   use ed_node_coms      , only : mynum           ! ! intent(in)
    use grid_coms         , only : ngrids          ! ! intent(in)
    use ed_state_vars     , only : edgrid_g        ! ! structure
 
@@ -330,7 +317,6 @@ subroutine load_ecosystem_state()
    include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
-   integer                :: ierr
    integer                :: igr
    integer                :: ping 
    !---------------------------------------------------------------------------------------!
@@ -764,7 +750,7 @@ subroutine read_site_file(cgrid,igr)
    ! call prior to loading pss/css files but after basic polygon established
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
-   use ed_misc_coms, only: ied_init_mode,sfilin, vary_elev, vary_rad, vary_hyd
+   use ed_misc_coms, only: sfilin, vary_elev, vary_rad, vary_hyd
    use mem_polygons, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
    use ed_max_dims, only: max_site,n_pft,str_len
@@ -791,7 +777,7 @@ subroutine read_site_file(cgrid,igr)
    integer :: sitenum,get_site_line,get_mat_line,get_header,found_mat_header=0,lcount=0,mcount=0
    real :: area,TCI,elevation,slope,aspect
    integer,allocatable :: soilclass(:)
-   integer :: ipy,isi,k
+   integer :: ipy,isi
    integer :: ierr
 
    if(vary_elev == 0)  no_lapse = .true.

@@ -3,23 +3,6 @@ module hdf5_utils
 
 contains
 
-! =============================================================================
-
-subroutine init_hdf5_env()
-  use hdf5_coms
-  implicit none
-  
-  integer :: hdferr
-  
-#if USE_HDF5
-  call h5open_f(hdferr)
-  if (hdferr /= 0) then
-     print*,'HDF5 Open error #:',hdferr
-     call fatal_error('Could not initialize the hdf environment' &
-          ,'h5_output','h5_output.F90')
-  endif
-#endif
-end subroutine init_hdf5_env
 
 !===============================================================================
 
@@ -84,43 +67,6 @@ end subroutine shdf5_info_f
 
 !===============================================================================
 
-subroutine shdf5_io(action,ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
-                                              ,ivars,rvars,cvars,dvars,lvars)
-  use hdf5_coms
-  implicit none
-
-  character(len=*)           :: dsetname, action
-  integer                    :: ndims, dims(*)
-  integer,          optional :: ivara(*), ivars
-  real,             optional :: rvara(*), rvars
-  character(len=*), optional :: cvara(*), cvars
-  real(kind=8),     optional :: dvara(*), dvars
-  logical,          optional :: lvara(*), lvars
- 
-  ! THIS ROUTINE CALLS SHDF5_IREC OR SHDF5_OREC TO READ OR WRITE A VARIABLE
-  ! DEPENDING ON WHETHER 'ACTION' EQUALS 'READ' OR 'WRITE'
-
-#if USE_HDF5
-  if (trim(action) == 'READ') then
-     
-     call shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
-          ,ivars,rvars,cvars,dvars,lvars)
-     
-  elseif (trim(action) == 'WRITE') then
-     
-     call shdf5_orec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
-          ,ivars,rvars,cvars,dvars,lvars)
-     
-  else
-     
-     print *, "Illegal action in shdf5_io."
-     print *, "Action should be 'READ' or 'WRITE'"
-     stop     "Ending model run"
-
-  endif
-#endif
- 
-end subroutine shdf5_io
 
 ! ========================================
 

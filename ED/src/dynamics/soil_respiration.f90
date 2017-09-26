@@ -443,7 +443,6 @@ real function root_resp_norm(ipft,soil_temp)
                              , rrf_q10                  ! ! intent(in)
    use farq_leuning   , only : arrhenius                & ! function
                              , collatz                  ! ! function
-   use soil_coms      , only : soil8                    ! ! intent(in)
    use rk4_coms       , only : tiny_offset              ! ! intent(in)
    use physiology_coms, only : iphysiol                 ! ! intent(in)
    use consts_coms    , only : lnexp_min8               & ! intent(in)

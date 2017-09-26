@@ -17,7 +17,7 @@ module budget_utils
    !=======================================================================================!
    !    This subroutine simply updates the budget variables.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine update_budget(csite,lsl,ipaa,ipaz)
+   subroutine update_budget(csite,lsl,ipa)
      
       use ed_state_vars, only : sitetype     ! ! structure
       implicit none
@@ -25,21 +25,14 @@ module budget_utils
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)  , target     :: csite
       integer         , intent(in) :: lsl
-      integer         , intent(in) :: ipaa
-      integer         , intent(in) :: ipaz
-      !----- Local variables. -------------------------------------------------------------!
-      integer                      :: ipa
-      !------------------------------------------------------------------------------------!
+      integer         , intent(in) :: ipa
 
-
-      do ipa=ipaa,ipaz
          !---------------------------------------------------------------------------------!
          !      Computing the storage terms for CO2, energy, and water budgets.            !
          !---------------------------------------------------------------------------------!
          csite%co2budget_initialstorage(ipa) = compute_co2_storage(csite,ipa)
          csite%wbudget_initialstorage(ipa)   = compute_water_storage(csite,lsl,ipa)
          csite%ebudget_initialstorage(ipa)   = compute_energy_storage(csite,lsl,ipa)
-      end do
 
       return
    end subroutine update_budget
@@ -57,12 +50,11 @@ module budget_utils
                             ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage           &
                             ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff       &
                             ,site_area,cbudget_nep,old_can_enthalpy,old_can_shv            &
-                            ,old_can_co2,old_can_rhos,old_can_temp,old_can_prss)
+                            ,old_can_co2,old_can_rhos,old_can_prss)
       use ed_state_vars, only : sitetype           & ! structure
                               , patchtype          ! ! structure
       use ed_max_dims  , only : str_len            ! ! intent(in)
       use ed_misc_coms , only : dtlsm              & ! intent(in)
-                              , fast_diagnostics   & ! intent(in)
                               , current_time       ! ! intent(in)
       use ed_max_dims  , only : n_dbh              ! ! intent(in)
       use consts_coms  , only : umol_2_kgC         & ! intent(in)
@@ -96,7 +88,6 @@ module budget_utils
       real                                    , intent(in)    :: old_can_shv
       real                                    , intent(in)    :: old_can_co2
       real                                    , intent(in)    :: old_can_rhos
-      real                                    , intent(in)    :: old_can_temp
       real                                    , intent(in)    :: old_can_prss
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)                         , pointer       :: cpatch
@@ -756,7 +747,6 @@ module budget_utils
       use consts_coms          , only : day_sec     & ! intent(in)
                                       , umol_2_kgC  ! ! intent(in)
       use ed_max_dims          , only : n_dbh       ! ! intent(in)
-      use ed_misc_coms         , only : ddbhi       ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite
@@ -774,9 +764,7 @@ module budget_utils
       real                  , intent(out) :: sapb_storage_resp
       !----- Local variables --------------------------------------------------------------!
       type(patchtype), pointer            :: cpatch
-      integer                             :: k
       integer                             :: ico
-      integer                             :: idbh
       !------------------------------------------------------------------------------------!
 
       !----- Initializing some variables. -------------------------------------------------!

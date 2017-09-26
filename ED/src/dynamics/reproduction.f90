@@ -7,7 +7,7 @@ module reproduction_module
 ! PFT-specific reproduction properties.  No reproduction will happen if the user didn't    !
 ! want it, in which case the seedling biomass will go to the litter pools.                 !
 !------------------------------------------------------------------------------------------!
-subroutine reproduction(cgrid, month)
+subroutine reproduction(cgrid,month)
    use stable_cohorts
    use stable_cohorts
    use update_derived_props_module
@@ -22,8 +22,6 @@ subroutine reproduction(cgrid, month)
                                  , zero_recruit             & ! subroutine
                                  , copy_recruit             & ! subroutine
                                  , seedling_mortality       & ! intent(in)
-                                 , c2n_stem                 & ! intent(in)
-                                 , l2n_stem                 & ! intent(in)
                                  , min_recruit_size         & ! intent(in)
                                  , one_plant_c              & ! intent(in)
                                  , c2n_recruit              & ! intent(in)
@@ -34,10 +32,8 @@ subroutine reproduction(cgrid, month)
                                  , qsw                      & ! intent(in)
                                  , q                        & ! intent(in)
                                  , agf_bs                   & ! intent(in)
-                                 , sla                      & ! intent(in)
                                  , hgt_min                  & ! intent(in)
                                  , plant_min_temp           ! ! intent(in)
-   use decomp_coms        , only : f_labile                 ! ! intent(in)
    use ed_max_dims        , only : n_pft                    ! ! intent(in)
    use fuse_fiss_utils    , only : sort_cohorts             & ! subroutine
                                  , terminate_cohorts        & ! subroutine
@@ -51,7 +47,6 @@ subroutine reproduction(cgrid, month)
    use allometry          , only : dbh2bd                   & ! function
                                  , size2bl                  & ! function
                                  , h2dbh                    & ! function
-                                 , dbh2h                    & ! function
                                  , ed_biomass               & ! function
                                  , area_indices             & ! subroutine
                                  , dbh2krdepth              ! ! function
@@ -120,7 +115,7 @@ subroutine reproduction(cgrid, month)
 
       !----- The big loops start here. -------------------------------------------------------!
       polyloop: do ipy = 1,cgrid%npolygons
-      
+
          !---------------------------------------------------------------------------------!
          !     Check whether this is late spring/early summer.  This is needed for         !
          ! temperate broadleaf deciduous trees.  Late spring means June in the Northern    !
@@ -232,7 +227,6 @@ subroutine reproduction(cgrid, month)
                                                   ,rectest%hite,rectest%dbh                &
                                                   ,csite%soil_water(:,ipa)                 &
                                                   ,cpoly%ntext_soil(:,isi)                 &
-                                                  ,cpoly%green_leaf_factor(:,isi)          &
                                                   ,rectest%paw_avg,rectest%elongf          &
                                                   ,rectest%phenology_status                &
                                                   ,rectest%bleaf,rectest%broot             &
@@ -274,7 +268,7 @@ subroutine reproduction(cgrid, month)
                            !---------------------------------------------------------------!
 
                            !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0                          
+                           csite%repro(ipft,ipa) = 0.0
                            !---------------------------------------------------------------!
                         end if
                         !------------------------------------------------------------------!
@@ -289,7 +283,7 @@ subroutine reproduction(cgrid, month)
 
 
                            !----- Reset the carbon available for reproduction. ------------!
-                           csite%repro(ipft,ipa) = 0.0                          
+                           csite%repro(ipft,ipa) = 0.0
                            !---------------------------------------------------------------!
                         end if
                      end select
@@ -376,8 +370,8 @@ subroutine reproduction(cgrid, month)
 
 
                      !----- Copy from recruitment table (II). -----------------------------!
-                     cpatch%nplant          (ico) = recruit(inew)%nplant 
-                     cpatch%bdead           (ico) = recruit(inew)%bdead 
+                     cpatch%nplant          (ico) = recruit(inew)%nplant
+                     cpatch%bdead           (ico) = recruit(inew)%bdead
                      cpatch%paw_avg         (ico) = recruit(inew)%paw_avg
                      cpatch%elongf          (ico) = recruit(inew)%elongf
                      cpatch%phenology_status(ico) = recruit(inew)%phenology_status
@@ -407,10 +401,7 @@ subroutine reproduction(cgrid, month)
                      !    Compute initial AGB and Basal Area.  Their derivatives will be   !
                      ! zero.                                                               !
                      !---------------------------------------------------------------------!
-                     cpatch%agb      (ico) = ed_biomass( cpatch%bdead     (ico)            &
-                                                       , cpatch%bleaf     (ico)            &
-                                                       , cpatch%bsapwooda (ico)            &
-                                                       , cpatch%pft       (ico) )
+                     cpatch%agb      (ico) = ed_biomass(cpatch, ico)
                      cpatch%basarea  (ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                      cpatch%dagb_dt  (ico) = 0.0
                      cpatch%dlnagb_dt(ico) = 0.0
@@ -434,11 +425,7 @@ subroutine reproduction(cgrid, month)
                      !    Obtain derived properties.                                       !
                      !---------------------------------------------------------------------!
                      !----- Find LAI, WAI, and CAI. ---------------------------------------!
-                     call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                &
-                                      ,cpatch%bdead(ico),cpatch%balive(ico)                &
-                                      ,cpatch%dbh(ico),cpatch%hite(ico),cpatch%pft(ico)    &
-                                      ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico)     &
-                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                     call area_indices(cpatch, ico)
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
@@ -485,9 +472,8 @@ subroutine reproduction(cgrid, month)
                !----- Update the cohort distribution. -------------------------------------!
                if(cpatch%ncohorts > 0 .and. maxcohort >= 0) then
                   call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-                  call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi)              &
-                                   ,cpoly%lsl(isi),.false.)
-                  call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
+                  call fuse_cohorts(csite,ipa,cpoly%lsl(isi),.false.)
+                  call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                end if
                !---------------------------------------------------------------------------!
 
@@ -503,7 +489,7 @@ subroutine reproduction(cgrid, month)
 
                !----- Since cohorts may have changed, update patch properties... ----------!
                call update_patch_derived_props(csite,ipa)
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
             end do update_patch_loop
             !------------------------------------------------------------------------------!
@@ -532,7 +518,7 @@ subroutine reproduction(cgrid, month)
       ! patch and 1 patch per pft and disturbance type).
       !------------------------------------------------------------------------------------!
 
-      
+
       !----- The big loops start here. ----------------------------------------------------!
       polyloop_big: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -557,7 +543,7 @@ subroutine reproduction(cgrid, month)
                  write (unit=*,fmt='(a,1x,es12.5)') ' + NCOHORTS: ',cpatch%ncohorts
                  call fatal_error('NCOHORTS can never be greater than 1 for big-leaf runs' &
                                   ,'reproduction' ,'reproduction.f90')
-               end if 
+               end if
                !---------------------------------------------------------------------------!
 
 
@@ -566,7 +552,7 @@ subroutine reproduction(cgrid, month)
                !      "Loop" over cohorts.  Reproduction does not create new patches,      !
                ! instead it will add population to the existing cohort.                    !
                !---------------------------------------------------------------------------!
-               cohortloop_big: do ico = 1, cpatch%ncohorts  
+               cohortloop_big: do ico = 1, cpatch%ncohorts
 
 
                   !------ Current PFT. ----------------------------------------------------!
@@ -635,7 +621,7 @@ subroutine reproduction(cgrid, month)
                      !    Will only reproduce/grow if on-allometry so dont' have to worry  !
                      ! about elongation factor.                                            !
                      !---------------------------------------------------------------------!
-                     bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
+                     bleaf_plant     = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                      broot_plant     = bleaf_plant * q(ipft)
                      bsapwood_plant  = bleaf_plant * qsw(ipft) * cpatch%hite(ico)
                      balive_plant    = bleaf_plant + broot_plant + bsapwood_plant
@@ -661,12 +647,7 @@ subroutine reproduction(cgrid, month)
                      ! changed.                                                            !
                      !---------------------------------------------------------------------!
                      !----- Find LAI, WAI, and CAI. ---------------------------------------!
-                     call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)                &
-                                      ,cpatch%bdead(ico),cpatch%balive(ico)                &
-                                      ,cpatch%dbh(ico),cpatch%hite(ico)                    &
-                                      ,cpatch%pft(ico),cpatch%sla(ico)                     &
-                                      ,cpatch%lai(ico),cpatch%wai(ico)                     &
-                                      ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                     call area_indices(cpatch, ico)
                      !----- Find heat capacity and vegetation internal energy. ------------!
                      call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                &
                                        ,cpatch%bsapwooda(ico),cpatch%nplant(ico)           &
@@ -722,7 +703,7 @@ subroutine reproduction(cgrid, month)
 
                !----- Since cohorts may have changed, update patch properties... ----------!
                call update_patch_derived_props(csite,ipa)
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
             end do update_patch_loop_big
             !------------------------------------------------------------------------------!
@@ -754,7 +735,7 @@ end subroutine reproduction
 !==========================================================================================!
 !      This subroutine will bypass all reproduction.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine reproduction_eq_0(cgrid, month)
+subroutine reproduction_eq_0(cgrid)
    use ed_state_vars      , only : edtype                & ! structure
                                  , polygontype           & ! structure
                                  , sitetype              & ! structure
@@ -765,50 +746,22 @@ subroutine reproduction_eq_0(cgrid, month)
    use pft_coms           , only : recruittype           & ! structure
                                  , zero_recruit          & ! subroutine
                                  , copy_recruit          & ! subroutine
-                                 , seedling_mortality    & ! intent(in)
-                                 , c2n_stem              & ! intent(in)
-                                 , l2n_stem              & ! intent(in)
-                                 , min_recruit_size      & ! intent(in)
-                                 , c2n_recruit           & ! intent(in)
-                                 , seed_rain             & ! intent(in)
-                                 , include_pft           & ! intent(in)
-                                 , include_pft_ag        & ! intent(in)
-                                 , qsw                   & ! intent(in)
-                                 , q                     & ! intent(in)
-                                 , sla                   & ! intent(in)
-                                 , hgt_min               & ! intent(in)
-                                 , plant_min_temp        ! ! intent(in)
-   use decomp_coms        , only : f_labile              ! ! intent(in)
+                                 , seedling_mortality    ! ! intent(in)
    use ed_max_dims        , only : n_pft                 ! ! intent(in)
    use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
-                                 , terminate_cohorts     & ! subroutine
-                                 , fuse_cohorts          & ! subroutine
-                                 , split_cohorts         ! ! subroutine
-   use phenology_coms     , only : repro_scheme          ! ! intent(in)
-   use mem_polygons       , only : maxcohort             ! ! intent(in)
+                                 , terminate_cohorts     ! ! subroutine
    use consts_coms        , only : pio4                  ! ! intent(in)
    use ed_therm_lib       , only : calc_veg_hcap         ! ! function
-   use grid_coms          , only : nzg                   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
-   integer          , intent(in) :: month
    !----- Local variables -----------------------------------------------------------------!
    type(polygontype), pointer          :: cpoly
    type(sitetype)   , pointer          :: csite
-   type(patchtype)  , pointer          :: cpatch
-   type(patchtype)  , pointer          :: temppatch
    type(recruittype), dimension(n_pft) :: recruit
-   type(recruittype)                   :: rectest
    integer                             :: ipy
    integer                             :: isi
    integer                             :: ipa
-   integer                             :: ico
-   !----- Saved variables -----------------------------------------------------------------!
-   logical          , save             :: first_time = .true.
-   !---------------------------------------------------------------------------------------!
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -975,7 +928,7 @@ subroutine seed_dispersal(cpoly,late_spring)
             !------------------------------------------------------------------------------!
          end do donpaloop1
          !---------------------------------------------------------------------------------!
-      end do siteloop1 
+      end do siteloop1
       !------------------------------------------------------------------------------------!
 
    case (2,3)
@@ -1023,7 +976,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                   bseed_maygo = 0.
                end if
                !---------------------------------------------------------------------------!
-               
+
                !---------------------------------------------------------------------------!
                !   Spread the seedlings across all patches in this polygon.                !
                !---------------------------------------------------------------------------!
@@ -1050,7 +1003,7 @@ subroutine seed_dispersal(cpoly,late_spring)
                                                     + bseed_stays
                      end if
                      !---------------------------------------------------------------------!
-                     
+
                   end do recpaloop2
                   !------------------------------------------------------------------------!
                end do recsiloop2

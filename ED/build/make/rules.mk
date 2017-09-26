@@ -293,11 +293,6 @@ patch_pft_size_profile_mod.o : $(ED_UTILS)/patch_pft_size_profile_mod.F90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-great_circle.o : $(ED_UTILS)/great_circle.f90
-	/bin/rm -f $(<F:.f90=.f90) 
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
 grid_coms.o : $(ED_MEMORY)/grid_coms.f90
 	/bin/rm -f $(<F:.f90=.f90) 
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -400,11 +395,6 @@ numutils.o: $(ED_UTILS)/numutils.f90
 
 old_twostream_rad.o : $(ED_DYNAMICS)/old_twostream_rad.f90
 	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
-optimiz_coms.o : $(ED_MEMORY)/optimiz_coms.f90
-	/bin/rm -f $(<F:.f90=.f90) 
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 

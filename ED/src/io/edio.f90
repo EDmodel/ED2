@@ -3,25 +3,19 @@
 !     This is the main driver for file output in ED.                                       !
 !------------------------------------------------------------------------------------------!
 subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
-                    ,annual_time,history_time,dcycle_time,the_end)
+                    ,annual_time,history_time,dcycle_time)
 
    use ed_state_vars, only : edgrid_g                & ! structure
                            , filltab_alltypes        & ! subroutine
                            , filltables              ! ! intent(inout)
-   use grid_coms    , only : ngrids                  & ! intent(in)
-                           , nzg                     ! ! intent(in)
-   use ed_node_coms , only : mynum                   & ! intent(in)
-                           , nnodetot                ! ! intent(in)
-   use ed_misc_coms , only : dtlsm                   & ! intent(in)
-                           , current_time            & ! intent(in)
-                           , isoutput                & ! intent(in)
+   use grid_coms    , only : ngrids                  ! ! intent(in)
+   use ed_misc_coms , only : isoutput                & ! intent(in)
                            , ifoutput                & ! intent(in)
                            , itoutput                & ! intent(in)
                            , writing_dail            & ! intent(in)
                            , writing_mont            & ! intent(in)
                            , writing_dcyc            & ! intent(in)
-                           , iprintpolys             & ! intent(in)
-                           , frqsum                  ! ! intent(in)
+                           , iprintpolys             ! ! intent(in)
    use average_utils, only : aggregate_polygon_fmean & ! sub-routine
                            , normalize_ed_fmean_vars & ! sub-routine
                            , integrate_ed_dmean_vars & ! sub-routine
@@ -37,7 +31,6 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
                            , zero_ed_yearly_vars     ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in)  :: the_end
    logical, intent(in)  :: analysis_time
    logical, intent(in)  :: dail_analy_time
    logical, intent(in)  :: mont_analy_time
@@ -61,7 +54,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_
        dail_analy_time .or. mont_analy_time .or. dcyc_analy_time .or. annual_time ) then
 
       if (filltables) then
-         
+
          !----- Re-hash the tables. -------------------------------------------------------!
          call filltab_alltypes
          !----- Reset the rehash flag. ----------------------------------------------------!

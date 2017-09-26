@@ -24,6 +24,11 @@
 #           no code problem, and you want results asap. This will not check for any        #
 #           problems, which means that this is an option suitable for end users, not de-   #
 #           velopers.                                                                      #
+#                                                                                          #
+#                                                                                          #
+# usage example:                                                                           #
+#                                                                                          #
+# install.sh --kind A --platform intel                                                     #
 #------------------------------------------------------------------------------------------#
 
 #----- Define the number of arguments. ----------------------------------------------------#
@@ -68,8 +73,8 @@ done
 
 if [ "${PLATFORM}" == "" ]
 then
-   echo "No platform specified, defaulting to gfortran."
-   PLATFORM="gfortran"
+   echo "No platform specified, defaulting to intel."
+   PLATFORM="intel"
 fi
 
 if [ "${KIND}" == "" ]
@@ -117,7 +122,7 @@ cd ${BIN}
 # Link to makefiles, includes, and shell scripts
 ln -sf ../make/*.mk ./
 ln -sf ../make/Makefile ./
-ln -sf ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
+ln -sf ../make/include.mk.${PLATFORM} ./include.mk
 ln -sf ../shell/* ./
 touch dependency.mk
 
