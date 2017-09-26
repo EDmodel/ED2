@@ -2490,10 +2490,10 @@ subroutine init_pft_alloc_params()
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
    !---- [KIM] new tropical parameters. ---------------------------------------------------!
-   rho(1)     = 0.40   ! 0.20
-   rho(2)     = 0.40   ! 0.53
-   rho(3)     = 0.60   ! 0.71
-   rho(4)     = 0.87   ! 0.90
+   rho(1)     = 0.20   ! 0.40
+   rho(2)     = 0.53   ! 0.40
+   rho(3)     = 0.71   ! 0.60
+   rho(4)     = 0.90   ! 0.87
    rho(5)     = 0.20   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:16) = 0.20
