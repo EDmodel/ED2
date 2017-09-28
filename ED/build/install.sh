@@ -85,10 +85,10 @@ fi
 
 # Set opt and bin
 case ${KIND} in
-['A','B','C','D']*)
+['A','B','C']*)
    OPT='dbg'
    ;;
-['E']*)
+['D','E','F']*)
    OPT='opt'
    ;;
 *)
@@ -122,7 +122,7 @@ cd ${BIN}
 # Link to makefiles, includes, and shell scripts
 ln -sf ../make/*.mk ./
 ln -sf ../make/Makefile ./
-ln -sf ../make/include.mk.${PLATFORM} ./include.mk
+ln -sf ../make/include.${PLATFORM}.mk ./include.mk
 ln -sf ../shell/* ./
 touch dependency.mk
 
