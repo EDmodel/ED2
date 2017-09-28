@@ -75,10 +75,10 @@ subroutine load_ed_ecosystem_params()
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    This flag should be used to define whether the plant is tropical/subtropical or    !
    ! not.                                                                                  !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    is_tropical(1:4)   = .true.
    is_tropical(5:11)  = .false.
    is_tropical(12:13) = .false.
@@ -93,9 +93,9 @@ subroutine load_ed_ecosystem_params()
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    This flag should be used to define whether the plant is tree or grass              !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    is_grass(1)     = .true.
    is_grass(2:4)   = .false.
    is_grass(5)     = .true.
@@ -281,7 +281,7 @@ subroutine init_ed_misc_coms
 
 
    !----- Flag specifying whether to search for a target year in pss/css. -----------------!
-   use_target_year = 0    
+   use_target_year = 0
    !---------------------------------------------------------------------------------------!
 
 
@@ -405,8 +405,8 @@ subroutine init_met_params()
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
    atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32�C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [�mol/mol]. ---------------------!
-   atm_co2_min = 100.     ! 
-   atm_co2_max = 1100.    ! 
+   atm_co2_min = 100.     !
+   atm_co2_max = 1100.    !
    !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
    prss_min =  45000. ! It may crash if you run a simulation in Mt. Everest.
    prss_max = 110000. ! It may crash if you run a simulation under water.
@@ -1049,7 +1049,7 @@ subroutine init_can_air_params()
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
    veg_height_min        = minval(hgt_min)
-   minimum_canopy_depth  = 5.0  ! alternative: minval(hgt_min) 
+   minimum_canopy_depth  = 5.0  ! alternative: minval(hgt_min)
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
    exar  = 2.5
@@ -1076,7 +1076,7 @@ subroutine init_can_air_params()
    csh         = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
    dl79        = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   beta_s       = 5.0          ! Beta 
+   beta_s       = 5.0          ! Beta
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    abh91       = -1.00         ! -a from equation  (28) and (32)
    bbh91       = -twothirds    ! -b from equation  (28) and (32)
@@ -1119,7 +1119,7 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
 
 
-   
+
    !----- Legacy variable, we can probably remove it. -------------------------------------!
    ez  = 0.172
    !---------------------------------------------------------------------------------------!
@@ -1189,7 +1189,7 @@ subroutine init_can_air_params()
    !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
    pm0       = 1.0
    !----- Surface drag parameters (Massman 1997). -----------------------------------------!
-   c1_m97    = 0.320 
+   c1_m97    = 0.320
    c2_m97    = 0.264
    c3_m97    = 15.1
    !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
@@ -1633,7 +1633,7 @@ subroutine init_pft_photo_params()
    Rd_decay_e  (1:17) = Vm_decay_e  (1:17)
    Rd_hor      (1:17) = Vm_hor      (1:17)
    Rd_q10      (1:17) = Vm_q10      (1:17)
- 
+
    !---------------------------------------------------------------------------------------!
    !    Respiration terms.  Here we must check whether this will run Foley-based or        !
    ! Collatz-based photosynthesis, because the respiration/Vm ratio is constant in the     !
@@ -1676,7 +1676,7 @@ subroutine init_pft_photo_params()
    stomatal_slope(15)        = mphoto_c4
    stomatal_slope(16)        = mphoto_trc3
    stomatal_slope(17)        = mphoto_trc3
- 
+
    !----- Define the stomatal slope (aka the b term, given in umol/m2/s). -----------------!
    cuticular_cond(1)         = bphoto_c4
    cuticular_cond(2)         = bphoto_blc3
@@ -2221,7 +2221,7 @@ subroutine init_pft_mort_params()
    !---------------------------------------------------------------------------------------!
    if (treefall_disturbance_rate == 0.) then
       !------ No disturbance rate, set time to reach canopy to infinity. ------------------!
-      time2canopy = huge(1.) 
+      time2canopy = huge(1.)
       lambda_ref  = 0.
       lambda_eff  = 0.
 
@@ -2452,7 +2452,7 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !     MLO.   These are the new parameters obtained by adjusting a curve that is similar !
    !            to the modified Chave's equation to include wood density effect on the     !
-   !            DBH->AGB allometry as described by:                                        ! 
+   !            DBH->AGB allometry as described by:                                        !
    !                                                                                       !
    !            Baker, T. R., and co-authors, 2004: Variation in wood density determines   !
    !               spatial patterns in Amazonian forest biomass.  Glob. Change Biol., 10,  !
@@ -2483,17 +2483,17 @@ subroutine init_pft_alloc_params()
 
    !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
    C2B    = 2.0
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Wood density.  Currently only tropical PFTs need it.  C3 grass density will be    !
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
    !---- [KIM] new tropical parameters. ---------------------------------------------------!
-   rho(1)     = 0.40   ! 0.20
-   rho(2)     = 0.40   ! 0.53
-   rho(3)     = 0.60   ! 0.71
-   rho(4)     = 0.87   ! 0.90
+   rho(1)     = 0.20   ! 0.40
+   rho(2)     = 0.53   ! 0.40
+   rho(3)     = 0.71   ! 0.60
+   rho(4)     = 0.90   ! 0.87
    rho(5)     = 0.20   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:16) = 0.20
@@ -2642,7 +2642,7 @@ subroutine init_pft_alloc_params()
    b2Ht(5)     = -0.75
    b2Ht(6)     = -0.03884
    b2Ht(7)     = -0.03884
-   b2Ht(8)     = -0.04445 
+   b2Ht(8)     = -0.04445
    b2Ht(9)     = -0.06534
    b2Ht(10)    = -0.04964
    b2Ht(11)    = -0.05404
@@ -2739,7 +2739,7 @@ subroutine init_pft_alloc_params()
 
 
 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
    !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
    !   DBH_ADULT   -- minimum DBH for the tree to be considered adult (used only when      !
@@ -2910,7 +2910,7 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
    end do
    !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
-   b1Bs_small(1:4)   = 0.0 
+   b1Bs_small(1:4)   = 0.0
    b1Bs_small(5)     = 1.0e-5
    b1Bs_small(6)     = 0.147
    b1Bs_small(7)     = 0.147
@@ -2919,8 +2919,8 @@ subroutine init_pft_alloc_params()
    b1Bs_small(10)    = 0.1617
    b1Bs_small(11)    = 0.235
    b1Bs_small(12:13) = 1.0e-5
-   b1Bs_small(14:15) = 0.0 
-   b1Bs_small(16)    = 0.0 
+   b1Bs_small(14:15) = 0.0
+   b1Bs_small(16)    = 0.0
    b1Bs_small(17)    = 0.0
    !----- DBH-stem allometry slope [dimensionless]. ---------------------------------------!
    b2Bs_small(1:4)   = 0.0
@@ -3011,28 +3011,28 @@ subroutine init_pft_alloc_params()
       b1Bl_small(    4)  = 0.08915847
       b1Bl_small(14:16)  = 0.04538826
       b1Bl_small(   17)  = 0.07322115
-      
+
       b2Bl_small(    1)  = 1.316338
       b2Bl_small(    2)  = 1.509083
       b2Bl_small(    3)  = 1.646576
       b2Bl_small(    4)  = 1.663773
       b2Bl_small(14:16)  = 1.316338
       b2Bl_small(   17)  = 1.509083
-      
+
       b1Bs_small(    1)  = 0.05291854
       b1Bs_small(    2)  = 0.15940854
       b1Bs_small(    3)  = 0.21445616
       b1Bs_small(    4)  = 0.26890751
       b1Bs_small(14:16)  = 0.05291854
       b1Bs_small(   17)  = 0.15940854
-      
+
       b2Bs_small(    1)  = 3.706955
       b2Bs_small(    2)  = 2.342587
       b2Bs_small(    3)  = 2.370640
       b2Bs_small(    4)  = 2.254336
       b2Bs_small(14:16)  = 3.706955
       b2Bs_small(   17)  = 2.342587
-      
+
       b1Bl_large    (:)  = b1Bl_small(:)
       b2Bl_large    (:)  = b2Bl_small(:)
       b1Bs_large    (:)  = b1Bs_small(:)
@@ -3724,27 +3724,27 @@ subroutine init_pft_derived_params()
       !------------------------------------------------------------------------------------!
       !    Minimum size (measured as biomass of living and structural tissues) allowed in  !
       ! a cohort.  Cohorts with less biomass than this are going to be terminated.         !
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       min_cohort_size(ipft)  = 0.1 * min_recruit_size(ipft)
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
       !    Seed_rain is the density of seedling that will be added from somewhere else.    !
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       seed_rain(ipft)  = 0.1 * init_density(ipft)
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       !    The following variable is the absolute minimum cohort population that a cohort  !
       ! can have.  This should be used only to avoid nplant=0, but IMPORTANT: this will    !
       ! lead to a ridiculously small cohort almost guaranteed to be extinct and SHOULD BE  !
       ! USED ONLY IF THE AIM IS TO ELIMINATE THE COHORT.                                   !
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
       negligible_nplant(ipft) = onesixth * min_cohort_size(ipft) / (bdead_max + balive_max)
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
       !----- Find the recruit carbon to nitrogen ratio. -----------------------------------!
@@ -3752,7 +3752,7 @@ subroutine init_pft_derived_params()
          / (balive_min * ( f_labile(ipft) / c2n_leaf(ipft)             &
          + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
          + bdead_min/c2n_stem(ipft))
-      !------------------------------------------------------------------------------------! 
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -3827,7 +3827,7 @@ subroutine init_disturb_params
    implicit none
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
-   treefall_hite_threshold = 10.0 
+   treefall_hite_threshold = 10.0
 
    !----- Cut-off for fire survivorship (bush fires versus canopy fire). ------------------!
    fire_hite_threshold     = 5.0
@@ -3839,7 +3839,7 @@ subroutine init_disturb_params
    agriculture_on = 0
 
    !----- Earliest year at which plantations occur. ---------------------------------------!
-   plantation_year = 1960 
+   plantation_year = 1960
 
    !----- Number of years that a plantation requires to reach maturity. -------------------!
    plantation_rotation = 25.0
@@ -3848,8 +3848,8 @@ subroutine init_disturb_params
    min_harvest_biomass = 0.001
 
    !----- Years that a non-plantation patch requires to reach maturity. -------------------!
-   mature_harvest_age = 50.0 
-   
+   mature_harvest_age = 50.0
+
    !---------------------------------------------------------------------------------------!
    !     If include_fire is 1, then fire may occur if total (ground + underground) water   !
    ! converted to meters falls below this threshold.                                       !
@@ -4003,7 +4003,7 @@ subroutine init_physiology_params()
    real, parameter :: tau_refval_f96 =  4500.   ! Reference tau                (F96)
    real, parameter :: tau_refval_c91 =  2600.   ! Reference tau                (C91)
    real, parameter :: tau_hor        = -5000.   ! "Activation energy" for tau  (F96)
-   real, parameter :: tau_q10        =  0.57    ! "Q10" term for tau           (C91)  
+   real, parameter :: tau_q10        =  0.57    ! "Q10" term for tau           (C91)
    !---------------------------------------------------------------------------------------!
 
 
@@ -4138,7 +4138,7 @@ subroutine init_physiology_params()
          compp_q10     = kco2_q10 / ko2_q10                        ! "Q10" term     [     ---]
       !------------------------------------------------------------------------------------!
    end select
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -4265,11 +4265,11 @@ subroutine init_hydro_coms
    MoistRateTuning = 1.0
 
    MoistSatThresh = 0.95
-  
+
    Moist_dWT = 2.0
 
    FracLiqRunoff = 0.5
-  
+
    GrassLAImax = 4.0
 
    inverse_runoff_time = 0.1
@@ -4540,7 +4540,7 @@ subroutine init_soil_coms
          soil(nslcon)%slcons  = (10.**(-0.60 + 1.26*slxsand - 0.64*slxclay))               &
             * 0.0254/hr_sec
          !----- Hydraulic conductivity at saturation at top [ m/s ], for TOPMODEL style. --!
-         
+
          !----- Soil moisture at saturation [ m^3/m^3 ]. ----------------------------------!
          soil(nslcon)%slmsts  = (50.5 - 14.2*slxsand - 3.7*slxclay) / 100.
          !----- Soil field capacity[ m^3/m^3 ]. -------------------------------------------!
@@ -4761,7 +4761,7 @@ subroutine init_soil_coms
    soil_rough8  = dble(soil_rough )
    snow_rough8  = dble(snow_rough )
    ny07_eq04_a8 = dble(ny07_eq04_a)
-   ny07_eq04_m8 = dble(ny07_eq04_m) 
+   ny07_eq04_m8 = dble(ny07_eq04_m)
    freezecoef8  = dble(freezecoef )
 
    !---------------------------------------------------------------------------------------!
@@ -4920,10 +4920,10 @@ subroutine init_phen_coms
    !----- Vm0 weight, the inverse of the window. ------------------------------------------!
    vm0_wgt         = 1. / vm0_window
    !----- Parameters that define the instantaneous Vm0 as a function of leaf life span. ---!
-   vm0_tran        =1.98    ! 8.5  
-   vm0_slope       =6.53    ! 7.0  
-   vm0_amp         =57.2    ! 42.0 
-   vm0_min         = 7.31   ! 18.0 
+   vm0_tran        =1.98    ! 8.5
+   vm0_slope       =6.53    ! 7.0
+   vm0_amp         =57.2    ! 42.0
+   vm0_min         = 7.31   ! 18.0
    !---------------------------------------------------------------------------------------!
 
    return
@@ -5133,14 +5133,14 @@ subroutine init_rk4_params()
    !    The following variables control the performance of the Runge-Kutta and Euler       !
    ! integration schemes. Think twice before changing them...                              !
    !---------------------------------------------------------------------------------------!
-   maxstp      = 100000000           ! Maximum number of intermediate steps. 
+   maxstp      = 100000000           ! Maximum number of intermediate steps.
    rk4eps      = dble(rk4_tolerance) ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps         ! The inverse of desired accuracy.
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
-                                     !     time step and stop the run in case any of these 
+   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every
+                                     !     time step and stop the run in case any of these
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!
 
@@ -5151,7 +5151,7 @@ subroutine init_rk4_params()
    debug         = .false.  ! Verbose output for debug                             [   T|F]
    toocold       = 1.5315d2 ! Minimum temperature for saturation specific hum.     [     K]
    toohot        = 3.5315d2 ! Maximum temperature for saturation specific hum.     [     K]
-   lai_to_cover  = 1.5d0    ! Canopies with LAI less than this number  are assumed to be 
+   lai_to_cover  = 1.5d0    ! Canopies with LAI less than this number  are assumed to be
                             !     open, ie, some fraction of the rain-drops can reach
                             !    the soil/litter layer unimpeded.
    !---------------------------------------------------------------------------------------!
@@ -5172,7 +5172,7 @@ subroutine init_rk4_params()
    !------ Daily error statistics (count how often a variable shrunk the time step). ------!
    record_err     = btest(idetailed,4)
    !---------------------------------------------------------------------------------------!
-   errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
+   errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.
    detail_pref    = 'thermo_state_'          ! Prefix for the detailed thermodynamic file
