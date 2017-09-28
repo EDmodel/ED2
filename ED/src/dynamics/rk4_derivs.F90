@@ -157,6 +157,11 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
    real(kind=8)                     :: surface_water    ! Temp. variable. Available liquid
    real(kind=8)                     :: avg_th_cond      ! Mean thermal conductivity
    real(kind=8)                     :: avg_hydcond      ! Mean thermal conductivity
+   real(kind=8)                     :: wloss_tot_k1     ! MdP temporal parameter
+   real(kind=8)                     :: wloss_tot_k2     ! MdP temporal parameter
+   real(kind=8)                     :: uint_here        ! MdP temporal parameter
+   real(kind=8)                     :: uint_here1       ! MdP temporal parameter
+   real(kind=8)                     :: rk4aux_k1        ! MdP temporal parameter
    integer                          :: ibuff            ! The shared memory processor index
                                                         ! for the buffer space (privatize)
    !---------------------------------------------------------------------------------------!
@@ -716,23 +721,34 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
 
 
 
-
    !---- Update soil moisture and energy from transpiration/root uptake. ------------------!
    if (rk4aux(ibuff)%any_resolvable) then
       do k1 = klsl, mzg    ! loop over extracted water
-         do k2=k1,mzg
-            if (rk4site%ntext_soil(k2) /= 13) then
-               !---------------------------------------------------------------------------!
-               !     Transpiration happens only when there is some water left down to this !
-               ! layer.                                                                    !
-               !---------------------------------------------------------------------------!
-               if (rk4aux(ibuff)%avail_h2o_int(k1) > 0.d0) then
+
+         !---------------------------------------------------------------------------!
+         !     Transpiration happens only when there is some water left down to this !
+         ! layer.                                                                    !
+         !---------------------------------------------------------------------------!
+
+         if (rk4aux(ibuff)%avail_h2o_int(k1) > 0.d0) then
+
+            wloss_tot_k1 = 0.d0
+
+            !-------- Integrate the total to be removed from this layer. ------------!
+            do ico=1,cpatch%ncohorts
+               wloss_tot_k1 = wloss_tot_k1 + rk4aux(ibuff)%extracted_water(ico,k1)
+            end do
+            !------------------------------------------------------------------------!
+
+            rk4aux_k1 = rk4aux(ibuff)%avail_h2o_int(k1)
+
+            do k2=k1,mzg
+               if (rk4site%ntext_soil(k2) /= 13) then
                   !------------------------------------------------------------------------!
                   !    Find the contribution of layer k2 for the transpiration from        !
                   ! cohorts that reach layer k1.                                           !
                   !------------------------------------------------------------------------!
-                  ext_weight = rk4aux(ibuff)%avail_h2o_lyr(k2)                             &
-                             / rk4aux(ibuff)%avail_h2o_int(k1)
+                  ext_weight = rk4aux(ibuff)%avail_h2o_lyr(k2) / rk4aux_k1
 
                   !------------------------------------------------------------------------!
                   !    Find the loss of water from layer k2 due to cohorts that reach at   !
@@ -744,50 +760,43 @@ subroutine leaftw_derivs(mzg,initp,dinitp,csite,ipa,dt,is_hybrid)
                   ! vapour happens at the leaf level, the internal energy must stay with   !
                   ! the leaves so energy is preserved.                                     !
                   !------------------------------------------------------------------------!
-                  wloss_tot      = 0.d0
-                  qloss_tot      = 0.d0
-                  wvlmeloss_tot  = 0.d0
-                  qvlmeloss_tot  = 0.d0
+
+                  uint_here     = tl2uint8(initp%soil_tempk(k2),1.d0)
+
+                  !------------------------------------------------------------------------!
+                  !      Add the internal energy to the cohort.  This energy will be       !
+                  ! eventually lost to the canopy air space because of transpiration,      !
+                  ! but we will do it in two steps so we ensure energy is conserved.       !
+                  !------------------------------------------------------------------------!
                   do ico=1,cpatch%ncohorts
-                     !----- Find the loss from this cohort. -------------------------------!
                      wloss         = rk4aux(ibuff)%extracted_water(ico,k1) * ext_weight
-                     qloss         = wloss * tl2uint8(initp%soil_tempk(k2),1.d0)
-                     wvlmeloss     = wloss * wdnsi8 * dslzi8(k2)
-                     qvlmeloss     = qloss * dslzi8(k2)
-                     !---------------------------------------------------------------------!
+                     uint_here1    = wloss * uint_here
 
-
-                     !---------------------------------------------------------------------!
-                     !      Add the internal energy to the cohort.  This energy will be    !
-                     ! eventually lost to the canopy air space because of transpiration,   !
-                     ! but we will do it in two steps so we ensure energy is conserved.    !
-                     !---------------------------------------------------------------------!
-                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico)  + qloss
-                     dinitp%veg_energy(ico)  = dinitp%veg_energy(ico)   + qloss
-                     initp%hflx_lrsti(ico) = initp%hflx_lrsti(ico)      + qloss
-                     !---------------------------------------------------------------------!
-
-                     !----- Integrate the total to be removed from this layer. ------------!
-                     wloss_tot     = wloss_tot     + wloss
-                     qloss_tot     = qloss_tot     + qloss
-                     wvlmeloss_tot = wvlmeloss_tot + wvlmeloss
-                     qvlmeloss_tot = qvlmeloss_tot + qvlmeloss
-                     !---------------------------------------------------------------------!
+                     dinitp%leaf_energy(ico) = dinitp%leaf_energy(ico) + uint_here1
+                     dinitp%veg_energy(ico)  = dinitp%veg_energy(ico)  + uint_here1
+                     initp%hflx_lrsti(ico)   = initp%hflx_lrsti(ico)   + uint_here1
                   end do
                   !------------------------------------------------------------------------!
 
-
+                  !--------- Derive the total to be removed from tthis layer --------------!
+                  wloss_tot     = wloss_tot_k1 * ext_weight
+                  wloss_tot_k2  = wloss_tot    * dslzi8(k2)
+                  wvlmeloss_tot = wloss_tot_k2 * wdnsi8
+                  qvlmeloss_tot = wloss_tot_k2 * uint_here
+                  !------------------------------------------------------------------------!
 
                   !----- Update derivatives of water, energy, and transpiration. ----------!
                   dinitp%soil_water   (k2) = dinitp%soil_water(k2)    - wvlmeloss_tot
                   dinitp%soil_energy  (k2) = dinitp%soil_energy(k2)   - qvlmeloss_tot
                   dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wloss_tot
                   !------------------------------------------------------------------------!
+
+
                end if
                !---------------------------------------------------------------------------!
-            end if
+            end do
             !------------------------------------------------------------------------------!
-         end do
+         end if
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
