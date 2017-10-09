@@ -1,7 +1,0 @@
-<map id="fillvar_l" name="fillvar_l">
-<area shape="rect" id="node2" href="$ed__print_8_f90.html#a17e1b1a77bc2db36d7fe7f318ea3dccd" title="print_fields" alt="" coords="113,5,197,32"/>
-<area shape="rect" id="node3" href="$edio_8f90.html#ad8881e6d009ffe427f1fa02d73ccc46b" title="ed_output" alt="" coords="245,5,324,32"/>
-<area shape="rect" id="node4" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="372,5,451,32"/>
-<area shape="rect" id="node5" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="499,5,572,32"/>
-<area shape="rect" id="node6" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="620,5,671,32"/>
-</map>

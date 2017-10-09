@@ -1,6 +1,5 @@
 
 <!-- NOTE: This page uses a combination of HTML and markdown to display properly in both GitHub and Doxygen. -->
-@mainpage
 
 ## Important: Please see <a href="#doxygit"> Doxygen and Git Commits </a>
 

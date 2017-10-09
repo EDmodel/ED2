@@ -1,6 +1,0 @@
-<map id="fill_history_grid_p11" name="fill_history_grid_p11">
-<area shape="rect" id="node2" href="$ed__init__full__history_8_f90.html#a8ef30add9a4d7b956d161cef5d36f08b" title="fill_history_grid" alt="" coords="189,5,297,32"/>
-<area shape="rect" id="node3" href="$ed__init__full__history_8_f90.html#aae7df21bdc388f535c22bf77f8acb93f" title="init_full_history_restart" alt="" coords="345,5,497,32"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="545,5,619,32"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="667,5,717,32"/>
-</map>

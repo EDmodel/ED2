@@ -1,7 +1,0 @@
-<map id="init_nbg_cohorts" name="init_nbg_cohorts">
-<area shape="rect" id="node2" href="$namespaceallometry.html#a31aa8db06e86ec74efb5e692417399df" title="allometry::h2dbh" alt="" coords="179,5,297,32"/>
-<area shape="rect" id="node3" href="$namespacefuse__fiss__utils.html#a31e4835d2465d1400c7cbbb51976b341" title="fuse_fiss_utils::sort\l_cohorts" alt="" coords="171,57,305,98"/>
-<area shape="rect" id="node4" href="$ed__type__init_8f90.html#af7c8e0a520dfca016f7eb7cf1c08b6ca" title="init_ed_cohort_vars" alt="" coords="171,123,305,149"/>
-<area shape="rect" id="node5" href="$namespaceallometry.html#ac1523ea0e0ef8d2dd6a429f61a013c1c" title="allometry::dbh2krdepth" alt="" coords="353,123,508,149"/>
-<area shape="rect" id="node6" href="$namespaceallometry.html#aab2b2cee61cac31529246b043121c7de" title="allometry::dbh2vol" alt="" coords="556,123,683,149"/>
-</map>
