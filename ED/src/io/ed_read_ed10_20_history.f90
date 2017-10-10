@@ -904,7 +904,7 @@ subroutine read_ed10_ed20_history_file
          end do
 
          !----- Initialise site-level variables. ------------------------------------------!
-         call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+         call init_ed_site_vars(cpoly)
 
 
          !----- Get a diagnostic on the polygon's vegetation. -----------------------------!

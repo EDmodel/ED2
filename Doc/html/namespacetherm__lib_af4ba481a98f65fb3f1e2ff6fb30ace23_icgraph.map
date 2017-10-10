@@ -1,6 +1,0 @@
-<map id="therm_lib::tslf" name="therm_lib::tslf">
-<area shape="rect" id="node2" href="$namespacetherm__lib.html#a7448671da269afe05b39189c581f790b" title="therm_lib::tslif" alt="" coords="169,31,272,57"/>
-<area shape="rect" id="node5" href="$namespacetherm__lib.html#a4a7268a45c9e0384a7711ec8b1d2b24e" title="therm_lib::dewpoint" alt="" coords="153,81,288,108"/>
-<area shape="rect" id="node3" href="$namespacetherm__lib.html#a0611d2fb3b39f0af58f3417bd88c43f0" title="therm_lib::dewfrostpoint" alt="" coords="336,5,495,32"/>
-<area shape="rect" id="node4" href="$namespacetherm__lib.html#a567e8e6a001cab2a0991a88f7b7fc28f" title="therm_lib::thetaeiv2thil" alt="" coords="340,56,491,83"/>
-</map>

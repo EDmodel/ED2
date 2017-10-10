@@ -1,6 +1,0 @@
-<map id="putconfigstring" name="putconfigstring">
-<area shape="rect" id="node2" href="$ed__xml__config_8f90.html#adac334da78b1efa5c92f7caf53e2d855" title="write_ed_xml_config" alt="" coords="160,13,299,39"/>
-<area shape="rect" id="node3" href="$ed__params_8f90.html#a2c0c887700d85a5be6fbd26b071c8da6" title="overwrite_with_xml\l_config" alt="" coords="347,5,477,47"/>
-<area shape="rect" id="node4" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="525,13,599,39"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="647,13,697,39"/>
-</map>

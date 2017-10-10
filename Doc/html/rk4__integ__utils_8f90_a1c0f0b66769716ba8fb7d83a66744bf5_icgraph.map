@@ -1,5 +1,0 @@
-<map id="initialize_misc_stepvars" name="initialize_misc_stepvars">
-<area shape="rect" id="node2" href="$ed__model_8_f90.html#a9804b9ca3fcb1b4e17171d786d50c32c" title="Begins, updates, and outputs results from ecosystem simulation. " alt="" coords="212,5,291,32"/>
-<area shape="rect" id="node3" href="$ed__driver_8_f90.html#a5706bd8bee60960fe8166de1870e47da" title="ed_driver" alt="" coords="339,5,412,32"/>
-<area shape="rect" id="node4" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="460,5,511,32"/>
-</map>

@@ -1,6 +1,0 @@
-<map id="ed_gridset" name="ed_gridset">
-<area shape="rect" id="node2" href="$ed__para__init_8_f90.html#a68f1e6ff24b110af5116b415ee0cee92" title="get_grid" alt="" coords="136,5,204,32"/>
-<area shape="rect" id="node3" href="$ed__para__init_8_f90.html#af802cdd6cc28a466fdcd01c66f3bc5a7" title="ed_node_decomp" alt="" coords="252,5,376,32"/>
-<area shape="rect" id="node4" href="$ed__1st_8_f90.html#a68fd3739f8d8de8d87a9a887e3b30c32" title="ed_1st_master" alt="" coords="424,5,532,32"/>
-<area shape="rect" id="node5" href="$edmain_8_f90.html#a8ec2266d83cd6c0b762cbcbc92c0af3d" title="main" alt="" coords="580,5,631,32"/>
-</map>

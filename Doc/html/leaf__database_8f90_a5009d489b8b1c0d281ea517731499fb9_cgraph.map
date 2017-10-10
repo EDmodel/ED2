@@ -1,7 +1,0 @@
-<map id="leaf_database" name="leaf_database">
-<area shape="rect" id="node2" href="$namespacehdf5__utils.html#ab621eee22271edfd3bf37b44d5b657e6" title="hdf5_utils::shdf5_open_f" alt="" coords="156,5,317,32"/>
-<area shape="rect" id="node3" href="$leaf__database_8f90.html#ac052df73efd4165c3df27c597cbe7760" title="get_file_indices" alt="" coords="181,56,292,83"/>
-<area shape="rect" id="node4" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="197,107,276,133"/>
-<area shape="rect" id="node5" href="$leaf__database_8f90.html#a2bc9d20bb929b6dcaf614245dc11fa28" title="ed_datp_datq" alt="" coords="187,157,287,184"/>
-<area shape="rect" id="node6" href="$numutils_8f90.html#ad368a70da00278adffefa8d34a5f87c6" title="rank_down" alt="" coords="195,208,279,235"/>
-</map>

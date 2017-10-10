@@ -1,8 +1,0 @@
-<map id="putconfigint" name="putconfigint">
-<area shape="rect" id="node2" href="$libxml2f90_8f90__pp_8f90.html#a102819b1160e7cccf698c60979acaef5" title="libxml2f90_ll_opentag" alt="" coords="143,5,289,32"/>
-<area shape="rect" id="node4" href="$libxml2f90_8f90__pp_8f90.html#aedf302b29e22ba3b7312a7650ac0134b" title="libxml2f90_ll_addid" alt="" coords="151,56,281,83"/>
-<area shape="rect" id="node7" href="$libxml2f90_8f90__pp_8f90.html#a23bfc785d957e044414ea18be75ac87a" title="libxml2f90_ll_closetag" alt="" coords="141,107,291,133"/>
-<area shape="rect" id="node3" href="$libxml2f90_8f90__pp_8f90.html#a9ffe2ce74c95d1e444dd17c02cf7ca19" title="libxml2f90_ll_inittag" alt="" coords="351,5,485,32"/>
-<area shape="rect" id="node5" href="$libxml2f90_8f90__pp_8f90.html#ae1a542a061a5705a796b5373b0dcaf1b" title="libxml2f90_error_getline" alt="" coords="339,81,497,108"/>
-<area shape="rect" id="node6" href="$libxml2f90_8f90__pp_8f90.html#abef5a4be7710d60ad11aab5a59fe5325" title="libxml2f90_getline" alt="" coords="545,81,671,108"/>
-</map>
