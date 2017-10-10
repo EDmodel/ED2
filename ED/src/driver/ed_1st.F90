@@ -35,6 +35,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    integer         , intent(in) :: headnode_num ! this process rank on a parallel run
    character(len=*), intent(in) :: name_name    ! namelist file name
    !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: ierr
    real                         :: w1
    real                         :: wtime_start 
    !----- Local parameters, this sub-routine shan't ever be called by coupled runs. -------!
@@ -169,6 +170,8 @@ subroutine ed_1st_node(init)
 #endif
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: init
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: ierr
    !---------------------------------------------------------------------------------------!
 
    !----- Make sure the node is synchronised with all fellows. ----------------------------!

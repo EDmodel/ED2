@@ -539,7 +539,6 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(min_patch_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
 
-   call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(zrough,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -1705,8 +1704,6 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_site_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_patch_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-
-   call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(zrough,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

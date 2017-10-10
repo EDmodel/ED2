@@ -31,6 +31,10 @@ subroutine ed_init_atm()
                                     , fuse_cohorts           & ! subroutine
                                     , terminate_cohorts      & ! subroutine
                                     , split_cohorts          ! ! subroutine
+   use ed_node_coms          , only : nnodetot               & ! intent(in)
+                                    , mynum                  & ! intent(in)
+                                    , sendnum                & ! intent(in)
+                                    , recvnum                ! ! intent(in)
    use ed_therm_lib          , only : calc_veg_hcap          & ! subroutine
                                     , ed_grndvap             ! ! subroutine
    use canopy_layer_coms     , only : canstr                 & ! intent(out)
@@ -66,6 +70,7 @@ subroutine ed_init_atm()
    integer                        :: ncohorts
    integer                        :: npatches
    integer                        :: ping
+   integer                        :: ierr
    real                           :: site_area_i
    real                           :: poly_area_i
    real                           :: poly_lai
