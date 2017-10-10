@@ -19,17 +19,19 @@ close all;
 test_name = 'r85ghubrapid';
 
 use_m34 = true;       % SOI Manaus km34
-use_ata = true;       % SOI Atacama
+use_ata = false;       % SOI Atacama
 use_s67 = true;       % SOI Santarem km 67
 use_har = true;       % SOI Harvard Forest
-use_pdg = true;       % SOI Pe de Gigante
+use_pdg = false;       % SOI Pe de Gigante
 use_cax = true;       % SOI Caxiuana
 use_ton = true;       % SOI Tonzi (temperate)
-use_tnf = true;       % SOI Tapajos National Forest
-use_pet = true;       % SOI Petrolina
+use_tnf = false;       % SOI Tapajos National Forest
+use_gyf = true;        % SOI Paracou
+use_pet = true;        % SOI Petrolina
 use_hip = true;       % SOI Petrolina (short high frequency)
 use_him = true;       % SOI Manaus (short high frequency)
-use_rjg = true;       % GRIDDED centered on Rio Jaru
+use_rjg = false;       % GRIDDED centered on Rio Jaru
+
 
 %==========================================================================
 
@@ -43,6 +45,7 @@ site_name  = {'Manaus km 34', ...
               'Caxiuana',...
               'Tonzi',...
               'Tapajos National Forest',...
+              'Paracou',...
               'Petrolina'};
 
 siteid     = {'m34',...
@@ -53,6 +56,7 @@ siteid     = {'m34',...
               'cax',...
               'ton',...
               'tnf',...
+              'gyf',...
               'pet'};
 
 hifr_name = {'Petrolina High Frequency','Manaus High Frequency'};
@@ -115,7 +119,7 @@ display(sprintf('\nThe following sites will be assessed:\n'));
 
 use_site = [use_m34,use_ata,use_s67,...
             use_har,use_pdg,use_cax,...
-            use_ton,use_tnf,use_pet];
+            use_ton,use_tnf,use_gyf,use_pet];
         
 use_hifr = [use_hip,use_him];
 
@@ -128,25 +132,33 @@ for is=1:nsite
         siteid{is});
     dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
         siteid{is});
-
-    srch=dir(strcat(testout_srch,'*out'));
-    testout_str=sprintf('%s/%s',test_name,srch(end).name);
-
-    srch=dir(strcat(dbugout_srch,'*out'));
-    dbugout_str=sprintf('%s/%s',test_name,srch(end).name);
-
-    srch=dir(strcat(mainout_srch,'*out'));
-    mainout_str=sprintf('%s/%s',test_name,srch(end).name);
-
-    if(use_site(is))
-    if (exist(testout_str,'file') && ...
-        exist(mainout_str,'file') && ...
-        exist(dbugout_str,'file'))
-        use_site(is)=true;
-        display(sprintf('%s - %s',siteid{is},site_name{is}));
-    else
+    
+    srch_test=dir(strcat(testout_srch,'*out'));
+    srch_dbug=dir(strcat(dbugout_srch,'*out'));
+    srch_main=dir(strcat(mainout_srch,'*out'));
+    
+    
+    if (isempty(srch_test) | isempty(srch_dbug) | isempty(srch_main))
+        
         use_site(is)=false;
-    end
+        continue
+        
+    else
+        
+        testout_str=sprintf('%s/%s',test_name,srch_test(end).name);
+        dbugout_str=sprintf('%s/%s',test_name,srch_dbug(end).name);
+        mainout_str=sprintf('%s/%s',test_name,srch_main(end).name);
+        
+        if(use_site(is))
+            if (exist(testout_str,'file') && ...
+                    exist(mainout_str,'file') && ...
+                    exist(dbugout_str,'file'))
+                use_site(is)=true;
+                display(sprintf('%s - %s',siteid{is},site_name{is}));
+            else
+                use_site(is)=false;
+            end
+        end
     end
 end
 
@@ -157,53 +169,73 @@ for ih=1:nhifr
         hifrid{ih});
     dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
         hifrid{ih});
-
-    srch=dir(strcat(testout_srch,'*out'));
-    testout_str=sprintf('%s/%s',test_name,srch(end).name);
-
-    srch=dir(strcat(dbugout_srch,'*out'));
-    dbugout_str=sprintf('%s/%s',test_name,srch(end).name);
-
-    srch=dir(strcat(mainout_srch,'*out'));
-    mainout_str=sprintf('%s/%s',test_name,srch(end).name);            
-
-    if(use_hifr(ih))
-    if (exist(testout_str,'file') && ...
-        exist(mainout_str,'file') && ...
-        exist(dbugout_str,'file'))
-        use_hifr(ih)=true;
-        display(sprintf('%s - %s',hifrid{ih},hifr_name{ih}));
+    
+    
+    srch_test=dir(strcat(testout_srch,'*out'));
+    srch_dbug=dir(strcat(dbugout_srch,'*out'));
+    srch_main=dir(strcat(mainout_srch,'*out'));
+    
+    
+    if (isempty(srch_test) | isempty(srch_dbug) | isempty(srch_main))
+        
+        use_site(ih)=false;
+        continue
+        
     else
-        use_hifr(ih)=false;
-    end
+        
+        testout_str=sprintf('%s/%s',test_name,srch_test(end).name);
+        dbugout_str=sprintf('%s/%s',test_name,srch_dbug(end).name);
+        mainout_str=sprintf('%s/%s',test_name,srch_main(end).name);
+        
+        if(use_hifr(ih))
+            if (exist(testout_str,'file') && ...
+                    exist(mainout_str,'file') && ...
+                    exist(dbugout_str,'file'))
+                use_hifr(ih)=true;
+                display(sprintf('%s - %s',hifrid{ih},hifr_name{ih}));
+            else
+                use_hifr(ih)=false;
+            end
+        end
     end
 end
 
 for ig=1:ngrid
-
+    
     testout_srch = sprintf('%s/test_%s.',test_name, ...
         gridid{ig});
     mainout_srch  = sprintf('%s/main_%s.',test_name, ...
         gridid{ig});
     dbugout_srch  = sprintf('%s/dbug_%s.',test_name, ...
         gridid{ig});
-
-    srch=dir(strcat(testout_srch,'*out'));
-    testout_str=sprintf('%s/%s',test_name,srch(end).name);
-    srch=dir(strcat(dbugout_srch,'*out'));
-    dbugout_str=sprintf('%s/%s',test_name,srch(end).name);
-    srch=dir(strcat(mainout_srch,'*out'));
-    mainout_str=sprintf('%s/%s',test_name,srch(end).name);
-
-    if(use_grid(ig))
-    if (exist(testout_str,'file') && ...
-        exist(mainout_str,'file') && ...
-        exist(dbugout_str,'file'))
-        use_grid(ig)=true;
-        display(sprintf('%s - %s',gridid{ig},grid_name{ig}));
+    
+    
+    srch_test=dir(strcat(testout_srch,'*out'));
+    srch_dbug=dir(strcat(dbugout_srch,'*out'));
+    srch_main=dir(strcat(mainout_srch,'*out'));
+    
+    
+    if (isempty(srch_test) | isempty(srch_dbug) | isempty(srch_main))
+        
+        use_site(ig)=false;
+        continue
+        
     else
-        use_grid(ig)=false;
-    end
+        
+        testout_str=sprintf('%s/%s',test_name,srch_test(end).name);
+        dbugout_str=sprintf('%s/%s',test_name,srch_dbug(end).name);
+        mainout_str=sprintf('%s/%s',test_name,srch_main(end).name);
+        
+        if(use_grid(ig))
+            if (exist(testout_str,'file') && ...
+                    exist(mainout_str,'file') && ...
+                    exist(dbugout_str,'file'))
+                use_grid(ig)=true;
+                display(sprintf('%s - %s',gridid{ig},grid_name{ig}));
+            else
+                use_grid(ig)=false;
+            end
+        end
     end
 end
 
