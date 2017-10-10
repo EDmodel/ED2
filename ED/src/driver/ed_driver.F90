@@ -34,6 +34,7 @@ subroutine ed_driver()
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
    character(len=12)           :: c1
+   integer                     :: ierr
    integer                     :: ifm
    integer                     :: ping
    real                        :: t1

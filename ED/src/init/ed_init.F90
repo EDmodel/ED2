@@ -308,7 +308,14 @@ subroutine load_ecosystem_state()
    use ed_misc_coms      , only : ied_init_mode   & ! intent(in)
                                 , ibigleaf        ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
-   use ed_node_coms      , only : mynum           ! ! intent(in)
+   use ed_node_coms      , only : mynum           & ! intent(in)
+                                , nmachs          & ! intent(in)
+                                , nnodetot        & ! intent(in)
+                                , mchnum          & ! intent(in)
+                                , machs           & ! intent(in)
+                                , master_num      & ! intent(in)
+                                , sendnum         & ! intent(in)
+                                , recvnum         ! ! intent(in)
    use grid_coms         , only : ngrids          ! ! intent(in)
    use ed_state_vars     , only : edgrid_g        ! ! structure
 
@@ -317,6 +324,7 @@ subroutine load_ecosystem_state()
    include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
+   integer                :: ierr
    integer                :: igr
    integer                :: ping 
    !---------------------------------------------------------------------------------------!

@@ -88,6 +88,7 @@ subroutine ed_model()
    character(len=28)  :: fmthead
    character(len=32)  :: fmtcntr
    integer            :: ifm
+   integer            :: ierr
    integer            :: nn
    integer            :: ndays
    logical            :: analysis_time
