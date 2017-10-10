@@ -280,7 +280,6 @@ subroutine ed_masterput_nl(par_run)
                                    , sm_fire                   & ! intent(in)
                                    , time2canopy               & ! intent(in)
                                    , min_patch_area            ! ! intent(in)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(in)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(in)
    use canopy_radiation_coms, only : icanrad                   & ! intent(in)
                                    , ltrans_vis                & ! intent(in)
@@ -540,7 +539,6 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(min_patch_area,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
 
-   call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(zrough,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
@@ -1443,7 +1441,6 @@ subroutine ed_nodeget_nl
                                    , sm_fire                   & ! intent(out)
                                    , time2canopy               & ! intent(out)
                                    , min_patch_area            ! ! intent(out)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
                                    , ltrans_vis                & ! intent(out)
@@ -1707,8 +1704,6 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_site_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(min_patch_area,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-
-   call MPI_Bcast(ioptinpt,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(zrough,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
