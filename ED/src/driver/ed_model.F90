@@ -88,7 +88,6 @@ subroutine ed_model()
    character(len=28)  :: fmthead
    character(len=32)  :: fmtcntr
    integer            :: ifm
-   integer            :: ierr
    integer            :: nn
    integer            :: ndays
    logical            :: analysis_time
@@ -111,6 +110,10 @@ subroutine ed_model()
    real               :: wtime2
    real               :: t2
    real               :: wtime_tot
+   !----- Local variables (MPI only). -----------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer            :: ierr
+#endif
    !----- Local constants. ----------------------------------------------------------------!
    logical         , parameter :: whos_slow=.false. ! This will print out node numbers
                                                     !    during synchronization, so you

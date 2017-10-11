@@ -308,6 +308,7 @@ subroutine load_ecosystem_state()
    use ed_misc_coms      , only : ied_init_mode   & ! intent(in)
                                 , ibigleaf        ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
+#if defined(RAMS_MPI)
    use ed_node_coms      , only : mynum           & ! intent(in)
                                 , nmachs          & ! intent(in)
                                 , nnodetot        & ! intent(in)
@@ -316,6 +317,9 @@ subroutine load_ecosystem_state()
                                 , master_num      & ! intent(in)
                                 , sendnum         & ! intent(in)
                                 , recvnum         ! ! intent(in)
+#else
+   use ed_node_coms      , only : mynum           ! ! intent(in)
+#endif
    use grid_coms         , only : ngrids          ! ! intent(in)
    use ed_state_vars     , only : edgrid_g        ! ! structure
 
@@ -324,9 +328,12 @@ subroutine load_ecosystem_state()
    include 'mpif.h'
 #endif
    !----- Local variables -----------------------------------------------------------------!
-   integer                :: ierr
    integer                :: igr
    integer                :: ping 
+   !----- Local variables (MPI only). -----------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                :: ierr
+#endif
    !---------------------------------------------------------------------------------------!
 
    ping = 741776

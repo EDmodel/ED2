@@ -1,0 +1,108 @@
+#==========================================================================================#
+#==========================================================================================#
+#    Makefile include.mk.opt.hpc                                                           #
+#                                                                                          #
+#    Compilation controls optimised for TravisCI.                                          #
+#------------------------------------------------------------------------------------------#
+
+#----- Define make (gnu make works best). -------------------------------------------------#
+MAKE=/usr/bin/make
+#------------------------------------------------------------------------------------------#
+
+
+
+#----- Main path for compilation. ---------------------------------------------------------#
+BASE=$(ED_ROOT)/build/
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    HDF 5 libraries.                                                                      #
+#                                                                                          #
+#    Since ED-2.1, this is no longer optional for real simulations.  You must have the     #
+# HDF5 libraries compiled with the same compiler you set for F_COMP and C_COMP.  You may   #
+# still be able to compile without HDF5 but the code is not going to run.                  #
+#------------------------------------------------------------------------------------------#
+USE_HDF5=1
+HDF5_HOME=/usr
+HDF5_INCS=-I$(HDF5_HOME)/include
+HDF5_LIBS=-lz -L$(HDF5_HOME)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     If you have a version of hdf5 compiled in parallel, then you may benefit from        #
+# collective I/O, then use this flag = 1.  Otherwise, set it to zero.                      #
+#------------------------------------------------------------------------------------------#
+USE_COLLECTIVE_MPIO=0
+#------------------------------------------------------------------------------------------#
+
+
+
+#################################### COMPILER SETTINGS #####################################
+CMACH=SUNHPC
+F_COMP=mpif90
+C_COMP=mpicc
+LOADER=mpif90
+LIBS=
+MOD_EXT=mod
+#------------------------------------------------------------------------------------------#
+
+USE_INTERF=1
+
+
+##################################### COMPILER OPTIONS #####################################
+#------------------------------------------------------------------------------------------#
+# A/B/C/D. Strict compilation.  It turns on several checks and turn off optimisation.      #
+# E. Performance compilation. It turns off most checks, allowing faster runs.              #
+#------------------------------------------------------------------------------------------#
+ifeq ($(KIND_COMP),)
+   KIND_COMP=E
+endif
+#------------------------------------------------------------------------------------------#
+ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
+   F_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=nan            \
+           -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fbounds-check           \
+           -frecursive
+   C_OPTS= -O0 -DLITTLE  -g
+   LOADER_OPTS= -O0 -ffree-line-length-none -g -fimplicit-none -Wall -finit-real=nan       \
+           -ffpe-trap=invalid,zero,overflow,underflow -fbacktrace -fbounds-check           \
+           -frecursive
+   #---------------------------------------------------------------------------------------#
+endif
+ifeq ($(KIND_COMP),E)
+   F_OPTS= -O3 -ffree-line-length-none -frecursive -fno-whole-file -static
+   C_OPTS= -O0 -DLITTLE  -g -static
+   LOADER_OPTS= -O3 -ffree-line-length-none -frecursive -fno-whole-file
+   #---------------------------------------------------------------------------------------#
+endif
+#------------------------------------------------------------------------------------------#
+############################################################################################
+
+
+
+
+#------------------------------------------------------------------------------------------#
+#     If using mpicc and mpif90 as compilers (recommended), leave MPI_PATH, PAR_INCS, and  #
+# PAR_LIBS blank, otherwise provide the includes and libraries for mpi.  Either way, don't #
+# change PAR_DEFS unless you know what you are doing.                                      #
+#------------------------------------------------------------------------------------------#
+MPI_PATH=
+PAR_INCS=
+PAR_LIBS=
+PAR_DEFS=-DRAMS_MPI
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Archive options.                                                                     #
+#------------------------------------------------------------------------------------------#
+#------ For IBM, HP, SGI, ALPHA, LINUX, and MAC_OS_X use these. ---------------------------#
+ARCHIVE=ar rs
+#------ For NEC SX-6. ---------------------------------------------------------------------#
+#ARCHIVE=sxar rs
+#------ For SUN, CONVEX. ------------------------------------------------------------------#
+#ARCHIVE=ar r'
+#------------------------------------------------------------------------------------------#

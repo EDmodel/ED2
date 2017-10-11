@@ -41,25 +41,40 @@ USE_INTERF=1
 USE_MPIWTIME=1
 
 # Compile flags ------------------------------------------------
-
 CMACH=PC_LINUX1
-
 F_COMP=mpif90
-
-F_OPTS= -g -fopenmp -O0 -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
-
 C_COMP=mpicc
-
-#C_OPTS= -O2 -DLITTLE  -g -static -traceback -debug extended
-C_OPTS = -g -fopenmp -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
-
 LOADER=mpif90
+#F_COMP = gfortran
+#C_COMP = gcc
 #LOADER = gfortran
 
-LOADER_OPTS=${F_OPTS}
+##################################### COMPILER OPTIONS #####################################
+#------------------------------------------------------------------------------------------#
+# A/B/C/D. Debugging, strictest compilation flags, lowest performance.                     #
+# E.       Running, most relaxed compilation flags, highest performance.                   #
+#------------------------------------------------------------------------------------------#
+ifeq ($(KIND_COMP),)
+   KIND_COMP=E
+endif
+ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
+   F_OPTS= -g -fopenmp -O0 -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion          \
+           -fbounds-check -fbacktrace -fdump-core
+   C_OPTS = -g -fopenmp -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
+   LOADER_OPTS=${F_OPTS}
+endif
+ifeq ($(KIND_COMP),E)
+   F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+   #F_OPTS= -V -FR -O2 -recursive -static -Vaxlib  -check all -g -fpe0 -ftz  -debug extended \
+   #        -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+   #F_OPTS= -03
+   C_OPTS = -O3 -DLITTLE
+   #C_OPTS= -O2 -DLITTLE  -g -static -traceback -debug extended
+   LOADER_OPTS=${F_OPTS}
+endif
 
-C_LOADER=mpicc
-#C_LOADER_OPTS=-v -g -traceback -static
+
+
 
 LIBS=
 MOD_EXT=mod

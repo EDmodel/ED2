@@ -1,8 +1,8 @@
 #==========================================================================================#
 #==========================================================================================#
-#    Makefile include.mk.opt.odyssey                                                       #
+#    Makefile include.mk.opt.hpc                                                           #
 #                                                                                          #
-#    Compilation controls optimised for Odyssey cluster at Harvard.                        #
+#    Compilation controls optimised for SunHPC at LNCC.                                    #
 #------------------------------------------------------------------------------------------#
 
 #----- Define make (gnu make works best). -------------------------------------------------#
@@ -24,10 +24,10 @@ BASE=$(ED_ROOT)/build/
 # still be able to compile without HDF5 but the code is not going to run.                  #
 #------------------------------------------------------------------------------------------#
 USE_HDF5=1
-#HDF5_PATH=/n/sw/hdf5/hdf5-1.8.2_intel-11.0.083
-HDF5_PATH=/n/sw/centos6/hdf5-1.8.11_openmpi-1.7.2_intel-13.0.079
+ZLIB_PATH=/scratch/bramsolam/marcos.longo/Util/zlib-1.2.8/intel
+HDF5_PATH=/scratch/bramsolam/marcos.longo/Util/hdf5-1.8.17/intel
 HDF5_INCS=-I$(HDF5_PATH)/include
-HDF5_LIBS= -lz -lm -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
+HDF5_LIBS=-L$(ZLIB_PATH)/lib -lz -L$(HDF5_PATH)/lib -lhdf5 -lhdf5_fortran -lhdf5_hl
 #------------------------------------------------------------------------------------------#
 
 
@@ -42,10 +42,10 @@ USE_COLLECTIVE_MPIO=0
 
 
 #################################### COMPILER SETTINGS #####################################
-CMACH=PC_LINUX1
-F_COMP=mpif90
-C_COMP=mpicc
-LOADER=mpif90
+CMACH=SUNHPC
+F_COMP=ifort
+C_COMP=icc
+LOADER=ifort
 LIBS=
 MOD_EXT=mod
 #------------------------------------------------------------------------------------------#
@@ -88,22 +88,22 @@ ifeq ($(KIND_COMP),A)
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces        \
            -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback
-   LOADER_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used   \
-                -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone            \
-                -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces
+   C_OPTS= -O0 -DLITTLE  -g -traceback -static
+   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
+               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
+               -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=0
    F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
-           -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces        \
+           -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces       \
            -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used   \
-                -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone            \
-                -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces   \
+   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
+               -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
+               -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
@@ -112,18 +112,18 @@ ifeq ($(KIND_COMP),C)
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
+   LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
                -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
                -assume byterecl
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O0 -recursive -check all-fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check  \
+   F_OPTS= -FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check \
            -implicitnone -assume byterecl -static
    C_OPTS= -O0 -DLITTLE  -g -traceback -static
-   LOADER_OPTS=-FR -O0 -recursive -check all-fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check  \
-               -implicitnone -assume byterecl
+   LOADER_OPTS=-FR -O0 -recursive -check all -fpe0 -no-ftz -traceback -ftrapuv             \
+               -fp-stack-check -implicitnone -assume byterecl
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
@@ -148,7 +148,8 @@ endif
 MPI_PATH=
 PAR_INCS=
 PAR_LIBS=
-PAR_DEFS=-DRAMS_MPI
+PAR_DEFS=
+#PAR_DEFS=-DRAMS_MPI
 #------------------------------------------------------------------------------------------#
 
 

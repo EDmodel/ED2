@@ -10339,6 +10339,7 @@ module ed_state_vars
                               , vt_info                  & ! intent(inout)
                               , var_table                & ! intent(inout)
                               , reset_vt_vector_pointers ! ! sub-routine
+#if defined(RAMS_MPI)
       use ed_node_coms , only : mynum                    & ! intent(in)
                               , nnodetot                 & ! intent(in)
                               , mchnum                   & ! intent(in)
@@ -10347,6 +10348,10 @@ module ed_state_vars
                               , sendnum                  & ! intent(in)
                               , recvnum                  & ! intent(in)
                               , master_num               ! ! intent(in)                              
+#else
+      use ed_node_coms , only : mynum                    & ! intent(in)
+                              , nnodetot                 ! ! intent(in)
+#endif
       use ed_max_dims  , only : maxgrds                  & ! intent(in)
                               , maxmach                  ! ! intent(in)
       implicit none
@@ -10368,12 +10373,13 @@ module ed_state_vars
       integer                                                  :: ipa
       integer                                                  :: nv
       integer                                                  :: nm
-      integer                                                  :: ierr
+      !----- Local variables (MPI variables). ---------------------------------------------!
 #if defined(RAMS_MPI)
-      integer          , dimension(MPI_STATUS_SIZE)            :: status
-#endif
+      integer                                                  :: ierr
       integer                                                  :: ping
       integer                                                  :: uniqueid
+      integer          , dimension(MPI_STATUS_SIZE)            :: status
+#endif
       !----- Local constants. -------------------------------------------------------------!
       logical                                      , parameter :: verbose = .false.    
       !----- Local saved variables. -------------------------------------------------------!

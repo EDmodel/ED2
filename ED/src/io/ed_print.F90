@@ -14,8 +14,17 @@
 !------------------------------------------------------------------------------------------!
 subroutine print_fields(ifm,cgrid)
  
+#if defined(RAMS_MPI)
+   use ed_node_coms , only : mynum         & ! intent(in)
+                           , nnodetot      & ! intent(in)
+                           , sendnum       & ! intent(in)
+                           , recvnum       & ! intent(in)
+                           , master_num    & ! intent(in)
+                           , machs         ! ! intent(in)
+#else
    use ed_node_coms , only : mynum         & ! intent(in)
                            , nnodetot      ! ! intent(in)
+#endif
    use ed_state_vars, only : edtype        & ! structure
                            , polygontype   ! ! structure
    use ed_misc_coms , only : printvars     & ! intent(in)
@@ -61,6 +70,14 @@ subroutine print_fields(ifm,cgrid)
    integer                                         :: col
    logical                                         :: pvartrue
    logical                                         :: ptr_send
+   !----- Local variables (MPI only). -----------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                                         :: ierr
+   integer                                         :: mast_idmin
+   integer                                         :: mast_idmax
+   integer                                         :: nm
+   logical                                         :: ptr_recv
+#endif
    !----- Local constants. ----------------------------------------------------------------!
    integer                            , parameter  :: maxcols  = 10
    real                               , parameter  :: undef    = -99.9
