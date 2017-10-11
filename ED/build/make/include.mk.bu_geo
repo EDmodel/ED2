@@ -95,7 +95,7 @@ ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
    LOADER_OPTS=${F_OPTS}
 endif
 ifeq ($(KIND_COMP),E)
-   F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+   F_OPTS= -g -fopenmp -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
    C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
    LOADER_OPTS=${F_OPTS}
 endif
