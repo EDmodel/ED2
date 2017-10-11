@@ -34,7 +34,6 @@ subroutine ed_driver()
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
    character(len=12)           :: c1
-   integer                     :: ierr
    integer                     :: ifm
    integer                     :: ping
    real                        :: t1
@@ -42,6 +41,10 @@ subroutine ed_driver()
    real                        :: w2
    real                        :: wtime_start
    logical                     :: patch_detailed
+   !----- Local variable (MPI only). ------------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                     :: ierr
+#endif
    !----- External functions. -------------------------------------------------------------!
    real             , external :: walltime    ! wall time
    !---------------------------------------------------------------------------------------!

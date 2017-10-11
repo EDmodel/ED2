@@ -35,6 +35,10 @@ program main
    integer                               :: nslaves
    integer                               :: isingle
    integer                               :: n
+   !------ Local variables (MPI only). ----------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                               :: ierr
+#endif
    !------ Intrinsic function to return number of arguments (numarg). ---------------------!
    integer                               :: iargc
    !----- OMP information. ----------------------------------------------------------------!

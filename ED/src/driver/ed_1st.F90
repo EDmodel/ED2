@@ -34,8 +34,11 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
    integer         , intent(in) :: nslaves      ! number of slaves on a parallel run
    integer         , intent(in) :: headnode_num ! this process rank on a parallel run
    character(len=*), intent(in) :: name_name    ! namelist file name
-   !----- Local variables. ----------------------------------------------------------------!
+   !----- Local variables (MPI only). -----------------------------------------------------!
+#if defined(RAMS_MPI)
    integer                      :: ierr
+#endif
+   !----- Local variables. ----------------------------------------------------------------!
    real                         :: w1
    real                         :: wtime_start 
    !----- Local parameters, this sub-routine shan't ever be called by coupled runs. -------!
@@ -170,8 +173,10 @@ subroutine ed_1st_node(init)
 #endif
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: init
-   !----- Local variables. ----------------------------------------------------------------!
+   !----- Local variable (MPI only). ------------------------------------------------------!
+#if defined(RAMS_MPI)
    integer             :: ierr
+#endif
    !---------------------------------------------------------------------------------------!
 
    !----- Make sure the node is synchronised with all fellows. ----------------------------!

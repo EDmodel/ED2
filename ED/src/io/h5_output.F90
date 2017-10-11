@@ -33,8 +33,15 @@ subroutine h5_output(vtype)
                            , cnt                   & ! intent(in)
                            , stride                & ! intent(in)
                            , globdims              ! ! intent(in)
+#if defined(RAMS_MPI)
+   use ed_node_coms , only : mynum                 & ! intent(in)
+                           , nnodetot              & ! intent(in)
+                           , recvnum               & ! intent(in)
+                           , sendnum               ! ! intent(in)
+#else
    use ed_node_coms , only : mynum                 & ! intent(in)
                            , nnodetot              ! ! intent(in)
+#endif
    use ed_max_dims  , only : n_pft                 & ! intent(in)
                            , n_dist_types          & ! intent(in)
                            , n_dbh                 & ! intent(in)
@@ -79,6 +86,13 @@ subroutine h5_output(vtype)
    logical                                                       :: exans
    logical                                                       :: new_file
    real(kind=8)                                                  :: dsec
+   !------ Local variables (MPI only). ----------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                                                       :: mpierror
+   integer                                                       :: mpi_size
+   integer                                                       :: mpi_rank
+   integer                                                       :: ierr
+#endif
    !------ HDF specific data types. -------------------------------------------------------!
    integer                                                       :: hdferr
    integer                                                       :: dsetrank

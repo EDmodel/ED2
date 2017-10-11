@@ -75,18 +75,31 @@ USE_MPIWTIME=1
 # CODE IS INTENDED TO BE LINE WIDTH COMPLIANT WITHIN 132 
 
 
-#----------------- gfortran on Linux (optimized build)-----------
+#----------------- gfortran on Linux -----------
 CMACH=PC_GFORTRAN
 F_COMP=mpif90
-#F_OPTS=-g -ffree-line-length-none -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check  #-O2
-F_OPTS= -g -fopenmp -O0 -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
-
 C_COMP=mpicc 
-#C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
-C_OPTS = -g -fopenmp -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
 LOADER=mpif90
-LOADER_OPTS=${F_OPTS}
-C_LOADER=mpicc
+
+##################################### COMPILER OPTIONS #####################################
+#------------------------------------------------------------------------------------------#
+# A/B/C/D. Debugging, strictest compilation flags, lowest performance.                     #
+# E.       Running, most relaxed compilation flags, highest performance.                   #
+#------------------------------------------------------------------------------------------#
+ifeq ($(KIND_COMP),)
+   KIND_COMP=E
+endif
+ifeq ($(KIND_COMP),$(filter $(KIND_COMP), A B C D))
+   F_OPTS= -g -fopenmp -O0 -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+   C_OPTS = -g -fopenmp -O0 -ffpe-trap=invalid,zero,overflow -fbounds-check
+   LOADER_OPTS=${F_OPTS}
+endif
+ifeq ($(KIND_COMP),E)
+   F_OPTS= -g -fopenmp -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check -fbacktrace -fdump-core
+   C_OPTS=-g -O2 -fopenmp #-ffpe-trap=invalid,zero,overflow -fbounds-check #-O2
+   LOADER_OPTS=${F_OPTS}
+endif
+
 LIBS=
 MOD_EXT=mod
 
