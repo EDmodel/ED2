@@ -4,6 +4,7 @@
 #------------------------------------------------------------------------------------------#
 rm(list=ls())
 graphics.off()
+options(warn=0)
 #==========================================================================================#
 #==========================================================================================#
 
@@ -26,7 +27,7 @@ monthbeg       = thismontha   # First month to use
 yearbeg        = thisyeara    # First year to consider
 yearend        = thisyearz    # Maximum year to consider
 reload.data    = TRUE         # Should I reload partially loaded data?
-sasmonth.short = c(2,5,8,11)  # Months for SAS plots (short runs)
+sasmonth.short = sequence(12) # Months for SAS plots (short runs)
 sasmonth.long  = 5            # Months for SAS plots (long runs)
 nyears.long    = 25           # Runs longer than this are considered long runs.
 #------------------------------------------------------------------------------------------#
@@ -75,7 +76,7 @@ source(file.path(srcdir,"load.everything.r"))
 
 
 #----- Load observations. -----------------------------------------------------------------#
-obsrfile = paste(srcdir,"LBA_MIP.v8.RData",sep="/")
+obsrfile = file.path(srcdir,"LBA_MIP.v8.RData")
 load(file=obsrfile)
 #------------------------------------------------------------------------------------------#
 
@@ -101,7 +102,7 @@ for (place in myplaces){
 
 
    #----- Decide how frequently the cohort-level variables should be saved. ---------------#
-   if (yearend - yearbeg + 1 <= nyears.long){
+   if ((yearend - yearbeg + 1) <= nyears.long){
       sasmonth = sasmonth.short
    }else{
       sasmonth = sasmonth.long
@@ -119,7 +120,7 @@ for (place in myplaces){
 
 
    #----- Print a banner to entretain the user. -------------------------------------------#
-   cat(" + Post-processing output from ",lieu,"...","\n")
+   cat0(" + Post-process output from ",lieu,".")
    #---------------------------------------------------------------------------------------#
 
 
@@ -130,11 +131,11 @@ for (place in myplaces){
    #---------------------------------------------------------------------------------------#
    path.data   = file.path(here,place,"rdata_month")
    if (! file.exists(path.data)) dir.create(path.data)
-   ed22.rdata  = file.path(path.data,paste(place,"RData",sep="."))
-   ed22.status = file.path(path.data,paste("status_",place,".txt",sep=""))
+   ed22.rdata  = file.path(path.data,paste0(place,".RData"))
+   ed22.status = file.path(path.data,paste0("status_",place,".txt"))
    if (reload.data && file.exists(ed22.rdata)){
       #----- Load the modelled dataset. ---------------------------------------------------#
-      cat("   - Loading previous session...","\n")
+      cat0("   - Load previous session.")
       load(ed22.rdata)
       tresume = datum$ntimes + 1
       datum   = update.monthly( new.ntimes = ntimes 
@@ -145,7 +146,7 @@ for (place in myplaces){
                               , slz.min    = slz.min
                               )#end update.monthly
    }else{
-      cat("   - Starting new session...","\n")
+      cat0("   - Start new session.")
       tresume    = 1
       datum      = create.monthly( ntimes  = ntimes
                                  , montha  = monthbeg
@@ -199,7 +200,7 @@ for (place in myplaces){
       #------------------------------------------------------------------------------------#
 
       #------ Save the data to the R object. ----------------------------------------------#
-      cat(" + Saving data to ",basename(ed22.rdata),"...","\n")
+      cat0(" + Save data to ",basename(ed22.rdata),".")
       save(datum,file=ed22.rdata)
       #------------------------------------------------------------------------------------#
    }#end if (! complete)

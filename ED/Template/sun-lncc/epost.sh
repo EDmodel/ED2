@@ -123,10 +123,20 @@ monthsdrought="c(12,1,2,3)" # List of months that get drought, if it starts late
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "marcosl" ]
-then
+case ${myself} in
+mlongo)
+   rscpath="${HOME}/util/Rsc"
+   rlibs="${HOME}/util/R-3.1.2/lib"
+   ;;
+marcos.longo)
+   rscpath="${SCRATCH}/Util/Rsc"
+   rlibs="${SCRATCH}/Util/Rlibs"
+   rsync -Prutv ${R_SCRP}/* ${rscpath}
+   ;;
+marcosl)
    rscpath="${HOME}/Util/Rsc"
-fi
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 

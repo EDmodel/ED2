@@ -218,12 +218,20 @@ let n_tasks_max=${n_nodes_max}*${n_tpn}
 #------------------------------------------------------------------------------------------#
 #    Use the general path.                                                                 #
 #------------------------------------------------------------------------------------------#
-if [ ${myself} == "marcos.longo" ]
-then
+case ${myself} in
+mlongo)
+   rscpath="${HOME}/util/Rsc"
+   rlibs="${HOME}/util/R-3.1.2/lib"
+   ;;
+marcos.longo)
    rscpath="${SCRATCH}/Util/Rsc"
    rlibs="${SCRATCH}/Util/Rlibs"
    rsync -Prutv ${R_SCRP}/* ${rscpath}
-fi
+   ;;
+marcosl)
+   rscpath="${HOME}/Util/Rsc"
+   ;;
+esac
 #------------------------------------------------------------------------------------------#
 
 
