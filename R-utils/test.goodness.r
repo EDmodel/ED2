@@ -109,6 +109,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
       #------------------------------------------------------------------------------------#
       #     Find the mean square error of the estimator, and the root mean square error.   #
       #------------------------------------------------------------------------------------#
+      mae         = mean(abs(x.res.ok))
       mse         = bias^2 + sigma^2
       rmse        = sqrt(mse)
       #------------------------------------------------------------------------------------#
@@ -169,6 +170,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
       bias         = NA
       sigma        = NA
       lsq.lnlike   = NA
+      mae          = NA
       mse          = NA
       rmse         = NA
       ss.tot       = NA
@@ -207,6 +209,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                       , bias         = bias
                       , sigma        = sigma
                       , lsq.lnlike   = lsq.lnlike
+                      , mae          = mae
                       , mse          = mse
                       , rmse         = rmse
                       , ss.tot       = ss.tot
@@ -229,6 +232,7 @@ test.goodness <<- function(x.mod,x.obs,x.sigma=NULL,n.parameters=NULL,out.dfr=FA
                  , bias         = bias
                  , sigma        = sigma
                  , lsq.lnlike   = lsq.lnlike
+                 , mae          = mae
                  , mse          = mse
                  , rmse         = rmse
                  , ss.tot       = ss.tot

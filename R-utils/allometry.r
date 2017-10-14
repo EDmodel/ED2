@@ -75,9 +75,9 @@ dbh2bl <<- function(dbh,ipft){
    }#end if
 
    dbhuse = pmin(dbh,pft$dbh.crit[zpft]) + 0. * dbh
-   bleaf  = ifelse( dbhuse %<% pft$dbh.adult[zpft]
-                  , pft$b1Bl.small[zpft] /C2B * dbhuse ^ pft$b2Bl.small[zpft]
-                  , pft$b1Bl.large[zpft] /C2B * dbhuse ^ pft$b2Bl.large[zpft]
+   bleaf  = ifelse( test = dbhuse %<% pft$dbh.adult[zpft]
+                  , yes  = pft$b1Bl.small[zpft] /C2B * dbhuse ^ pft$b2Bl.small[zpft]
+                  , no   = pft$b1Bl.large[zpft] /C2B * dbhuse ^ pft$b2Bl.large[zpft]
                   )#end ifelse
 
    return(bleaf)
@@ -141,9 +141,9 @@ dbh2ca <<- function(dbh,ipft){
    #---------------------------------------------------------------------------------------#
    #     Decide how to calculate based on allometry.                                       #
    #---------------------------------------------------------------------------------------#
-   if (iallom %in% c(0,1,2,3)){
+   if (iallom %in% c(0,1,2)){
       crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
-   }else if (iallom %in% c(4)){
+   }else if (iallom %in% c(3,4)){
       crown = ifelse( dbhuse >= pft$dbh.adult[ipft]
                     , pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
                     , loclai
@@ -201,10 +201,8 @@ dbh2wai <<- function(dbh,ipft,chambers=FALSE){
       abranch  = pi*kterm*log(dcb.use/dbmin)
       wai      = ( abole + abranch )
       wai      = wai * dbh2ca(dbh=pft$dbh.crit[zpft],ipft=zpft)/max(wai)
-   }else if(iallom %in% c(0,1,2)){
-      wai      = pft$b1WAI[zpft] * dbh.use ^ pft$b2WAI[zpft]
    }else{
-      wai      = 0.11 * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
+      wai      = pft$qwai[zpft] * pft$SLA[ipft] * dbh2bl(dbh=dbh.use,ipft=zpft)
    }#end if
    if (any(is.na(wai))) browser()
    #---------------------------------------------------------------------------------------#

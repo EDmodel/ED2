@@ -31,6 +31,7 @@ plot.ptcloud <<- function( pt.cloud
                          , key.title        = NULL
                          , plot.after       = NULL
                          , f.key            = 1/9
+                         , f.dens           = 1/3
                          , theta            = 315.
                          , phi              = 30.
                          , expand           = 0.5
@@ -302,7 +303,7 @@ plot.ptcloud <<- function( pt.cloud
 
    #----- Split window into two blocks. ---------------------------------------------------#
    if (plot.density){
-      layout(cbind(3,2,1),widths=c(c(1/3,2/3)*(1-f.key),f.key))
+      layout(cbind(3,2,1),widths=c(c(f.dens,1.-f.dens)*(1-f.key),f.key))
    }else{
       layout(cbind(2,1),widths=c(1-f.key,f.key))
    }#end if

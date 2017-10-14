@@ -15,6 +15,7 @@ subroutine read_ed21_history_file
    use pft_coms       , only : SLA                     & ! intent(in)
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
+                             , qbark                   & ! intent(in)
                              , hgt_min                 & ! intent(in)
                              , min_dbh                 & ! intent(in)
                              , min_bdead               & ! intent(in)
@@ -57,6 +58,7 @@ subroutine read_ed21_history_file
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
                              , size2bt                 & ! function
+                             , size2xb                 & ! function
                              , bd2dbh                  & ! function
                              , size2bl                 & ! function
                              , dbh2h                   & ! function
@@ -113,8 +115,6 @@ subroutine read_ed21_history_file
    real                                :: currad
    real                                :: elim_nplant
    real                                :: elim_lai
-   real                                :: salloc
-   real                                :: salloci
    logical                             :: foundvar
    !----- Local constants. ----------------------------------------------------------------!
    real                  , parameter   :: tiny_biomass = 1.e-20
@@ -628,19 +628,21 @@ subroutine read_ed21_history_file
                            !     Use allometry to define leaf and the other live biomass   !
                            ! pools.                                                        !
                            !---------------------------------------------------------------!
-                           salloc                = 1.0 + q(ipft)                           &
-                                                 + qsw(ipft) * cpatch%hite(ico)
-                           salloci               = 1.0 / salloc
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
                                                           , ipft )
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
-                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
-                           cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
-                                                 * cpatch%hite(ico) * salloci * agf_bs(ipft)
-                           cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
-                                                 * cpatch%hite(ico) * salloci              &
-                                                 * (1.-agf_bs(ipft))
+                           cpatch%broot   (ico)  = cpatch%bleaf(ico) * q(ipft)
+                           cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
+                                                 * qsw(ipft) * cpatch%hite(ico)
+                           cpatch%bsapwoodb(ico) = (1.-agf_bs(ipft)) * cpatch%bleaf(ico)   &
+                                                 * qsw(ipft) * cpatch%hite(ico)
+                           cpatch%bbark(ico)     = cpatch%bleaf(ico)                       &
+                                                 * qbark(ipft) * cpatch%hite(ico)
+                           cpatch%balive  (ico)  = cpatch%bleaf    (ico)                   &
+                                                 + cpatch%broot    (ico)                   &
+                                                 + cpatch%bsapwooda(ico)                   &
+                                                 + cpatch%bsapwoodb(ico)                   &
+                                                 + cpatch%bbark    (ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
                            !---------------------------------------------------------------!
@@ -764,6 +766,10 @@ subroutine read_ed21_history_file
                                cpatch%bsapwoodb(ico) < tiny_biomass) then
                               cpatch%bsapwoodb(ico) = tiny_biomass
                            end if
+                           if (cpatch%bbark(ico) > 0.                .and.                 &
+                               cpatch%bbark(ico) < tiny_biomass)     then
+                              cpatch%bbark(ico) = tiny_biomass
+                           end if
                            if (cpatch%bdead(ico) > 0.                .and.                 &
                                cpatch%bdead(ico) < tiny_biomass)     then
                               cpatch%bdead(ico) = tiny_biomass
@@ -781,22 +787,27 @@ subroutine read_ed21_history_file
                            cpatch%agb    (ico) = ed_biomass( cpatch%bdead    (ico)         &
                                                            , cpatch%bleaf    (ico)         &
                                                            , cpatch%bsapwooda(ico)         &
+                                                           , cpatch%bbark    (ico)         &
                                                            , cpatch%pft      (ico) )
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
                                                         , cpatch%bdead    (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bbark    (ico)            &
                                                         , cpatch%pft      (ico) )
 
                             
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
                                             ,cpatch%dbh(ico), cpatch%hite(ico)             &
                                             ,cpatch%pft(ico), SLA(cpatch%pft(ico))         &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                            ,cpatch%crown_area(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -906,6 +917,7 @@ subroutine read_ed21_history_unstruct
    use pft_coms       , only : SLA                     & ! intent(in)
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
+                             , qbark                   & ! intent(in)
                              , hgt_min                 & ! intent(in)
                              , min_dbh                 & ! intent(in)
                              , min_bdead               & ! intent(in)
@@ -949,6 +961,7 @@ subroutine read_ed21_history_unstruct
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
                              , size2bt                 & ! function
+                             , size2xb                 & ! function
                              , bd2dbh                  & ! function
                              , dbh2h                   & ! function
                              , dbh2bd                  & ! function
@@ -1058,8 +1071,6 @@ subroutine read_ed21_history_unstruct
    real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
-   real                                                         :: salloc
-   real                                                         :: salloci
    logical                                                      :: foundvar
    !----- Local constants. ----------------------------------------------------------------!
    real                                           , parameter   :: tiny_biomass = 1.e-20
@@ -1873,19 +1884,21 @@ subroutine read_ed21_history_unstruct
                            !     Use allometry to define leaf and the other live biomass   !
                            ! pools.                                                        !
                            !---------------------------------------------------------------!
-                           salloc                = 1.0 + q(ipft)                           &
-                                                 + qsw(ipft) * cpatch%hite(ico)
-                           salloci               = 1.0 / salloc
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
                                                           , ipft )
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
-                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
-                           cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
-                                                 * cpatch%hite(ico) * salloci * agf_bs(ipft)
-                           cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
-                                                 * cpatch%hite(ico) * salloci              &
-                                                 * (1.-agf_bs(ipft))
+                           cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
+                           cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
+                                                 * qsw(ipft) * cpatch%hite(ico)
+                           cpatch%bsapwoodb(ico) = (1. - agf_bs(ipft)) * cpatch%bleaf(ico) &
+                                                 * qsw(ipft) * cpatch%hite(ico)
+                           cpatch%bbark(ico)     = cpatch%bleaf(ico)                       &
+                                                 * qbark(ipft) * cpatch%hite(ico)
+                           cpatch%balive  (ico)  = cpatch%bleaf(ico)                       &
+                                                 + cpatch%broot(ico)                       &
+                                                 + cpatch%bsapwooda(ico)                   &
+                                                 + cpatch%bsapwoodb(ico)                   &
+                                                 + cpatch%bbark(ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
                            !---------------------------------------------------------------!
@@ -2007,6 +2020,10 @@ subroutine read_ed21_history_unstruct
                                cpatch%bsapwoodb(ico) < tiny_biomass) then
                               cpatch%bsapwoodb(ico) = tiny_biomass
                            end if
+                           if (cpatch%bbark(ico) > 0.            .and.                     &
+                               cpatch%bbark(ico) < tiny_biomass) then
+                              cpatch%bbark(ico) = tiny_biomass
+                           end if
                            if (cpatch%bdead(ico) > 0.            .and.                     &
                                cpatch%bdead(ico) < tiny_biomass) then
                               cpatch%bdead(ico) = tiny_biomass
@@ -2022,23 +2039,28 @@ subroutine read_ed21_history_unstruct
                            cpatch%agb(ico)     = ed_biomass( cpatch%bdead    (ico)         &
                                                            , cpatch%bleaf    (ico)         &
                                                            , cpatch%bsapwooda(ico)         &
+                                                           , cpatch%bbark    (ico)         &
                                                            , cpatch%pft      (ico) )
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
                                                         , cpatch%bdead    (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bbark    (ico)            &
                                                         , cpatch%pft      (ico) )
                            !---------------------------------------------------------------!
 
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                            ,cpatch%crown_area(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!
@@ -2157,6 +2179,7 @@ subroutine read_ed21_polyclone
    use pft_coms       , only : SLA                     & ! intent(in)
                              , q                       & ! intent(in)
                              , qsw                     & ! intent(in)
+                             , qbark                   & ! intent(in)
                              , hgt_min                 & ! intent(in)
                              , min_dbh                 & ! intent(in)
                              , min_bdead               & ! intent(in)
@@ -2201,6 +2224,7 @@ subroutine read_ed21_polyclone
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              & ! function
                              , size2bt                 & ! function
+                             , size2xb                 & ! function
                              , bd2dbh                  & ! function
                              , dbh2h                   & ! function
                              , dbh2bd                  & ! function
@@ -3104,19 +3128,21 @@ subroutine read_ed21_polyclone
                            !     Use allometry to define leaf and the other live biomass   !
                            ! pools.                                                        !
                            !---------------------------------------------------------------!
-                           salloc                = 1.0 + q(ipft)                           &
-                                                 + qsw(ipft) * cpatch%hite(ico)
-                           salloci               = 1.0 / salloc
                            cpatch%bleaf(ico)     = size2bl( cpatch%dbh (ico)               &
                                                           , cpatch%hite(ico)               &
                                                           , ipft )
-                           cpatch%balive  (ico)  = cpatch%bleaf(ico) * salloc
-                           cpatch%broot   (ico)  = cpatch%balive(ico) * q(ipft) * salloci
-                           cpatch%bsapwooda(ico) = cpatch%balive(ico) * qsw(ipft)          &
-                                                 * cpatch%hite(ico) * salloci * agf_bs(ipft)
-                           cpatch%bsapwoodb(ico) = cpatch%balive(ico) * qsw(ipft)          &
-                                                 * cpatch%hite(ico) * salloci              &
-                                                 * (1.-agf_bs(ipft))
+                           cpatch%broot(ico)     = cpatch%bleaf(ico) * q(ipft)
+                           cpatch%bsapwooda(ico) = agf_bs(ipft) * cpatch%bleaf(ico)        &
+                                                 * qsw(ipft) * cpatch%hite(ico)
+                           cpatch%bsapwoodb(ico) = (1. - agf_bs(ipft)) * cpatch%bleaf(ico) &
+                                                 * qsw(ipft) * cpatch%hite(ico)
+                           cpatch%bbark(ico)     = cpatch%bleaf(ico)                       &
+                                                 * qbark(ipft) * cpatch%hite(ico)
+                           cpatch%balive  (ico)  = cpatch%bleaf    (ico)                   &
+                                                 + cpatch%broot    (ico)                   &
+                                                 + cpatch%bsapwooda(ico)                   &
+                                                 + cpatch%bsapwoodb(ico)                   &
+                                                 + cpatch%bbark    (ico)
                            cpatch%bstorage(ico)  = max(almost_zero,f_bstorage_init(ipft))  &
                                                  * cpatch%balive(ico)
                            !---------------------------------------------------------------!
@@ -3238,6 +3264,10 @@ subroutine read_ed21_polyclone
                                cpatch%bsapwoodb(ico) < tiny_biomass) then
                               cpatch%bsapwoodb(ico) = tiny_biomass
                            end if
+                           if (cpatch%bbark(ico) > 0.            .and.                     &
+                               cpatch%bbark(ico) < tiny_biomass) then
+                              cpatch%bbark(ico) = tiny_biomass
+                           end if
                            if (cpatch%bdead(ico) > 0.            .and.                     &
                                cpatch%bdead(ico) < tiny_biomass) then
                               cpatch%bdead(ico) = tiny_biomass
@@ -3253,21 +3283,26 @@ subroutine read_ed21_polyclone
                            cpatch%agb(ico)     = ed_biomass( cpatch%bdead    (ico)         &
                                                            , cpatch%bleaf    (ico)         &
                                                            , cpatch%bsapwooda(ico)         &
+                                                           , cpatch%bbark    (ico)         &
                                                            , cpatch%pft      (ico) )
                            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                            cpatch%btimber(ico) = size2bt( cpatch%dbh      (ico)            &
                                                         , cpatch%hite     (ico)            &
                                                         , cpatch%bdead    (ico)            &
                                                         , cpatch%bsapwooda(ico)            &
+                                                        , cpatch%bbark    (ico)            &
+                                                        , cpatch%pft      (ico) )
+                           cpatch%thbark(ico)  = size2xb( cpatch%dbh      (ico)            &
+                                                        , cpatch%hite     (ico)            &
+                                                        , cpatch%bbark    (ico)            &
                                                         , cpatch%pft      (ico) )
 
                            !----- Assign LAI, WAI, and CAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
-                                            ,cpatch%bdead(ico),cpatch%balive(ico)          &
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wai(ico)               &
-                                            ,cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+                                            ,cpatch%crown_area(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!

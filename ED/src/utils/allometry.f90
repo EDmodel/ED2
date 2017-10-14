@@ -473,7 +473,7 @@ module allometry
    !=======================================================================================!
    !    This function computes the commercial timber biomass for different PFTs.           !
    !---------------------------------------------------------------------------------------!
-   real function size2bt(dbh,hgt,bdead,bsapwooda,ipft)
+   real function size2bt(dbh,hgt,bdead,bsapwooda,bbark,ipft)
       use pft_coms    , only : is_grass    & ! intent(in)
                              , is_tropical & ! intent(in)
                              , rho         & ! intent(in)
@@ -486,6 +486,7 @@ module allometry
       real(kind=4), intent(in) :: hgt
       real(kind=4), intent(in) :: bdead
       real(kind=4), intent(in) :: bsapwooda
+      real(kind=4), intent(in) :: bbark
       integer     , intent(in) :: ipft
       !----- Local variables. -------------------------------------------------------------!
       real(kind=4)             :: btimber
@@ -507,7 +508,7 @@ module allometry
          !     Tropical trees.  We use the tree volume scaled with typical wood density.   !
          !---------------------------------------------------------------------------------!
          btimber  = 1000. * rho(ipft) * dbh2vol(dbh,hgt,ipft) / C2B
-         bagwood  = agf_bs(ipft) * bdead + bsapwooda
+         bagwood  = agf_bs(ipft) * (bdead + bbark) + bsapwooda
          size2bt  = min(btimber,bagwood)
          !---------------------------------------------------------------------------------!
       else
@@ -515,13 +516,61 @@ module allometry
          !     Temperate trees.  For the time being we use total aboveground wood biomass, !
          ! so results are consistent with former implementation.                           !
          !---------------------------------------------------------------------------------!
-         size2bt  = agf_bs(ipft) * bdead + bsapwooda
+         size2bt  = agf_bs(ipft) * (bdead + bbark) + bsapwooda
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
 
       return
    end function size2bt
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This function computes bark thickness.  To obtain the actual thickness, we compare !
+   ! the actual bark biomass with on-allometry bark biomass.                               !
+   !---------------------------------------------------------------------------------------!
+   real function size2xb(dbh,hgt,bbark,ipft)
+      use pft_coms   , only : qbark       & ! intent(in)
+                            , b1Xb        ! ! intent(in)
+      use consts_coms, only : tiny_num    ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: dbh
+      real(kind=4), intent(in) :: hgt
+      real(kind=4), intent(in) :: bbark
+      integer     , intent(in) :: ipft
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)             :: bleaf_max
+      real(kind=4)             :: bbark_max
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Calculate commercial timber biomass based on the life form and habitat.       !
+      !------------------------------------------------------------------------------------!
+      if (qbark(ipft) < tiny_num) then
+         size2xb = 0.0
+      else
+         !----- Find on-allometry bark biomass. -------------------------------------------!
+         bleaf_max = size2bl(dbh,hgt,ipft) 
+         bbark_max = qbark(ipft) * hgt * bleaf_max
+         !---------------------------------------------------------------------------------!
+
+         !----- Scale bark thickness with the ratio between actual and on-allometry. ------!
+         size2xb   = b1Xb(ipft) * dbh * bbark / bbark_max
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function size2xb
    !=======================================================================================!
    !=======================================================================================!
 
@@ -623,7 +672,7 @@ module allometry
    !=======================================================================================!
    !     This subroutine finds the total above ground biomass (wood + leaves)              !
    !---------------------------------------------------------------------------------------!
-   real function ed_biomass(bdead, bleaf, bsapwooda, ipft)
+   real function ed_biomass(bdead, bleaf, bsapwooda, bbark, ipft)
       use pft_coms, only:  agf_bs ! ! intent(in)
       
       implicit none
@@ -631,13 +680,11 @@ module allometry
       real    , intent(in) :: bdead
       real    , intent(in) :: bleaf
       real    , intent(in) :: bsapwooda
+      real    , intent(in) :: bbark
       integer , intent(in) :: ipft
-      !----- Local variables --------------------------------------------------------------!
-      real                 :: bwood
       !------------------------------------------------------------------------------------!
 
-      bwood      = bsapwooda + (bdead * agf_bs(ipft))
-      ed_biomass = bleaf + bwood
+      ed_biomass = bleaf + bsapwooda + ( bdead + bbark ) * agf_bs(ipft)
 
       return
    end function ed_biomass
@@ -668,51 +715,29 @@ module allometry
    !    index across a tropical rain forest landscape.  Agric. For. Meteorol., 177,        !
    !    110--116, 2013.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wai,crown_area   &
-                          ,bsapwooda)
-      use pft_coms    , only : is_tropical     & ! intent(in)
-                             , is_grass        & ! intent(in)
-                             , agf_bs          & ! intent(in)
-                             , rho             & ! intent(in)
-                             , C2B             & ! intent(in)
-                             , dbh_crit        & ! intent(in)
-                             , b1WAI           & ! intent(in)
-                             , b2WAI           ! ! intent(in)
-      use consts_coms , only : onethird        & ! intent(in)
-                             , pi1             ! ! intent(in)
+   subroutine area_indices(nplant,bleaf,dbh,hite,pft,sla,lai,wai,crown_area)
+      use pft_coms    , only : qwai            ! ! intent(in)
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
-      use ed_misc_coms, only : igrass          & ! intent(in)
-                             , iallom          ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer , intent(in)  :: pft        ! Plant functional type            [         ---]
       real    , intent(in)  :: nplant     ! Number of plants                 [    plant/m²]
       real    , intent(in)  :: bleaf      ! Specific leaf biomass            [   kgC/plant]
-      real    , intent(in)  :: bdead      ! Specific structural              [   kgC/plant]
-      real    , intent(in)  :: balive     ! Specific live tissue biomass     [   kgC/plant]
-      real    , intent(in)  :: bsapwooda  ! Specific sapwood biomass above grnd[   kgC/plant]
       real    , intent(in)  :: dbh        ! Diameter at breast height        [          cm]
       real    , intent(in)  :: hite       ! Plant height                     [           m]
       real    , intent(in)  :: sla        ! Specific leaf area               [m²leaf/plant]
       real    , intent(out) :: lai        ! Leaf area index                  [   m²leaf/m²]
       real    , intent(out) :: wai        ! Wood area index                  [   m²wood/m²]
       real    , intent(out) :: crown_area ! Crown area                       [  m²crown/m²]
-      !----- Local variables --------------------------------------------------------------!
-      real                  :: bwood      ! Wood biomass                     [   kgC/plant]
-      real                  :: swa        ! Specific wood area               [    m²/plant]
-      real                  :: bdiamet    ! Diameter of current branch       [           m]
-      real                  :: blength    ! Length of each branch            [           m]
-      real                  :: nbranch    ! Number of branches               [        ----]
-      real                  :: bdmin      ! Minimum diameter                 [           m]
-      !----- External functions -----------------------------------------------------------!
-      real    , external    :: errorfun ! Error function.
       !------------------------------------------------------------------------------------!
       
       !----- First, we compute the LAI ----------------------------------------------------!
       lai = bleaf * nplant * sla
+      !------------------------------------------------------------------------------------!
 
       !----- Find the crown area. ---------------------------------------------------------!
       crown_area = min(1.0, nplant * dbh2ca(dbh,hite,sla,pft))
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !
@@ -727,21 +752,9 @@ module allometry
 
       case (1,2)
          !---------------------------------------------------------------------------------!
-         !     Decide the WAI according to the allometry.                                  !
+         !     Assume WAI is a fixed fraction of potential LAI.                            !
          !---------------------------------------------------------------------------------!
-         select case (iallom)
-         case (3,4)
-            !------------------------------------------------------------------------------!
-            !     Assume a simple extrapolation based on Olivas et al. (2013).  WAI is     !
-            ! always 11% of the potential LAI.                                             !
-            !------------------------------------------------------------------------------!
-            wai = 0.11 * nplant * sla * size2bl(dbh,hite,pft)
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Solve branches using the equations from Hormann et al. (2003) ----------!
-            wai = nplant * b1WAI(pft) * min(dbh,dbh_crit(pft)) ** b2WAI(pft)
-            !------------------------------------------------------------------------------!
-         end select
+         wai = qwai(pft) * nplant * sla * size2bl(dbh,hite,pft)
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

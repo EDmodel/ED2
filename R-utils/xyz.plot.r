@@ -50,6 +50,7 @@ xyz.plot <<- function( x
                    , xyz.more       = NULL
                    , xyz.before     = xyz.more
                    , xyz.after      = NULL
+                   , edge.axes      = FALSE
                    , key.title      = NULL
                    , key.log        = FALSE
                    , key.axis       = NULL
@@ -104,12 +105,12 @@ xyz.plot <<- function( x
       if (! is.list(pch)){
          orig.pch = pch
          pch      = list()
-         for (p in 1:npanels) pch[[p]] = orig.pch
+         for (p in sequence(npanels)) pch[[p]] = orig.pch
       }#end if
       if (! is.list(cex)){
          orig.cex = cex
          cex      = list()
-         for (p in 1:npanels) cex[[p]] = orig.cex
+         for (p in sequence(npanels)) cex[[p]] = orig.cex
       }#end if
    }#end if
    #---------------------------------------------------------------------------------------#
@@ -237,10 +238,19 @@ xyz.plot <<- function( x
    #---------------------------------------------------------------------------------------#
    for (p in sequence(npanels)){
       #------ Decide the margins based upon the XY axes limits. ---------------------------#
-      mar.now = lo.box$mar[p,]
-      if (length(mar.now) != 4) browser()
-      if (! fixed.xlim) mar.now[c(1,3)] = lo.box$mar0[c(1,3)]
-      if (! fixed.ylim) mar.now[c(2,4)] = lo.box$mar0[c(2,4)]
+      if (edge.axes || (! fixed.xlim) || (! fixed.ylim)){
+         left    = TRUE
+         right   = TRUE
+         top     = TRUE
+         bottom  = TRUE
+         mar.now = lo.box$mar0
+      }else{
+         left    = lo.panel$left  [p]
+         right   = lo.panel$right [p]
+         top     = lo.panel$top   [p]
+         bottom  = lo.panel$bottom[p]
+         mar.now = lo.panel$mar   [p,]
+      }#end if (edge.axes || (! fixed.xlim) || (! fixed.ylim))
       #------------------------------------------------------------------------------------#
 
 
@@ -279,15 +289,15 @@ xyz.plot <<- function( x
       #------------------------------------------------------------------------------------#
       #     Check whether there are especial instructions for plotting the axes.           #
       #------------------------------------------------------------------------------------#
-      if (is.null(xyz.xaxis) && ( lo.box$bottom[p] | ! fixed.xlim) ){
+      if (is.null(xyz.xaxis) && bottom ){
          axis(side=1)
-      }else if ( lo.box$bottom[p] | ! fixed.xlim ){
+      }else if ( bottom ){
          if (! "side" %in% names(xyz.xaxis)) xyz.xaxis$side = 1
          do.call("axis",xyz.xaxis)
       }#end if
-      if (is.null(xyz.yaxis) && ( lo.box$left[p] | ! fixed.ylim) ){
+      if (is.null(xyz.yaxis) && left ){
          axis(side=2,las=1)
-      }else if ( lo.box$left[p] | ! fixed.ylim ){
+      }else if ( left ){
          if (! "side" %in% names(xyz.yaxis)) xyz.yaxis$side = 2
          do.call("axis",xyz.yaxis)
       }#end if
@@ -299,7 +309,7 @@ xyz.plot <<- function( x
       #     Check whether there are additional instructions to plot. 
       #------------------------------------------------------------------------------------#
       if (! is.null(xyz.before)) {
-         for (m in 1:length(xyz.before)){
+         for (m in seq_along(xyz.before)){
             do.call(names(xyz.before)[m],xyz.before[[m]])
          }#end for
       }#end if
@@ -328,7 +338,7 @@ xyz.plot <<- function( x
       #     Check whether there are additional instructions to plot. 
       #------------------------------------------------------------------------------------#
       if (! is.null(xyz.after)) {
-         for (m in 1:length(xyz.after)){
+         for (m in seq_along(xyz.after)){
             do.call(names(xyz.after)[m],xyz.after[[m]])
          }#end for
       }#end if

@@ -5,7 +5,7 @@
 amazonmap = function(mapdir=NULL,legal=FALSE,...){
   if (is.null(mapdir)) mapdir = file.path(srcdir,"amzmap")
   if (legal){
-     fichier = file.path(mapdir,"amazon.forest.txt")
+     fichier = file.path(mapdir,"brazilian_legal_amazon.txt")
   }else{
      fichier = file.path(mapdir,"amazon.ecoregion.txt")
   }#end if

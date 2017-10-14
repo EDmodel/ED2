@@ -9,7 +9,9 @@ sn.version      <<- as.numeric(substring(packageVersion(pkg="sn"),1,1))
 sn.stats <<- function(x,na.rm=FALSE,maxit=9999){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function sn.stats requires package sn!")
+      stop("Function sn.stats requires package sn (version > 1.0)!")
+   }else if (sn.version == 0){
+      stop("Function sn.stats requires package sn (version > 1.0)!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -27,88 +29,33 @@ sn.stats <<- function(x,na.rm=FALSE,maxit=9999){
 
 
    #---------------------------------------------------------------------------------------#
-   #    Package sn is very different depending on version.                                 #
+   #     Uses the skew elliptical error distribution to estimate parameters.               #
    #---------------------------------------------------------------------------------------#
-   if (sn.version == 0){
+   myfit.mle = try( selm( formula = xsel~1
+                        , family  = "SN"
+                        , data    = data.frame(xsel=xsel)
+                        )#end selm
+                  , silent = TRUE
+                  )#end try
+   #---------------------------------------------------------------------------------------#
 
 
-      #------------------------------------------------------------------------------------#
-      #     The default is to try the maximum likelihood estimator.  It is fast, but it    #
-      # doesn't always converge.  In case it fails, we fall back to EM algorithm, which is #
-      # more robust but a lot slower.  If none of them work, then falls back to Gaussian,  #
-      # as this usually happens when there are very few points, or all points being the    #
-      # same.                                                                              #
-      #------------------------------------------------------------------------------------#
-      myfit.mle = try(sn.mle(y=xsel,plot.it=FALSE,control=list(maxit=maxit)),silent=TRUE)
-      if ("try-error" %in% is(myfit.mle)){
-         warning(" - MLE failed, falling back to EM")
-         converged = FALSE
-      }else{
-         dp         = cp.to.dp(myfit.mle$cp)
-         ans        = c(dp,0)
-         rm(dp)
-         converged  = myfit.mle$optim$convergence == 0
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-
-      #------------------------------------------------------------------------------------#
-      #     Run EM if it failed.                                                           #
-      #------------------------------------------------------------------------------------#
-      if (! converged){
-         myfit.em = try(sn.em(y=xsel),silent=TRUE)
-         if ("try-error" %in% is(myfit.em)){
-            #------------------------------------------------------------------------------#
-            #      Not enough point, assume Gaussian and warn the user...                  #
-            #------------------------------------------------------------------------------#
-            warning("EM failed too, using mean instead.")
-            ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
-            #------------------------------------------------------------------------------#
-         }else{
-            ans = c(myfit.em$dp,0)
-         }#end if
-         rm(myfit.em)
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #     Delete everything else.                                                        #
-      #------------------------------------------------------------------------------------#
-      rm(xsel,myfit.mle,converged)
-      #------------------------------------------------------------------------------------#
+   #---------------------------------------------------------------------------------------#
+   if ("try-error" %in% is(myfit.mle)){
+      warning(" - MLE failed, using mean instead.")
+      ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
    }else{
-      #------------------------------------------------------------------------------------#
-      #     Version 1 uses the skew elliptical error distribution to estimate parameters.  #
-      #------------------------------------------------------------------------------------#
-      myfit.mle = try( selm( formula = xsel~1
-                           , family  = "SN"
-                           , data    = data.frame(xsel=xsel)
-                           )#end selm
-                     , silent = TRUE
-                     )#end try
-      #------------------------------------------------------------------------------------#
+      dp         = myfit.mle@param$dp
+      ans        = c(dp,0)
+      rm(dp)
+   }#end if
+   #---------------------------------------------------------------------------------------#
 
 
-      #------------------------------------------------------------------------------------#
-      if ("try-error" %in% is(myfit.mle)){
-         warning(" - MLE failed, using mean instead.")
-         ans = c(mean(xsel,na.rm=TRUE),sd(xsel,na.rm=TRUE),0.,1.)
-      }else{
-         dp         = myfit.mle@param$dp
-         ans        = c(dp,0)
-         rm(dp)
-      }#end if
-      #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #     Delete everything else.                                                        #
-      #------------------------------------------------------------------------------------#
-      rm(xsel,myfit.mle)
-      #------------------------------------------------------------------------------------#
-   }#end if (sn.version == 0)
+   #---------------------------------------------------------------------------------------#
+   #     Delete everything else.                                                           #
+   #---------------------------------------------------------------------------------------#
+   rm(xsel,myfit.mle)
    #---------------------------------------------------------------------------------------#
 
 
@@ -225,7 +172,9 @@ sn.converged <<- function(x,na.rm=FALSE){
 skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function skew2normal requires package sn!")
+      stop("Function skew2normal requires package sn (version > 1.0)!")
+   }else if (sn.version == 0){
+      stop("Function skew2normal requires package sn (version > 1.0)!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -257,31 +206,15 @@ skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
       stats.ok     = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
       if (any(sel) && stats.ok){
          #---------------------------------------------------------------------------------#
-         #   Find normalised quantile.  Check for sn version as parameters have changed.   #
+         #   Find normalised quantile.  We are only using the true SN distribution, so we  #
+         # set the engine to "T.Owen" to avoid crashes.                                    #
          #---------------------------------------------------------------------------------#
-         if (sn.version == 0){
-            #------------------------------------------------------------------------------#
-            #    Old method.  This is slated to disappear.                                 #
-            #------------------------------------------------------------------------------#
-            cdf.skew[sel] = psn( x        = x[sel]
-                               , location = location[n]
-                               , scale    = scale   [n]
-                               , shape    = shape   [n]
-                               )#end psn
-            #------------------------------------------------------------------------------#
-         }else{
-            #------------------------------------------------------------------------------#
-            #    New method.  We are only using the true SN distribution, so we set the    #
-            # engine to "T.Owen" to avoid crashes.                                         #
-            #------------------------------------------------------------------------------#
-            cdf.skew[sel] = psn( x        = x[sel]
-                               , xi       = location[n]
-                               , omega    = scale   [n]
-                               , alpha    = shape   [n]
-                               , engine   = "T.Owen"
-                               )#end psn 
-            #------------------------------------------------------------------------------#
-         }#end if (sn.version == 0)
+         cdf.skew[sel] = psn( x        = x[sel]
+                            , xi       = location[n]
+                            , omega    = scale   [n]
+                            , alpha    = shape   [n]
+                            , engine   = "T.Owen"
+                            )#end psn 
          #---------------------------------------------------------------------------------#
       }#end if (any(sel) && stats.ok)
       #------------------------------------------------------------------------------------#
@@ -317,7 +250,9 @@ skew2normal <<- function(x,location,scale,shape,idx=rep(1,times=length(x))){
 normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm))){
    #----- Stop if package fGarch isn't loaded. --------------------------------------------#
    if (! "package:sn" %in% search()){
-      stop("Function normal2skew requires package sn!")
+      stop("Function normal2skew requires package sn (version > 1.0)!")
+   }else if (sn.version == 0){
+      stop("Function normal2skew requires package sn (version > 1.0)!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -345,34 +280,18 @@ normal2skew <<- function(xnorm,location,scale,shape,idx=rep(1,times=length(xnorm
       stats.ok = is.finite(location[n]) && is.finite(scale[n]) && is.finite(shape[n])
       if (any(sel) && stats.ok){
          #---------------------------------------------------------------------------------#
-         #     Back-transform data to original scale.                                      #
+         #     Back-transform data to original scale.   The default solver is not as       #
+         # stable as RFB, so we always use RFB, even though it is slower.  Also, we are    #
+         # only using the true SN distribution, so we set the engine to "T.Owen" to avoid  #
+         # crashes.                                                                        #
          #---------------------------------------------------------------------------------#
-         #----- Find absolute value. ------------------------------------------------------#
-         if (sn.version == 0){
-            #------------------------------------------------------------------------------#
-            #    Old method.  This is slated to disappear.                                 #
-            #------------------------------------------------------------------------------#
-            x[sel] = qsn( p        = cdf.skew[sel]
-                        , location = location[n]
-                        , scale    = scale   [n]
-                        , shape    = shape   [n]
-                        )#end qsn
-            #------------------------------------------------------------------------------#
-         }else{
-            #------------------------------------------------------------------------------#
-            #    New method.  The default solver is not as stable as RFB, so we always use #
-            # RFB, even though it is slower.  Also, we are only using the true SN          #
-            # distribution, so we set the engine to "T.Owen" to avoid crashes.             #
-            #------------------------------------------------------------------------------#
-            x[sel] = qsn( p        = cdf.skew[sel]
-                        , xi       = location[n]
-                        , omega    = scale   [n]
-                        , alpha    = shape   [n]
-                        , engine   = "T.Owen"
-                        , solver   = "RFB"
-                        )#end qsn
-            #------------------------------------------------------------------------------#
-         }#end if (sn.version == 0)
+         x[sel] = qsn( p        = cdf.skew[sel]
+                     , xi       = location[n]
+                     , omega    = scale   [n]
+                     , alpha    = shape   [n]
+                     , engine   = "T.Owen"
+                     , solver   = "RFB"
+                     )#end qsn
          #---------------------------------------------------------------------------------#
       }#end if (any(sel) && stats.ok)
       #------------------------------------------------------------------------------------#
@@ -405,21 +324,11 @@ psn.mult <<- function(z,n,nsample=10000,location=0,scale=1,shape=0,lower.tail=TR
 
    if ( n == 1 && ! force.sample){
       #----- Use the standard probability distribution function (no sampling). ------------#
-      if (R.major <= 2){
-         prob = psn(x=z,location=location,scale=scale,shape=shape,lower.tail=lower.tail
-                   ,log.p=log.p)
-      }else{
-         prob = psn(x=z,xi=location,omega=scale,alpha=shape,lower.tail=lower.tail
-                   ,log.p=log.p)
-      }#end if (R.major <= 2)
+      prob = psn(x=z,xi=location,omega=scale,alpha=shape,lower.tail=lower.tail,log.p=log.p)
       #------------------------------------------------------------------------------------#
    }else{
       #----- Create an array with multiple data sets. -------------------------------------#
-      if (R.major <= 2){
-         x    = rsn(n=n*nsample,location=location,scale=scale,shape=shape)
-      }else{
-         x    = rsn(n=n*nsample,xi=location,omega=scale,alpha=shape)
-      }#end if
+      x    = rsn(n=n*nsample,xi=location,omega=scale,alpha=shape)
       i    = rep(sequence(nsample),each=n)
       ztry = tapply(X=x,INDEX=i,FUN=sum)
       #------------------------------------------------------------------------------------#
@@ -501,7 +410,7 @@ qsn.mult <<- function( z
                      , location
                      , scale
                      , shape
-                     , shift    = "location"
+                     , shift    = c("location","scale","shape")
                      , lower
                      , upper
                      , nsample  = 10000
@@ -509,6 +418,9 @@ qsn.mult <<- function( z
                      ){
 
 
+   #----- Standardise shift argument. -----------------------------------------------------#
+   shift = match.arg(shift)
+   #---------------------------------------------------------------------------------------#
 
 
 
@@ -523,8 +435,7 @@ qsn.mult <<- function( z
 
    #----- Find the location parameter that solves P(Z) = p. -------------------------------#
    tol        = 0.1 / nsample
-   short      = substring(tolower(shift),1,2)
-   if ( short == "lo"){
+   if ( shift %in% "location"){
       sol        = uniroot(f=psn.root,lower=lower,upper=upper,z=z,n=n,p=p,scale=scale
                           ,shape=shape,shift=shift,nsample=nsample,tol=tol,maxiter = 1000)
 
@@ -540,7 +451,7 @@ qsn.mult <<- function( z
       #----- Free memory. -----------------------------------------------------------------#
       rm(new.location,new.mean)
       #------------------------------------------------------------------------------------#
-   }else if (short == "sc"){
+   }else if (shift %in% "scale"){
       sol        = uniroot(f=psn.root,lower=lower,upper=upper,z=z,n=n,p=p,location=location
                           ,shape=shape,shift=shift,nsample=nsample,tol=tol,maxiter = 1000)
 
@@ -556,7 +467,7 @@ qsn.mult <<- function( z
       #----- Free memory. -----------------------------------------------------------------#
       rm(new.scale,new.sdev)
       #------------------------------------------------------------------------------------#
-   }else if (short == "sh"){
+   }else if (shift %in% "shape"){
       sol        = uniroot(f=psn.root,lower=lower,upper=upper,z=z,n=n,p=p,location=location
                           ,scale=scale,shift=shift,nsample=nsample,tol=tol,maxiter = 1000)
 
@@ -572,10 +483,6 @@ qsn.mult <<- function( z
       #----- Free memory. -----------------------------------------------------------------#
       rm(new.shape,new.delta,new.skew)
       #------------------------------------------------------------------------------------#
-   }else{
-      cat(" - Invalid statistics request! Shift has been set to ",shift,"\n")
-      cat("   Acceptable options are location, scale, and shape","\n")
-      stop("Invalid statistics!")
    }#end if
    #---------------------------------------------------------------------------------------#
 
@@ -639,11 +546,7 @@ sn.lsq <<- function(r,skew=FALSE){
 
 
       #------ Find the log-likelihood of the distribution. --------------------------------#
-      if (R.major <= 2){
-         ans = sum(x=dsn(x=r.fine,location=rlocation,scale=rscale,shape=rshape,log=TRUE))
-      }else{
-         ans = sum(x=dsn(x=r.fine,xi=rlocation,omega=rscale,alpha=rshape,log=TRUE))
-      }#end if (R.major <= 2)
+      ans = sum(x=dsn(x=r.fine,xi=rlocation,omega=rscale,alpha=rshape,log=TRUE))
       #------------------------------------------------------------------------------------#
 
       #----- Free memory. -----------------------------------------------------------------#
@@ -666,5 +569,76 @@ sn.lsq <<- function(r,skew=FALSE){
    return(ans)
    #---------------------------------------------------------------------------------------#
 }#end sn.lsq
+#==========================================================================================#
+#==========================================================================================#
+
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
+#    This function finds the shape parameter for a skew normal distribution.  In case      #
+# the distribution is not skewed, location parameter becomes the standard deviation.       #
+#------------------------------------------------------------------------------------------#
+sn.cvar <<- function(location,scale,shape,dp=NULL){
+   #----- Replace xi, omega, and alpha with dp in case dp is not NULL. --------------------#
+   if ( (! is.null(dp)) && (! (missing(xi) && missing(omega) && missing(alpha))) ){
+      stop("You cannot set both \"dp\" and component parameters!")
+   }else if (! is.null(dp)){
+      location = dp[1]
+      scale    = dp[2]
+      shape    = dp[3]
+   }else{
+      nmax  = max(c(length(location),length(scale),length(shape)))
+      if (length(location) == 1){
+         location = rep(location,times=nmax)
+      }else if (length(location) != nmax){
+         stop("Parameters must be single numbers of have the same length.")
+      }#end if
+      if (length(scale) == 1){
+         scale = rep(scale,times=nmax)
+      }else if (length(scale) != nmax){
+         stop("Parameters must be single numbers of have the same length.")
+      }#end if
+      if (length(shape) == 1){
+         shape = rep(shape,times=nmax)
+      }else if (length(shape) != nmax){
+         stop("Parameters must be single numbers of have the same length.")
+      }#end if
+   }#end if ( (! is.null(dp)) && (! (missing(xi) && missing(omega) && missing(alpha))) )
+   #---------------------------------------------------------------------------------------#
+
+
+   #---------------------------------------------------------------------------------------#
+   #     Find quantiles equivalent to the definition in the normal distribution.           #
+   #---------------------------------------------------------------------------------------#
+   if (nmax > 1){
+      #----- Use mapply to run element-by-element. ----------------------------------------#
+      ans  = mapply( FUN      = sn.cvar
+                   , location = as.list(location)
+                   , scale    = as.list(scale   )
+                   , shape    = as.list(shape   )
+                   , SIMPLIFY = TRUE
+                   )#end mapply
+      #------------------------------------------------------------------------------------#
+   }else{
+      plwr = pnorm(q=-0.5,mean=0.0,sd=1.0)
+      pmid = pnorm(q= 0.0,mean=0.0,sd=1.0)
+      pupr = pnorm(q=+0.5,mean=0.0,sd=1.0)
+      qlwr = qsn(p=plwr,xi=location,omega=scale,alpha=shape,engine="T.Owen",solver="RFB")
+      qmid = qsn(p=pmid,xi=location,omega=scale,alpha=shape,engine="T.Owen",solver="RFB")
+      qupr = qsn(p=pupr,xi=location,omega=scale,alpha=shape,engine="T.Owen",solver="RFB")
+      ans  = (qupr - qlwr) / qmid
+   }#end if
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #     Return the answer.                                                                #
+   #---------------------------------------------------------------------------------------#
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end function
 #==========================================================================================#
 #==========================================================================================#

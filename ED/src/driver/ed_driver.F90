@@ -130,10 +130,11 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   !      Initialise derived radiation parameters.                                         !
+   !      Initialise any variable that should be initialised after the xml parameters have !
+   ! been read.                                                                            !
    !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_rad_variables...'
-   call init_derived_rad_params()
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_params_after_xml...'
+   call init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
 
 

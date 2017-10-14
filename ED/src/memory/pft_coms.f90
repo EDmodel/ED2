@@ -11,25 +11,25 @@ module pft_coms
 
    use ed_max_dims, only: n_pft
    !---------------------------------------------------------------------------------------!
-   !  PFT | Name                                |   Grass | Tropical | Conifer |      Crop !
-   !------+-------------------------------------+---------+----------+---------------------!
-   !    1 | C4 grass                            |     yes |      yes |      no |       yes !
-   !    2 | Early tropical                      |      no |      yes |      no |        no !
-   !    3 | Mid tropical                        |      no |      yes |      no |        no !
-   !    4 | Late tropical                       |      no |      yes |      no |        no !
-   !    5 | Temperate C3 grass                  |     yes |       no |      no |       yes !
-   !    6 | Northern pines                      |      no |       no |     yes |        no !
-   !    7 | Southern pines                      |      no |       no |     yes |        no !
-   !    8 | Late conifers                       |      no |       no |     yes |        no !
-   !    9 | Early temperate deciduous           |      no |       no |      no |        no !
-   !   10 | Mid temperate deciduous             |      no |       no |      no |        no !
-   !   11 | Late temperate deciduous            |      no |       no |      no |        no !
-   !   12 | C3 pasture                          |     yes |       no |      no |       yes !
-   !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |      no |       yes !
-   !   14 | C4 pasture                          |     yes |      yes |      no |       yes !
-   !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |      no |       yes !
-   !   16 | Tropical C3 grass                   |     yes |      yes |      no |       yes !
-   !   17 | Araucaria                           |      no |      yes |     yes |        no !
+   ! PFT | Name                            | Grass | Liana | Tropical | Savannah | Conifer !
+   !-----+---------------------------------+-------+-------+----------+----------+---------!
+   !   1 | C4 grass                        |   yes |    no |      yes |       no |      no !
+   !   2 | Early tropical forest           |    no |    no |      yes |       no |      no !
+   !   3 | Mid tropical forest             |    no |    no |      yes |       no |      no !
+   !   4 | Late tropical forest            |    no |    no |      yes |       no |      no !
+   !   5 | Temperate C3 grass              |   yes |    no |       no |       no |      no !
+   !   6 | Northern pines                  |    no |    no |       no |       no |     yes !
+   !   7 | Southern pines                  |    no |    no |       no |       no |     yes !
+   !   8 | Late conifers                   |    no |    no |       no |       no |     yes !
+   !   9 | Early temperate deciduous       |    no |    no |       no |       no |      no !
+   !  10 | Mid temperate deciduous         |    no |    no |       no |       no |      no !
+   !  11 | Late temperate deciduous        |    no |    no |       no |       no |      no !
+   !  12 | Early tropical savannah         |    no |    no |      yes |      yes |      no !
+   !  13 | Mid tropical savannah           |    no |    no |      yes |      yes |      no !
+   !  14 | Late tropical savannah          |    no |    no |      yes |      yes |      no !
+   !  15 | Araucaria                       |    no |    no |      yes |       no |     yes !
+   !  16 | Tropical C3 grass               |   yes |    no |      yes |       no |      no !
+   !  17 | Liana                           |    no |   yes |      yes |       no |     yes !
    !---------------------------------------------------------------------------------------!
 
 
@@ -139,6 +139,7 @@ module pft_coms
    logical, dimension(n_pft)    :: is_tropical
    logical, dimension(n_pft)    :: is_conifer
    logical, dimension(n_pft)    :: is_grass
+   logical, dimension(n_pft)    :: is_savannah
    !---------------------------------------------------------------------------------------!
 
 
@@ -234,6 +235,9 @@ module pft_coms
 
    !----- This is the inverse of fine root life span [1/year]. ----------------------------!
    real, dimension(n_pft) :: root_turnover_rate
+
+   !----- This is the inverse of fine bark life span [1/year]. ----------------------------!
+   real, dimension(n_pft) :: bark_turnover_rate
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the rate of dark (i.e., leaf) respiration.  It is dimensionless !
@@ -437,9 +441,15 @@ module pft_coms
    real   , dimension(n_pft)    :: sla_pft_init
    !----- Mass ratio between fine root and leaves [kg_fine_roots]/[kg_leaves]. ------------!
    real   , dimension(n_pft)    :: q
-   !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
+   !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]/[m]. -------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
+   !----- Mass ratio between bark and leaves [kg_bark]/[kg_leaves]/[m]. -------------------!
+   real   , dimension(n_pft)    :: qbark
+   !----- Area ratio between WAI and LAI [m2_wood/m2_leaf]. -------------------------------!
+   real   , dimension(n_pft)    :: qwai
+   !----- Density ratio between bark and wood [(g cm-3)_bark/(g cm-3)_wood]. --------------!
+   real   , dimension(n_pft)    :: qrhob
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry intercept (m).  Notice that this variable has different      !
    ! meaning between temperate and tropical PFTs.                                          !
@@ -475,10 +485,10 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
-   !----- DBH-WAI allometry intercept.  All PFTs. -----------------------------------------!
-   real   , dimension(n_pft)    :: b1WAI
-   !----- DBH-WAI allometry slope.  All PFTs. ---------------------------------------------!
-   real   , dimension(n_pft)    :: b2WAI
+   !----- DBH-bark thickness slope.  All PFTs. --------------------------------------------!
+   real   , dimension(n_pft)    :: b1Xb
+   !----- DBH-sapwood thickness slope.  All PFTs. -----------------------------------------!
+   real   , dimension(n_pft)    :: b1Xs
    !----- Minimum DBH attainable by this PFT. ---------------------------------------------!
    real   , dimension(n_pft)    :: min_dbh
    !----- Critical DBH for height/bdead, point in which plants stop growing vertically. ---!
@@ -533,15 +543,6 @@ module pft_coms
    real, dimension(n_pft) :: b2Vol
    real, dimension(n_pft) :: b1Rd
    real, dimension(n_pft) :: b2Rd
-
-   !---------------------------------------------------------------------------------------!
-   !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
-   !                                                                                       !
-   !    Poorter, L.; Bongers, L.; Bongers, F., 2006: Architecture of 54 moist-forest tree  !
-   ! species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.           !
-   ! For simplicity, we assume similar numbers for temperate PFTs.                         !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(n_pft) :: horiz_branch
    !=======================================================================================!
    !=======================================================================================!
 
@@ -556,14 +557,23 @@ module pft_coms
    !---------------------------------------------------------------------------------------!
    !----- Specific heat capacity of dry leaf biomass [J/kg/K]. ----------------------------!
    real, dimension(n_pft) :: c_grn_leaf_dry
-   !----- Specific heat capacity of dry non-green biomass [J/kg/K]. -----------------------!
-   real, dimension(n_pft) :: c_ngrn_biom_dry
+   !----- Specific heat capacity of dry non-green wood biomass [J/kg/K]. ------------------!
+   real, dimension(n_pft) :: c_ngrn_wood_dry
+   !----- Specific heat capacity of dry non-green bark biomass [J/kg/K]. ------------------!
+   real, dimension(n_pft) :: c_ngrn_bark_dry
    !----- Ratio of tissue water to dry mass in green leaves [kg_h2o/kg_leaves]. -----------!
-   real, dimension(n_pft) :: wat_dry_ratio_grn
+   real, dimension(n_pft) :: wat_dry_ratio_leaf
    !----- Ratio of water to dry mass in wood biomass [kg_h2o/kg_wood]. --------------------!
-   real, dimension(n_pft) :: wat_dry_ratio_ngrn
-   !-----  Second term in the RHS of equation 5 of Gu et al. (2007), assuming T=t3ple. ----!
-   real, dimension(n_pfT) :: delta_c
+   real, dimension(n_pft) :: wat_dry_ratio_wood
+   !----- Ratio of water to dry mass in bark biomass [kg_h2o/kg_wood]. --------------------!
+   real, dimension(n_pft) :: wat_dry_ratio_bark
+   !-----  Correction-term for energy storage in wood-water bond. -------------------------!
+   real, dimension(n_pft) :: delta_c_wood
+   real, dimension(n_pft) :: delta_c_bark
+   !----- Net specific heat capacity of leaves, wood, and bark. ---------------------------!
+   real, dimension(n_pft) :: cleaf
+   real, dimension(n_pft) :: cwood
+   real, dimension(n_pft) :: cbark
    !=======================================================================================!
    !=======================================================================================!
 
@@ -699,6 +709,7 @@ module pft_coms
       real                :: broot
       real                :: bsapwooda
       real                :: bsapwoodb
+      real                :: bbark
       real                :: balive
       real                :: paw_avg
       real                :: elongf
@@ -748,6 +759,7 @@ module pft_coms
          recruit(p)%broot                = 0.
          recruit(p)%bsapwooda            = 0.
          recruit(p)%bsapwoodb            = 0.
+         recruit(p)%bbark                = 0.
          recruit(p)%balive               = 0.
          recruit(p)%paw_avg              = 0.
          recruit(p)%elongf               = 0.
@@ -800,6 +812,7 @@ module pft_coms
       rectarget%broot            = recsource%broot
       rectarget%bsapwooda        = recsource%bsapwooda
       rectarget%bsapwoodb        = recsource%bsapwoodb
+      rectarget%bbark            = recsource%bbark
       rectarget%balive           = recsource%balive
       rectarget%paw_avg          = recsource%paw_avg
       rectarget%elongf           = recsource%elongf

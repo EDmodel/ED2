@@ -1728,6 +1728,142 @@ BIC.lsq.htscd <<- function(object){
 
 #==========================================================================================#
 #==========================================================================================#
+#    VIF.lsq.htscd -- This function retrieves the Variance Inflation Factor for            #
+#                     predictors.                                                          #
+#------------------------------------------------------------------------------------------#
+vif.lsq.htscd <<- function(object,log.guess=FALSE,verbose=FALSE){
+   #---------------------------------------------------------------------------------------#
+   #    This must use an object created by optim.lsq.htscd.                                #
+   #---------------------------------------------------------------------------------------#
+   stopifnot(is.lsq.htscd(object))
+   #---------------------------------------------------------------------------------------#
+
+   #---------------------------------------------------------------------------------------#
+   #    Copy data to a temporary object, and remove predicted variable.                    #
+   #---------------------------------------------------------------------------------------#
+   yvar  = all.vars(object$lsq.formula)[1]
+   dtest = object$data[,(! names(object$data) %in% yvar),drop=FALSE]
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #     In case we are supposed to guess log transformation, check variables.             #
+   #---------------------------------------------------------------------------------------#
+   if (log.guess){
+
+      if (verbose) cat0(" + Guess which variables should be log-transformed.")
+
+
+      #------------------------------------------------------------------------------------#
+      #     Return a list with the BIC value.                                              #
+      #------------------------------------------------------------------------------------#
+      coeff.list = names(coefficients(object))
+      coeff.lsq  = coeff.list[grepl(pattern="^lsq\\.",x=coeff.list)]
+      coeff.lsq  = gsub(pattern="^lsq\\.",replacement="",x=coeff.lsq)
+      lsq.char   = gsub(pattern=" ",replacement="",as.character(object$lsq.formula)[3])
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Find variables that must be transformed in logarithm.                          #
+      #------------------------------------------------------------------------------------#
+      ln.transf  = rep(FALSE,times=length(coeff.lsq))
+      form.list  = all.vars(object$lsq.formula)[-1]
+      ivrs       = which(form.list %in% names(dtest))
+      icfs       = which(form.list %in% coeff.lsq   )
+      for (vv in seq_along(coeff.lsq)){
+          #----- Find position of coefficient to check. -----------------------------------#
+          icf = icfs[vv]
+          #--------------------------------------------------------------------------------#
+
+
+          #----- Look for likely candidates for log-transformation. -----------------------#
+          expo    = grepl(pattern=paste0("\\^"     ,coeff.lsq[vv]  ),x=lsq.char)
+          lnexpl  = grepl(pattern=paste0(coeff.lsq[vv],"\\*log\\(" ),x=lsq.char)
+          logexpl = grepl(pattern=paste0(coeff.lsq[vv],"\\*lo10\\("),x=lsq.char)
+          #--------------------------------------------------------------------------------#
+
+
+
+          #--------------------------------------------------------------------------------#
+          #     Identify the actual variable next to the coefficient that is likely to be  #
+          # linked to log-transformation.                                                  #
+          #--------------------------------------------------------------------------------#
+          if (expo){
+             #----- Find variable just before the exponent. -------------------------------#
+             warn.old = getOption("warn")
+             dummy    = options(warn=-1)
+             iln      = max(ivrs[ivrs < icf])
+             dummy    = options(warn=warn.old)
+             #-----------------------------------------------------------------------------#
+          }else if (lnexpl || logexpl){
+             #----- Find variable likely to be inside the log. ----------------------------#
+             warn.old = getOption("warn")
+             dummy    = options(warn=-1)
+             iln      = min(ivrs[ivrs > icf])
+             dummy    = options(warn=warn.old)
+             #-----------------------------------------------------------------------------#
+          }else{
+             #----- Do not transform any variable. ----------------------------------------#
+             iln      = NA
+             #-----------------------------------------------------------------------------#
+          }#end if (expo)
+          #--------------------------------------------------------------------------------#
+
+
+          #--------------------------------------------------------------------------------#
+          #      Transform variable.                                                       #
+          #--------------------------------------------------------------------------------#
+          if (is.finite(iln)){
+             ln.transf          = form.list[iln]
+             dtest[[ln.transf]] = log(dtest[[ln.transf]])
+             cat0("   - Variable ",ln.transf," was log-transformed.") 
+          }else if (expo || lnexpl || logexpl){
+             cat0("   - No suitable variable for log-transformation.") 
+          }#end if (is.finite(iln))
+          #--------------------------------------------------------------------------------#
+      }#end for (vv in sequence(ln.transf))
+      #------------------------------------------------------------------------------------#
+   }#end if (log.guess)
+   #---------------------------------------------------------------------------------------#
+   
+   #---------------------------------------------------------------------------------------#
+   #       Loop through variables, fit linear models.                                      #
+   #---------------------------------------------------------------------------------------#
+   ans        = rep(NA_real_,times=length(dtest))
+   names(ans) = names(dtest)
+   for (a in seq_along(ans)){
+      y.this    = names(ans)[a]
+      x.this    = names(ans)[-a]
+      form.this = as.formula(paste0(y.this," ~ ",paste(x.this,collapse=" + ")))
+      fit.this  = lm(formula=form.this,data=dtest)
+      summ.this = summary(fit.this)
+      ans[a]    = 1. / (1. - summ.this$r.squared)
+   }#end for
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #---------------------------------------------------------------------------------------#
+   #      Return answer.                                                                   # 
+   #---------------------------------------------------------------------------------------#
+   if (verbose){
+      for (a in which(ans >= 10.)){
+          cat0(" - Variable ",names(ans)[a]," has strong evidence of multicolinearity.")
+      }#end for (a in which(ans >= 10.))
+   }#end if
+   return(ans)
+   #---------------------------------------------------------------------------------------#
+}#end vif.lsq.htscd
+#------------------------------------------------------------------------------------------#
+
+
+
+
+
+#==========================================================================================#
+#==========================================================================================#
 #    summary.lsq.htscd -- Dummy function, it returns the object itself.                    #
 #------------------------------------------------------------------------------------------#
 summary.lsq.htscd <<- function(object){

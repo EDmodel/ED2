@@ -921,7 +921,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    use ed_misc_coms          , only : dtlsm                & ! intent(in)
                                     , fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
-   use pft_coms              , only : water_conductance    ! ! intent(in)
+   use pft_coms              , only : water_conductance    & ! intent(in)
+                                    , agf_bs               ! ! intent(in)
    use budget_utils          , only : compute_netrad       ! ! function
    !$ use omp_lib
 
@@ -1322,10 +1323,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
    !---------------------------------------------------------------------------------------!
   
    cohortloop: do ico = 1,cpatch%ncohorts
+      ipft = cpatch%pft(ico)
 
-      cflxgc = cflxgc + initp%root_resp(ico)        + initp%root_growth_resp(ico)          &
-                      + initp%sapb_growth_resp(ico) + initp%root_storage_resp(ico)         &
-                      + initp%sapb_storage_resp(ico)
+      cflxgc = cflxgc + initp%root_resp(ico)                                               &
+                      + initp%root_growth_resp(ico)                                        &
+                      + initp%sapb_growth_resp(ico)                                        &
+                      + dble(1.0 - agf_bs(ipft)) * initp%sapb_growth_resp(ico)             &
+                      + initp%root_storage_resp(ico)                                       &
+                      + initp%sapb_storage_resp(ico)                                       &
+                      + dble(1.0 - agf_bs(ipft)) * initp%sapb_storage_resp(ico)
 
       !------------------------------------------------------------------------------------!
       !    Add the respiration terms according to their "source".                          !
@@ -1335,7 +1341,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxsc,wflxsc,qwflxsc,hf
       ! Leaf   -> CAS : Leaf respiration, Virtual leaf respiration - GPP.                  !
       !------------------------------------------------------------------------------------!
       cflxlc_tot = cflxlc_tot + initp%leaf_growth_resp(ico) + initp%leaf_storage_resp(ico)
-      cflxwc_tot = cflxwc_tot + initp%sapa_growth_resp(ico) + initp%sapa_storage_resp(ico)
+      cflxwc_tot = cflxwc_tot + initp%sapa_growth_resp(ico)                                &
+                              + dble(agf_bs(ipft)) * initp%bark_growth_resp(ico)           &
+                              + initp%sapa_storage_resp(ico)                               &
+                              + dble(agf_bs(ipft)) * initp%bark_storage_resp(ico)
       !------------------------------------------------------------------------------------!
 
 

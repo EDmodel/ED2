@@ -226,10 +226,12 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: root_storage_resp ! Storage resp   [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: sapa_storage_resp ! Storage resp   [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: sapb_storage_resp ! Storage resp   [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: bark_storage_resp ! Storage resp   [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: leaf_growth_resp !                 [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: root_growth_resp !                 [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: sapa_growth_resp !                 [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: sapb_growth_resp !                 [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: bark_growth_resp !                 [µmol/m²/s]
 
 
       !------ Variables used for hybrid stepping -----------------------------------------!
@@ -1252,10 +1254,12 @@ module rk4_coms
       allocate(y%root_growth_resp (maxcohort))
       allocate(y%sapa_growth_resp (maxcohort))
       allocate(y%sapb_growth_resp (maxcohort))
+      allocate(y%bark_growth_resp (maxcohort))
       allocate(y%leaf_storage_resp(maxcohort))
       allocate(y%root_storage_resp(maxcohort))
       allocate(y%sapa_storage_resp(maxcohort))
       allocate(y%sapb_storage_resp(maxcohort))
+      allocate(y%bark_storage_resp(maxcohort))
 
       allocate(y%wflxlc           (maxcohort))
       allocate(y%wflxwc           (maxcohort))
@@ -1356,10 +1360,12 @@ module rk4_coms
       nullify(y%root_growth_resp )
       nullify(y%sapa_growth_resp )
       nullify(y%sapb_growth_resp )
+      nullify(y%bark_growth_resp )
       nullify(y%leaf_storage_resp)
       nullify(y%root_storage_resp)
       nullify(y%sapa_storage_resp)
       nullify(y%sapb_storage_resp)
+      nullify(y%bark_storage_resp)
 
       nullify(y%wflxlc           )
       nullify(y%wflxwc           )
@@ -1459,10 +1465,12 @@ module rk4_coms
       if (associated(y%root_growth_resp )) y%root_growth_resp = 0.d0
       if (associated(y%sapa_growth_resp )) y%sapa_growth_resp = 0.d0
       if (associated(y%sapb_growth_resp )) y%sapb_growth_resp = 0.d0
+      if (associated(y%bark_growth_resp )) y%bark_growth_resp = 0.d0
       if (associated(y%leaf_storage_resp)) y%leaf_storage_resp = 0.d0
       if (associated(y%root_storage_resp)) y%root_storage_resp = 0.d0
       if (associated(y%sapa_storage_resp)) y%sapa_storage_resp = 0.d0
       if (associated(y%sapb_storage_resp)) y%sapb_storage_resp = 0.d0
+      if (associated(y%bark_storage_resp)) y%bark_storage_resp = 0.d0
 
       if (associated(y%wflxlc           )) y%wflxlc           = 0.d0
       if (associated(y%wflxwc           )) y%wflxwc           = 0.d0
@@ -1561,10 +1569,12 @@ module rk4_coms
       if (associated(y%root_growth_resp )) deallocate(y%root_growth_resp  )
       if (associated(y%sapa_growth_resp )) deallocate(y%sapa_growth_resp  )
       if (associated(y%sapb_growth_resp )) deallocate(y%sapb_growth_resp  )
+      if (associated(y%bark_growth_resp )) deallocate(y%bark_growth_resp  )
       if (associated(y%leaf_storage_resp)) deallocate(y%leaf_storage_resp )
       if (associated(y%root_storage_resp)) deallocate(y%root_storage_resp )
       if (associated(y%sapa_storage_resp)) deallocate(y%sapa_storage_resp )
       if (associated(y%sapb_storage_resp)) deallocate(y%sapb_storage_resp )
+      if (associated(y%bark_storage_resp)) deallocate(y%bark_storage_resp )
 
       if (associated(y%wflxlc           )) deallocate(y%wflxlc            )
       if (associated(y%wflxwc           )) deallocate(y%wflxwc            )

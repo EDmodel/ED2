@@ -197,6 +197,10 @@ module average_utils
                                                     + cpatch%fmean_sapb_growth_resp (ico)  &
                                                     * cpatch%nplant                 (ico)  &
                                                     * patch_wgt
+                  cgrid%fmean_bark_growth_resp(ipy) = cgrid%fmean_bark_growth_resp  (ipy)  &
+                                                    + cpatch%fmean_bark_growth_resp (ico)  &
+                                                    * cpatch%nplant                 (ico)  &
+                                                    * patch_wgt
                   cgrid%fmean_leaf_storage_resp(ipy)= cgrid%fmean_leaf_storage_resp (ipy)  &
                                                     + cpatch%fmean_leaf_storage_resp(ico)  &
                                                     * cpatch%nplant                 (ico)  &
@@ -211,6 +215,10 @@ module average_utils
                                                     * patch_wgt
                   cgrid%fmean_sapb_storage_resp(ipy)= cgrid%fmean_sapb_storage_resp (ipy)  &
                                                     + cpatch%fmean_sapb_storage_resp(ico)  &
+                                                    * cpatch%nplant                 (ico)  &
+                                                    * patch_wgt
+                  cgrid%fmean_bark_storage_resp(ipy)= cgrid%fmean_bark_storage_resp (ipy)  &
+                                                    + cpatch%fmean_bark_storage_resp(ico)  &
                                                     * cpatch%nplant                 (ico)  &
                                                     * patch_wgt
                   cgrid%fmean_plresp        (ipy) = cgrid%fmean_plresp         (ipy)       &
@@ -1131,10 +1139,12 @@ module average_utils
                                            + cpatch%fmean_root_storage_resp(ico)           &
                                            + cpatch%fmean_sapa_storage_resp(ico)           &
                                            + cpatch%fmean_sapb_storage_resp(ico)           &
+                                           + cpatch%fmean_bark_storage_resp(ico)           &
                                            + cpatch%fmean_leaf_growth_resp (ico)           &
                                            + cpatch%fmean_root_growth_resp (ico)           &
                                            + cpatch%fmean_sapa_growth_resp (ico)           &
-                                           + cpatch%fmean_sapb_growth_resp (ico)
+                                           + cpatch%fmean_sapb_growth_resp (ico)           &
+                                           + cpatch%fmean_bark_growth_resp (ico)
 
                   cpatch%fmean_npp   (ico) = cpatch%fmean_gpp         (ico)                &
                                            - cpatch%fmean_plresp      (ico)
@@ -1236,10 +1246,12 @@ module average_utils
          cgrid%fmean_root_growth_resp(  ipy) = 0.0
          cgrid%fmean_sapa_growth_resp(  ipy) = 0.0
          cgrid%fmean_sapb_growth_resp(  ipy) = 0.0
+         cgrid%fmean_bark_growth_resp(  ipy) = 0.0
          cgrid%fmean_leaf_storage_resp(  ipy) = 0.0
          cgrid%fmean_root_storage_resp(  ipy) = 0.0
          cgrid%fmean_sapa_storage_resp(  ipy) = 0.0
          cgrid%fmean_sapb_storage_resp(  ipy) = 0.0
+         cgrid%fmean_bark_storage_resp(  ipy) = 0.0
          cgrid%fmean_plresp          (  ipy) = 0.0
          cgrid%fmean_leaf_energy     (  ipy) = 0.0
          cgrid%fmean_leaf_water      (  ipy) = 0.0
@@ -1489,10 +1501,12 @@ module average_utils
                   cpatch%fmean_root_growth_resp  (ico) = 0.0
                   cpatch%fmean_sapa_growth_resp  (ico) = 0.0
                   cpatch%fmean_sapb_growth_resp  (ico) = 0.0
+                  cpatch%fmean_bark_growth_resp  (ico) = 0.0
                   cpatch%fmean_leaf_storage_resp (ico) = 0.0
                   cpatch%fmean_root_storage_resp (ico) = 0.0
                   cpatch%fmean_sapa_storage_resp (ico) = 0.0
                   cpatch%fmean_sapb_storage_resp (ico) = 0.0
+                  cpatch%fmean_bark_storage_resp (ico) = 0.0
                   cpatch%fmean_plresp            (ico) = 0.0
                   cpatch%fmean_leaf_energy       (ico) = 0.0
                   cpatch%fmean_leaf_water        (ico) = 0.0
@@ -1673,6 +1687,9 @@ module average_utils
          cgrid%dmean_sapb_growth_resp(ipy) = cgrid%dmean_sapb_growth_resp(ipy)             &
                                            + cgrid%fmean_sapb_growth_resp(ipy)             &
                                            * frqsum_o_daysec
+         cgrid%dmean_bark_growth_resp(ipy) = cgrid%dmean_bark_growth_resp(ipy)             &
+                                           + cgrid%fmean_bark_growth_resp(ipy)             &
+                                           * frqsum_o_daysec
          cgrid%dmean_leaf_storage_resp(ipy)= cgrid%dmean_leaf_storage_resp(ipy)            &
                                            + cgrid%fmean_leaf_storage_resp(ipy)            &
                                            * frqsum_o_daysec
@@ -1684,6 +1701,9 @@ module average_utils
                                            * frqsum_o_daysec
          cgrid%dmean_sapb_storage_resp(ipy)= cgrid%dmean_sapb_storage_resp(ipy)            &
                                            + cgrid%fmean_sapb_storage_resp(ipy)            &
+                                           * frqsum_o_daysec
+         cgrid%dmean_bark_storage_resp(ipy)= cgrid%dmean_bark_storage_resp(ipy)            &
+                                           + cgrid%fmean_bark_storage_resp(ipy)            &
                                            * frqsum_o_daysec
          cgrid%dmean_plresp         (ipy) = cgrid%dmean_plresp         (ipy)               &
                                           + cgrid%fmean_plresp         (ipy)               &
@@ -2272,6 +2292,9 @@ module average_utils
                   cpatch%dmean_sapb_growth_resp(ico) = cpatch%dmean_sapb_growth_resp (ico) &
                                                      + cpatch%fmean_sapb_growth_resp (ico) &
                                                      * frqsum_o_daysec
+                  cpatch%dmean_bark_growth_resp(ico) = cpatch%dmean_bark_growth_resp (ico) &
+                                                     + cpatch%fmean_bark_growth_resp (ico) &
+                                                     * frqsum_o_daysec
                   cpatch%dmean_leaf_storage_resp(ico)= cpatch%dmean_leaf_storage_resp(ico) &
                                                      + cpatch%fmean_leaf_storage_resp(ico) &
                                                      * frqsum_o_daysec
@@ -2283,6 +2306,9 @@ module average_utils
                                                      * frqsum_o_daysec
                   cpatch%dmean_sapb_storage_resp(ico)= cpatch%dmean_sapb_storage_resp(ico) &
                                                      + cpatch%fmean_sapb_storage_resp(ico) &
+                                                     * frqsum_o_daysec
+                  cpatch%dmean_bark_storage_resp(ico)= cpatch%dmean_bark_storage_resp(ico) &
+                                                     + cpatch%fmean_bark_storage_resp(ico) &
                                                      * frqsum_o_daysec
                   cpatch%dmean_plresp        (ico) = cpatch%dmean_plresp        (ico)      &
                                                    + cpatch%fmean_plresp        (ico)      &
@@ -2575,6 +2601,8 @@ module average_utils
                      cpatch%dmean_nppfroot  (ico) = cpatch%today_nppfroot  (ico)           &
                                                   * yr_day / cpatch%nplant (ico)
                      cpatch%dmean_nppsapwood(ico) = cpatch%today_nppsapwood(ico)           &
+                                                  * yr_day / cpatch%nplant (ico)
+                     cpatch%dmean_nppbark   (ico) = cpatch%today_nppbark   (ico)           &
                                                   * yr_day / cpatch%nplant (ico)
                      cpatch%dmean_nppcroot  (ico) = cpatch%today_nppcroot  (ico)           &
                                                   * yr_day / cpatch%nplant (ico)
@@ -2892,6 +2920,10 @@ module average_utils
                                                      + cpatch%dmean_nppsapwood      (ico)  &
                                                      * cpatch%nplant                (ico)  &
                                                      * patch_wgt
+                  cgrid%dmean_nppbark          (ipy) = cgrid%dmean_nppbark          (ipy)  &
+                                                     + cpatch%dmean_nppbark         (ico)  &
+                                                     * cpatch%nplant                (ico)  &
+                                                     * patch_wgt
                   cgrid%dmean_nppcroot         (ipy) = cgrid%dmean_nppcroot         (ipy)  &
                                                      + cpatch%dmean_nppcroot        (ico)  &
                                                      * cpatch%nplant                (ico)  &
@@ -3136,6 +3168,7 @@ module average_utils
                   cpatch%today_nppleaf      (ico) = 0.0
                   cpatch%today_nppfroot     (ico) = 0.0
                   cpatch%today_nppsapwood   (ico) = 0.0
+                  cpatch%today_nppbark      (ico) = 0.0
                   cpatch%today_nppcroot     (ico) = 0.0
                   cpatch%today_nppseeds     (ico) = 0.0
                   cpatch%today_nppwood      (ico) = 0.0
@@ -3198,6 +3231,7 @@ module average_utils
          cgrid%dmean_nppleaf            (ipy) = 0.0
          cgrid%dmean_nppfroot           (ipy) = 0.0
          cgrid%dmean_nppsapwood         (ipy) = 0.0
+         cgrid%dmean_nppbark            (ipy) = 0.0
          cgrid%dmean_nppcroot           (ipy) = 0.0
          cgrid%dmean_nppseeds           (ipy) = 0.0
          cgrid%dmean_nppwood            (ipy) = 0.0
@@ -3215,10 +3249,12 @@ module average_utils
          cgrid%dmean_root_growth_resp   (ipy) = 0.0
          cgrid%dmean_sapa_growth_resp   (ipy) = 0.0
          cgrid%dmean_sapb_growth_resp   (ipy) = 0.0
+         cgrid%dmean_bark_growth_resp   (ipy) = 0.0
          cgrid%dmean_leaf_storage_resp  (ipy) = 0.0
          cgrid%dmean_root_storage_resp  (ipy) = 0.0
          cgrid%dmean_sapa_storage_resp  (ipy) = 0.0
          cgrid%dmean_sapb_storage_resp  (ipy) = 0.0
+         cgrid%dmean_bark_storage_resp  (ipy) = 0.0
          cgrid%dmean_plresp             (ipy) = 0.0
          cgrid%dmean_leaf_energy        (ipy) = 0.0
          cgrid%dmean_leaf_water         (ipy) = 0.0
@@ -3444,6 +3480,7 @@ module average_utils
                   cpatch%dmean_nppleaf           (ico) = 0.0
                   cpatch%dmean_nppfroot          (ico) = 0.0
                   cpatch%dmean_nppsapwood        (ico) = 0.0
+                  cpatch%dmean_nppbark           (ico) = 0.0
                   cpatch%dmean_nppcroot          (ico) = 0.0
                   cpatch%dmean_nppseeds          (ico) = 0.0
                   cpatch%dmean_nppwood           (ico) = 0.0
@@ -3456,10 +3493,12 @@ module average_utils
                   cpatch%dmean_root_growth_resp  (ico) = 0.0
                   cpatch%dmean_sapa_growth_resp  (ico) = 0.0
                   cpatch%dmean_sapb_growth_resp  (ico) = 0.0
+                  cpatch%dmean_bark_growth_resp  (ico) = 0.0
                   cpatch%dmean_leaf_storage_resp (ico) = 0.0
                   cpatch%dmean_root_storage_resp (ico) = 0.0
                   cpatch%dmean_sapa_storage_resp (ico) = 0.0
                   cpatch%dmean_sapb_storage_resp (ico) = 0.0
+                  cpatch%dmean_bark_storage_resp (ico) = 0.0
                   cpatch%dmean_plresp            (ico) = 0.0
                   cpatch%dmean_leaf_energy       (ico) = 0.0
                   cpatch%dmean_leaf_water        (ico) = 0.0
@@ -3614,6 +3653,9 @@ module average_utils
          !    The following variables don't have daily means, but the instantaneous value  !
          ! is fine because they are updated only once a day.                               !
          !---------------------------------------------------------------------------------!
+         cgrid%mmean_thbark          (:,:,ipy) = cgrid%mmean_thbark           (:,:,ipy)    &
+                                               + cgrid%thbark                 (:,:,ipy)    &
+                                               * ndaysi
          cgrid%mmean_lai             (:,:,ipy) = cgrid%mmean_lai              (:,:,ipy)    &
                                                + cgrid%lai                    (:,:,ipy)    &
                                                * ndaysi
@@ -3623,14 +3665,26 @@ module average_utils
          cgrid%mmean_broot           (:,:,ipy) = cgrid%mmean_broot            (:,:,ipy)    &
                                                + cgrid%broot                  (:,:,ipy)    &
                                                * ndaysi
+         cgrid%mmean_bbark           (:,:,ipy) = cgrid%mmean_bbark            (:,:,ipy)    &
+                                               + cgrid%bbark                  (:,:,ipy)    &
+                                               * ndaysi
          cgrid%mmean_bstorage        (:,:,ipy) = cgrid%mmean_bstorage         (:,:,ipy)    &
                                                + cgrid%bstorage               (:,:,ipy)    &
+                                               * ndaysi
+         cgrid%mmean_balive          (:,:,ipy) = cgrid%mmean_balive           (:,:,ipy)    &
+                                               + cgrid%balive                 (:,:,ipy)    &
                                                * ndaysi
          cgrid%mmean_bleaf_n         (:,:,ipy) = cgrid%mmean_bleaf_n          (:,:,ipy)    &
                                                + cgrid%bleaf_n                (:,:,ipy)    &
                                                * ndaysi
          cgrid%mmean_broot_n         (:,:,ipy) = cgrid%mmean_broot_n          (:,:,ipy)    &
                                                + cgrid%broot_n                (:,:,ipy)    &
+                                               * ndaysi
+         cgrid%mmean_bbark_n         (:,:,ipy) = cgrid%mmean_bbark_n          (:,:,ipy)    &
+                                               + cgrid%bbark_n                (:,:,ipy)    &
+                                               * ndaysi
+         cgrid%mmean_balive_n        (:,:,ipy) = cgrid%mmean_balive_n         (:,:,ipy)    &
+                                               + cgrid%balive_n               (:,:,ipy)    &
                                                * ndaysi
          cgrid%mmean_bstorage_n      (:,:,ipy) = cgrid%mmean_bstorage_n       (:,:,ipy)    &
                                                + cgrid%bstorage_n             (:,:,ipy)    &
@@ -3640,6 +3694,9 @@ module average_utils
                                                * ndaysi
          cgrid%mmean_root_maintenance(:,:,ipy) = cgrid%mmean_root_maintenance (:,:,ipy)    &
                                                + cgrid%root_maintenance       (:,:,ipy)    &
+                                               * ndaysi
+         cgrid%mmean_bark_maintenance(:,:,ipy) = cgrid%mmean_bark_maintenance (:,:,ipy)    &
+                                               + cgrid%bark_maintenance       (:,:,ipy)    &
                                                * ndaysi
          cgrid%mmean_leaf_drop       (:,:,ipy) = cgrid%mmean_leaf_drop        (:,:,ipy)    &
                                                + cgrid%leaf_drop              (:,:,ipy)    &
@@ -3698,6 +3755,9 @@ module average_utils
          cgrid%mmean_sapb_growth_resp (ipy) = cgrid%mmean_sapb_growth_resp (ipy)           &
                                             + cgrid%dmean_sapb_growth_resp (ipy)           &
                                             * ndaysi
+         cgrid%mmean_bark_growth_resp (ipy) = cgrid%mmean_bark_growth_resp (ipy)           &
+                                            + cgrid%dmean_bark_growth_resp (ipy)           &
+                                            * ndaysi
          cgrid%mmean_leaf_storage_resp(ipy) = cgrid%mmean_leaf_storage_resp(ipy)           &
                                             + cgrid%dmean_leaf_storage_resp(ipy)           &
                                             * ndaysi
@@ -3709,6 +3769,9 @@ module average_utils
                                             * ndaysi
          cgrid%mmean_sapb_storage_resp(ipy) = cgrid%mmean_sapb_storage_resp(ipy)           &
                                             + cgrid%dmean_sapb_storage_resp(ipy)           &
+                                            * ndaysi
+         cgrid%mmean_bark_storage_resp(ipy) = cgrid%mmean_bark_storage_resp(ipy)           &
+                                            + cgrid%dmean_bark_storage_resp(ipy)           &
                                             * ndaysi
          cgrid%mmean_plresp           (ipy) = cgrid%mmean_plresp           (ipy)           &
                                             + cgrid%dmean_plresp           (ipy)           &
@@ -3835,6 +3898,9 @@ module average_utils
                                             * ndaysi
          cgrid%mmean_nppsapwood       (ipy) = cgrid%mmean_nppsapwood       (ipy)           &
                                             + cgrid%dmean_nppsapwood       (ipy)           &
+                                            * ndaysi
+         cgrid%mmean_nppbark          (ipy) = cgrid%mmean_nppbark          (ipy)           &
+                                            + cgrid%dmean_nppbark          (ipy)           &
                                             * ndaysi
          cgrid%mmean_nppcroot         (ipy) = cgrid%mmean_nppcroot         (ipy)           &
                                             + cgrid%dmean_nppcroot         (ipy)           &
@@ -4017,6 +4083,9 @@ module average_utils
                                             * ndaysi
          cgrid%mmean_nppsapwood       (ipy) = cgrid%mmean_nppsapwood       (ipy)           &
                                             + cgrid%dmean_nppsapwood       (ipy)           &
+                                            * ndaysi
+         cgrid%mmean_nppbark          (ipy) = cgrid%mmean_nppbark          (ipy)           &
+                                            + cgrid%dmean_nppbark          (ipy)           &
                                             * ndaysi
          cgrid%mmean_nppcroot         (ipy) = cgrid%mmean_nppcroot         (ipy)           &
                                             + cgrid%dmean_nppcroot         (ipy)           &
@@ -4522,6 +4591,9 @@ module average_utils
                   !      Integrate the cohort-level variables that have no daily means     !
                   ! because their time step is one day.                                    !
                   !------------------------------------------------------------------------!
+                  cpatch%mmean_thbark          (ico) = cpatch%mmean_thbark          (ico)  &
+                                                     + cpatch%thbark                (ico)  &
+                                                     * ndaysi
                   cpatch%mmean_lai             (ico) = cpatch%mmean_lai             (ico)  &
                                                      + cpatch%lai                   (ico)  &
                                                      * ndaysi
@@ -4530,6 +4602,12 @@ module average_utils
                                                      * ndaysi
                   cpatch%mmean_broot           (ico) = cpatch%mmean_broot           (ico)  &
                                                      + cpatch%broot                 (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_bbark           (ico) = cpatch%mmean_bbark           (ico)  &
+                                                     + cpatch%bbark                 (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_balive          (ico) = cpatch%mmean_balive          (ico)  &
+                                                     + cpatch%balive                (ico)  &
                                                      * ndaysi
                   cpatch%mmean_bstorage        (ico) = cpatch%mmean_bstorage        (ico)  &
                                                      + cpatch%bstorage              (ico)  &
@@ -4543,6 +4621,9 @@ module average_utils
                   cpatch%mmean_root_maintenance(ico) = cpatch%mmean_root_maintenance(ico)  &
                                                      + cpatch%root_maintenance      (ico)  &
                                                      * ndaysi
+                  cpatch%mmean_bark_maintenance(ico) = cpatch%mmean_bark_maintenance(ico)  &
+                                                     + cpatch%bark_maintenance      (ico)  &
+                                                     * ndaysi
                   cpatch%mmean_leaf_drop       (ico) = cpatch%mmean_leaf_drop       (ico)  &
                                                      + cpatch%leaf_drop             (ico)  &
                                                      * ndaysi
@@ -4551,6 +4632,7 @@ module average_utils
                                                        - cpatch%dmean_plresp        (ico)  &
                                                        - cpatch%leaf_maintenance    (ico)  &
                                                        - cpatch%root_maintenance    (ico)  &
+                                                       - cpatch%bark_maintenance    (ico)  &
                                                        - cpatch%leaf_drop           (ico)  &
                                                        ) / yr_day * ndaysi
                   !------------------------------------------------------------------------!
@@ -4584,6 +4666,9 @@ module average_utils
                   cpatch%mmean_sapb_growth_resp(ico) = cpatch%mmean_sapb_growth_resp(ico)  &
                                                      + cpatch%dmean_sapb_growth_resp(ico)  &
                                                      * ndaysi
+                  cpatch%mmean_bark_growth_resp(ico) = cpatch%mmean_bark_growth_resp(ico)  &
+                                                     + cpatch%dmean_bark_growth_resp(ico)  &
+                                                     * ndaysi
                   cpatch%mmean_leaf_storage_resp(ico)= cpatch%mmean_leaf_storage_resp(ico) &
                                                      + cpatch%dmean_leaf_storage_resp(ico) &
                                                      * ndaysi
@@ -4595,6 +4680,9 @@ module average_utils
                                                      * ndaysi
                   cpatch%mmean_sapb_storage_resp(ico)= cpatch%mmean_sapb_storage_resp(ico) &
                                                      + cpatch%dmean_sapb_storage_resp(ico) &
+                                                     * ndaysi
+                  cpatch%mmean_bark_storage_resp(ico)= cpatch%mmean_bark_storage_resp(ico) &
+                                                     + cpatch%dmean_bark_storage_resp(ico) &
                                                      * ndaysi
                   cpatch%mmean_plresp          (ico) = cpatch%mmean_plresp          (ico)  &
                                                      + cpatch%dmean_plresp          (ico)  &
@@ -4760,6 +4848,9 @@ module average_utils
                                                      * ndaysi
                   cpatch%mmean_nppsapwood      (ico) = cpatch%mmean_nppsapwood      (ico)  &
                                                      + cpatch%dmean_nppsapwood      (ico)  &
+                                                     * ndaysi
+                  cpatch%mmean_nppbark         (ico) = cpatch%mmean_nppbark         (ico)  &
+                                                     + cpatch%dmean_nppbark         (ico)  &
                                                      * ndaysi
                   cpatch%mmean_nppcroot        (ico) = cpatch%mmean_nppcroot        (ico)  &
                                                      + cpatch%dmean_nppcroot        (ico)  &
@@ -5179,15 +5270,21 @@ module average_utils
       polyloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
+         cgrid%mmean_thbark          (:,:,ipy) = 0.0
          cgrid%mmean_lai             (:,:,ipy) = 0.0
          cgrid%mmean_bleaf           (:,:,ipy) = 0.0
          cgrid%mmean_broot           (:,:,ipy) = 0.0
+         cgrid%mmean_bbark           (:,:,ipy) = 0.0
+         cgrid%mmean_balive          (:,:,ipy) = 0.0
          cgrid%mmean_bstorage        (:,:,ipy) = 0.0
          cgrid%mmean_bleaf_n         (:,:,ipy) = 0.0
          cgrid%mmean_broot_n         (:,:,ipy) = 0.0
+         cgrid%mmean_bbark_n         (:,:,ipy) = 0.0
+         cgrid%mmean_balive_n        (:,:,ipy) = 0.0
          cgrid%mmean_bstorage_n      (:,:,ipy) = 0.0
          cgrid%mmean_leaf_maintenance(:,:,ipy) = 0.0
          cgrid%mmean_root_maintenance(:,:,ipy) = 0.0
+         cgrid%mmean_bark_maintenance(:,:,ipy) = 0.0
          cgrid%mmean_leaf_drop       (:,:,ipy) = 0.0
          cgrid%mmean_fast_soil_c         (ipy) = 0.0 
          cgrid%mmean_slow_soil_c         (ipy) = 0.0 
@@ -5205,10 +5302,12 @@ module average_utils
          cgrid%mmean_root_growth_resp    (ipy) = 0.0 
          cgrid%mmean_sapa_growth_resp    (ipy) = 0.0 
          cgrid%mmean_sapb_growth_resp    (ipy) = 0.0 
+         cgrid%mmean_bark_growth_resp    (ipy) = 0.0 
          cgrid%mmean_leaf_storage_resp   (ipy) = 0.0 
          cgrid%mmean_root_storage_resp   (ipy) = 0.0 
          cgrid%mmean_sapa_storage_resp   (ipy) = 0.0 
          cgrid%mmean_sapb_storage_resp   (ipy) = 0.0 
+         cgrid%mmean_bark_storage_resp   (ipy) = 0.0 
          cgrid%mmean_plresp              (ipy) = 0.0 
          cgrid%mmean_leaf_energy         (ipy) = 0.0 
          cgrid%mmean_leaf_water          (ipy) = 0.0 
@@ -5255,6 +5354,7 @@ module average_utils
          cgrid%mmean_nppleaf             (ipy) = 0.0 
          cgrid%mmean_nppfroot            (ipy) = 0.0 
          cgrid%mmean_nppsapwood          (ipy) = 0.0 
+         cgrid%mmean_nppbark             (ipy) = 0.0 
          cgrid%mmean_nppcroot            (ipy) = 0.0 
          cgrid%mmean_nppseeds            (ipy) = 0.0 
          cgrid%mmean_nppwood             (ipy) = 0.0 
@@ -5321,6 +5421,7 @@ module average_utils
          cgrid%mmean_nppleaf             (ipy) = 0.0
          cgrid%mmean_nppfroot            (ipy) = 0.0
          cgrid%mmean_nppsapwood          (ipy) = 0.0
+         cgrid%mmean_nppbark             (ipy) = 0.0
          cgrid%mmean_nppcroot            (ipy) = 0.0
          cgrid%mmean_nppseeds            (ipy) = 0.0
          cgrid%mmean_nppwood             (ipy) = 0.0
@@ -5501,13 +5602,17 @@ module average_utils
                !       Loop over cohorts.                                                  !
                !---------------------------------------------------------------------------!
                cohortloop: do ico=1,cpatch%ncohorts
+                  cpatch%mmean_thbark            (ico) = 0.0
                   cpatch%mmean_lai               (ico) = 0.0
                   cpatch%mmean_bleaf             (ico) = 0.0
                   cpatch%mmean_broot             (ico) = 0.0
+                  cpatch%mmean_bbark             (ico) = 0.0
+                  cpatch%mmean_balive            (ico) = 0.0
                   cpatch%mmean_bstorage          (ico) = 0.0
                   cpatch%mmean_mort_rate       (:,ico) = 0.0
                   cpatch%mmean_leaf_maintenance  (ico) = 0.0
                   cpatch%mmean_root_maintenance  (ico) = 0.0
+                  cpatch%mmean_bark_maintenance  (ico) = 0.0
                   cpatch%mmean_leaf_drop         (ico) = 0.0
                   select case (iddmort_scheme)
                   case (0)
@@ -5523,10 +5628,12 @@ module average_utils
                   cpatch%mmean_root_growth_resp  (ico) = 0.0
                   cpatch%mmean_sapa_growth_resp  (ico) = 0.0
                   cpatch%mmean_sapb_growth_resp  (ico) = 0.0
+                  cpatch%mmean_bark_growth_resp  (ico) = 0.0
                   cpatch%mmean_leaf_storage_resp (ico) = 0.0
                   cpatch%mmean_root_storage_resp (ico) = 0.0
                   cpatch%mmean_sapa_storage_resp (ico) = 0.0
                   cpatch%mmean_sapb_storage_resp (ico) = 0.0
+                  cpatch%mmean_bark_storage_resp (ico) = 0.0
                   cpatch%mmean_plresp            (ico) = 0.0
                   cpatch%mmean_leaf_energy       (ico) = 0.0
                   cpatch%mmean_leaf_water        (ico) = 0.0
@@ -5582,6 +5689,7 @@ module average_utils
                   cpatch%mmean_nppleaf           (ico) = 0.0
                   cpatch%mmean_nppfroot          (ico) = 0.0
                   cpatch%mmean_nppsapwood        (ico) = 0.0
+                  cpatch%mmean_nppbark           (ico) = 0.0
                   cpatch%mmean_nppcroot          (ico) = 0.0
                   cpatch%mmean_nppseeds          (ico) = 0.0
                   cpatch%mmean_nppwood           (ico) = 0.0
@@ -5728,17 +5836,23 @@ module average_utils
          cgrid%qmean_sapb_growth_resp (t,ipy) = cgrid%qmean_sapb_growth_resp (t,ipy)       &
                                               + cgrid%fmean_sapb_growth_resp   (ipy)       &
                                               * ndaysi
+         cgrid%qmean_bark_growth_resp (t,ipy) = cgrid%qmean_bark_growth_resp (t,ipy)       &
+                                              + cgrid%fmean_bark_growth_resp   (ipy)       &
+                                              * ndaysi
          cgrid%qmean_leaf_storage_resp(t,ipy) = cgrid%qmean_leaf_storage_resp(t,ipy)       &
                                               + cgrid%fmean_leaf_storage_resp  (ipy)       &
                                               * ndaysi
-         cgrid%qmean_root_storage_resp(t,ipy) = cgrid%qmean_sapa_storage_resp(t,ipy)       &
-                                              + cgrid%fmean_sapa_storage_resp  (ipy)       &
+         cgrid%qmean_root_storage_resp(t,ipy) = cgrid%qmean_root_storage_resp(t,ipy)       &
+                                              + cgrid%fmean_root_storage_resp  (ipy)       &
                                               * ndaysi
-         cgrid%qmean_sapa_storage_resp(t,ipy) = cgrid%qmean_sapb_storage_resp(t,ipy)       &
-                                              + cgrid%fmean_sapb_storage_resp  (ipy)       &
+         cgrid%qmean_sapa_storage_resp(t,ipy) = cgrid%qmean_sapa_storage_resp(t,ipy)       &
+                                              + cgrid%fmean_sapa_storage_resp  (ipy)       &
                                               * ndaysi
          cgrid%qmean_sapb_storage_resp(t,ipy) = cgrid%qmean_sapb_storage_resp(t,ipy)       &
                                               + cgrid%fmean_sapb_storage_resp  (ipy)       &
+                                              * ndaysi
+         cgrid%qmean_bark_storage_resp(t,ipy) = cgrid%qmean_bark_storage_resp(t,ipy)       &
+                                              + cgrid%fmean_bark_storage_resp  (ipy)       &
                                               * ndaysi
          cgrid%qmean_plresp           (t,ipy) = cgrid%qmean_plresp           (t,ipy)       &
                                               + cgrid%fmean_plresp             (ipy)       &
@@ -6452,6 +6566,9 @@ module average_utils
                   cpatch%qmean_sapb_growth_resp(t,ico)=cpatch%qmean_sapb_growth_resp(t,ico)&
                                                       +cpatch%fmean_sapb_growth_resp  (ico)&
                                                       *ndaysi
+                  cpatch%qmean_bark_growth_resp(t,ico)=cpatch%qmean_bark_growth_resp(t,ico)&
+                                                      +cpatch%fmean_bark_growth_resp  (ico)&
+                                                      *ndaysi
                   cpatch%qmean_leaf_storage_resp(t,ico)= cpatch%qmean_leaf_storage_resp(t,ico)&
                                                        + cpatch%fmean_leaf_storage_resp  (ico)&
                                                        * ndaysi
@@ -6463,6 +6580,9 @@ module average_utils
                                                        * ndaysi
                   cpatch%qmean_sapb_storage_resp(t,ico)= cpatch%qmean_sapb_storage_resp(t,ico)&
                                                        + cpatch%fmean_sapb_storage_resp  (ico)&
+                                                       * ndaysi
+                  cpatch%qmean_bark_storage_resp(t,ico)= cpatch%qmean_bark_storage_resp(t,ico)&
+                                                       + cpatch%fmean_bark_storage_resp  (ico)&
                                                        * ndaysi
                   cpatch%qmean_plresp        (t,ico) = cpatch%qmean_plresp        (t,ico)  &
                                                      + cpatch%fmean_plresp          (ico)  &
@@ -7035,10 +7155,12 @@ module average_utils
          cgrid%qmean_root_growth_resp   (:,ipy) = 0.0
          cgrid%qmean_sapa_growth_resp   (:,ipy) = 0.0
          cgrid%qmean_sapb_growth_resp   (:,ipy) = 0.0
+         cgrid%qmean_bark_growth_resp   (:,ipy) = 0.0
          cgrid%qmean_leaf_storage_resp  (:,ipy) = 0.0
          cgrid%qmean_root_storage_resp  (:,ipy) = 0.0
          cgrid%qmean_sapa_storage_resp  (:,ipy) = 0.0
          cgrid%qmean_sapb_storage_resp  (:,ipy) = 0.0
+         cgrid%qmean_bark_storage_resp  (:,ipy) = 0.0
          cgrid%qmean_plresp             (:,ipy) = 0.0
          cgrid%qmean_leaf_energy        (:,ipy) = 0.0
          cgrid%qmean_leaf_water         (:,ipy) = 0.0
@@ -7303,10 +7425,12 @@ module average_utils
                   cpatch%qmean_root_growth_resp    (:,ico) = 0.0
                   cpatch%qmean_sapa_growth_resp    (:,ico) = 0.0
                   cpatch%qmean_sapb_growth_resp    (:,ico) = 0.0
+                  cpatch%qmean_bark_growth_resp    (:,ico) = 0.0
                   cpatch%qmean_leaf_storage_resp   (:,ico) = 0.0
                   cpatch%qmean_root_storage_resp   (:,ico) = 0.0
                   cpatch%qmean_sapa_storage_resp   (:,ico) = 0.0
                   cpatch%qmean_sapb_storage_resp   (:,ico) = 0.0
+                  cpatch%qmean_bark_storage_resp   (:,ico) = 0.0
                   cpatch%qmean_plresp              (:,ico) = 0.0
                   cpatch%qmean_leaf_energy         (:,ico) = 0.0
                   cpatch%qmean_leaf_water          (:,ico) = 0.0

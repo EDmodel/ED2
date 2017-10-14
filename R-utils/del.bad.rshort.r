@@ -6,7 +6,7 @@
 #------------------------------------------------------------------------------------------#
 del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30){
    #----- Remove suspicious incoming shortwave radiation. ---------------------------------#
-   cat("   - Remove negative daytime shortwave radiation...","\n")
+   cat0("   - Remove negative daytime shortwave radiation.")
    suspect             = as.integer(dat$daytime & dat$rshort.in  < rshort.day.min)
    testdays            = dates(sort(unique(dat$today)))
    weird               = testdays[tapply(X=suspect,INDEX=dat$today,FUN=sum,na.rm=TRUE) > 0]
@@ -17,7 +17,7 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
 
 
    #----- Remove suspicious outgoing shortwave radiation. ---------------------------------#
-   cat("   - Remove suspicious outgoing shortwave radiation...","\n")
+   cat0("   - Remove suspicious outgoing shortwave radiation.")
    suspect             = as.integer(dat$daytime & dat$rshort.out  < rshort.day.min)
    testdays            = dates(sort(unique(dat$today)))
    weird               = testdays[tapply(X=suspect,INDEX=dat$today,FUN=sum,na.rm=TRUE) > 0]
@@ -39,10 +39,10 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
 
 
    #----- Find the mean diurnal cycle and the mean variability of the diel. ---------------#
-   cat("   - Find probability of each measurement...","\n")
+   cat0("   - Find probability of each measurement.")
    for (this in c("rshort.in","rshort.out","par.in","par.out")){
-      cat("    > ",this,"...","\n")
-      hhmm = paste(sprintf("%2.2i",dat$hour),sprintf("%2.2i",dat$minu))
+      cat0("    > ",this,".")
+      hhmm = paste0(sprintf("%2.2i",dat$hour),sprintf("%2.2i",dat$minu))
       #----- Find the mean diurnal cycle. -------------------------------------------------#
       location.this = tapply(X=dat[[this]] ,INDEX=hhmm,FUN=sn.location ,na.rm=TRUE)
       scale.this    = tapply(X=dat[[this]] ,INDEX=hhmm,FUN=sn.scale    ,na.rm=TRUE)
@@ -77,7 +77,7 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
    # we discard the value with the least probability that we found using a skewed normal   #
    # distribution for the hour of the day.                                                 #
    #---------------------------------------------------------------------------------------#
-   cat("   - Discard data that has weird PAR/SW ratio...","\n")
+   cat0("   - Discard data that has weird PAR/SW ratio.")
    weird.in            = ( dat$par.in  < onethird  * dat$rshort.in
                          | dat$par.in  > twothirds * dat$rshort.in  )
    weird.out           = ( dat$par.out < onethird  * dat$rshort.out
@@ -103,7 +103,7 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
 
 
    #----- Nighttime radiation should be zero. ---------------------------------------------#
-   cat("   - Discard shortwave emitted by fireflies...","\n")
+   cat0("   - Ensure night time irradiance components are all zero.")
    dat$rshort.in [dat$nighttime] = 0.
    dat$rshort.out[dat$nighttime] = 0.
    dat$par.in    [dat$nighttime] = 0.
@@ -115,7 +115,7 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
    #---------------------------------------------------------------------------------------#
    #     We don't let radiation exceed maximum.                                            #
    #---------------------------------------------------------------------------------------#
-   cat ("   - Bounding radiation...","\n")
+   cat ("   - Ensure daytime radiation does not exceed maximum.")
    dat$rshort.in[dat$daytime] = pmin(dat$rshort.in[dat$daytime],dat$rshort.pot[dat$daytime])
    dat$par.in   [dat$daytime] = pmin(dat$par.in   [dat$daytime],dat$par.pot   [dat$daytime])
    #---------------------------------------------------------------------------------------#
@@ -124,6 +124,6 @@ del.bad.rshort <<- function(dat,rshort.day.min=0.,par.frac.min=0.80,alb.max=0.30
    #---------------------------------------------------------------------------------------#
    return(dat)
    #---------------------------------------------------------------------------------------#
-}#end function
+}#end function del.bad.rshort
 #==========================================================================================#
 #==========================================================================================#

@@ -240,6 +240,19 @@ tspftdbh[[n]]     = list( vnam     = "bsapwood"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "bbark"
+                        , desc     = "Bark biomass"
+                        , e.unit   = untab$kgcom2
+                        , i.unit   = untab$kgcopl
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "bstorage"
                         , desc     = "Storage biomass"
                         , e.unit   = untab$kgcom2
@@ -274,6 +287,19 @@ tspftdbh[[n]]     = list( vnam     = "byield"
                         , pft      = TRUE
                         , pftdbh   = TRUE
                         , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = TRUE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "thbark"
+                        , desc     = "Bark thickness"
+                        , e.unit   = untab$cm
+                        , i.unit   = untab$cm
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = TRUE
                         , bar.plot = FALSE
                         , stack    = TRUE
                         , scsout   = TRUE
@@ -1048,6 +1074,19 @@ tspftdbh[[n]]     = list( vnam     = "f.bseeds"
                         , scsout   = TRUE
                         )#end list
 n                 = n + 1
+tspftdbh[[n]]     = list( vnam     = "f.bbark"
+                        , desc     = "Relative bark biomass"
+                        , e.unit   = untab$gcokgcbio
+                        , i.unit   = untab$gcokgcbio
+                        , plog     = FALSE
+                        , pft      = TRUE
+                        , pftdbh   = TRUE
+                        , sas      = FALSE
+                        , bar.plot = FALSE
+                        , stack    = FALSE
+                        , scsout   = TRUE
+                        )#end list
+n                 = n + 1
 tspftdbh[[n]]     = list( vnam     = "leaf.par"
                         , desc     = "Norm. Absorbed PAR - Leaf"
                         , e.unit   = untab$umolom2los
@@ -1184,6 +1223,24 @@ n         = n + 1
 tslu[[n]] = list( vnam = "biomass"
                 , desc = "Total biomass"
                 , unit = untab$kgcom2
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "btimber"
+                , desc = "(Commercial) timber biomass"
+                , unit = untab$kgcom2
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "byield"
+                , desc = "Yield (seed) biomass"
+                , unit = untab$kgcom2
+                , plog = FALSE
+                , plt  = TRUE)
+n         = n + 1
+tslu[[n]] = list( vnam = "thbark"
+                , desc = "Bark thickness"
+                , unit = untab$cm
                 , plog = FALSE
                 , plt  = TRUE)
 n         = n + 1

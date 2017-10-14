@@ -116,7 +116,8 @@ subroutine update_patch_derived_props(csite,ipa)
       !----- Compute the patch-level above-ground biomass
       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                            &
                                   + ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)         &
-                                              ,cpatch%bsapwooda(ico),cpatch%pft(ico))                      &
+                                              ,cpatch%bsapwooda(ico),cpatch%bbark(ico)     &
+                                              ,cpatch%pft(ico))                            &
                                   * cpatch%nplant(ico)           
       !------------------------------------------------------------------------------------!
 
@@ -484,6 +485,7 @@ subroutine update_polygon_derived_props(cgrid)
                                     , c2n_slow           & ! intent(in)
                                     , c2n_structural     ! ! intent(in)
    use decomp_coms           , only : cwd_frac           ! ! intent(in)
+   use consts_coms           , only : tiny_num           ! ! intent(in)
 
    implicit none
    !----- Arguments.      -----------------------------------------------------------------!
@@ -545,6 +547,7 @@ subroutine update_polygon_derived_props(cgrid)
       cgrid%lai                 (:,:,ipy) = 0.0
       cgrid%wai                 (:,:,ipy) = 0.0
       cgrid%basal_area          (:,:,ipy) = 0.0
+      cgrid%thbark              (:,:,ipy) = 0.0
       cgrid%bdead               (:,:,ipy) = 0.0
       cgrid%btimber             (:,:,ipy) = 0.0
       cgrid%balive              (:,:,ipy) = 0.0
@@ -552,6 +555,7 @@ subroutine update_polygon_derived_props(cgrid)
       cgrid%broot               (:,:,ipy) = 0.0
       cgrid%bsapwooda           (:,:,ipy) = 0.0
       cgrid%bsapwoodb           (:,:,ipy) = 0.0
+      cgrid%bbark               (:,:,ipy) = 0.0
       cgrid%bseeds              (:,:,ipy) = 0.0
       cgrid%byield              (:,:,ipy) = 0.0
       cgrid%bstorage            (:,:,ipy) = 0.0
@@ -561,10 +565,12 @@ subroutine update_polygon_derived_props(cgrid)
       cgrid%broot_n             (:,:,ipy) = 0.0
       cgrid%bsapwooda_n         (:,:,ipy) = 0.0
       cgrid%bsapwoodb_n         (:,:,ipy) = 0.0
+      cgrid%bbark_n             (:,:,ipy) = 0.0
       cgrid%bseeds_n            (:,:,ipy) = 0.0
       cgrid%bstorage_n          (:,:,ipy) = 0.0
       cgrid%leaf_maintenance    (:,:,ipy) = 0.0
       cgrid%root_maintenance    (:,:,ipy) = 0.0
+      cgrid%bark_maintenance    (:,:,ipy) = 0.0
       cgrid%leaf_drop           (:,:,ipy) = 0.0
       cgrid%fast_soil_c             (ipy) = 0.0
       cgrid%slow_soil_c             (ipy) = 0.0
@@ -737,6 +743,10 @@ subroutine update_polygon_derived_props(cgrid)
                                                + cpatch%bsapwoodb          (ico)           &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
+               cgrid%bbark           (p,d,ipy) = cgrid%bbark           (p,d,ipy)           &
+                                               + cpatch%bbark              (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
                cgrid%bseeds          (p,d,ipy) = cgrid%bseeds          (p,d,ipy)           &
                                                + cpatch%bseeds             (ico)           &
                                                * cpatch%nplant             (ico)           &
@@ -759,7 +769,8 @@ subroutine update_polygon_derived_props(cgrid)
                                                    + cpatch%broot          (ico) )         &
                                                    / c2n_leaf                (p)           &
                                                  + ( cpatch%bsapwooda      (ico)           &
-                                                   + cpatch%bsapwoodb      (ico) )         &
+                                                   + cpatch%bsapwoodb      (ico)           &
+                                                   + cpatch%bbark          (ico) )         &
                                                    / c2n_stem                (p)   )       &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
@@ -783,6 +794,11 @@ subroutine update_polygon_derived_props(cgrid)
                                                / c2n_stem                    (p)           &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
+               cgrid%bbark_n         (p,d,ipy) = cgrid%bbark_n         (p,d,ipy)           &
+                                               + cpatch%bbark              (ico)           &
+                                               / c2n_stem                    (p)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
                cgrid%bseeds_n        (p,d,ipy) = cgrid%bseeds_n        (p,d,ipy)           &
                                                + cpatch%bseeds             (ico)           &
                                                / c2n_recruit                 (p)           &
@@ -801,9 +817,27 @@ subroutine update_polygon_derived_props(cgrid)
                                                + cpatch%root_maintenance   (ico)           &
                                                * cpatch%nplant             (ico)           &
                                                * patch_wgt
+               cgrid%bark_maintenance(p,d,ipy) = cgrid%bark_maintenance(p,d,ipy)           &
+                                               + cpatch%bark_maintenance   (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * patch_wgt
                cgrid%leaf_drop       (p,d,ipy) = cgrid%leaf_drop       (p,d,ipy)           &
                                                + cpatch%leaf_drop          (ico)           &
                                                * cpatch%nplant             (ico)           &
+                                               * patch_wgt
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !     Bark thickness is a weighted average.  Here we integrate the          !
+               ! thickness, multiplied by basal area, then outside the siteloop we         !
+               ! normalise by total basal area.                                            !
+               !---------------------------------------------------------------------------!
+               cgrid%thbark          (p,d,ipy) = cgrid%thbark          (p,d,ipy)           &
+                                               + cpatch%thbark             (ico)           &
+                                               * cpatch%nplant             (ico)           &
+                                               * cpatch%basarea            (ico)           &
                                                * patch_wgt
                !---------------------------------------------------------------------------!
 
@@ -855,6 +889,22 @@ subroutine update_polygon_derived_props(cgrid)
          !---------------------------------------------------------------------------------!
       end do siteloop
       !------------------------------------------------------------------------------------!
+
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Normalise bark thickness.                                                      !
+      !------------------------------------------------------------------------------------!
+      where (cgrid%basal_area(:,:,ipy) > tiny_num)
+         cgrid%thbark(:,:,ipy) = cgrid%thbark(:,:,ipy) / cgrid%basal_area(:,:,ipy)
+      elsewhere
+         cgrid%thbark(:,:,ipy) = 0.
+      end where
+      !------------------------------------------------------------------------------------!
+
+
    end do polyloop
    !---------------------------------------------------------------------------------------!
    return
@@ -1239,6 +1289,7 @@ subroutine update_cohort_extensive_props(cpatch,aco,zco,mult)
       cpatch%today_nppleaf      (ico) = cpatch%today_nppleaf      (ico) * mult
       cpatch%today_nppfroot     (ico) = cpatch%today_nppfroot     (ico) * mult
       cpatch%today_nppsapwood   (ico) = cpatch%today_nppsapwood   (ico) * mult
+      cpatch%today_nppbark      (ico) = cpatch%today_nppbark      (ico) * mult
       cpatch%today_nppcroot     (ico) = cpatch%today_nppcroot     (ico) * mult
       cpatch%today_nppseeds     (ico) = cpatch%today_nppseeds     (ico) * mult
       cpatch%today_nppwood      (ico) = cpatch%today_nppwood      (ico) * mult

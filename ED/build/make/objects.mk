@@ -63,7 +63,8 @@ OBJ_MODEL =                        \
 	events.o                   \
 	farq_leuning.o             \
 	fatal_error.o              \
-	fire.o                     \
+	fire_ed10.o                \
+	fire_ed22.o                \
 	forestry.o                 \
 	fusion_fission_coms.o      \
 	fuse_fiss_utils.o          \

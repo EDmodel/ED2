@@ -463,11 +463,48 @@ if ("iallom" %in% ls()){
 #------------------------------------------------------------------------------------------#
 #     Factors for leaf:sapwood biomass ratio.  The original ED-1 number is incorrect, and  #
 # we keep it incorrect unless the PFT is tropical and allometry is set to 4, in which case #
-# we combine the pipe model with the data from Calvo-Alvarado et al. (2008) to derive the  #
-# ratio.                                                                                   #
+# we combine the pipe model with the data from Calvo-Alvarado et al. (2008) (and shape     #
+# parameter from Falster et al. 2016) to derive the ratio.                                 #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring. Allometric relationships        #
+#    predicting foliar biomass and leaf area:sapwood area ratio from tree height in five   #
+#    Costa Rican rain forest species. Tree Physiol., 28 (11):1601-1608, Sep 2008.          #
+#    doi:10.1093/treephys/28.11.1601. (CA08)                                               #
+#                                                                                          #
+# Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.  plant: A   #
+#    package for modelling forest trait ecology and evolution.  Methods Ecol. Evol., 7(2): #
+#    136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                                 #
+#                                                                                          #
+# McDowell, N., H. Barnard, B. Bond, T. Hinckley, R. Hubbard, H. Ishii, B. Kostner,        #
+#    F. Magnani, J. Marshall, F. Meinzer, N. Phillips, M. Ryan, and D. Whitehead. The      #
+#    relationship between tree height and leaf area: sapwood area ratio. Oecologia,        #
+#    132(1):12-20, Jun 2002. doi:10.1007/s00442-002-0904-x. (MD02)                         #
+#                                                                                          #
+# Rosell, J. A., S. Gleason, R. Mendez-Alonzo, Y. Chang, and M. Westoby. Bark functional   #
+#    ecology: evidence for tradeoffs, functional coordination, and environment producing   #
+#    bark diversity. New Phytol., 201(2): 486-497, Jan 2014. doi:10.1111/nph.12541. (R14)  #
+#                                                                                          #
+# Yokozawa M., and T. Hara. Foliage profile, size structure and stem diameter-plant height #
+#    relationship in crowded plant populations. Ann. Bot.-London, 76(3):271-285, Sep 1995. #
+#    doi:10.1006/anbo.1995.1096. (YH95)                                                    #
+#                                                                                          #
+#      Leaf-to-sapwood area ratio (Al:As, or As/Al) for conifers was estimated from the    #
+# average of all conifers listed in Table 1 of MD02, weighted by number of individuals.    #
+# Broadleaf is currently tropical-only, and was obtained from the average of all points    #
+# from Fig. 1 of CA08 (obtained from extracting data from the figure itself).              #
+#                                                                                          #
+#       Eta is a parameter that described the distribution of leaf area within the crown.  #
+# According to F16 and the original referennce (YH95), eta=1 is typical of conifers,       #
+# whereas eta=12 is closer to the profiles observed in angiosperms.  Araucarias somewhat   #
+# intermediate, so we set eta=5.                                                           #
 #------------------------------------------------------------------------------------------#
+eta.f16            <<- c(bl=12.,cf=1.0,aa=5.0)
+eta.c.f16          <<- 1. - 2.0 / (1.0+eta.f16) + 1.0 / (1 + 2.0 * eta.f16)
+asal.bar           <<- c(bl=7.400139e-05,cf=3.709184e-05,aa=3.709184e-05)
 sapwood.ratio.orig <<- 3900.
-sapwood.factor.ca08 <<- 35.0
+sapwood.factor     <<- 1.0 / (eta.c.f16 * asal.bar * 1000. / C2B)
 #------------------------------------------------------------------------------------------#
 
 
@@ -483,6 +520,17 @@ uleaf       = c( -1.09254800, 1.28505100,  3.199019  )
 ncrown.area = c(  0.11842950, 1.05211970)
 #------------------------------------------------------------------------------------------#
 
+
+#------------------------------------------------------------------------------------------#
+#     Additional parameters for determining specific heat.                                 #
+#                                                                                          #
+# spht.tref - Reference temperature (in Kelvin) for specific heat properties.              #
+# wdr.fs    - Moisture content at fiber saturation. Excess moisture is treated as free     #
+#             water (FPL10).                                                               #
+#------------------------------------------------------------------------------------------#
+spht.tref  <<- t00 + 15.
+wdr.fs     <<- 0.30
+#------------------------------------------------------------------------------------------#
 
 
 #----- Define reference height and coefficients for tropical allometry. -------------------#
@@ -552,9 +600,12 @@ l83.l2 = 2.1360
 #------------------------------------------------------------------------------------------#
 pft01 = list( name               = "C4 grass"
             , key                = "C4G"
-            , colour             = "#E5E503"
+            , colour             = "#DDCC77"
             , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = TRUE
+            , liana              = FALSE
             , pathway            = 4
             , d0                 = d0.grass
             , vm.hor             = vm.hor
@@ -580,7 +631,7 @@ pft01 = list( name               = "C4 grass"
             , rho                = 0.20
             , leaf.turnover.rate = 2.9
             , root.turnover.rate = 2.9
-            , SLA                = 35.1
+            , SLA                = 30.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -598,14 +649,17 @@ pft01 = list( name               = "C4 grass"
             , b1Cl               = 0.99
             , b2Cl               = 1.00
             , b1Mh               = 0.495
-            , b1WAI              = 0.00
-            , b2WAI              = 1.00
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 0.5
             , hgt.max            = 1.5
             , qroot              = 1.0
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.grass
             , clumping.factor    = clumping.grass
@@ -616,9 +670,12 @@ pft01 = list( name               = "C4 grass"
 
 pft02 = list( name               = "Early tropical"
             , key                = "ETR"
-            , colour             = "#9FFF8C"
+            , colour             = "#83CCC0"
             , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -644,7 +701,7 @@ pft02 = list( name               = "Early tropical"
             , rho                = 0.53
             , leaf.turnover.rate = 1.282
             , root.turnover.rate = 1.282
-            , SLA                = 23.18
+            , SLA                = 23.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -662,14 +719,17 @@ pft02 = list( name               = "Early tropical"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0192 * 0.5
-            , b2WAI              = 2.0947
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
@@ -680,9 +740,12 @@ pft02 = list( name               = "Early tropical"
 
 pft03 = list( name               = "Mid tropical"
             , key                = "MTR"
-            , colour             = "#44CC29"
+            , colour             = "#44AA99"
             , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -708,7 +771,7 @@ pft03 = list( name               = "Mid tropical"
             , rho                = 0.71
             , leaf.turnover.rate = 0.596
             , root.turnover.rate = 0.596
-            , SLA                = 14.88
+            , SLA                = 16.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -726,14 +789,17 @@ pft03 = list( name               = "Mid tropical"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0192 * 0.5
-            , b2WAI              = 2.0947
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
@@ -744,9 +810,12 @@ pft03 = list( name               = "Mid tropical"
 
 pft04 = list( name               = "Late tropical"
             , key                = "LTR"
-            , colour             = "#137300"
+            , colour             = "#186659"
             , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -772,7 +841,7 @@ pft04 = list( name               = "Late tropical"
             , rho                = 0.90
             , leaf.turnover.rate = 0.266
             , root.turnover.rate = 0.266
-            , SLA                = 9.32
+            , SLA                = 9.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
             , b2Ht               = b2Ht.trop
@@ -790,14 +859,17 @@ pft04 = list( name               = "Late tropical"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0192 * 0.5
-            , b2WAI              = 2.0947
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.tree
             , clumping.factor    = clumping.tree
@@ -808,9 +880,12 @@ pft04 = list( name               = "Late tropical"
 
 pft05 = list( name               = "Temperate C3 Grass"
             , key                = "TTG"
-            , colour             = "#B2B224"
+            , colour             = "#EBE0AA"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = TRUE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -854,14 +929,17 @@ pft05 = list( name               = "Temperate C3 Grass"
             , b1Cl               = 0.99
             , b2Cl               = 1.0
             , b1Mh               = 0.495
-            , b1WAI              = 0.0
-            , b2WAI              = 1.0
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 0.15
             , hgt.max            = 0.95 * 0.4778
             , qroot              = 1.0
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = -0.30
             , clumping.factor    =  1.00
@@ -872,9 +950,12 @@ pft05 = list( name               = "Temperate C3 Grass"
 
 pft06 = list( name               = "North Pine"
             , key                = "NPN"
-            , colour             = "#0066CC"
+            , colour             = "#88CCEE"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = TRUE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -918,14 +999,17 @@ pft06 = list( name               = "North Pine"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0553 * 0.5
-            , b2WAI              = 1.9769
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 27.14
             , qroot              = 0.3463
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
@@ -936,9 +1020,12 @@ pft06 = list( name               = "North Pine"
 
 pft07 = list( name               = "South Pine"
             , key                = "SPN"
-            , colour             = "#99CCFF"
+            , colour             = "#B6E0F5"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = TRUE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -982,14 +1069,17 @@ pft07 = list( name               = "South Pine"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0553 * 0.5
-            , b2WAI              = 1.9769
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 27.14
             , qroot              = 0.3463
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
@@ -1000,9 +1090,12 @@ pft07 = list( name               = "South Pine"
 
 pft08 = list( name               = "Late conifer"
             , key                = "LCN"
-            , colour             = "#00407F"
+            , colour             = "#31708F"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = TRUE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1046,14 +1139,17 @@ pft08 = list( name               = "Late conifer"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0553 * 0.5
-            , b2WAI              = 1.9769
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 22.79
             , qroot              = 0.3463
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.01
             , clumping.factor    = 0.735
@@ -1064,9 +1160,12 @@ pft08 = list( name               = "Late conifer"
 
 pft09 = list( name               = "Early hardwood"
             , key                = "EHW"
-            , colour             = "#FF999B"
+            , colour             = "#CC83C0"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1110,14 +1209,17 @@ pft09 = list( name               = "Early hardwood"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0192 * 0.5
-            , b2WAI              = 2.0947
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 22.6799
             , qroot              = 1.1274
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
@@ -1128,9 +1230,12 @@ pft09 = list( name               = "Early hardwood"
 
 pft10 = list( name               = "Mid hardwood"
             , key                = "MHW"
-            , colour             = "#E5171A"
+            , colour             = "#AA4499"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1174,14 +1279,17 @@ pft10 = list( name               = "Mid hardwood"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0192 * 0.5
-            , b2WAI              = 2.0947
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 25.18
             , qroot              = 1.1274
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
@@ -1192,9 +1300,12 @@ pft10 = list( name               = "Mid hardwood"
 
 pft11 = list( name               = "Late hardwood"
             , key                = "LHW"
-            , colour             = "#990003"
+            , colour             = "#661859"
             , tropical           = FALSE
+            , savannah           = FALSE
+            , conifer            = FALSE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1238,14 +1349,17 @@ pft11 = list( name               = "Late hardwood"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0192 * 0.5
-            , b2WAI              = 2.0947
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 1.5
             , hgt.max            = 0.999 * 23.3874
             , qroot              = 1.1274
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = 0.25
             , clumping.factor    = 0.84
@@ -1254,80 +1368,14 @@ pft11 = list( name               = "Late hardwood"
             , veg.hcap.min       = 1.60601E-01
             )
 
-pft12 = pft05; pft12$name = "C3 crop"   ; pft12$key = "CC3"; pft12$colour="#A38FCC"
-pft13 = pft05; pft13$name = "C3 pasture"; pft13$key = "PC3"; pft13$colour="#7F40FF"
-pft14 = pft01; pft14$name = "C4 crop"   ; pft14$key = "CC4"; pft14$colour="#A1E5CF"
-pft15 = pft01; pft15$name = "C4 pasture"; pft15$key = "PC4"; pft15$colour="#6B998A"
-
-pft16 = list( name               = "C3 grass"
-            , key                = "C3G"
-            , colour             = "#F2F291"
-            , tropical           = TRUE
-            , grass              = TRUE
-            , pathway            = 3
-            , d0                 = d0.grass
-            , vm.hor             = vm.hor
-            , vm.base            = vm.base.c3
-            , vm.decay.a         = vm.decay.a
-            , vm.decay.b         = vm.decay.b
-            , vm.low.temp        = vm.tcold.c3trop + t00
-            , vm.high.temp       = vm.thot.c3trop  + t00
-            , vm.decay.e.low     = vm.decay.ecold.c3
-            , vm.decay.e.high    = vm.decay.ehot.c3
-            , lr.hor             = lr.hor
-            , lr.base            = lr.base.c3
-            , lr.low.temp        = lr.tcold.c3trop + t00
-            , lr.high.temp       = lr.thot.c3trop  + t00
-            , lr.decay.e.low     = lr.decay.ecold.c3
-            , lr.decay.e.high    = lr.decay.ehot.c3
-            , vm0                = 18.750 * vmfact.c3 * umol.2.mol
-            , m                  = mphoto.c3
-            , alpha              = alpha.c3
-            , b                  = b.c3 * umol.2.mol
-            , gamma.resp         = gamma.c3
-            , effarea.transp     = 1.0
-            , rho                = 0.20
-            , leaf.turnover.rate = 2.9
-            , root.turnover.rate = 2.9
-            , SLA                = 35.0
-            , hgt.ref            = hgt.ref.trop
-            , b1Ht               = b1Ht.trop
-            , b2Ht               = b2Ht.trop
-            , b1Bl.small         = NA
-            , b2Bl.small         = NA
-            , b1Bl.large         = NA
-            , b2Bl.large         = NA
-            , bleaf.adult        = NA
-            , b1Bs.small         = NA
-            , b2Bs.small         = NA
-            , b1Bs.large         = NA
-            , b2Bs.large         = NA
-            , b1Ca               = 2.490154
-            , b2Ca               = 0.8068806
-            , b1Cl               = 0.99
-            , b2Cl               = 1.00
-            , b1Mh               = 0.495
-            , b1WAI              = 0.0
-            , b2WAI              = 1.0
-            , b1Vol              = NA
-            , b2Vol              = NA
-            , hgt.min            = 0.5
-            , hgt.max            = 1.5
-            , qroot              = 1.0
-            , qsw                = NA
-            , agf.bs             = 0.7
-            , orient.factor      = orient.grass
-            , clumping.factor    = clumping.grass
-            , leaf.width         = lwidth.grass
-            , init.density       = 0.1
-            , veg.hcap.min       = 7.30807E+00
-            )
-
-pft17 = list( name               = "Araucaria"
+pft15 = list( name               = "Araucaria"
             , key                = "ARC"
-            , colour             = "#BF60A7"
+            , colour             = "#7365B8"
             , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = TRUE
             , grass              = FALSE
+            , liana              = FALSE
             , pathway            = 3
             , d0                 = d0.tree
             , vm.hor             = vm.hor
@@ -1371,14 +1419,17 @@ pft17 = list( name               = "Araucaria"
             , b1Cl               = 0.3106775
             , b2Cl               = 1.098
             , b1Mh               = 0.8370557
-            , b1WAI              = 0.0553 * 0.5
-            , b2WAI              = 1.9769
             , b1Vol              = NA
             , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
             , hgt.min            = 0.5
             , hgt.max            = hgt.max.trop
             , qroot              = 1.0
             , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
             , agf.bs             = 0.7
             , orient.factor      = orient.aa
             , clumping.factor    = clumping.aa
@@ -1386,7 +1437,178 @@ pft17 = list( name               = "Araucaria"
             , init.density       = 0.1
             , veg.hcap.min       = 2.19242E+01
             )
-pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour="#404040"
+
+pft16 = list( name               = "C3 grass"
+            , key                = "C3G"
+            , colour             = "#85762B"
+            , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = FALSE
+            , grass              = TRUE
+            , liana              = FALSE
+            , pathway            = 3
+            , d0                 = d0.grass
+            , vm.hor             = vm.hor
+            , vm.base            = vm.base.c3
+            , vm.decay.a         = vm.decay.a
+            , vm.decay.b         = vm.decay.b
+            , vm.low.temp        = vm.tcold.c3trop + t00
+            , vm.high.temp       = vm.thot.c3trop  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
+            , lr.hor             = lr.hor
+            , lr.base            = lr.base.c3
+            , lr.low.temp        = lr.tcold.c3trop + t00
+            , lr.high.temp       = lr.thot.c3trop  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
+            , vm0                = 18.750 * vmfact.c3 * umol.2.mol
+            , m                  = mphoto.c3
+            , alpha              = alpha.c3
+            , b                  = b.c3 * umol.2.mol
+            , gamma.resp         = gamma.c3
+            , effarea.transp     = 1.0
+            , rho                = 0.20
+            , leaf.turnover.rate = 2.9
+            , root.turnover.rate = 2.9
+            , SLA                = 30.0
+            , hgt.ref            = hgt.ref.trop
+            , b1Ht               = b1Ht.trop
+            , b2Ht               = b2Ht.trop
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
+            , bleaf.adult        = NA
+            , b1Bs.small         = NA
+            , b2Bs.small         = NA
+            , b1Bs.large         = NA
+            , b2Bs.large         = NA
+            , b1Ca               = 2.490154
+            , b2Ca               = 0.8068806
+            , b1Cl               = 0.99
+            , b2Cl               = 1.00
+            , b1Mh               = 0.495
+            , b1Vol              = NA
+            , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
+            , hgt.min            = 0.5
+            , hgt.max            = 1.5
+            , qroot              = 1.0
+            , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
+            , agf.bs             = 0.7
+            , orient.factor      = orient.grass
+            , clumping.factor    = clumping.grass
+            , leaf.width         = lwidth.grass
+            , init.density       = 0.1
+            , veg.hcap.min       = 7.30807E+00
+            )
+
+pft17 = list( name               = "Liana"
+            , key                = "LNA"
+            , colour             = "#332288"
+            , tropical           = TRUE
+            , savannah           = FALSE
+            , conifer            = FALSE
+            , grass              = FALSE
+            , liana              = TRUE
+            , pathway            = 3
+            , d0                 = d0.tree
+            , vm.hor             = vm.hor
+            , vm.base            = vm.base.c3
+            , vm.decay.a         = vm.decay.a
+            , vm.decay.b         = vm.decay.b
+            , vm.low.temp        = vm.tcold.aa + t00
+            , vm.high.temp       = vm.thot.aa  + t00
+            , vm.decay.e.low     = vm.decay.ecold.c3
+            , vm.decay.e.high    = vm.decay.ehot.c3
+            , lr.hor             = lr.hor
+            , lr.base            = lr.base.c3
+            , lr.low.temp        = lr.tcold.aa + t00
+            , lr.high.temp       = lr.thot.aa  + t00
+            , lr.decay.e.low     = lr.decay.ecold.c3
+            , lr.decay.e.high    = lr.decay.ehot.c3
+            , vm0                = 15.625  * vmfact.c3 * umol.2.mol
+            , m                  = mphoto.aa
+            , alpha              = alpha.c3
+            , b                  = b.aa * umol.2.mol
+            , gamma.resp         = gamma.aa
+            , effarea.transp     = 2.0
+            , rho                = 0.59
+            , leaf.turnover.rate = 1./6.
+            , root.turnover.rate = 1./6.
+            , SLA                = 10.0
+            , hgt.ref            = hgt.ref.trop
+            , b1Ht               = b1Ht.trop
+            , b2Ht               = b2Ht.trop
+            , b1Bl.small         = NA
+            , b2Bl.small         = NA
+            , b1Bl.large         = NA
+            , b2Bl.large         = NA
+            , bleaf.adult        = NA
+            , b1Bs.small         = NA
+            , b2Bs.small         = NA
+            , b1Bs.large         = NA
+            , b2Bs.large         = NA
+            , b1Ca               = 2.490154
+            , b2Ca               = 0.8068806
+            , b1Cl               = 0.3106775
+            , b2Cl               = 1.098
+            , b1Mh               = 0.8370557
+            , b1Vol              = NA
+            , b2Vol              = NA
+            , b1Xb               = NA
+            , b1Xs               = NA
+            , hgt.min            = 0.5
+            , hgt.max            = hgt.max.trop
+            , qroot              = 1.0
+            , qsw                = NA
+            , qbark              = NA
+            , qwai               = NA
+            , qrhob              = NA
+            , agf.bs             = 0.7
+            , orient.factor      = orient.aa
+            , clumping.factor    = clumping.aa
+            , leaf.width         = lwidth.nltree
+            , init.density       = 0.1
+            , veg.hcap.min       = 2.19242E+01
+            )
+
+#----- Derived PFTs. ----------------------------------------------------------------------#
+pft12 = modifyList( x   = pft02
+                  , val = list( name     = "Early savannah"
+                              , key      = "ESV"
+                              , colour   = "#CC839B"
+                              , savannah = TRUE
+                              )#end list
+                  )#end modifyList
+
+pft13 = modifyList( x   = pft03
+                  , val = list( name     = "Mid savannah"
+                              , key      = "MSV"
+                              , colour   = "#AA4466"
+                              , savannah = TRUE
+                              )#end list
+                  )#end modifyList
+
+pft14 = modifyList( x   = pft04
+                  , val = list( name     = "Late savannah"
+                              , key      = "LSV"
+                              , colour   = "#661832"
+                              , savannah = TRUE
+                              )#end list
+                  )#end modifyList
+
+pft18 = modifyList( x   = pft15
+                  , val = list( name     = "Total"
+                              , key      = "ALL"
+                              , colour   = "#404040"
+                              )#end list
+                  )#end modifyList
 #------------------------------------------------------------------------------------------#
 
 
@@ -1395,7 +1617,7 @@ pft18 = pft07; pft18$name = "Total"   ; pft18$key = "ALL"; pft18$colour="#404040
 pft = list()
 for (p in sequence(npft+1)){
   ppp  = sprintf("%2.2i",p)
-  phph = paste("pft",ppp,sep="")
+  phph = paste0("pft",ppp)
   if (p == 1){
      pft = get(phph)
   }else{
@@ -1405,6 +1627,7 @@ for (p in sequence(npft+1)){
      } #end for
   }# end if
 } #end for
+pft = as.data.frame(pft,stringsAsFactors=FALSE)
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
@@ -1412,8 +1635,10 @@ for (p in sequence(npft+1)){
 #------------------------------------------------------------------------------------------#
 for (ipft in sequence(npft)){
    #---- Check PFT and allometry. ---------------------------------------------------------#
-   if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4){
-      pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor.ca08
+   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% 4){
+      pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["aa"]
+   }else if (pft$tropical[ipft] && iallom %in% 4){
+      pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["bl"]
    }else{
       pft$qsw[ipft] = pft$SLA[ipft] / sapwood.ratio.orig
    }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4)
@@ -1431,6 +1656,157 @@ for (ipft in sequence(npft)){
 #       }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
 #    }#end for (ipft in sequence(npft))
 # }#end if
+#------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------#
+#     Set the bark:wood density ratio (qrhob), and the water:biomass ratio for leaves      #
+# (qwatdry.leaf), wood (qwatdry.wood), and bark (qwatdry.bark).  qwatdry.leaf is defined   #
+# after G07.  The other variables were defined based on the PFT: for tropical broadleaf    #
+# trees, we use model fits based on the Table S1 data from P14.  For other PFTs we use the #
+# default values from R14 and FPL10.                                                       #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Forest Products Laboratory. Wood handbook - wood as an engineering material. General     #
+#    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.      #
+#    doi:10.2737/FPL-GTR-190 (FPL10)                                                       #
+#                                                                                          #
+# Gu, L., T. Meyers, S. G. Pallardy, P. J. Hanson, B. Yang, M. Heuer, K. P. Hosman,        #
+#    Q. Liu, J. S. Riggs, D. Sluss, and S. D. Wullschleger. Influences of biomass heat and #
+#    biochemical energy storages on the land surface fluxes and radiative temperature.     #
+#    J. Geophys. Res., 112(D2):D02107, Jan 2007. doi:10.1029/2006JD007425 (G07)            #
+#                                                                                          #
+# Poorter, L., A. McNeil, V.-H. Hurtado, H. H. T. Prins, and F. E. Putz. Bark traits and   #
+#    life-history strategies of tropical dry- and moist forest trees. Funct. Ecol.,        #
+#    28(1):232-242, Feb 2014. doi:10.1111/1365-2435.12158 (P14)                            #
+#                                                                                          #
+# Rosell, J. A., S. Gleason, R. Mendez-Alonzo, Y. Chang, and M. Westoby. Bark              #
+#    functional ecology: evidence for tradeoffs, functional coordination, and environ-     #
+#    ment producing bark diversity. New Phytol., 201(2): 486-497, Jan 2014.                #
+#    doi:10.1111/nph.12541. (R14)                                                          #
+#------------------------------------------------------------------------------------------#
+pft$qrhob        = rep(NA,times=npft+1)
+pft$qwatdry.leaf = ifelse(pft$tropical,1.85,2.50)
+pft$qwatdry.wood = rep(NA,times=npft+1)
+pft$qwatdry.bark = rep(NA,times=npft+1)
+pft$c.leaf.dry   = c(rep(3218.,times=npft),NA)
+pft$c.wood.dry   = c(rep(103.1+3.867*spht.tref,times=npft),NA)
+pft$c.bark.dry   = pft$c.wood.dry
+for (ipft in sequence(npft)){
+   usedef = with(pft,grass[ipft] || liana[ipft] || conifer[ipft] || (! tropical[ipft]))
+   if (usedef){
+      #----- Default values. --------------------------------------------------------------#
+      pft$qrhob       [ipft] = 0.49/0.61
+      pft$qwatdry.wood[ipft] = 0.7
+      pft$qwatdry.bark[ipft] = 0.7
+      #------------------------------------------------------------------------------------#
+   }else{
+      #----- Default values. --------------------------------------------------------------#
+      pft$qrhob       [ipft] = exp(0.27614783 - 0.8114117 * pft$rho[ipft])
+      pft$qwatdry.wood[ipft] = exp(1.529155   - 3.108388  * pft$rho[ipft])
+      pft$qwatdry.bark[ipft] = exp(1.588317   - 2.382240  * pft$rho[ipft])
+      #------------------------------------------------------------------------------------#
+   }#end if (usedef)
+   #---------------------------------------------------------------------------------------#
+}#end for (ipft in sequence(npft))
+#------------------------------------------------------------------------------------------#
+
+#----- Correction term for water-wood bond. -----------------------------------------------#
+pft$delta.c.wood = ( 1.e5 * pmin(wdr.fs,pft$qwatdry.wood)
+                   * ( - 0.06191 + 2.36e-4 * spht.tref 
+                     - 1.33e-2 * pmin(wdr.fs,pft$qwatdry.wood)
+                     )#end
+                   )#end pft$delta.c.wood
+pft$delta.c.bark = ( 1.e5 * pmin(wdr.fs,pft$qwatdry.bark)
+                   * ( - 0.06191 + 2.36e-4 * spht.tref
+                     - 1.33e-2 * pmin(wdr.fs,pft$qwatdry.bark)
+                     )#end
+                   )#end pft$delta.c.wood
+pft$c.leaf = (pft$c.leaf.dry + pft$qwatdry.leaf * cliq) / (1. + pft$qwatdry.leaf)
+pft$c.wood = ( (pft$c.wood.dry + pft$qwatdry.wood * cliq) / (1. + pft$qwatdry.wood)
+             + pft$delta.c.wood
+             )#end pft$c.wood
+pft$c.bark = ( (pft$c.bark.dry + pft$qwatdry.bark * cliq) / (1. + pft$qwatdry.bark)
+             + pft$delta.c.bark
+             )#end pft$c.bark
+#------------------------------------------------------------------------------------------#
+
+
+
+#------------------------------------------------------------------------------------------#
+#     Set bark thickness and carbon allocation to bark.  This is currently done only for   #
+# tropical trees when IALLOM=4, because all biomass pools must be corrected to ensure that #
+# total aboveground biomass is consistent with the allometric equations.  This may and     #
+# should be changed in the future.                                                         #
+#                                                                                          #
+# References:                                                                              #
+#                                                                                          #
+# Meinzer, F. C., G. Goldstein, and J. L. Andrade. Regulation of water flux through        #
+#    tropical forest canopy trees: Do universal rules apply? Tree Physiol., 21(1):19-26,   #
+#    Jan 2001. doi:10.1093/treephys/21.1.19. (M01)                                         #
+#                                                                                          #
+# de Mattos, P. P., A. T. dos Santos, H. Rivera, Y. M. M. de Oliveira, M. A. D. Rosot,     #
+#    and M. C. Garrastazu. Growth of Araucaria angustifolia in the Embrapa/Epagri forest   #
+#    reserve, Cacador, SC, Brazil. Pesq. Flor. Bras., 55(2):107-114, Jul 2007.             #
+#    URL http://pfb.cnpf.embrapa.br/pfb/index.php/pfb/ article/view/124. In Portuguese.    #
+#    (M07)                                                                                 #
+#                                                                                          #
+# Lawes, M. J. , J. J. Midgley, and P. J. Clarke. Costs and benefits of relative bark      #
+#    thickness in relation to fire damage: a savanna/forest contrast. J. Ecol.,            #
+#    101(2):517-524, Dec 2013. doi:10.1111/1365-2745.12035. (L13)                          #
+#                                                                                          #
+# Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.  plant: A   #
+#    package for modelling forest trait ecology and evolution.  Methods Ecol. Evol., 7(2): #
+#    136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                                 #
+#------------------------------------------------------------------------------------------#
+pft$b1Xs[sequence(npft)] = 0.315769481
+for (ipft in sequence(npft)){
+   skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || (iallom != 4)
+   if (skip){
+      #------------------------------------------------------------------------------------#
+      #   Set all bark variables to zero. in case this is not a tropical tree and in case  #
+      # this is an old allometry.                                                          #
+      #------------------------------------------------------------------------------------#
+      pft$b1Xs [ipft] = 0.
+      pft$b1Xb [ipft] = 0.
+      pft$qbark[ipft] = 0.
+      #------------------------------------------------------------------------------------#
+   }else{
+      #------------------------------------------------------------------------------------#
+      #     Variable b1Xs is the ratio between sapwood thickness and DBH.  It is currently #
+      # set to 0.316, based on a model fitting using M01 data.  This number is currently   #
+      # used only to define carbon allocation to bark.                                     #
+      #------------------------------------------------------------------------------------#
+      pft$b1Xs[ipft] = 0.315769481
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     Bark thickness slope depends on the life strategy.  Tropical broadleaf trees   #
+      # use the meta-analysis by L13, and the tropical needleleaf trees use the slope      #
+      # derived from M07's table 1.                                                        #
+      #------------------------------------------------------------------------------------#
+      if (pft$conifer[ipft]){
+         pft$b1Xb[ipft] = 0.03936468
+      }else if (pft$savannah[ipft]){
+         pft$b1Xb[ipft] = 0.128
+      }else{
+         pft$b1Xb[ipft] = 0.019
+      }#end (pft$conifer[ipft])
+      #------------------------------------------------------------------------------------#
+
+
+      #------------------------------------------------------------------------------------#
+      #     qbark is the factor that relates leaf biomass (and height) with bark biomass.  #
+      #------------------------------------------------------------------------------------#
+      abas            = ( pft$b1Xb[ipft] * (1.0 - pft$b1Xb[ipft]) 
+                        / ( pft$b1Xs[ipft] * (1. + pft$b1Xs[ipft] - 2. * pft$b1Xb[ipft]) )
+                        )#end abas
+      pft$qbark[ipft] = pft$qrhob[ipft] * abas * pft$qsw[ipft]
+      #------------------------------------------------------------------------------------#
+   }#end if (skip)
+   #---------------------------------------------------------------------------------------#
+}#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
 
 
@@ -1521,24 +1897,22 @@ for (ipft in sequence(npft)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
-         #     Replace b1Cr/b2Cr ("Crown Radius") coefficients by those calculated by:     #
          #                                                                                 #
          #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in #
-         #       the Amazon. Biogeosciences, in prep.                                      #
+         #       the Amazon. Environ. Res. Lett., in prep.                                 #
          #                                                                                 #
          #    Equation was derived from forest inventory measurements carried out at       #
          # multiple locations in the Brazilian Amazon, and fitted using a heteroscedastic  #
-         # least squares approach.  Note that their original equation relates DBH with     #
-         # crown radius, so we transform radius into area.                                 #
+         # least squares approach.                                                         #
          #                                                                                 #
          # Total number of trees: 17072                                                    #
-         # b1Cr    = 0.402 (95% CI: [0.394;0.412])                                         #
-         # b2Cr    = 0.615 (95% CI: [0.607;0.622])                                         #
-         # R2      = 0.589                                                                 #
-         # RMSE    = 0.999                                                                 #
+         # b1Ca    = 0.582 (95% CI: [0.543;0.628])                                         #
+         # b2Ca    = 1.224 (95% CI: [1.201;1.245])                                         #
+         # R2      = 0.501                                                                 #
+         # RMSE    = 29.89                                                                 #
          #---------------------------------------------------------------------------------#
-         pft$b1Ca[ipft] = pi * 0.40223^2
-         pft$b2Ca[ipft] = 2. * 0.61462
+         pft$b1Ca[ipft] = 0.582
+         pft$b2Ca[ipft] = 1.224
          #---------------------------------------------------------------------------------#
       }#end if
       #------------------------------------------------------------------------------------#
@@ -1618,9 +1992,9 @@ for (ipft in sequence(npft)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.1685739 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.4400991
-         pft$b2Bs.large[ipft] = 2.1159602
+         pft$b1Bs.small[ipft] = C2B * 0.167172 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.435521
+         pft$b2Bs.large[ipft] = 2.1594874
          pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
                                 ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if
@@ -1649,29 +2023,25 @@ for (ipft in sequence(npft)){
          pft$b2Cl[ipft] = 1.0324
       }#end if
       #------------------------------------------------------------------------------------#
-
-
-      #------------------------------------------------------------------------------------#
-      #     Replace the coefficients for WAI in case iallom is 3 or 4.                     #
-      #  These numbers come from fixing WAI to be 11% of the Maximum Leaf Area Index based #
-      #  on observation by                                                                 #
-      #                                                                                    #
-      #  Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,             #
-      #     J. J. O'Brien, and H. Ordonez, 2013: Comparison of direct and indirect methods #
-      #     for assessing leaf area index across a tropical rain forest landscape.         #
-      #     Agric. For. Meteorol., 177, 110--116. doi:10.1016/j.agrformet.2013.04.010.     #
-      #------------------------------------------------------------------------------------#
-      if (iallom %in% c(3,4)){
-         pft$b1WAI[ipft] = 0.11 * pft$SLA[ipft] * pft$b1Bl.large[ipft]
-         pft$b2WAI[ipft] = pft$b2Bl.large[ipft]
-      }#end if
-      #------------------------------------------------------------------------------------#
    }else{
       pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
                               * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
    }#end if (pft$tropical[ipft]
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#    Ratio between WAI and maximum LAI, based on Olivas et al. (2013).  Currently this is  #
+# applied to all PFTs.                                                                     #
+#                                                                                          #
+# Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien, and #
+#    H. Ordonez. Comparison of direct and indirect methods for assessing leaf area index   #
+#    across a tropical rain forest landscape. Agric. For. Meteorol., 177:110-116,          #
+#    Aug 2013. doi:10.1016/j.agrformet.2013.04.010.                                        #
+#------------------------------------------------------------------------------------------#
+pft$qwai = c(rep(0.11,times=npft),NA)
 #------------------------------------------------------------------------------------------#
 
 
@@ -1743,7 +2113,7 @@ if (iallom %in% c(0)){
 #------------------------------------------------------------------------------------------#
 #    Minimum bleaf and leaf area index that is resolvable.                                 #
 #------------------------------------------------------------------------------------------#
-pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=1:npft),NA)
+pft$bleaf.min = c(dbh2bl(dbh=pft$dbh.min[1:npft],ipft=sequence(npft)),NA)
 pft$lai.min   = onesixth * pft$init.dens * pft$bleaf.min * pft$SLA
 #------------------------------------------------------------------------------------------#
 

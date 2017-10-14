@@ -1182,6 +1182,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                      , fmt   = "%.3f"
                                      , off   = 0.0
                                      , mult  = 0.001)
+   numvar[["logging.cycle"]]   = list( descr = "Logging cycle"
+                                     , unit  = "yrs"
+                                     , fmt   = "%4i"
+                                     , off   = 0.0
+                                     , mult  = 1.0)
    numvar[["topsoil" ]]        = list( descr = "Top soil thickness"
                                      , unit  = "cm"
                                      , fmt   = "%.1f"
@@ -1220,9 +1225,9 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(            8,    12)
       }else if (lenici == 13){
          nparms = 1
-         param  = c("iustar")
-         na     = c(      12)
-         nz     = c(      13)
+         param  = c("iphen.scheme")
+         na     = c(            11)
+         nz     = c(            13)
       }else if (lenici == 14){
          nparms = 1
          param  = c("icanrad")
@@ -1318,11 +1323,16 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          param  = c("iage","ihrzrad","imetrad")
          na     = c(    10,       21,       31)
          nz     = c(    12,       22,       32)
-      }else if (lenici == 34){
+      }else if (lenici == 34 && grepl(pattern="imetrad",x=ici)){
          nparms = 3
          param  = c("ihrzrad","imetrad","vm0")
          na     = c(       13,       23,   32)
          nz     = c(       14,       24,   34)
+      }else if (lenici == 34 && grepl(pattern="bharv",x=ici)){
+         nparms = 4
+         param  = c("ianth.disturb","logging.type","logging.cycle","bharvest")
+         na     = c(             11,            14,             22,        31)
+         nz     = c(             12,            16,             24,        34)
       }else if (lenici == 35){
          nparms = 4
          param  = c("include.fire","ianth.disturb","ianth.dataset","isoil.text")

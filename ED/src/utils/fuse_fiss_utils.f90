@@ -568,7 +568,9 @@ module fuse_fiss_utils
                                      , is_grass            & ! intent(in)
                                      , hgt_ref             & ! intent(in)
                                      , veg_hcap_min        & ! intent(in)
-                                     , qsw                 ! ! intent(in)
+                                     , qsw                 & ! intent(in)
+                                     , qbark               & ! intent(in)
+                                     , agf_bs              ! ! intent(in)
       use fusion_fission_coms , only : niter_cohfus        & ! intent(in)
                                      , coh_size_tol_min    & ! intent(in)
                                      , coh_size_tol_mult   & ! intent(in)
@@ -605,12 +607,14 @@ module fuse_fiss_utils
       real         :: newn           ! New nplants of merged coh.
       real         :: donc_lai_max   ! Maximum LAI: donor cohort
       real         :: donc_bleaf_max ! Maximum BLeaf: donor cohort
-      real         :: donc_bsapw_max ! Maximum BSapwood: donor cohort
+      real         :: donc_bsapa_max ! Maximum BSapwood (AG): donor cohort
+      real         :: donc_bbark_max ! Maximum BBark: donor cohort
       real         :: donc_lhcap_max ! Maximum leaf heat capacity: donor cohort
       real         :: donc_whcap_max ! Maximum wood heat capacity: donor cohort
       real         :: recc_lai_max   ! Maximum LAI: receptor cohort
       real         :: recc_bleaf_max ! Maximum BLeaf: receptor cohort
-      real         :: recc_bsapw_max ! Maximum BSapwood: receptor cohort
+      real         :: recc_bsapa_max ! Maximum BSapwood (AG): receptor cohort
+      real         :: recc_bbark_max ! Maximum BBark: receptor cohort
       real         :: recc_lhcap_max ! Maximum leaf heat capacity: receptor cohort
       real         :: recc_whcap_max ! Maximum wood heat capacity: receptor cohort
       real         :: total_size     ! Total size
@@ -784,9 +788,12 @@ module fuse_fiss_utils
                   ! cohorts.                                                               !
                   !------------------------------------------------------------------------!
                   recc_bleaf_max = size2bl(cpatch%dbh(recc),cpatch%hite(recc),rpft)
-                  recc_bsapw_max = recc_bleaf_max * qsw(rpft) * cpatch%hite(recc)
-                  call calc_veg_hcap(recc_bleaf_max,cpatch%bdead(recc),recc_bsapw_max      &
-                                    ,cpatch%nplant(recc),rpft,recc_lhcap_max,recc_whcap_max)
+                  recc_bsapa_max = agf_bs(rpft)                                            &
+                                 * recc_bleaf_max * qsw  (rpft) * cpatch%hite(recc)
+                  recc_bbark_max = recc_bleaf_max * qbark(rpft) * cpatch%hite(recc)
+                  call calc_veg_hcap(recc_bleaf_max,cpatch%bdead(recc),recc_bsapa_max      &
+                                    ,recc_bbark_max,cpatch%nplant(recc),rpft               &
+                                    ,recc_lhcap_max,recc_whcap_max)
                   !------------------------------------------------------------------------!
 
 
@@ -795,9 +802,12 @@ module fuse_fiss_utils
                   !    Find potential heat capacity -- Donor cohort.                       !
                   !------------------------------------------------------------------------!
                   donc_bleaf_max = size2bl(cpatch%dbh(donc),cpatch%hite(donc),dpft)
-                  donc_bsapw_max = donc_bleaf_max * qsw(dpft) * cpatch%hite(donc)
-                  call calc_veg_hcap(donc_bleaf_max,cpatch%bdead(donc),donc_bsapw_max      &
-                                    ,cpatch%nplant(donc),dpft,donc_lhcap_max,donc_whcap_max)
+                  donc_bsapa_max = agf_bs(dpft)                                            &
+                                 * donc_bleaf_max * qsw  (dpft) * cpatch%hite(donc)
+                  recc_bbark_max = donc_bleaf_max * qbark(dpft) * cpatch%hite(donc)
+                  call calc_veg_hcap(donc_bleaf_max,cpatch%bdead(donc),donc_bsapa_max      &
+                                    ,donc_bbark_max,cpatch%nplant(donc),dpft               &
+                                    ,donc_lhcap_max,donc_whcap_max)
                   !------------------------------------------------------------------------!
 
 
@@ -953,15 +963,14 @@ module fuse_fiss_utils
 
       use ed_state_vars        , only : patchtype              & ! structure
                                       , copy_patchtype         ! ! sub-routine
-      use pft_coms             , only : q                      & ! intent(in), lookup table
-                                      , qsw                    & ! intent(in), lookup table
-                                      , is_grass               ! ! intent(in)
+      use pft_coms             , only : is_grass               ! ! intent(in)
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
       use allometry            , only : dbh2h                  & ! function
                                       , bd2dbh                 & ! function
                                       , bl2dbh                 & ! function
                                       , bl2h                   & ! function
+                                      , size2bl                & ! function
                                       , dbh2bd                 ! ! function
       use ed_misc_coms         , only : iqoutput               & ! intent(in)
                                       , imoutput               & ! intent(in)
@@ -983,7 +992,8 @@ module fuse_fiss_utils
       integer                              :: ncohorts_new      ! New # of cohorts
       integer                              :: tobesplit         ! # of cohorts to be split
       integer                              :: ipft              ! PFT type
-      real                                 :: stai              ! Potential TAI
+      real                                 :: bleaf_mp          ! Maximum possible Bleaf
+      real                                 :: tai_mp            ! Maximum possible TAI
       real                                 :: old_nplant        ! Old nplant
       real                                 :: new_nplant        ! New nplant
       real                                 :: old_size          ! Old size
@@ -1009,17 +1019,18 @@ module fuse_fiss_utils
          do ico = 1,cpatch%ncohorts
             ipft = cpatch%pft(ico)
 
-            !------------------------------------------------------------------------------! 
-            !     STAI is the potential TAI that this cohort has when its leaves are fully !
-            ! flushed.                                                                     !
-            !------------------------------------------------------------------------------! 
-            stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)       &
-                 * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )              &
-                 * cpatch%sla(ico) + cpatch%wai(ico)
+            !------------------------------------------------------------------------------!
+            !     Bleaf_mp and tai_mp are the maximum potential leaf biomass and           !
+            ! associated plant area index, given the seasonal constrain                    !
+            ! (green_leaf_factor and SLA).                                                 !
+            !------------------------------------------------------------------------------!
+            bleaf_mp = green_leaf_factor(ipft)                                             &
+                     * size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+            tai_mp   = cpatch%nplant(ico) * bleaf_mp * cpatch%sla(ico) + cpatch%wai(ico)
             !------------------------------------------------------------------------------! 
 
             !----- If the resulting TAI is too large, split this cohort. ------------------!
-            split_mask(ico) = stai > lai_tol
+            split_mask(ico) = tai_mp > lai_tol
             
             old_nplant = old_nplant + cpatch%nplant(ico)
             old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive  (ico)          &
@@ -1181,9 +1192,7 @@ module fuse_fiss_utils
    subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor,can_prss,can_shv,lsl &
                             ,fuse_initial)
       use ed_state_vars      , only : patchtype              ! ! Structure
-      use pft_coms           , only : q                      & ! intent(in), lookup table
-                                    , qsw                    & ! intent(in), lookup table
-                                    , is_grass               ! ! intent(in)
+      use pft_coms           , only : is_grass               ! ! intent(in)
       use therm_lib          , only : uextcm2tl              & ! subroutine
                                     , vpdefil                & ! subroutine
                                     , qslif                  ! ! function
@@ -1191,7 +1200,8 @@ module fuse_fiss_utils
                                     , bd2dbh                 & ! function
                                     , bl2dbh                 & ! function
                                     , bl2h                   & ! function
-                                    , dbh2h                  ! ! function
+                                    , dbh2h                  & ! function
+                                    , size2xb                ! ! function
       use ed_max_dims        , only : n_mort                 ! ! intent(in)
       use ed_misc_coms       , only : writing_long           & ! intent(in)
                                     , writing_eorq           & ! intent(in)
@@ -1219,12 +1229,16 @@ module fuse_fiss_utils
       integer                      :: imty              ! Mortality type
       real                         :: exp_mort_donc     ! Exp(mortality) donor
       real                         :: exp_mort_recc     ! Exp(mortality) receptor
-      real                         :: rlai              ! LAI of receiver
-      real                         :: dlai              ! LAI of donor
-      real                         :: rwai              ! WAI of receiver
-      real                         :: dwai              ! WAI of donor
-      real                         :: rnplant           ! nplant of receiver
-      real                         :: dnplant           ! nplant of donor
+      real                         :: recc_basarea      ! BA of receiver
+      real                         :: donc_basarea      ! BA of donor
+      real                         :: rlai              ! LAI weight of receiver
+      real                         :: dlai              ! LAI weight of donor
+      real                         :: rwai              ! WAI weight of receiver
+      real                         :: dwai              ! WAI weight of donor
+      real                         :: rnplant           ! nplant weight of receiver
+      real                         :: dnplant           ! nplant weight of donor
+      real                         :: rba               ! BA weight of receiver
+      real                         :: dba               ! BA weight of donor
       !------------------------------------------------------------------------------------!
 
 
@@ -1234,6 +1248,7 @@ module fuse_fiss_utils
       !  - If the unit is X/plant, then we scale by nplant.                                !
       !  - If the unit is X/m2_leaf, then we scale by LAI.                                 !
       !  - If the unit is X/m2_wood, then we scale by WAI.                                 !
+      !  - If the unit is X and related to basal area, then we scale by BA.                !
       !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
       !------------------------------------------------------------------------------------!
       rnplant = cpatch%nplant(recc) / (cpatch%nplant(recc) + cpatch%nplant(donc))
@@ -1247,19 +1262,35 @@ module fuse_fiss_utils
       ! (MLO 11-24-2014): turned rlai and dlai relative weights, so it works in all cases. !
       ! Also, applied the same idea to WAI-dependent variables.                            !
       !------------------------------------------------------------------------------------!
-      if (cpatch%lai(recc) + cpatch%lai(donc) > 0 ) then
+      if ((cpatch%lai(recc) + cpatch%lai(donc)) > 0. ) then
          rlai    = cpatch%lai(recc) / ( cpatch%lai(recc) + cpatch%lai(donc) )
          dlai    = 1.0 - rlai
       else
          rlai    = 0.5
          dlai    = 0.5
       end if
-      if (cpatch%wai(recc) + cpatch%wai(donc) > 0 ) then
+      if ((cpatch%wai(recc) + cpatch%wai(donc)) > 0. ) then
          rwai    = cpatch%wai(recc) / ( cpatch%wai(recc) + cpatch%wai(donc) )
          dwai    = 1.0 - rwai
       else
          rwai    = 0.5
          dwai    = 0.5
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Scaling factor for basal area.                                                  !
+      !------------------------------------------------------------------------------------!
+      recc_basarea = cpatch%nplant(recc) * cpatch%basarea(recc)
+      donc_basarea = cpatch%nplant(donc) * cpatch%basarea(donc)
+      if ((recc_basarea + donc_basarea) > 0. ) then
+         rba = recc_basarea / ( recc_basarea + donc_basarea )
+         dba = 1.0 - rba
+      else
+         rba = 0.5
+         dba = 0.5
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1306,6 +1337,8 @@ module fuse_fiss_utils
                                      + cpatch%bsapwooda       (donc) * dnplant
       cpatch%bsapwoodb        (recc) = cpatch%bsapwoodb       (recc) * rnplant             &
                                      + cpatch%bsapwoodb       (donc) * dnplant
+      cpatch%bbark            (recc) = cpatch%bbark           (recc) * rnplant             &
+                                     + cpatch%bbark           (donc) * dnplant
       cpatch%bstorage         (recc) = cpatch%bstorage        (recc) * rnplant             &
                                      + cpatch%bstorage        (donc) * dnplant
       cpatch%btimber          (recc) = cpatch%btimber         (recc) * rnplant             &
@@ -1319,10 +1352,11 @@ module fuse_fiss_utils
                                      + cpatch%leaf_maintenance(donc) * dnplant
       cpatch%root_maintenance (recc) = cpatch%root_maintenance(recc) * rnplant             &
                                      + cpatch%root_maintenance(donc) * dnplant
+      cpatch%bark_maintenance (recc) = cpatch%bark_maintenance(recc) * rnplant             &
+                                     + cpatch%bark_maintenance(donc) * dnplant
       cpatch%leaf_drop        (recc) = cpatch%leaf_drop       (recc) * rnplant             &
                                      + cpatch%leaf_drop       (donc) * dnplant
       !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!
@@ -1334,6 +1368,14 @@ module fuse_fiss_utils
       else
          cpatch%bleaf(recc)  = 0.
       end if
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Bark thickness is calculated based on the fused size and biomass.              !
+      !------------------------------------------------------------------------------------!
+      cpatch%thbark(recc) = size2xb(cpatch%dbh(recc),cpatch%hite(recc),cpatch%bbark(recc)  &
+                                   ,cpatch%pft(recc))
       !------------------------------------------------------------------------------------!
 
 
@@ -1438,6 +1480,9 @@ module fuse_fiss_utils
                                   
       cpatch%today_nppsapwood   (recc) = cpatch%today_nppsapwood   (recc)                  &
                                        + cpatch%today_nppsapwood   (donc)
+                                  
+      cpatch%today_nppbark      (recc) = cpatch%today_nppbark      (recc)                  &
+                                       + cpatch%today_nppbark      (donc)
                                   
       cpatch%today_nppcroot     (recc) = cpatch%today_nppcroot     (recc)                  &
                                        + cpatch%today_nppcroot     (donc)
@@ -1556,6 +1601,8 @@ module fuse_fiss_utils
                                        + cpatch%sapa_growth_resp   (donc) * dnplant
       cpatch%sapb_growth_resp   (recc) = cpatch%sapb_growth_resp   (recc) * rnplant        &
                                        + cpatch%sapb_growth_resp   (donc) * dnplant
+      cpatch%bark_growth_resp   (recc) = cpatch%bark_growth_resp   (recc) * rnplant        &
+                                       + cpatch%bark_growth_resp   (donc) * dnplant
       cpatch%leaf_storage_resp  (recc) = cpatch%leaf_storage_resp  (recc) * rnplant        &
                                        + cpatch%leaf_storage_resp  (donc) * dnplant
       cpatch%root_storage_resp  (recc) = cpatch%root_storage_resp  (recc) * rnplant        &
@@ -1564,6 +1611,8 @@ module fuse_fiss_utils
                                        + cpatch%sapa_storage_resp  (donc) * dnplant
       cpatch%sapb_storage_resp  (recc) = cpatch%sapb_storage_resp  (recc) * rnplant        &
                                        + cpatch%sapb_storage_resp  (donc) * dnplant
+      cpatch%bark_storage_resp  (recc) = cpatch%bark_storage_resp  (recc) * rnplant        &
+                                       + cpatch%bark_storage_resp  (donc) * dnplant
       !------------------------------------------------------------------------------------!
 
 
@@ -1715,6 +1764,10 @@ module fuse_fiss_utils
                                              * rnplant                                     &
                                              + cpatch%fmean_sapb_growth_resp(donc)         &
                                              * dnplant
+         cpatch%fmean_bark_growth_resp(recc) = cpatch%fmean_bark_growth_resp(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_bark_growth_resp(donc)         &
+                                             * dnplant
          cpatch%fmean_leaf_storage_resp(recc)= cpatch%fmean_leaf_storage_resp(recc)        &
                                              * rnplant                                     &
                                              + cpatch%fmean_leaf_storage_resp(donc)        &
@@ -1730,6 +1783,10 @@ module fuse_fiss_utils
          cpatch%fmean_sapb_storage_resp(recc)= cpatch%fmean_sapb_storage_resp(recc)        &
                                              * rnplant                                     &
                                              + cpatch%fmean_sapb_storage_resp(donc)        &
+                                             * dnplant
+         cpatch%fmean_bark_storage_resp(recc)= cpatch%fmean_bark_storage_resp(recc)        &
+                                             * rnplant                                     &
+                                             + cpatch%fmean_bark_storage_resp(donc)        &
                                              * dnplant
          cpatch%fmean_plresp          (recc) = cpatch%fmean_plresp          (recc)         &
                                              * rnplant                                     &
@@ -1932,6 +1989,10 @@ module fuse_fiss_utils
                                              * rnplant                                     &
                                              + cpatch%dmean_nppsapwood      (donc)         &
                                              * dnplant
+         cpatch%dmean_nppbark         (recc) = cpatch%dmean_nppbark         (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_nppbark         (donc)         &
+                                             * dnplant
          cpatch%dmean_nppcroot        (recc) = cpatch%dmean_nppcroot        (recc)         &
                                              * rnplant                                     &
                                              + cpatch%dmean_nppcroot        (donc)         &
@@ -1980,6 +2041,10 @@ module fuse_fiss_utils
                                              * rnplant                                     &
                                              + cpatch%dmean_sapb_growth_resp(donc)         &
                                              * dnplant
+         cpatch%dmean_bark_growth_resp(recc) = cpatch%dmean_bark_growth_resp(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_bark_growth_resp(donc)         &
+                                             * dnplant
          cpatch%dmean_leaf_storage_resp(recc)= cpatch%dmean_leaf_storage_resp(recc)        &
                                              * rnplant                                     &
                                              + cpatch%dmean_leaf_storage_resp(donc)        &
@@ -1995,6 +2060,10 @@ module fuse_fiss_utils
          cpatch%dmean_sapb_storage_resp(recc)= cpatch%dmean_sapb_storage_resp(recc)        &
                                              * rnplant                                     &
                                              + cpatch%dmean_sapb_storage_resp(donc)        &
+                                             * dnplant
+         cpatch%dmean_bark_storage_resp(recc)= cpatch%dmean_bark_storage_resp(recc)        &
+                                             * rnplant                                     &
+                                             + cpatch%dmean_bark_storage_resp(donc)        &
                                              * dnplant
          cpatch%dmean_plresp          (recc) = cpatch%dmean_plresp          (recc)         &
                                              * rnplant                                     &
@@ -2261,6 +2330,10 @@ module fuse_fiss_utils
                                              * rnplant                                     &
                                              + cpatch%mmean_nppsapwood      (donc)         &
                                              * dnplant
+         cpatch%mmean_nppbark         (recc) = cpatch%mmean_nppbark         (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_nppbark         (donc)         &
+                                             * dnplant
          cpatch%mmean_nppcroot        (recc) = cpatch%mmean_nppcroot        (recc)         &
                                              * rnplant                                     &
                                              + cpatch%mmean_nppcroot        (donc)         &
@@ -2309,6 +2382,10 @@ module fuse_fiss_utils
                                              * rnplant                                     &
                                              + cpatch%mmean_sapb_growth_resp(donc)         &
                                              * dnplant
+         cpatch%mmean_bark_growth_resp(recc) = cpatch%mmean_bark_growth_resp(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_bark_growth_resp(donc)         &
+                                             * dnplant
          cpatch%mmean_leaf_storage_resp(recc)= cpatch%mmean_leaf_storage_resp(recc)        &
                                              * rnplant                                     &
                                              + cpatch%mmean_leaf_storage_resp(donc)        &
@@ -2324,6 +2401,10 @@ module fuse_fiss_utils
          cpatch%mmean_sapb_storage_resp(recc)= cpatch%mmean_sapb_storage_resp(recc)        &
                                              * rnplant                                     &
                                              + cpatch%mmean_sapb_storage_resp(donc)        &
+                                             * dnplant
+         cpatch%mmean_bark_storage_resp(recc)= cpatch%mmean_bark_storage_resp(recc)        &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_bark_storage_resp(donc)        &
                                              * dnplant
          cpatch%mmean_plresp          (recc) = cpatch%mmean_plresp          (recc)         &
                                              * rnplant                                     &
@@ -2349,6 +2430,14 @@ module fuse_fiss_utils
                                              * rnplant                                     &
                                              + cpatch%mmean_broot           (donc)         &
                                              * dnplant
+         cpatch%mmean_bbark           (recc) = cpatch%mmean_bbark           (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_bbark           (donc)         &
+                                             * dnplant
+         cpatch%mmean_balive          (recc) = cpatch%mmean_balive          (recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_balive          (donc)         &
+                                             * dnplant
          cpatch%mmean_bstorage        (recc) = cpatch%mmean_bstorage        (recc)         &
                                              * rnplant                                     &
                                              + cpatch%mmean_bstorage        (donc)         &
@@ -2360,6 +2449,10 @@ module fuse_fiss_utils
          cpatch%mmean_root_maintenance(recc) = cpatch%mmean_root_maintenance(recc)         &
                                              * rnplant                                     &
                                              + cpatch%mmean_root_maintenance(donc)         &
+                                             * dnplant
+         cpatch%mmean_bark_maintenance(recc) = cpatch%mmean_bark_maintenance(recc)         &
+                                             * rnplant                                     &
+                                             + cpatch%mmean_bark_maintenance(donc)         &
                                              * dnplant
          cpatch%mmean_leaf_drop       (recc) = cpatch%mmean_leaf_drop       (recc)         &
                                              * rnplant                                     &
@@ -2384,6 +2477,14 @@ module fuse_fiss_utils
          !---------------------------------------------------------------------------------!
 
 
+         !---------------------------------------------------------------------------------!
+         !    Bark thickness is weighted by basal area.                                    !
+         !---------------------------------------------------------------------------------!
+         cpatch%mmean_thbark          (recc) = cpatch%mmean_thbark          (recc)         &
+                                             * rba                                         &
+                                             + cpatch%mmean_thbark          (donc)         &
+                                             * dba
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -2679,6 +2780,10 @@ module fuse_fiss_utils
                                                * rnplant                                   &
                                                + cpatch%qmean_sapb_growth_resp(:,donc)     &
                                                * dnplant
+         cpatch%qmean_bark_growth_resp(:,recc) = cpatch%qmean_bark_growth_resp(:,recc)     &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_bark_growth_resp(:,donc)     &
+                                               * dnplant
          cpatch%qmean_leaf_storage_resp(:,recc)= cpatch%qmean_leaf_storage_resp(:,recc)    &
                                                * rnplant                                   &
                                                + cpatch%qmean_leaf_storage_resp(:,donc)    &
@@ -2694,6 +2799,10 @@ module fuse_fiss_utils
          cpatch%qmean_sapb_storage_resp(:,recc)= cpatch%qmean_sapb_storage_resp(:,recc)    &
                                                * rnplant                                   &
                                                + cpatch%qmean_sapb_storage_resp(:,donc)    &
+                                               * dnplant
+         cpatch%qmean_bark_storage_resp(:,recc)= cpatch%qmean_bark_storage_resp(:,recc)    &
+                                               * rnplant                                   &
+                                               + cpatch%qmean_bark_storage_resp(:,donc)    &
                                                * dnplant
          cpatch%qmean_plresp          (:,recc) = cpatch%qmean_plresp          (:,recc)     &
                                                * rnplant                                   &

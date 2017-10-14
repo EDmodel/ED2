@@ -10,9 +10,7 @@ subroutine structural_growth(cgrid, month)
                              , polygontype            & ! structure
                              , sitetype               & ! structure
                              , patchtype              ! ! structure
-   use pft_coms       , only : q                      & ! intent(in)
-                             , qsw                    & ! intent(in)
-                             , seedling_mortality     & ! intent(in)
+   use pft_coms       , only : seedling_mortality     & ! intent(in)
                              , c2n_leaf               & ! intent(in)
                              , c2n_storage            & ! intent(in)
                              , c2n_recruit            & ! intent(in)
@@ -49,8 +47,6 @@ subroutine structural_growth(cgrid, month)
    integer                       :: ipft
    integer                       :: prev_month
    integer                       :: imonth
-   real                          :: salloc
-   real                          :: salloci
    real                          :: balive_in
    real                          :: bdead_in
    real                          :: bleaf_in
@@ -135,8 +131,6 @@ subroutine structural_growth(cgrid, month)
                !----- Assigning an alias for PFT type. ------------------------------------!
                ipft    = cpatch%pft(ico)
 
-               salloc  = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-               salloci = 1.0 / salloc
 
                !----- Remember inputs in order to calculate increments later on. ----------!
                balive_in   = cpatch%balive  (ico)
@@ -483,7 +477,8 @@ subroutine structural_growth(cgrid, month)
                !---------------------------------------------------------------------------!
                old_leaf_hcap = cpatch%leaf_hcap(ico)
                old_wood_hcap = cpatch%wood_hcap(ico)
-               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                      &
+                                 ,cpatch%bsapwooda(ico),cpatch%bbark(ico)                  &
                                  ,cpatch%nplant(ico),cpatch%pft(ico)                       &
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -552,9 +547,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                              , polygontype            & ! structure
                              , sitetype               & ! structure
                              , patchtype              ! ! structure
-   use pft_coms       , only : q                      & ! intent(in)
-                             , qsw                    & ! intent(in)
-                             , seedling_mortality     & ! intent(in)
+   use pft_coms       , only : seedling_mortality     & ! intent(in)
                              , c2n_leaf               & ! intent(in)
                              , c2n_storage            & ! intent(in)
                              , c2n_recruit            & ! intent(in)
@@ -588,8 +581,6 @@ subroutine structural_growth_eq_0(cgrid, month)
    integer                       :: ipft
    integer                       :: prev_month
    integer                       :: imonth
-   real                          :: salloc
-   real                          :: salloci
    real                          :: cb_act
    real                          :: cb_lightmax
    real                          :: cb_moistmax
@@ -602,6 +593,7 @@ subroutine structural_growth_eq_0(cgrid, month)
    real                          :: broot_in
    real                          :: bsapwooda_in
    real                          :: bsapwoodb_in
+   real                          :: bbark_in
    real                          :: bdead_in
    real                          :: hite_in
    real                          :: dbh_in
@@ -644,8 +636,6 @@ subroutine structural_growth_eq_0(cgrid, month)
                !----- Assigning an alias for PFT type. ------------------------------------!
                ipft    = cpatch%pft(ico)
 
-               salloc  = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-               salloci = 1.0 / salloc
 
                !---------------------------------------------------------------------------!
                !      Remember inputs in order to calculate increments and revert back to  !
@@ -657,6 +647,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                broot_in      = cpatch%broot           (ico)
                bsapwooda_in  = cpatch%bsapwooda       (ico)
                bsapwoodb_in  = cpatch%bsapwoodb       (ico)
+               bbark_in      = cpatch%bbark           (ico)
                hite_in       = cpatch%hite            (ico)
                dbh_in        = cpatch%dbh             (ico)
                nplant_in     = cpatch%nplant          (ico)
@@ -908,6 +899,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                cpatch%broot           (ico) = broot_in
                cpatch%bsapwooda       (ico) = bsapwooda_in
                cpatch%bsapwoodb       (ico) = bsapwoodb_in
+               cpatch%bbark           (ico) = bbark_in
                cpatch%hite            (ico) = hite_in
                cpatch%dbh             (ico) = dbh_in
                cpatch%nplant          (ico) = nplant_in
@@ -932,7 +924,8 @@ subroutine structural_growth_eq_0(cgrid, month)
                !---------------------------------------------------------------------------!
                old_leaf_hcap = cpatch%leaf_hcap(ico)
                old_wood_hcap = cpatch%wood_hcap(ico)
-               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)&
+               call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                      &
+                                 ,cpatch%bsapwooda(ico),cpatch%bbark(ico)                  &
                                  ,cpatch%nplant(ico),cpatch%pft(ico)                       &
                                  ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
@@ -1127,8 +1120,6 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
 
    use ed_state_vars , only : patchtype           ! ! structure
    use pft_coms      , only : phenology           & ! intent(in)
-                            , q                   & ! intent(in)
-                            , qsw                 & ! intent(in)
                             , is_grass            ! ! intent(in)
    use allometry     , only : bd2dbh              & ! function
                             , dbh2h               & ! function
@@ -1137,6 +1128,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , bl2h                & ! function
                             , size2bl             & ! function
                             , size2bt             & ! function
+                            , size2xb             & ! function
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
@@ -1221,17 +1213,20 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !---------------------------------------------------------------------------------------!
 
    !----- Update LAI, WAI, and CAI. -------------------------------------------------------!
-   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
-              ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &
-              ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico)      &
-              ,cpatch%bsapwooda(ico))
+   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico),cpatch%hite(ico) &
+                    ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico),cpatch%wai(ico)       &
+                    ,cpatch%crown_area(ico))
 
-   !----- Finding the new basal area and above-ground biomass. ----------------------------!
+   !----- Update derived properties (AGB, BA, timber stocks and bark thickness). ----------!
    cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
    cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                    &
-                                   ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                                   ,cpatch%bsapwooda(ico),cpatch%bbark(ico)                &
+                                   ,cpatch%pft(ico))
    cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdead(ico)        &
-                                ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                                ,cpatch%bsapwooda(ico),cpatch%bbark(ico),cpatch%pft(ico))
+   cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbark(ico)        &
+                                ,cpatch%pft(ico))
+   !---------------------------------------------------------------------------------------!
 
    !----- Update rooting depth ------------------------------------------------------------!
    cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
@@ -1260,8 +1255,6 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
    use ed_misc_coms  , only : ddbhi        ! ! intent(in)
    use consts_coms   , only : pio4         ! ! intent(in)
    use pft_coms      , only : agf_bs       & ! intent(in)
-                            , q            & ! intent(in)
-                            , qsw          & ! intent(in)
                             , is_grass     ! ! function
    use allometry     , only : ed_biomass   ! ! function
    implicit none
@@ -1300,7 +1293,8 @@ subroutine update_vital_rates(cpatch,ico,dbh_in,bdead_in,balive_in,hite_in,bstor
    !----- Find the new basal area and above-ground biomass. -------------------------------!
    cpatch%basarea(ico)    = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
    cpatch%agb(ico)        = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                 &
-                                      ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
+                                      ,cpatch%bsapwooda(ico),cpatch%bbark(ico)             &
+                                      ,cpatch%pft(ico)) 
 
    !---------------------------------------------------------------------------------------!
    !     Change the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH    !
