@@ -989,8 +989,8 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) cci_gapsize = real(rval)
         call getConfigREAL  ('cci_gapmin','hrzshade',i,rval,texist)
         if(texist) cci_gapmin = real(rval)
-        call getConfigREAL  ('cci_nretn','hrzshade',i,rval,texist)
-        if(texist) cci_nretn = real(rval)
+        call getConfigINT  ('cci_nretn','hrzshade',i,ival,texist)
+        if(texist) cci_nretn = ival
         call getConfigREAL  ('cci_hmax','hrzshade',i,rval,texist)
         if(texist) cci_hmax = real(rval)
 
@@ -1723,7 +1723,7 @@ subroutine write_ed_xml_config
      call putConfigREAL ("cci_pixres" ,cci_pixres )
      call putConfigREAL ("cci_gapsize",cci_gapsize)
      call putConfigREAL ("cci_gapmin" ,cci_gapmin )
-     call putConfigREAL ("cci_nretn"  ,cci_nretn  )
+     call putConfigINT  ("cci_nretn"  ,cci_nretn  )
      call putConfigREAL ("cci_hmax"   ,cci_hmax   )
   call libxml2f90_ll_closetag("hrzshade")
 

@@ -1105,6 +1105,8 @@ module growth_balive
                          ( available_carbon > 0.0 .and. cpatch%phenology_status(ico) == 1 )
       !------------------------------------------------------------------------------------!
 
+
+
       !------------------------------------------------------------------------------------!
       !     Maximum bleaf that the allometric relationship would allow.  If the plant is   !
       ! drought stressed (elongf < 1), we don't allow it to get back to full allometry.    !
@@ -1141,51 +1143,63 @@ module growth_balive
             delta_bbark     = max (0.0, bbark_aim     - cpatch%bbark    (ico))
             !------------------------------------------------------------------------------!
 
-            if(cpatch%elongf(ico) < tiny_num) then
-               
-               write(*,'(a)')' ============================================'
-               write(*,'(a)')' LINE 990 growth_balive.f90'
-               write(*,'(a)')' subroutine alloc_plant_c_balance'
-               write(*,'(a)')' '
-               write(*,'(a)')' An elongation factor of effectively zero'
-               write(*,'(a)')' has been detected during the transfer'
-               write(*,'(a)')' of storage carbon back to active leaf pool.'
-               write(*,'(a)')' This routine is expecting a non-zero '
-               write(*,'(a)')' elongation as status leaves exist.'
-               write(*,'(a)')' This is a minor bug that appears to trigger'
-               write(*,'(a)')' in rare cases when veg dynamics are off and'
-               write(*,'(a)')' drought stress is high.'
-               write(*,'(a)')' '
-               write(*,'(a)')' Continuing with 0 storage transfer.'
-               write(*,'(a)')' ============================================'
 
-               f_total=0.0
+            !------------------------------------------------------------------------------!
+            !     Check the intended biomass. In case of singularities, make the fraction  !
+            ! zero.                                                                        !
+            !------------------------------------------------------------------------------!
+            !----- Leaf. ------------------------------------------------------------------!
+            if (bleaf_aim >= tiny_num) then
+               f_bleaf = delta_bleaf / bleaf_aim
             else
-
-               !---------------------------------------------------------------------------!
-               !     If the available carbon is less than what we need to get back to      !
-               ! allometry.  Grow pools in proportion to demand.  If we have enough        !
-               ! carbon, we'll put the extra into bstorage.                                !
-               !---------------------------------------------------------------------------!
-               f_bleaf     = delta_bleaf     / bleaf_aim
-               f_broot     = delta_broot     / broot_aim
-               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
-               f_bbark     = delta_bbark     / bbark_aim
-               f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
-               !---------------------------------------------------------------------------!
+               f_bleaf = 0.
             end if
+            !----- Fine root. -------------------------------------------------------------!
+            if (broot_aim >= tiny_num) then
+               f_broot = delta_broot / broot_aim
+            else
+               f_broot = 0.
+            end if
+            !----- Above-ground sapwood. --------------------------------------------------!
+            if (bsapwooda_aim >= tiny_num) then
+               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+            else
+               f_bsapwooda = 0.
+            end if
+            !----- Below-ground sapwood. --------------------------------------------------!
+            if (bsapwooda_aim >= tiny_num) then
+               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+            else
+               f_bsapwoodb = 0.
+            end if
+            !----- Bark. ------------------------------------------------------------------!
+            if (bbark_aim >= tiny_num) then
+               f_bbark = delta_bbark / bbark_aim
+            else
+               f_bbark = 0.
+            end if
+            !----- Total. -----------------------------------------------------------------!
+            f_total = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
-            !     We only allow transfer from storage to living tissues if there is need   !
-            ! to transfer.                                                                 !
+            !     In case the available carbon is less than what we need to get back to    !
+            ! allometry, grow pools in proportion to demand.  Otherwise, put the excess    !
+            ! carbon into bstorage.                                                        !
             !------------------------------------------------------------------------------!
-            if (f_total > 0.0) then
+            if (f_total >= tiny_num) then
                tr_bleaf     = min(delta_bleaf    , f_bleaf     / f_total * available_carbon)
                tr_broot     = min(delta_broot    , f_broot     / f_total * available_carbon)
                tr_bsapwooda = min(delta_bsapwooda, f_bsapwooda / f_total * available_carbon)
                tr_bsapwoodb = min(delta_bsapwoodb, f_bsapwoodb / f_total * available_carbon)
                tr_bbark     = min(delta_bbark    , f_bbark     / f_total * available_carbon)
+            else
+               tr_bleaf     = 0.
+               tr_broot     = 0.
+               tr_bsapwooda = 0.
+               tr_bsapwoodb = 0.
+               tr_bbark     = 0.
             end if
             !------------------------------------------------------------------------------!
 
@@ -1793,46 +1807,54 @@ module growth_balive
             delta_bbark     = max (0.0, bbark_aim     - cpatch%bbark    (ico))
             !------------------------------------------------------------------------------!
 
-            if(cpatch%elongf(ico) < tiny_num) then
-               
-               write(*,'(a)')' ============================================'
-               write(*,'(a)')' LINE 990 growth_balive.f90'
-               write(*,'(a)')' subroutine alloc_plant_c_balance'
-               write(*,'(a)')' '
-               write(*,'(a)')' An elongation factor of effectively zero'
-               write(*,'(a)')' has been detected during the transfer'
-               write(*,'(a)')' of storage carbon back to active leaf pool.'
-               write(*,'(a)')' This routine is expecting a non-zero '
-               write(*,'(a)')' elongation as status leaves exist.'
-               write(*,'(a)')' This is a minor bug that appears to trigger'
-               write(*,'(a)')' in rare cases when veg dynamics are off and'
-               write(*,'(a)')' drought stress is high.'
-               write(*,'(a)')' '
-               write(*,'(a)')' Continuing with 0 storage transfer.'
-               write(*,'(a)')' ============================================'
 
-               f_total=0.0
+
+
+            !------------------------------------------------------------------------------!
+            !     Check the intended biomass. In case of singularities, make the fraction  !
+            ! zero.                                                                        !
+            !------------------------------------------------------------------------------!
+            !----- Leaf. ------------------------------------------------------------------!
+            if (bleaf_aim >= tiny_num) then
+               f_bleaf = delta_bleaf / bleaf_aim
             else
-
-               !---------------------------------------------------------------------------!
-               !     If the available carbon is less than what we need to get back to      !
-               ! allometry.  Grow pools in proportion to demand.  If we have enough        !
-               ! carbon, we'll put the extra into bstorage.                                !
-               !---------------------------------------------------------------------------!
-               f_bleaf     = delta_bleaf     / bleaf_aim
-               f_broot     = delta_broot     / broot_aim
-               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
-               f_bbark     = delta_bbark     / bbark_aim
-               f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
-               !---------------------------------------------------------------------------!
+               f_bleaf = 0.
             end if
+            !----- Fine root. -------------------------------------------------------------!
+            if (broot_aim >= tiny_num) then
+               f_broot = delta_broot / broot_aim
+            else
+               f_broot = 0.
+            end if
+            !----- Above-ground sapwood. --------------------------------------------------!
+            if (bsapwooda_aim >= tiny_num) then
+               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+            else
+               f_bsapwooda = 0.
+            end if
+            !----- Below-ground sapwood. --------------------------------------------------!
+            if (bsapwooda_aim >= tiny_num) then
+               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+            else
+               f_bsapwoodb = 0.
+            end if
+            !----- Bark. ------------------------------------------------------------------!
+            if (bbark_aim >= tiny_num) then
+               f_bbark = delta_bbark / bbark_aim
+            else
+               f_bbark = 0.
+            end if
+            !----- Total. -----------------------------------------------------------------!
+            f_total = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
-            !     We only allow transfer from storage to living tissues if there is need   !
-            ! to transfer.                                                                 !
+            !     In case the available carbon is less than what we need to get back to    !
+            ! allometry, grow pools in proportion to demand.  Otherwise, put the excess    !
+            ! carbon into bstorage.                                                        !
             !------------------------------------------------------------------------------!
-            if (f_total > 0.0) then
+            if (f_total >= tiny_num) then
                tr_bleaf     = min(delta_bleaf    , f_bleaf     / f_total * available_carbon)
                tr_broot     = min(delta_broot    , f_broot     / f_total * available_carbon)
                tr_bsapwooda = min(delta_bsapwooda, f_bsapwooda / f_total * available_carbon)
@@ -2526,52 +2548,59 @@ module growth_balive
             delta_bbark     = max (0.0, bbark_aim     - cpatch%bbark    (ico))
             !------------------------------------------------------------------------------!
 
-            if(cpatch%elongf(ico) < tiny_num) then
 
-               write(*,'(a)')' ============================================'
-               write(*,'(a)')' LINE 1660 growth_balive.f90'
-               write(*,'(a)')' subroutine alloc_plant_c_balance_eq_0'
-               write(*,'(a)')' '
-               write(*,'(a)')' An elongation factor of effectively zero'
-               write(*,'(a)')' has been detected during the transfer'
-               write(*,'(a)')' of storage carbon back to active leaf pool.'
-               write(*,'(a)')' This routine is expecting a non-zero '
-               write(*,'(a)')' elongation as status is flushing.'
-               write(*,'(a)')' This is a minor bug that appears to trigger'
-               write(*,'(a)')' in rare cases when veg dynamics are off and'
-               write(*,'(a)')' drought stress is high.'
-               write(*,'(a)')' '
-               write(*,'(a)')' Continuing with 0 storage transfer.'
-               write(*,'(a)')' ============================================'
 
-               f_total=0.0
+
+            !------------------------------------------------------------------------------!
+            !     Check the intended biomass. In case of singularities, make the fraction  !
+            ! zero.                                                                        !
+            !------------------------------------------------------------------------------!
+            !----- Leaf. ------------------------------------------------------------------!
+            if (bleaf_aim >= tiny_num) then
+               f_bleaf = delta_bleaf / bleaf_aim
             else
-               
-               !---------------------------------------------------------------------------!
-               !     If the available carbon is less than what we need to get back to      !
-               ! allometry.  Grow pools in proportion to demand.  If we have enough        !
-               ! carbon, we'll put the extra into bstorage.                                !
-               !---------------------------------------------------------------------------!
-               f_bleaf     = delta_bleaf     / bleaf_aim
-               f_broot     = delta_broot     / broot_aim
-               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
-               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
-               f_bbark     = delta_bbark     / bbark_aim
-               f_total     = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
-               !---------------------------------------------------------------------------!
-               
+               f_bleaf = 0.
             end if
+            !----- Fine root. -------------------------------------------------------------!
+            if (broot_aim >= tiny_num) then
+               f_broot = delta_broot / broot_aim
+            else
+               f_broot = 0.
+            end if
+            !----- Above-ground sapwood. --------------------------------------------------!
+            if (bsapwooda_aim >= tiny_num) then
+               f_bsapwooda = delta_bsapwooda / bsapwooda_aim
+            else
+               f_bsapwooda = 0.
+            end if
+            !----- Below-ground sapwood. --------------------------------------------------!
+            if (bsapwooda_aim >= tiny_num) then
+               f_bsapwoodb = delta_bsapwoodb / bsapwoodb_aim
+            else
+               f_bsapwoodb = 0.
+            end if
+            !----- Bark. ------------------------------------------------------------------!
+            if (bbark_aim >= tiny_num) then
+               f_bbark = delta_bbark / bbark_aim
+            else
+               f_bbark = 0.
+            end if
+            !----- Total. -----------------------------------------------------------------!
+            f_total = f_bleaf + f_broot + f_bsapwooda + f_bsapwoodb + f_bbark
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
-            !     We only allow transfer from storage to living tissues if there is need   !
-            ! to transfer.                                                                 !
+            !     In case the available carbon is less than what we need to get back to    !
+            ! allometry, grow pools in proportion to demand.  Otherwise, put the excess    !
+            ! carbon into bstorage.                                                        !
             !------------------------------------------------------------------------------!
-            if (f_total > 0.0) then
-               tr_bleaf     = min(delta_bleaf    , (f_bleaf/f_total)     * available_carbon)
-               tr_broot     = min(delta_broot    , (f_broot/f_total)     * available_carbon)
-               tr_bsapwooda = min(delta_bsapwooda, (f_bsapwooda/f_total) * available_carbon)
-               tr_bsapwoodb = min(delta_bsapwoodb, (f_bsapwoodb/f_total) * available_carbon)
-               tr_bbark     = min(delta_bbark    , (f_bbark/f_total)     * available_carbon)
+            if (f_total >= tiny_num) then
+               tr_bleaf     = min(delta_bleaf    , f_bleaf     / f_total * available_carbon)
+               tr_broot     = min(delta_broot    , f_broot     / f_total * available_carbon)
+               tr_bsapwooda = min(delta_bsapwooda, f_bsapwooda / f_total * available_carbon)
+               tr_bsapwoodb = min(delta_bsapwoodb, f_bsapwoodb / f_total * available_carbon)
+               tr_bbark     = min(delta_bbark    , f_bbark     / f_total * available_carbon)
             else
                tr_bleaf     = 0.
                tr_broot     = 0.

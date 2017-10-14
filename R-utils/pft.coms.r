@@ -1398,7 +1398,7 @@ pft15 = list( name               = "Araucaria"
             , b                  = b.aa * umol.2.mol
             , gamma.resp         = gamma.aa
             , effarea.transp     = 2.0
-            , rho                = 0.59
+            , rho                = 0.54
             , leaf.turnover.rate = 1./6.
             , root.turnover.rate = 1./6.
             , SLA                = 10.0
@@ -1834,7 +1834,7 @@ for (ipft in sequence(npft)){
       pft$dbh.crit[ipft] = ( log(1.0 - (pft$hgt.max[ipft]-pft$hgt.ref[ipft])
                                        / pft$b1Ht[ipft]) / pft$b2Ht[ipft] )
    }#end if
-   pft$dbh.adult[ipft]   = 10.0
+   pft$dbh.adult[ipft]   = 5.0
 }#end for
 #------------------------------------------------------------------------------------------#
 
@@ -2041,7 +2041,7 @@ for (ipft in sequence(npft)){
 #    across a tropical rain forest landscape. Agric. For. Meteorol., 177:110-116,          #
 #    Aug 2013. doi:10.1016/j.agrformet.2013.04.010.                                        #
 #------------------------------------------------------------------------------------------#
-pft$qwai = c(rep(0.11,times=npft),NA)
+pft$qwai = c(ifelse(pft$grass[-(npft+1)],0.00,0.11),NA)
 #------------------------------------------------------------------------------------------#
 
 

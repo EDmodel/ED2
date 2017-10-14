@@ -3140,7 +3140,7 @@ subroutine init_pft_alloc_params()
       if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
          qrhob(ipft) = 0.49 / 0.61
       else
-         qrhob(ipft) = exp(0.6966550 -1.602123 * rho(ipft))
+         qrhob(ipft) = exp(0.27614783 - 0.8114117 * rho(ipft))
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -3972,8 +3972,8 @@ subroutine init_pft_alloc_params()
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(455a)') ('-',n=1,455)
-      write(unit=18,fmt='(35(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(468a)') ('-',n=1,468)
+      write(unit=18,fmt='(36(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
                                      ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
@@ -3984,11 +3984,11 @@ subroutine init_pft_alloc_params()
                                      ,' DBH_BigLeaf',' Bleaf_Adult','  Bdead_Crit'         &
                                      ,'   Init_dens',' Init_LAImax','         SLA'         &
                                      ,'F_Bstor_init','           q','         qsw'         &
-                                     ,'       qbark','        qwai'
+                                     ,'       qbark','        qwai','       qrhob'
 
-      write(unit=18,fmt='(455a)') ('-',n=1,455)
+      write(unit=18,fmt='(468a)') ('-',n=1,468)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),26(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),33(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
                        ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
@@ -3997,9 +3997,9 @@ subroutine init_pft_alloc_params()
                        ,min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft),dbh_bigleaf(ipft)     &
                        ,bleaf_adult(ipft),bdead_crit(ipft),init_density(ipft)              &
                        ,init_laimax(ipft),sla(ipft),f_bstorage_init(ipft),q(ipft)          &
-                       ,qsw(ipft),qbark(ipft),qwai(ipft)
+                       ,qsw(ipft),qbark(ipft),qwai(ipft),qrhob(ipft)
       end do
-      write(unit=18,fmt='(455a)') ('-',n=1,455)
+      write(unit=18,fmt='(468a)') ('-',n=1,468)
       close(unit=18,status='keep')
    end if
 
@@ -5760,7 +5760,8 @@ end subroutine init_phen_coms
 !     This subroutine assigns the fusion and splitting parameters.                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-   use fusion_fission_coms, only : niter_patfus              & ! intent(out)
+   use fusion_fission_coms, only : ff_nhgt                   & ! intent(out)
+                                 , niter_patfus              & ! intent(out)
                                  , lai_tol                   & ! intent(out)
                                  , pat_light_ext             & ! intent(out)
                                  , pat_light_tol_min         & ! intent(out)
@@ -5796,6 +5797,13 @@ subroutine init_ff_coms
    lai_tol            = 1.0
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !      Number of height classes (classes will be initialised in                         !
+   ! init_derived_params_after_xml.                                                        !
+   !---------------------------------------------------------------------------------------!
+   ff_nhgt = 19
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Patch fusion layers were relocated to init_pft_derived_params, so the default     !
