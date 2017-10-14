@@ -17,6 +17,7 @@ subroutine read_ed10_ed20_history_file
    use pft_coms       , only : SLA                 & ! intent(in)
                              , q                   & ! intent(in)
                              , qsw                 & ! intent(in)
+                             , qbark               & ! intent(in)
                              , hgt_min             & ! intent(in)
                              , min_dbh             & ! intent(in)
                              , min_bdead           & ! intent(in)
@@ -49,6 +50,7 @@ subroutine read_ed10_ed20_history_file
                              , dbh2bd              & ! function
                              , size2bl             & ! function
                              , size2bt             & ! function
+                             , size2xb             & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
    use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
@@ -803,19 +805,16 @@ subroutine read_ed10_ed20_history_file
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
                         cpatch%bleaf(ic2)     = size2bl(dbh(ic), hite(ic),ipft(ic))
-                        cpatch%balive(ic2)    = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic))     &
-                                              + qsw(ipft(ic)) * cpatch%hite(ic2))
-                        cpatch%broot(ic2)     = cpatch%balive(ic2) * q(ipft(ic))           &
-                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
-                                               * cpatch%hite(ic2))
-                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic)) * cpatch%balive(ic2)      &
-                                              * qsw(ipft(ic))* cpatch%hite(ic2)            &
-                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
-                                              * cpatch%hite(ic2))
-                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic))) * cpatch%balive(ic2) &
-                                              * qsw(ipft(ic))* cpatch%hite(ic2)            &
-                                              / ( 1.0 + q(ipft(ic)) + qsw(ipft(ic))        &
-                                               * cpatch%hite(ic2))
+                        cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(ipft(ic))
+                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic)) * cpatch%bleaf(ic2)       &
+                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic))) * cpatch%bleaf(ic2)  &
+                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                        cpatch%bbark(ic2)     = cpatch%bleaf(ic2)                          &
+                                              * qbark(ipft(ic)) * cpatch%hite(ic2)
+                        cpatch%balive(ic2)    = cpatch%bleaf(ic2) + cpatch%broot(ic2)      &
+                                              + cpatch%bsapwooda(ic2)                      &
+                                              + cpatch%bsapwoodb(ic2) + cpatch%bbark(ic2)
                         cpatch%bstorage(ic2)  = max(almost_zero,f_bstorage_init(ipft(ic))) &
                                               * cpatch%balive(ic2)
                         !------------------------------------------------------------------!
@@ -833,11 +832,10 @@ subroutine read_ed10_ed20_history_file
 
                         !----- Assign LAI, WAI, and CAI -----------------------------------!
                         call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)             &
-                                         ,cpatch%bdead(ic2),cpatch%balive(ic2)             &
-                                         ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
-                                         ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
-                                         ,cpatch%lai(ic2), cpatch%wai(ic2)                 &
-                                         ,cpatch%crown_area(ic2),cpatch%bsapwooda(ic2))
+                                         ,cpatch%dbh(ic2),cpatch%hite(ic2)                 &
+                                         ,cpatch%pft(ic2),SLA(cpatch%pft(ic2))             &
+                                         ,cpatch%lai(ic2),cpatch%wai(ic2)                  &
+                                         ,cpatch%crown_area(ic2))
                         !------------------------------------------------------------------!
 
 
@@ -881,12 +879,18 @@ subroutine read_ed10_ed20_history_file
                         cpatch%agb    (ic2) = ed_biomass( cpatch%bdead     (ic2)           &
                                                         , cpatch%bleaf     (ic2)           &
                                                         , cpatch%bsapwooda (ic2)           &
+                                                        , cpatch%bbark     (ic2)           &
                                                         , cpatch%pft       (ic2) )
                         cpatch%basarea(ic2) = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
                         cpatch%btimber(ic2) = size2bt( cpatch%dbh       (ic2)              &
                                                      , cpatch%hite      (ic2)              &
                                                      , cpatch%bdead     (ic2)              &
                                                      , cpatch%bsapwooda (ic2)              &
+                                                     , cpatch%bbark     (ic2)              &
+                                                     , cpatch%pft       (ic2) )
+                        cpatch%thbark (ic2) = size2xb( cpatch%dbh       (ic2)              &
+                                                     , cpatch%hite      (ic2)              &
+                                                     , cpatch%bbark     (ic2)              &
                                                      , cpatch%pft       (ic2) )
 
                         !----- Growth rates, start with zero. -----------------------------!

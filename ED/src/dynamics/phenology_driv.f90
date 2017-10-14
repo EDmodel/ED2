@@ -164,8 +164,6 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    use grid_coms      , only : nzg                      ! ! intent(in)
    use pft_coms       , only : phenology                & ! intent(in)
                              , c2n_leaf                 & ! intent(in)
-                             , q                        & ! intent(in)
-                             , qsw                      & ! intent(in)
                              , l2n_stem                 & ! intent(in)
                              , c2n_stem                 & ! intent(in)
                              , c2n_storage              ! ! intent(in)
@@ -207,7 +205,6 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: bl_max
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
-   real                                  :: salloci
    real                                  :: elongf_try
    real                                  :: elongf_grow
    !----- Variables used only for debugging purposes. -------------------------------------!
@@ -243,7 +240,6 @@ subroutine update_phenology(doy, cpoly, isi, lat)
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft    = cpatch%pft(ico)
          kroot   = cpatch%krdepth(ico)
-         salloci = 1. / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
          
          !----- Initially, we assume all leaves stay. -------------------------------------!
          cpatch%leaf_drop(ico) = 0.0
@@ -589,10 +585,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
 
          !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)            &
+                          ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)                &
+                          ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
          !---------------------------------------------------------------------------------!
 
 
@@ -600,7 +595,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
+                                     ,cpatch%bsapwooda(ico),cpatch%bbark(ico)              &
+                                     ,cpatch%pft(ico)) 
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -609,7 +608,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          old_leaf_hcap       = cpatch%leaf_hcap(ico)
          old_wood_hcap       = cpatch%wood_hcap(ico)
          call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
-                           ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%bbark(ico),cpatch%nplant(ico),cpatch%pft(ico)           &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)
@@ -654,9 +653,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
                              , sitetype                 & ! structure
                              , patchtype                ! ! structure
    use grid_coms      , only : nzg                      ! ! intent(in)
-   use pft_coms       , only : phenology                & ! intent(in)
-                             , q                        & ! intent(in)
-                             , qsw                      ! ! intent(in)
+   use pft_coms       , only : phenology                ! ! intent(in)
    use decomp_coms    , only : f_labile                 ! ! intent(in)
    use phenology_coms , only : retained_carbon_fraction & ! intent(in)
                              , iphen_scheme             & ! intent(in)
@@ -693,7 +690,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
    real                                  :: bleaf_new
    real                                  :: old_leaf_hcap
    real                                  :: old_wood_hcap
-   real                                  :: salloci
    real                                  :: elongf_try
    real                                  :: elongf_grow
    !---------------------------------------------------------------------------------------!
@@ -720,7 +716,6 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
       cohortloop: do ico = 1,cpatch%ncohorts
          ipft    = cpatch%pft(ico)
          kroot   = cpatch%krdepth(ico)
-         salloci = 1. / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
          
          !----- Initially, we assume all leaves stay. -------------------------------------!
          cpatch%leaf_drop(ico) = 0.0
@@ -995,14 +990,18 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
 
 
          !----- Update LAI, WAI, and CAI accordingly. -------------------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)             &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)            &
+                          ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)                &
+                          ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
+         !---------------------------------------------------------------------------------!
+
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico)) 
+                                     ,cpatch%bsapwooda(ico),cpatch%bbark(ico)              &
+                                     ,cpatch%pft(ico))
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -1011,7 +1010,7 @@ subroutine update_phenology_eq_0(doy, cpoly, isi, lat)
          old_leaf_hcap       = cpatch%leaf_hcap(ico)
          old_wood_hcap       = cpatch%wood_hcap(ico)
          call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)      &
-                           ,cpatch%nplant(ico),cpatch%pft(ico)                             &
+                           ,cpatch%bbark(ico),cpatch%nplant(ico),cpatch%pft(ico)           &
                            ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
          call update_veg_energy_cweh(csite,ipa,ico,old_leaf_hcap,old_wood_hcap)
          call is_resolvable(csite,ipa,ico)

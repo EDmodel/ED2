@@ -17,6 +17,7 @@ subroutine ed_bigleaf_init(cgrid)
    use allometry      , only : size2bl              & ! function
                              , dbh2bd               & ! function
                              , size2bt              & ! function
+                             , size2xb              & ! function
                              , area_indices         & ! function
                              , ed_biomass           ! ! function
    use pft_coms       , only : hgt_max              & ! intent(in)
@@ -24,6 +25,7 @@ subroutine ed_bigleaf_init(cgrid)
                              , sla                  & ! intent(in)
                              , q                    & ! intent(in)
                              , qsw                  & ! intent(in)
+                             , qbark                & ! intent(in)
                              , agf_bs               & ! intent(in)
                              , f_bstorage_init      ! ! intent(in)
    use ed_misc_coms   , only : igrass               ! ! intent(in)
@@ -270,8 +272,11 @@ subroutine ed_bigleaf_init(cgrid)
                                              * qsw(ipft) * cpatch%hite(1)
                      cpatch%bsapwoodb    (1) = (1.0 - agf_bs(ipft)) * cpatch%bleaf(1)      &
                                              * qsw(ipft) * cpatch%hite(1)
+                     cpatch%bbark        (1) = cpatch%bleaf(1)                             &
+                                             * qbark(ipft) * cpatch%hite(1)
                      cpatch%balive       (1) = cpatch%bleaf    (1) + cpatch%broot    (1)   &
-                                             + cpatch%bsapwooda(1) + cpatch%bsapwoodb(1)
+                                             + cpatch%bsapwooda(1) + cpatch%bsapwoodb(1)   &
+                                             + cpatch%bbark    (1)
                      cpatch%sla          (1) = sla     (ipft)
                      cpatch%nplant       (1) = lai (ipft,ilu)                              &
                                              / ( cpatch%sla(1) * cpatch%bleaf(1)           &
@@ -323,19 +328,20 @@ subroutine ed_bigleaf_init(cgrid)
 
 
                      !----- Assign LAI, WAI, and CAI --------------------------------------!
-                     call area_indices(cpatch%nplant(1),cpatch%bleaf(1),cpatch%bdead(1)    &
-                                      ,cpatch%balive(1),cpatch%dbh(1), cpatch%hite(1)      &
-                                      ,cpatch%pft(1),cpatch%sla(1),cpatch%lai(1)           &
-                                      ,cpatch%wai(1),cpatch%crown_area(1)                  &
-                                      ,cpatch%bsapwooda(1))
+                     call area_indices(cpatch%nplant(1),cpatch%bleaf(1),cpatch%dbh(1)      &
+                                      ,cpatch%hite(1),cpatch%pft(1),cpatch%sla(1)          &
+                                      ,cpatch%lai(1),cpatch%wai(1),cpatch%crown_area(1))
 
                      !----- Above ground biomass, use the allometry. ----------------------!
                      cpatch%agb(1)     = ed_biomass(cpatch%bdead(1),cpatch%bleaf(1)        &
-                                               ,cpatch%bsapwooda(1),cpatch%pft(1))
+                                               ,cpatch%bsapwooda(1),cpatch%bbark(1)        &
+                                               ,cpatch%pft(1))
                      cpatch%basarea(1) = pio4 * cpatch%dbh(1) * cpatch%dbh(1)
                      cpatch%btimber(1) = size2bt(cpatch%dbh(1),cpatch%hite(1)              &
                                                 ,cpatch%bdead(1),cpatch%bsapwooda(1)       &
-                                                ,cpatch%pft(1))
+                                                ,cpatch%bbark(1),cpatch%pft(1))
+                     cpatch%thbark(1)  = size2xb(cpatch%dbh(1),cpatch%hite(1)              &
+                                                ,cpatch%bbark(1),cpatch%pft(1))
                      !---------------------------------------------------------------------!
 
 

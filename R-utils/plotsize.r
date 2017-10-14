@@ -12,7 +12,11 @@ plotsize <<- function( proje                  #  Map projection? [T|F]
                      , extendfc   = FALSE     #  Extend width for filled.contour [T|F]
                                               #  TRUE/FALSE  -- True = yes for longitude
                                               #  "lon","lat" -- will extend the specific
-                                              #   dimension
+                                              #     dimension
+                                              #  "both" -- will extend both dimensions
+                                              #     extfactor may be a vector of two, in
+                                              #     which case the first is applied to "lon"
+                                              #     and the second is applied to "lat")
                      , extfactor  = 1/6       #  Factor to extend width or height
                      , paper      = "letter"  #  Paper size (ignored if stdXXX aren't NULL)
                      , landscape  = TRUE      #  Landscape? (if not swap width and height)
@@ -143,12 +147,15 @@ plotsize <<- function( proje                  #  Map projection? [T|F]
    if (is.logical(extendfc)){
       width.fac  = 1.0 + extfactor * as.numeric(extendfc)
       height.fac = 1.0
-   }else if (tolower(substring(extendfc,1,2)) == "lo"){
+   }else if (tolower(substring(extendfc,1,2)) %in% "lo"){
       width.fac  = 1.0 + extfactor
       height.fac = 1.0
-   }else if (tolower(substring(extendfc,1,2)) == "la"){
+   }else if (tolower(substring(extendfc,1,2)) %in% "la"){
       width.fac  = 1.0
       height.fac = 1.0 + extfactor
+   }else if (tolower(substring(extendfc,1,2)) %in% "bo"){
+      width.fac  = 1.0 + extfactor[1]
+      height.fac = 1.0 + extfactor[min(length(extfactor),2)]
    }else{
       width.fac  = 1.0
       height.fac = 1.0
@@ -186,3 +193,4 @@ plotsize <<- function( proje                  #  Map projection? [T|F]
 }#end function
 #==========================================================================================#
 #==========================================================================================#
+

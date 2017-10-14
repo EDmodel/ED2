@@ -362,6 +362,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) leaf_turnover_rate(myPFT) = real(rval)
            call getConfigREAL  ('root_turnover_rate','pft',i,rval,texist)
            if(texist) root_turnover_rate(myPFT) = real(rval)
+           call getConfigREAL  ('bark_turnover_rate','pft',i,rval,texist)
+           if(texist) bark_turnover_rate(myPFT) = real(rval)
            call getConfigREAL  ('storage_turnover_rate','pft',i,rval,texist)
            if(texist) storage_turnover_rate(myPFT) = real(rval)
            call getConfigREAL  ('f_labile','pft',i,rval,texist)
@@ -424,14 +426,14 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) rho(myPFT) = real(rval)
            call getConfigREAL  ('SLA','pft',i,rval,texist)
            if(texist) SLA(myPFT) = real(rval)
-           call getConfigREAL  ('horiz_branch','pft',i,rval,texist)
-           if(texist) horiz_branch(myPFT) = real(rval)
            call getConfigREAL  ('q','pft',i,rval,texist)
            if(texist) q(myPFT) = real(rval)
            call getConfigREAL  ('sapwood_ratio','pft',i,rval,texist)
            if(texist) sapwood_ratio(myPFT) = real(rval)
            call getConfigREAL  ('qsw','pft',i,rval,texist)
            if(texist) qsw(myPFT) = real(rval)
+           call getConfigREAL  ('qbark','pft',i,rval,texist)
+           if(texist) qbark(myPFT) = real(rval)
            call getConfigREAL  ('init_density','pft',i,rval,texist)
            if(texist) init_density(myPFT) = real(rval)
            call getConfigREAL  ('f_bstorage_init','pft',i,rval,texist)
@@ -529,12 +531,18 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) b2Ca(myPFT) = real(rval)
 
      ! branches
-	   call getConfigREAL  ('b1WAI','pft',i,rval,texist)
-           if(texist) b1WAI(myPFT) = real(rval)
-	   call getConfigREAL  ('b2WAI','pft',i,rval,texist)
-           if(texist) b2WAI(myPFT) = real(rval)
+	   call getConfigREAL  ('qwai','pft',i,rval,texist)
+           if(texist) qwai(myPFT) = real(rval)
 	   call getConfigREAL  ('brf_wd','pft',i,rval,texist)
            if(texist) brf_wd(myPFT) = real(rval)
+
+     ! bark/sapwood thickness
+	   call getConfigREAL  ('qrhob','pft',i,rval,texist)
+           if(texist) qrhob(myPFT) = real(rval)
+	   call getConfigREAL  ('b1Xb','pft',i,rval,texist)
+           if(texist) b1Xb(myPFT) = real(rval)
+	   call getConfigREAL  ('b1Xs','pft',i,rval,texist)
+           if(texist) b1Xs(myPFT) = real(rval)
 
     ! coarse roots
            call getConfigREAL  ('agf_bs','pft',i,rval,texist)
@@ -556,24 +564,32 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) c2n_leaf(myPFT) = real(rval)
 !           call getConfigREAL  ('c2n_stem','pft',i,rval,texist)                  !! not pft-level in current mainline
 !           if(texist) c2n_stem(myPFT) = real(rval)
-           call getConfigREAL  ('c2n_recruit','pft',i,rval,texist)
-           if(texist) c2n_recruit(myPFT) = real(rval)
 !!$           call getConfigREAL  ('c2n_storage','pft',i,rval,texist)
 !!$           if(texist) c2n_storage(myPFT) = real(rval)
 
 ! leaf dependent
            call getConfigINT   ('phenology','pft',i,ival,texist)
            if(texist) phenology(myPFT) = ival
+
+! Specific heat
            call getConfigREAL  ('c_grn_leaf_dry','pft',i,rval,texist)
            if(texist) c_grn_leaf_dry(myPFT) = real(rval)
-           call getConfigREAL  ('wat_dry_ratio_grn','pft',i,rval,texist)
-           if(texist) wat_dry_ratio_grn(myPFT) = real(rval)
-           call getConfigREAL  ('wat_dry_ratio_ngrn','pft',i,rval,texist)
-           if(texist) wat_dry_ratio_ngrn(myPFT) = real(rval)
-           call getConfigREAL  ('c_ngrn_biom_dry','pft',i,rval,texist)
-           if(texist) c_ngrn_biom_dry(myPFT) = real(rval)
-           call getConfigREAL  ('delta_c','pft',i,rval,texist)
-           if(texist) delta_c(myPFT) = real(rval)
+           call getConfigREAL  ('c_ngrn_wood_dry','pft',i,rval,texist)
+           if(texist) c_ngrn_wood_dry(myPFT) = real(rval)
+           call getConfigREAL  ('c_ngrn_bark_dry','pft',i,rval,texist)
+           if(texist) c_ngrn_bark_dry(myPFT) = real(rval)
+           call getConfigREAL  ('wat_dry_ratio_leaf','pft',i,rval,texist)
+           if(texist) wat_dry_ratio_leaf(myPFT) = real(rval)
+           call getConfigREAL  ('wat_dry_ratio_wood','pft',i,rval,texist)
+           if(texist) wat_dry_ratio_wood(myPFT) = real(rval)
+           call getConfigREAL  ('wat_dry_ratio_bark','pft',i,rval,texist)
+           if(texist) wat_dry_ratio_bark(myPFT) = real(rval)
+           call getConfigREAL  ('delta_c_wood','pft',i,rval,texist)
+           if(texist) delta_c_wood(myPFT) = real(rval)
+           call getConfigREAL  ('delta_c_bark','pft',i,rval,texist)
+           if(texist) delta_c_bark(myPFT) = real(rval)
+
+! Crown depth
            call getConfigREAL  ('b1Cl','pft',i,rval,texist)
            if(texist) b1Cl(myPFT) = real(rval)
            call getConfigREAL  ('b2Cl','pft',i,rval,texist)
@@ -594,18 +610,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) repro_min_h(myPFT) = real(rval)
 
 !!! OTHER / derived
-           call getConfigREAL  ('one_plant_c','pft',i,rval,texist)
-           if(texist) one_plant_c(myPFT) = real(rval)
-           call getConfigREAL  ('min_recruit_size','pft',i,rval,texist)
-           if(texist) min_recruit_size(myPFT) = real(rval)
-           call getConfigREAL  ('min_cohort_size','pft',i,rval,texist)
-           if(texist) min_cohort_size(myPFT) = real(rval)
            call getConfigREAL  ('seed_rain','pft',i,rval,texist)
            if(texist) seed_rain(myPFT) = real(rval)
-           call getConfigREAL  ('negligible_nplant','pft',i,rval,texist)
-           if(texist) negligible_nplant(myPFT) = real(rval)
-           call getConfigREAL  ('veg_hcap_min','pft',i,rval,texist)
-           if(texist) veg_hcap_min(myPFT) = real(rval)
 
         else
            print*,"INVALID PFT READ FROM CONFIG FILE ::", myPFT
@@ -1467,6 +1473,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("growth_resp_factor",   growth_resp_factor(i))
         call putConfigREAL("leaf_turnover_rate",   leaf_turnover_rate(i))
         call putConfigREAL("root_turnover_rate",   root_turnover_rate(i))
+        call putConfigREAL("bark_turnover_rate",   bark_turnover_rate(i))
         call putConfigREAL("storage_turnover_rate",storage_turnover_rate(i))
         call putConfigREAL("f_labile",             f_labile(i))
         call putConfigREAL("root_respiration_factor",root_respiration_factor(i))
@@ -1500,10 +1507,10 @@ subroutine write_ed_xml_config
 !! ALLOCATION
         call putConfigREAL("rho",rho(i))
         call putConfigREAL("SLA",SLA(i))
-        call putConfigREAL("horiz_branch",horiz_branch(i))
         call putConfigREAL("q",q(i))
         call putConfigREAL("sapwood_ratio",sapwood_ratio(i))
-        call putConfigREAL("qsw",qsw(i))
+        call putConfigREAL("qsw"  ,qsw(i))
+        call putConfigREAL("qbark",qbark(i))
         call putConfigREAL("init_density",init_density(i))
         call putConfigREAL("f_bstorage_init",f_bstorage_init(i))
 
@@ -1538,9 +1545,13 @@ subroutine write_ed_xml_config
         call putConfigREAL("b2Ca",      b2Ca(i))
 
      !! BRANCHES
-        call putConfigREAL("b1WAI",     b1WAI(i))
-        call putConfigREAL("b2WAI",     b2WAI(i))
+        call putConfigREAL("qwai",      qwai(i))
         call putConfigREAL("brf_wd",    brf_wd(i))
+
+     !! BARK/SAPWOOD THICKNESS
+        call putConfigREAL("qrhob",   qrhob(i))
+        call putConfigREAL("b1Xb",    b1Xb(i))
+        call putConfigREAL("b1Xs",    b1Xs(i))
 
      !! COARSE ROOTS
         call putConfigREAL("agf_bs",     agf_bs(i))
@@ -1552,15 +1563,21 @@ subroutine write_ed_xml_config
 
      !! NITRO
         call putConfigREAL("c2n_leaf",   c2n_leaf(i))
-        call putConfigREAL("c2n_recruit",c2n_recruit(i))
 
      !! LEAF DEPENDENT
         call putConfigINT("phenology",         phenology(i))
+
+     !! SPECIFIC HEAT
         call putConfigREAL("c_grn_leaf_dry",    c_grn_leaf_dry(i))
-        call putConfigREAL("wat_dry_ratio_grn", wat_dry_ratio_grn(i))
-        call putConfigREAL("wat_dry_ratio_ngrn",wat_dry_ratio_ngrn(i))
-        call putConfigREAL("c_ngrn_biom_dry",   c_ngrn_biom_dry(i))
-        call putConfigREAL("delta_c",           delta_c(i))
+        call putConfigREAL("c_ngrn_wood_dry",   c_ngrn_wood_dry(i))
+        call putConfigREAL("c_ngrn_bark_dry",   c_ngrn_bark_dry(i))
+        call putConfigREAL("wat_dry_ratio_leaf",wat_dry_ratio_leaf(i))
+        call putConfigREAL("wat_dry_ratio_wood",wat_dry_ratio_wood(i))
+        call putConfigREAL("wat_dry_ratio_bark",wat_dry_ratio_bark(i))
+        call putConfigREAL("delta_c_wood",      delta_c_wood(i))
+        call putConfigREAL("delta_c_bark",      delta_c_bark(i))
+
+     !! CROWN DEPTH
         call putConfigREAL("b1Cl",              b1Cl(i))
         call putConfigREAL("b2Cl",              b2Cl(i))
 
@@ -1573,12 +1590,7 @@ subroutine write_ed_xml_config
         call putConfigREAL("min_recruit_size",min_recruit_size(i))
 
      !! OTHER
-        call putConfigREAL("one_plant_c",      one_plant_c(i))
-        call putConfigREAL("min_recruit_size", min_recruit_size(i))
-        call putConfigREAL("min_cohort_size",  min_cohort_size(i))
         call putConfigREAL("seed_rain",        seed_rain(i))
-        call putConfigREAL("negligible_nplant",negligible_nplant(i))
-        call putConfigREAL("veg_hcap_min",     veg_hcap_min(i))
 
         call libxml2f90_ll_closetag("pft")
      endif

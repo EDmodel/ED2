@@ -354,7 +354,8 @@ module phenology_aux
                                , patchtype        ! ! structure
       use ed_therm_lib  , only : calc_veg_hcap    ! ! function
       use ed_max_dims   , only : n_pft            ! ! intent(in)
-      use allometry     , only : area_indices     ! ! subroutine
+      use allometry     , only : ed_biomass       & ! subroutine
+                               , area_indices     ! ! subroutine
       use grid_coms     , only : nzg              ! ! intent(in)
       use therm_lib     , only : cmtl2uext        ! ! function
       implicit none
@@ -403,7 +404,7 @@ module phenology_aux
                                                ,cpatch%phenology_status(ico)               &
                                                ,cpatch%bleaf(ico),cpatch%broot(ico)        &
                                                ,cpatch%bsapwooda(ico)                      &
-                                               ,cpatch%bsapwoodb(ico)                      &
+                                               ,cpatch%bsapwoodb(ico),cpatch%bbark(ico)    &
                                                ,cpatch%balive(ico),cpatch%bstorage(ico)    &
                                                ,cpatch%cb(:,ico),cpatch%cb_lightmax(:,ico) &
                                                ,cpatch%cb_moistmax(:,ico)                  &
@@ -412,18 +413,16 @@ module phenology_aux
 
 
                   !----- Find LAI, WAI, and CAI. ------------------------------------------!
-                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                   ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)    &
-                                   ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)        &
-                                   ,cpatch%wai(ico),cpatch%crown_area(ico)                 &
-                                   ,cpatch%bsapwooda(ico))  
+                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)   &
+                                   ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)       &
+                                   ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
                   !------------------------------------------------------------------------!
 
 
                   !----- Find heat capacity and vegetation internal energy. ---------------!
                   call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico)                   &
-                                    ,cpatch%bsapwooda(ico),cpatch%nplant(ico)              &
-                                    ,cpatch%pft(ico)                                       &
+                                    ,cpatch%bsapwooda(ico),cpatch%bbark(ico)               &
+                                    ,cpatch%nplant(ico),cpatch%pft(ico)                    &
                                     ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico) )
                   cpatch%leaf_energy(ico) = cmtl2uext(cpatch%leaf_hcap (ico)               &
                                                      ,cpatch%leaf_water(ico)               &
@@ -434,6 +433,17 @@ module phenology_aux
                                                      ,cpatch%wood_temp (ico)               &
                                                      ,cpatch%wood_fliq (ico))
                   call is_resolvable(csite,ipa,ico)
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     Update biomass (other derived properties such as timber and bark   !
+                  ! thickness are not immediately affected by changes in bleaf).           !
+                  !------------------------------------------------------------------------!
+                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)     &
+                                                  ,cpatch%bsapwooda(ico),cpatch%bbark(ico) &
+                                                  ,cpatch%pft(ico))
                   !------------------------------------------------------------------------!
                end do cohortloop
                !---------------------------------------------------------------------------!
@@ -467,17 +477,19 @@ module phenology_aux
    !---------------------------------------------------------------------------------------!
    subroutine pheninit_balive_bstorage(mzg,ipft,kroot,height,dbh,soil_water,ntext_soil     &
                                       ,green_leaf_factor,paw_avg,elongf,phenology_status   &
-                                      ,bleaf,broot,bsapwooda,bsapwoodb,balive,bstorage     &
-                                      ,cb,cb_lightmax,cb_moistmax,cb_mlmax,cbr_bar)
+                                      ,bleaf,broot,bsapwooda,bsapwoodb,bbark,balive        &
+                                      ,bstorage,cb,cb_lightmax,cb_moistmax,cb_mlmax,cbr_bar)
       use soil_coms      , only : soil                & ! intent(in), look-up table
                                 , slz                 & ! intent(in)
                                 , slzt                & ! intent(in)
-                                , dslz                ! ! intent(in)
+                                , dslz                & ! intent(in)
+                                , matric_potential    ! ! function
       use phenology_coms , only : spot_phen           & ! intent(in)
                                 , elongf_min          ! ! intent(in)
       use pft_coms       , only : phenology           & ! intent(in)
                                 , q                   & ! intent(in)
                                 , qsw                 & ! intent(in)
+                                , qbark               & ! intent(in)
                                 , agf_bs              & ! intent(in)
                                 , f_bstorage_init     ! ! intent(in)
       use ed_max_dims    , only : n_pft               ! ! intent(in)
@@ -502,6 +514,7 @@ module phenology_aux
       real                     , intent(out) :: broot             ! Root biomass
       real                     , intent(out) :: bsapwooda         ! AG Sapwood biomass 
       real                     , intent(out) :: bsapwoodb         ! BG Sapwood biomass 
+      real                     , intent(out) :: bbark             ! Bark biomass 
       real                     , intent(out) :: balive            ! Living tissue biomass
       real                     , intent(out) :: bstorage          ! Storage biomass
       real   , dimension(13)   , intent(out) :: cb                ! Carbon balance
@@ -512,8 +525,6 @@ module phenology_aux
       !----- Local variables --------------------------------------------------------------!
       integer                                :: k                 ! Layer counter
       integer                                :: nsoil             ! Soil texture class
-      real                                   :: salloc            ! balive:bleaf ratio
-      real                                   :: salloci           ! bleaf:balive ratio
       real                                   :: bleaf_max         ! maximum bleaf
       real                                   :: balive_max        ! balive if on-allometry
       real                                   :: psi_layer         ! Water pot. of this layer
@@ -533,10 +544,8 @@ module phenology_aux
             nsoil     = ntext_soil(k)
             mcheight  = 0.5 * ( height + h2crownbh(height,ipft) )
 
-            psi_layer = slzt(k) - mcheight                                                 &
-                      + soil(nsoil)%slpots                                                 &
-                      / (soil_water(k)      / soil(nsoil)%slmsts) ** soil(nsoil)%slbs
-            paw_avg   = paw_avg + max(0.0, (psi_layer - soil(nsoil)%slpotwp)) * dslz(k)               &
+            psi_layer = slzt(k) - mcheight + matric_potential(nsoil,soil_water(k))
+            paw_avg   = paw_avg + max(0.0, (psi_layer - soil(nsoil)%slpotwp)) * dslz(k)    &
                                 / (soil(nsoil)%slpotld  - soil(nsoil)%slpotwp)
          end do
          paw_avg = paw_avg / abs(slz(kroot))
@@ -582,15 +591,14 @@ module phenology_aux
 
 
       !----- Compute the biomass of living tissues. ---------------------------------------!
-      salloc     = 1.0 + q(ipft) + qsw(ipft) * height
-      salloci    = 1.0 / salloc
       bleaf_max  = size2bl(dbh,height,ipft)
-      balive_max = bleaf_max * salloc
+      balive_max = bleaf_max * ( 1.0 + q(ipft) + ( qsw(ipft) + qbark(ipft) ) * height )
       bleaf      = bleaf_max * elongf
-      broot      = balive_max * q(ipft)   * salloci
-      bsapwooda  = balive_max * qsw(ipft) * height * salloci * agf_bs(ipft)
-      bsapwoodb  = balive_max * qsw(ipft) * height * salloci * (1.0 - agf_bs(ipft))
-      balive     = bleaf + broot + bsapwooda + bsapwoodb
+      broot      = bleaf_max * q    (ipft)
+      bsapwooda  = bleaf_max * qsw  (ipft) * height * agf_bs(ipft)
+      bsapwoodb  = bleaf_max * qsw  (ipft) * height * (1.0 - agf_bs(ipft))
+      bbark      = bleaf_max * qbark(ipft) * height
+      balive     = bleaf + broot + bsapwooda + bsapwoodb + bbark
       !------------------------------------------------------------------------------------!
 
 

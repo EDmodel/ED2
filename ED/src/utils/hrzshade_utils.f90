@@ -1022,7 +1022,7 @@ module hrzshade_utils
                   ! point.                                                                 !
                   !------------------------------------------------------------------------!
                   if (dr8 > 0.d0 .and. dr8 <= radius8 .and. dz8 > 0.d0) then
-                     cci8(xn,yn) = cci8(xn,yn) + sin(dz8 / sqrt(dz8*dz8 + dr8*dr8))
+                     cci8(xn,yn) = cci8(xn,yn) + dz8 / sqrt(dz8*dz8 + dr8*dr8)
                   end if
                   !------------------------------------------------------------------------!
                end do in_xloop

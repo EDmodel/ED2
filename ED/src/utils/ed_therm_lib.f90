@@ -25,6 +25,7 @@ module ed_therm_lib
    !                  for the mass of insterstitial water and its ability to hold energy.  !
    ! + BDEAD        - the structural wood biomass of the cohort in kgC/plant.              !
    ! + BSAPWOODA    - the above ground sapwood biomass of the cohort, in kgC/plant.        !
+   ! + BBARK        - bark biomass of the cohort, in kgC/plant.                            !
    ! + NPLANTS      - the number of plants per m2.                                         !
    ! + PFT          - the plant functional type of the current cohort, which may serve     !
    !                  for defining different parameterizations of specific heat capacity   !
@@ -44,13 +45,14 @@ module ed_therm_lib
    !      energy storages on the land surface fluxes and radiative temperature.            !
    !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
    !---------------------------------------------------------------------------------------!
-   subroutine calc_veg_hcap(bleaf,bdead,bsapwooda,nplant,pft,leaf_hcap,wood_hcap)
+   subroutine calc_veg_hcap(bleaf,bdead,bsapwooda,bbark,nplant,pft,leaf_hcap,wood_hcap)
       use consts_coms          , only : cliq                ! ! intent(in)
-      use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
-                                      , wat_dry_ratio_grn   & ! intent(in)
-                                      , c_ngrn_biom_dry     & ! intent(in)
-                                      , wat_dry_ratio_ngrn  & ! intent(in)
-                                      , delta_c             & ! intent(in)
+      use pft_coms             , only : cleaf               & ! intent(in)
+                                      , cwood               & ! intent(in)
+                                      , cbark               & ! intent(in)
+                                      , wat_dry_ratio_leaf  & ! intent(in)
+                                      , wat_dry_ratio_wood  & ! intent(in)
+                                      , wat_dry_ratio_bark  & ! intent(in)
                                       , agf_bs              & ! intent(in)
                                       , C2B                 & ! intent(in)
                                       , brf_wd              ! ! intent(in)
@@ -58,17 +60,17 @@ module ed_therm_lib
       use rk4_coms             , only : ibranch_thermo      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      real    , intent(in)    :: bleaf         ! Biomass of leaves              [kgC/plant]
+      real    , intent(in)    :: bleaf         ! Leaf biomass                   [kgC/plant]
       real    , intent(in)    :: bdead         ! Biomass of structural wood     [kgC/plant]
       real    , intent(in)    :: bsapwooda     ! Biomass of above ground sapwood[kgC/plant]
+      real    , intent(in)    :: bbark         ! Bark biomass                   [kgC/plant]
       real    , intent(in)    :: nplant        ! Number of plants               [ plant/m2]
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
       real    , intent(out)   :: leaf_hcap     ! Leaf heat capacity             [   J/m2/K]
       real    , intent(out)   :: wood_hcap     ! Wood heat capacity             [   J/m2/K]
       !----- Local variables --------------------------------------------------------------!
-      real                    :: bwood         ! Wood biomass                   [kgC/plant]
-      real                    :: spheat_leaf   ! Leaf specific heat             [   J/kg/K]
-      real                    :: spheat_wood   ! Wood specific heat             [   J/kg/K]
+      real                    :: bwoodbr       ! Wood biomass (branches)        [kgC/plant]
+      real                    :: bbarkbr       ! Bark biomass (branches)        [kgC/plant]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -77,25 +79,22 @@ module ed_therm_lib
       select case (ibranch_thermo)
       case (0)
          !----- Skip it, the user doesn't want to solve for branches. ---------------------!
-         spheat_wood = 0.
-         bwood       = 0.
+         bwoodbr     = 0.
+         bbarkbr     = 0.
       case default
          !----- Find branch/twig specific heat and biomass. -------------------------------!
-         spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
-                     / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood       = brf_wd(pft) * (bsapwooda + bdead*agf_bs(pft))
+         bwoodbr     = brf_wd(pft) * (bsapwooda + bdead * agf_bs(pft))
+         bbarkbr     = brf_wd(pft) * bbark * agf_bs(pft)
       end select
-
-      !----- Find the leaf specific heat. -------------------------------------------------!
-      spheat_leaf = (c_grn_leaf_dry(pft) + wat_dry_ratio_grn(pft) * cliq)                  &
-                  / (1. + wat_dry_ratio_grn(pft))
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !     The heat capacity is specific heat times the plant density times the leaf/wood !
       ! biomass.                                                                           !
       !------------------------------------------------------------------------------------!
-      leaf_hcap = nplant * C2B * bleaf * spheat_leaf * (1. + wat_dry_ratio_grn (pft))
-      wood_hcap = nplant * C2B * bwood * spheat_wood * (1. + wat_dry_ratio_ngrn(pft))
+      leaf_hcap = nplant * C2B *   bleaf   * cleaf(pft) * (1. + wat_dry_ratio_leaf(pft))
+      wood_hcap = nplant * C2B * ( bwoodbr * cwood(pft) * (1. + wat_dry_ratio_wood(pft))  &
+                                 + bbarkbr * cbark(pft) * (1. + wat_dry_ratio_bark(pft)) )
       !------------------------------------------------------------------------------------!
 
       return

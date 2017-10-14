@@ -60,7 +60,6 @@ module disturbance_utils
       use grid_coms          , only : nzg                       & ! intent(in)
                                     , nzs                       ! ! intent(in)
       use pft_coms           , only : include_pft               ! ! intent(in)
-      use allometry          , only : area_indices              ! ! function
       use mortality          , only : disturbance_mortality     ! ! subroutine
       use consts_coms        , only : lnexp_max                 & ! intent(in)
                                     , tiny_num                  & ! intent(in)
@@ -2999,8 +2998,9 @@ module disturbance_utils
             !------------------------------------------------------------------------------!
          case (2,6)
             !------ Felling / forest plantation.  Harvest commercial timber. --------------!
-            falive_timber    = cpatch%bsapwooda(ico)                                       &
-                             / ( cpatch%bsapwooda(ico) + agf_bs(ipft) * cpatch%bdead(ico) )
+            falive_timber    = (cpatch%bsapwooda(ico) + agf_bs(ipft) * cpatch%bbark(ico))  &
+                             / ( cpatch%bsapwooda(ico)                                     &
+                               + agf_bs(ipft) * (cpatch%bbark(ico) + cpatch%bdead(ico)) )
             balive_remain    = cpatch%balive  (ico) - falive_timber * cpatch%btimber(ico)
             bdead_remain     = cpatch%bdead   (ico)                                        &
                              - (1. - falive_timber) * cpatch%btimber(ico)
@@ -3153,10 +3153,7 @@ module disturbance_utils
                          ,height_factor,lsl)
       use ed_state_vars , only  : sitetype                 & ! structure
                                 , patchtype                ! ! structure
-      use pft_coms       , only : q                        & ! intent(in)
-                                , qsw                      & ! intent(in)
-                                , sla                      & ! intent(in)
-                                , hgt_min                  & ! intent(in)
+      use pft_coms       , only : hgt_min                  & ! intent(in)
                                 , hgt_max                  & ! intent(in)
                                 , dbh_bigleaf              ! ! intent(in)
       use ed_misc_coms   , only : dtlsm                    & ! intent(in)
@@ -3168,6 +3165,7 @@ module disturbance_utils
       use allometry      , only : h2dbh                    & ! function
                                 , dbh2bd                   & ! function
                                 , size2bt                  & ! function
+                                , size2xb                  & ! function
                                 , area_indices             & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
@@ -3269,8 +3267,8 @@ module disturbance_utils
                                    ,green_leaf_factor,cpatch%paw_avg(nc),cpatch%elongf(nc) &
                                    ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
                                    ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
-                                   ,cpatch%bsapwoodb(nc),cpatch%balive(nc)                 &
-                                   ,cpatch%bstorage(nc),cpatch%cb(:,nc)                    &
+                                   ,cpatch%bsapwoodb(nc),cpatch%bbark(nc)                  &
+                                   ,cpatch%balive(nc),cpatch%bstorage(nc),cpatch%cb(:,nc)  &
                                    ,cpatch%cb_lightmax(:,nc),cpatch%cb_moistmax(:,nc)      &
                                    ,cpatch%cb_mlmax(:,nc),cpatch%cbr_bar(nc))
       !------------------------------------------------------------------------------------!
@@ -3278,19 +3276,22 @@ module disturbance_utils
 
 
       !----- Compute all area indices needed. ---------------------------------------------!
-      call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
-                       ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
-                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc),cpatch%crown_area(nc) &
-                       ,cpatch%bsapwooda(nc))
+      call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%dbh(nc),cpatch%hite(nc)  &
+                       ,cpatch%pft(nc),cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc)        &
+                       ,cpatch%crown_area(nc))
       !------------------------------------------------------------------------------------!
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea      (nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb          (nc) = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)              &
-                                           ,cpatch%bsapwooda(nc),cpatch%pft(nc))
+                                           ,cpatch%bsapwooda(nc),cpatch%bbark(nc)          &
+                                           ,cpatch%pft(nc))
       cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bdead(nc)   &
-                                        ,cpatch%bsapwooda(nc),cpatch%pft(nc))
+                                        ,cpatch%bsapwooda(nc),cpatch%bbark(nc)             &
+                                        ,cpatch%pft(nc))
+      cpatch%thbark       (nc) = size2xb(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bbark(nc)   &
+                                        ,cpatch%pft(nc))
       cpatch%leaf_temp    (nc) = csite%can_temp  (np)
       cpatch%leaf_temp_pv (nc) = csite%can_temp  (np)
       cpatch%leaf_water   (nc) = 0.0
@@ -3304,7 +3305,7 @@ module disturbance_utils
 
       !----- Because we assigned no water, the internal energy is simply hcap*T. ----------!
       call calc_veg_hcap(cpatch%bleaf(nc),cpatch%bdead(nc),cpatch%bsapwooda(nc)            &
-                        ,cpatch%nplant(nc),cpatch%pft(nc)                                  &
+                        ,cpatch%bbark(nc),cpatch%nplant(nc),cpatch%pft(nc)                 &
                         ,cpatch%leaf_hcap(nc),cpatch%wood_hcap(nc))
 
       cpatch%leaf_energy(nc) = cmtl2uext(cpatch%leaf_hcap (nc),cpatch%leaf_water(nc)       &

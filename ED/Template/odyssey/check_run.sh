@@ -1,28 +1,53 @@
-#!/bin/sh
-
-if [ "x${1}" == "x" ]
-then
-   ncol=1
-else
-   ncol=${1}
-fi
-echo ${ncol}
-
+#!/bin/bash
 here=$(pwd)
 joborder="${here}/joborder.txt"
 desc=$(basename ${here})
+jobname="${desc}-sims"
 moi=$(whoami)
-outform="%.200j %.8T"
+outform="JobName%200,State%12"
 #----- Determine the number of polygons to run. -------------------------------------------#
 let npolys=$(wc -l ${joborder} | awk '{print $1 }')-3
 echo "Number of polygons: ${npolys}..."
 
 
+polya=1
+polyz=${npolys}
+
+#----- Argument parsing. ------------------------------------------------------------------#
+while [[ ${#} > 0 ]]
+do
+key="${1}"
+   case ${key} in
+   -a)
+      polya="${2}"
+      shift
+      ;;
+   -z)
+      polyz="${2}"
+      shift
+      ;;
+   --polya=*)
+      polya=$(echo ${key} | sed s@"-polya=="@""@g)
+      ;;
+   --polyz=*)
+      polyz=$(echo ${key} | sed s@"-polyz=="@""@g)
+      ;;
+   *)
+      echo "Unknown key-value argument pair."
+      exit 2
+      ;;
+   esac
+
+   shift # past argument or value
+done
+#------------------------------------------------------------------------------------------#
+
+
 #------------------------------------------------------------------------------------------#
 #     Loop over all polygons.                                                              #
 #------------------------------------------------------------------------------------------#
-ff=0
-while [ ${ff} -lt ${npolys} ]
+let ff=${polya}-1
+while [ ${ff} -lt ${polyz} ]
 do
    let ff=${ff}+1
    let line=${ff}+3
@@ -43,23 +68,6 @@ do
       ffout=${ff}
    fi
    #---------------------------------------------------------------------------------------#
-
-
-
-   #----- Make two columns. ---------------------------------------------------------------#
-   let col=${ff}%${ncol}
-   if [ ${ncol} -eq 1 ]
-   then
-      opt=""
-      off=""
-   elif [ ${col} -eq 0 ]
-   then
-      opt=""
-      off=".\t"
-   else
-      opt="-n"
-      off=""
-   fi
 
    #---------------------------------------------------------------------------------------#
    #      Read the ffth line of the polygon list.  There must be smarter ways of doing     #
@@ -180,7 +188,6 @@ do
    #---------------------------------------------------------------------------------------#
    #     Set some variables to check whether the simulation is running.                    #
    #---------------------------------------------------------------------------------------#
-   jobname="${desc}-${polyname}"
    stdout="${here}/${polyname}/serial_out.out"
    stderr="${here}/${polyname}/serial_out.err"
    lsfout="${here}/${polyname}/serial_lsf.out"
@@ -194,10 +201,10 @@ do
    if [ -s ${stdout} ]
    then
       #----- Check whether the simulation is running, and when in model time it is. -------#
-      squeue="squeue --noheader -u ${moi}"
-      running=$(${squeue}   -o "${outform}" -t RUNNING   | grep ${jobname} | wc -l)
-      pending=$(${squeue}   -o "${outform}" -t PENDING   | grep ${jobname} | wc -l)
-      suspended=$(${squeue} -o "${outform}" -t SUSPENDED | grep ${jobname} | wc -l)
+      stask="stask --noheader -u ${moi} -t ${polyname} -j ${jobname}"
+      running=$(${stask}   -o "${outform}" | grep "RUNNING"   | wc -l)
+      pending=$(${stask}   -o "${outform}" | grep "PENDING"   | wc -l)
+      suspended=$(${stask} -o "${outform}" | grep "SUSPENDED" | wc -l)
       simline=$(grep "Simulating: "   ${stdout} | tail -1)
       runtime=$(echo ${simline} | awk '{print $3}')
       #------------------------------------------------------------------------------------#
@@ -232,40 +239,39 @@ do
       #------------------------------------------------------------------------------------#
 
 
-
       #------------------------------------------------------------------------------------#
       #     Plot a message so the user knows what is going on.                             #
       #------------------------------------------------------------------------------------#
       if [ ${pending} -gt 0 ]
       then
-         echo -e ${opt} "${off} ${ffout}: ${polyname} is pending..."
+         echo -e "${ffout}: ${polyname} is pending..."
       elif [ ${suspended} -gt 0 ]
       then
-         echo -e ${opt} "${off} ${ffout}: ${polyname} is suspended!!!"
+         echo -e "${ffout}: ${polyname} is suspended!!!"
       elif [ ${running} -gt 0 ] || [ -s ${skipper} ] && [ ${sigsegv} -eq 0 ]
       then
-         echo -e ${opt} "${off} ${ffout}: ${polyname} is running (${runtime})..."
+         echo -e "${ffout}: ${polyname} is running (${runtime})..."
       elif [ ${sigsegv} -gt 0 ]
       then
-         echo -e ${opt} "${off} ${ffout}: ${polyname} HAD SEGMENTATION VIOLATION... <==========="
+         echo -e "${ffout}: ${polyname} HAD SEGMENTATION VIOLATION... <==========="
       elif [ ${crashed} -gt 0 ]
       then 
-         echo -e ${opt} "${off} ${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
+         echo -e "${ffout}: ${polyname} HAS CRASHED (RK4 PROBLEM)... <==========="
       elif [ ${metmiss} -gt 0 ]
       then 
-         echo -e ${opt} "${off} ${ffout}: ${polyname} DID NOT FIND MET DRIVERS... <==========="
+         echo -e "${ffout}: ${polyname} DID NOT FIND MET DRIVERS... <==========="
       elif [ ${stopped} -gt 0 ]
       then
-         echo -e ${opt} "${off} ${ffout}: ${polyname} STOPPED (UNKNOWN REASON)... <==========="
+         echo -e "${ffout}: ${polyname} STOPPED (UNKNOWN REASON)... <==========="
       elif [ ${the_end} -gt 0 ]
       then
-         echo -e ${opt} "${off} ${ffout}: ${polyname} has finished o/\o..."
+         echo -e "${ffout}: ${polyname} has finished o/\o..."
       else
-         echo -e ${opt} "${off} ${ffout}: ${polyname} status is unknown..."
+         echo -e "${ffout}: ${polyname} status is unknown..."
       fi
       #------------------------------------------------------------------------------------#
    else
-      echo -e ${opt} "${off} ${ffout}: ${polyname} is pending ..."
+      echo -e "${ffout}: ${polyname} is pending ..."
    fi
    #---------------------------------------------------------------------------------------#
 done

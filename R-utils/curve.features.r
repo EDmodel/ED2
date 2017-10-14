@@ -15,7 +15,8 @@ curve.features <<- function( x
                            , span   = 3L
                            , do.pad = TRUE
                            , xscale = max(abs(x),na.rm=TRUE)
-                           , toler  = 1000. * .Machine$double.eps
+                           , toler  = 10000. * .Machine$double.eps
+                           , toler2 = 100.   * .Machine$double.eps
                            ){
    #----- Make sure span is odd. ----------------------------------------------------------#
    span = as.integer(span)
@@ -61,7 +62,7 @@ curve.features <<- function( x
    xpp     = x[ip1] - 2.*x[i] + x[im1]
    xpp[1]  = xpp[2]
    xpp[nx] = xpp[nx-1] 
-   xpp     = ifelse(test=abs(xpp) >= toler, yes=xpp, no = 0.)
+   xpp     = ifelse(test=abs(xpp) >= toler2, yes=xpp, no = 0.)
    #---------------------------------------------------------------------------------------#
 
 
@@ -145,7 +146,7 @@ signblock <<- function(x,block=c("all","left","right")){
    if (length(x) == 0){
       xuse = NA
    }else if (block %in% "all" || length(x) == 1){
-      xuse = x
+      xuse = x[-ceiling(length(x)/2)]
    }else{
       #----- Grab indices that will be used. ----------------------------------------------#
       idx = sequence(floor(length(x)/2))

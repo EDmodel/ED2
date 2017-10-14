@@ -103,7 +103,7 @@ image.map <<- function( x
    #---------------------------------------------------------------------------------------#
    #      Check whether x, y, and z are the same type of data.                             #
    #---------------------------------------------------------------------------------------#
-   same.kind = (is.list(x) == is.list(y) && is.list(x) == is.list(y))
+   same.kind = (is.list(x) == is.list(y) && is.list(x) == is.list(z))
    if (! same.kind){
       cat(" X is list: ",is.list(x),"\n")
       cat(" Y is list: ",is.list(y),"\n")

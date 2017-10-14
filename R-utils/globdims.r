@@ -307,10 +307,23 @@ if (idbh.type == 1){
                         )#end paste0
    dbhcols    <<- c("#3B24B3","#306614","#A3CC52","#E65C17","#990F0F",all.colour)
    dbhltys    <<- c("twodash","dashed","longdash","dotdash","twodash","solid")
+}else if (idbh.type == 5){
+   ndbh       <<-  8
+   classdbh   <<- c(0,20,40,60,80,100,120,140)
+   breakdbh   <<- c(-Inf,classdbh[-1],Inf)
+   dbhlabel   <<- "08_szclss"
+   dbhkeys    <<- paste0(classdbh,"-",c(classdbh[-1],Inf))
+   dbhnames   <<- paste0( c("<",paste(classdbh[-c(1,ndbh)],"-",sep=""),">")
+                        , c(classdbh[-1],classdbh[ndbh]),"cm"
+                        )#end paste0
+   dbhcols    <<- c("#332288","#6699CC","#88CCEE","#44AA99","#117733"
+                   ,"#DDCC77","#CC6677","#882255",all.colour)
+   dbhltys    <<- c("twodash","dashed"  ,"longdash","dotdash","twodash"
+                   ,"dashed" ,"longdash","dotdash" ,"solid")
 }else{
    cat(" In globdims.r:","\n")
    cat(" IDBH.TYPE = ",idbh.type,"\n")
-   stop(" Invalid IDBH.TYPE, it must be between 1 and 4 (feel free to add more options.")
+   stop(" Invalid IDBH.TYPE, it must be between 1 and 5 (feel free to add more options.")
 }#end if
 #==========================================================================================#
 #==========================================================================================#

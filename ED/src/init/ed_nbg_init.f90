@@ -110,6 +110,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    use ed_misc_coms       , only : ied_init_mode      ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
+                                 , qbark              & ! intent(in)
                                  , sla                & ! intent(in)
                                  , hgt_min            & ! intent(in)
                                  , include_pft        & ! intent(in)
@@ -129,6 +130,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , dbh2bd             & ! function
                                  , size2bl            & ! function
                                  , size2bt            & ! function
+                                 , size2xb            & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
    use fuse_fiss_utils    , only : sort_cohorts       ! ! subroutine
@@ -145,8 +147,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    integer                            :: ico               ! Cohort counter
    integer                            :: mypfts            ! Number of included PFTs
    integer                            :: ipft              ! PFT counter
-   real                               :: salloc            ! balive/bleaf when on allom.
-   real                               :: salloci           ! 1./salloc
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -224,17 +224,15 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),ipft)
          cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft) 
          cpatch%sla(ico)              = sla(ipft)
-
-
-         salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-         salloci                      = 1. / salloc
-
-         cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
-         cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
-         cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * agf_bs(ipft)
-         cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * (1.-agf_bs(ipft))
+         cpatch%broot(ico)            = q(ipft) * cpatch%bleaf(ico)
+         cpatch%bsapwooda(ico)        = cpatch%bleaf(ico) * qsw(ipft) * cpatch%hite(ico)   &
+                                      * agf_bs(ipft)
+         cpatch%bsapwoodb(ico)        = cpatch%bleaf(ico) * qsw(ipft) * cpatch%hite(ico)   &
+                                      * (1. - agf_bs(ipft))
+         cpatch%bbark(ico)            = cpatch%bleaf(ico) * qbark(ipft) * cpatch%hite(ico)
+         cpatch%balive(ico)           = cpatch%bleaf(ico) + cpatch%broot(ico)              &
+                                      + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)      &
+                                      + cpatch%bbark(ico)
          cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))             &
                                       * cpatch%balive(ico)
          !---------------------------------------------------------------------------------!
@@ -273,17 +271,20 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)            &
+                          ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)                &
+                          ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                                     ,cpatch%bsapwooda(ico),cpatch%bbark(ico)              &
+                                     ,cpatch%pft(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
          cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bdead(ico)  &
-                                      ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                                      ,cpatch%bsapwooda(ico),cpatch%bbark(ico)             &
+                                      ,cpatch%pft(ico))
+         cpatch%thbark(ico)  = size2xb(cpatch%dbh(ico),cpatch%hite(ico),cpatch%bbark(ico)  &
+                                      ,cpatch%pft(ico))
 
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -325,6 +326,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    use ed_max_dims        , only : n_pft              ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
+                                 , qbark              & ! intent(in)
                                  , sla                & ! intent(in)
                                  , hgt_min            & ! intent(in)
                                  , include_pft        & ! intent(in)
@@ -357,8 +359,6 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    integer                            :: ico     ! Cohort counter
    integer                            :: ipft    ! PFT counter
    real                               :: height  ! Cohort initial height
-   real                               :: salloc  ! Factor to find balive, broot, bsapwood
-   real                               :: salloci ! 1./salloc
    !----- Local constants. ----------------------------------------------------------------!
    integer               , parameter  :: nlayers = 8   ! # of cohort layers to be included.
    real                  , parameter  :: dheight = 1.5 ! height interval.
@@ -403,16 +403,15 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
 
-
-         salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-         salloci                      = 1. / salloc
-
-         cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
-         cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
-         cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * agf_bs(ipft)
-         cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
-                                      * salloci * (1.-agf_bs(ipft))
+         cpatch%broot(ico)            = cpatch%bleaf(ico) * q(ipft)
+         cpatch%bsapwooda(ico)        = cpatch%bleaf(ico) * qsw(ipft) * cpatch%hite(ico)   &
+                                      * agf_bs(ipft)
+         cpatch%bsapwoodb(ico)        = cpatch%bleaf(ico) * qsw(ipft) * cpatch%hite(ico)   &
+                                      * (1.-agf_bs(ipft))
+         cpatch%bbark(ico)            = cpatch%bleaf(ico) * qbark(ipft) * cpatch%hite(ico)
+         cpatch%balive(ico)           = cpatch%bleaf(ico) + cpatch%broot(ico)              &
+                                      + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)      &
+                                      + cpatch%bbark(ico)
          cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))             &
                                       * cpatch%balive(ico)
 
@@ -447,14 +446,14 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
 
          !----- Find the initial area indices (LAI, WAI, CAI). ----------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
-                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wai(ico),cpatch%crown_area(ico),cpatch%bsapwooda(ico))
+         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)            &
+                          ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)                &
+                          ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)                  &
-                                     ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                                     ,cpatch%bsapwooda(ico),cpatch%bbark(ico)              &
+                                     ,cpatch%pft(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -498,6 +497,7 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
    use grid_coms          , only : nzg                ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
+                                 , qbark              & ! intent(in)
                                  , sla                & ! intent(in)
                                  , agf_bs             & ! intent(in)
                                  , dbh_bigleaf        & ! intent(in)
@@ -617,15 +617,16 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                cpatch%bleaf(ico)            = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
                cpatch%sla(ico)              = sla(ipft)
 
-               salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-               salloci                      = 1. / salloc
-
-               cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
-               cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) *salloci
-               cpatch%bsapwooda(ico)        = qsw(ipft) * cpatch%hite(ico)                 &
-                                            * cpatch%balive(ico) * salloci *agf_bs(ipft)
-               cpatch%bsapwoodb(ico)        = qsw(ipft) * cpatch%hite(ico)                 &
-                                            * cpatch%balive(ico) * salloci *(1.-agf_bs(ipft))
+               cpatch%broot(ico)            = cpatch%bleaf(ico) * q(ipft)
+               cpatch%bsapwooda(ico)        = cpatch%bleaf(ico) * qsw(ipft)                &
+                                            * cpatch%hite(ico)  * agf_bs(ipft)
+               cpatch%bsapwoodb(ico)        = cpatch%bleaf(ico) * qsw(ipft)                &
+                                            * cpatch%hite(ico)  * (1. - agf_bs(ipft))
+               cpatch%bbark(ico)            = cpatch%bleaf(ico) * qbark(ipft)              &
+                                            * cpatch%hite(ico)
+               cpatch%balive(ico)           = cpatch%bleaf(ico) + cpatch%broot(ico)        &
+                                            + cpatch%bsapwooda(ico)                        &
+                                            + cpatch%bsapwoodb(ico) + cpatch%bbark(ico)
                cpatch%bstorage(ico)         = max(almost_zero,f_bstorage_init(ipft))       &
                                             * cpatch%balive(ico)
 
@@ -657,15 +658,14 @@ subroutine near_bare_ground_big_leaf_init(cgrid)
                !---------------------------------------------------------------------------!
 
                !----- Find the initial area indices (LAI, WAI, CAI). ----------------------!
-               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &
-                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
-                                ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
-                                ,cpatch%wai(ico),cpatch%crown_area(ico)                    &
-                                ,cpatch%bsapwooda(ico))
+               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)      &
+                                ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)          &
+                                ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
 
                !----- Find the above-ground biomass and basal area. -----------------------!
                cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)            &
-                                           ,cpatch%bsapwooda(ico),cpatch%pft(ico))
+                                           ,cpatch%bsapwooda(ico),cpatch%bbark(ico)        &
+                                           ,cpatch%pft(ico))
                cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
                !----- Initialize other cohort-level variables. ----------------------------!

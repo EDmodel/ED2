@@ -136,6 +136,9 @@ module ed_state_vars
       ! Plant diameter at breast height (cm)
       real ,pointer,dimension(:) :: dbh
 
+      ! Plant bark thickness (cm)
+      real ,pointer,dimension(:) :: thbark
+
       ! Biomass of the structural wood (kgC/plant)
       real ,pointer,dimension(:) :: bdead
 
@@ -156,6 +159,9 @@ module ed_state_vars
 
       ! Biomass of sapwood below ground (kgC/plant)
       real, pointer, dimension(:) :: bsapwoodb
+
+      ! Bark biomass (kgC/plant)
+      real, pointer, dimension(:) :: bbark
 
       ! Plant storage pool of carbon [kgC/plant]
       real ,pointer,dimension(:) :: bstorage
@@ -297,6 +303,7 @@ module ed_state_vars
       real,pointer,dimension(:) :: today_nppleaf
       real,pointer,dimension(:) :: today_nppfroot
       real,pointer,dimension(:) :: today_nppsapwood
+      real,pointer,dimension(:) :: today_nppbark
       real,pointer,dimension(:) :: today_nppcroot
       real,pointer,dimension(:) :: today_nppseeds
       real,pointer,dimension(:) :: today_nppwood
@@ -307,17 +314,16 @@ module ed_state_vars
 
       ! Plant growth respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: leaf_growth_resp
-      ! Plant growth respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: root_growth_resp
-      ! Plant growth respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: sapa_growth_resp
-      ! Plant growth respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: sapb_growth_resp
+      real ,pointer,dimension(:) :: bark_growth_resp
       ! Plant storage respiration (kgC/plant/day)
       real ,pointer,dimension(:) :: leaf_storage_resp
       real ,pointer,dimension(:) :: root_storage_resp
       real ,pointer,dimension(:) :: sapa_storage_resp
       real ,pointer,dimension(:) :: sapb_storage_resp
+      real ,pointer,dimension(:) :: bark_storage_resp
 
       ! Plant density tendency [plants/m2/month]
       real ,pointer,dimension(:) :: monthly_dndt
@@ -462,6 +468,7 @@ module ed_state_vars
       ! roots [kgC/plant]
       real ,pointer,dimension(:) :: leaf_maintenance
       real ,pointer,dimension(:) :: root_maintenance
+      real ,pointer,dimension(:) :: bark_maintenance
      
       ! Leaf loss to litter layer due to phenology [kgC/plant]
       real , pointer, dimension(:) :: leaf_drop
@@ -507,10 +514,12 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_root_growth_resp ! Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapa_growth_resp ! Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapb_growth_resp ! Growth resp.      [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_bark_growth_resp ! Growth resp.      [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_leaf_storage_resp! Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_root_storage_resp! Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapa_storage_resp! Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_sapb_storage_resp! Storage resp.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: fmean_bark_storage_resp! Storage resp.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_plresp           ! Plant resp.       [ kgC/pl/yr]
       real,pointer,dimension(:)   :: fmean_leaf_energy      ! Leaf int. energy  [     J/m2g]
       real,pointer,dimension(:)   :: fmean_leaf_water       ! Leaf sfc. water   [    kg/m2g]
@@ -561,24 +570,29 @@ module ed_state_vars
       real,pointer,dimension(:)   :: fmean_vapor_wc         ! Wood evaporation  [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_intercepted_aw   ! Wood interception [  kg/m2g/s]
       real,pointer,dimension(:)   :: fmean_wshed_wg         ! Wood shedding     [  kg/m2g/s]
-      real,pointer,dimension(:)   :: fmean_lai		    ! LAI  		[     m2/m2]
-      real,pointer,dimension(:)	  :: fmean_bdead	    ! Bdead		[     kg/pl]
+      real,pointer,dimension(:)   :: fmean_lai              ! LAI               [     m2/m2]
+      real,pointer,dimension(:)	  :: fmean_bdead            ! Bdead             [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:)   :: dmean_nppleaf          ! Leaf NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppfroot         ! Fine root NPP     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppsapwood       ! Sapwood NPP       [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: dmean_nppbark          ! Bark NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppcroot         ! Coarse root NPP   [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppseeds         ! Seed NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppwood          ! Wood NPP          [ kgC/pl/yr]
       real,pointer,dimension(:)   :: dmean_nppdaily         ! Daily NPP         [ kgC/pl/yr]
       !----- Monthly means of variables that are integrated daily. ------------------------!
+      real,pointer,dimension(:)   :: mmean_thbark           ! Bark thickness    [        cm]
       real,pointer,dimension(:)   :: mmean_lai              ! Leaf area index   [   m2l/m2g]
       real,pointer,dimension(:)   :: mmean_bleaf            ! Leaf biomass      [    kgC/pl]
       real,pointer,dimension(:)   :: mmean_broot            ! Root biomass      [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_bbark            ! Bark biomass      [    kgC/pl]
       real,pointer,dimension(:)   :: mmean_bstorage         ! Storage biomass   [    kgC/pl]
+      real,pointer,dimension(:)   :: mmean_balive           ! Live biomass      [    kgC/pl]
       real,pointer,dimension(:,:) :: mmean_mort_rate        ! Mortality rate    [      1/yr]
       real,pointer,dimension(:)   :: mmean_leaf_maintenance ! Leaf maintenance  [ kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_root_maintenance ! Root mainten.     [ kgC/pl/yr]
+      real,pointer,dimension(:)   :: mmean_bark_maintenance ! Bark mainten.     [ kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_leaf_drop        ! Leaf drop         [ kgC/pl/yr]
       real,pointer,dimension(:)   :: mmean_cb               ! 12-mon C balance  [    kgC/pl]
       !----- Daily mean (same units as fast mean). ----------------------------------------!
@@ -590,10 +604,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_root_growth_resp
       real,pointer,dimension(:)     :: dmean_sapa_growth_resp
       real,pointer,dimension(:)     :: dmean_sapb_growth_resp
+      real,pointer,dimension(:)     :: dmean_bark_growth_resp
       real,pointer,dimension(:)     :: dmean_leaf_storage_resp
       real,pointer,dimension(:)     :: dmean_root_storage_resp
       real,pointer,dimension(:)     :: dmean_sapa_storage_resp
       real,pointer,dimension(:)     :: dmean_sapb_storage_resp
+      real,pointer,dimension(:)     :: dmean_bark_storage_resp
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
@@ -655,10 +671,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_root_growth_resp
       real,pointer,dimension(:)     :: mmean_sapa_growth_resp
       real,pointer,dimension(:)     :: mmean_sapb_growth_resp
+      real,pointer,dimension(:)     :: mmean_bark_growth_resp
       real,pointer,dimension(:)     :: mmean_leaf_storage_resp
       real,pointer,dimension(:)     :: mmean_root_storage_resp
       real,pointer,dimension(:)     :: mmean_sapa_storage_resp
       real,pointer,dimension(:)     :: mmean_sapb_storage_resp
+      real,pointer,dimension(:)     :: mmean_bark_storage_resp
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
@@ -714,6 +732,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppleaf
       real,pointer,dimension(:)     :: mmean_nppfroot
       real,pointer,dimension(:)     :: mmean_nppsapwood
+      real,pointer,dimension(:)     :: mmean_nppbark
       real,pointer,dimension(:)     :: mmean_nppcroot
       real,pointer,dimension(:)     :: mmean_nppseeds
       real,pointer,dimension(:)     :: mmean_nppwood
@@ -736,10 +755,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_root_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_bark_growth_resp
       real,pointer,dimension(:,:)   :: qmean_leaf_storage_resp
       real,pointer,dimension(:,:)   :: qmean_root_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_bark_storage_resp
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
@@ -2161,6 +2182,7 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: lai
       real,pointer,dimension(:,:,:) :: wai
       real,pointer,dimension(:,:,:) :: basal_area
+      real,pointer,dimension(:,:,:) :: thbark
       real,pointer,dimension(:,:,:) :: bdead
       real,pointer,dimension(:,:,:) :: btimber
       real,pointer,dimension(:,:,:) :: balive
@@ -2168,6 +2190,7 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: broot
       real,pointer,dimension(:,:,:) :: bsapwooda
       real,pointer,dimension(:,:,:) :: bsapwoodb
+      real,pointer,dimension(:,:,:) :: bbark
       real,pointer,dimension(:,:,:) :: bseeds
       real,pointer,dimension(:,:,:) :: byield
       real,pointer,dimension(:,:,:) :: bstorage
@@ -2177,10 +2200,12 @@ module ed_state_vars
       real,pointer,dimension(:,:,:) :: broot_n
       real,pointer,dimension(:,:,:) :: bsapwooda_n
       real,pointer,dimension(:,:,:) :: bsapwoodb_n
+      real,pointer,dimension(:,:,:) :: bbark_n
       real,pointer,dimension(:,:,:) :: bseeds_n
       real,pointer,dimension(:,:,:) :: bstorage_n
       real,pointer,dimension(:,:,:) :: leaf_maintenance
       real,pointer,dimension(:,:,:) :: root_maintenance
+      real,pointer,dimension(:,:,:) :: bark_maintenance
       real,pointer,dimension(:,:,:) :: leaf_drop
       !------------------------------------------------------------------------------------!
 
@@ -2280,10 +2305,12 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_root_growth_resp ! Growth resp.        [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapa_growth_resp ! Growth resp.        [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_sapb_growth_resp ! Growth resp.        [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_leaf_storage_resp     ! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_root_storage_resp     ! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_sapa_storage_resp     ! Storage resp.       [ kgC/m2/yr]
-      real,pointer,dimension(:) :: fmean_sapb_storage_resp     ! Storage resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_bark_growth_resp ! Growth resp.        [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_leaf_storage_resp! Storage resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_root_storage_resp! Storage resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_sapa_storage_resp! Storage resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_sapb_storage_resp! Storage resp.       [ kgC/m2/yr]
+      real,pointer,dimension(:) :: fmean_bark_storage_resp! Storage resp.       [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_plresp           ! Plant respiration.  [ kgC/m2/yr]
       real,pointer,dimension(:) :: fmean_leaf_energy      ! Leaf int. energy    [      J/m2]
       real,pointer,dimension(:) :: fmean_leaf_water       ! Leaf sfc. water     [     kg/m2]
@@ -2413,12 +2440,13 @@ module ed_state_vars
       real,pointer,dimension(:) :: fmean_soil_wetness     ! Soil wetness index  [        --]
       real,pointer,dimension(:) :: fmean_skin_temp        ! Skin temperature    [         K]
       !--------Variables required by PEcAn.  ----------------------------------------------!
-      real,pointer,dimension(:) :: fmean_lai		  ! LAI  		[     m2/m2]
-      real,pointer,dimension(:)	:: fmean_bdead	    	  ! Bdead		[     kg/pl]
+      real,pointer,dimension(:) :: fmean_lai              ! LAI                 [     m2/m2]
+      real,pointer,dimension(:)	:: fmean_bdead            ! Bdead               [     kg/pl]
       !----- Variables without sub-daily averages. ----------------------------------------!
       real,pointer,dimension(:) :: dmean_nppleaf          ! Leaf NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppfroot         ! Fine root NPP       [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppsapwood       ! Sapwood NPP         [ kgC/m2/yr]
+      real,pointer,dimension(:) :: dmean_nppbark          ! Bark NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppcroot         ! Coarse root NPP     [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppseeds         ! Seed NPP            [ kgC/m2/yr]
       real,pointer,dimension(:) :: dmean_nppwood          ! Wood NPP            [ kgC/m2/yr]
@@ -2429,15 +2457,21 @@ module ed_state_vars
       real,pointer,dimension(:) :: dmean_energy_residual  ! Enthalpy residual   [      J/m2]
       real,pointer,dimension(:) :: dmean_water_residual   ! Water residual      [     kg/m2]
       !----- Variables that are updated once a day. ---------------------------------------!
+      real,pointer,dimension(:,:,:) :: mmean_thbark           ! Bark thickness  [        cm]
       real,pointer,dimension(:,:,:) :: mmean_lai              ! Leaf area index [     m2/m2]
       real,pointer,dimension(:,:,:) :: mmean_bleaf            ! Leaf biomass    [    kgC/m2]
       real,pointer,dimension(:,:,:) :: mmean_broot            ! Root biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbark            ! Bark biomass    [    kgC/m2]
+      real,pointer,dimension(:,:,:) :: mmean_balive           ! Live biomass    [    kgC/m2]
       real,pointer,dimension(:,:,:) :: mmean_bstorage         ! Storage         [    kgC/m2]
       real,pointer,dimension(:,:,:) :: mmean_bleaf_n          ! Leaf N mass     [    kgN/m2]
       real,pointer,dimension(:,:,:) :: mmean_broot_n          ! Root N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_bbark_n          ! Root N mass     [    kgN/m2]
+      real,pointer,dimension(:,:,:) :: mmean_balive_n         ! Live N mass     [    kgN/m2]
       real,pointer,dimension(:,:,:) :: mmean_bstorage_n       ! Storage N       [    kgN/m2]
       real,pointer,dimension(:,:,:) :: mmean_leaf_maintenance ! Leaf maintenance[ kgC/m2/yr]
       real,pointer,dimension(:,:,:) :: mmean_root_maintenance ! Root maintenance[ kgC/m2/yr]
+      real,pointer,dimension(:,:,:) :: mmean_bark_maintenance ! Bark maintenance[ kgC/m2/yr]
       real,pointer,dimension(:,:,:) :: mmean_leaf_drop        ! Leaf shedding   [ kgC/m2/yr]
       real,pointer,dimension(:)     :: mmean_fast_soil_c      ! Fast soil C     [    kgC/m2]
       real,pointer,dimension(:)     :: mmean_slow_soil_c      ! Slow soil C     [    kgC/m2]
@@ -2456,10 +2490,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: dmean_root_growth_resp
       real,pointer,dimension(:)     :: dmean_sapa_growth_resp
       real,pointer,dimension(:)     :: dmean_sapb_growth_resp
+      real,pointer,dimension(:)     :: dmean_bark_growth_resp
       real,pointer,dimension(:)     :: dmean_leaf_storage_resp
       real,pointer,dimension(:)     :: dmean_root_storage_resp
       real,pointer,dimension(:)     :: dmean_sapa_storage_resp
       real,pointer,dimension(:)     :: dmean_sapb_storage_resp
+      real,pointer,dimension(:)     :: dmean_bark_storage_resp
       real,pointer,dimension(:)     :: dmean_plresp
       real,pointer,dimension(:)     :: dmean_leaf_energy
       real,pointer,dimension(:)     :: dmean_leaf_water
@@ -2588,10 +2624,12 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_root_growth_resp
       real,pointer,dimension(:)     :: mmean_sapa_growth_resp
       real,pointer,dimension(:)     :: mmean_sapb_growth_resp
+      real,pointer,dimension(:)     :: mmean_bark_growth_resp
       real,pointer,dimension(:)     :: mmean_leaf_storage_resp
       real,pointer,dimension(:)     :: mmean_root_storage_resp
       real,pointer,dimension(:)     :: mmean_sapa_storage_resp
       real,pointer,dimension(:)     :: mmean_sapb_storage_resp
+      real,pointer,dimension(:)     :: mmean_bark_storage_resp
       real,pointer,dimension(:)     :: mmean_plresp
       real,pointer,dimension(:)     :: mmean_leaf_energy
       real,pointer,dimension(:)     :: mmean_leaf_water
@@ -2697,6 +2735,7 @@ module ed_state_vars
       real,pointer,dimension(:)     :: mmean_nppleaf    
       real,pointer,dimension(:)     :: mmean_nppfroot   
       real,pointer,dimension(:)     :: mmean_nppsapwood 
+      real,pointer,dimension(:)     :: mmean_nppbark    
       real,pointer,dimension(:)     :: mmean_nppcroot   
       real,pointer,dimension(:)     :: mmean_nppseeds   
       real,pointer,dimension(:)     :: mmean_nppwood    
@@ -2757,10 +2796,12 @@ module ed_state_vars
       real,pointer,dimension(:,:)   :: qmean_root_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_growth_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_growth_resp
+      real,pointer,dimension(:,:)   :: qmean_bark_growth_resp
       real,pointer,dimension(:,:)   :: qmean_leaf_storage_resp
       real,pointer,dimension(:,:)   :: qmean_root_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapa_storage_resp
       real,pointer,dimension(:,:)   :: qmean_sapb_storage_resp
+      real,pointer,dimension(:,:)   :: qmean_bark_storage_resp
       real,pointer,dimension(:,:)   :: qmean_plresp
       real,pointer,dimension(:,:)   :: qmean_leaf_energy
       real,pointer,dimension(:,:)   :: qmean_leaf_water
@@ -3137,6 +3178,7 @@ module ed_state_vars
       allocate(cgrid%lai                        (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%wai                        (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%basal_area                 (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%thbark                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bdead                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%btimber                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%balive                     (   n_pft,     n_dbh,npolygons))
@@ -3144,6 +3186,7 @@ module ed_state_vars
       allocate(cgrid%broot                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwooda                  (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwoodb                  (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bbark                      (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bseeds                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%byield                     (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bstorage                   (   n_pft,     n_dbh,npolygons))
@@ -3153,10 +3196,12 @@ module ed_state_vars
       allocate(cgrid%broot_n                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwooda_n                (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bsapwoodb_n                (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bbark_n                    (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bseeds_n                   (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%bstorage_n                 (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%leaf_maintenance           (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%root_maintenance           (   n_pft,     n_dbh,npolygons))
+      allocate(cgrid%bark_maintenance           (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%leaf_drop                  (   n_pft,     n_dbh,npolygons))
       allocate(cgrid%fast_soil_c                (                    npolygons))
       allocate(cgrid%slow_soil_c                (                    npolygons))
@@ -3193,10 +3238,12 @@ module ed_state_vars
       allocate(cgrid%fmean_root_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_sapa_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_sapb_growth_resp     (                    npolygons))
+      allocate(cgrid%fmean_bark_growth_resp     (                    npolygons))
       allocate(cgrid%fmean_leaf_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_root_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_sapa_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_sapb_storage_resp    (                    npolygons))
+      allocate(cgrid%fmean_bark_storage_resp    (                    npolygons))
       allocate(cgrid%fmean_plresp               (                    npolygons))
       allocate(cgrid%fmean_leaf_energy          (                    npolygons))
       allocate(cgrid%fmean_leaf_water           (                    npolygons))
@@ -3331,6 +3378,7 @@ module ed_state_vars
          allocate(cgrid%dmean_nppleaf          (                     npolygons))
          allocate(cgrid%dmean_nppfroot         (                     npolygons))
          allocate(cgrid%dmean_nppsapwood       (                     npolygons))
+         allocate(cgrid%dmean_nppbark          (                     npolygons))
          allocate(cgrid%dmean_nppcroot         (                     npolygons))
          allocate(cgrid%dmean_nppseeds         (                     npolygons))
          allocate(cgrid%dmean_nppwood          (                     npolygons))
@@ -3348,10 +3396,12 @@ module ed_state_vars
          allocate(cgrid%dmean_root_growth_resp (                     npolygons))
          allocate(cgrid%dmean_sapa_growth_resp (                     npolygons))
          allocate(cgrid%dmean_sapb_growth_resp (                     npolygons))
+         allocate(cgrid%dmean_bark_growth_resp (                     npolygons))
          allocate(cgrid%dmean_leaf_storage_resp(                     npolygons))
          allocate(cgrid%dmean_root_storage_resp(                     npolygons))
          allocate(cgrid%dmean_sapa_storage_resp(                     npolygons))
          allocate(cgrid%dmean_sapb_storage_resp(                     npolygons))
+         allocate(cgrid%dmean_bark_storage_resp(                     npolygons))
          allocate(cgrid%dmean_plresp           (                     npolygons))
          allocate(cgrid%dmean_leaf_energy      (                     npolygons))
          allocate(cgrid%dmean_leaf_water       (                     npolygons))
@@ -3482,15 +3532,21 @@ module ed_state_vars
       ! requested by the user.                                                             !
       !------------------------------------------------------------------------------------!
       if (writing_eorq) then
+         allocate(cgrid%mmean_thbark           (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_lai              (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_bleaf            (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_broot            (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bbark            (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_balive           (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_bstorage         (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_bleaf_n          (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_broot_n          (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bbark_n          (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_balive_n         (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_bstorage_n       (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_leaf_maintenance (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_root_maintenance (   n_pft,      n_dbh,npolygons))
+         allocate(cgrid%mmean_bark_maintenance (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_leaf_drop        (   n_pft,      n_dbh,npolygons))
          allocate(cgrid%mmean_fast_soil_c      (                     npolygons)) 
          allocate(cgrid%mmean_slow_soil_c      (                     npolygons)) 
@@ -3508,10 +3564,12 @@ module ed_state_vars
          allocate(cgrid%mmean_root_growth_resp (                     npolygons)) 
          allocate(cgrid%mmean_sapa_growth_resp (                     npolygons)) 
          allocate(cgrid%mmean_sapb_growth_resp (                     npolygons)) 
+         allocate(cgrid%mmean_bark_growth_resp (                     npolygons)) 
          allocate(cgrid%mmean_leaf_storage_resp(                     npolygons)) 
          allocate(cgrid%mmean_root_storage_resp(                     npolygons)) 
          allocate(cgrid%mmean_sapa_storage_resp(                     npolygons)) 
          allocate(cgrid%mmean_sapb_storage_resp(                     npolygons)) 
+         allocate(cgrid%mmean_bark_storage_resp(                     npolygons)) 
          allocate(cgrid%mmean_plresp           (                     npolygons)) 
          allocate(cgrid%mmean_leaf_energy      (                     npolygons)) 
          allocate(cgrid%mmean_leaf_water       (                     npolygons)) 
@@ -3617,6 +3675,7 @@ module ed_state_vars
          allocate(cgrid%mmean_nppleaf          (                     npolygons))
          allocate(cgrid%mmean_nppfroot         (                     npolygons))
          allocate(cgrid%mmean_nppsapwood       (                     npolygons))
+         allocate(cgrid%mmean_nppbark          (                     npolygons))
          allocate(cgrid%mmean_nppcroot         (                     npolygons))
          allocate(cgrid%mmean_nppseeds         (                     npolygons))
          allocate(cgrid%mmean_nppwood          (                     npolygons))
@@ -3686,10 +3745,12 @@ module ed_state_vars
          allocate(cgrid%qmean_root_growth_resp (             ndcycle,npolygons))
          allocate(cgrid%qmean_sapa_growth_resp (             ndcycle,npolygons))
          allocate(cgrid%qmean_sapb_growth_resp (             ndcycle,npolygons))
+         allocate(cgrid%qmean_bark_growth_resp (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_storage_resp(             ndcycle,npolygons))
          allocate(cgrid%qmean_root_storage_resp(             ndcycle,npolygons))
          allocate(cgrid%qmean_sapa_storage_resp(             ndcycle,npolygons))
          allocate(cgrid%qmean_sapb_storage_resp(             ndcycle,npolygons))
+         allocate(cgrid%qmean_bark_storage_resp(             ndcycle,npolygons))
          allocate(cgrid%qmean_plresp           (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_energy      (             ndcycle,npolygons))
          allocate(cgrid%qmean_leaf_water       (             ndcycle,npolygons))
@@ -4590,6 +4651,7 @@ module ed_state_vars
       allocate(cpatch%ddbh_dt                      (                    ncohorts))
       allocate(cpatch%dlndbh_dt                    (                    ncohorts))
       allocate(cpatch%dbh                          (                    ncohorts))
+      allocate(cpatch%thbark                       (                    ncohorts))
       allocate(cpatch%bdead                        (                    ncohorts))
       allocate(cpatch%btimber                      (                    ncohorts))
       allocate(cpatch%bleaf                        (                    ncohorts))
@@ -4597,6 +4659,7 @@ module ed_state_vars
       allocate(cpatch%broot                        (                    ncohorts))
       allocate(cpatch%bsapwooda                    (                    ncohorts))
       allocate(cpatch%bsapwoodb                    (                    ncohorts))
+      allocate(cpatch%bbark                        (                    ncohorts))
       allocate(cpatch%bstorage                     (                    ncohorts))
       allocate(cpatch%bseeds                       (                    ncohorts))
       allocate(cpatch%byield                       (                    ncohorts))
@@ -4641,6 +4704,7 @@ module ed_state_vars
       allocate(cpatch%today_nppleaf                (                    ncohorts))
       allocate(cpatch%today_nppfroot               (                    ncohorts))
       allocate(cpatch%today_nppsapwood             (                    ncohorts))
+      allocate(cpatch%today_nppbark                (                    ncohorts))
       allocate(cpatch%today_nppcroot               (                    ncohorts))
       allocate(cpatch%today_nppseeds               (                    ncohorts))
       allocate(cpatch%today_nppwood                (                    ncohorts))
@@ -4649,10 +4713,12 @@ module ed_state_vars
       allocate(cpatch%root_growth_resp             (                    ncohorts))
       allocate(cpatch%sapa_growth_resp             (                    ncohorts))
       allocate(cpatch%sapb_growth_resp             (                    ncohorts))
+      allocate(cpatch%bark_growth_resp             (                    ncohorts))
       allocate(cpatch%leaf_storage_resp            (                    ncohorts))
       allocate(cpatch%root_storage_resp            (                    ncohorts))
       allocate(cpatch%sapa_storage_resp            (                    ncohorts))
       allocate(cpatch%sapb_storage_resp            (                    ncohorts))
+      allocate(cpatch%bark_storage_resp            (                    ncohorts))
       allocate(cpatch%monthly_dndt                 (                    ncohorts))
       allocate(cpatch%monthly_dlnndt               (                    ncohorts))
       allocate(cpatch%mort_rate                    (             n_mort,ncohorts))
@@ -4700,6 +4766,7 @@ module ed_state_vars
       allocate(cpatch%water_supply                 (                    ncohorts))
       allocate(cpatch%leaf_maintenance             (                    ncohorts))
       allocate(cpatch%root_maintenance             (                    ncohorts))
+      allocate(cpatch%bark_maintenance             (                    ncohorts))
       allocate(cpatch%leaf_drop                    (                    ncohorts))
       allocate(cpatch%leaf_respiration             (                    ncohorts))
       allocate(cpatch%root_respiration             (                    ncohorts))
@@ -4718,10 +4785,12 @@ module ed_state_vars
       allocate(cpatch%fmean_root_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_sapa_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_sapb_growth_resp       (                    ncohorts))
+      allocate(cpatch%fmean_bark_growth_resp       (                    ncohorts))
       allocate(cpatch%fmean_leaf_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_root_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_sapa_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_sapb_storage_resp      (                    ncohorts))
+      allocate(cpatch%fmean_bark_storage_resp      (                    ncohorts))
       allocate(cpatch%fmean_plresp                 (                    ncohorts))
       allocate(cpatch%fmean_leaf_energy            (                    ncohorts))
       allocate(cpatch%fmean_leaf_water             (                    ncohorts))
@@ -4782,6 +4851,7 @@ module ed_state_vars
          allocate(cpatch%dmean_nppleaf             (                    ncohorts))
          allocate(cpatch%dmean_nppfroot            (                    ncohorts))
          allocate(cpatch%dmean_nppsapwood          (                    ncohorts))
+         allocate(cpatch%dmean_nppbark             (                    ncohorts))
          allocate(cpatch%dmean_nppcroot            (                    ncohorts))
          allocate(cpatch%dmean_nppseeds            (                    ncohorts))
          allocate(cpatch%dmean_nppwood             (                    ncohorts))
@@ -4794,10 +4864,12 @@ module ed_state_vars
          allocate(cpatch%dmean_root_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_sapa_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_sapb_growth_resp    (                    ncohorts))
+         allocate(cpatch%dmean_bark_growth_resp    (                    ncohorts))
          allocate(cpatch%dmean_leaf_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_root_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_sapa_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_sapb_storage_resp   (                    ncohorts))
+         allocate(cpatch%dmean_bark_storage_resp   (                    ncohorts))
          allocate(cpatch%dmean_plresp              (                    ncohorts))
          allocate(cpatch%dmean_leaf_energy         (                    ncohorts))
          allocate(cpatch%dmean_leaf_water          (                    ncohorts))
@@ -4853,13 +4925,17 @@ module ed_state_vars
       end if
 
       if (writing_eorq) then
+         allocate(cpatch%mmean_thbark              (                    ncohorts))
          allocate(cpatch%mmean_lai                 (                    ncohorts))
          allocate(cpatch%mmean_bleaf               (                    ncohorts))
          allocate(cpatch%mmean_broot               (                    ncohorts))
+         allocate(cpatch%mmean_bbark               (                    ncohorts))
+         allocate(cpatch%mmean_balive              (                    ncohorts))
          allocate(cpatch%mmean_bstorage            (                    ncohorts))
          allocate(cpatch%mmean_mort_rate           (             n_mort,ncohorts))
          allocate(cpatch%mmean_leaf_maintenance    (                    ncohorts))
          allocate(cpatch%mmean_root_maintenance    (                    ncohorts))
+         allocate(cpatch%mmean_bark_maintenance    (                    ncohorts))
          allocate(cpatch%mmean_leaf_drop           (                    ncohorts))
          allocate(cpatch%mmean_cb                  (                    ncohorts))
          allocate(cpatch%mmean_gpp                 (                    ncohorts))
@@ -4870,10 +4946,12 @@ module ed_state_vars
          allocate(cpatch%mmean_root_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_sapa_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_sapb_growth_resp    (                    ncohorts))
+         allocate(cpatch%mmean_bark_growth_resp    (                    ncohorts))
          allocate(cpatch%mmean_leaf_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_root_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_sapa_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_sapb_storage_resp   (                    ncohorts))
+         allocate(cpatch%mmean_bark_storage_resp   (                    ncohorts))
          allocate(cpatch%mmean_plresp              (                    ncohorts))
          allocate(cpatch%mmean_leaf_energy         (                    ncohorts))
          allocate(cpatch%mmean_leaf_water          (                    ncohorts))
@@ -4929,6 +5007,7 @@ module ed_state_vars
          allocate(cpatch%mmean_nppleaf             (                    ncohorts))
          allocate(cpatch%mmean_nppfroot            (                    ncohorts))
          allocate(cpatch%mmean_nppsapwood          (                    ncohorts))
+         allocate(cpatch%mmean_nppbark             (                    ncohorts))
          allocate(cpatch%mmean_nppcroot            (                    ncohorts))
          allocate(cpatch%mmean_nppseeds            (                    ncohorts))
          allocate(cpatch%mmean_nppwood             (                    ncohorts))
@@ -4952,10 +5031,12 @@ module ed_state_vars
          allocate(cpatch%qmean_root_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapa_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapb_growth_resp    (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_bark_growth_resp    (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_root_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapa_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_sapb_storage_resp   (            ndcycle,ncohorts))
+         allocate(cpatch%qmean_bark_storage_resp   (            ndcycle,ncohorts))
          allocate(cpatch%qmean_plresp              (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_energy         (            ndcycle,ncohorts))
          allocate(cpatch%qmean_leaf_water          (            ndcycle,ncohorts))
@@ -5094,6 +5175,7 @@ module ed_state_vars
       nullify(cgrid%lai                     )
       nullify(cgrid%wai                     )
       nullify(cgrid%basal_area              )
+      nullify(cgrid%thbark                  )
       nullify(cgrid%bdead                   )
       nullify(cgrid%btimber                 )
       nullify(cgrid%balive                  )
@@ -5101,6 +5183,7 @@ module ed_state_vars
       nullify(cgrid%broot                   )
       nullify(cgrid%bsapwooda               )
       nullify(cgrid%bsapwoodb               )
+      nullify(cgrid%bbark                   )
       nullify(cgrid%bseeds                  )
       nullify(cgrid%byield                  )
       nullify(cgrid%bstorage                )
@@ -5110,10 +5193,12 @@ module ed_state_vars
       nullify(cgrid%broot_n                 )
       nullify(cgrid%bsapwooda_n             )
       nullify(cgrid%bsapwoodb_n             )
+      nullify(cgrid%bbark_n                 )
       nullify(cgrid%bseeds_n                )
       nullify(cgrid%bstorage_n              )
       nullify(cgrid%leaf_maintenance        )
       nullify(cgrid%root_maintenance        )
+      nullify(cgrid%bark_maintenance        )
       nullify(cgrid%leaf_drop               )
       nullify(cgrid%fast_soil_c             )
       nullify(cgrid%slow_soil_c             )
@@ -5149,10 +5234,12 @@ module ed_state_vars
       nullify(cgrid%fmean_root_growth_resp  )
       nullify(cgrid%fmean_sapa_growth_resp  )
       nullify(cgrid%fmean_sapb_growth_resp  )
+      nullify(cgrid%fmean_bark_growth_resp  )
       nullify(cgrid%fmean_leaf_storage_resp )
       nullify(cgrid%fmean_root_storage_resp )
       nullify(cgrid%fmean_sapa_storage_resp )
       nullify(cgrid%fmean_sapb_storage_resp )
+      nullify(cgrid%fmean_bark_storage_resp )
       nullify(cgrid%fmean_plresp            )
       nullify(cgrid%fmean_leaf_energy       )
       nullify(cgrid%fmean_leaf_water        )
@@ -5274,11 +5361,12 @@ module ed_state_vars
       nullify(cgrid%fmean_dpcpg             )
       nullify(cgrid%fmean_soil_wetness      )
       nullify(cgrid%fmean_skin_temp         )
-      nullify(cgrid%fmean_lai		    )
-      nullify(cgrid%fmean_bdead		    )
+      nullify(cgrid%fmean_lai               )
+      nullify(cgrid%fmean_bdead             )
       nullify(cgrid%dmean_nppleaf           )
       nullify(cgrid%dmean_nppfroot          )
       nullify(cgrid%dmean_nppsapwood        )
+      nullify(cgrid%dmean_nppbark           )
       nullify(cgrid%dmean_nppcroot          )
       nullify(cgrid%dmean_nppseeds          )
       nullify(cgrid%dmean_nppwood           )
@@ -5296,10 +5384,12 @@ module ed_state_vars
       nullify(cgrid%dmean_root_growth_resp  )
       nullify(cgrid%dmean_sapa_growth_resp  )
       nullify(cgrid%dmean_sapb_growth_resp  )
+      nullify(cgrid%dmean_bark_growth_resp  )
       nullify(cgrid%dmean_leaf_storage_resp )
       nullify(cgrid%dmean_root_storage_resp )
       nullify(cgrid%dmean_sapa_storage_resp )
       nullify(cgrid%dmean_sapb_storage_resp )
+      nullify(cgrid%dmean_bark_storage_resp )
       nullify(cgrid%dmean_plresp            )
       nullify(cgrid%dmean_leaf_energy       )
       nullify(cgrid%dmean_leaf_water        )
@@ -5419,15 +5509,21 @@ module ed_state_vars
       nullify(cgrid%dmean_pcpg              )
       nullify(cgrid%dmean_qpcpg             )
       nullify(cgrid%dmean_dpcpg             )
+      nullify(cgrid%mmean_thbark            )
       nullify(cgrid%mmean_lai               )
       nullify(cgrid%mmean_bleaf             )
       nullify(cgrid%mmean_broot             )
+      nullify(cgrid%mmean_bbark             )
+      nullify(cgrid%mmean_balive            )
       nullify(cgrid%mmean_bstorage          )
       nullify(cgrid%mmean_bleaf_n           )
       nullify(cgrid%mmean_broot_n           )
+      nullify(cgrid%mmean_bbark_n           )
+      nullify(cgrid%mmean_balive_n          )
       nullify(cgrid%mmean_bstorage_n        )
       nullify(cgrid%mmean_leaf_maintenance  )
       nullify(cgrid%mmean_root_maintenance  )
+      nullify(cgrid%mmean_bark_maintenance  )
       nullify(cgrid%mmean_leaf_drop         )
       nullify(cgrid%mmean_fast_soil_c       )
       nullify(cgrid%mmean_slow_soil_c       )
@@ -5445,10 +5541,12 @@ module ed_state_vars
       nullify(cgrid%mmean_root_growth_resp  )
       nullify(cgrid%mmean_sapa_growth_resp  )
       nullify(cgrid%mmean_sapb_growth_resp  )
+      nullify(cgrid%mmean_bark_growth_resp  )
       nullify(cgrid%mmean_leaf_storage_resp )
       nullify(cgrid%mmean_root_storage_resp )
       nullify(cgrid%mmean_sapa_storage_resp )
       nullify(cgrid%mmean_sapb_storage_resp )
+      nullify(cgrid%mmean_bark_storage_resp )
       nullify(cgrid%mmean_plresp            )
       nullify(cgrid%mmean_leaf_energy       )
       nullify(cgrid%mmean_leaf_water        )
@@ -5554,6 +5652,7 @@ module ed_state_vars
       nullify(cgrid%mmean_nppleaf           )
       nullify(cgrid%mmean_nppfroot          )
       nullify(cgrid%mmean_nppsapwood        )
+      nullify(cgrid%mmean_nppbark           )
       nullify(cgrid%mmean_nppcroot          )
       nullify(cgrid%mmean_nppseeds          )
       nullify(cgrid%mmean_nppwood           )
@@ -5612,10 +5711,12 @@ module ed_state_vars
       nullify(cgrid%qmean_root_growth_resp  )
       nullify(cgrid%qmean_sapa_growth_resp  )
       nullify(cgrid%qmean_sapb_growth_resp  )
+      nullify(cgrid%qmean_bark_growth_resp  )
       nullify(cgrid%qmean_leaf_storage_resp )
       nullify(cgrid%qmean_root_storage_resp )
       nullify(cgrid%qmean_sapa_storage_resp )
       nullify(cgrid%qmean_sapb_storage_resp )
+      nullify(cgrid%qmean_bark_storage_resp )
       nullify(cgrid%qmean_plresp            )
       nullify(cgrid%qmean_leaf_energy       )
       nullify(cgrid%qmean_leaf_water        )
@@ -6415,6 +6516,7 @@ module ed_state_vars
       nullify(cpatch%ddbh_dt               )
       nullify(cpatch%dlndbh_dt             )
       nullify(cpatch%dbh                   )
+      nullify(cpatch%thbark                )
       nullify(cpatch%bdead                 )
       nullify(cpatch%btimber               )
       nullify(cpatch%bleaf                 )
@@ -6422,6 +6524,7 @@ module ed_state_vars
       nullify(cpatch%broot                 )
       nullify(cpatch%bsapwooda             )
       nullify(cpatch%bsapwoodb             )
+      nullify(cpatch%bbark                 )
       nullify(cpatch%bstorage              )
       nullify(cpatch%bseeds                )
       nullify(cpatch%byield                )
@@ -6466,6 +6569,7 @@ module ed_state_vars
       nullify(cpatch%today_nppleaf         )
       nullify(cpatch%today_nppfroot        )
       nullify(cpatch%today_nppsapwood      )
+      nullify(cpatch%today_nppbark         )
       nullify(cpatch%today_nppcroot        )
       nullify(cpatch%today_nppseeds        )
       nullify(cpatch%today_nppwood         )
@@ -6474,10 +6578,12 @@ module ed_state_vars
       nullify(cpatch%root_growth_resp      )
       nullify(cpatch%sapa_growth_resp      )
       nullify(cpatch%sapb_growth_resp      )
+      nullify(cpatch%bark_growth_resp      )
       nullify(cpatch%leaf_storage_resp     )
       nullify(cpatch%root_storage_resp     )
       nullify(cpatch%sapa_storage_resp     )
       nullify(cpatch%sapb_storage_resp     )
+      nullify(cpatch%bark_storage_resp     )
       nullify(cpatch%monthly_dndt          )
       nullify(cpatch%monthly_dlnndt        )
       nullify(cpatch%mort_rate             )
@@ -6524,6 +6630,7 @@ module ed_state_vars
       nullify(cpatch%water_supply          )
       nullify(cpatch%leaf_maintenance      )
       nullify(cpatch%root_maintenance      )
+      nullify(cpatch%bark_maintenance      )
       nullify(cpatch%leaf_drop             )
       nullify(cpatch%leaf_respiration      )
       nullify(cpatch%root_respiration      )
@@ -6542,10 +6649,12 @@ module ed_state_vars
       nullify(cpatch%fmean_root_growth_resp)
       nullify(cpatch%fmean_sapa_growth_resp)
       nullify(cpatch%fmean_sapb_growth_resp)
+      nullify(cpatch%fmean_bark_growth_resp)
       nullify(cpatch%fmean_leaf_storage_resp)
       nullify(cpatch%fmean_root_storage_resp)
       nullify(cpatch%fmean_sapa_storage_resp)
       nullify(cpatch%fmean_sapb_storage_resp)
+      nullify(cpatch%fmean_bark_storage_resp)
       nullify(cpatch%fmean_plresp          )
       nullify(cpatch%fmean_leaf_energy     )
       nullify(cpatch%fmean_leaf_water      )
@@ -6603,6 +6712,7 @@ module ed_state_vars
       nullify(cpatch%dmean_nppleaf         )
       nullify(cpatch%dmean_nppfroot        )
       nullify(cpatch%dmean_nppsapwood      )
+      nullify(cpatch%dmean_nppbark         )
       nullify(cpatch%dmean_nppcroot        )
       nullify(cpatch%dmean_nppseeds        )
       nullify(cpatch%dmean_nppwood         )
@@ -6615,10 +6725,12 @@ module ed_state_vars
       nullify(cpatch%dmean_root_growth_resp)
       nullify(cpatch%dmean_sapa_growth_resp)
       nullify(cpatch%dmean_sapb_growth_resp)
+      nullify(cpatch%dmean_bark_growth_resp)
       nullify(cpatch%dmean_leaf_storage_resp)
       nullify(cpatch%dmean_root_storage_resp)
       nullify(cpatch%dmean_sapa_storage_resp)
       nullify(cpatch%dmean_sapb_storage_resp)
+      nullify(cpatch%dmean_bark_storage_resp)
       nullify(cpatch%dmean_plresp          )
       nullify(cpatch%dmean_leaf_energy     )
       nullify(cpatch%dmean_leaf_water      )
@@ -6671,13 +6783,17 @@ module ed_state_vars
       nullify(cpatch%dmean_vapor_wc        )
       nullify(cpatch%dmean_intercepted_aw  )
       nullify(cpatch%dmean_wshed_wg        )
+      nullify(cpatch%mmean_thbark          )
       nullify(cpatch%mmean_lai             )
       nullify(cpatch%mmean_bleaf           )
       nullify(cpatch%mmean_broot           )
+      nullify(cpatch%mmean_bbark           )
+      nullify(cpatch%mmean_balive          )
       nullify(cpatch%mmean_bstorage        )
       nullify(cpatch%mmean_mort_rate       )
       nullify(cpatch%mmean_leaf_maintenance)
       nullify(cpatch%mmean_root_maintenance)
+      nullify(cpatch%mmean_bark_maintenance)
       nullify(cpatch%mmean_leaf_drop       )
       nullify(cpatch%mmean_cb              )
       nullify(cpatch%mmean_gpp             )
@@ -6688,10 +6804,12 @@ module ed_state_vars
       nullify(cpatch%mmean_root_growth_resp)
       nullify(cpatch%mmean_sapa_growth_resp)
       nullify(cpatch%mmean_sapb_growth_resp)
+      nullify(cpatch%mmean_bark_growth_resp)
       nullify(cpatch%mmean_leaf_storage_resp)
       nullify(cpatch%mmean_root_storage_resp)
       nullify(cpatch%mmean_sapa_storage_resp)
       nullify(cpatch%mmean_sapb_storage_resp)
+      nullify(cpatch%mmean_bark_storage_resp)
       nullify(cpatch%mmean_plresp          )
       nullify(cpatch%mmean_leaf_energy     )
       nullify(cpatch%mmean_leaf_water      )
@@ -6747,6 +6865,7 @@ module ed_state_vars
       nullify(cpatch%mmean_nppleaf         )
       nullify(cpatch%mmean_nppfroot        )
       nullify(cpatch%mmean_nppsapwood      )
+      nullify(cpatch%mmean_nppbark         )
       nullify(cpatch%mmean_nppcroot        )
       nullify(cpatch%mmean_nppseeds        )
       nullify(cpatch%mmean_nppwood         )
@@ -6767,10 +6886,12 @@ module ed_state_vars
       nullify(cpatch%qmean_root_growth_resp)
       nullify(cpatch%qmean_sapa_growth_resp)
       nullify(cpatch%qmean_sapb_growth_resp)
+      nullify(cpatch%qmean_bark_growth_resp)
       nullify(cpatch%qmean_leaf_storage_resp)
       nullify(cpatch%qmean_root_storage_resp)
       nullify(cpatch%qmean_sapa_storage_resp)
       nullify(cpatch%qmean_sapb_storage_resp)
+      nullify(cpatch%qmean_bark_storage_resp)
       nullify(cpatch%qmean_plresp          )
       nullify(cpatch%qmean_leaf_energy     )
       nullify(cpatch%qmean_leaf_water      )
@@ -6918,6 +7039,7 @@ module ed_state_vars
       if(associated(cgrid%lai                   )) deallocate(cgrid%lai                   )
       if(associated(cgrid%wai                   )) deallocate(cgrid%wai                   )
       if(associated(cgrid%basal_area            )) deallocate(cgrid%basal_area            )
+      if(associated(cgrid%thbark                )) deallocate(cgrid%thbark                )
       if(associated(cgrid%bdead                 )) deallocate(cgrid%bdead                 )
       if(associated(cgrid%btimber               )) deallocate(cgrid%btimber               )
       if(associated(cgrid%balive                )) deallocate(cgrid%balive                )
@@ -6925,6 +7047,7 @@ module ed_state_vars
       if(associated(cgrid%broot                 )) deallocate(cgrid%broot                 )
       if(associated(cgrid%bsapwooda             )) deallocate(cgrid%bsapwooda             )
       if(associated(cgrid%bsapwoodb             )) deallocate(cgrid%bsapwoodb             )
+      if(associated(cgrid%bbark                 )) deallocate(cgrid%bbark                 )
       if(associated(cgrid%bseeds                )) deallocate(cgrid%bseeds                )
       if(associated(cgrid%byield                )) deallocate(cgrid%byield                )
       if(associated(cgrid%bstorage              )) deallocate(cgrid%bstorage              )
@@ -6934,10 +7057,12 @@ module ed_state_vars
       if(associated(cgrid%broot_n               )) deallocate(cgrid%broot_n               )
       if(associated(cgrid%bsapwooda_n           )) deallocate(cgrid%bsapwooda_n           )
       if(associated(cgrid%bsapwoodb_n           )) deallocate(cgrid%bsapwoodb_n           )
+      if(associated(cgrid%bbark_n               )) deallocate(cgrid%bbark_n               )
       if(associated(cgrid%bseeds_n              )) deallocate(cgrid%bseeds_n              )
       if(associated(cgrid%bstorage_n            )) deallocate(cgrid%bstorage_n            )
       if(associated(cgrid%leaf_maintenance      )) deallocate(cgrid%leaf_maintenance      )
       if(associated(cgrid%root_maintenance      )) deallocate(cgrid%root_maintenance      )
+      if(associated(cgrid%bark_maintenance      )) deallocate(cgrid%bark_maintenance      )
       if(associated(cgrid%leaf_drop             )) deallocate(cgrid%leaf_drop             )
       if(associated(cgrid%fast_soil_c           )) deallocate(cgrid%fast_soil_c           )
       if(associated(cgrid%slow_soil_c           )) deallocate(cgrid%slow_soil_c           )
@@ -6973,10 +7098,12 @@ module ed_state_vars
       if(associated(cgrid%fmean_root_growth_resp)) deallocate(cgrid%fmean_root_growth_resp)
       if(associated(cgrid%fmean_sapa_growth_resp)) deallocate(cgrid%fmean_sapa_growth_resp)
       if(associated(cgrid%fmean_sapb_growth_resp)) deallocate(cgrid%fmean_sapb_growth_resp)
+      if(associated(cgrid%fmean_bark_growth_resp)) deallocate(cgrid%fmean_bark_growth_resp)
       if(associated(cgrid%fmean_leaf_storage_resp)) deallocate(cgrid%fmean_leaf_storage_resp)
       if(associated(cgrid%fmean_root_storage_resp)) deallocate(cgrid%fmean_root_storage_resp)
       if(associated(cgrid%fmean_sapa_storage_resp)) deallocate(cgrid%fmean_sapa_storage_resp)
       if(associated(cgrid%fmean_sapb_storage_resp)) deallocate(cgrid%fmean_sapb_storage_resp)
+      if(associated(cgrid%fmean_bark_storage_resp)) deallocate(cgrid%fmean_bark_storage_resp)
       if(associated(cgrid%fmean_plresp          )) deallocate(cgrid%fmean_plresp          )
       if(associated(cgrid%fmean_leaf_energy     )) deallocate(cgrid%fmean_leaf_energy     )
       if(associated(cgrid%fmean_leaf_water      )) deallocate(cgrid%fmean_leaf_water      )
@@ -7103,6 +7230,7 @@ module ed_state_vars
       if(associated(cgrid%dmean_nppleaf         )) deallocate(cgrid%dmean_nppleaf         )
       if(associated(cgrid%dmean_nppfroot        )) deallocate(cgrid%dmean_nppfroot        )
       if(associated(cgrid%dmean_nppsapwood      )) deallocate(cgrid%dmean_nppsapwood      )
+      if(associated(cgrid%dmean_nppbark         )) deallocate(cgrid%dmean_nppbark         )
       if(associated(cgrid%dmean_nppcroot        )) deallocate(cgrid%dmean_nppcroot        )
       if(associated(cgrid%dmean_nppseeds        )) deallocate(cgrid%dmean_nppseeds        )
       if(associated(cgrid%dmean_nppwood         )) deallocate(cgrid%dmean_nppwood         )
@@ -7120,10 +7248,12 @@ module ed_state_vars
       if(associated(cgrid%dmean_root_growth_resp)) deallocate(cgrid%dmean_root_growth_resp)
       if(associated(cgrid%dmean_sapa_growth_resp)) deallocate(cgrid%dmean_sapa_growth_resp)
       if(associated(cgrid%dmean_sapb_growth_resp)) deallocate(cgrid%dmean_sapb_growth_resp)
+      if(associated(cgrid%dmean_bark_growth_resp)) deallocate(cgrid%dmean_bark_growth_resp)
       if(associated(cgrid%dmean_leaf_storage_resp)) deallocate(cgrid%dmean_leaf_storage_resp)
       if(associated(cgrid%dmean_root_storage_resp)) deallocate(cgrid%dmean_root_storage_resp)
       if(associated(cgrid%dmean_sapa_storage_resp)) deallocate(cgrid%dmean_sapa_storage_resp)
       if(associated(cgrid%dmean_sapb_storage_resp)) deallocate(cgrid%dmean_sapb_storage_resp)
+      if(associated(cgrid%dmean_bark_storage_resp)) deallocate(cgrid%dmean_bark_storage_resp)
       if(associated(cgrid%dmean_plresp          )) deallocate(cgrid%dmean_plresp          )
       if(associated(cgrid%dmean_leaf_energy     )) deallocate(cgrid%dmean_leaf_energy     )
       if(associated(cgrid%dmean_leaf_water      )) deallocate(cgrid%dmean_leaf_water      )
@@ -7246,12 +7376,16 @@ module ed_state_vars
       if(associated(cgrid%mmean_lai             )) deallocate(cgrid%mmean_lai             )
       if(associated(cgrid%mmean_bleaf           )) deallocate(cgrid%mmean_bleaf           )
       if(associated(cgrid%mmean_broot           )) deallocate(cgrid%mmean_broot           )
+      if(associated(cgrid%mmean_balive          )) deallocate(cgrid%mmean_balive          )
       if(associated(cgrid%mmean_bstorage        )) deallocate(cgrid%mmean_bstorage        )
       if(associated(cgrid%mmean_bleaf_n         )) deallocate(cgrid%mmean_bleaf_n         )
       if(associated(cgrid%mmean_broot_n         )) deallocate(cgrid%mmean_broot_n         )
+      if(associated(cgrid%mmean_bbark_n         )) deallocate(cgrid%mmean_bbark_n         )
+      if(associated(cgrid%mmean_balive_n        )) deallocate(cgrid%mmean_balive_n        )
       if(associated(cgrid%mmean_bstorage_n      )) deallocate(cgrid%mmean_bstorage_n      )
       if(associated(cgrid%mmean_leaf_maintenance)) deallocate(cgrid%mmean_leaf_maintenance)
       if(associated(cgrid%mmean_root_maintenance)) deallocate(cgrid%mmean_root_maintenance)
+      if(associated(cgrid%mmean_bark_maintenance)) deallocate(cgrid%mmean_bark_maintenance)
       if(associated(cgrid%mmean_leaf_drop       )) deallocate(cgrid%mmean_leaf_drop       )
       if(associated(cgrid%mmean_fast_soil_c     )) deallocate(cgrid%mmean_fast_soil_c     )
       if(associated(cgrid%mmean_slow_soil_c     )) deallocate(cgrid%mmean_slow_soil_c     )
@@ -7269,10 +7403,12 @@ module ed_state_vars
       if(associated(cgrid%mmean_root_growth_resp)) deallocate(cgrid%mmean_root_growth_resp)
       if(associated(cgrid%mmean_sapa_growth_resp)) deallocate(cgrid%mmean_sapa_growth_resp)
       if(associated(cgrid%mmean_sapb_growth_resp)) deallocate(cgrid%mmean_sapb_growth_resp)
+      if(associated(cgrid%mmean_bark_growth_resp)) deallocate(cgrid%mmean_bark_growth_resp)
       if(associated(cgrid%mmean_leaf_storage_resp)) deallocate(cgrid%mmean_leaf_storage_resp)
       if(associated(cgrid%mmean_root_storage_resp)) deallocate(cgrid%mmean_root_storage_resp)
       if(associated(cgrid%mmean_sapa_storage_resp)) deallocate(cgrid%mmean_sapa_storage_resp)
       if(associated(cgrid%mmean_sapb_storage_resp)) deallocate(cgrid%mmean_sapb_storage_resp)
+      if(associated(cgrid%mmean_bark_storage_resp)) deallocate(cgrid%mmean_bark_storage_resp)
       if(associated(cgrid%mmean_plresp          )) deallocate(cgrid%mmean_plresp          )
       if(associated(cgrid%mmean_leaf_energy     )) deallocate(cgrid%mmean_leaf_energy     )
       if(associated(cgrid%mmean_leaf_water      )) deallocate(cgrid%mmean_leaf_water      )
@@ -7378,6 +7514,7 @@ module ed_state_vars
       if(associated(cgrid%mmean_nppleaf         )) deallocate(cgrid%mmean_nppleaf         )
       if(associated(cgrid%mmean_nppfroot        )) deallocate(cgrid%mmean_nppfroot        )
       if(associated(cgrid%mmean_nppsapwood      )) deallocate(cgrid%mmean_nppsapwood      )
+      if(associated(cgrid%mmean_nppbark         )) deallocate(cgrid%mmean_nppbark         )
       if(associated(cgrid%mmean_nppcroot        )) deallocate(cgrid%mmean_nppcroot        )
       if(associated(cgrid%mmean_nppseeds        )) deallocate(cgrid%mmean_nppseeds        )
       if(associated(cgrid%mmean_nppwood         )) deallocate(cgrid%mmean_nppwood         )
@@ -7436,10 +7573,12 @@ module ed_state_vars
       if(associated(cgrid%qmean_root_growth_resp)) deallocate(cgrid%qmean_root_growth_resp)
       if(associated(cgrid%qmean_sapa_growth_resp)) deallocate(cgrid%qmean_sapa_growth_resp)
       if(associated(cgrid%qmean_sapb_growth_resp)) deallocate(cgrid%qmean_sapb_growth_resp)
+      if(associated(cgrid%qmean_bark_growth_resp)) deallocate(cgrid%qmean_bark_growth_resp)
       if(associated(cgrid%qmean_leaf_storage_resp)) deallocate(cgrid%qmean_leaf_storage_resp)
       if(associated(cgrid%qmean_root_storage_resp)) deallocate(cgrid%qmean_root_storage_resp)
       if(associated(cgrid%qmean_sapa_storage_resp)) deallocate(cgrid%qmean_sapa_storage_resp)
       if(associated(cgrid%qmean_sapb_storage_resp)) deallocate(cgrid%qmean_sapb_storage_resp)
+      if(associated(cgrid%qmean_bark_storage_resp)) deallocate(cgrid%qmean_bark_storage_resp)
       if(associated(cgrid%qmean_plresp          )) deallocate(cgrid%qmean_plresp          )
       if(associated(cgrid%qmean_leaf_energy     )) deallocate(cgrid%qmean_leaf_energy     )
       if(associated(cgrid%qmean_leaf_water      )) deallocate(cgrid%qmean_leaf_water      )
@@ -8275,6 +8414,7 @@ module ed_state_vars
       if(associated(cpatch%ddbh_dt             )) deallocate(cpatch%ddbh_dt             )
       if(associated(cpatch%dlndbh_dt           )) deallocate(cpatch%dlndbh_dt           )
       if(associated(cpatch%dbh                 )) deallocate(cpatch%dbh                 )
+      if(associated(cpatch%thbark              )) deallocate(cpatch%thbark              )
       if(associated(cpatch%bdead               )) deallocate(cpatch%bdead               )
       if(associated(cpatch%btimber             )) deallocate(cpatch%btimber             )
       if(associated(cpatch%bleaf               )) deallocate(cpatch%bleaf               )
@@ -8282,6 +8422,7 @@ module ed_state_vars
       if(associated(cpatch%broot               )) deallocate(cpatch%broot               )
       if(associated(cpatch%bsapwooda           )) deallocate(cpatch%bsapwooda           )
       if(associated(cpatch%bsapwoodb           )) deallocate(cpatch%bsapwoodb           )
+      if(associated(cpatch%bbark               )) deallocate(cpatch%bbark               )
       if(associated(cpatch%bstorage            )) deallocate(cpatch%bstorage            )
       if(associated(cpatch%bseeds              )) deallocate(cpatch%bseeds              )
       if(associated(cpatch%byield              )) deallocate(cpatch%byield              )
@@ -8326,6 +8467,7 @@ module ed_state_vars
       if(associated(cpatch%today_nppleaf       )) deallocate(cpatch%today_nppleaf       )
       if(associated(cpatch%today_nppfroot      )) deallocate(cpatch%today_nppfroot      )
       if(associated(cpatch%today_nppsapwood    )) deallocate(cpatch%today_nppsapwood    )
+      if(associated(cpatch%today_nppbark       )) deallocate(cpatch%today_nppbark       )
       if(associated(cpatch%today_nppcroot      )) deallocate(cpatch%today_nppcroot      )
       if(associated(cpatch%today_nppseeds      )) deallocate(cpatch%today_nppseeds      )
       if(associated(cpatch%today_nppwood       )) deallocate(cpatch%today_nppwood       )
@@ -8334,10 +8476,12 @@ module ed_state_vars
       if(associated(cpatch%root_growth_resp    )) deallocate(cpatch%root_growth_resp    )
       if(associated(cpatch%sapa_growth_resp    )) deallocate(cpatch%sapa_growth_resp    )
       if(associated(cpatch%sapb_growth_resp    )) deallocate(cpatch%sapb_growth_resp    )
+      if(associated(cpatch%bark_growth_resp    )) deallocate(cpatch%bark_growth_resp    )
       if(associated(cpatch%leaf_storage_resp   )) deallocate(cpatch%leaf_storage_resp   )
       if(associated(cpatch%root_storage_resp   )) deallocate(cpatch%root_storage_resp   )
       if(associated(cpatch%sapa_storage_resp   )) deallocate(cpatch%sapa_storage_resp   )
       if(associated(cpatch%sapb_storage_resp   )) deallocate(cpatch%sapb_storage_resp   )
+      if(associated(cpatch%bark_storage_resp   )) deallocate(cpatch%bark_storage_resp   )
       if(associated(cpatch%monthly_dndt        )) deallocate(cpatch%monthly_dndt        )
       if(associated(cpatch%monthly_dlnndt      )) deallocate(cpatch%monthly_dlnndt      )
       if(associated(cpatch%mort_rate           )) deallocate(cpatch%mort_rate           )
@@ -8384,6 +8528,7 @@ module ed_state_vars
       if(associated(cpatch%water_supply        )) deallocate(cpatch%water_supply        )
       if(associated(cpatch%leaf_maintenance    )) deallocate(cpatch%leaf_maintenance    )
       if(associated(cpatch%root_maintenance    )) deallocate(cpatch%root_maintenance    )
+      if(associated(cpatch%bark_maintenance    )) deallocate(cpatch%bark_maintenance    )
       if(associated(cpatch%leaf_drop           )) deallocate(cpatch%leaf_drop           )
       if(associated(cpatch%leaf_respiration    )) deallocate(cpatch%leaf_respiration    )
       if(associated(cpatch%root_respiration    )) deallocate(cpatch%root_respiration    )
@@ -8402,10 +8547,12 @@ module ed_state_vars
       if(associated(cpatch%fmean_root_growth_resp)) deallocate(cpatch%fmean_root_growth_resp)
       if(associated(cpatch%fmean_sapa_growth_resp)) deallocate(cpatch%fmean_sapa_growth_resp)
       if(associated(cpatch%fmean_sapb_growth_resp)) deallocate(cpatch%fmean_sapb_growth_resp)
+      if(associated(cpatch%fmean_bark_growth_resp)) deallocate(cpatch%fmean_bark_growth_resp)
       if(associated(cpatch%fmean_leaf_storage_resp)) deallocate(cpatch%fmean_leaf_storage_resp)
       if(associated(cpatch%fmean_root_storage_resp)) deallocate(cpatch%fmean_root_storage_resp)
       if(associated(cpatch%fmean_sapa_storage_resp)) deallocate(cpatch%fmean_sapa_storage_resp)
       if(associated(cpatch%fmean_sapb_storage_resp)) deallocate(cpatch%fmean_sapb_storage_resp)
+      if(associated(cpatch%fmean_bark_storage_resp)) deallocate(cpatch%fmean_bark_storage_resp)
       if(associated(cpatch%fmean_plresp        )) deallocate(cpatch%fmean_plresp        )
       if(associated(cpatch%fmean_leaf_energy   )) deallocate(cpatch%fmean_leaf_energy   )
       if(associated(cpatch%fmean_leaf_water    )) deallocate(cpatch%fmean_leaf_water    )
@@ -8465,6 +8612,7 @@ module ed_state_vars
       if(associated(cpatch%dmean_nppleaf       )) deallocate(cpatch%dmean_nppleaf       )
       if(associated(cpatch%dmean_nppfroot      )) deallocate(cpatch%dmean_nppfroot      )
       if(associated(cpatch%dmean_nppsapwood    )) deallocate(cpatch%dmean_nppsapwood    )
+      if(associated(cpatch%dmean_nppbark       )) deallocate(cpatch%dmean_nppbark       )
       if(associated(cpatch%dmean_nppcroot      )) deallocate(cpatch%dmean_nppcroot      )
       if(associated(cpatch%dmean_nppseeds      )) deallocate(cpatch%dmean_nppseeds      )
       if(associated(cpatch%dmean_nppwood       )) deallocate(cpatch%dmean_nppwood       )
@@ -8477,10 +8625,12 @@ module ed_state_vars
       if(associated(cpatch%dmean_root_growth_resp)) deallocate(cpatch%dmean_root_growth_resp)
       if(associated(cpatch%dmean_sapa_growth_resp)) deallocate(cpatch%dmean_sapa_growth_resp)
       if(associated(cpatch%dmean_sapb_growth_resp)) deallocate(cpatch%dmean_sapb_growth_resp)
+      if(associated(cpatch%dmean_bark_growth_resp)) deallocate(cpatch%dmean_bark_growth_resp)
       if(associated(cpatch%dmean_leaf_storage_resp)) deallocate(cpatch%dmean_leaf_storage_resp)
       if(associated(cpatch%dmean_root_storage_resp)) deallocate(cpatch%dmean_root_storage_resp)
       if(associated(cpatch%dmean_sapa_storage_resp)) deallocate(cpatch%dmean_sapa_storage_resp)
       if(associated(cpatch%dmean_sapb_storage_resp)) deallocate(cpatch%dmean_sapb_storage_resp)
+      if(associated(cpatch%dmean_bark_storage_resp)) deallocate(cpatch%dmean_bark_storage_resp)
       if(associated(cpatch%dmean_plresp        )) deallocate(cpatch%dmean_plresp        )
       if(associated(cpatch%dmean_leaf_energy   )) deallocate(cpatch%dmean_leaf_energy   )
       if(associated(cpatch%dmean_leaf_water    )) deallocate(cpatch%dmean_leaf_water    )
@@ -8535,15 +8685,20 @@ module ed_state_vars
       if(associated(cpatch%dmean_vapor_wc      )) deallocate(cpatch%dmean_vapor_wc      )
       if(associated(cpatch%dmean_intercepted_aw)) deallocate(cpatch%dmean_intercepted_aw)
       if(associated(cpatch%dmean_wshed_wg      )) deallocate(cpatch%dmean_wshed_wg      )
+      if(associated(cpatch%mmean_thbark        )) deallocate(cpatch%mmean_thbark        )
       if(associated(cpatch%mmean_lai           )) deallocate(cpatch%mmean_lai           )
       if(associated(cpatch%mmean_bleaf         )) deallocate(cpatch%mmean_bleaf         )
       if(associated(cpatch%mmean_broot         )) deallocate(cpatch%mmean_broot         )
+      if(associated(cpatch%mmean_bbark         )) deallocate(cpatch%mmean_bbark         )
+      if(associated(cpatch%mmean_balive        )) deallocate(cpatch%mmean_balive        )
       if(associated(cpatch%mmean_bstorage      )) deallocate(cpatch%mmean_bstorage      )
       if(associated(cpatch%mmean_mort_rate     )) deallocate(cpatch%mmean_mort_rate     )
       if(associated(cpatch%mmean_leaf_maintenance))                                        &
                                                 deallocate(cpatch%mmean_leaf_maintenance)
       if(associated(cpatch%mmean_root_maintenance))                                        &
                                                 deallocate(cpatch%mmean_root_maintenance)
+      if(associated(cpatch%mmean_bark_maintenance))                                        &
+                                                deallocate(cpatch%mmean_bark_maintenance)
       if(associated(cpatch%mmean_leaf_drop     )) deallocate(cpatch%mmean_leaf_drop     )
       if(associated(cpatch%mmean_cb            )) deallocate(cpatch%mmean_cb            )
       if(associated(cpatch%mmean_gpp           )) deallocate(cpatch%mmean_gpp           )
@@ -8554,10 +8709,12 @@ module ed_state_vars
       if(associated(cpatch%mmean_root_growth_resp)) deallocate(cpatch%mmean_root_growth_resp)
       if(associated(cpatch%mmean_sapa_growth_resp)) deallocate(cpatch%mmean_sapa_growth_resp)
       if(associated(cpatch%mmean_sapb_growth_resp)) deallocate(cpatch%mmean_sapb_growth_resp)
+      if(associated(cpatch%mmean_bark_growth_resp)) deallocate(cpatch%mmean_bark_growth_resp)
       if(associated(cpatch%mmean_leaf_storage_resp)) deallocate(cpatch%mmean_leaf_storage_resp)
       if(associated(cpatch%mmean_root_storage_resp)) deallocate(cpatch%mmean_root_storage_resp)
       if(associated(cpatch%mmean_sapa_storage_resp)) deallocate(cpatch%mmean_sapa_storage_resp)
       if(associated(cpatch%mmean_sapb_storage_resp)) deallocate(cpatch%mmean_sapb_storage_resp)
+      if(associated(cpatch%mmean_bark_storage_resp)) deallocate(cpatch%mmean_bark_storage_resp)
       if(associated(cpatch%mmean_plresp        )) deallocate(cpatch%mmean_plresp        )
       if(associated(cpatch%mmean_leaf_energy   )) deallocate(cpatch%mmean_leaf_energy   )
       if(associated(cpatch%mmean_leaf_water    )) deallocate(cpatch%mmean_leaf_water    )
@@ -8615,6 +8772,7 @@ module ed_state_vars
       if(associated(cpatch%mmean_nppleaf       )) deallocate(cpatch%mmean_nppleaf       )
       if(associated(cpatch%mmean_nppfroot      )) deallocate(cpatch%mmean_nppfroot      )
       if(associated(cpatch%mmean_nppsapwood    )) deallocate(cpatch%mmean_nppsapwood    )
+      if(associated(cpatch%mmean_nppbark       )) deallocate(cpatch%mmean_nppbark       )
       if(associated(cpatch%mmean_nppcroot      )) deallocate(cpatch%mmean_nppcroot      )
       if(associated(cpatch%mmean_nppseeds      )) deallocate(cpatch%mmean_nppseeds      )
       if(associated(cpatch%mmean_nppwood       )) deallocate(cpatch%mmean_nppwood       )
@@ -8635,10 +8793,12 @@ module ed_state_vars
       if(associated(cpatch%qmean_root_growth_resp)) deallocate(cpatch%qmean_root_growth_resp)
       if(associated(cpatch%qmean_sapa_growth_resp)) deallocate(cpatch%qmean_sapa_growth_resp)
       if(associated(cpatch%qmean_sapb_growth_resp)) deallocate(cpatch%qmean_sapb_growth_resp)
+      if(associated(cpatch%qmean_bark_growth_resp)) deallocate(cpatch%qmean_bark_growth_resp)
       if(associated(cpatch%qmean_leaf_storage_resp)) deallocate(cpatch%qmean_leaf_storage_resp)
       if(associated(cpatch%qmean_root_storage_resp)) deallocate(cpatch%qmean_root_storage_resp)
       if(associated(cpatch%qmean_sapa_storage_resp)) deallocate(cpatch%qmean_sapa_storage_resp)
       if(associated(cpatch%qmean_sapb_storage_resp)) deallocate(cpatch%qmean_sapb_storage_resp)
+      if(associated(cpatch%qmean_bark_storage_resp)) deallocate(cpatch%qmean_bark_storage_resp)
       if(associated(cpatch%qmean_plresp        )) deallocate(cpatch%qmean_plresp        )
       if(associated(cpatch%qmean_leaf_energy   )) deallocate(cpatch%qmean_leaf_energy   )
       if(associated(cpatch%qmean_leaf_water    )) deallocate(cpatch%qmean_leaf_water    )
@@ -10140,6 +10300,7 @@ module ed_state_vars
          opatch%ddbh_dt               (oco) = ipatch%ddbh_dt               (ico)
          opatch%dlndbh_dt             (oco) = ipatch%dlndbh_dt             (ico)
          opatch%dbh                   (oco) = ipatch%dbh                   (ico)
+         opatch%thbark                (oco) = ipatch%thbark                (ico)
          opatch%bdead                 (oco) = ipatch%bdead                 (ico)
          opatch%btimber               (oco) = ipatch%btimber               (ico)
          opatch%bleaf                 (oco) = ipatch%bleaf                 (ico)
@@ -10147,6 +10308,7 @@ module ed_state_vars
          opatch%broot                 (oco) = ipatch%broot                 (ico)
          opatch%bsapwooda             (oco) = ipatch%bsapwooda             (ico)
          opatch%bsapwoodb             (oco) = ipatch%bsapwoodb             (ico)
+         opatch%bbark                 (oco) = ipatch%bbark                 (ico)
          opatch%bstorage              (oco) = ipatch%bstorage              (ico)
          opatch%bseeds                (oco) = ipatch%bseeds                (ico)
          opatch%byield                (oco) = ipatch%byield                (ico)
@@ -10187,6 +10349,7 @@ module ed_state_vars
          opatch%today_nppleaf         (oco) = ipatch%today_nppleaf         (ico)
          opatch%today_nppfroot        (oco) = ipatch%today_nppfroot        (ico)
          opatch%today_nppsapwood      (oco) = ipatch%today_nppsapwood      (ico)
+         opatch%today_nppbark         (oco) = ipatch%today_nppbark         (ico)
          opatch%today_nppcroot        (oco) = ipatch%today_nppcroot        (ico)
          opatch%today_nppseeds        (oco) = ipatch%today_nppseeds        (ico)
          opatch%today_nppwood         (oco) = ipatch%today_nppwood         (ico)
@@ -10195,10 +10358,12 @@ module ed_state_vars
          opatch%root_growth_resp      (oco) = ipatch%root_growth_resp      (ico)
          opatch%sapa_growth_resp      (oco) = ipatch%sapa_growth_resp      (ico)
          opatch%sapb_growth_resp      (oco) = ipatch%sapb_growth_resp      (ico)
+         opatch%bark_growth_resp      (oco) = ipatch%bark_growth_resp      (ico)
          opatch%leaf_storage_resp     (oco) = ipatch%leaf_storage_resp     (ico)
          opatch%root_storage_resp     (oco) = ipatch%root_storage_resp     (ico)
          opatch%sapa_storage_resp     (oco) = ipatch%sapa_storage_resp     (ico)
          opatch%sapb_storage_resp     (oco) = ipatch%sapb_storage_resp     (ico)
+         opatch%bark_storage_resp     (oco) = ipatch%bark_storage_resp     (ico)
          opatch%monthly_dndt          (oco) = ipatch%monthly_dndt          (ico)
          opatch%monthly_dlnndt        (oco) = ipatch%monthly_dlnndt        (ico)
          opatch%krdepth               (oco) = ipatch%krdepth               (ico)
@@ -10243,6 +10408,7 @@ module ed_state_vars
          opatch%water_supply          (oco) = ipatch%water_supply          (ico)
          opatch%leaf_maintenance      (oco) = ipatch%leaf_maintenance      (ico)
          opatch%root_maintenance      (oco) = ipatch%root_maintenance      (ico)
+         opatch%bark_maintenance      (oco) = ipatch%bark_maintenance      (ico)
          opatch%leaf_drop             (oco) = ipatch%leaf_drop             (ico)
          opatch%leaf_respiration      (oco) = ipatch%leaf_respiration      (ico)
          opatch%root_respiration      (oco) = ipatch%root_respiration      (ico)
@@ -10261,10 +10427,12 @@ module ed_state_vars
          opatch%fmean_root_growth_resp(oco) = ipatch%fmean_root_growth_resp(ico)
          opatch%fmean_sapa_growth_resp(oco) = ipatch%fmean_sapa_growth_resp(ico)
          opatch%fmean_sapb_growth_resp(oco) = ipatch%fmean_sapb_growth_resp(ico)
+         opatch%fmean_bark_growth_resp(oco) = ipatch%fmean_bark_growth_resp(ico)
          opatch%fmean_leaf_storage_resp(oco) = ipatch%fmean_leaf_storage_resp(ico)
          opatch%fmean_root_storage_resp(oco) = ipatch%fmean_root_storage_resp(ico)
          opatch%fmean_sapa_storage_resp(oco) = ipatch%fmean_sapa_storage_resp(ico)
          opatch%fmean_sapb_storage_resp(oco) = ipatch%fmean_sapb_storage_resp(ico)
+         opatch%fmean_bark_storage_resp(oco) = ipatch%fmean_bark_storage_resp(ico)
          opatch%fmean_plresp          (oco) = ipatch%fmean_plresp          (ico)
          opatch%fmean_leaf_energy     (oco) = ipatch%fmean_leaf_energy     (ico)
          opatch%fmean_leaf_water      (oco) = ipatch%fmean_leaf_water      (ico)
@@ -10355,6 +10523,7 @@ module ed_state_vars
             opatch%dmean_nppleaf         (oco) = ipatch%dmean_nppleaf         (ico)
             opatch%dmean_nppfroot        (oco) = ipatch%dmean_nppfroot        (ico)
             opatch%dmean_nppsapwood      (oco) = ipatch%dmean_nppsapwood      (ico)
+            opatch%dmean_nppbark         (oco) = ipatch%dmean_nppbark         (ico)
             opatch%dmean_nppcroot        (oco) = ipatch%dmean_nppcroot        (ico)
             opatch%dmean_nppseeds        (oco) = ipatch%dmean_nppseeds        (ico)
             opatch%dmean_nppwood         (oco) = ipatch%dmean_nppwood         (ico)
@@ -10367,10 +10536,12 @@ module ed_state_vars
             opatch%dmean_root_growth_resp(oco) = ipatch%dmean_root_growth_resp(ico)
             opatch%dmean_sapa_growth_resp(oco) = ipatch%dmean_sapa_growth_resp(ico)
             opatch%dmean_sapb_growth_resp(oco) = ipatch%dmean_sapb_growth_resp(ico)
+            opatch%dmean_bark_growth_resp(oco) = ipatch%dmean_bark_growth_resp(ico)
             opatch%dmean_leaf_storage_resp(oco) = ipatch%dmean_leaf_storage_resp(ico)
             opatch%dmean_root_storage_resp(oco) = ipatch%dmean_root_storage_resp(ico)
             opatch%dmean_sapa_storage_resp(oco) = ipatch%dmean_sapa_storage_resp(ico)
             opatch%dmean_sapb_storage_resp(oco) = ipatch%dmean_sapb_storage_resp(ico)
+            opatch%dmean_bark_storage_resp(oco) = ipatch%dmean_bark_storage_resp(ico)
             opatch%dmean_plresp          (oco) = ipatch%dmean_plresp          (ico)
             opatch%dmean_leaf_energy     (oco) = ipatch%dmean_leaf_energy     (ico)
             opatch%dmean_leaf_water      (oco) = ipatch%dmean_leaf_water      (ico)
@@ -10440,12 +10611,16 @@ module ed_state_vars
          !---------------------------------------------------------------------------------!
          if (writing_eorq) then
             !----- Scalars. ---------------------------------------------------------------!
+            opatch%mmean_thbark          (oco) = ipatch%mmean_thbark          (ico)
             opatch%mmean_lai             (oco) = ipatch%mmean_lai             (ico)
             opatch%mmean_bleaf           (oco) = ipatch%mmean_bleaf           (ico)
             opatch%mmean_broot           (oco) = ipatch%mmean_broot           (ico)
+            opatch%mmean_bbark           (oco) = ipatch%mmean_bbark           (ico)
+            opatch%mmean_balive          (oco) = ipatch%mmean_balive          (ico)
             opatch%mmean_bstorage        (oco) = ipatch%mmean_bstorage        (ico)
             opatch%mmean_leaf_maintenance(oco) = ipatch%mmean_leaf_maintenance(ico)
             opatch%mmean_root_maintenance(oco) = ipatch%mmean_root_maintenance(ico)
+            opatch%mmean_bark_maintenance(oco) = ipatch%mmean_bark_maintenance(ico)
             opatch%mmean_leaf_drop       (oco) = ipatch%mmean_leaf_drop       (ico)
             opatch%mmean_cb              (oco) = ipatch%mmean_cb              (ico)
             opatch%mmean_gpp             (oco) = ipatch%mmean_gpp             (ico)
@@ -10456,10 +10631,12 @@ module ed_state_vars
             opatch%mmean_root_growth_resp(oco) = ipatch%mmean_root_growth_resp(ico)
             opatch%mmean_sapa_growth_resp(oco) = ipatch%mmean_sapa_growth_resp(ico)
             opatch%mmean_sapb_growth_resp(oco) = ipatch%mmean_sapb_growth_resp(ico)
+            opatch%mmean_bark_growth_resp(oco) = ipatch%mmean_bark_growth_resp(ico)
             opatch%mmean_leaf_storage_resp(oco) = ipatch%mmean_leaf_storage_resp(ico)
             opatch%mmean_root_storage_resp(oco) = ipatch%mmean_root_storage_resp(ico)
             opatch%mmean_sapa_storage_resp(oco) = ipatch%mmean_sapa_storage_resp(ico)
             opatch%mmean_sapb_storage_resp(oco) = ipatch%mmean_sapb_storage_resp(ico)
+            opatch%mmean_bark_storage_resp(oco) = ipatch%mmean_bark_storage_resp(ico)
             opatch%mmean_plresp          (oco) = ipatch%mmean_plresp          (ico)
             opatch%mmean_leaf_energy     (oco) = ipatch%mmean_leaf_energy     (ico)
             opatch%mmean_leaf_water      (oco) = ipatch%mmean_leaf_water      (ico)
@@ -10514,6 +10691,7 @@ module ed_state_vars
             opatch%mmean_nppleaf         (oco) = ipatch%mmean_nppleaf         (ico)
             opatch%mmean_nppfroot        (oco) = ipatch%mmean_nppfroot        (ico)
             opatch%mmean_nppsapwood      (oco) = ipatch%mmean_nppsapwood      (ico)
+            opatch%mmean_nppbark         (oco) = ipatch%mmean_nppbark         (ico)
             opatch%mmean_nppcroot        (oco) = ipatch%mmean_nppcroot        (ico)
             opatch%mmean_nppseeds        (oco) = ipatch%mmean_nppseeds        (ico)
             opatch%mmean_nppwood         (oco) = ipatch%mmean_nppwood         (ico)
@@ -10556,10 +10734,12 @@ module ed_state_vars
                opatch%qmean_root_growth_resp(n,oco) = ipatch%qmean_root_growth_resp(n,ico)
                opatch%qmean_sapa_growth_resp(n,oco) = ipatch%qmean_sapa_growth_resp(n,ico)
                opatch%qmean_sapb_growth_resp(n,oco) = ipatch%qmean_sapb_growth_resp(n,ico)
+               opatch%qmean_bark_growth_resp(n,oco) = ipatch%qmean_bark_growth_resp(n,ico)
                opatch%qmean_leaf_storage_resp(n,oco) = ipatch%qmean_leaf_storage_resp(n,ico)
                opatch%qmean_root_storage_resp(n,oco) = ipatch%qmean_root_storage_resp(n,ico)
                opatch%qmean_sapa_storage_resp(n,oco) = ipatch%qmean_sapa_storage_resp(n,ico)
                opatch%qmean_sapb_storage_resp(n,oco) = ipatch%qmean_sapb_storage_resp(n,ico)
+               opatch%qmean_bark_storage_resp(n,oco) = ipatch%qmean_bark_storage_resp(n,ico)
                opatch%qmean_plresp          (n,oco) = ipatch%qmean_plresp          (n,ico)
                opatch%qmean_leaf_energy     (n,oco) = ipatch%qmean_leaf_energy     (n,ico)
                opatch%qmean_leaf_water      (n,oco) = ipatch%qmean_leaf_water      (n,ico)
@@ -10748,6 +10928,7 @@ module ed_state_vars
       opatch%ddbh_dt               (1:z) = pack(ipatch%ddbh_dt                   ,lmask)
       opatch%dlndbh_dt             (1:z) = pack(ipatch%dlndbh_dt                 ,lmask)
       opatch%dbh                   (1:z) = pack(ipatch%dbh                       ,lmask)
+      opatch%thbark                (1:z) = pack(ipatch%thbark                    ,lmask)
       opatch%bdead                 (1:z) = pack(ipatch%bdead                     ,lmask)
       opatch%btimber               (1:z) = pack(ipatch%btimber                   ,lmask)
       opatch%bleaf                 (1:z) = pack(ipatch%bleaf                     ,lmask)
@@ -10755,6 +10936,7 @@ module ed_state_vars
       opatch%broot                 (1:z) = pack(ipatch%broot                     ,lmask)
       opatch%bsapwooda             (1:z) = pack(ipatch%bsapwooda                 ,lmask)
       opatch%bsapwoodb             (1:z) = pack(ipatch%bsapwoodb                 ,lmask)
+      opatch%bbark                 (1:z) = pack(ipatch%bbark                     ,lmask)
       opatch%bstorage              (1:z) = pack(ipatch%bstorage                  ,lmask)
       opatch%bseeds                (1:z) = pack(ipatch%bseeds                    ,lmask)
       opatch%byield                (1:z) = pack(ipatch%byield                    ,lmask)
@@ -10795,6 +10977,7 @@ module ed_state_vars
       opatch%today_nppleaf         (1:z) = pack(ipatch%today_nppleaf             ,lmask)
       opatch%today_nppfroot        (1:z) = pack(ipatch%today_nppfroot            ,lmask)
       opatch%today_nppsapwood      (1:z) = pack(ipatch%today_nppsapwood          ,lmask)
+      opatch%today_nppbark         (1:z) = pack(ipatch%today_nppbark             ,lmask)
       opatch%today_nppcroot        (1:z) = pack(ipatch%today_nppcroot            ,lmask)
       opatch%today_nppseeds        (1:z) = pack(ipatch%today_nppseeds            ,lmask)
       opatch%today_nppwood         (1:z) = pack(ipatch%today_nppwood             ,lmask)
@@ -10803,10 +10986,12 @@ module ed_state_vars
       opatch%root_growth_resp      (1:z) = pack(ipatch%root_growth_resp          ,lmask)
       opatch%sapa_growth_resp      (1:z) = pack(ipatch%sapa_growth_resp          ,lmask)
       opatch%sapb_growth_resp      (1:z) = pack(ipatch%sapb_growth_resp          ,lmask)
+      opatch%bark_growth_resp      (1:z) = pack(ipatch%bark_growth_resp          ,lmask)
       opatch%leaf_storage_resp     (1:z) = pack(ipatch%leaf_storage_resp         ,lmask)
       opatch%root_storage_resp     (1:z) = pack(ipatch%root_storage_resp         ,lmask)
       opatch%sapa_storage_resp     (1:z) = pack(ipatch%sapa_storage_resp         ,lmask)
       opatch%sapb_storage_resp     (1:z) = pack(ipatch%sapb_storage_resp         ,lmask)
+      opatch%bark_storage_resp     (1:z) = pack(ipatch%bark_storage_resp         ,lmask)
       opatch%monthly_dndt          (1:z) = pack(ipatch%monthly_dndt              ,lmask)
       opatch%monthly_dlnndt        (1:z) = pack(ipatch%monthly_dlnndt            ,lmask)
       opatch%krdepth               (1:z) = pack(ipatch%krdepth                   ,lmask)
@@ -10851,6 +11036,7 @@ module ed_state_vars
       opatch%water_supply          (1:z) = pack(ipatch%water_supply              ,lmask)
       opatch%leaf_maintenance      (1:z) = pack(ipatch%leaf_maintenance          ,lmask)
       opatch%root_maintenance      (1:z) = pack(ipatch%root_maintenance          ,lmask)
+      opatch%bark_maintenance      (1:z) = pack(ipatch%bark_maintenance          ,lmask)
       opatch%leaf_drop             (1:z) = pack(ipatch%leaf_drop                 ,lmask)
       opatch%leaf_respiration      (1:z) = pack(ipatch%leaf_respiration          ,lmask)
       opatch%root_respiration      (1:z) = pack(ipatch%root_respiration          ,lmask)
@@ -10926,10 +11112,12 @@ module ed_state_vars
       opatch%fmean_root_growth_resp(1:z) = pack(ipatch%fmean_root_growth_resp    ,lmask)
       opatch%fmean_sapa_growth_resp(1:z) = pack(ipatch%fmean_sapa_growth_resp    ,lmask)
       opatch%fmean_sapb_growth_resp(1:z) = pack(ipatch%fmean_sapb_growth_resp    ,lmask)
+      opatch%fmean_bark_growth_resp(1:z) = pack(ipatch%fmean_bark_growth_resp    ,lmask)
       opatch%fmean_leaf_storage_resp(1:z) = pack(ipatch%fmean_leaf_storage_resp  ,lmask)
       opatch%fmean_root_storage_resp(1:z) = pack(ipatch%fmean_root_storage_resp  ,lmask)
       opatch%fmean_sapa_storage_resp(1:z) = pack(ipatch%fmean_sapa_storage_resp  ,lmask)
       opatch%fmean_sapb_storage_resp(1:z) = pack(ipatch%fmean_sapb_storage_resp  ,lmask)
+      opatch%fmean_bark_storage_resp(1:z) = pack(ipatch%fmean_bark_storage_resp  ,lmask)
       opatch%fmean_plresp          (1:z) = pack(ipatch%fmean_plresp              ,lmask)
       opatch%fmean_leaf_energy     (1:z) = pack(ipatch%fmean_leaf_energy         ,lmask)
       opatch%fmean_leaf_water      (1:z) = pack(ipatch%fmean_leaf_water          ,lmask)
@@ -11027,6 +11215,7 @@ module ed_state_vars
       opatch%dmean_nppleaf         (1:z) = pack(ipatch%dmean_nppleaf             ,lmask)
       opatch%dmean_nppfroot        (1:z) = pack(ipatch%dmean_nppfroot            ,lmask)
       opatch%dmean_nppsapwood      (1:z) = pack(ipatch%dmean_nppsapwood          ,lmask)
+      opatch%dmean_nppbark         (1:z) = pack(ipatch%dmean_nppbark             ,lmask)
       opatch%dmean_nppcroot        (1:z) = pack(ipatch%dmean_nppcroot            ,lmask)
       opatch%dmean_nppseeds        (1:z) = pack(ipatch%dmean_nppseeds            ,lmask)
       opatch%dmean_nppwood         (1:z) = pack(ipatch%dmean_nppwood             ,lmask)
@@ -11039,10 +11228,12 @@ module ed_state_vars
       opatch%dmean_root_growth_resp(1:z) = pack(ipatch%dmean_root_growth_resp    ,lmask)
       opatch%dmean_sapa_growth_resp(1:z) = pack(ipatch%dmean_sapa_growth_resp    ,lmask)
       opatch%dmean_sapb_growth_resp(1:z) = pack(ipatch%dmean_sapb_growth_resp    ,lmask)
+      opatch%dmean_bark_growth_resp(1:z) = pack(ipatch%dmean_bark_growth_resp    ,lmask)
       opatch%dmean_leaf_storage_resp(1:z) = pack(ipatch%dmean_leaf_storage_resp  ,lmask)
       opatch%dmean_root_storage_resp(1:z) = pack(ipatch%dmean_root_storage_resp  ,lmask)
       opatch%dmean_sapa_storage_resp(1:z) = pack(ipatch%dmean_sapa_storage_resp  ,lmask)
       opatch%dmean_sapb_storage_resp(1:z) = pack(ipatch%dmean_sapb_storage_resp  ,lmask)
+      opatch%dmean_bark_storage_resp(1:z) = pack(ipatch%dmean_bark_storage_resp  ,lmask)
       opatch%dmean_plresp          (1:z) = pack(ipatch%dmean_plresp              ,lmask)
       opatch%dmean_leaf_energy     (1:z) = pack(ipatch%dmean_leaf_energy         ,lmask)
       opatch%dmean_leaf_water      (1:z) = pack(ipatch%dmean_leaf_water          ,lmask)
@@ -11135,12 +11326,16 @@ module ed_state_vars
 
 
       !----- Scalars. ---------------------------------------------------------------------!
+      opatch%mmean_thbark          (1:z) = pack(ipatch%mmean_thbark              ,lmask)
       opatch%mmean_lai             (1:z) = pack(ipatch%mmean_lai                 ,lmask)
       opatch%mmean_bleaf           (1:z) = pack(ipatch%mmean_bleaf               ,lmask)
       opatch%mmean_broot           (1:z) = pack(ipatch%mmean_broot               ,lmask)
+      opatch%mmean_bbark           (1:z) = pack(ipatch%mmean_bbark               ,lmask)
+      opatch%mmean_balive          (1:z) = pack(ipatch%mmean_balive              ,lmask)
       opatch%mmean_bstorage        (1:z) = pack(ipatch%mmean_bstorage            ,lmask)
       opatch%mmean_leaf_maintenance(1:z) = pack(ipatch%mmean_leaf_maintenance    ,lmask)
       opatch%mmean_root_maintenance(1:z) = pack(ipatch%mmean_root_maintenance    ,lmask)
+      opatch%mmean_bark_maintenance(1:z) = pack(ipatch%mmean_bark_maintenance    ,lmask)
       opatch%mmean_leaf_drop       (1:z) = pack(ipatch%mmean_leaf_drop           ,lmask)
       opatch%mmean_cb              (1:z) = pack(ipatch%mmean_cb                  ,lmask)
       opatch%mmean_gpp             (1:z) = pack(ipatch%mmean_gpp                 ,lmask)
@@ -11151,10 +11346,12 @@ module ed_state_vars
       opatch%mmean_root_growth_resp(1:z) = pack(ipatch%mmean_root_growth_resp    ,lmask)
       opatch%mmean_sapa_growth_resp(1:z) = pack(ipatch%mmean_sapa_growth_resp    ,lmask)
       opatch%mmean_sapb_growth_resp(1:z) = pack(ipatch%mmean_sapb_growth_resp    ,lmask)
+      opatch%mmean_bark_growth_resp(1:z) = pack(ipatch%mmean_bark_growth_resp    ,lmask)
       opatch%mmean_leaf_storage_resp(1:z) = pack(ipatch%mmean_leaf_storage_resp  ,lmask)
       opatch%mmean_root_storage_resp(1:z) = pack(ipatch%mmean_root_storage_resp  ,lmask)
       opatch%mmean_sapa_storage_resp(1:z) = pack(ipatch%mmean_sapa_storage_resp  ,lmask)
       opatch%mmean_sapb_storage_resp(1:z) = pack(ipatch%mmean_sapb_storage_resp  ,lmask)
+      opatch%mmean_bark_storage_resp(1:z) = pack(ipatch%mmean_bark_storage_resp  ,lmask)
       opatch%mmean_plresp          (1:z) = pack(ipatch%mmean_plresp              ,lmask)
       opatch%mmean_leaf_energy     (1:z) = pack(ipatch%mmean_leaf_energy         ,lmask)
       opatch%mmean_leaf_water      (1:z) = pack(ipatch%mmean_leaf_water          ,lmask)
@@ -11209,6 +11406,7 @@ module ed_state_vars
       opatch%mmean_nppleaf         (1:z) = pack(ipatch%mmean_nppleaf             ,lmask)
       opatch%mmean_nppfroot        (1:z) = pack(ipatch%mmean_nppfroot            ,lmask)
       opatch%mmean_nppsapwood      (1:z) = pack(ipatch%mmean_nppsapwood          ,lmask)
+      opatch%mmean_nppbark         (1:z) = pack(ipatch%mmean_nppbark             ,lmask)
       opatch%mmean_nppcroot        (1:z) = pack(ipatch%mmean_nppcroot            ,lmask)
       opatch%mmean_nppseeds        (1:z) = pack(ipatch%mmean_nppseeds            ,lmask)
       opatch%mmean_nppwood         (1:z) = pack(ipatch%mmean_nppwood             ,lmask)
@@ -11277,10 +11475,12 @@ module ed_state_vars
          opatch%qmean_root_growth_resp(n,1:z) = pack(ipatch%qmean_root_growth_resp(n,:),lmask)
          opatch%qmean_sapa_growth_resp(n,1:z) = pack(ipatch%qmean_sapa_growth_resp(n,:),lmask)
          opatch%qmean_sapb_growth_resp(n,1:z) = pack(ipatch%qmean_sapb_growth_resp(n,:),lmask)
+         opatch%qmean_bark_growth_resp(n,1:z) = pack(ipatch%qmean_bark_growth_resp(n,:),lmask)
          opatch%qmean_leaf_storage_resp(n,1:z) = pack(ipatch%qmean_leaf_storage_resp(n,:),lmask)
          opatch%qmean_root_storage_resp(n,1:z) = pack(ipatch%qmean_root_storage_resp(n,:),lmask)
          opatch%qmean_sapa_storage_resp(n,1:z) = pack(ipatch%qmean_sapa_storage_resp(n,:),lmask)
          opatch%qmean_sapb_storage_resp(n,1:z) = pack(ipatch%qmean_sapb_storage_resp(n,:),lmask)
+         opatch%qmean_bark_storage_resp(n,1:z) = pack(ipatch%qmean_bark_storage_resp(n,:),lmask)
          opatch%qmean_plresp        (n,1:z) = pack(ipatch%qmean_plresp        (n,:),lmask)
          opatch%qmean_leaf_energy   (n,1:z) = pack(ipatch%qmean_leaf_energy   (n,:),lmask)
          opatch%qmean_leaf_water    (n,1:z) = pack(ipatch%qmean_leaf_water    (n,:),lmask)
@@ -12685,6 +12885,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Belowground sapwood growth respiration'      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%fmean_bark_growth_resp )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_bark_growth_resp                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_BARK_GROWTH_RESP_PY   :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Bark growth respiration'                     &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%fmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%fmean_leaf_storage_resp                             &
@@ -12719,6 +12928,15 @@ module ed_state_vars
                            ,'FMEAN_SAPB_STORAGE_RESP_PY      :11:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Belowground Sapwood storage respiration'     &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%fmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%fmean_bark_storage_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'FMEAN_BARK_STORAGE_RESP_PY      :11:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Bark storage respiration'                    &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%fmean_plresp          )) then
@@ -13839,6 +14057,15 @@ module ed_state_vars
                            ,'Daily mean - Net primary productivity - Sap wood'             &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_nppbark         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_nppbark                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_NPPBARK_PY           :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Net primary productivity - Bark'                 &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_nppcroot        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_nppcroot                                      &
@@ -13992,6 +14219,15 @@ module ed_state_vars
                            ,'Daily mean - Belowground sapwood growth respiration'          &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%dmean_bark_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_bark_growth_resp                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_BARK_GROWTH_RESP_PY  :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Bark growth respiration'                         &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%dmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%dmean_leaf_storage_resp                             &
@@ -14026,6 +14262,15 @@ module ed_state_vars
                            ,'DMEAN_SAPB_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Belowground Sapwood Storage respiration'         &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%dmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%dmean_bark_storage_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'DMEAN_BARK_STORAGE_RESP_PY      :11:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Bark storage respiration'                        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%dmean_plresp          )) then
@@ -15156,6 +15401,15 @@ module ed_state_vars
                            ,'Monthly mean - Belowground sapwood growth respiration'        &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%mmean_bark_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_bark_growth_resp                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BARK_GROWTH_RESP_PY  :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark growth respiration'                       &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%mmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_leaf_storage_resp                             &
@@ -15190,6 +15444,15 @@ module ed_state_vars
                            ,'MMEAN_SAPB_STORAGE_RESP_PY      :11:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Belowground Sapwood Storage respiration'       &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
+      if (associated(cgrid%mmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_bark_storage_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BARK_STORAGE_RESP_PY      :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark Storage respiration'                      &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
       if (associated(cgrid%mmean_plresp          )) then
@@ -16065,6 +16328,15 @@ module ed_state_vars
                            ,'Monthly mean - Net primary productivity - Sap wood'           &
                            ,'[  kgC/m2/yr]','(ipoly)'            )
       end if
+      if (associated(cgrid%mmean_nppbark         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%mmean_nppbark                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_NPPBARK_PY           :11:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Net primary productivity - Bark'               &
+                           ,'[  kgC/m2/yr]','(ipoly)'            )
+      end if
       if (associated(cgrid%mmean_nppcroot        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%mmean_nppcroot                                      &
@@ -16705,6 +16977,15 @@ module ed_state_vars
                            ,'Mean diel - Belowground Sapwood Growth respiration'           &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
+      if (associated(cgrid%qmean_bark_growth_resp )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_bark_growth_resp                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_BARK_GROWTH_RESP_PY :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Bark Growth respiration'                          &
+                           ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
+      end if
       if (associated(cgrid%qmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cgrid%qmean_leaf_storage_resp                             &
@@ -16739,6 +17020,15 @@ module ed_state_vars
                            ,'QMEAN_SAPB_STORAGE_RESP_PY     :-11:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Belowground Sapwood Storage respiration'          &
+                           ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
+      end if
+      if (associated(cgrid%qmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_bark_storage_resp                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'QMEAN_BARK_STORAGE_RESP_PY     :-11:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Bark storage respiration'                         &
                            ,'[  kgC/m2/yr]','(ndcycle,ipoly)'    )
       end if
       if (associated(cgrid%qmean_plresp          )) then
@@ -18566,6 +18856,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Basal area'                                          &
                            ,   '[cm2/m2]','(n_pft,n_dbh,ipoly)')
       end if
+      if (associated(cgrid%thbark )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%thbark                                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'THBARK_PY  :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Bark thickness (weighted by basal area)'             &
+                           ,   '[cm]','(n_pft,n_dbh,ipoly)')
+      end if
       if (associated(cgrid%bdead      )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%bdead                                               &
@@ -18586,7 +18884,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%balive                                              &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BALIVE_PY      :146:hist:anal:mont:dail:dcyc')
+                           ,'BALIVE_PY      :146:hist:anal:dail')
          call metadata_edio(nvar,igr,'Biomass of active (living) tissues'                  &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -18620,6 +18918,14 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'BSAPWOODB_PY   :146:hist:anal:mont:dail:dcyc')
          call metadata_edio(nvar,igr,'Below-ground sapwood biomass'                        &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%bbark      )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bbark                                               &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BBARK_PY       :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Bark biomass'                                        &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%bseeds     )) then
@@ -18658,7 +18964,7 @@ module ed_state_vars
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%balive_n                                            &
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
-                           ,'BALIVE_N_PY    :146:hist:anal:mont:dail:dcyc')
+                           ,'BALIVE_N_PY    :146:hist:anal:dail')
          call metadata_edio(nvar,igr,'Nitrogen mass of active (living) tissues'            &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
@@ -18694,6 +19000,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Below-ground sapwood nitrogen mass'                  &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
+      if (associated(cgrid%bbark_n    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bbark_n                                             &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BBARK_N_PY     :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Bark nitrogen mass'                                  &
+                           ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
+      end if
       if (associated(cgrid%bseeds_n   )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%bseeds_n                                            &
@@ -18726,6 +19040,14 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Root maintenance rate'                               &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
+      if (associated(cgrid%bark_maintenance)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%bark_maintenance                                    &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'BARK_MAINTENANCE_PY    :146:hist:anal:dail')
+         call metadata_edio(nvar,igr,'Bark maintenance rate'                               &
+                           ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
       if (associated(cgrid%leaf_drop)) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%leaf_drop                                           &
@@ -18733,6 +19055,14 @@ module ed_state_vars
                            ,'LEAF_DROP_PY    :146:hist:anal:dail')
          call metadata_edio(nvar,igr,'Leaf drop'                                           &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_thbark)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_thbark                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_THBARK_PY      :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - BA-weighted Bark thickness'           &
+                           ,'[cm]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%mmean_lai)) then
          nvar = nvar + 1
@@ -18756,6 +19086,22 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_BROOT_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Root biomass'                         &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_bbark      )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_bbark                                         &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BBARK_PY       :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Bark biomass'                         &
+                           ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_balive     )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_balive                                        &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BALIVE_PY      :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Biomass of living tissues'            &
                            ,   '[kgC/m2]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%mmean_bstorage   )) then
@@ -18782,6 +19128,22 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Monthly mean - Root nitrogen mass'                   &
                            ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
       end if
+      if (associated(cgrid%mmean_bbark_n    )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_bbark_n                                       &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BBARK_N_PY     :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Bark nitrogen mass'                   &
+                           ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_balive_n   )) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_balive_n                                      &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BALIVE_N_PY    :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Nitrogen mass of living tissues'      &
+                           ,   '[kgN/m2]','(n_pft,n_dbh,ipoly)')
+      end if
       if (associated(cgrid%mmean_bstorage_n )) then
          nvar = nvar + 1
          call vtable_edio_r(npts,cgrid%mmean_bstorage_n                                    &
@@ -18804,6 +19166,14 @@ module ed_state_vars
                            ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
                            ,'MMEAN_ROOT_MAINTENANCE_PY       :146:'//trim(eorq_keys))
          call metadata_edio(nvar,igr,'Monthly mean - Root maintenance rate'                &
+                           ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
+      end if
+      if (associated(cgrid%mmean_bark_maintenance)) then
+         nvar = nvar + 1
+         call vtable_edio_r(npts,cgrid%mmean_bark_maintenance                              &
+                           ,nvar,igr,init,cgrid%pyglob_id,var_len,var_len_global,max_ptrs  &
+                           ,'MMEAN_BARK_MAINTENANCE_PY       :146:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr,'Monthly mean - Bark maintenance rate'                &
                            ,   '[kgC/m2/yr]','(n_pft,n_dbh,ipoly)')
       end if
       if (associated(cgrid%mmean_leaf_drop)) then
@@ -25151,6 +25521,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Diameter at breast height','[cm]','icohort') 
       end if
 
+      if (associated(cpatch%thbark)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%thbark,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'THBARK :41:hist:anal:year:dail') 
+         call metadata_edio(nvar,igr,'Bark thickness','[cm]','icohort') 
+      end if
+
       if (associated(cpatch%bdead)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bdead,nvar,igr,init,cpatch%coglob_id, &
@@ -25169,21 +25546,21 @@ module ed_state_vars
       if (associated(cpatch%bleaf)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bleaf,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BLEAF :41:hist:anal:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BLEAF :41:hist:anal:year:dail') 
          call metadata_edio(nvar,igr,'Leaf biomass','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%balive)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%balive,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BALIVE :41:hist:anal:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BALIVE :41:hist:anal:year:dail') 
          call metadata_edio(nvar,igr,'Biomass of living tissues','[kgC/pl]','icohort') 
       end if
 
       if (associated(cpatch%broot)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%broot,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BROOT :41:hist:anal:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BROOT :41:hist:anal:year:dail') 
          call metadata_edio(nvar,igr,'Fine-root biomass','[kgC/pl]','icohort') 
       end if
 
@@ -25203,10 +25580,17 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'Below-ground sapwood biomass','[kgC/pl]','icohort') 
       end if
 
+      if (associated(cpatch%bbark)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bbark,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BBARK :41:hist:anal:year:dail') 
+         call metadata_edio(nvar,igr,'Bark biomass','[kgC/pl]','icohort') 
+      end if
+
       if (associated(cpatch%lai)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%lai,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:anal:dail:mont:year:dcyc') 
+           var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:anal:dail:year') 
          call metadata_edio(nvar,igr,'Leaf area index','[m2leaf/m2]','icohort') 
       end if
 
@@ -25228,7 +25612,7 @@ module ed_state_vars
       if (associated(cpatch%bstorage)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%bstorage,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:anal:year:dail:mont:dcyc') 
+           var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:anal:year:dail') 
          call metadata_edio(nvar,igr,'Biomass of non-structural carbon'                    &
                            ,'[kgC/pl]','icohort') 
       end if
@@ -25431,6 +25815,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
       end if
       
+      if (associated(cpatch%today_nppbark)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%today_nppbark,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'TODAY_NPPBARK :41:hist') 
+         call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC VARIABLE','[NA]','icohort') 
+      end if
+      
       if (associated(cpatch%today_nppcroot)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%today_nppcroot,nvar,igr,init,cpatch%coglob_id, &
@@ -25515,6 +25906,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%bark_growth_resp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bark_growth_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARK_GROWTH_RESP :41:hist:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(cpatch%leaf_storage_resp)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%leaf_storage_resp,nvar,igr,init,cpatch%coglob_id, &
@@ -25540,6 +25938,13 @@ module ed_state_vars
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%sapb_storage_resp,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'SAPB_STORAGE_RESP :41:hist:anal') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%bark_storage_resp)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bark_storage_resp,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARK_STORAGE_RESP :41:hist:anal') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -25823,6 +26228,13 @@ module ed_state_vars
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
+      if (associated(cpatch%bark_maintenance)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%bark_maintenance,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'BARK_MAINTENANCE :41:hist:dail') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
       if (associated(cpatch%leaf_drop)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%leaf_drop,nvar,igr,init,cpatch%coglob_id, &
@@ -26035,6 +26447,15 @@ module ed_state_vars
                            ,'Sub-daily mean - Belowground sapwood growth respiration'      &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
+      if (associated(cpatch%fmean_bark_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_bark_growth_resp                             &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_BARK_GROWTH_RESP_CO  :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Leaf growth respiration'                     &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
       if (associated(cpatch%fmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%fmean_leaf_storage_resp                            &
@@ -26069,6 +26490,15 @@ module ed_state_vars
                            ,'FMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Sub-daily mean - Belowground Sapwood Storage respiration'     &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%fmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%fmean_bark_storage_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'FMEAN_BARK_STORAGE_RESP_CO      :41:'//trim(fast_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Sub-daily mean - Bark Storage respiration'                    &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%fmean_plresp          )) then
@@ -26607,6 +27037,15 @@ module ed_state_vars
                            ,'Daily mean - Net primary productivity - Sap wood'             &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
+      if (associated(cpatch%dmean_nppbark         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_nppbark                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_NPPBARK_CO           :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Net primary productivity - Bark'                 &
+                           ,'[  kgC/m2/yr]','(icohort)'            )
+      end if
       if (associated(cpatch%dmean_nppcroot        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_nppcroot                                     &
@@ -26715,6 +27154,15 @@ module ed_state_vars
                            ,'Daily mean - Belowground sapwood growth respiration'          &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
+      if (associated(cpatch%dmean_bark_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_bark_growth_resp                             &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_BARK_GROWTH_RESP_CO  :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Bark growth respiration'                         &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
       if (associated(cpatch%dmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%dmean_leaf_storage_resp                            &
@@ -26749,6 +27197,15 @@ module ed_state_vars
                            ,'DMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Daily mean - Belowground Sapwood Storage respiration'         &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%dmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%dmean_bark_storage_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'DMEAN_BARK_STORAGE_RESP_CO      :41:'//trim(dail_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Daily mean - Bark Storage respiration'                        &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%dmean_plresp          )) then
@@ -27337,6 +27794,15 @@ module ed_state_vars
                            ,'Monthly mean - Belowground sapwood growth respiration'        &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
+      if (associated(cpatch%mmean_bark_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_bark_growth_resp                             &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BARK_GROWTH_RESP_CO  :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark growth respiration'                       &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
       if (associated(cpatch%mmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_leaf_storage_resp                            &
@@ -27371,6 +27837,15 @@ module ed_state_vars
                            ,'MMEAN_SAPB_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Belowground Sapwood Storage respiration'       &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_bark_storage_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BARK_STORAGE_RESP_CO      :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark Storage respiration'                      &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_plresp          )) then
@@ -27820,6 +28295,15 @@ module ed_state_vars
                            ,'Monthly mean - Wood shedding'                                 &
                            ,'[    kg/m2/s]','(icohort)'            )
       end if
+      if (associated(cpatch%mmean_thbark          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_thbark                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_THBARK_CO            :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark thickness'                                &
+                           ,'[         cm]','(icohort)'            )
+      end if
       if (associated(cpatch%mmean_lai             )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_lai                                          &
@@ -27847,6 +28331,24 @@ module ed_state_vars
                            ,'Monthly mean - Root biomass'                                  &
                            ,'[     kgC/pl]','(icohort)'            )
       end if
+      if (associated(cpatch%mmean_bbark           )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_bbark                                        &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BBARK_CO             :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark biomass'                                  &
+                           ,'[     kgC/pl]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_balive          )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_balive                                       &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BALIVE_CO            :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Biomass of living tissues'                     &
+                           ,'[     kgC/pl]','(icohort)'            )
+      end if
       if (associated(cpatch%mmean_bstorage        )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%mmean_bstorage                                     &
@@ -27872,6 +28374,15 @@ module ed_state_vars
                            ,'MMEAN_ROOT_MAINTENANCE_CO     :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Root maintenance rate'                         &
+                           ,'[  kgC/pl/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_bark_maintenance)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_bark_maintenance                             &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_BARK_MAINTENANCE_CO     :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Bark maintenance rate'                         &
                            ,'[  kgC/pl/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_leaf_drop       )) then
@@ -27917,6 +28428,15 @@ module ed_state_vars
                            ,'MMEAN_NPPSAPWOOD_CO        :41:'//trim(eorq_keys))
          call metadata_edio(nvar,igr                                                       &
                            ,'Monthly mean - Net primary productivity - Sap wood'           &
+                           ,'[  kgC/m2/yr]','(icohort)'            )
+      end if
+      if (associated(cpatch%mmean_nppbark         )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%mmean_nppbark                                      &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'MMEAN_NPPBARK_CO           :41:'//trim(eorq_keys))
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Monthly mean - Net primary productivity - Bark'               &
                            ,'[  kgC/m2/yr]','(icohort)'            )
       end if
       if (associated(cpatch%mmean_nppcroot        )) then
@@ -28162,6 +28682,15 @@ module ed_state_vars
                            ,'Mean diel - Belowground sapwood growth respiration'           &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
+      if (associated(cpatch%qmean_bark_growth_resp)) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_bark_growth_resp                             &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_BARK_GROWTH_RESP_CO :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Bark growth respiration'                          &
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
+      end if
       if (associated(cpatch%qmean_leaf_storage_resp    )) then
          nvar = nvar+1
          call vtable_edio_r(npts,cpatch%qmean_leaf_storage_resp                            &
@@ -28196,6 +28725,15 @@ module ed_state_vars
                            ,'QMEAN_SAPB_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
          call metadata_edio(nvar,igr                                                       &
                            ,'Mean diel - Belowground Sapwood Storage respiration'          &
+                           ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
+      end if
+      if (associated(cpatch%qmean_bark_storage_resp    )) then
+         nvar = nvar+1
+         call vtable_edio_r(npts,cpatch%qmean_bark_storage_resp                            &
+                           ,nvar,igr,init,cpatch%coglob_id,var_len,var_len_global,max_ptrs &
+                           ,'QMEAN_BARK_STORAGE_RESP_CO     :-41:'//trim(eorq_keys)     )
+         call metadata_edio(nvar,igr                                                       &
+                           ,'Mean diel - Bark Storage respiration'                         &
                            ,'[  kgC/pl/yr]','(ndcycle,icohort)'    )
       end if
       if (associated(cpatch%qmean_plresp          )) then
