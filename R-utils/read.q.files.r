@@ -658,7 +658,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          pftconow          = mymont$PFT
          nplantconow       = mymont$NPLANT
          heightconow       = mymont$HITE
-         thbarkconow       = mymont$MMEAN.THBARK
+         thbarkconow       = mymont$MMEAN.THBARK.CO
          wood.densconow    = pft$rho[pftconow]
          agf.bsconow       = pft$agf.bs[pftconow]
          baconow           = mymont$BA.CO
@@ -756,7 +756,6 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
          q.fgs.stem  = matrix(data=fgs.stem ,nrow=mymont$NCOHORTS.GLOBAL,ncol=mymont$NDCYC)
          q.fgs.froot = matrix(data=fgs.froot,nrow=mymont$NCOHORTS.GLOBAL,ncol=mymont$NDCYC)
          q.fgs.croot = matrix(data=fgs.croot,nrow=mymont$NCOHORTS.GLOBAL,ncol=mymont$NDCYC)
-         q.fgs.bark  = matrix(data=fgs.bark ,nrow=mymont$NCOHORTS.GLOBAL,ncol=mymont$NDCYC)
          q.agf.bs    = matrix( data = agf.bsconow
                              , nrow = mymont$NCOHORTS.GLOBAL
                              , ncol = mymont$NDCYC

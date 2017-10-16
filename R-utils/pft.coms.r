@@ -59,7 +59,7 @@ tarrhi       <<- 1./tarrh
 # C91.  (tcollatz, in Kelvin).  fcollatz is the factor that multiply the temperature       #
 # departure from reference.                                                                #
 #------------------------------------------------------------------------------------------#
-tcollatz        <<- 25.0+t00
+tcollatz        <<- 15.0+t00
 fcollatz        <<- 0.1
 #------------------------------------------------------------------------------------------#
 
@@ -629,8 +629,8 @@ pft01 = list( name               = "C4 grass"
             , gamma.resp         = gamma.c4
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.9
-            , root.turnover.rate = 2.9
+            , leaf.turnover.rate = 2.0
+            , root.turnover.rate = 2.0
             , SLA                = 30.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
@@ -1469,8 +1469,8 @@ pft16 = list( name               = "C3 grass"
             , gamma.resp         = gamma.c3
             , effarea.transp     = 1.0
             , rho                = 0.20
-            , leaf.turnover.rate = 2.9
-            , root.turnover.rate = 2.9
+            , leaf.turnover.rate = 2.0
+            , root.turnover.rate = 2.0
             , SLA                = 30.0
             , hgt.ref            = hgt.ref.trop
             , b1Ht               = b1Ht.trop
@@ -1631,6 +1631,32 @@ pft = as.data.frame(pft,stringsAsFactors=FALSE)
 #------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
+#     Set SLA, leaf turnover rate, and Vm0 following a combination of two trait data sets: #
+# GLOPNET (W04) and the wood economic spectrum (C09), and developing equations using the   #
+# standardised major axis to relate both variables.  All variables except for wood density #
+# were log-transformed.                                                                    #
+#                                                                                          #
+# Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics spectrum.   #
+#    Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).                   #
+#                                                                                          #
+# Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne. Towards a  #
+#    worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366, Apr 2009.              #
+#    doi:10.1111/j.1461-0248.2009.01285.x (C09).                                           #
+#------------------------------------------------------------------------------------------#
+for (ipft in sequence(npft)){
+   #---- Check PFT and allometry. ---------------------------------------------------------#
+   usedef = with(pft,grass[ipft] || liana[ipft] || conifer[ipft] || (! tropical[ipft]))
+   if (! usedef){
+      pft$SLA               [ipft] = exp(4.44824590-2.50747710*pft$rho[ipft])
+      pft$leaf.turnover.rate[ipft] = exp(2.57332880-4.38819777*pft$rho[ipft])
+      pft$root.turnover.rate[ipft] = pft$leaf.turnover.rate [ipft]
+      pft$vm0               [ipft] = exp(4.63093593-3.27792920*pft$rho[ipft]) * umol.2.mol
+   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4)
+   #---------------------------------------------------------------------------------------#
+}#end for (ipft in sequence(npft))
+#------------------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------------------#
 #     Set qsw according to the allometry and the PFT.                                      #
 #------------------------------------------------------------------------------------------#
 for (ipft in sequence(npft)){
@@ -1661,9 +1687,10 @@ for (ipft in sequence(npft)){
 #------------------------------------------------------------------------------------------#
 #     Set the bark:wood density ratio (qrhob), and the water:biomass ratio for leaves      #
 # (qwatdry.leaf), wood (qwatdry.wood), and bark (qwatdry.bark).  qwatdry.leaf is defined   #
-# after G07.  The other variables were defined based on the PFT: for tropical broadleaf    #
-# trees, we use model fits based on the Table S1 data from P14.  For other PFTs we use the #
-# default values from R14 and FPL10.                                                       #
+# after G07.  The other variables were defined based on the PFT. For tropical broadleaf    #
+# trees, we used a SMA analysis, similar to what was done for Vm0, SLA, and turnover, but  #
+# using the data available in Table S1 (P14).  For other PFTs we use the default values    #
+# from R14 and FPL10.                                                                      #
 #                                                                                          #
 # References:                                                                              #
 #                                                                                          #
@@ -1702,9 +1729,9 @@ for (ipft in sequence(npft)){
       #------------------------------------------------------------------------------------#
    }else{
       #----- Default values. --------------------------------------------------------------#
-      pft$qrhob       [ipft] = exp(0.27614783 - 0.8114117 * pft$rho[ipft])
-      pft$qwatdry.wood[ipft] = exp(1.529155   - 3.108388  * pft$rho[ipft])
-      pft$qwatdry.bark[ipft] = exp(1.588317   - 2.382240  * pft$rho[ipft])
+      pft$qrhob       [ipft] = exp(0.6966550 - 1.602123 * pft$rho[ipft])
+      pft$qwatdry.wood[ipft] = exp(1.5018230 - 3.137476 * pft$rho[ipft])
+      pft$qwatdry.bark[ipft] = exp(1.9892840 - 3.174365 * pft$rho[ipft])
       #------------------------------------------------------------------------------------#
    }#end if (usedef)
    #---------------------------------------------------------------------------------------#
@@ -1835,20 +1862,6 @@ for (ipft in sequence(npft)){
                                        / pft$b1Ht[ipft]) / pft$b2Ht[ipft] )
    }#end if
    pft$dbh.adult[ipft]   = 5.0
-}#end for
-#------------------------------------------------------------------------------------------#
-
-
-#------------------------------------------------------------------------------------------#
-#    Specific leaf area for those PFTs whose specific leaf area depends on the leaf turn-  #
-# over rate.                                                                               #
-#------------------------------------------------------------------------------------------#
-#pft$SLA = rep(NA,times=npft+1)
-for (ipft in sequence(npft)){
-   if (is.na(pft$SLA[ipft])){
-      pft$SLA[ipft] = ( 10^( (2.4 - 0.46 * log10(12./pft$leaf.turnover.rate[ipft]))) 
-                      * C2B * 0.1 )
-   }#end if
 }#end for
 #------------------------------------------------------------------------------------------#
 
@@ -1992,9 +2005,9 @@ for (ipft in sequence(npft)){
          pft$b2Bs.large[ipft] = ndead.large[2]
       }else if (iallom %in% c(4)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
-         pft$b1Bs.small[ipft] = C2B * 0.167172 * pft$rho[ipft]
-         pft$b2Bs.small[ipft] = 2.435521
-         pft$b2Bs.large[ipft] = 2.1594874
+         pft$b1Bs.small[ipft] = C2B * 0.1668894 * pft$rho[ipft]
+         pft$b2Bs.small[ipft] = 2.4391522
+         pft$b2Bs.large[ipft] = 2.1378625
          pft$b1Bs.large[ipft] = ( pft$b1Bs.small[ipft] * pft$dbh.crit[ipft]
                                 ** (pft$b2Bs.small[ipft] - pft$b2Bs.large[ipft]) )
       }#end if

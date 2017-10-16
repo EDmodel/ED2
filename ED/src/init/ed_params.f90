@@ -1568,7 +1568,8 @@ end subroutine init_can_lyr_params
 subroutine init_pft_photo_params()
 
    use ed_max_dims    , only : n_pft                   & ! intent(in)
-                             , str_len                 ! ! intent(in)
+                             , str_len                 & ! intent(in)
+                             , undef_real              ! ! intent(in)
    use ed_misc_coms   , only : ibigleaf                & ! intent(in)
                              , iallom                  ! ! intent(in)
    use pft_coms       , only : is_tropical             & ! intent(in)
@@ -1576,6 +1577,7 @@ subroutine init_pft_photo_params()
                              , is_grass                & ! intent(in)
                              , SLA                     & ! intent(in)
                              , C2B                     & ! intent(in)
+                             , rho                     & ! intent(in)
                              , D0                      & ! intent(out)
                              , Vm_low_temp             & ! intent(out)
                              , Vm_high_temp            & ! intent(out)
@@ -1622,7 +1624,6 @@ subroutine init_pft_photo_params()
                              , lwidth_nltree           & ! intent(in)
                              , q10_c3                  & ! intent(in)
                              , q10_c4                  ! ! intent(in)
-   use detailed_coms  , only : idetailed               ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
@@ -1630,14 +1631,10 @@ subroutine init_pft_photo_params()
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=4)            :: ssfact
    real(kind=4)            :: vmexpo_pft
-   real(kind=4)            :: vmtref_pft
    real(kind=4)            :: gamma_pft
    real(kind=4)            :: a_pft
    real(kind=4)            :: b_pft
    integer                 :: ipft
-   integer                 :: n
-   logical                 :: write_photo
-   character(len=2)        :: char_pathway
    !----- Local parameters, based on Atkin et al. (2015), Table S3 (Rdark,m). -------------!
    real(kind=4), parameter :: a_c3grss = -1.962            ! 5d, C3H
    real(kind=4), parameter :: b_c3grss =  1.247            ! 5d, C3H
@@ -1649,14 +1646,6 @@ subroutine init_pft_photo_params()
    real(kind=4), parameter :: b_bltemp =  0.753            ! 5f, 15 degC <= TWQ < 25 degC
    real(kind=4), parameter :: a_needle = -0.366            ! 5d, NlT
    real(kind=4), parameter :: b_needle =  0.494            ! 5d, NlT
-   !----- Other constants. ----------------------------------------------------------------!
-   character(len=str_len), parameter :: photo_file  = 'photo_param.txt'
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Check whether to print the photosynthesis table or not. -------------------------!
-   write_photo = btest(idetailed,5)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1750,23 +1739,82 @@ subroutine init_pft_photo_params()
       end select
    end select
    !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
-   Vm0(1)     = 12.500000
-   Vm0(2)     = 18.750000 ! 18.750000
-   Vm0(3)     = 12.500000 ! 12.500000
-   Vm0(4)     =  6.250000 !  6.250000
-   Vm0(5)     = 18.300000
-   Vm0(6)     = 11.350000
-   Vm0(7)     = 11.350000
-   Vm0(8)     =  4.540000
-   Vm0(9)     = 20.387075
-   Vm0(10)    = 17.454687
-   Vm0(11)    =  6.981875
-   Vm0(12)    = Vm0(2)
-   Vm0(13)    = Vm0(3)
-   Vm0(14)    = Vm0(4)
-   Vm0(15)    = 15.625000
-   Vm0(16)    = 18.750000 ! 18.750000
-   Vm0(17)    = 15.625000
+
+   !---------------------------------------------------------------------------------------!
+   !  KIM - new tropical parameters.                                                       !
+   !                                                                                       !
+   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
+   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
+   !        account for variation on both axes, all equations were developed using         !
+   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
+   !        density, all variables were log-transformed.                                   !
+   !                                                                                       !
+   !  References                                                                           !
+   !                                                                                       !
+   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
+   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
+   !                                                                                       !
+   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
+   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
+   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_tropical(ipft) .and. is_conifer(ipft)) then
+         !----- Sub-tropical conifers. ----------------------------------------------------!
+         Vm0(ipft) = 10.
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
+         !----- Tropical trees. -----------------------------------------------------------!
+         Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Temperate trees, each PFT must be initialised separately.                    !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (1)
+            !----- C3 grass. --------------------------------------------------------------!
+            Vm0(ipft) = 12.500000
+            !------------------------------------------------------------------------------!
+         case (5,16)
+            !----- C3 grass. --------------------------------------------------------------!
+            Vm0(ipft) = 18.300000
+            !------------------------------------------------------------------------------!
+         case (6,7)
+            !----- Pines (N/S). -----------------------------------------------------------!
+            Vm0(ipft) = 11.350000
+            !------------------------------------------------------------------------------!
+         case (8)
+            !----- Late conifers. ---------------------------------------------------------!
+            Vm0(ipft) = 4.540000
+            !------------------------------------------------------------------------------!
+         case (9)
+            !----- Early hardwood. --------------------------------------------------------!
+            Vm0(ipft) = 20.387075
+            !------------------------------------------------------------------------------!
+         case (10)
+            !----- Mid hardwood. ----------------------------------------------------------!
+            Vm0(ipft) = 17.454687
+            !------------------------------------------------------------------------------!
+         case (11)
+            !----- Late hardwood. ---------------------------------------------------------!
+            Vm0(ipft) = 6.981875
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Just in case. ----------------------------------------------------------!
+            Vm0(ipft) = 15.625
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Correct Vm0 based on input settings or if this is a big-leaf simulation.          !
+   !---------------------------------------------------------------------------------------!
    do ipft = 1, n_pft
       select case (photosyn_pathway(ipft))
       case (3)
@@ -1801,16 +1849,15 @@ subroutine init_pft_photo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !       By default we assume most Rd parameters to be the same as the Vm ones, but they !
-   ! do not need to be the same.                                                           !
+   !       Initialise Rd terms with undefined values.  In case they are not provided in    !
+   ! XML, we assign default, gamma-based values in init_derived_params_after_xml.          !
    !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      Rd_low_temp (ipft) = Vm_low_temp (ipft)
-      Rd_high_temp(ipft) = Vm_high_temp(ipft)
-      Rd_decay_e  (ipft) = Vm_decay_e  (ipft)
-      Rd_hor      (ipft) = Vm_hor      (ipft)
-      Rd_q10      (ipft) = Vm_q10      (ipft)
-   end do
+   Rd_low_temp (:) = undef_real
+   Rd_high_temp(:) = undef_real
+   Rd_decay_e  (:) = undef_real
+   Rd_hor      (:) = undef_real
+   Rd_q10      (:) = undef_real
+   Rd0         (:) = undef_real
    !---------------------------------------------------------------------------------------!
 
 
@@ -1868,10 +1915,8 @@ subroutine init_pft_photo_params()
          select case (iphysiol)
          case (0,1)
             vmexpo_pft = SLA(ipft) * Vm0(ipft) / C2B
-            vmtref_pft = Vm0(ipft)
          case (2,3)
             vmexpo_pft = SLA(ipft) * vm_q10(ipft) * Vm0(ipft) / C2B
-            vmtref_pft = Vm0(ipft) * vm_q10(ipft) / rd_q10(ipft)
          end select
          !---------------------------------------------------------------------------------!
 
@@ -1883,36 +1928,12 @@ subroutine init_pft_photo_params()
          !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
-         !     The ratio depends on the method: Collatz may have different q10 factors,    !
-         ! and in ED the reference temperature is 15 degC, not 25 degC.  The q10 numbers   !
-         ! make sure that the comparison is carried out at 25 degC, but the reference is   !
-         ! defined at 15 degC.                                                             !
-         !---------------------------------------------------------------------------------!
-         select case (iphysiol)
-         case (0,1)
-            vmexpo_pft = 1.0
-            vmtref_pft = Vm0(ipft)
-         case (2,3)
-            vmexpo_pft = 1.0
-            vmtref_pft = Vm0(ipft) * vm_q10(ipft) / rd_q10(ipft)
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
          !      gamma_pft is the dark_respiration_factor (Rd:Vm ratio).                    !
          !---------------------------------------------------------------------------------!
          dark_respiration_factor(ipft) = gamma_pft
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
-
-
-
-      !------ Define reference dark respiration rate. -------------------------------------!
-      Rd0(ipft) = dark_respiration_factor(ipft) * vmtref_pft
-      !------------------------------------------------------------------------------------!
-
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -1979,78 +2000,6 @@ subroutine init_pft_photo_params()
          leaf_width(ipft) = lwidth_bltree
       end if
    end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Decide which variables to write in the output based on iphysiol.                   !
-   !---------------------------------------------------------------------------------------!
-   if (write_photo) then
-      open (unit=18,file=trim(photo_file),status='replace',action='write')
-      select case (iphysiol)
-      case (0,1)
-         !---------------------------------------------------------------------------------!
-         !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
-         !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(286a)') ('-',n=1,286)
-         write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'      &
-                                        ,'     Pathway','         SLA','          D0'      &
-                                        ,'         Vm0','         Rd0','       gamma'      &
-                                        ,'    Vm_Tcold','     Vm_Thot','    Vm_decay'      &
-                                        ,'      Vm_hor','    Rd_Tcold','     Rd_Thot'      &
-                                        ,'    Rd_decay','      Rd_hor','    st_slope'      &
-                                        ,'         gs0','     q_yield','      KWroot'      &
-                                        ,'  leaf_width'
-
-         write(unit=18,fmt='(286a)') ('-',n=1,286)
-         do ipft=1,n_pft
-            write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
-
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,18(1x,es12.5))')                   &
-                           ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
-                          ,D0(ipft),Vm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)      &
-                          ,Vm_low_temp(ipft),Vm_high_temp(ipft),Vm_decay_e(ipft)           &
-                          ,vm_hor(ipft),Rd_low_temp(ipft),Rd_high_temp(ipft)               &
-                          ,Rd_decay_e(ipft),Rd_hor(ipft),stomatal_slope(ipft)              &
-                          ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
-                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
-         end do
-         write(unit=18,fmt='(286a)') ('-',n=1,286)
-         !---------------------------------------------------------------------------------!
-      case (2,3)
-         !---------------------------------------------------------------------------------!
-         !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
-         !---------------------------------------------------------------------------------!
-         write(unit=18,fmt='(286a)') ('-',n=1,286)
-         write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'      &
-                                        ,'     Pathway','         SLA','          D0'      &
-                                        ,'         Vm0','         Rd0','       gamma'      &
-                                        ,'    Vm_Tcold','     Vm_Thot','    Vm_decay'      &
-                                        ,'      Vm_Q10','    Rd_Tcold','     Rd_Thot'      &
-                                        ,'    Rd_decay','      Rd_Q10','    st_slope'      &
-                                        ,'         gs0','     q_yield','      KWroot'      &
-                                        ,'  leaf_width'
-
-         write(unit=18,fmt='(286a)') ('-',n=1,286)
-         do ipft=1,n_pft
-            write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
-
-            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,18(1x,es12.5))')                   &
-                           ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
-                          ,D0(ipft),Vm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)      &
-                          ,Vm_low_temp(ipft),Vm_high_temp(ipft),Vm_decay_e(ipft)           &
-                          ,vm_q10(ipft),Rd_low_temp(ipft),Rd_high_temp(ipft)               &
-                          ,Rd_decay_e(ipft),Rd_q10(ipft),stomatal_slope(ipft)              &
-                          ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
-                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
-         end do
-         write(unit=18,fmt='(286a)') ('-',n=1,286)
-         !---------------------------------------------------------------------------------!
-      end select
-      close(unit=18,status='keep')
-   end if
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2184,29 +2133,26 @@ end subroutine init_decomp_params
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_pft_resp_params()
-   use ed_max_dims    , only : n_pft                     ! ! intent(in)
+   use ed_max_dims    , only : n_pft                     & ! intent(in)
+                             , undef_real                ! ! intent(in)
    use physiology_coms, only : iphysiol                  & ! intent(in)
                              , rrffact                   & ! intent(in)
                              , growthresp                ! ! intent(in)
    use pft_coms       , only : is_tropical               & ! intent(in)
                              , is_grass                  & ! intent(in)
                              , is_conifer                & ! intent(in)
-                             , rd_low_temp               & ! intent(in)
-                             , rd_high_temp              & ! intent(in)
-                             , rd_decay_e                & ! intent(in)
-                             , rd_hor                    & ! intent(in)
-                             , rd_q10                    & ! intent(in)
+                             , rho                       & ! intent(in)
                              , growth_resp_factor        & ! intent(out)
                              , leaf_turnover_rate        & ! intent(out)
                              , root_turnover_rate        & ! intent(out)
                              , bark_turnover_rate        & ! intent(out)
                              , storage_turnover_rate     & ! intent(out)
                              , root_respiration_factor   & ! intent(out)
-                             , rrf_low_temp              & ! intent(out)
-                             , rrf_high_temp             & ! intent(out)
-                             , rrf_decay_e               & ! intent(out)
-                             , rrf_hor                   & ! intent(out)
-                             , rrf_q10                   ! ! intent(out)
+                             , rrf_low_temp              & ! intent(inout)
+                             , rrf_high_temp             & ! intent(inout)
+                             , rrf_decay_e               & ! intent(inout)
+                             , rrf_hor                   & ! intent(inout)
+                             , rrf_q10                   ! ! intent(inout)
    use decomp_coms    , only : f_labile                  ! ! intent(out)
    use consts_coms    , only : onesixth                  & ! intent(in)
                              , onethird                  & ! intent(in)
@@ -2260,27 +2206,28 @@ subroutine init_pft_resp_params()
          leaf_turnover_rate(ipft) = 2.0
          !---------------------------------------------------------------------------------!
       elseif (.not. is_tropical(ipft)) then
-         !----- Hardwood trees. -----------------------------------------------------------!
+         !----- Hardwood trees.  Turnover is determined by phenology only. ----------------!
          leaf_turnover_rate(ipft) = 0.0
          !---------------------------------------------------------------------------------!
       else
-         !----- Tropical trees.  Check functional type. -----------------------------------!
-         select case (ipft)
-         case (2,12)
-            !----- Early-successional. ----------------------------------------------------!
-            leaf_turnover_rate(ipft) = 1.25 ! 1.00
-         case (3,13)
-            !----- Mid-successional. ------------------------------------------------------!
-            leaf_turnover_rate(ipft) = 0.60 ! 0.50
-         case (4,14)
-            !----- Mid-successional. ------------------------------------------------------!
-            leaf_turnover_rate(ipft) = 0.25 ! onethird
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Forgotten PFTs... ------------------------------------------------------!
-            leaf_turnover_rate(ipft) = 0.50
-            !------------------------------------------------------------------------------!
-         end select
+         !---------------------------------------------------------------------------------!
+         !  MLO - Updated tropical parameters based on empirical models relating leaf      !
+         !        traits from GLOPNET (W04) with wood density from (C09).  Because the     !
+         !        idea is to account for variation on both axes, all equations were        !
+         !        developed using standardised major axis (SMA) models - R package smatr.  !
+         !        Except for wood density, all variables were log-transformed.             !
+         !                                                                                 !
+         !  References                                                                     !
+         !                                                                                 !
+         !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics   !
+         !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403      !
+         !     (W04).                                                                      !
+         !                                                                                 !
+         !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.  !
+         !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,    !
+         !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                       !
+         !---------------------------------------------------------------------------------!
+         leaf_turnover_rate(ipft) = exp(2.57332880-4.38819777*rho(ipft))
          !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
@@ -2419,20 +2366,14 @@ subroutine init_pft_resp_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Following Moorcroft et al. (2001), we use the same shape for both leaf and root   !
-   ! respiration.                                                                          !
+   !     Initialise root respiration terms with undefined, and attribute default values    !
+   ! only in case they are not defined through XML (check init_derived_params_after_xml).  !
    !---------------------------------------------------------------------------------------!
-   !----- Temperature [degC] below which root metabolic activity rapidly declines. --------!
-   rrf_low_temp(:)  = rd_low_temp(:)
-   !----- Temperature [degC] above which root metabolic activity rapidly declines. --------!
-   rrf_high_temp(:) = rd_high_temp(:)
-   !----- Decay factor for the exponential correction. ------------------------------------!
-   rrf_decay_e(:)   = rd_decay_e(:)
-   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
-   rrf_hor(:)       = rd_hor(:)
-   !----- Base (Q10 term) for respiration in Collatz equation . ---------------------------!
-   rrf_q10(:)       = rd_q10(:)
-   !---------------------------------------------------------------------------------------!
+   rrf_low_temp(:)  = undef_real
+   rrf_high_temp(:) = undef_real
+   rrf_decay_e(:)   = undef_real
+   rrf_hor(:)       = undef_real
+   rrf_q10(:)       = undef_real
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2941,10 +2882,6 @@ subroutine init_pft_alloc_params()
    !     Specific leaf area [m² leaf / kg C].   For tropical PFTs, this is a turnover rate !
    ! defined by the slope, intercept and scale.                                            !
    !---------------------------------------------------------------------------------------!
-   !----- Old parameters. -----------------------------------------------------------------!
-   ! sla_scale =  1.0000
-   ! sla_inter =  1.6923
-   ! sla_slope = -0.3305
    !----- New parameters. -----------------------------------------------------------------!
    sla_scale =  0.1 * C2B
    sla_inter =  2.4
@@ -2953,29 +2890,81 @@ subroutine init_pft_alloc_params()
 
    !---------------------------------------------------------------------------------------!
    !  KIM - new tropical parameters.                                                       !
-   !  MLO - updated tropical parameters based on SMA using leaf turnover and wood density. !
-   !        Data were derived from GLOPNET:                                                !
-   !        Wright, I. J., et al.  (2004). The worldwide leaf economics spectrum. Nature,  !
-   !           428(6985), 821-827, doi:10.1038/nature02403.                                !
+   !                                                                                       !
+   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
+   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
+   !        account for variation on both axes, all equations were developed using         !
+   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
+   !        density, all variables were log-transformed.                                   !
+   !                                                                                       !
+   !  References                                                                           !
+   !                                                                                       !
+   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
+   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
+   !                                                                                       !
+   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
+   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
+   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
    !---------------------------------------------------------------------------------------!
    !SLA(i) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(i))) * sla_scale
-   SLA( 1) = 30.0
-   SLA( 2) = 23.0
-   SLA( 3) = 16.0
-   SLA( 4) =  9.0
-   SLA( 5) = 22.0
-   SLA( 6) =  6.0
-   SLA( 7) =  9.0
-   SLA( 8) = 10.0
-   SLA( 9) = 30.0
-   SLA(10) = 24.2
-   SLA(11) = 60.0
-   SLA(12) = SLA(2)
-   SLA(13) = SLA(3)
-   SLA(14) = SLA(4)
-   SLA(15) = 10.0
-   SLA(16) = 30.0
-   SLA(17) = 10.0
+   do ipft=1,n_pft
+      if (is_tropical(ipft)) then
+         if (is_grass(ipft)) then
+            !----- Tropical grasses. ------------------------------------------------------!
+            SLA(ipft) = 30.
+            !------------------------------------------------------------------------------!
+         elseif (is_conifer(ipft)) then
+            !----- Sub-tropical conifers. -------------------------------------------------!
+            SLA(ipft) = 10.
+            !------------------------------------------------------------------------------!
+         else
+            !----- Tropical trees. --------------------------------------------------------!
+            SLA(ipft) = exp(4.44824590-2.50747710*rho(ipft))
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Temperate trees, each PFT must be initialised separately.                    !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (5)
+            !----- Temperate C3 grass. ----------------------------------------------------!
+            SLA(ipft) = 22.0
+            !------------------------------------------------------------------------------!
+         case (6)
+            !----- Northern pines. --------------------------------------------------------!
+            SLA(ipft) = 6.0
+            !------------------------------------------------------------------------------!
+         case (7)
+            !----- Southern pines. --------------------------------------------------------!
+            SLA(ipft) = 9.0
+            !------------------------------------------------------------------------------!
+         case (8)
+            !----- Late conifers. ---------------------------------------------------------!
+            SLA(ipft) = 10.0
+            !------------------------------------------------------------------------------!
+         case (9)
+            !----- Early hardwood. --------------------------------------------------------!
+            SLA(ipft) = 30.0
+            !------------------------------------------------------------------------------!
+         case (10)
+            !----- Mid hardwood. ----------------------------------------------------------!
+            SLA(ipft) = 24.2
+            !------------------------------------------------------------------------------!
+         case (11)
+            !----- Late hardwood. ---------------------------------------------------------!
+            SLA(ipft) = 60.0 ! Does it make sense to be this high?
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Just in case. ----------------------------------------------------------!
+            SLA(ipft) = 15.0
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -3140,7 +3129,7 @@ subroutine init_pft_alloc_params()
       if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
          qrhob(ipft) = 0.49 / 0.61
       else
-         qrhob(ipft) = exp(0.27614783 - 0.8114117 * rho(ipft))
+         qrhob(ipft) = exp(0.6966550 - 1.602123 * rho(ipft))
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -3727,9 +3716,9 @@ subroutine init_pft_alloc_params()
             !    estimate the aboveground biomass of tropical trees. Glob. Change Biol.,   !
             !    20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.                        !
             !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.167172 * rho(ipft)
-            b2Bs_small(ipft) = 2.435521
-            b2Bs_large(ipft) = 2.1594874
+            b1Bs_small(ipft) = C2B * 0.1668894 * rho(ipft)
+            b2Bs_small(ipft) = 2.4391522
+            b2Bs_large(ipft) = 2.1378625
             b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
                              * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
             !------------------------------------------------------------------------------!
@@ -4265,8 +4254,8 @@ subroutine init_pft_leaf_params()
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
       if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-         wat_dry_ratio_wood(ipft) = exp(1.529155 - 3.108388 * rho(ipft))
-         wat_dry_ratio_bark(ipft) = exp(1.588317 - 2.382240 * rho(ipft))
+         wat_dry_ratio_wood(ipft) = exp(1.5018230 - 3.137476 * rho(ipft))
+         wat_dry_ratio_bark(ipft) = exp(1.9892840 - 3.174365 * rho(ipft))
       else
          wat_dry_ratio_wood(ipft) = 0.7
          wat_dry_ratio_bark(ipft) = 0.7
@@ -6242,13 +6231,16 @@ end subroutine overwrite_with_xml_config
 !                                                                                          !
 ! - Leaf turnover as a function of SLA (Joe's empirical relationship based on forest A     !
 !   may be different from Jane's, which was based on forest B).                            !
-! - Rd0 as a function of Vm0 (some photosynthesis models don't assume this)                !
 !                                                                                          !
 !                                                                                          !
 ! Examples of parameters that are initialised here only if not initialised in xml:         !
-! ---------------------------------------------                                            !
+! ---------------------------------------------------------------------------------        !
+!                                                                                          !
 ! - seed_rain, which must be greater than the minimum PFT size otherwise it will never     !
 !   occur.                                                                                 !
+! - Rd0, which may depend on dark_respiration_factor (aka gamma), or could be defined      !
+!   directly.  Eventually dark_respiration_factor should be phased out and Rd0 should be   !
+!   the only variable, but we keep the proportionality factor for legacy.                  !
 !                                                                                          !
 !                                                                                          !
 ! IMPORTANT.  Variables flagged as "intent(in)" must appear in XML, whereas variables      !
@@ -6258,86 +6250,118 @@ end subroutine overwrite_with_xml_config
 !    from ed_max_dims, so it is easy to track.                                             !
 !------------------------------------------------------------------------------------------!
 subroutine init_derived_params_after_xml()
-   use decomp_coms          , only : f_labile             ! ! intent(in)
-   use detailed_coms        , only : idetailed            ! ! intent(in)
-   use ed_misc_coms         , only : ibigleaf             ! ! intent(in)
-   use ed_max_dims          , only : n_pft                & ! intent(in)
-                                   , str_len              & ! intent(in)
-                                   , undef_real           ! ! intent(in)
-   use consts_coms          , only : onesixth             & ! intent(in)
-                                   , twothirds            & ! intent(in)
-                                   , cliq                 & ! intent(in)
-                                   , almost_zero          ! ! intent(in)
-   use pft_coms             , only : init_density         & ! intent(in)
-                                   , c2n_leaf             & ! intent(in)
-                                   , c2n_stem             & ! intent(in)
-                                   , c2n_storage          & ! intent(in)
-                                   , b1Ht                 & ! intent(in)
-                                   , b2Ht                 & ! intent(in)
-                                   , hgt_min              & ! intent(in)
-                                   , hgt_ref              & ! intent(in)
-                                   , q                    & ! intent(in)
-                                   , qsw                  & ! intent(in)
-                                   , qbark                & ! intent(in)
-                                   , sla                  & ! intent(in)
-                                   , pft_name16           & ! intent(in)
-                                   , hgt_max              & ! intent(in)
-                                   , dbh_crit             & ! intent(in)
-                                   , dbh_bigleaf          & ! intent(in)
-                                   , f_bstorage_init      & ! intent(in)
-                                   , c_grn_leaf_dry       & ! intent(in)
-                                   , c_ngrn_wood_dry      & ! intent(in)
-                                   , c_ngrn_bark_dry      & ! intent(in)
-                                   , wat_dry_ratio_leaf   & ! intent(in)
-                                   , wat_dry_ratio_wood   & ! intent(in)
-                                   , wat_dry_ratio_bark   & ! intent(in)
-                                   , delta_c_wood         & ! intent(in)
-                                   , delta_c_bark         & ! intent(in)
-                                   , seed_rain            & ! intent(inout)
-                                   , one_plant_c          & ! intent(out)
-                                   , min_recruit_size     & ! intent(out)
-                                   , min_cohort_size      & ! intent(out)
-                                   , negligible_nplant    & ! intent(out)
-                                   , c2n_recruit          & ! intent(out)
-                                   , veg_hcap_min         & ! intent(out)
-                                   , cleaf                & ! intent(out)
-                                   , cwood                & ! intent(out)
-                                   , cbark                ! ! intent(out)
-   use phenology_coms       , only : elongf_min           & ! intent(in)
-                                   , elongf_flush         ! ! intent(in)
-   use fusion_fission_coms  , only : ff_nhgt              & ! intent(in)
-                                   , hgt_class            ! ! intent(out)
-   use allometry            , only : h2dbh                & ! function
-                                   , dbh2h                & ! function
-                                   , size2bl              & ! function
-                                   , dbh2bd               ! ! function
-   use ed_therm_lib         , only : calc_veg_hcap        ! ! function
-   use canopy_radiation_coms, only : ihrzrad              & ! intent(in)
-                                   , cci_hmax             & ! intent(in)
-                                   , leaf_trans_vis       & ! intent(in)
-                                   , leaf_reflect_vis     & ! intent(in)
-                                   , wood_trans_vis       & ! intent(in)
-                                   , wood_reflect_vis     & ! intent(in)
-                                   , leaf_trans_nir       & ! intent(in)
-                                   , leaf_reflect_nir     & ! intent(in)
-                                   , wood_trans_nir       & ! intent(in)
-                                   , wood_reflect_nir     & ! intent(in)
-                                   , leaf_scatter_vis     & ! intent(out)
-                                   , leaf_backscatter_vis & ! intent(out)
-                                   , wood_scatter_vis     & ! intent(out)
-                                   , wood_backscatter_vis & ! intent(out)
-                                   , leaf_scatter_nir     & ! intent(out)
-                                   , leaf_backscatter_nir & ! intent(out)
-                                   , wood_scatter_nir     & ! intent(out)
-                                   , wood_backscatter_nir & ! intent(out)
-                                   , orient_factor        & ! intent(out)
-                                   , phi1                 & ! intent(out)
-                                   , phi2                 & ! intent(out)
-                                   , mu_bar               ! ! intent(out)
+   use decomp_coms          , only : f_labile                ! ! intent(in)
+   use detailed_coms        , only : idetailed               ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf                ! ! intent(in)
+   use ed_max_dims          , only : n_pft                   & ! intent(in)
+                                   , str_len                 & ! intent(in)
+                                   , undef_real              ! ! intent(in)
+   use consts_coms          , only : onesixth                & ! intent(in)
+                                   , twothirds               & ! intent(in)
+                                   , cliq                    & ! intent(in)
+                                   , yr_sec                  & ! intent(in)
+                                   , almost_zero             ! ! intent(in)
+   use physiology_coms      , only : iphysiol                ! ! intent(in)
+   use pft_coms             , only : is_tropical             & ! intent(in)
+                                   , is_grass                & ! intent(in)
+                                   , init_density            & ! intent(in)
+                                   , c2n_leaf                & ! intent(in)
+                                   , c2n_stem                & ! intent(in)
+                                   , c2n_storage             & ! intent(in)
+                                   , b1Ht                    & ! intent(in)
+                                   , b2Ht                    & ! intent(in)
+                                   , hgt_min                 & ! intent(in)
+                                   , hgt_ref                 & ! intent(in)
+                                   , q                       & ! intent(in)
+                                   , qsw                     & ! intent(in)
+                                   , qbark                   & ! intent(in)
+                                   , sla                     & ! intent(in)
+                                   , pft_name16              & ! intent(in)
+                                   , hgt_max                 & ! intent(in)
+                                   , dbh_crit                & ! intent(in)
+                                   , dbh_bigleaf             & ! intent(in)
+                                   , f_bstorage_init         & ! intent(in)
+                                   , c_grn_leaf_dry          & ! intent(in)
+                                   , c_ngrn_wood_dry         & ! intent(in)
+                                   , c_ngrn_bark_dry         & ! intent(in)
+                                   , wat_dry_ratio_leaf      & ! intent(in)
+                                   , wat_dry_ratio_wood      & ! intent(in)
+                                   , wat_dry_ratio_bark      & ! intent(in)
+                                   , delta_c_wood            & ! intent(in)
+                                   , delta_c_bark            & ! intent(in)
+                                   , D0                      & ! intent(in)
+                                   , Vm_low_temp             & ! intent(in)
+                                   , Vm_high_temp            & ! intent(in)
+                                   , Vm_decay_e              & ! intent(in)
+                                   , Vm0                     & ! intent(in)
+                                   , Vm_hor                  & ! intent(in)
+                                   , Vm_q10                  & ! intent(in)
+                                   , stomatal_slope          & ! intent(in)
+                                   , leaf_width              & ! intent(in)
+                                   , cuticular_cond          & ! intent(in)
+                                   , quantum_efficiency      & ! intent(in)
+                                   , photosyn_pathway        & ! intent(in)
+                                   , dark_respiration_factor & ! intent(in)
+                                   , water_conductance       & ! intent(in)
+                                   , seed_rain               & ! intent(inout)
+                                   , Rd_low_temp             & ! intent(inout)
+                                   , Rd_high_temp            & ! intent(inout)
+                                   , Rd_decay_e              & ! intent(inout)
+                                   , Rd0                     & ! intent(inout)
+                                   , Rd_hor                  & ! intent(inout)
+                                   , Rd_q10                  & ! intent(inout)
+                                   , rrf_low_temp            & ! intent(inout)
+                                   , rrf_high_temp           & ! intent(inout)
+                                   , rrf_decay_e             & ! intent(inout)
+                                   , rrf_hor                 & ! intent(inout)
+                                   , rrf_q10                 & ! intent(inout)
+                                   , one_plant_c             & ! intent(out)
+                                   , min_recruit_size        & ! intent(out)
+                                   , min_cohort_size         & ! intent(out)
+                                   , negligible_nplant       & ! intent(out)
+                                   , c2n_recruit             & ! intent(out)
+                                   , veg_hcap_min            & ! intent(out)
+                                   , cleaf                   & ! intent(out)
+                                   , cwood                   & ! intent(out)
+                                   , cbark                   ! ! intent(out)
+   use phenology_coms       , only : elongf_min              & ! intent(in)
+                                   , elongf_flush            ! ! intent(in)
+   use fusion_fission_coms  , only : ff_nhgt                 & ! intent(in)
+                                   , hgt_class               ! ! intent(out)
+   use allometry            , only : h2dbh                   & ! function
+                                   , dbh2h                   & ! function
+                                   , size2bl                 & ! function
+                                   , dbh2bd                  ! ! function
+   use ed_therm_lib         , only : calc_veg_hcap           ! ! function
+   use canopy_radiation_coms, only : ihrzrad                 & ! intent(in)
+                                   , cci_hmax                & ! intent(in)
+                                   , leaf_trans_vis          & ! intent(in)
+                                   , leaf_reflect_vis        & ! intent(in)
+                                   , wood_trans_vis          & ! intent(in)
+                                   , wood_reflect_vis        & ! intent(in)
+                                   , leaf_trans_nir          & ! intent(in)
+                                   , leaf_reflect_nir        & ! intent(in)
+                                   , wood_trans_nir          & ! intent(in)
+                                   , wood_reflect_nir        & ! intent(in)
+                                   , leaf_scatter_vis        & ! intent(out)
+                                   , leaf_backscatter_vis    & ! intent(out)
+                                   , wood_scatter_vis        & ! intent(out)
+                                   , wood_backscatter_vis    & ! intent(out)
+                                   , leaf_scatter_nir        & ! intent(out)
+                                   , leaf_backscatter_nir    & ! intent(out)
+                                   , wood_scatter_nir        & ! intent(out)
+                                   , wood_backscatter_nir    & ! intent(out)
+                                   , orient_factor           & ! intent(out)
+                                   , phi1                    & ! intent(out)
+                                   , phi2                    & ! intent(out)
+                                   , mu_bar                  ! ! intent(out)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
+   character(len=2)                  :: char_pathway
    integer                           :: ipft
    integer                           :: ihgt
+   integer                           :: n
+   logical                           :: print_zero_table
    real                              :: dbh
    real                              :: huge_dbh
    real                              :: huge_height
@@ -6367,8 +6391,10 @@ subroutine init_derived_params_after_xml()
    real                              :: lai_min
    real                              :: nplant_res_min
    real                              :: max_hgt_max
-   logical                           :: print_zero_table
-   character(len=str_len), parameter :: zero_table_fn    = 'pft_sizes.txt'
+   real                              :: vmtref_pft
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=str_len), parameter :: zero_table_fn = 'pft_sizes.txt'
+   character(len=str_len), parameter :: photo_file    = 'photo_param.txt'
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -6662,6 +6688,167 @@ subroutine init_derived_params_after_xml()
       mu_bar(:) = ( 1.d0 - phi1(:) * log(1.d0 + phi2(:) / phi1(:)) / phi2(:) ) / phi2(:)
    end where
    !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       By default we assume most Rd parameters to be the same as the Vm ones, but they !
+   ! do not need to be the same.                                                           !
+   !---------------------------------------------------------------------------------------!
+   where (Rd_low_temp (:) == undef_real)
+      Rd_low_temp (:) = Vm_low_temp (:)
+   end where
+   where (Rd_high_temp(:) == undef_real)
+      Rd_high_temp(:) = Vm_high_temp(:)
+   end where
+   where (Rd_decay_e (:) == undef_real)
+      Rd_decay_e  (:) = Vm_decay_e  (:)
+   end where
+   where (Rd_hor      (:) == undef_real)
+      Rd_hor      (:) = Vm_hor      (:)
+   end where
+   where (Rd_q10      (:) == undef_real)
+      Rd_q10      (:) = Vm_q10      (:)
+   end where
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Respiration terms.  We only fill them in case they have not been initialised       !
+   ! through XML.  In this case, we define Rd0 as gamma * Vm0.  We also must check whether !
+   ! this simulation used Foley-based (Arrhenius) or Collatz-based (Q10) temperature       !
+   ! dependence functions, because the respiration/Vm ratio is constant in the former but  !
+   ! not necessarily in the latter.                                                        !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      !------------------------------------------------------------------------------------!
+      !     The ratio depends on the method: Collatz may have different q10 factors, and   !
+      ! in ED the reference temperature is 15 degC, not 25 degC.  The q10 numbers make     !
+      ! sure that the comparison is carried out at 25 degC, but the reference temperature  !
+      ! in ED-2 is set at 15 degC.                                                         !
+      !------------------------------------------------------------------------------------!
+      select case (iphysiol)
+      case (0,1)
+         vmtref_pft = Vm0(ipft)
+      case (2,3)
+         vmtref_pft = Vm0(ipft) * vm_q10(ipft) / rd_q10(ipft)
+      end select
+      !------------------------------------------------------------------------------------!
+
+      !------ Define reference dark respiration rate. -------------------------------------!
+      if (Rd0(ipft) == undef_real) Rd0(ipft) = dark_respiration_factor(ipft) * vmtref_pft
+      !------------------------------------------------------------------------------------!
+
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     In case root respiration parameters have not been initialised through XML, we     !
+   ! follow Moorcroft et al. (2001) and assign the same numbers used for leaf respiration. !
+   !---------------------------------------------------------------------------------------!
+   !----- Temperature [degC] below which root metabolic activity rapidly declines. --------!
+   where (rrf_low_temp(:)  == undef_real)
+      rrf_low_temp(:)  = rd_low_temp(:)
+   end where
+   !----- Temperature [degC] above which root metabolic activity rapidly declines. --------!
+   where (rrf_high_temp(:) == undef_real)
+      rrf_high_temp(:) = rd_high_temp(:)
+   end where
+   !----- Decay factor for the exponential correction. ------------------------------------!
+   where (rrf_decay_e(:)   == undef_real)
+      rrf_decay_e(:)   = rd_decay_e(:)
+   end where
+   !----- Exponent for Rr in the Arrhenius equation [K]. ----------------------------------!
+   where (rrf_hor(:)       == undef_real)
+      rrf_hor(:)       = rd_hor(:)
+   end where
+   !----- Base (Q10 term) for respiration in Collatz equation . ---------------------------!
+   where (rrf_q10(:)       == undef_real)
+      rrf_q10(:)       = rd_q10(:)
+   end where
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Decide which variables to write in the output based on iphysiol.                   !
+   !---------------------------------------------------------------------------------------!
+   if (print_zero_table) then
+      open (unit=18,file=trim(photo_file),status='replace',action='write')
+      select case (iphysiol)
+      case (0,1)
+         !---------------------------------------------------------------------------------!
+         !     Arrhenius-based model, print Arrhenius reference and skip Q10.              !
+         !---------------------------------------------------------------------------------!
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'      &
+                                        ,'     Pathway','         SLA','          D0'      &
+                                        ,'         Vm0','         Rd0','       gamma'      &
+                                        ,'    Vm_Tcold','     Vm_Thot','    Vm_decay'      &
+                                        ,'      Vm_hor','    Rd_Tcold','     Rd_Thot'      &
+                                        ,'    Rd_decay','      Rd_hor','    st_slope'      &
+                                        ,'         gs0','     q_yield','      KWroot'      &
+                                        ,'  leaf_width'
+
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         do ipft=1,n_pft
+            write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
+
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,18(1x,es12.5))')                   &
+                           ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
+                          ,D0(ipft),Vm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)      &
+                          ,Vm_low_temp(ipft),Vm_high_temp(ipft),Vm_decay_e(ipft)           &
+                          ,vm_hor(ipft),Rd_low_temp(ipft),Rd_high_temp(ipft)               &
+                          ,Rd_decay_e(ipft),Rd_hor(ipft),stomatal_slope(ipft)              &
+                          ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
+                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
+         end do
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         !---------------------------------------------------------------------------------!
+      case (2,3)
+         !---------------------------------------------------------------------------------!
+         !     Collatz-based model, print Q10 instead of Arrhenius reference.              !
+         !---------------------------------------------------------------------------------!
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         write(unit=18,fmt='(22(1x,a))') '         PFT','    Tropical','       Grass'      &
+                                        ,'     Pathway','         SLA','          D0'      &
+                                        ,'         Vm0','         Rd0','       gamma'      &
+                                        ,'    Vm_Tcold','     Vm_Thot','    Vm_decay'      &
+                                        ,'      Vm_Q10','    Rd_Tcold','     Rd_Thot'      &
+                                        ,'    Rd_decay','      Rd_Q10','    st_slope'      &
+                                        ,'         gs0','     q_yield','      KWroot'      &
+                                        ,'  leaf_width'
+
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         do ipft=1,n_pft
+            write(char_pathway,fmt='(a,i1)') 'C',photosyn_pathway(ipft)
+
+            write (unit=18,fmt='(8x,i5,2(12x,l1),11x,a2,18(1x,es12.5))')                   &
+                           ipft,is_tropical(ipft),is_grass(ipft),char_pathway,SLA(ipft)    &
+                          ,D0(ipft),Vm0(ipft),Rd0(ipft),dark_respiration_factor(ipft)      &
+                          ,Vm_low_temp(ipft),Vm_high_temp(ipft),Vm_decay_e(ipft)           &
+                          ,vm_q10(ipft),Rd_low_temp(ipft),Rd_high_temp(ipft)               &
+                          ,Rd_decay_e(ipft),Rd_q10(ipft),stomatal_slope(ipft)              &
+                          ,cuticular_cond(ipft),quantum_efficiency(ipft)                   &
+                          ,water_conductance(ipft)*yr_sec,leaf_width(ipft)
+         end do
+         write(unit=18,fmt='(286a)') ('-',n=1,286)
+         !---------------------------------------------------------------------------------!
+      end select
+      close(unit=18,status='keep')
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine init_derived_params_after_xml
