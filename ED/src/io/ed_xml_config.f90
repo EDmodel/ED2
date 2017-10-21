@@ -396,8 +396,8 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) cbr_severe_stress(myPFT) = real(rval)
            call getConfigREAL  ('seedling_mortality','pft',i,rval,texist)
            if(texist) seedling_mortality(myPFT) = real(rval)
-
-           call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
+	   
+	   call getConfigREAL  ('treefall_gt','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
            call getConfigREAL  ('treefall_s_gtht','pft',i,rval,texist)
            if(texist) treefall_s_gtht(myPFT) = real(rval)
@@ -639,6 +639,14 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) l2n_stem = real(rval)
         call getConfigREAL  ('C2B','pftconst',i,rval,texist)
         if(texist) C2B = real(rval)
+
+
+     ! liana-specific parameters
+        call getConfigREAL  ('h_edge','pftconst',i,rval,texist)
+        if(texist) h_edge = real(rval)
+        call getConfigREAL  ('liana_dbh_crit','pftconst',i,rval,texist)
+        if(texist) liana_dbh_crit = real(rval)
+
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo
@@ -933,8 +941,40 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('min_recruit_size','fusefiss',i,rval,texist)
         if(texist) min_recruit_size = real(rval)
 
+        call getConfigINT  ('ff_nhgt','fusefiss',i,ival,texist)
+        if(texist) ff_nhgt = ival
 
+        !! Old patch and cohort fusion parameters (slated to be deleted)
+        call getConfigREAL  ('dark_cumlai_min','fusefiss',i,rval,texist)
+        if(texist) dark_cumlai_min = real(rval)
+        call getConfigREAL  ('dark_cumlai_max','fusefiss',i,rval,texist)
+        if(texist) dark_cumlai_max = real(rval)
+        call getConfigREAL  ('sunny_cumlai_min','fusefiss',i,rval,texist)
+        if(texist) sunny_cumlai_min = real(rval)
+        call getConfigREAL  ('sunny_cumlai_max','fusefiss',i,rval,texist)
+        if(texist) sunny_cumlai_max = real(rval)
+        call getConfigREAL  ('light_toler_min','fusefiss',i,rval,texist)
+        if(texist) light_toler_min = real(rval)
+        call getConfigREAL  ('light_toler_max','fusefiss',i,rval,texist)
+        if(texist) light_toler_max = real(rval)
+        call getConfigREAL  ('dark_cumlai_mult','fusefiss',i,rval,texist)
+        if(texist) dark_cumlai_mult = real(rval)
+        call getConfigREAL  ('sunny_cumlai_mult','fusefiss',i,rval,texist)
+        if(texist) sunny_cumlai_mult = real(rval)
+        call getConfigREAL  ('light_toler_mult','fusefiss',i,rval,texist)
+        if(texist) light_toler_mult = real(rval)
+        call getConfigREAL  ('fusetol','fusefiss',i,rval,texist)
+        if(texist) fusetol = real(rval)
+        call getConfigREAL  ('fusetol_h','fusefiss',i,rval,texist)
+        if(texist) fusetol_h = real(rval)
+        call getConfigREAL  ('lai_fuse_tol','fusefiss',i,rval,texist)
+        if(texist) lai_fuse_tol = real(rval)
+        call getConfigREAL  ('coh_tolerance_max','fusefiss',i,rval,texist)
+        if(texist) coh_tolerance_max = real(rval)
+        call getConfigINT  ('fuse_relax','fusefiss',i,ival,texist)
+        if(texist) fuse_relax = ival == 1
 
+        !!! New/remaining patch and cohort fusion parameters
         call getConfigINT  ('niter_patfus','fusefiss',i,ival,texist)
         if(texist) niter_patfus = ival
         call getConfigREAL  ('pat_light_ext','fusefiss',i,rval,texist)
@@ -951,9 +991,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) pat_diff_age_tol = real(rval)
         call getConfigREAL  ('pat_min_area_remain','fusefiss',i,rval,texist)
         if(texist) pat_min_area_remain = real(rval)
-
-        call getConfigINT  ('niter_cohfus','fusefiss',i,ival,texist)
-        if(texist) niter_cohfus = ival
         call getConfigREAL  ('coh_size_tol_min','fusefiss',i,rval,texist)
         if(texist) coh_size_tol_min = real(rval)
         call getConfigREAL  ('coh_size_tol_max','fusefiss',i,rval,texist)
@@ -961,10 +998,8 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('coh_size_tol_mult','fusefiss',i,rval,texist)
         if(texist) coh_size_tol_mult = real(rval)
 
-       call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
+        call getConfigREAL  ('lai_tol','fusefiss',i,rval,texist)
         if(texist) lai_tol = real(rval)
-        call getConfigREAL  ('ff_nhgt','fusefiss',i,rval,texist)
-        if(texist) ff_nhgt = real(rval)
 !        call getConfigREAL  ('ntol','fusefiss',i,rval,texist)
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
@@ -1329,12 +1364,10 @@ subroutine write_ed_xml_config
 
   implicit none
 !  integer :: ival
-  integer(4) :: i,npft,ntag,myPFT,nlu,myLU,len,ival
+  integer(4) :: i,ival
   character(512) :: xfilout 
 !  integer :: i
-  real(8) :: rval
 !  character*(*) :: filename
-  character(len=str_len)  :: cval
   integer             :: ng
 
   write(xfilout,"(a)") trim(sfilout)//".xml"
@@ -1499,8 +1532,8 @@ subroutine write_ed_xml_config
         call putConfigREAL("skid_s_gtharv"   ,skid_s_gtharv   (i))
         call putConfigREAL("skid_s_ltharv"   ,skid_s_ltharv   (i))
 
-        call putConfigREAL("fire_s_gt",fire_s_gtht(i))
-        call putConfigREAL("fire_s_lt",fire_s_ltht(i))
+        call putConfigREAL("fire_s_gtht",fire_s_gtht(i))
+        call putConfigREAL("fire_s_ltht",fire_s_ltht(i))
 
         call putConfigREAL("plant_min_temp",plant_min_temp(i))
 
@@ -1602,6 +1635,8 @@ subroutine write_ed_xml_config
      call putConfigREAL("c2n_structural",c2n_structural)
      call putConfigREAL("l2n_stem",l2n_stem)
      call putConfigREAL("C2B",C2B)
+     call putConfigREAL("h_edge",h_edge)
+     call putConfigREAL("liana_dbh_crit",liana_dbh_crit)
   call libxml2f90_ll_closetag("pftconst")
 
   !************   HYDROLOGY  *****************
@@ -1701,7 +1736,29 @@ subroutine write_ed_xml_config
   !************   FUSION/FISSION  *****************
   call libxml2f90_ll_opentag("fusefiss")
      call putConfigINT  ("ff_nhgt"            ,ff_nhgt            )
+     !----- Old patch/cohort fusion parameters
+     call putConfigREAL ("dark_cumlai_min"    ,dark_cumlai_min    )
+     call putConfigREAL ("dark_cumlai_max"    ,dark_cumlai_max    )
+     call putConfigREAL ("sunny_cumlai_min"   ,sunny_cumlai_min   )
+     call putConfigREAL ("sunny_cumlai_max"   ,sunny_cumlai_max   )
+     call putConfigREAL ("light_toler_min"    ,light_toler_min    )
+     call putConfigREAL ("light_toler_max"    ,light_toler_max    )
+     call putConfigREAL ("sunny_cumlai_mult"  ,sunny_cumlai_mult  )
+     call putConfigREAL ("dark_cumlai_mult"   ,dark_cumlai_mult   )
+     call putConfigREAL ("light_toler_mult"   ,light_toler_mult   )
+     call putConfigREAL ("fusetol"            ,fusetol            )
+     call putConfigREAL ("fusetol_h"          ,fusetol_h          )
+     call putConfigREAL ("lai_fuse_tol"       ,lai_fuse_tol       )
+     call putConfigREAL ("coh_tolerance_max"  ,coh_tolerance_max  )
+     if (fuse_relax) then
+        ival = 1
+     else
+        ival = 0
+     end if
+     call putConfigINT  ("fuse_relax"         ,ival               )
+     !------ New patch/cohort fusion parameters
      call putConfigINT  ("niter_patfus"       ,niter_patfus       )
+     call putConfigREAL ("lai_fuse_tol"       ,lai_fuse_tol       )
      call putConfigREAL ("pat_light_tol_min"  ,pat_light_tol_min  )
      call putConfigREAL ("pat_light_tol_max"  ,pat_light_tol_max  )
      call putConfigREAL ("pat_light_tol_mult" ,pat_light_tol_mult )

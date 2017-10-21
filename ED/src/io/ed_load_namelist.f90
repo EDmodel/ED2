@@ -263,7 +263,6 @@ subroutine copy_nl(copy_type)
                                    , tprandtl                  & ! intent(out)
                                    , ribmax                    & ! intent(out)
                                    , leaf_maxwhc               ! ! intent(out)
-   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_layer_coms    , only : crown_mod                 ! ! intent(out)
    use canopy_radiation_coms, only : icanrad                   & ! intent(out)
                                    , ihrzrad                   & ! intent(out)
@@ -289,7 +288,7 @@ subroutine copy_nl(copy_type)
                                    , day_sec                   & ! intent(in)
                                    , hr_sec                    & ! intent(in)
                                    , min_sec                   ! ! intent(in)
-
+   use fusion_fission_coms  , only : ifusion                   ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=*), intent(in) :: copy_type
@@ -518,12 +517,12 @@ subroutine copy_nl(copy_type)
       iedcnfgf                  = nl%iedcnfgf
       event_file                = nl%event_file
       phenpath                  = nl%phenpath
+      ifusion                   = nl%ifusion
       maxsite                   = nl%maxsite
       maxpatch                  = nl%maxpatch
       maxcohort                 = nl%maxcohort
       min_site_area             = nl%min_site_area
       min_patch_area            = nl%min_patch_area
-      ioptinpt                  = nl%ioptinpt
       zrough                    = nl%zrough
 
       dt_census                 = nl%dt_census

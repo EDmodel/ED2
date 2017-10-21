@@ -444,9 +444,7 @@ subroutine ed_opspec_times
                            , isoutput         & ! intent(in)
                            , idoutput         & ! intent(in)
                            , imoutput         & ! intent(in)
-                           , iyoutput         & ! intent(in)
                            , iqoutput         & ! intent(in)
-                           , itoutput         & ! intent(in)
                            , nrec_fast        & ! intent(in)
                            , nrec_state       & ! intent(in)
                            , outfast          & ! intent(in)
@@ -456,7 +454,6 @@ subroutine ed_opspec_times
    use consts_coms  , only : day_sec          & ! intent(in)
                            , hr_sec           ! ! intent(in)
    use grid_coms    , only : timmax           ! ! intent(in)
-   use ed_misc_coms , only : fast_diagnostics ! ! intent(in)
    use ed_max_dims  , only : str_len          ! ! intent(in)
 
    implicit none
@@ -1289,11 +1286,12 @@ subroutine ed_opspec_misc
                                     , min_recruit_dbh              & ! intent(in)
                                     , idetailed                    & ! intent(in)
                                     , patch_keep                   ! ! intent(in)
-
-   use met_driver_coms       , only : imetrad                      ! ! intent(in)
+   use fusion_fission_coms   , only : ifusion                      ! ! intent(in)
 #if defined(COUPLED)
+   use met_driver_coms       , only : imetrad                      ! ! intent(in)
 #else
-   use met_driver_coms       , only : ishuffle                     & ! intent(in)
+   use met_driver_coms       , only : imetrad                      & ! intent(in)
+                                    , ishuffle                     & ! intent(in)
                                     , imetavg                      ! ! intent(in)
 #endif
 
@@ -1313,6 +1311,11 @@ subroutine ed_opspec_misc
    !----- IFATERR will count the number of bad set ups. -----------------------------------!
    ifaterr=0
 
+
+   if (ifusion < 0 .and. ifusion > 1) then
+      write (reason,fmt='(a,1x,i5,a)')                                                     &
+         'Invalid IFUSION, it must be 0 or 1.  Yours is set to ',ifusion,'...'
+   end if
 
    if (maxsite < 1 .and. maxsite > ed_nstyp) then
       write (reason,fmt='(a,1x,i5,a,2x,a,1x,i5,a)')                                        &

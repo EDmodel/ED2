@@ -135,12 +135,10 @@ subroutine warning(reason,subr,file)
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine fail_whale(reason,location)
+subroutine fail_whale()
 
    implicit none
 
-   character(len=*), intent(in) :: reason
-   character(len=*), intent(in) :: location
 
    write(unit=*,fmt='(a)') ''
    write(unit=*,fmt='(a)') ''

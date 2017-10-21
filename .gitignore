@@ -68,7 +68,7 @@ ED/build/bin/Make.depend.1.old
 abarca
 bbarca
 ED/dbgbuild
-BRAMS/dbgbuild
+#BRAMS/dbgbuild
 edbbarca
 auxedbbarca
 regional
@@ -132,7 +132,7 @@ BRAMS/i10dbg/*.F90
 BRAMS/i10dbg/*.c
 BRAMS/i10dbg/edbrams-opt
 BRAMS/i12dbg/edbrams-opt
-BRAMS/build
+#BRAMS/build
 BRAMS/build/edbrams-srf
 BRAMS/i10dbg/bin/include.mk.opt
 BRAMS/i12build
@@ -144,4 +144,19 @@ ED/build/rad_param.data
 ED/slurmdbg
 R-utils/read.q.temporary.r
 ED/m61build
-
+#Manfredo ignores
+.*
+!.gitignore
+!.travis.yml
+!.gitattributes
+ED/build/csspss/*
+ED/build/analy/*
+ED/build/histo/*
+ED/build/OGE2/*
+ED/build/FAO/*
+ED/build/Paracou/*
+ED/build/post_process/*
+ED/build/thermal_sums/*
+ED/build/ED2IN*
+ED/build/allom_param.txt
+ED/build/pft_sizes.txt

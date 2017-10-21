@@ -80,13 +80,8 @@ subroutine leaf_database(ofn,nsite,nlandsea,iaction,lat,lon,classout,pctout)
    integer                                                 :: j2
    integer                                                 :: ic
    integer                                                 :: jc
-   integer                                                 :: nt
    integer                                                 :: ilandsea
    integer                                                 :: dq
-   integer                                                 :: stext
-   integer                                                 :: best
-   real                                                    :: rio_full
-   real                                                    :: rjo_full
    integer                                                 :: ed_nctyp
    !------ External functions. ------------------------------------------------------------!
    integer, external                                       :: find_rank

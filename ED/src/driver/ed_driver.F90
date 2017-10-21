@@ -5,28 +5,33 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
-   use grid_coms            , only : ngrids              & ! intent(in)
-                                   , time                & ! intent(inout)
-                                   , timmax              ! ! intent(inout)
-   use ed_state_vars        , only : allocate_edglobals  & ! sub-routine
-                                   , filltab_alltypes    & ! sub-routine
-                                   , edgrid_g            ! ! intent(inout)
-   use ed_misc_coms         , only : iyeara              & ! intent(in)
-                                   , imontha             & ! intent(in)
-                                   , idatea              & ! intent(in)
-                                   , itimea              & ! intent(in)
-                                   , runtype             ! ! intent(in)
-   use soil_coms            , only : alloc_soilgrid      ! ! sub-routine
-   use ed_node_coms         , only : mynum               & ! intent(in)
-                                   , nnodetot            & ! intent(in)
-                                   , sendnum             & ! intent(inout)
-                                   , recvnum             ! ! intent(in)
-   use detailed_coms        , only : idetailed           & ! intent(in)
-                                   , patch_keep          ! ! intent(in)
-   use phenology_aux        , only : first_phenology     ! ! subroutine
-   use hrzshade_utils       , only : init_cci_variables  ! ! subroutine
-   use canopy_radiation_coms, only : ihrzrad             ! ! intent(in)
-   use random_utils         , only : init_random_seed    ! ! subroutine
+   use update_derived_utils , only : update_derived_props       ! ! subroutine
+   use lsm_hyd              , only : initHydrology              ! ! subroutine
+   use ed_met_driver        , only : init_met_drivers           & ! subroutine
+                                   , read_met_drivers_init      & ! subroutine
+                                   , update_met_drivers         ! ! subroutine
+   use ed_init_full_history , only : init_full_history_restart  ! ! subroutine
+   use ed_init              , only : set_polygon_coordinates    & ! subroutine
+                                   , sfcdata_ed                 & ! subroutine
+                                   , load_ecosystem_state       ! ! subroutine
+   use grid_coms            , only : ngrids                     & ! intent(in)
+                                   , time                       & ! intent(inout)
+                                   , timmax                     ! ! intent(inout)
+   use ed_state_vars        , only : allocate_edglobals         & ! sub-routine
+                                   , filltab_alltypes           & ! sub-routine
+                                   , edgrid_g                   ! ! intent(inout)
+   use ed_misc_coms         , only : runtype                    ! ! intent(in)
+   use soil_coms            , only : alloc_soilgrid             ! ! sub-routine
+   use ed_node_coms         , only : mynum                      & ! intent(in)
+                                   , nnodetot                   & ! intent(in)
+                                   , sendnum                    & ! intent(inout)
+                                   , recvnum                    ! ! intent(in)
+   use detailed_coms        , only : idetailed                  & ! intent(in)
+                                   , patch_keep                 ! ! intent(in)
+   use phenology_aux        , only : first_phenology            ! ! subroutine
+   use hrzshade_utils       , only : init_cci_variables         ! ! subroutine
+   use canopy_radiation_coms, only : ihrzrad                    ! ! intent(in)
+   use random_utils         , only : init_random_seed           ! ! subroutine
    implicit none
    !----- Included variables. -------------------------------------------------------------!
 #if defined(RAMS_MPI)
@@ -35,7 +40,6 @@ subroutine ed_driver()
    !----- Local variables. ----------------------------------------------------------------!
    character(len=12)           :: c0
    character(len=12)           :: c1
-   integer                     :: ierr
    integer                     :: ifm
    integer                     :: ping
    real                        :: t1
@@ -43,6 +47,10 @@ subroutine ed_driver()
    real                        :: w2
    real                        :: wtime_start
    logical                     :: patch_detailed
+   !----- Local variable (MPI only). ------------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                     :: ierr
+#endif
    !----- External functions. -------------------------------------------------------------!
    real             , external :: walltime    ! wall time
    !---------------------------------------------------------------------------------------!
@@ -115,6 +123,16 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise any variable that should be initialised after the xml parameters have !
+   ! been read.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_params_after_xml...'
+   call init_derived_params_after_xml()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      In case this simulation will use horizontal shading, initialise the landscape    !
    ! arrays.                                                                               !
    !---------------------------------------------------------------------------------------!
@@ -125,16 +143,6 @@ subroutine ed_driver()
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_cci_variables...'
       call init_cci_variables()
    end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Initialise any variable that should be initialised after the xml parameters have !
-   ! been read.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Init_derived_params_after_xml...'
-   call init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
 
 
@@ -235,7 +243,7 @@ subroutine ed_driver()
 
    call init_met_drivers()
    if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Read_Met_Drivers_Init...'
-   call read_met_drivers_init
+   call read_met_drivers_init()
 
 
 #if defined(RAMS_MPI)
@@ -552,8 +560,7 @@ subroutine exterminate_patches_except(keeppa)
                   write(unit=*,fmt='(a,1x,i6)') ' - NPATCHES = ',csite%npatches
                   write(unit=*,fmt='(a,1x,i6)') ' - KEEPPA   = ',keeppa
                   write(unit=*,fmt='(a)')       '-----------------------------------------'
-                  call fail_whale ('KEEPPA can''t be greater than NPATCHES'                &
-                                  ,'ed_driver.f90')
+                  call fail_whale ()
                   call fatal_error('KEEPPA can''t be greater than NPATCHES'                &
                                   ,'exterminate_patches_except','ed_driver.f90')
                end if

@@ -273,14 +273,12 @@ module ename_coms
       integer                                           :: patch_keep
 
       !----- Variables that control the sought number of patches and cohorts. -------------!
+      integer                                           :: ifusion
       integer                                           :: maxsite
       integer                                           :: maxpatch
       integer                                           :: maxcohort
       real                                              :: min_site_area
       real                                              :: min_patch_area
-
-      !----- Directory for optimizer inputs. ----------------------------------------------!
-      character(len=str_len)                            :: ioptinpt
 
       !----- Roughness length. ------------------------------------------------------------!
       real                                              :: zrough
@@ -557,13 +555,13 @@ module ename_coms
       enl%idetailed                 = undef_integer
       enl%patch_keep                = undef_integer
 
+      enl%ifusion                   = undef_integer
       enl%maxsite                   = undef_integer
       enl%maxpatch                  = undef_integer
       enl%maxcohort                 = undef_integer
       enl%min_site_area             = undef_real
       enl%min_patch_area            = undef_real
 
-      enl%ioptinpt                  = undef_path
       enl%zrough                    = undef_real
       enl%edres                     = undef_real 
 

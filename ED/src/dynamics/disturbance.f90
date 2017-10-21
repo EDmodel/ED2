@@ -13,7 +13,8 @@ module disturbance_utils
                               , deallocate_sitetype   & ! subroutine
                               , copy_sitetype_mask    & ! subroutine
                               , copy_sitetype         ! ! subroutine
-   use fuse_fiss_utils , only : fuse_cohorts          & ! subroutine
+   use fuse_fiss_utils , only : old_fuse_cohorts      & ! subroutine
+                              , new_fuse_cohorts      & ! subroutine
                               , terminate_cohorts     & ! subroutine
                               , split_cohorts         & ! subroutine
                               , fuse_2_patches        & ! subroutine
@@ -37,37 +38,40 @@ module disturbance_utils
    ! 3 - primary forest: natural disturbances (treefall or fire).                          !
    !---------------------------------------------------------------------------------------!
    subroutine apply_disturbances(cgrid)
-
-      use ed_state_vars      , only : edtype                    & ! structure
-                                    , polygontype               & ! structure
-                                    , sitetype                  & ! structure
-                                    , patchtype                 ! ! structure
-      use ed_misc_coms       , only : current_time              & ! intent(in)
-                                    , ibigleaf                  ! ! intent(in)
-      use disturb_coms       , only : min_patch_area            & ! intent(in)
-                                    , mature_harvest_age        & ! intent(in)
-                                    , plantation_year           & ! intent(in)
-                                    , plantation_rotation       & ! intent(in)
-                                    , time2canopy               & ! intent(in)
-                                    , treefall_disturbance_rate & ! intent(in)
-                                    , treefall_hite_threshold   & ! intent(in)
-                                    , min_oldgrowth             & ! intent(in)
-                                    , sl_skid_rel_area          ! ! intent(in)
-      use ed_max_dims        , only : n_dist_types              & ! intent(in)
-                                    , n_pft                     & ! intent(in)
-                                    , n_dbh                     ! ! intent(in)
-      use mem_polygons       , only : maxcohort                 ! ! intent(in)
-      use grid_coms          , only : nzg                       & ! intent(in)
-                                    , nzs                       ! ! intent(in)
-      use pft_coms           , only : include_pft               ! ! intent(in)
-      use mortality          , only : disturbance_mortality     ! ! subroutine
-      use consts_coms        , only : lnexp_max                 & ! intent(in)
-                                    , tiny_num                  & ! intent(in)
-                                    , huge_num                  ! ! intent(in)
-      use budget_utils       , only : update_budget             ! ! sub-routine
-      use forestry           , only : find_lambda_harvest       ! ! sub-routine
-      use consts_coms        , only : lnexp_max                 ! ! intent(in)
-      use detailed_coms      , only : idetailed                 ! ! intent(in)
+      use ed_state_vars       , only : edtype                     & ! structure
+                                     , polygontype                & ! structure
+                                     , sitetype                   & ! structure
+                                     , patchtype                  ! ! structure
+      use ed_misc_coms        , only : current_time               & ! intent(in)
+                                     , ibigleaf                   ! ! intent(in)
+      use disturb_coms        , only : min_patch_area             & ! intent(in)
+                                     , mature_harvest_age         & ! intent(in)
+                                     , plantation_year            & ! intent(in)
+                                     , plantation_rotation        & ! intent(in)
+                                     , treefall_hite_threshold    & ! intent(in)
+                                     , min_oldgrowth              & ! intent(in)
+                                     , sl_skid_rel_area           ! ! intent(in)
+      use ed_max_dims         , only : n_dist_types               & ! intent(in)
+                                     , n_pft                      & ! intent(in)
+                                     , n_dbh                      ! ! intent(in)
+      use mem_polygons        , only : maxcohort                  ! ! intent(in)
+      use grid_coms           , only : nzg                        & ! intent(in)
+                                     , nzs                        ! ! intent(in)
+      use pft_coms            , only : include_pft                ! ! intent(in)
+      use allometry           , only : area_indices               ! ! function
+      use mortality           , only : disturbance_mortality      ! ! subroutine
+      use consts_coms         , only : lnexp_max                  & ! intent(in)
+                                     , tiny_num                   & ! intent(in)
+                                     , huge_num                   ! ! intent(in)
+      use budget_utils        , only : update_budget              ! ! sub-routine
+      use forestry            , only : find_lambda_harvest        ! ! sub-routine
+      use detailed_coms       , only : idetailed                  ! ! intent(in)
+      use update_derived_utils, only : update_patch_thermo_props  & ! subroutine
+                                     , update_patch_thermo_fmean  & ! subroutine
+                                     , update_patch_derived_props & ! subroutine
+                                     , update_site_derived_props  ! ! subroutine
+      use fusion_fission_coms , only : ifusion                    ! ! intent(in)
+      use ed_type_init        , only : new_patch_sfc_props        ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                    , target      :: cgrid
@@ -105,10 +109,8 @@ module disturbance_utils
       real   , dimension(n_dist_types)              :: pot_area_gain
       real   , dimension(n_dist_types)              :: act_area_gain
       real   , dimension(n_dist_types)              :: one_area_loss
-      logical                                       :: biomass_harvest
       logical                                       :: disturbed
       logical                                       :: same_pft
-      logical                                       :: is_mature
       logical                                       :: is_primary
       real   , dimension(n_pft)                     :: mindbh_harvest
       real                                          :: pot_area_remain
@@ -117,7 +119,6 @@ module disturbance_utils
       real                                          :: area_fac
       real                                          :: orig_area
       real                                          :: dist_area
-      real                                          :: dist_rate
       real                                          :: elim_nplant
       real                                          :: elim_lai
       real                                          :: new_nplant
@@ -287,8 +288,7 @@ module disturbance_utils
                ! happened, or if the newly created patch is tiny, it will be removed soon. !
                !---------------------------------------------------------------------------!
                init_dist_sas: do new_lu = onsp+1, onsp+n_dist_types
-                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu      &
-                                                 ,cpoly%lsl(isi))
+                  call initialize_disturbed_patch(csite,new_lu,cpoly%lsl(isi))
                end do init_dist_sas
                !---------------------------------------------------------------------------!
 
@@ -320,7 +320,7 @@ module disturbance_utils
                disturb_mask         = .false.
                disturb_mask(1:onsp) = .true.
                !---------------------------------------------------------------------------!
- 
+
 
                !---------------------------------------------------------------------------!
                !      Initialize all the potential as well as implemented disturbance      !
@@ -329,8 +329,7 @@ module disturbance_utils
                ! happened, or if the newly created patch is tiny, it will be removed soon. !
                !---------------------------------------------------------------------------!
                init_distpatch_ble: do ipa = onsp+1, onsp+nnsp_ble
-                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,ipa         &
-                                                 ,cpoly%lsl(isi))
+                  call initialize_disturbed_patch(csite,ipa,cpoly%lsl(isi))
                end do init_distpatch_ble
                !---------------------------------------------------------------------------!
             end select
@@ -566,8 +565,7 @@ module disturbance_utils
                      !---------------------------------------------------------------------!
                      !     Initialize to zero the new trasitioned patches.                 !
                      !---------------------------------------------------------------------!
-                     call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp          &
-                                                    ,onsp+new_lu,cpoly%lsl(isi))
+                     call initialize_disturbed_patch(csite,onsp+new_lu,cpoly%lsl(isi))
                      !---------------------------------------------------------------------!
 
                   case (1)
@@ -606,8 +604,7 @@ module disturbance_utils
 
 
                         !----- Initialize to zero the new trasitioned patches. ------------!
-                        call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp       &
-                                                       ,onsp+new_lu,cpoly%lsl(isi))
+                        call initialize_disturbed_patch(csite,onsp+new_lu,cpoly%lsl(isi))
                         !------------------------------------------------------------------!
 
                      case default
@@ -628,8 +625,7 @@ module disturbance_utils
 
 
                            !----- Initialize to zero the new trasitioned patches. ---------!
-                           call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp    &
-                                                          ,npa,cpoly%lsl(isi))
+                           call initialize_disturbed_patch(csite,npa,cpoly%lsl(isi))
                            !---------------------------------------------------------------!
                         end do pft_add_loop
                         !------------------------------------------------------------------!
@@ -812,22 +808,19 @@ module disturbance_utils
                      call plant_patch(csite,onsp+new_lu,nzg                                &
                                      ,cpoly%pasture_stocking_pft(isi)                      &
                                      ,cpoly%pasture_stocking_density(isi)                  &
-                                     ,cpoly%ntext_soil(:,isi)                              &
-                                     ,cpoly%green_leaf_factor(:,isi), 1.0                  &
+                                     ,cpoly%ntext_soil(:,isi), 1.0                         &
                                      ,cpoly%lsl(isi))
                   case (2)
                      call plant_patch(csite,onsp+new_lu,nzg                                &
                                      ,cpoly%plantation_stocking_pft(isi)                   &
                                      ,cpoly%plantation_stocking_density(isi)               &
-                                     ,cpoly%ntext_soil(:,isi)                              &
-                                     ,cpoly%green_leaf_factor(:,isi), 2.0                  &
+                                     ,cpoly%ntext_soil(:,isi), 2.0                         &
                                      ,cpoly%lsl(isi))
                   case (8)
                      call plant_patch(csite,onsp+new_lu,nzg                                &
                                      ,cpoly%agri_stocking_pft(isi)                         &
                                      ,cpoly%agri_stocking_density(isi)                     &
-                                     ,cpoly%ntext_soil(:,isi)                              &
-                                     ,cpoly%green_leaf_factor(:,isi), 1.0                  &
+                                     ,cpoly%ntext_soil(:,isi), 1.0                         &
                                      ,cpoly%lsl(isi))
                   end select
                   !------------------------------------------------------------------------!
@@ -840,11 +833,14 @@ module disturbance_utils
                   !------------------------------------------------------------------------!
                   qpatch => csite%patch(onsp+new_lu)
                   if (ibigleaf == 0 .and. qpatch%ncohorts > 0 .and. maxcohort >= 0) then
-                     call fuse_cohorts(csite,onsp+new_lu,cpoly%green_leaf_factor(:,isi)    &
-                                      ,cpoly%lsl(isi),.false.)
+                     select case (ifusion)
+                     case (0)
+                        call old_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
+                     case (1)
+                        call new_fuse_cohorts(csite,onsp+new_lu,cpoly%lsl(isi),.false.)
+                     end select
                      call terminate_cohorts(csite,onsp+new_lu,elim_nplant,elim_lai)
-                     call split_cohorts(qpatch,cpoly%green_leaf_factor(:,isi)              &
-                                       ,cpoly%lsl(isi))
+                     call split_cohorts(qpatch, cpoly%green_leaf_factor(:,isi))
                   end if
                   !------------------------------------------------------------------------!
 
@@ -860,7 +856,7 @@ module disturbance_utils
                   call new_patch_sfc_props(csite,onsp+new_lu,nzg,nzs                       &
                                           ,cpoly%ntext_soil(:,isi))
                   !----- Update budget properties. ----------------------------------------!
-                  call update_budget(csite,cpoly%lsl(isi),onsp+new_lu,onsp+new_lu)
+                  call update_budget(csite,cpoly%lsl(isi),onsp+new_lu)
                   !----- Update AGB, basal area. ------------------------------------------!
                   call update_site_derived_props(cpoly,1,isi)
                   !------------------------------------------------------------------------!
@@ -939,7 +935,13 @@ module disturbance_utils
             end do old_lu_l4th
             !------------------------------------------------------------------------------!
 
-
+            if (include_pft(17)) then
+            prune_loop: do new_lu=1,n_dist_types
+            !----------------------- Prune the lianas -------------------------------------!
+               call prune_lianas(csite, onsp + new_lu, cpoly%lsl(isi))
+            !------------------------------------------------------------------------------!
+            end do prune_loop
+            end if
 
 
             !------------------------------------------------------------------------------!
@@ -1008,7 +1010,7 @@ module disturbance_utils
                            then
                               !----- Fuse both patches. -----------------------------------!
                               call fuse_2_patches(csite,npa,ipa,nzg,nzs                    &
-                                                 ,cpoly%met(isi)%prss,cpoly%lsl(isi)       &
+                                                 ,cpoly%lsl(isi)                           &
                                                  ,cpoly%ntext_soil(:,isi)                  &
                                                  ,cpoly%green_leaf_factor(:,isi)           &
                                                  ,.false.,elim_nplant,elim_lai)
@@ -1023,9 +1025,7 @@ module disturbance_utils
                               do ico=2,cpatch%ncohorts
                                  new_nplant = cpatch%nplant(ico) + cpatch%nplant(1)
                                  ipft       = cpatch%pft(1)
-                                 call fuse_2_cohorts(cpatch,ico,1,new_nplant               &
-                                                    ,cpoly%green_leaf_factor(1,isi)        &
-                                                    ,csite%can_prss(ipa)                   &
+                                 call fuse_2_cohorts(cpatch,ico,1, csite%can_prss(ipa)     &
                                                     ,csite%can_shv (ipa),cpoly%lsl(isi)    &
                                                     ,.false.)
 
@@ -1291,7 +1291,7 @@ module disturbance_utils
             !    Calculate fire disturbance rates only when fire is on.                    !
             !------------------------------------------------------------------------------!
             select case (include_fire)
-            case (0) 
+            case (0)
                fire_disturbance_rate = 0.0
             case default
                fire_disturbance_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
@@ -1630,22 +1630,20 @@ module disturbance_utils
    !=======================================================================================!
    !     This subroutine assigns initial conditions to a patch that has been disturbed     !
    !---------------------------------------------------------------------------------------!
-   subroutine initialize_disturbed_patch(csite,atm_tmp,np,lsl)
+   subroutine initialize_disturbed_patch(csite,np,lsl)
 
-      use ed_state_vars, only : sitetype  & ! structure
-                              , patchtype ! ! structure
-      use consts_coms  , only : t3ple     ! ! intent(in)
-      use grid_coms    , only : nzs       & ! intent(in)
-                              , nzg       ! ! intent(in)
-      use ed_max_dims  , only : n_pft     ! ! intent(in)
+      use ed_state_vars, only : sitetype           & ! structure
+                              , patchtype          ! ! structure
+      use consts_coms  , only : t3ple              ! ! intent(in)
+      use grid_coms    , only : nzs                & ! intent(in)
+                              , nzg                ! ! intent(in)
+      use ed_max_dims  , only : n_pft              ! ! intent(in)
+      use ed_type_init , only : init_ed_patch_vars ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype), target      :: csite
-      real          , intent(in)  :: atm_tmp
       integer       , intent(in)  :: np
       integer       , intent(in)  :: lsl
-      !----- Local variables. -------------------------------------------------------------!
-      integer                     :: k
       !------------------------------------------------------------------------------------!
 
 
@@ -1681,7 +1679,6 @@ module disturbance_utils
    end subroutine initialize_disturbed_patch
    !=======================================================================================!
    !=======================================================================================!
-
 
 
 
@@ -1875,16 +1872,16 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       csite%fmean_rh             (np) = csite%fmean_rh             (np)                    &
                                       + csite%fmean_rh             (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_cwd_rh         (np) = csite%fmean_cwd_rh         (np)                    &
                                       + csite%fmean_cwd_rh         (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_nep            (np) = csite%fmean_nep            (np)                    &
                                       + csite%fmean_nep            (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rk4step        (np) = csite%fmean_rk4step        (np)                    &
                                       + csite%fmean_rk4step        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_available_water(np) = csite%fmean_available_water(np)                    &
                                       + csite%fmean_available_water(cp)                    &
                                       * area_fac 
@@ -1896,126 +1893,126 @@ module disturbance_utils
                                       * area_fac
       csite%fmean_can_theiv      (np) = csite%fmean_can_theiv      (np)                    &
                                       + csite%fmean_can_theiv      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_can_theta      (np) = csite%fmean_can_theta      (np)                    &
                                       + csite%fmean_can_theta      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_can_vpdef      (np) = csite%fmean_can_vpdef      (np)                    &
                                       + csite%fmean_can_vpdef      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_can_shv        (np) = csite%fmean_can_shv        (np)                    &
                                       + csite%fmean_can_shv        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_can_co2        (np) = csite%fmean_can_co2        (np)                    &
                                       + csite%fmean_can_co2        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_can_prss       (np) = csite%fmean_can_prss       (np)                    &
                                       + csite%fmean_can_prss       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_gnd_temp       (np) = csite%fmean_gnd_temp       (np)                    &
                                       + csite%fmean_gnd_temp       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_gnd_shv        (np) = csite%fmean_gnd_shv        (np)                    &
                                       + csite%fmean_gnd_shv        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_can_ggnd       (np) = csite%fmean_can_ggnd       (np)                    &
                                       + csite%fmean_can_ggnd       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_sfcw_depth     (np) = csite%fmean_sfcw_depth     (np)                    &
                                       + csite%fmean_sfcw_depth     (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       !----- Integrate pounding energy in J/m2. -------------------------------------------!
       csite%fmean_sfcw_energy    (np) = csite%fmean_sfcw_energy    (np)                    &
                                       + csite%fmean_sfcw_energy    (cp)                    &
                                       * csite%fmean_sfcw_mass      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_sfcw_mass      (np) = csite%fmean_sfcw_mass      (np)                    &
                                       + csite%fmean_sfcw_mass      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rshort_gnd     (np) = csite%fmean_rshort_gnd     (np)                    &
                                       + csite%fmean_rshort_gnd     (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_par_gnd        (np) = csite%fmean_par_gnd        (np)                    &
                                       + csite%fmean_par_gnd        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rlong_gnd      (np) = csite%fmean_rlong_gnd      (np)                    &
                                       + csite%fmean_rlong_gnd      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rlongup        (np) = csite%fmean_rlongup        (np)                    &
                                       + csite%fmean_rlongup        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_parup          (np) = csite%fmean_parup          (np)                    &
                                       + csite%fmean_parup          (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_nirup          (np) = csite%fmean_nirup          (np)                    &
                                       + csite%fmean_nirup          (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rshortup       (np) = csite%fmean_rshortup       (np)                    &
                                       + csite%fmean_rshortup       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rnet           (np) = csite%fmean_rnet           (np)                    &
                                       + csite%fmean_rnet           (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_albedo         (np) = csite%fmean_albedo         (np)                    &
                                       + csite%fmean_albedo         (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_albedo_par     (np) = csite%fmean_albedo_par     (np)                    &
                                       + csite%fmean_albedo_par     (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_albedo_nir     (np) = csite%fmean_albedo_nir     (np)                    &
                                       + csite%fmean_albedo_nir     (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_rlong_albedo   (np) = csite%fmean_rlong_albedo   (np)                    &
                                       + csite%fmean_rlong_albedo   (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_ustar          (np) = csite%fmean_ustar          (np)                    &
                                       + csite%fmean_ustar          (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_tstar          (np) = csite%fmean_tstar          (np)                    &
                                       + csite%fmean_tstar          (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_qstar          (np) = csite%fmean_qstar          (np)                    &
                                       + csite%fmean_qstar          (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_cstar          (np) = csite%fmean_cstar          (np)                    &
                                       + csite%fmean_cstar          (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_carbon_ac      (np) = csite%fmean_carbon_ac      (np)                    &
                                       + csite%fmean_carbon_ac      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_carbon_st      (np) = csite%fmean_carbon_st      (np)                    &
                                       + csite%fmean_carbon_st      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_vapor_gc       (np) = csite%fmean_vapor_gc       (np)                    &
                                       + csite%fmean_vapor_gc       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_vapor_ac       (np) = csite%fmean_vapor_ac       (np)                    &
                                       + csite%fmean_vapor_ac       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_throughfall    (np) = csite%fmean_throughfall    (np)                    &
                                       + csite%fmean_throughfall    (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_runoff         (np) = csite%fmean_runoff         (np)                    &
                                       + csite%fmean_runoff         (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_drainage       (np) = csite%fmean_drainage       (np)                    &
                                       + csite%fmean_drainage       (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_sensible_gc    (np) = csite%fmean_sensible_gc    (np)                    &
                                       + csite%fmean_sensible_gc    (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_sensible_ac    (np) = csite%fmean_sensible_ac    (np)                    &
                                       + csite%fmean_sensible_ac    (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_qthroughfall   (np) = csite%fmean_qthroughfall   (np)                    &
                                       + csite%fmean_qthroughfall   (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_qrunoff        (np) = csite%fmean_qrunoff        (np)                    &
                                       + csite%fmean_qrunoff        (cp)                    &
-                                      * area_fac 
+                                      * area_fac
       csite%fmean_qdrainage      (np) = csite%fmean_qdrainage      (np)                    &
                                       + csite%fmean_qdrainage      (cp)                    &
-                                      * area_fac 
+                                      * area_fac
 
       do k=1, nzg
          csite%fmean_soil_energy(k,np) = csite%fmean_soil_energy(k,np)                     &
@@ -2773,15 +2770,11 @@ module disturbance_utils
    ! disturbed but did not go extinct.                                                     !
    !---------------------------------------------------------------------------------------!
    subroutine insert_survivors(csite,np,cp,new_lu,area_fac,mindbh_harvest)
-
-      use ed_state_vars, only : sitetype     & ! structure
-                              , patchtype    ! ! structure
-      use ed_misc_coms , only : idoutput     & ! intent(in)
-                              , iqoutput     & ! intent(in)
-                              , imoutput     ! ! intent(in)
-      use ed_max_dims  , only : n_pft        ! ! intent(in)
-      use mortality    , only : survivorship ! ! function
-    
+      use ed_state_vars       , only : sitetype                      & ! structure
+                                     , patchtype                     ! ! structure
+      use ed_max_dims         , only : n_pft                         ! ! intent(in)
+      use mortality           , only : survivorship                  ! ! function
+      use update_derived_utils, only : update_cohort_extensive_props ! ! subroutine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target      :: csite
@@ -2818,7 +2811,7 @@ module disturbance_utils
          allocate(survival_fac(cpatch%ncohorts))
          mask(:)         = .false.
          survival_fac(:) = 0.
-    
+
          survivalloop: do ico = 1,cpatch%ncohorts
             survival_fac(ico) = survivorship(new_lu,csite%dist_type(cp),mindbh_harvest     &
                                             ,cpatch,ico) * area_fac
@@ -2878,7 +2871,6 @@ module disturbance_utils
       call allocate_patchtype(npatch,tpatch%ncohorts)
       call copy_patchtype(tpatch,npatch,1,tpatch%ncohorts,1,tpatch%ncohorts)
       call deallocate_patchtype(tpatch)
-      !------------------------------------------------------------------------------------!
 
       deallocate(tpatch)
       if (allocated(mask        )) deallocate(mask        )
@@ -2911,11 +2903,9 @@ module disturbance_utils
       use ed_max_dims  , only : n_pft               ! ! intent(in)
       use pft_coms     , only : c2n_storage         & ! intent(in)
                               , c2n_leaf            & ! intent(in)
-                              , c2n_recruit         & ! intent(in)
                               , c2n_stem            & ! intent(in)
                               , l2n_stem            & ! intent(in)
                               , agf_bs              ! ! intent(in)
-      use grid_coms    , only : nzg                 ! ! intent(in)
       use mortality    , only : survivorship        ! ! function
 
       implicit none
@@ -3149,15 +3139,13 @@ module disturbance_utils
    !    Add a cohort of the appropriate PFT type to populate a plantation/cropland/pasture !
    ! patch.                                                                                !
    !---------------------------------------------------------------------------------------!
-   subroutine plant_patch(csite,np,mzg,pft,density,ntext_soil,green_leaf_factor            &
-                         ,height_factor,lsl)
-      use ed_state_vars , only  : sitetype                 & ! structure
+   subroutine plant_patch(csite,np,mzg,pft,density,ntext_soil,height_factor,lsl)
+      use ed_state_vars  , only : sitetype                 & ! structure
                                 , patchtype                ! ! structure
       use pft_coms       , only : hgt_min                  & ! intent(in)
                                 , hgt_max                  & ! intent(in)
                                 , dbh_bigleaf              ! ! intent(in)
-      use ed_misc_coms   , only : dtlsm                    & ! intent(in)
-                                , ibigleaf                 ! ! intent(in)
+      use ed_misc_coms   , only : ibigleaf                 ! ! intent(in)
       use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
       use ed_therm_lib   , only : calc_veg_hcap            ! ! function
       use consts_coms    , only : t3ple                    & ! intent(in)
@@ -3169,9 +3157,10 @@ module disturbance_utils
                                 , area_indices             & ! function
                                 , ed_biomass               ! ! function
       use ed_max_dims    , only : n_pft                    ! ! intent(in)
-      use phenology_coms , only : retained_carbon_fraction ! ! intent(in)
       use phenology_aux  , only : pheninit_balive_bstorage ! ! intent(in)
       use therm_lib      , only : cmtl2uext                ! ! intent(in)
+      use stable_cohorts , only : is_resolvable            ! ! sub-routine
+      use ed_type_init   , only : init_ed_cohort_vars      ! ! sub-routine
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(sitetype)                  , target     :: csite
@@ -3180,7 +3169,6 @@ module disturbance_utils
       integer                         , intent(in) :: pft
       integer                         , intent(in) :: lsl
       integer       , dimension(mzg)  , intent(in) :: ntext_soil
-      real          , dimension(n_pft), intent(in) :: green_leaf_factor
       real                            , intent(in) :: density
       real                            , intent(in) :: height_factor
       !----- Local variables. -------------------------------------------------------------!
@@ -3212,7 +3200,7 @@ module disturbance_utils
       else
          call allocate_patchtype(cpatch,1)
       end if
-         
+
       cpatch%ncohorts = nc
       csite%paco_n(np)= nc
 
@@ -3264,7 +3252,7 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       call pheninit_balive_bstorage(mzg,cpatch%pft(nc),cpatch%krdepth(nc),cpatch%hite(nc)  &
                                    ,cpatch%dbh(nc),csite%soil_water(:,np),ntext_soil       &
-                                   ,green_leaf_factor,cpatch%paw_avg(nc),cpatch%elongf(nc) &
+                                   ,cpatch%paw_avg(nc),cpatch%elongf(nc)                   &
                                    ,cpatch%phenology_status(nc),cpatch%bleaf(nc)           &
                                    ,cpatch%broot(nc),cpatch%bsapwooda(nc)                  &
                                    ,cpatch%bsapwoodb(nc),cpatch%bbark(nc)                  &
@@ -3276,17 +3264,13 @@ module disturbance_utils
 
 
       !----- Compute all area indices needed. ---------------------------------------------!
-      call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%dbh(nc),cpatch%hite(nc)  &
-                       ,cpatch%pft(nc),cpatch%sla(nc),cpatch%lai(nc),cpatch%wai(nc)        &
-                       ,cpatch%crown_area(nc))
+      call area_indices(cpatch, nc)
       !------------------------------------------------------------------------------------!
 
 
       !----- Find the new basal area and above-ground biomass. ----------------------------!
       cpatch%basarea      (nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
-      cpatch%agb          (nc) = ed_biomass(cpatch%bdead(nc),cpatch%bleaf(nc)              &
-                                           ,cpatch%bsapwooda(nc),cpatch%bbark(nc)          &
-                                           ,cpatch%pft(nc))
+      cpatch%agb          (nc) = ed_biomass(cpatch, nc)
       cpatch%btimber      (nc) = size2bt(cpatch%dbh(nc),cpatch%hite(nc),cpatch%bdead(nc)   &
                                         ,cpatch%bsapwooda(nc),cpatch%bbark(nc)             &
                                         ,cpatch%pft(nc))
@@ -3327,6 +3311,201 @@ module disturbance_utils
    end subroutine plant_patch
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This routine is used to reduce the lianas height (and derived props)             !
+   ! in accordance with the current tree population. Each cohort height is rescaled by     !
+   ! a factor h_pruning_factor. This way lianas that where hgt_max meters tall will now    !
+   ! be as tall as the tallest tree cohort. The other liana cohorts will be scaled         !
+   ! proportionally.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   subroutine prune_lianas(csite, np, lsl)
+      use stable_cohorts,  only : is_resolvable            ! ! structure
+      use ed_state_vars,   only : patchtype                & ! structure
+                                , sitetype                 ! ! structure
+      use ed_therm_lib,    only : calc_veg_hcap            & ! function
+                                , update_veg_energy_cweh   ! ! function
+      use allometry,       only : area_indices             & ! subroutine
+                                , ed_biomass               & ! function
+                                , h2dbh                    & ! function
+                                , size2bl                  & ! function
+                                , dbh2bd                   & ! function
+                                , dbh2krdepth              ! ! function
+      use pft_coms,        only : qsw                      & ! intent(in)
+                                , qbark                    & ! intent(in)
+                                , agf_bs                   & ! intent(in)
+                                , hgt_max                  & ! intent(in)
+                                , l2n_stem                 & ! intent(in)
+                                , c2n_stem                 & ! intent(in)
+                                , c2n_leaf                 & ! intent(in)
+                                , is_liana                 ! ! intent(in)
+      use decomp_coms,     only : f_labile                 ! ! intent(in)
+      use ed_max_dims,     only : n_pft                    ! ! intent(in)
+      use consts_coms,     only : pio4                     ! ! intent(in)
+      use budget_utils,    only : update_budget            ! ! sub-routine
+      use fuse_fiss_utils, only : sort_cohorts             ! ! sub-routine
+      use update_derived_utils, only : update_patch_derived_props !
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                  , target     :: csite
+      integer                         , intent(in) :: np
+      integer                         , intent(in) :: lsl
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                 , pointer    :: cpatch
+      integer                                      :: ico
+      integer                                      :: ipft
+      real                                         :: maxh
+      real                                         :: h_pruning_factor !< height rescale factor
+      real                                         :: struct_cohort
+      real                                         :: fast_litter
+      real                                         :: struct_litter
+      real                                         :: struct_lignin
+      real                                         :: fast_litter_n
+      real                                         :: bleaf_in
+      real                                         :: bsapa_in
+      real                                         :: bdead_in
+      real                                         :: bbark_in
+      real                                         :: old_leaf_hcap
+      real                                         :: old_wood_hcap
+      real                                         :: bleaf_max
+      real                                         :: delta_alive
+      real                                         :: delta_dead
+      !------------------------------------------------------------------------------------!
+
+
+      maxh = 0.0
+
+      cpatch => csite%patch(np)
+
+      cohortloop: do ico=1,cpatch%ncohorts
+
+         !----- Alias for current PFT. ----------------------------------------------------!
+         ipft = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+         !---------- Loop over cohorts to find the maximum height for trees ---------------!
+         if (cpatch%hite(ico) > maxh .and. .not. is_liana(ipft)) then
+            maxh = cpatch%hite(ico)
+         end if
+
+      end do cohortloop
+
+      !------------- pruning_factor, how much should I reduce the height ------------------!
+      h_pruning_factor    = maxh / hgt_max(17)
+
+      !-------------------- Initialise the non-scaled litter pools. -----------------------!
+      fast_litter   = 0.0
+      struct_litter = 0.0
+      struct_lignin = 0.0
+      fast_litter_n = 0.0
+
+      cohortloop2: do ico=1,cpatch%ncohorts
+
+         !-------------------------- Alias for current PFT. -------------------------------!
+         ipft = cpatch%pft(ico)
+         !---------------------------------------------------------------------------------!
+
+         ! Attention: if maxh turns out to be less than 1 m there's gonna be a problem
+         ! because cpatch%hite will be increased instead of reduced
+         if (is_liana(ipft) .and. cpatch%hite(ico) > maxh .and. maxh >= 1.0) then
+
+            bleaf_in      = cpatch%bleaf    (ico)
+            bsapa_in      = cpatch%bsapwooda(ico)
+            bdead_in      = cpatch%bdead    (ico)
+            bbark_in      = cpatch%bbark    (ico)
+            old_leaf_hcap = cpatch%leaf_hcap(ico)
+            old_wood_hcap = cpatch%wood_hcap(ico)
+            !add the agb_f to bdead
+            !if new root depth is smaller keep the old one keep track of the value
+
+            ! Lianas of 35m will be reduced to maxh, all
+            cpatch%hite(ico)      = max(cpatch%hite(ico) * h_pruning_factor, 1.0)
+            cpatch%dbh(ico)       = h2dbh (cpatch%hite(ico), ipft)
+            bleaf_max             = size2bl(cpatch%dbh(ico), cpatch%hite(ico), ipft)
+            cpatch%bleaf(ico)     = bleaf_max * cpatch%elongf(ico)
+            cpatch%bdead(ico)     = dbh2bd(cpatch%dbh(ico), ipft)
+            cpatch%bsapwooda(ico) = bleaf_max * qsw(ipft) * cpatch%hite(ico)
+            !  (MLO) Manfredo: although qbark is set to zero, check whether these changes
+            !  are consistent with your rationale.
+            cpatch%bbark    (ico) = (1.0 - agf_bs(ipft)) * bbark_in                        &
+                                  + agf_bs(ipft) * bleaf_max * qbark(ipft)                 &
+                                  * cpatch%hite(ico)
+
+
+            !----- Updating LAI, WAI, and CAI. --------------------------------------!
+            call area_indices(cpatch, ico)
+            !------------------------------------------------------------------------!
+
+            !----- Finding the new basal area and above-ground biomass. -------------!
+            cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+            cpatch%agb(ico)     = ed_biomass(cpatch, ico)
+
+            !----- Update rooting depth ---------------------------------------------!
+            cpatch%krdepth(ico) = dbh2krdepth(cpatch%hite(ico),cpatch%dbh(ico),ipft,lsl)
+            !if new root depth is smaller keep the old one
+
+            !------------------------------------------------------------------------!
+            !     It is likely that biomass has changed, therefore, update           !
+            ! vegetation energy and heat capacity.                                   !
+            !------------------------------------------------------------------------!
+            call calc_veg_hcap(cpatch%bleaf(ico),cpatch%bdead(ico),cpatch%bsapwooda(ico)   &
+                              ,cpatch%bbark(ico),cpatch%nplant(ico), cpatch%pft(ico)       &
+                              ,cpatch%leaf_hcap(ico),cpatch%wood_hcap(ico))
+            call update_veg_energy_cweh(csite,np,ico,old_leaf_hcap,old_wood_hcap)
+            !----- Update the stability status. -------------------------------------!
+            call is_resolvable(csite,np,ico)
+            !------------------------------------------------------------------------!
+
+
+            !-- Compute the amount of carbon lost due to pruning and send to litter --!
+            delta_alive = bleaf_in + bsapa_in + bbark_in                              &
+                        - cpatch%bleaf(ico) - cpatch%bsapwooda(ico) - cpatch%bbark(ico)
+            delta_dead  = bdead_in - cpatch%bdead(ico)
+
+            fast_litter   = fast_litter + (f_labile(ipft) * delta_alive) * cpatch%nplant(ico)
+            fast_litter_n = fast_litter_n + (f_labile(ipft) * delta_alive / c2n_leaf(ipft))   &
+               * cpatch%nplant(ico)
+
+            struct_cohort = (delta_dead + (1. - f_labile(ipft)) * delta_alive )     &
+               * cpatch%nplant(ico)
+
+            struct_litter = struct_litter + struct_cohort
+            struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
+            !-----------------------------------------------------------------------!
+
+         end if
+
+      end do cohortloop2
+
+
+      !--- Sort the cohorts so that the new cohort is at the correct height bin. ---!
+      call sort_cohorts(cpatch)
+      !-----------------------------------------------------------------------------!
+
+      !----- Load disturbance litter directly into carbon and N pools. -------------!
+      csite%fast_soil_C(np)       = csite%fast_soil_C(np)       + fast_litter
+      csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter
+      csite%structural_soil_L(np) = csite%structural_soil_L(np) + struct_lignin
+      csite%fast_soil_N(np)       = csite%fast_soil_N(np)       + fast_litter_n
+      !-----------------------------------------------------------------------------!
+
+      !------------------- Update patch LAI, WAI, height, roughness... -------------!
+      call update_patch_derived_props(csite,np)
+      !-----------------------------------------------------------------------------!
+
+      !----- Recalculate storage terms (for budget assessment). --------------------!
+      call update_budget(csite,lsl,np)
+      !-----------------------------------------------------------------------------!
+
+      return
+
+   end subroutine prune_lianas
+
 end module disturbance_utils
 !==========================================================================================!
 !==========================================================================================!

@@ -192,8 +192,8 @@ module canopy_radiation_coms
    real(kind=8), dimension(n_pft) :: leaf_scatter_nir
    real(kind=8), dimension(n_pft) :: wood_scatter_nir
    !----- Thermal infrared. ---------------------------------------------------------------!
-   real(kind=8), dimension(n_pft) :: leaf_scatter_tir
-   real(kind=8), dimension(n_pft) :: wood_scatter_tir
+   ! real(kind=8), dimension(n_pft) :: leaf_scatter_tir
+   ! real(kind=8), dimension(n_pft) :: wood_scatter_tir
    !---------------------------------------------------------------------------------------!
 
 

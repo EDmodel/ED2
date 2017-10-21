@@ -1464,6 +1464,11 @@ ed_bigleaf_init.o : $(ED_INIT)/ed_bigleaf_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+ed_cn_utils.o : $(ED_UTILS)/ed_cn_utils.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 ed_driver.o : $(ED_DRIVER)/ed_driver.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
@@ -1854,7 +1859,7 @@ twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
+update_derived_utils.o : $(ED_UTILS)/update_derived_utils.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

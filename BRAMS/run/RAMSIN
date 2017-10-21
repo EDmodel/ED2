@@ -2813,6 +2813,18 @@ $ED2_INFO
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
+   ! IFUSION        -- Control on patch/cohort fusion scheme                               !
+   !                   0.  Original ED-2.1 scheme.  This may be eventually removed,        !
+   !                       It's kept here for legacy.                                      !
+   !                   1.  New scheme, developed to address a few issues that become more  !
+   !                       evident when initialising ED with large (>1000) number of       !
+   !                       patches.  It uses absolute difference in light levels to avoid  !
+   !                       fusing patches with very different canopies, and also makes     !
+   !                       sure that remaining patches have area above MIN_PATCH_AREA and  !
+   !                       that a high percentage of the original landscape is retained.   !
+   !                       (the old scheme can throw away large numbers of small patches   !
+   !                       that could account for a significant fraction of the landscape) !
+   !                                                                                       !
    ! MAXPATCH       -- If number of patches in a given site exceeds MAXPATCH, force patch  !
    !                   fusion.  If MAXPATCH is 0, then fusion will never happen.  If       !
    !                   MAXPATCH is negative, then the absolute value is used only during   !
@@ -2830,11 +2842,16 @@ $ED2_INFO
    !                   during the initialization, and fusion will never happen again.      !
    !                   Notice that if the cohorts are too different, then the actual       !
    !                   number of cohorts in a patch may exceed MAXCOHORT.                  !
+   ! MIN_SITE_AREA  -- This is the minimum fraction area of a given soil type that allows  !
+   !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
+   IFUSION        =     1,
+   ! MAXSITE        =     1, - Initialised through NVEGPAT.
    MAXPATCH       =    20,
    MAXCOHORT      =    80,
+   ! MIN_SITE_AREA = 0.005, - Initialised through LEAF-3 MIN_PATCH_AREA.
    MIN_PATCH_AREA = 0.005,
    !---------------------------------------------------------------------------------------!
 

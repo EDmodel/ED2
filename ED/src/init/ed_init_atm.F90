@@ -4,55 +4,64 @@
 ! conditions plus some soil parameters.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine ed_init_atm()
-   use ed_misc_coms          , only : runtype                & ! intent(in)
-                                    , ibigleaf               & ! intent(in)
-                                    , ied_init_mode          ! ! intent(in)
-   use ed_state_vars         , only : edtype                 & ! structure
-                                    , polygontype            & ! structure
-                                    , sitetype               & ! structure
-                                    , patchtype              & ! structure
-                                    , edgrid_g               ! ! structure
-   use soil_coms             , only : soil_rough             & ! intent(in)
-                                    , isoilstateinit         & ! intent(in)
-                                    , soil                   & ! intent(in)
-                                    , slmstr                 & ! intent(in)
-                                    , stgoff                 & ! intent(in)
-                                    , ed_soil_idx2water      & ! function
-                                    , matric_potential       ! ! function
-   use consts_coms           , only : wdns                   & ! intent(in)
-                                    , t3ple                  ! ! intent(in)
-   use grid_coms             , only : nzs                    & ! intent(in)
-                                    , nzg                    & ! intent(in)
-                                    , ngrids                 ! ! intent(in)
-   use fuse_fiss_utils       , only : fuse_patches           & ! subroutine
-                                    , terminate_patches      & ! subroutine
-                                    , rescale_patches        & ! subroutine
-                                    , fuse_cohorts           & ! subroutine
-                                    , terminate_cohorts      & ! subroutine
-                                    , split_cohorts          ! ! subroutine
-   use ed_node_coms          , only : nnodetot               & ! intent(in)
-                                    , mynum                  & ! intent(in)
-                                    , sendnum                & ! intent(in)
-                                    , recvnum                ! ! intent(in)
-   use pft_coms              , only : sla                    ! ! intent(in)
-   use ed_therm_lib          , only : calc_veg_hcap          & ! subroutine
-                                    , ed_grndvap             ! ! subroutine
-   use canopy_layer_coms     , only : canstr                 & ! intent(out)
-                                    , alloc_canopy_layer_mbs ! ! subroutine
-   use therm_lib             , only : thetaeiv               & ! function
-                                    , vpdefil                & ! function
-                                    , idealdenssh            & ! function
-                                    , qslif                  & ! function
-                                    , reducedpress           & ! function
-                                    , press2exner            & ! function
-                                    , extheta2temp           & ! function
-                                    , cmtl2uext              ! ! function
-   use met_driver_coms       , only : met_driv_state         ! ! structure
-   use canopy_struct_dynamics, only : canopy_turbulence      ! ! subroutine
-   use budget_utils          , only : update_budget          ! ! subroutine
-   use canopy_radiation_coms , only : ihrzrad                ! ! intent(in)
-   use hrzshade_utils        , only : split_hrzshade         & ! sub-routine
-                                    , reset_hrzshade         ! ! sub-routine
+   use ed_misc_coms          , only : runtype                      & ! intent(in)
+                                    , ibigleaf                     & ! intent(in)
+                                    , ied_init_mode                ! ! intent(in)
+   use ed_state_vars         , only : edtype                       & ! structure
+                                    , polygontype                  & ! structure
+                                    , sitetype                     & ! structure
+                                    , patchtype                    & ! structure
+                                    , edgrid_g                     ! ! structure
+   use soil_coms             , only : soil_rough                   & ! intent(in)
+                                    , isoilstateinit               & ! intent(in)
+                                    , soil                         & ! intent(in)
+                                    , slmstr                       & ! intent(in)
+                                    , stgoff                       & ! intent(in)
+                                    , ed_soil_idx2water            & ! function
+                                    , matric_potential             ! ! function
+   use consts_coms           , only : wdns                         & ! intent(in)
+                                    , t3ple                        ! ! intent(in)
+   use grid_coms             , only : nzs                          & ! intent(in)
+                                    , nzg                          & ! intent(in)
+                                    , ngrids                       ! ! intent(in)
+   use fuse_fiss_utils       , only : old_fuse_patches             & ! subroutine
+                                    , new_fuse_patches             & ! subroutine
+                                    , terminate_patches            & ! subroutine
+                                    , rescale_patches              & ! subroutine
+                                    , old_fuse_cohorts             & ! subroutine
+                                    , new_fuse_cohorts             & ! subroutine
+                                    , terminate_cohorts            & ! subroutine
+                                    , split_cohorts                ! ! subroutine
+#if defined(RAMS_MPI)
+   use ed_node_coms          , only : nnodetot                     & ! intent(in)
+                                    , mynum                        & ! intent(in)
+                                    , sendnum                      & ! intent(in)
+                                    , recvnum                      ! ! intent(in)
+#endif
+   use ed_therm_lib          , only : calc_veg_hcap                & ! subroutine
+                                    , ed_grndvap                   ! ! subroutine
+   use canopy_layer_coms     , only : canstr                       & ! intent(out)
+                                    , alloc_canopy_layer_mbs       ! ! subroutine
+   use therm_lib             , only : thetaeiv                     & ! function
+                                    , vpdefil                      & ! function
+                                    , idealdenssh                  & ! function
+                                    , qslif                        & ! function
+                                    , reducedpress                 & ! function
+                                    , press2exner                  & ! function
+                                    , extheta2temp                 & ! function
+                                    , cmtl2uext                    ! ! function
+   use met_driver_coms       , only : met_driv_state               ! ! structure
+   use canopy_struct_dynamics, only : canopy_turbulence            ! ! subroutine
+   use budget_utils          , only : update_budget                ! ! subroutine
+   use canopy_radiation_coms , only : ihrzrad                      ! ! intent(in)
+   use hrzshade_utils        , only : split_hrzshade               & ! sub-routine
+                                    , reset_hrzshade               ! ! sub-routine
+   use stable_cohorts        , only : is_resolvable                ! ! function
+   use update_derived_utils  , only : update_patch_derived_props   & ! sub-routine
+                                    , update_site_derived_props    & ! sub-routine
+                                    , update_polygon_derived_props & ! sub-routine
+                                    , read_soil_moist_temp         ! ! sub-routine
+   use fusion_fission_coms   , only : ifusion                      ! ! intent(in)
    !$ use omp_lib
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -72,9 +81,7 @@ subroutine ed_init_atm()
    integer                        :: nlsw1
    integer                        :: ncohorts
    integer                        :: npatches
-   integer                        :: ix
-   integer                        :: iy
-   integer                        :: ping,ierr
+   integer                        :: ping
    real                           :: site_area_i
    real                           :: poly_area_i
    real                           :: poly_lai
@@ -85,6 +92,10 @@ subroutine ed_init_atm()
    real                           :: rvaux
    integer                        :: ibuff
    integer                        :: nbuff
+   !----- Local variables (MPI only). -----------------------------------------------------!
+#if defined(RAMS_MPI)
+   integer                        :: ierr
+#endif
    !----- Add the MPI common block. -------------------------------------------------------!
 #if defined(RAMS_MPI)
    include 'mpif.h'
@@ -351,7 +362,7 @@ subroutine ed_init_atm()
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
                                  ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
-                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%snowfac(ipa)     &
+                                 ,csite%snowfac(ipa)                                       &
                                  ,csite%can_prss(ipa),csite%can_shv(ipa)                   &
                                  ,csite%ground_shv(ipa),csite%ground_ssh(ipa)              &
                                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa)            &
@@ -366,7 +377,7 @@ subroutine ed_init_atm()
                   call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
                                  ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
-                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%snowfac(ipa)     &
+                                 ,csite%snowfac(ipa)                                       &
                                  ,csite%can_prss(ipa),csite%can_shv(ipa)                   &
                                  ,csite%ground_shv(ipa),csite%ground_ssh(ipa)              &
                                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa)            &
@@ -377,7 +388,7 @@ subroutine ed_init_atm()
                call canopy_turbulence(cpoly,isi,ipa)
 
                !----- Compute the storage terms for CO2, energy, and water budgets. -------!
-               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
+               call update_budget(csite,cpoly%lsl(isi),ipa)
 
             end do patchloop2
 
@@ -395,7 +406,12 @@ subroutine ed_init_atm()
          !---------------------------------------------------------------------------------!
          !    Size and age structure.  Start by fusing similar patches.                    !
          !---------------------------------------------------------------------------------!
-         call fuse_patches(cgrid,igr,.true.)
+         select case (ifusion)
+         case (0)
+            call old_fuse_patches(cgrid,igr,.true.)
+         case (1)
+            call new_fuse_patches(cgrid,igr,.true.)
+         end select
          !---------------------------------------------------------------------------------!
 
 
@@ -466,11 +482,14 @@ subroutine ed_init_atm()
                   cpatch => csite%patch(ipa)
 
                   if (cpatch%ncohorts > 0) then
-                     call fuse_cohorts(csite,ipa,cpoly%green_leaf_factor(:,isi)            &
-                                      ,cpoly%lsl(isi),.true.)
+                     select case (ifusion)
+                     case (0)
+                        call old_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.true.)
+                     case (1)
+                        call new_fuse_cohorts(csite,ipa,cpoly%lsl(isi),.true.)
+                     end select
                      call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-                     call split_cohorts(cpatch,cpoly%green_leaf_factor(:,isi)              &
-                                       ,cpoly%lsl(isi))
+                     call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi))
                   end if
 
                   cohortloop3: do ico = 1,cpatch%ncohorts

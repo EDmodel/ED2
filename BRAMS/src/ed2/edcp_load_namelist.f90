@@ -252,6 +252,7 @@ subroutine read_ednl(iunit,filename)
                                    , min_recruit_dbh                       & ! intent(out)
                                    , idetailed                             & ! intent(out)
                                    , patch_keep                            ! ! intent(out)
+   use fusion_fission_coms  , only : ifusion                               ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer         , intent(in) :: iunit    ! Namelist unit number
@@ -283,10 +284,11 @@ subroutine read_ednl(iunit,filename)
                        ,sl_biomass_harvest,sl_skid_rel_area,sl_skid_s_gtharv               &
                        ,sl_skid_s_ltharv,sl_felling_s_ltharv,cl_fseeds_harvest             &
                        ,cl_fstorage_harvest,cl_fleaf_harvest,icanturb,include_these_pft    &
-                       ,pasture_stock,agri_stock,plantation_stock,pft_1st_check,maxpatch   &
-                       ,maxcohort,min_patch_area,treefall_disturbance_rate,time2canopy     &
-                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,imetrad,iphenys1  &
-                       ,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+                       ,pasture_stock,agri_stock,plantation_stock,pft_1st_check,ifusion    &
+                       ,maxpatch,maxcohort,min_patch_area,treefall_disturbance_rate        &
+                       ,time2canopy,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
+                       ,imetrad,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file    &
+                       ,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -415,10 +417,11 @@ subroutine read_ednl(iunit,filename)
       write (unit=*,fmt=*) ' agri_stock                =',agri_stock
       write (unit=*,fmt=*) ' plantation_stock          =',plantation_stock
       write (unit=*,fmt=*) ' pft_1st_check             =',pft_1st_check
+      write (unit=*,fmt=*) ' ifusion                   =',ifusion
       write (unit=*,fmt=*) ' maxsite                   =',maxsite
       write (unit=*,fmt=*) ' maxpatch                  =',maxpatch
       write (unit=*,fmt=*) ' maxcohort                 =',maxcohort
-      write (unit=*,fmt=*) ' min_patch_area            =',min_patch_area
+      write (unit=*,fmt=*) ' min_site_area             =',min_site_area
       write (unit=*,fmt=*) ' treefall_disturbance_rate =',treefall_disturbance_rate
       write (unit=*,fmt=*) ' time2canopy               =',time2canopy
       write (unit=*,fmt=*) ' iprintpolys               =',iprintpolys

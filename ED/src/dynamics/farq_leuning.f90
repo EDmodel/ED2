@@ -115,10 +115,7 @@ module farq_leuning
                                 , vm0_slope                & ! intent(in)
                                 , vm0_amp                  & ! intent(in)
                                 , vm0_min                  ! ! intent(in)
-      use physiology_coms, only : c34smin_lint_co28        & ! intent(in)
-                                , c34smax_lint_co28        & ! intent(in)
-                                , gbh_2_gbw8               & ! intent(in)
-                                , gbw_2_gbc8               & ! intent(in)
+      use physiology_coms, only : gbw_2_gbc8               & ! intent(in)
                                 , o2_ref8                  ! ! intent(in)
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
@@ -134,34 +131,34 @@ module farq_leuning
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
       real(kind=4), intent(in)    :: can_prss          ! Canopy air pressure    [       Pa]
-      real(kind=4), intent(in)    :: can_rhos          ! Canopy air density     [    kg/m³]
+      real(kind=4), intent(in)    :: can_rhos          ! Canopy air density     [    kg/mï¿½]
       real(kind=4), intent(in)    :: can_shv           ! Canopy air sp. hum.    [    kg/kg]
-      real(kind=4), intent(in)    :: can_co2           ! Canopy air CO2         [ µmol/mol]
+      real(kind=4), intent(in)    :: can_co2           ! Canopy air CO2         [ ï¿½mol/mol]
       integer     , intent(in)    :: ipft              ! Plant functional type  [      ---]
-      real(kind=4), intent(in)    :: leaf_par          ! Absorbed PAR           [     W/m²]
+      real(kind=4), intent(in)    :: leaf_par          ! Absorbed PAR           [     W/mï¿½]
       real(kind=4), intent(in)    :: leaf_temp         ! Leaf temperature       [        K]
       real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
       real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
-      real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [µmol/m²/s]
-      real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/m²/s]
-      real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
-      real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
-      real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (light) [µmol/m²/s]
-      real(kind=4), intent(out)   :: A_rubp            ! Photosyn. rate (RuBP)  [µmol/m²/s]
-      real(kind=4), intent(out)   :: A_co2             ! Photosyn. rate (CO2)   [µmol/m²/s]
-      real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m²/s]
-      real(kind=4), intent(out)   :: gsw_closed        ! St. cnd. of H2O  (cl.) [  kg/m²/s]
+      real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(in)    :: leaf_gbw          ! B.lyr. cnd. of H2O     [  kg/mï¿½/s]
+      real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: A_light           ! Photosyn. rate (light) [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: A_rubp            ! Photosyn. rate (RuBP)  [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: A_co2             ! Photosyn. rate (CO2)   [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/mï¿½/s]
+      real(kind=4), intent(out)   :: gsw_closed        ! St. cnd. of H2O  (cl.) [  kg/mï¿½/s]
       real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg]
       real(kind=4), intent(out)   :: lsfc_shv_closed   ! Leaf sfc. sp.hum.(cl.) [    kg/kg]
-      real(kind=4), intent(out)   :: lsfc_co2_open     ! Leaf sfc. CO2    (op.) [ µmol/mol]
-      real(kind=4), intent(out)   :: lsfc_co2_closed   ! Leaf sfc. CO2    (cl.) [ µmol/mol]
-      real(kind=4), intent(out)   :: lint_co2_open     ! Intercell. CO2   (op.) [ µmol/mol]
-      real(kind=4), intent(out)   :: lint_co2_closed   ! Intercell. CO2   (cl.) [ µmol/mol]
-      real(kind=4), intent(out)   :: leaf_resp         ! Leaf respiration rate  [µmol/m²/s]
-      real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [µmol/m²/s]
-      real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ µmol/mol]
+      real(kind=4), intent(out)   :: lsfc_co2_open     ! Leaf sfc. CO2    (op.) [ ï¿½mol/mol]
+      real(kind=4), intent(out)   :: lsfc_co2_closed   ! Leaf sfc. CO2    (cl.) [ ï¿½mol/mol]
+      real(kind=4), intent(out)   :: lint_co2_open     ! Intercell. CO2   (op.) [ ï¿½mol/mol]
+      real(kind=4), intent(out)   :: lint_co2_closed   ! Intercell. CO2   (cl.) [ ï¿½mol/mol]
+      real(kind=4), intent(out)   :: leaf_resp         ! Leaf respiration rate  [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [ï¿½mol/mï¿½/s]
+      real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ ï¿½mol/mol]
       integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
       !----- Local variables. -------------------------------------------------------------!
       integer                     :: ib
@@ -201,7 +198,7 @@ module farq_leuning
       met(ib)%lint_shv    = epi8 * dble(lint_shv)
       !------------------------------------------------------------------------------------!
       !  6. Find the conductivities for water and carbon.  The input for water is in       !
-      !     kg/m²/s, and here we convert to mol/m²/s.  The convertion coefficient from     !
+      !     kg/mï¿½/s, and here we convert to mol/mï¿½/s.  The convertion coefficient from     !
       !     water to carbon dioxide comes from M09's equation B14.  Here we multiply by    !
       !     the effective area for transpiration, depending on whether the leaves of this  !
       !     plant functional type are hypo-stomatous, symmetrical, or amphistomatous.      !
@@ -238,7 +235,7 @@ module farq_leuning
 
       !------------------------------------------------------------------------------------!
       !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
-      ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m²/s.  !
+      ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/mï¿½/s.  !
       !------------------------------------------------------------------------------------!
       select case(phenology(ipft))
       case (3)
@@ -283,13 +280,13 @@ module farq_leuning
       !    Copy the solution to the standard output variables.  Here we convert the values !
       ! back to the standard ED units                                                      !
       !------------------------------------------------------------------------------------!
-      !----- Carbon demand, convert them to [µmol/m²/s]. ----------------------------------!
+      !----- Carbon demand, convert them to [ï¿½mol/mï¿½/s]. ----------------------------------!
       A_closed       = sngloff(stclosed(ib)%co2_demand    * mol_2_umol8 , tiny_offset)
       A_open         = sngloff(stopen(ib)%co2_demand      * mol_2_umol8 , tiny_offset)
       A_light        = sngloff(lightlim(ib)%co2_demand    * mol_2_umol8 , tiny_offset)
       A_rubp         = sngloff(rubiscolim(ib)%co2_demand  * mol_2_umol8 , tiny_offset)
       A_co2          = sngloff(co2lim(ib)%co2_demand      * mol_2_umol8 , tiny_offset)
-      !----- Stomatal resistance, convert the conductances to [kg/m²/s]. ------------------!
+      !----- Stomatal resistance, convert the conductances to [kg/mï¿½/s]. ------------------!
       gsw_closed     = sngloff(stclosed(ib)%stom_cond_h2o * mmdry8 / effarea_transp(ipft)  &
                               , tiny_offset)
       gsw_open       = sngloff(stopen(ib)%stom_cond_h2o   * mmdry8 / effarea_transp(ipft)  &
@@ -297,17 +294,17 @@ module farq_leuning
       !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
       lsfc_shv_closed = sngloff(stclosed(ib)%lsfc_shv     * ep8         , tiny_offset)
       lsfc_shv_open   = sngloff(stopen(ib)%lsfc_shv       * ep8         , tiny_offset)
-      !----- Leaf surface CO2 concentration, convert them to [µmol/mol]. ------------------!
+      !----- Leaf surface CO2 concentration, convert them to [ï¿½mol/mol]. ------------------!
       lsfc_co2_closed = sngloff(stclosed(ib)%lsfc_co2     * mol_2_umol8 , tiny_offset)
       lsfc_co2_open   = sngloff(stopen(ib)%lsfc_co2       * mol_2_umol8 , tiny_offset)
-      !----- Intercellular carbon dioxide concentration, convert them to [µmol/mol]. ------!
+      !----- Intercellular carbon dioxide concentration, convert them to [ï¿½mol/mol]. ------!
       lint_co2_closed = sngloff(stclosed(ib)%lint_co2     * mol_2_umol8 , tiny_offset)
       lint_co2_open   = sngloff(stopen(ib)%lint_co2       * mol_2_umol8 , tiny_offset)
-      !----- Leaf respiration [µmol/m²/s]. ------------------------------------------------!
+      !----- Leaf respiration [ï¿½mol/mï¿½/s]. ------------------------------------------------!
       leaf_resp       = sngloff(aparms(ib)%leaf_resp      * mol_2_umol8 , tiny_offset)
-      !----- Maximum Rubisco capacity to perform the carboxylase function [µmol/m²/s]. ----!
+      !----- Maximum Rubisco capacity to perform the carboxylase function [ï¿½mol/mï¿½/s]. ----!
       vmout           = sngloff(aparms(ib)%vm             * mol_2_umol8 , tiny_offset)
-      !----- Gross photosynthesis compensation point, convert it to [µmol/mol]. -----------!
+      !----- Gross photosynthesis compensation point, convert it to [ï¿½mol/mol]. -----------!
       comppout        = sngloff(aparms(ib)%compp          * mol_2_umol8 , tiny_offset)
       !------------------------------------------------------------------------------------!
       return
@@ -327,7 +324,7 @@ module farq_leuning
    ! properties, and, in case of light controlled phenology, the leaf life span and the    !
    ! average reference value of the Vm function (Vm0).  The output variables are stored in !
    ! the aparms structure, as they are going to be used in other sub-routines. Both Vm and !
-   ! the reference value Vm0 have units of µmol/m²/s                                       !
+   ! the reference value Vm0 have units of ï¿½mol/mï¿½/s                                       !
    !     Compute the photosynthesis and leaf respiration parameters that depend on temper- !
    ! ature, according to the parameters defined in the "thispft" structure and the         !
    ! functional form chosen by the user.  The variables that are defined there are:        !
@@ -367,8 +364,8 @@ module farq_leuning
       real(kind=4), intent(in) :: leaf_aging_factor ! Ageing factor             [      ---]
       real(kind=4), intent(in) :: green_leaf_factor ! Greeness (prescr. phen.)  [      ---]
       !------ Local variables. ------------------------------------------------------------!
-      real(kind=8)             :: vm_nocorr         ! Vm  with no correction    [ mol/m²/s]
-      real(kind=8)             :: rd_nocorr         ! Rd  with no correction    [ mol/m²/s]
+      real(kind=8)             :: vm_nocorr         ! Vm  with no correction    [ mol/mï¿½/s]
+      real(kind=8)             :: rd_nocorr         ! Rd  with no correction    [ mol/mï¿½/s]
       real(kind=8)             :: lnexplow          ! Low temperature exponent  [      ---]
       real(kind=8)             :: lnexphigh         ! High temperature exponent [      ---]
       real(kind=8)             :: tlow_fun          ! Low temperature bound     [      ---]
@@ -611,14 +608,12 @@ module farq_leuning
    subroutine photosynthesis_exact_solver(limit_flag)
       use c34constants   , only : met              & ! intent(in)
                                 , thispft          & ! intent(in)
-                                , aparms           & ! intent(in)
                                 , stopen           & ! intent(inout)
                                 , stclosed         & ! intent(inout)
                                 , rubiscolim       & ! intent(inout)
                                 , co2lim           & ! intent(inout)
                                 , lightlim         & ! intent(inout)
                                 , copy_solution    ! ! intent(in)
-      use physiology_coms, only : c34smax_gsw8     ! ! intent(in)
       !$ use omp_lib
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
@@ -1033,9 +1028,7 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    subroutine solve_iterative_case(answer,converged)
       use c34constants   , only : solution_vars     & ! structure
-                                , met               & ! intent(in)
-                                , thispft           & ! intent(in)
-                                , aparms            ! ! intent(in)
+                                , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8        ! ! intent(in)
       !$ use omp_lib
       implicit none
@@ -1047,9 +1040,9 @@ module farq_leuning
       real(kind=8)                     :: cia       ! Smallest/previous guess   [  mol/mol]
       real(kind=8)                     :: ciz       ! Largest/new guess         [  mol/mol]
       real(kind=8)                     :: deriv     ! Function derivative       [  mol/mol]
-      real(kind=8)                     :: fun       ! Function evaluation       [mol²/mol²]
-      real(kind=8)                     :: funa      ! Smallest  guess function  [mol²/mol²]
-      real(kind=8)                     :: funz      ! Largest   guess function  [mol²/mol²]
+      real(kind=8)                     :: fun       ! Function evaluation       [molï¿½/molï¿½]
+      real(kind=8)                     :: funa      ! Smallest  guess function  [molï¿½/molï¿½]
+      real(kind=8)                     :: funz      ! Largest   guess function  [molï¿½/molï¿½]
       real(kind=8)                     :: delta     ! Aux. var to find 2nd guess[         ]
       real(kind=8)                     :: cimin     ! Minimum intercell. CO2    [  mol/mol]
       real(kind=8)                     :: cimax     ! Maximum intercell. CO2    [  mol/mol]
@@ -1472,10 +1465,10 @@ module farq_leuning
       real(kind=8), intent(out) :: fun                 ! Function evaluation   [       ---]
       real(kind=8), intent(out) :: deriv               ! Derivative.           [   mol/mol]
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)              :: stom_cond_h2o       ! Water conductance     [  mol/m²/s]
-      real(kind=8)              :: co2_demand          ! CO2 demand            [  mol/m²/s]
-      real(kind=8)              :: co2_demand_prime    ! Deriv. of CO2 demand  [1/mol/m²/s]
-      real(kind=8)              :: stom_cond_h2o_prime ! Deriv. of H2O cond.   [1/mol/m²/s]
+      real(kind=8)              :: stom_cond_h2o       ! Water conductance     [  mol/mï¿½/s]
+      real(kind=8)              :: co2_demand          ! CO2 demand            [  mol/mï¿½/s]
+      real(kind=8)              :: co2_demand_prime    ! Deriv. of CO2 demand  [1/mol/mï¿½/s]
+      real(kind=8)              :: stom_cond_h2o_prime ! Deriv. of H2O cond.   [1/mol/mï¿½/s]
       real(kind=8)              :: efun1               ! 1st term
       real(kind=8)              :: efun2               ! 2nd term
       real(kind=8)              :: efun3               ! 3rd term
@@ -1586,7 +1579,7 @@ module farq_leuning
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2   ! Intercellular CO2 concentration  [  mol/mol]
-      real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/m²/s]
+      real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/mï¿½/s]
       !------------------------------------------------------------------------------------!
       integer :: ib
 
@@ -1618,7 +1611,7 @@ module farq_leuning
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2   ! Intercellular CO2 concentration  [  mol/mol]
-      real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/m²/s]
+      real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/mï¿½/s]
       !------------------------------------------------------------------------------------!
       integer :: ib
 
@@ -1653,9 +1646,9 @@ module farq_leuning
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       real(kind=8), intent(in) :: lint_co2         ! Intercell. CO2 conc.      [   mol/mol]
-      real(kind=8), intent(in) :: stom_cond_h2o    ! Water                     [  mol/m²/s]
-      real(kind=8), intent(in) :: co2_demand       ! CO2 demand                [  mol/m²/s]
-      real(kind=8), intent(in) :: co2_demand_prime ! Derivative of CO2 demand  [1/mol/m²/s]
+      real(kind=8), intent(in) :: stom_cond_h2o    ! Water                     [  mol/mï¿½/s]
+      real(kind=8), intent(in) :: co2_demand       ! CO2 demand                [  mol/mï¿½/s]
+      real(kind=8), intent(in) :: co2_demand_prime ! Derivative of CO2 demand  [1/mol/mï¿½/s]
       !------------------------------------------------------------------------------------!
       integer :: ib
       
@@ -1690,11 +1683,8 @@ module farq_leuning
       use c34constants   , only : thispft           & ! intent(in)
                                 , aparms            & ! intent(in)
                                 , met               ! ! intent(in)
-      use physiology_coms, only : gsw_2_gsc8        & ! intent(in)
-                                , gbw_2_gbc8        & ! intent(in)
-                                , c34smin_lint_co28 & ! intent(in)
-                                , c34smax_lint_co28 & ! intent(in)
-                                , c34smax_gsw8      ! ! intent(in)
+      use physiology_coms, only : gbw_2_gbc8        & ! intent(in)
+                                , c34smin_lint_co28 ! ! intent(in)
       !$ use omp_lib
 
       implicit none
@@ -1705,7 +1695,7 @@ module farq_leuning
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)               :: aquad   ! Quadratic coefficient             [      ---]
       real(kind=8)               :: bquad   ! Linear coefficient                [  mol/mol]
-      real(kind=8)               :: cquad   ! Intercept                         [mol²/mol²]
+      real(kind=8)               :: cquad   ! Intercept                         [molï¿½/molï¿½]
       real(kind=8)               :: ciAo    ! Ci at singularity where Aopen=0   [  mol/mol]
       real(kind=8)               :: cigsw   ! Ci at sing. where gbc(ca-ci)=Ao   [  mol/mol]
       real(kind=8)               :: ciQ     ! Ci at singularity where qi-qs=-D0 [  mol/mol]
@@ -1713,7 +1703,7 @@ module farq_leuning
       real(kind=8)               :: ytmp    ! variable for ciQ
       real(kind=8)               :: ztmp    ! variable for ciQ
       real(kind=8)               :: wtmp    ! variable for ciQ
-      real(kind=8)               :: discr   ! The discriminant of the quad. eq. [mol²/mol²]
+      real(kind=8)               :: discr   ! The discriminant of the quad. eq. [molï¿½/molï¿½]
       real(kind=8)               :: ciroot1 ! 1st root for the quadratic eqn.   [  mol/mol]
       real(kind=8)               :: ciroot2 ! 2nd root for the quadratic eqn.   [  mol/mol]
       integer                    :: ib
@@ -1983,10 +1973,8 @@ module farq_leuning
    ! cannot be a constant because it depends on the PFT and the environmental conditions.  !
    !---------------------------------------------------------------------------------------!
    real(kind=8) function find_twilight_min()
-      use c34constants   , only : thispft           & ! intent(in)
-                                , aparms            & ! intent(in)
+      use c34constants   , only : aparms            & ! intent(in)
                                 , met               ! ! intent(in)
-      use physiology_coms, only : gsw_2_gsc8
       !$ use omp_lib
       implicit none
       integer :: ib

@@ -388,8 +388,8 @@ module canopy_air_coms
    !=======================================================================================!
    !   Soil conductance terms, from:                                                       !
    !                                                                                       !
-   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifié !
-   !     soumis à une excitation amtosphérique naturelle. Comparaison: Modèles-expérience. !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifiï¿½ !
+   !     soumis ï¿½ une excitation amtosphï¿½rique naturelle. Comparaison: Modï¿½les-expï¿½rience. !
    !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
    !                                                                                       !
    ! retrieved from:                                                                       !
@@ -938,7 +938,6 @@ module canopy_air_coms
       real                :: fun       ! Function for which we seek a root.        [   ---]
       real                :: funa      ! Smallest guess function.                  [   ---]
       real                :: funz      ! Largest guess function.                   [   ---]
-      real                :: delta0    ! Aux. var --- 2nd guess for bisection      [   ---]
       real                :: delta     ! Aux. var --- 2nd guess for bisection      [   ---]
       real                :: coeff     ! RiB * zstar / (Pr * (zstar - z0))         [   ---]
       real                :: zetamin   ! Minimum zeta for stable case.             [   ---]
@@ -1322,7 +1321,6 @@ module canopy_air_coms
       real(kind=8)             :: fun       ! Function for which we seek a root.   [   ---]
       real(kind=8)             :: funa      ! Smallest guess function.             [   ---]
       real(kind=8)             :: funz      ! Largest guess function.              [   ---]
-      real(kind=8)             :: delta0    ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: coeff     ! RiB * zstar / (Pr * (zstar - z0))    [   ---]
       real(kind=8)             :: zetamin   ! Minimum zeta for stable case.        [   ---]
@@ -1702,7 +1700,6 @@ module canopy_air_coms
       real(kind=4)             :: fun       ! Function for which we seek a root.   [   ---]
       real(kind=4)             :: funa      ! Smallest guess function.             [   ---]
       real(kind=4)             :: funz      ! Largest guess function.              [   ---]
-      real(kind=4)             :: delta0    ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=4)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=4)             :: coeff     ! RiB*zstar/(Pr*(zstar-z0))*(k*u/u*)^2 [   ---]
       real(kind=4)             :: coeffi    ! 1/coeff                              [   ---]
@@ -2052,7 +2049,6 @@ module canopy_air_coms
       real(kind=8)             :: fun       ! Function for which we seek a root.   [   ---]
       real(kind=8)             :: funa      ! Smallest guess function.             [   ---]
       real(kind=8)             :: funz      ! Largest guess function.              [   ---]
-      real(kind=8)             :: delta0    ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: coeff     ! RiB*zstar/(Pr*(zstar-z0))*(k*u/u*)^2 [   ---]
       real(kind=8)             :: coeffi    ! 1.d0 / coeff                         [   ---]

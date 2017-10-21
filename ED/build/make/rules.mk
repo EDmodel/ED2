@@ -98,6 +98,11 @@ ed_bigleaf_init.o : $(ED_INIT)/ed_bigleaf_init.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
+ed_cn_utils.o : $(ED_UTILS)/ed_cn_utils.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
 ed_driver.o : $(ED_DRIVER)/ed_driver.F90
 	/bin/rm -f $(<F:.F90=.F90)
 	/bin/cp -f $< $(<F:.F90=.F90)
@@ -123,10 +128,10 @@ ed_init_atm.o : $(ED_INIT)/ed_init_atm.F90
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 
-ed_init_full_history.o : $(ED_IO)/ed_init_full_history.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+ed_init_full_history.o : $(ED_IO)/ed_init_full_history.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
 
 ed_load_namelist.o : $(ED_IO)/ed_load_namelist.f90
 	/bin/rm -f $(<F:.f90=.f90)
@@ -268,12 +273,7 @@ fatal_error.o : $(ED_UTILS)/fatal_error.F90
 	/bin/cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 
-fire_ed10.o : $(ED_DYNAMICS)/fire_ed10.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
-fire_ed22.o : $(ED_DYNAMICS)/fire_ed22.f90
+fire.o : $(ED_DYNAMICS)/fire.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -348,11 +348,6 @@ hydrology_constants.o: $(ED_MEMORY)/hydrology_constants.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-init_hydro_sites.o : $(ED_INIT)/init_hydro_sites.f90
-	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90) 
-
 invmondays.o : $(ED_UTILS)/invmondays.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
@@ -410,11 +405,6 @@ numutils.o: $(ED_UTILS)/numutils.f90
 
 old_twostream_rad.o : $(ED_DYNAMICS)/old_twostream_rad.f90
 	/bin/rm -f $(<F:.f90=.f90)
-	/bin/cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-
-optimiz_coms.o : $(ED_MEMORY)/optimiz_coms.f90
-	/bin/rm -f $(<F:.f90=.f90) 
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
@@ -478,10 +468,15 @@ rk4_coms.o : $(ED_MEMORY)/rk4_coms.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
+rk4_copy_patch.o : $(ED_DYNAMICS)/rk4_copy_patch.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+
+rk4_derivs.o : $(ED_DYNAMICS)/rk4_derivs.f90
+	/bin/rm -f $(<F:.f90=.f90)
+	/bin/cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
 
 rk4_driver.o : $(ED_DYNAMICS)/rk4_driver.F90
 	/bin/rm -f $(<F:.F90=.F90)
@@ -497,11 +492,6 @@ rk4_misc.o : $(ED_DYNAMICS)/rk4_misc.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
-
-rk4_stepper.o : $(ED_DYNAMICS)/rk4_stepper.F90
-	/bin/rm -f $(<F:.F90=.F90)
-	/bin/cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
 
 rsys.o: $(ED_UTILS)/rsys.F90
 	/bin/rm -f $(<F:.F90=.F90)
@@ -543,7 +533,7 @@ twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 
-update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
+update_derived_utils.o : $(ED_UTILS)/update_derived_utils.f90
 	/bin/rm -f $(<F:.f90=.f90)
 	/bin/cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

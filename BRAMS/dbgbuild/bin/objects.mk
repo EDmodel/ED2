@@ -299,6 +299,7 @@ OBJ_MODEL =                         \
 	disturb_coms.o              \
 	disturbance.o               \
 	ed_bigleaf_init.o           \
+	ed_cn_utils.o               \
 	ed_filelist.o               \
 	ed_grid.o                   \
 	ed_init_full_history.o      \
@@ -375,6 +376,6 @@ OBJ_MODEL =                         \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
-	update_derived_props.o      \
+	update_derived_utils.o      \
 	vegetation_dynamics.o
 

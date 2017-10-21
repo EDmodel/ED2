@@ -1,19 +1,30 @@
 #!/bin/bash
-################ COMPILER OPTIONS (INTEL, ODYSSEY, SUN-HPC, SDUMONT ONLY) ##################
-#------------------------------------------------------------------------------------------#
-# A/B. Pickiest.  Use this whenever you change arguments on functions and subroutines, and #
-#      perform the three steps to make sure the code has consistent interfaces (i.e.       #
-#      arguments match between subroutine declaration and subroutine calls).  A and B are  #
-#      the same now (stick with one), but you must provide another argument, -s <value>,   #
-#      which will tell which step of the compilation is to be run.                         #
-#      Step 1. Compile and generate interfaces                                             #
-#              (e.g. ./install.sh -k A -p odyssey -s 1)                                    #
-#      Step 2. Remove original files, but keep modules (only run this step after you       #
-#              create the executable using step 1).                                        #
-#              (e.g. ./install.sh -k A -p odyssey -s 2)                                    #
-#      Step 3. Compile again with the interface verification.                              #
-#              (e.g. ./install.sh -k A -p odyssey -s 3)                                    #
+################################## COMPILER OPTIONS ########################################
 #                                                                                          #
+# Gfortran-based                                                                           #
+# --------------                                                                           #
+#                                                                                          #
+# A/B/C/D. Strictest. Use this whenever you make significant changes to the code. These    #
+#             options will turn on multiple checks allowing for effective debugging.       #
+#             Currently there A, B, C, and D options are the same for gfortran             #
+# E.       Performance.  This option removes most code checks, and it is intended to be    #
+#          used when the code is stable and ready to run science simulations.              #
+#                                                                                          #
+#                                                                                          #
+# Ifort-based                                                                              #
+# -----------                                                                              #
+#                                                                                          #
+# A/B. Pickiest - Use this whenever you change arguments on functions and subroutines.     #
+#                 This will perform the same tests as B but it will also check whether all #
+#                 arguments match between subroutine declaration and subroutine calls.     #
+#                 WARNING: In order to really check all interfaces you must compile with   #
+#                          this option twice:                                              #
+#                 1. Compile (./install.sh A)                                              #
+#                 2. Prepare second compilation(./2ndcomp.sh)                              #
+#                 3. Compile one more time (./install.sh B)                                #
+#                 If the compilation fails either at step 3, then your code has interface  #
+#                 problems. If it successfully compiles, then the code is fine for         #
+#                 interfaces.                                                              #
 # C. Pickiest with no interface - This will compile fast but the run will be slow due to   #
 #    the -O0 option. However, by setting -O0 you will take full advantage of the intel     #
 #    debugger.                                                                             #
@@ -25,10 +36,14 @@
 #    if you have a good idea of which problem you are dealing with.                        #
 #                                                                                          #
 # E. Fast - This is all about performance, use only when you are sure that the model has   #
-#           no code problem, and you want results fast. This will not check for any        #
-#           problems, which means that this is an OPTION SUITABLE for end users.           #
-#           DEVELOPERS, THIS IS NOT THE OPTION YOU SHOULD USE TO CHECK WHETHER YOUR        #
-#           NEW CODE IS WORKING OR NOT.                                                    #
+#           no code problem, and you want results asap. This will not check for any        #
+#           problems, which means that this is an option suitable for end users, not de-   #
+#           velopers.                                                                      #
+#                                                                                          #
+#                                                                                          #
+# usage example:                                                                           #
+#                                                                                          #
+# install.sh -k C -p intel                                                                 #
 #------------------------------------------------------------------------------------------#
 
 #----- Define the number of arguments. ----------------------------------------------------#
@@ -59,6 +74,7 @@ key="$1"
       ;;
    -c|--clean)
       CLEAN="clean"
+      STEP=1
       ;;
    -g|--gitoff)
       USE_GIT=false
@@ -90,31 +106,38 @@ fi
 
 
 # Check that the step is properly set 
-case ${KIND} in
-['A','B']*)
-   case ${STEP} in
-   0)
-      echo "You must provide step (option -s or --step) when use \"-k A\" or \"-k B\""
-      exit 1
-      ;;
-   1)
-      LKIND="A"
-      echo "Step ${STEP}, generate interfaces."
-      ;;
-   2)
-      LKIND="A"
-      echo "Step ${STEP}, prepare for interface check."
-      ;;
-   3)
-      LKIND="B"
-      echo "Step ${STEP}, check interfaces."
+case "${PLATFORM}" in
+intel|odyssey|sunhpc|sdumont)
+   case ${KIND} in
+   ['A','B']*)
+      case ${STEP} in
+      0)
+         echo "You must provide step (option -s or --step) when use \"-k A\" or \"-k B\""
+         exit 1
+         ;;
+      1)
+         LKIND="A"
+         echo "Step ${STEP}, generate interfaces."
+         ;;
+      2)
+         LKIND="A"
+         echo "Step ${STEP}, prepare for interface check."
+         ;;
+      3)
+         LKIND="B"
+         echo "Step ${STEP}, check interfaces."
+         ;;
+      *)
+         echo "Invalid step! It must be one of the following options:"
+         echo "-s 1 (--step 1): Generate interfaces"
+         echo "-s 2 (--step 2): Prepare for interface check"
+         echo "-s 3 (--step 3): Check interfaces"
+         exit 1
+         ;;
+      esac
       ;;
    *)
-      echo "Invalid step! It must be one of the following options:"
-      echo "-s 1 (--step 1): Generate interfaces"
-      echo "-s 2 (--step 2): Prepare for interface check"
-      echo "-s 3 (--step 3): Check interfaces"
-      exit 1
+      LKIND=${KIND}
       ;;
    esac
    ;;
@@ -123,13 +146,13 @@ case ${KIND} in
    ;;
 esac
 
-      
+
 # Set opt and bin
 case ${KIND} in
 ['A','B','C','D']*)
    OPT='dbg'
    ;;
-['E']*)
+['E','F']*)
    OPT='opt'
    ;;
 *)
@@ -167,7 +190,7 @@ case ${STEP} in
    # Link to makefiles, includes, and shell scripts
    ln -sf ../make/*.mk ./
    ln -sf ../make/Makefile ./
-   ln -sf ../make/include.mk.${OPT}.${PLATFORM} ./include.mk
+   ln -sf ../make/include.mk.${PLATFORM} ./include.mk
    ln -sf ../shell/* ./
    touch dependency.mk
 

@@ -29,6 +29,7 @@ OBJ_MODEL =                        \
 	edio.o                     \
 	ed_1st.o                   \
 	ed_bigleaf_init.o          \
+	ed_cn_utils.o              \
 	ed_driver.o                \
 	ed_filelist.o              \
 	ed_grid.o                  \
@@ -63,8 +64,7 @@ OBJ_MODEL =                        \
 	events.o                   \
 	farq_leuning.o             \
 	fatal_error.o              \
-	fire_ed10.o                \
-	fire_ed22.o                \
+	fire.o                     \
 	forestry.o                 \
 	fusion_fission_coms.o      \
 	fuse_fiss_utils.o          \
@@ -79,7 +79,6 @@ OBJ_MODEL =                        \
 	hybrid_driver.o            \
 	hydrology_coms.o           \
 	hydrology_constants.o      \
-	init_hydro_sites.o         \
 	invmondays.o               \
 	landuse_init.o             \
 	lapse.o                    \
@@ -92,7 +91,6 @@ OBJ_MODEL =                        \
 	multiple_scatter.o         \
 	numutils.o                 \
 	old_twostream_rad.o        \
-	optimiz_coms.o             \
 	phenology_aux.o            \
 	phenology_coms.o           \
 	phenology_driv.o           \
@@ -105,11 +103,11 @@ OBJ_MODEL =                        \
 	random_utils.o             \
 	reproduction.o             \
 	rk4_coms.o                 \
+	rk4_copy_patch.o           \
 	rk4_derivs.o               \
 	rk4_driver.o               \
 	rk4_integ_utils.o          \
 	rk4_misc.o                 \
-	rk4_stepper.o              \
 	rsys.o                     \
 	soil_coms.o                \
 	soil_respiration.o         \
@@ -118,7 +116,7 @@ OBJ_MODEL =                        \
 	therm_lib.o                \
 	therm_lib8.o               \
 	twostream_rad.o            \
-	update_derived_props.o     \
+	update_derived_utils.o     \
 	utils_c.o                  \
 	utils_f.o                  \
 	vegetation_dynamics.o

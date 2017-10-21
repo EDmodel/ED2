@@ -1395,6 +1395,19 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
+   ! IFUSION        -- Control on patch/cohort fusion scheme                               !
+   !                   0.  Original ED-2.1 scheme.  This may be eventually removed,        !
+   !                       It's kept here for legacy.                                      !
+   !                   1.  New scheme, developed to address a few issues that become more  !
+   !                       evident when initialising ED with large (>1000) number of       !
+   !                       patches.  It uses absolute difference in light levels to avoid  !
+   !                       fusing patches with very different canopies, and also makes     !
+   !                       sure that remaining patches have area above MIN_PATCH_AREA and  !
+   !                       that a high percentage of the original landscape is retained.   !
+   !                       (the old scheme can throw away large numbers of small patches   !
+   !                       that could account for a significant fraction of the landscape) !
+   !                                                                                       !
+   !                                                                                       !
    ! MAXSITE        -- This is the strict maximum number of sites that each polygon can    !
    !                   contain.  Currently this is used only when the user wants to run    !
    !                   the same polygon with multiple soil types.  If there aren't that    !
@@ -1422,6 +1435,7 @@ $ED_NL
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
+   NL%IFUSION        =     1
    NL%MAXSITE        =     1
    NL%MAXPATCH       = mymaxpatch
    NL%MAXCOHORT      = mymaxcohort
@@ -1698,14 +1712,6 @@ $ED_NL
    !            biomass.                                                                   !
    !---------------------------------------------------------------------------------------!
    NL%STORAGE_RESP_SCHEME = 1
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! IOPTINPT -- Optimization configuration. (Currently not used)                          !
-   !---------------------------------------------------------------------------------------!
-   NL%IOPTINPT = ''
    !---------------------------------------------------------------------------------------!
 $END
 !==========================================================================================!

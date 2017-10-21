@@ -3,11 +3,12 @@ sudo: required
 
 before_install:
     - sudo apt-get clean && sudo apt-get update
-    - sudo apt-get install gcc-4.6 gfortran-4.6 hdf5-tools libmpich1.0-dev libhdf5-mpich-dev
-    - sudo ln -s /usr/bin/gfortran-4.6 /usr/bin/gfortran
+    - sudo apt-get install gcc gfortran hdf5-tools libopenmpi-dev libhdf5-openmpi-dev 
     - which gfortran
+    - which gcc
+    - which h5dump
 
 script:
     - pwd
     - cd ED/build/
-    - install.sh
+    - ./install.sh -k C -p travisci -g

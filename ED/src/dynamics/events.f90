@@ -5,7 +5,7 @@ subroutine read_events_xml(filename,success)
   implicit none
   character*(*),intent(in) :: filename
   logical                  :: iamhere
-  logical, intent(out)     :: success 
+  logical, intent(out)     :: success
   integer                  :: nevent
   success = .false.
 
@@ -18,8 +18,8 @@ subroutine read_events_xml(filename,success)
         success = .true.
 
         call libxml2f90__ll_selectlist('EVENTS')
-        call libxml2f90__ll_selecttag('ACT','eventlist',1) !select upper level tag  
-        call libxml2f90__ll_exist('DOWN','event',nevent)  
+        call libxml2f90__ll_selecttag('ACT','eventlist',1) !select upper level tag
+        call libxml2f90__ll_exist('DOWN','event',nevent)
         print*,"NUMBER OF EVENTS FOUND", nevent
 
      end if
@@ -29,7 +29,7 @@ end subroutine read_events_xml
 
 
 subroutine prescribed_event(year,doy)
-  use ed_misc_coms, only: event_file 
+  use ed_misc_coms, only: event_file
   implicit none
 
   integer, intent(in) :: year
@@ -42,7 +42,7 @@ subroutine prescribed_event(year,doy)
   integer(kind=4),dimension(20) ::pft
   real(kind=8),dimension(20):: rval
   logical(kind=4) :: texist = .false.
-  
+
 
 
   if (event_file /= '') then
@@ -54,9 +54,9 @@ subroutine prescribed_event(year,doy)
         if(first) then !! if read was successful
 
            !! access list and find next event
-           call libxml2f90__ll_selectlist('EVENTS')  
+           call libxml2f90__ll_selectlist('EVENTS')
            call libxml2f90__ll_selecttag('ACT','eventlist',1) !select upper level tag
-           call libxml2f90__ll_exist('DOWN','event',nevent)           
+           call libxml2f90__ll_exist('DOWN','event',nevent)
            print*,"NUMBER OF EVENTS FOUND", nevent
            if(nevent .ge. 1) then
               do i=1,nevent
@@ -75,7 +75,7 @@ subroutine prescribed_event(year,doy)
               enddo
               print*,"FIRST EVENT",next_doy,next_year
            end if
-              
+
         endif
 
         first = .false.
@@ -84,10 +84,10 @@ subroutine prescribed_event(year,doy)
      if(next_year == year .and. next_doy == doy) then
 
         !! access list and find todays events
-        call libxml2f90__ll_selectlist('EVENTS')  
+        call libxml2f90__ll_selectlist('EVENTS')
         call libxml2f90__ll_selecttag('ACT','eventlist',1) !select upper level tag
         call libxml2f90__ll_exist('DOWN','event',nevent)
- 
+
 !        print*,"EVENT",nevent
         findevent: do i=1,nevent !! Find Event in list
            call libxml2f90__ll_selecttag('DOWN','event',i) !select event
@@ -97,15 +97,15 @@ subroutine prescribed_event(year,doy)
            !! see if the event bumps the closest event
            if((curr_year == year .and. curr_doy == doy)) then
               print*,"EVENT",i,"of",nevent
-              
+
               !!! PROCESS AGRICULTURAL EVENTS
 
               !!! HARVESTING
               call libxml2f90__ll_exist('DOWN','harvest',nrep)
               if(nrep .gt. 0) then
-                 print*,"HARVEST FESTIVAL"                 
+                 print*,"HARVEST FESTIVAL"
                  ! agb_frac
-                 ! bgb_frac 
+                 ! bgb_frac
                  do j = 1,nrep
                     call libxml2f90__ll_selecttag('DOWN','harvest',j)
                     !! Above-ground coarse biomass fraction removed
@@ -122,7 +122,7 @@ subroutine prescribed_event(year,doy)
                     if(.not.texist) rval(4) = 1.0d+0
 
                     call event_harvest(rval(1),rval(2),rval(3),rval(4))
-                    
+
                     call libxml2f90__ll_selecttag('UP','event',i)
                  end do
               end if
@@ -150,7 +150,7 @@ subroutine prescribed_event(year,doy)
                     if(.not.texist) rval(5) = 0.0d+0
 
                     call event_fertilize(rval(1:5))
-                 
+
                     call libxml2f90__ll_selecttag('UP','event',i)
                  end do
               endif
@@ -164,11 +164,11 @@ subroutine prescribed_event(year,doy)
 
                     call getConfigREAL  ('depth','till',j,rval(1),texist)
                     if(.not.texist) rval(1) = 0.15d+0 !assume a default of 15cm
-                    
+
                     call event_till(rval(1))
 
                     call libxml2f90__ll_selecttag('UP','event',i)
-   
+
                  enddo
               end if
 
@@ -176,18 +176,18 @@ subroutine prescribed_event(year,doy)
               if(nrep .gt. 0) then
                  print*,"IRRIGATE"
                  do j = 1,nrep
-                    
+
                     call getConfigREAL ('irrigate','event',j,rval(1),texist)
                     if(.not.texist) rval(1) = 0.0d+0
-                    
+
                     call event_irrigate(rval(1))
-                   
+
                  enddo
               endif
 
               call libxml2f90__ll_exist('DOWN','pesticide',nrep)
               if(nrep .gt. 0) print*,"PESTICIDE"
-              
+
               call libxml2f90__ll_exist('DOWN','herbicide',nrep)
               if(nrep .gt. 0) print*,"HERBICIDE"
               !pft !! spp removed
@@ -203,7 +203,7 @@ subroutine prescribed_event(year,doy)
               call libxml2f90__ll_exist('DOWN','thin',nrep)
               if(nrep .gt. 0) print*,"There's too many trees around here"
               !pft, default = all
-              
+
               !!! PROCESS NATURAL DISTURBANCES
               call libxml2f90__ll_exist('DOWN','wind',nrep)
               if(nrep .gt. 0) print*,"If the wind blows, your gone"
@@ -217,7 +217,7 @@ subroutine prescribed_event(year,doy)
                     call libxml2f90__ll_selecttag('DOWN','fire',j)
 
                     call event_fire()
-                    
+
                     call libxml2f90__ll_selecttag('UP','event',i)
                  end do
               end if
@@ -229,7 +229,7 @@ subroutine prescribed_event(year,doy)
               if(nrep .gt. 0) print*,"introduced species"
 
               !! PLANTING (assumed to occur AFTER the other events)
-              call libxml2f90__ll_exist('DOWN','plant',nrep) 
+              call libxml2f90__ll_exist('DOWN','plant',nrep)
               if(nrep .gt. 0) then
                  do j = 1,nrep
                     call libxml2f90__ll_selecttag('DOWN','plant',j)
@@ -242,13 +242,13 @@ subroutine prescribed_event(year,doy)
                     call getConfigREAL   ('density','plant',j,rval(1),texist)
                     if(.not.texist) rval(1) = 1.0d+0
                     call event_planting(pft(1),rval(1))
-                    
+
                     call libxml2f90__ll_selecttag('UP','event',i)
                  end do
               end if
 
 
-              
+
               call libxml2f90__ll_selecttag('UP','eventlist',1) !move back up to top level
               exit findevent
            endif
@@ -263,7 +263,7 @@ subroutine prescribed_event(year,doy)
            call libxml2f90__ll_selecttag('DOWN','event',i) !select event
            call getConfigINT   ('year','event',i,curr_year,texist)
            call getConfigINT   ('doy','event',i,curr_doy,texist)
-           
+
            !! see if the event bumps the closest event
            if((curr_year == year .and. curr_doy .gt. doy) .or. (curr_year .gt. year)) then
               if((curr_year .lt. next_year) .or. (curr_year == next_year .and. curr_doy .lt. next_doy)) then
@@ -283,12 +283,13 @@ end subroutine prescribed_event
 
 
 subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
-  use grid_coms, only : ngrids,nzg
+  use stable_cohorts, only : is_resolvable
+  use update_derived_utils, only : update_patch_derived_props, update_site_derived_props
+  use grid_coms, only : ngrids
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
-  use pft_coms, only:sla,qsw,qbark,q,hgt_min, agf_bs, is_grass
-  use disturbance_utils,only: plant_patch
+  use pft_coms, only:qsw,qbark,q,hgt_min, agf_bs, is_grass
   use ed_therm_lib, only: calc_veg_hcap,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
   use allometry, only : bd2dbh, dbh2h, bl2dbh, bl2h, h2dbh, area_indices, ed_biomass, &
@@ -331,24 +332,24 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   print*,agb_frac,bgb_frac,fol_frac
 
   do ifm = 1,ngrids
-     cgrid => edgrid_g(ifm) 
+     cgrid => edgrid_g(ifm)
      do ipy = 1,cgrid%npolygons
-        
+
         cpoly => cgrid%polygon(ipy)
-        
+
         do isi = 1,cpoly%nsites
-           
+
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              
+
               cpatch => csite%patch(ipa)
 
               if(cpatch%ncohorts > 0) then
 
               do ico=1,cpatch%ncohorts
-                 
-                 pft = cpatch%pft(ico)                 
+
+                 pft = cpatch%pft(ico)
                  !! calc new pool sizes
 
                  ialloc     =  1.0 / (1.0 + q(pft) + (qsw(pft)+qbark(pft))*cpatch%hite(ico))
@@ -368,11 +369,11 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
 
                  !! move residual frac to debris/litter pools
                    !! For now assume 100% removal [[needs to be updated]]
-                 
 
-                 !! update biomass pools  
-                 !! [[this needs to be more sophisticated]] 
-                 
+
+                 !! update biomass pools
+                 !! [[this needs to be more sophisticated]]
+
                  cpatch%balive(ico)    = max(0.0,bleaf_new + bfr_new + bswa_new + bswb_new)
                  cpatch%broot(ico)     = max(0.0,bfr_new)
                  cpatch%bsapwooda(ico) = max(0.0,bswa_new)
@@ -380,7 +381,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%bbark(ico)     = max(0.0,bbark_new)
                  cpatch%bdead(ico)     = max(0.0,bdead_new)
                  cpatch%bstorage(ico)  = max(0.0,bstore_new)
-                 
+
                  if(bleaf_new .le. tiny(1.0)) then
                     cpatch%phenology_status(ico) = -2
                     cpatch%elongf(ico)           = 0.0
@@ -392,33 +393,29 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  end if
 
                  if(cpatch%bdead(ico) .gt. tiny(1.0)) then
-                    if(is_grass(cpatch%pft(ico)) .and. igrass==1) then 
+                    if(is_grass(cpatch%pft(ico)) .and. igrass==1) then
                        cpatch%hite(ico) = max( hgt_min(pft), bl2h(cpatch%bleaf(ico),pft))
                        cpatch%dbh (ico) = h2dbh(cpatch%hite(ico),pft)
                     else
-                       cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
+                       cpatch%dbh (ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
                        cpatch%hite(ico) = dbh2h (cpatch%pft(ico), cpatch%dbh(ico))
                     end if
                  else
                     cpatch%dbh(ico)  = 0.0
                     cpatch%hite(ico) = 0.0
                  end if
-                 
+
                  !----- Update LAI, WAI, and CAI ------------------------------------------!
-                 call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%dbh(ico)    &
-                                  ,cpatch%hite(ico),cpatch%pft(ico),cpatch%sla(ico)        &
-                                  ,cpatch%lai(ico),cpatch%wai(ico),cpatch%crown_area(ico))
+                 call area_indices(cpatch, ico)
 
                  !----- Update basal area and above-ground biomass. -----------------------!
-                 cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)            
+                 cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
                  cpatch%btimber(ico) = size2bt(cpatch%dbh(ico),cpatch%hite(ico)            &
                                               ,cpatch%bdead(ico),cpatch%bsapwooda(ico)     &
                                               ,cpatch%bbark(ico),cpatch%pft(ico))
                  cpatch%thbark (ico) = size2xb(cpatch%dbh(ico),cpatch%hite(ico)            &
                                               ,cpatch%bbark(ico),cpatch%pft(ico))
-                 cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%bleaf(ico)      &
-                                                 ,cpatch%bsapwooda(ico),cpatch%bbark(ico)  &
-                                                 ,cpatch%pft(ico))
+                 cpatch%agb(ico)     = ed_biomass(cpatch, ico)
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
                  ! worry, if there is any, it will go down through shedding the next       !
@@ -436,17 +433,17 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call is_resolvable(csite,ipa,ico)
 
               enddo
-             
+
               !! remove small cohorts
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
            end if  !! check to make sure there ARE cohorts
 
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props(cpoly,0,isi)           
+           call update_site_derived_props(cpoly,0,isi)
         end do
      end do
 
@@ -458,14 +455,18 @@ end subroutine event_harvest
 
 
 subroutine event_planting(pft,density8)
+  use rk4_integ_utils, only : initialize_rk4patches
+  use update_derived_utils, only : update_patch_thermo_props  &
+                                 , update_patch_derived_props &
+                                 , update_site_derived_props
   use grid_coms, only : ngrids,nzg,nzs
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
-       filltab_alltypes 
-  use pft_coms, only:sla,qsw,q,hgt_min
+       filltab_alltypes
   use disturbance_utils,only: plant_patch
   use budget_utils     , only : update_budget
+  use ed_type_init     , only : new_patch_sfc_props
   implicit none
   integer(kind=4),intent(in) :: pft
   real(kind=8),intent(in) :: density8
@@ -491,27 +492,27 @@ subroutine event_planting(pft,density8)
   print*,pft,density
 
   do ifm = 1,ngrids
-     cgrid => edgrid_g(ifm) 
+     cgrid => edgrid_g(ifm)
      do ipy = 1,cgrid%npolygons
-        
+
         cpoly => cgrid%polygon(ipy)
-        
+
         do isi = 1,cpoly%nsites
-           
+
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
               call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
               call plant_patch(csite,ipa,nzg,pft,density,cpoly%ntext_soil(:,isi) &
-                              ,cpoly%green_leaf_factor(:,isi),planting_ht,cpoly%lsl(isi))
+                              ,planting_ht,cpoly%lsl(isi))
               call update_patch_derived_props(csite,ipa)
               call new_patch_sfc_props(csite, ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
 
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props(cpoly,1,isi)           
+           call update_site_derived_props(cpoly,1,isi)
 
         enddo
 
@@ -527,12 +528,11 @@ subroutine event_planting(pft,density8)
 end subroutine event_planting
 
 subroutine event_fertilize(rval8)
-  use grid_coms, only : ngrids, nzg
+  use update_derived_utils, only : update_patch_derived_props, update_site_derived_props
+  use grid_coms, only : ngrids
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
-       patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
-  use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use disturbance_utils,only: plant_patch
+       patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
   use budget_utils     , only : update_budget
   real(kind=8),intent(in),dimension(5) :: rval8
 
@@ -562,28 +562,28 @@ subroutine event_fertilize(rval8)
   print*,rval8
 
   do ifm = 1,ngrids
-     cgrid => edgrid_g(ifm) 
+     cgrid => edgrid_g(ifm)
      do ipy = 1,cgrid%npolygons
-        
+
         cpoly => cgrid%polygon(ipy)
-        
+
         do isi = 1,cpoly%nsites
-           
+
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              
+
               cpatch => csite%patch(ipa)
 
               csite%mineralized_soil_N(ipa) = max(0.0,csite%mineralized_soil_N(ipa) + nh4 + no3)
-             
+
               !! update patch properties
               call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
            enddo
 
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props(cpoly,0,isi)           
+           call update_site_derived_props(cpoly,0,isi)
         end do
      end do
 
@@ -608,7 +608,7 @@ subroutine event_irrigate(rval8)
   type(sitetype),pointer :: csite
   type(patchtype),pointer :: cpatch
 
-  iwater = real(rval8)     
+  iwater = real(rval8)
 
   print*,"----------------------------"
   print*,"----------------------------"
@@ -628,17 +628,17 @@ subroutine event_irrigate(rval8)
   end if
 
   do ifm = 1,ngrids
-     cgrid => edgrid_g(ifm) 
+     cgrid => edgrid_g(ifm)
      do ipy = 1,cgrid%npolygons
-        
+
         cpoly => cgrid%polygon(ipy)
-        
+
         do isi = 1,cpoly%nsites
-           
+
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              
+
               cpatch => csite%patch(ipa)
 
               !! note, assume irrigation water is at same temperature as soil
@@ -695,11 +695,12 @@ subroutine event_fire()
 end subroutine event_fire
 
 subroutine event_till(rval8)
+  use update_derived_utils, only : update_patch_derived_props, update_site_derived_props
   use grid_coms, only : ngrids
   use ed_state_vars,only: edgrid_g, &
        edtype,polygontype,sitetype, &
-       patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
-  use pft_coms, only: c2n_structural, c2n_slow, c2n_storage,c2n_leaf,c2n_stem,l2n_stem
+       patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype
+  use pft_coms, only: c2n_storage,c2n_leaf,c2n_stem,l2n_stem
   use decomp_coms, only: f_labile
   use fuse_fiss_utils, only: terminate_cohorts
   use ed_therm_lib, only : calc_veg_hcap
@@ -733,24 +734,24 @@ subroutine event_till(rval8)
   print*,rval8
 
   do ifm = 1,ngrids
-     cgrid => edgrid_g(ifm) 
+     cgrid => edgrid_g(ifm)
      do ipy = 1,cgrid%npolygons
-        
+
         cpoly => cgrid%polygon(ipy)
-        
+
         do isi = 1,cpoly%nsites
-           
+
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              
+
               cpatch => csite%patch(ipa)
               print*,cpatch%ncohorts
               if(cpatch%ncohorts > 0) then
 
               do ico=1,cpatch%ncohorts
-                 
-                 pft = cpatch%pft(ico)                 
+
+                 pft = cpatch%pft(ico)
                  !! move biomass to debris/litter pools
                  csite%fast_soil_C(ipa) = csite%fast_soil_C(ipa) + &
                       f_labile(pft)*cpatch%balive(ico) + &
@@ -758,7 +759,7 @@ subroutine event_till(rval8)
 
                  csite%structural_soil_C(ipa) = csite%structural_soil_C(ipa) + &
                       (1.0-f_labile(pft))*cpatch%balive(ico) + &
-                      cpatch%bdead(ico) 
+                      cpatch%bdead(ico)
                  csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa) + &
                       (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem(pft) + &
                       cpatch%bdead(ico)* l2n_stem / c2n_stem(pft)
@@ -803,18 +804,18 @@ subroutine event_till(rval8)
                                                     ,cpatch%wood_fliq (ico))
                  cpatch%phenology_status(ico) = -2
                  cpatch%elongf(ico)           = 0.0
-                 
+
               enddo
               !! remove small cohorts
               call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
               !! update patch properties
               call update_patch_derived_props(csite,ipa)
-              call update_budget(csite, cpoly%lsl(isi),ipa,ipa)
+              call update_budget(csite, cpoly%lsl(isi),ipa)
               endif
            enddo
            ! Update site properties. ## THINK ABOUT WHAT TO SET FLAG##########
-           call update_site_derived_props(cpoly,0,isi)           
+           call update_site_derived_props(cpoly,0,isi)
         end do
      end do
 
@@ -861,18 +862,18 @@ end subroutine event_till
 !!$print*,cpatch%veg_energy(ico)
 !!$
 !!$              !! count as new recruitment?
-!!$              cpatch%new_recruit_flag(ico) = 1 
+!!$              cpatch%new_recruit_flag(ico) = 1
 !!$print*,"init_cohorts"
 !!$              call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
-!!$              
+!!$
 !!$              csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
 !!$              cpatch%ncohorts = ico
 !!$              csite%paco_n(ipa) = ico
 !!$
 !!$              ! Sort the cohorts so that the new cohort is at the correct height bin
 !!$
-!!$              call sort_cohorts(cpatch)           
-!!$   
+!!$              call sort_cohorts(cpatch)
+!!$
 !!$!              call update_patch_derived_props(csite, ipa)
 !!$!              call update_budget(csite, cpoly%lsl(isi), ipa, ipa)
-!!$          
+!!$

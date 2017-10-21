@@ -14,6 +14,22 @@ module fusion_fission_coms
 
    implicit none
 
+
+   !---------------------------------------------------------------------------------------!
+   !> IFUSION is a temporary flag for patch fusion. 
+   !> 0 -- Original (ED-2.1) patch/cohort fusion routines.
+   !> 1 -- Updated (ED-2.2) patch/cohort fusion routines.
+   !> (MLO) The old scheme had some issues, mostly the fact that it used relative 
+   !> differences in light levels, and had high rate of tolerance increase.  This would 
+   !> eventually fuse patches with very different upper canopy.  Also, the patch fusion
+   !> scheme did not check for number of remaining patches that were so small that would
+   !> be terminated.  Both problems are much more likely to make a difference when initial
+   !> conditions have a large number of patches (> 1000), which is quite common when using
+   !> airborne lidar.  I am keeping the old scheme to avoid disrupting people's work, but
+   !> eventually I would prefer deleting the routines. 
+   !---------------------------------------------------------------------------------------!
+   integer :: ifusion
+
    !----- Maximum number of iterations for patch fusion. ----------------------------------!
    integer :: niter_patfus
 
@@ -22,8 +38,32 @@ module fusion_fission_coms
 
    !----- Number of height bins in patch profiling ----------------------------------------!
    integer :: ff_nhgt
+   !---------------------------------------------------------------------------------------!
 
-   !---- Patch fusion variables. ----------------------------------------------------------!
+
+   !---- Old patch fusion variables (slated to be deleted in the near future). ------------!
+   real :: dark_cumlai_min
+   real :: dark_cumlai_max
+   real :: sunny_cumlai_min
+   real :: sunny_cumlai_max
+   real :: dark_cumlai_mult
+   real :: sunny_cumlai_mult
+   real :: light_toler_min
+   real :: light_toler_max
+   real :: light_toler_mult
+   !---------------------------------------------------------------------------------------!
+
+
+   !---- Old cohort fusion variables (slated to be deleted in the near future). -----------!
+   real    :: fusetol           ! Cohort fusion tolerance on DBH (dimensionless) 
+   real    :: fusetol_h         ! Cohort fusion tolerance on height (m) !
+   real    :: lai_fuse_tol      ! Cohort fusion tolerance on LAI (m2 leaf/m2 ground)
+   real    :: coh_tolerance_max ! Cohort maximum tolerance factor 
+   logical :: fuse_relax        ! Flag to allow a less strict fusion test
+   !---------------------------------------------------------------------------------------!
+
+
+   !---- New patch fusion variables. ------------------------------------------------------!
    real :: pat_light_ext        ! Extinction coefficient for patch fusion.  This is more
                                 !    like ED-1.0, but for simplicity we compare patch 
                                 !    similarity using Beer's law. 

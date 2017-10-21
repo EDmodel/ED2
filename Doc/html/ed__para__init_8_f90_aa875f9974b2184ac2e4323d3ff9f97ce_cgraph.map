@@ -1,8 +1,0 @@
-<map id="get_work" name="get_work">
-<area shape="rect" id="node2" href="$leaf__database_8f90.html#a5009d489b8b1c0d281ea517731499fb9" title="leaf_database" alt="" coords="128,107,231,133"/>
-<area shape="rect" id="node3" href="$namespacehdf5__utils.html#ab621eee22271edfd3bf37b44d5b657e6" title="hdf5_utils::shdf5_open_f" alt="" coords="279,5,440,32"/>
-<area shape="rect" id="node4" href="$leaf__database_8f90.html#ac052df73efd4165c3df27c597cbe7760" title="get_file_indices" alt="" coords="304,56,415,83"/>
-<area shape="rect" id="node5" href="$fatal__error_8_f90.html#a2a2bff228716ab48a81c795b348d1665" title="fatal_error" alt="" coords="320,107,399,133"/>
-<area shape="rect" id="node6" href="$leaf__database_8f90.html#a2bc9d20bb929b6dcaf614245dc11fa28" title="ed_datp_datq" alt="" coords="309,157,409,184"/>
-<area shape="rect" id="node7" href="$numutils_8f90.html#ad368a70da00278adffefa8d34a5f87c6" title="rank_down" alt="" coords="317,208,401,235"/>
-</map>

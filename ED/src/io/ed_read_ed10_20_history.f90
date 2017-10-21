@@ -14,11 +14,10 @@ subroutine read_ed10_ed20_history_file
                              , str_len             & ! intent(in)
                              , maxfiles            & ! intent(in)
                              , maxlist             ! ! intent(in)
-   use pft_coms       , only : SLA                 & ! intent(in)
-                             , q                   & ! intent(in)
+   use pft_coms       , only : q                   & ! intent(in)
                              , qsw                 & ! intent(in)
                              , qbark               & ! intent(in)
-                             , hgt_min             & ! intent(in)
+                             , SLA                 & ! intent(in)
                              , min_dbh             & ! intent(in)
                              , min_bdead           & ! intent(in)
                              , is_grass            & ! intent(in)
@@ -30,8 +29,6 @@ subroutine read_ed10_ed20_history_file
                              , include_these_pft   ! ! intent(in)
    use ed_misc_coms   , only : sfilin              & ! intent(in)
                              , ied_init_mode       ! ! intent(in)
-   use mem_polygons   , only : grid_res            & ! intent(in)
-                             , edres               ! ! intent(in)
    use consts_coms    , only : pio180              & ! intent(in)
                              , pio4                & ! intent(in)
                              , almost_zero         ! ! intent(in)
@@ -57,11 +54,15 @@ subroutine read_ed10_ed20_history_file
                              , sort_patches        ! ! subroutine
    use disturb_coms   , only : ianth_disturb       ! ! intent(in)
    use physiology_coms, only : iddmort_scheme      ! ! intent(in)
+   use ed_type_init   , only : init_ed_cohort_vars & ! subroutine
+                             , init_ed_patch_vars  & ! subroutine
+                             , init_ed_site_vars   & ! subroutine
+                             , init_ed_poly_vars   ! ! subroutine
    implicit none
 
    !----- Local constants. ----------------------------------------------------------------!
    real(kind=8), parameter :: min_area = 1.d-7           ! Minimum acceptable area.
-   real(kind=8), parameter :: min_ok   = 1.d-20          ! Minimum acceptable value for 
+   real(kind=8), parameter :: min_ok   = 1.d-20          ! Minimum acceptable value for
                                                          !    any restart variable.
    logical     , parameter :: harvard_override = .false. ! Overwrite some initial values
                                                          !    for a specific Harvard run?
@@ -83,13 +84,11 @@ subroutine read_ed10_ed20_history_file
    character(len=str_len)                                 :: cdum
    character(len=str_len), dimension(huge_cohort)         :: cname
    character(len=str_len), dimension(huge_cohort)         :: cpname
-   integer               , dimension(n_pft)               :: include_pft_ep
    integer               , dimension(huge_patch)          :: trk
    integer               , dimension(huge_patch)          :: sitenum
    integer               , dimension(huge_cohort)         :: leaves_on
    integer               , dimension(huge_cohort)         :: ipft
    integer                                                :: year
-   integer                                                :: pft
    integer                                                :: igr
    integer                                                :: ipy
    integer                                                :: isi
@@ -191,7 +190,7 @@ subroutine read_ed10_ed20_history_file
       cgrid => edgrid_g(igr)
 
       polyloop: do ipy = 1,cgrid%npolygons
-         
+
          cpoly => cgrid%polygon(ipy)
 
          !---------------------------------------------------------------------------------!
@@ -244,7 +243,7 @@ subroutine read_ed10_ed20_history_file
             !------------------------------------------------------------------------------!
             open(unit=12,file=trim(pss_name),form='formatted',status='old',action='read')
             read(unit=12,fmt='(a4)')  cdum
-            
+
             !----- Read the other information from the header (if there is any...). -------!
             nwater = 1
             if (ied_init_mode == 1 ) then
@@ -252,7 +251,7 @@ subroutine read_ed10_ed20_history_file
                read (unit=12,fmt=*) cdum,depth(1:nwater)
                read (unit=12,fmt=*)
             end if
-            
+
             !------------------------------------------------------------------------------!
             !     Now we loop over all patches and decide whether they should be included  !
             ! or not.                                                                      !
@@ -260,7 +259,7 @@ subroutine read_ed10_ed20_history_file
             ip      = 1
             sitenum = 0
             count_patches: do
-               
+
                !---------------------------------------------------------------------------!
                !     We must check whether we are not exceeding the maximum number of      !
                ! patches that we can read.                                                 !
@@ -325,7 +324,7 @@ subroutine read_ed10_ed20_history_file
                   msn    (ip) = sngloff(dmsn     ,min_ok  )
                   fsn    (ip) = sngloff(dfsn     ,min_ok  )
                   water(1,ip) = sngloff(dwater(1),min_ok  )
-                  
+
                case (3)
                   !----- ED-2.0 file, with site information. ------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) sitenum(ip),time(ip),pname(ip),trk(ip)   &
@@ -398,7 +397,7 @@ subroutine read_ed10_ed20_history_file
                exit find_nonwater
             else
                !----- The closest file was no good, so we make it far away for now. -------!
-               file_pdist(nclosest) = 1.e20 
+               file_pdist(nclosest) = 1.e20
             end if
          end do find_nonwater
          !---------------------------------------------------------------------------------!
@@ -420,7 +419,7 @@ subroutine read_ed10_ed20_history_file
                end do
 
                csite => cpoly%site(isi)
-               
+
                !----- Allocate the patches in this site. ----------------------------------!
                call allocate_sitetype(csite,npatch2)
                !---------------------------------------------------------------------------!
@@ -606,7 +605,7 @@ subroutine read_ed10_ed20_history_file
 
             ic = ic + 1
             add_this_cohort(ic) = .true.
-            
+
             !------------------------------------------------------------------------------!
             !     We must check whether we are not exceeding the maximum number of patches !
             ! that we can read.                                                            !
@@ -635,7 +634,7 @@ subroutine read_ed10_ed20_history_file
                !---------------------------------------------------------------------------!
                !     Check whether the file has hit the end, and if so, leave the loop.    !
                !---------------------------------------------------------------------------!
-               if(ierr /= 0) exit read_cohorts  
+               if(ierr /= 0) exit read_cohorts
 
             case (2,3,6)
                !----- ED-2.0 file. --------------------------------------------------------!
@@ -669,7 +668,7 @@ subroutine read_ed10_ed20_history_file
             !----- Check if the year matches.  If not, we will ignore this cohort. --------!
             year = int(ctime(ic))
             if(use_target_year == 1 .and. year /= restart_target_year) then
-               add_this_cohort(ic) = .false. 
+               add_this_cohort(ic) = .false.
             end if
 
             !----- Remove cohort in case nplant > 0. --------------------------------------!
@@ -716,7 +715,7 @@ subroutine read_ed10_ed20_history_file
                         add_this_cohort(ic) = .false.
                      end select
                   end if
-                  
+
                   if (trim(csite%pname(ipa)) == trim(cpname(ic) ) .and.                    &
                       add_this_cohort(ic)                              ) then
                      csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1
@@ -728,8 +727,8 @@ subroutine read_ed10_ed20_history_file
 
          !----- Find the total number of cohorts. -----------------------------------------!
          ncohorts = max(ic-1,0)
-         
-         
+
+
          close (unit=12,status='keep')
 
          loop_sites: do isi=1,cpoly%nsites
@@ -774,9 +773,9 @@ subroutine read_ed10_ed20_history_file
                         select case(ied_init_mode)
                         case (6)
                            !----- Inventory.  Read DBH and find the other stuff. ----------!
-                           cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(ipft(ic)))
-                           cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
-                           cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
+                           cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(cpatch%pft(ic2)))
+                           cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
+                           cpatch%bdead(ic2) = dbh2bd(cpatch%dbh(ic2),cpatch%pft(ic2))
 
                         case default
                            !---------------------------------------------------------------!
@@ -787,35 +786,46 @@ subroutine read_ed10_ed20_history_file
                            ! equations.                                                    !
                            !---------------------------------------------------------------!
                            if (bdead(ic) > 0.0) then
-                              cpatch%bdead(ic2) = max(bdead(ic),min_bdead(ipft(ic)))
-                              cpatch%dbh(ic2)   = bd2dbh(ipft(ic),bdead(ic))
-                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
+                              cpatch%bdead(ic2) = max(bdead(ic),min_bdead(cpatch%pft(ic2)))
+                              cpatch%dbh(ic2)   = bd2dbh(cpatch%pft(ic2),cpatch%bdead(ic2))
+                              cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
                            else
-                              cpatch%dbh(ic2)   = dbh(ic)
-                              cpatch%hite(ic2)  = dbh2h(ipft(ic),dbh(ic))
-                              cpatch%bdead(ic2) = dbh2bd(dbh(ic),ipft(ic))
+                              cpatch%dbh(ic2)   = max(dbh(ic),min_dbh(cpatch%pft(ic2)))
+                              cpatch%hite(ic2)  = dbh2h(cpatch%pft(ic2),cpatch%dbh(ic2))
+                              cpatch%bdead(ic2) = dbh2bd(cpatch%dbh(ic2),cpatch%pft(ic2))
                            end if
                         end select
                         !------------------------------------------------------------------!
 
+                        !------------------------------------------------------------------!
+                        !     Initialise SLA with the look-up table value, this may be     !
+                        ! updated during phenology initialisation, but an initial assign-  !
+                        ! ment is needed to obtain area indices.                           !
+                        !------------------------------------------------------------------!
+                        cpatch%sla(ic2) = SLA(cpatch%pft(ic2))
+                        !------------------------------------------------------------------!
 
 
                         !------------------------------------------------------------------!
                         !     Use allometry to define leaf and the other live biomass      !
                         ! pools.                                                           !
                         !------------------------------------------------------------------!
-                        cpatch%bleaf(ic2)     = size2bl(dbh(ic), hite(ic),ipft(ic))
-                        cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(ipft(ic))
-                        cpatch%bsapwooda(ic2) = agf_bs(ipft(ic)) * cpatch%bleaf(ic2)       &
-                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
-                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(ipft(ic))) * cpatch%bleaf(ic2)  &
-                                              * qsw(ipft(ic))   * cpatch%hite(ic2)
+                        cpatch%bleaf(ic2)     = size2bl(cpatch%dbh(ic2),cpatch%hite(ic2)   &
+                                                       ,cpatch%pft(ic2))
+                        cpatch%broot(ic2)     = cpatch%bleaf(ic2) * q(cpatch%pft(ic2))
+                        cpatch%bsapwooda(ic2) = agf_bs(cpatch%pft(ic2))                    &
+                                              * cpatch%bleaf(ic2)                          &
+                                              * qsw(cpatch%pft(ic2))   * cpatch%hite(ic2)
+                        cpatch%bsapwoodb(ic2) = (1.-agf_bs(cpatch%pft(ic2)))               &
+                                              * cpatch%bleaf(ic2)                          &
+                                              * qsw(cpatch%pft(ic2))   * cpatch%hite(ic2)
                         cpatch%bbark(ic2)     = cpatch%bleaf(ic2)                          &
-                                              * qbark(ipft(ic)) * cpatch%hite(ic2)
+                                              * qbark(cpatch%pft(ic2)) * cpatch%hite(ic2)
                         cpatch%balive(ic2)    = cpatch%bleaf(ic2) + cpatch%broot(ic2)      &
                                               + cpatch%bsapwooda(ic2)                      &
                                               + cpatch%bsapwoodb(ic2) + cpatch%bbark(ic2)
-                        cpatch%bstorage(ic2)  = max(almost_zero,f_bstorage_init(ipft(ic))) &
+                        cpatch%bstorage(ic2)  = max( almost_zero                           &
+                                                   , f_bstorage_init(cpatch%pft(ic2)))     &
                                               * cpatch%balive(ic2)
                         !------------------------------------------------------------------!
 
@@ -831,11 +841,7 @@ subroutine read_ed10_ed20_history_file
 
 
                         !----- Assign LAI, WAI, and CAI -----------------------------------!
-                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)             &
-                                         ,cpatch%dbh(ic2),cpatch%hite(ic2)                 &
-                                         ,cpatch%pft(ic2),SLA(cpatch%pft(ic2))             &
-                                         ,cpatch%lai(ic2),cpatch%wai(ic2)                  &
-                                         ,cpatch%crown_area(ic2))
+                        call area_indices(cpatch, ic2)
                         !------------------------------------------------------------------!
 
 
@@ -876,11 +882,7 @@ subroutine read_ed10_ed20_history_file
 
 
                         !----- Above ground biomass, use the allometry. -------------------!
-                        cpatch%agb    (ic2) = ed_biomass( cpatch%bdead     (ic2)           &
-                                                        , cpatch%bleaf     (ic2)           &
-                                                        , cpatch%bsapwooda (ic2)           &
-                                                        , cpatch%bbark     (ic2)           &
-                                                        , cpatch%pft       (ic2) )
+                        cpatch%agb    (ic2) = ed_biomass(cpatch, ic2)
                         cpatch%basarea(ic2) = pio4 * cpatch%dbh(ic2) * cpatch%dbh(ic2)
                         cpatch%btimber(ic2) = size2bt( cpatch%dbh       (ic2)              &
                                                      , cpatch%hite      (ic2)              &
@@ -900,7 +902,7 @@ subroutine read_ed10_ed20_history_file
                         cpatch%dlnba_dt (ic2)  = 0.
                         cpatch%ddbh_dt  (ic2)  = 0.
                         cpatch%dlndbh_dt(ic2)  = 0.
-                        
+
                         !------------------------------------------------------------------!
                         !      Initialise other cohort variables.  Some of them won't be   !
                         ! updated unless the lai exceeds lai_min.                          !
@@ -908,11 +910,14 @@ subroutine read_ed10_ed20_history_file
                         cpatch%fsw(ic2)   = 1.0
                         cpatch%gpp(ic2)   = 0.0
                         cpatch%par_l(ic2) = 0.0
+                        !------------------------------------------------------------------!
+
 
                         !----- Update the patch level above-ground biomass. ---------------!
                         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)          &
                                                     + cpatch%agb(ic2) * cpatch%nplant(ic2)
-                     end if
+                         !------------------------------------------------------------------!
+                    end if
                   end do
                end if
             end do loop_patches
@@ -922,7 +927,7 @@ subroutine read_ed10_ed20_history_file
 
          !----- Initialise all the other site-, patch-, and cohort-level variables. -------!
          do isi = 1,cpoly%nsites
-            
+
             area_sum = 0.0
             ncohorts = 0
 
@@ -945,7 +950,7 @@ subroutine read_ed10_ed20_history_file
             !----- Initialise the cohort variables, then sort them by size. ---------------!
             do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
-               do ico = 1,cpatch%ncohorts                 
+               do ico = 1,cpatch%ncohorts
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                end do
 
@@ -961,7 +966,7 @@ subroutine read_ed10_ed20_history_file
          end do
 
          !----- Initialise site-level variables. ------------------------------------------!
-         call init_ed_site_vars(cpoly,cgrid%lat(ipy))
+         call init_ed_site_vars(cpoly)
 
 
          !----- Get a diagnostic on the polygon's vegetation. -----------------------------!
@@ -1027,12 +1032,12 @@ subroutine create_ed10_ed20_fname(lat,ed_res,lon,sfilin,pss_name,css_name,site_n
 
    !----- Find the latitude and longitude corresponding to the dataset. -------------------!
    if (lat >= 0.0) then
-      flat =   ed_res * real(int( lat / ed_res)) + 0.5 * ed_res 
+      flat =   ed_res * real(int( lat / ed_res)) + 0.5 * ed_res
    else
       flat = - ed_res * real(int(-lat / ed_res)) - 0.5 * ed_res
    end if
    if (lon >= 0.0) then
-      flon =   ed_res * real(int( lon / ed_res)) + 0.5 * ed_res 
+      flon =   ed_res * real(int( lon / ed_res)) + 0.5 * ed_res
    else
       flon = - ed_res * real(int(-lon / ed_res)) - 0.5 * ed_res
    endif

@@ -133,13 +133,17 @@ module pft_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !    The following logical flags will tell whether the PFTs are tropical, conifrers,    !
-   ! and also check whether it is a grass or tree PFT.                                     !
+   !    The following logical flags will describe the main life forms (grasses, lianas,    !
+   ! conifers) as well as the likely landscape where they are to be found                  !
+   ! (tropical/temperate, savannah/forest).  Note that ED2 does not restrict location of   !
+   ! any PFT: if you really want, you could include Eastern hemlocks in an Amazonian run,  !
+   ! or a Cecropia in the tundra.                                                          !
    !---------------------------------------------------------------------------------------!
    logical, dimension(n_pft)    :: is_tropical
+   logical, dimension(n_pft)    :: is_savannah
    logical, dimension(n_pft)    :: is_conifer
    logical, dimension(n_pft)    :: is_grass
-   logical, dimension(n_pft)    :: is_savannah
+   logical, dimension(n_pft)    :: is_liana
    !---------------------------------------------------------------------------------------!
 
 
@@ -163,16 +167,16 @@ module pft_coms
    real, dimension(n_pft) :: D0
    !---------------------------------------------------------------------------------------!
 
-   !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Vm_low_temp 
 
-   !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Vm_high_temp 
 
    !----- Decay factor for the exponential correction. ------------------------------------!
    real, dimension(n_pft) :: Vm_decay_e 
 
-   !----- Maximum photosynthetic capacity at a reference temperature [µmol/m2/s]. ---------!
+   !----- Maximum photosynthetic capacity at a reference temperature [umol/m2/s]. ---------!
    real, dimension(n_pft) :: Vm0 
 
    !----- Exponent for Vm in the Arrhenius equation [K]. ----------------------------------!
@@ -181,16 +185,16 @@ module pft_coms
    !----- Base (Q10 term) for Vm in Collatz equation. -------------------------------------!
    real, dimension(n_pft) :: Vm_q10
 
-   !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] below which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Rd_low_temp 
 
-   !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] above which leaf metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: Rd_high_temp 
 
    !----- Decay factor for the exponential correction. ------------------------------------!
    real, dimension(n_pft) :: Rd_decay_e 
 
-   !----- Maximum respiration factor at the reference temperature [µmol/m2/s]. ------------!
+   !----- Maximum respiration factor at the reference temperature [umol/m2/s]. ------------!
    real, dimension(n_pft) :: Rd0
 
    !----- Exponent for Rd in the Arrhenius equation [K]. ----------------------------------!
@@ -202,7 +206,7 @@ module pft_coms
    !----- Slope of the Ball/Berry stomatal conductance-photosynthesis relationship. -------!
    real, dimension(n_pft) :: stomatal_slope
 
-   !----- Intercept of the Ball/Berry stomatal conductance relationship [µmol/m2/s]. ------!
+   !----- Intercept of the Ball/Berry stomatal conductance relationship [umol/m2/s]. ------!
    real, dimension(n_pft) :: cuticular_cond
 
    !----- Efficiency of using PAR to fix CO2 [ ----]. -------------------------------------!
@@ -250,14 +254,14 @@ module pft_coms
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the contribution of roots to respiration at the reference       !
-   ! temperature of 15C.  Its units is µmol_CO2/kg_fine_roots/s.                           !
+   ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: root_respiration_factor 
 
-   !----- Temperature [°C] below which root metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] below which root metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: rrf_low_temp 
 
-   !----- Temperature [°C] above which root metabolic activity begins to rapidly decline. -!
+   !----- Temperature [C] above which root metabolic activity begins to rapidly decline. --!
    real, dimension(n_pft) :: rrf_high_temp 
 
    !----- Decay factor for the exponential correction. ------------------------------------!
@@ -269,10 +273,10 @@ module pft_coms
    !----- Base (Q10 term) for respiration in Collatz equation. ----------------------------!
    real, dimension(n_pft) :: rrf_q10
 
-   !----- Temperature [°C] below which storage respiration begins to rapidly decline. -----!
+   !----- Temperature [C] below which storage respiration begins to rapidly decline. ------!
    real, dimension(n_pft) :: strf_low_temp 
 
-   !----- Temperature [°C] above which storage respiration begins to rapidly decline. -----!
+   !----- Temperature [C] above which storage respiration begins to rapidly decline. ------!
    real, dimension(n_pft) :: strf_high_temp 
 
    !----- Decay factor for the exponential correction. ------------------------------------!
@@ -433,9 +437,9 @@ module pft_coms
    !=======================================================================================!
    ! Allocation and allometry.                                                             !
    !---------------------------------------------------------------------------------------!
-   !----- Wood density.  Used only for tropical PFTs and grasses [ g/cm³]. ----------------!
+   !----- Wood density.  Used only for tropical PFTs and grasses [ g/cm3]. ----------------!
    real   , dimension(n_pft)    :: rho
-   !----- Specific Leaf Area (m²leaf/kg_C]. -----------------------------------------------!
+   !----- Specific Leaf Area (m2leaf/kg_C]. -----------------------------------------------!
    real   , dimension(n_pft)    :: SLA
    !----- The initialization parameters for SLA:  SLA = sla_pft_init for non-trop PFTs
    real   , dimension(n_pft)    :: sla_pft_init
@@ -457,7 +461,7 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Ht
    !---------------------------------------------------------------------------------------!
    !     DBH-height allometry slope (1/cm).  Notice that this variable has different       !
-   ! meaning between temperate and tropical PFTs.                                          !!
+   ! meaning between temperate and tropical PFTs.                                          !
    !---------------------------------------------------------------------------------------!
    real   , dimension(n_pft)    :: b2Ht
    !---------------------------------------------------------------------------------------!
@@ -586,15 +590,15 @@ module pft_coms
    !=======================================================================================!
    !     Reproduction and recruitment.                                                     !
    !---------------------------------------------------------------------------------------!
-   !----- Initial plant density in a near-bare-ground run [plant/m²]. ---------------------!
+   !----- Initial plant density in a near-bare-ground run [plant/m2]. ---------------------!
    real   , dimension(n_pft)    :: init_density
-   !----- Initial maximum LAI in a near-bare-ground run [m²/m²] - Big leaf only. ----------!
+   !----- Initial maximum LAI in a near-bare-ground run [m2/m2] - Big leaf only. ----------!
    real   , dimension(n_pft)    :: init_laimax
    !----- Minimum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_min
    !----- Maximum height of an individual [m]. --------------------------------------------!
    real   , dimension(n_pft)    :: hgt_max
-   !----- Minimum biomass density [kgC/m²] required to form a new recruit. ----------------!
+   !----- Minimum biomass density [kgC/m2] required to form a new recruit. ----------------!
    real   , dimension(n_pft) :: min_recruit_size
    !----- Amount of biomass [kgC] in one tree, used for 'big-leaf' ED. --------------------!
    real   , dimension(n_pft) :: one_plant_c
@@ -607,7 +611,7 @@ module pft_coms
    real   , dimension(n_pft) :: r_fract
    !----- Increase rate for carbon going to reproduction. ---------------------------------!
    real   , dimension(n_pft) :: r_slope
-   !----- External input of seeds [kgC/m²/year]. ------------------------------------------!
+   !----- External input of seeds [kgC/m2/year]. ------------------------------------------!
    real   , dimension(n_pft) :: seed_rain
    !----- Fraction of seed dispersal that is gridcell-wide. -------------------------------!
    real   , dimension(n_pft) :: nonlocal_dispersal !  
@@ -635,18 +639,18 @@ module pft_coms
    !=======================================================================================!
    !=======================================================================================!
    !     The following variables control the cohort existence/termination.                 !
-   !---------------------------------------------------------------------------------------! 
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
    !    Minimum size (measured as biomass of living and structural tissues) allowed in a   !
    ! cohort.  Cohorts with less biomass than this are going to be terminated.              !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: min_cohort_size
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    !    The following variable is the absolute minimum cohort population that a cohort can !
    ! have.  This should be used only to avoid nplant=0, but IMPORTANT: this will lead to a !
    ! ridiculously small cohort almost guaranteed to be extinct and SHOULD BE USED ONLY IF  !
    ! THE AIM IS TO ELIMINATE THE COHORT.                                                   !
-   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: negligible_nplant
    !=======================================================================================!
    !=======================================================================================!
@@ -667,6 +671,21 @@ module pft_coms
    !=======================================================================================!
    !=======================================================================================!
    real, dimension(n_pft) :: veg_hcap_min
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Liana-specific parameters.                                                        !
+   !=======================================================================================!
+   !=======================================================================================!
+   real :: h_edge          !< maximum height advantage for lianas
+   real :: liana_dbh_crit  !< liana specific critical dbh
    !=======================================================================================!
    !=======================================================================================!
 
