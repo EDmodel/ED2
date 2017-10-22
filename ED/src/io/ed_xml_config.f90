@@ -122,6 +122,74 @@ recursive subroutine read_ed_xml_config(filename)
   
 
 
+  !*******  MET PARAMS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','met',ntag)    !get number of met tags
+  print*,"MET READ FROM FILE ::",ntag
+  if (ntag >= 1) then
+     do i=1,ntag
+        call libxml2f90__ll_selecttag('DOWN','met',i)
+
+        call getConfigREAL  ('met_land_min'   ,'met',i,rval,texist)
+        if (texist) met_land_min     = real(rval)
+        call getConfigREAL  ('rshort_min'     ,'met',i,rval,texist)
+        if (texist) rshort_min       = real(rval)
+        call getConfigREAL  ('rshort_max'     ,'met',i,rval,texist)
+        if (texist) rshort_max       = real(rval)
+        call getConfigREAL  ('rlong_min'      ,'met',i,rval,texist)
+        if (texist) rlong_min        = real(rval)
+        call getConfigREAL  ('rlong_max'      ,'met',i,rval,texist)
+        if (texist) rlong_max        = real(rval)
+        call getConfigREAL  ('dt_radinterp'   ,'met',i,rval,texist)
+        if (texist) dt_radinterp     = real(rval)
+        call getConfigREAL  ('atm_tmp_min'    ,'met',i,rval,texist)
+        if (texist) atm_tmp_min      = real(rval)
+        call getConfigREAL  ('atm_tmp_max'    ,'met',i,rval,texist)
+        if (texist) atm_tmp_max      = real(rval)
+        call getConfigREAL  ('atm_shv_min'    ,'met',i,rval,texist)
+        if (texist) atm_shv_min      = real(rval)
+        call getConfigREAL  ('atm_shv_max'    ,'met',i,rval,texist)
+        if (texist) atm_shv_max      = real(rval)
+        call getConfigREAL  ('atm_rhv_min'    ,'met',i,rval,texist)
+        if (texist) atm_rhv_min      = real(rval)
+        call getConfigREAL  ('atm_rhv_max'    ,'met',i,rval,texist)
+        if (texist) atm_rhv_max      = real(rval)
+        call getConfigREAL  ('atm_co2_min'    ,'met',i,rval,texist)
+        if (texist) atm_co2_min      = real(rval)
+        call getConfigREAL  ('atm_co2_max'    ,'met',i,rval,texist)
+        if (texist) atm_co2_max      = real(rval)
+        call getConfigREAL  ('prss_min'       ,'met',i,rval,texist)
+        if (texist) prss_min         = real(rval)
+        call getConfigREAL  ('prss_max'       ,'met',i,rval,texist)
+        if (texist) prss_max         = real(rval)
+        call getConfigREAL  ('pcpg_min'       ,'met',i,rval,texist)
+        if (texist) pcpg_min         = real(rval)
+        call getConfigREAL  ('pcpg_max'       ,'met',i,rval,texist)
+        if (texist) pcpg_max         = real(rval)
+        call getConfigREAL  ('vels_min'       ,'met',i,rval,texist)
+        if (texist) vels_min         = real(rval)
+        call getConfigREAL  ('vels_max'       ,'met',i,rval,texist)
+        if (texist) vels_max         = real(rval)
+        call getConfigREAL  ('geoht_min'      ,'met',i,rval,texist)
+        if (texist) geoht_min        = real(rval)
+        call getConfigREAL  ('geoht_max'      ,'met',i,rval,texist)
+        if (texist) geoht_max        = real(rval)
+        call getConfigINT   ('print_radinterp','met',i,ival,texist)
+        if (texist) print_radinterp  = ival == 1
+        call getConfigSTRING('vbdsf_file'     ,'met',i,cval,texist)
+        if (texist) vbdsf_file       = trim(cval)
+        call getConfigSTRING('vddsf_file'     ,'met',i,cval,texist)
+        if (texist) vddsf_file       = trim(cval)
+        call getConfigSTRING('nbdsf_file'     ,'met',i,cval,texist)
+        if (texist) nbdsf_file       = trim(cval)
+        call getConfigSTRING('nddsf_file'     ,'met',i,cval,texist)
+        if (texist) nddsf_file       = trim(cval)
+         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+
+      end do
+  end if
+
   !*******  MISC
   call libxml2f90__ll_selectlist(TRIM(FILENAME))       
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
@@ -1376,6 +1444,46 @@ subroutine write_ed_xml_config
   call libxml2f90_ll_add_list("OUTCONFIG")
   call libxml2f90_ll_opentag("config")
   !-----------------------------------------------------
+
+
+  !************   MET  *****************
+  call libxml2f90_ll_opentag("met")
+        call putConfigREAL  ("met_land_min"   ,met_land_min   )
+        call putConfigREAL  ("rshort_min"     ,rshort_min     )
+        call putConfigREAL  ("rshort_max"     ,rshort_max     )
+        call putConfigREAL  ("rlong_min"      ,rlong_min      )
+        call putConfigREAL  ("rlong_max"      ,rlong_max      )
+        call putConfigREAL  ("dt_radinterp"   ,dt_radinterp   )
+        call putConfigREAL  ("atm_tmp_min"    ,atm_tmp_min    )
+        call putConfigREAL  ("atm_tmp_max"    ,atm_tmp_max    )
+        call putConfigREAL  ("atm_shv_min"    ,atm_shv_min    )
+        call putConfigREAL  ("atm_shv_max"    ,atm_shv_max    )
+        call putConfigREAL  ("atm_rhv_min"    ,atm_rhv_min    )
+        call putConfigREAL  ("atm_rhv_max"    ,atm_rhv_max    )
+        call putConfigREAL  ("atm_co2_min"    ,atm_co2_min    )
+        call putConfigREAL  ("atm_co2_max"    ,atm_co2_max    )
+        call putConfigREAL  ("prss_min"       ,prss_min       )
+        call putConfigREAL  ("prss_max"       ,prss_max       )
+        call putConfigREAL  ("pcpg_min"       ,pcpg_min       )
+        call putConfigREAL  ("pcpg_max"       ,pcpg_max       )
+        call putConfigREAL  ("vels_min"       ,vels_min       )
+        call putConfigREAL  ("vels_max"       ,vels_max       )
+        call putConfigREAL  ("geoht_min"      ,geoht_min      )
+        call putConfigREAL  ("geoht_max"      ,geoht_max      )
+        if (print_radinterp) then
+           ival = 1
+        else
+           ival = 0
+        end if
+        call putConfigINT   ("print_radinterp",ival           )
+        call putConfigSTRING("vbdsf_file"     ,vbdsf_file     )
+        call putConfigSTRING("vddsf_file"     ,vddsf_file     )
+        call putConfigSTRING("nbdsf_file"     ,nbdsf_file     )
+        call putConfigSTRING("nddsf_file"     ,nddsf_file     )
+  call libxml2f90_ll_closetag("met")
+
+
+
 
   !************   MISC  *****************
   call libxml2f90_ll_opentag("misc")

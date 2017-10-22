@@ -22,8 +22,9 @@ subdirs="ED BRAMS Ramspost R-utils"
 #------ Editor to use (I've only tested with nedit, use others at your own risk). ---------#
 editor="nedit"
 #------ Two paths with EDBRAMS (full path). -----------------------------------------------#
-here="/n/home00/mlongo/EDBRAMS"
-there="/n/home00/mlongo/MainLine/mpaiao-EDBRAMS"
+our="/n/home00/mlongo/EDBRAMS"
+their="/n/home00/mlongo/PullRequest/EDBRAMS"
+ournew=true
 #------------------------------------------------------------------------------------------#
 
 
@@ -47,15 +48,15 @@ do
    do
      if [ ${subdir} == "R-utils" ] && [ ${ext} == ".txt" ]
      then
-        srchere="${here}/${subdir}/samap"
-        srcthere="${there}/${subdir}/samap"
+        srcour="${our}/${subdir}/samap"
+        srctheir="${their}/${subdir}/samap"
      elif [ ${subdir} == "R-utils" ]
      then
-        srchere="${here}/${subdir}"
-        srcthere="${there}/${subdir}"
+        srcour="${our}/${subdir}"
+        srctheir="${their}/${subdir}"
      else
-        srchere="${here}/${subdir}/src"
-        srcthere="${there}/${subdir}/src"
+        srcour="${our}/${subdir}/src"
+        srctheir="${their}/${subdir}/src"
      fi
      #-------------------------------------------------------------------------------------#
 
@@ -63,27 +64,34 @@ do
      #-------------------------------------------------------------------------------------#
      #    Look for files that were changed or were removed in the remote test.             #
      #-------------------------------------------------------------------------------------#
-     lookuptable=$(find ${srchere} -name "*${ext}")
-     for filehere in ${lookuptable}
+     lookuptable=$(find ${srcour} -name "*${ext}")
+     for fileour in ${lookuptable}
      do
-       file=$(basename ${filehere})
-       newpath=$(dirname ${filehere} | sed s@${here}@${there}@g)
-       filethere="${newpath}/${file}"
-       if [ -s ${filethere} ] 
+       file=$(basename ${fileour})
+       newpath=$(dirname ${fileour} | sed s@${our}@${their}@g)
+       filetheir="${newpath}/${file}"
+       if [ -s ${filetheir} ] 
        then
-         ldif=$(diff -ib ${filethere} ${filehere} | wc -l)
+         ldif=$(diff -ibB <(grep -vE "^\s*!" ${fileour}) <(grep -vE "^\s*!" ${filetheir}) | wc -l)
          if [ ${ldif} -gt 0 ]
          then
-            woroot=$(echo ${filehere} | sed s@"${srchere}/"@""@g)
+            woroot=$(echo ${fileour} | sed s@"${srcour}/"@""@g)
             echo "${woroot} has changed..."
-            diff -ib ${filehere} ${filethere} > notthesame.txt
-            ${editor} ${filehere} ${filethere} notthesame.txt 1> /dev/null 2> /dev/null
+            if ${ournew}
+            then
+               diff -uibB <(grep -vE "^\s*!" ${filetheir}) <(grep -vE "^\s*!" ${fileour})  \
+                  > notthesame.txt
+            else
+               diff -uibB <(grep -vE "^\s*!" ${fileour}) <(grep -vE "^\s*!" ${filetheir})  \
+                  > notthesame.txt
+            fi
+            ${editor} ${fileour} ${filetheir} notthesame.txt 1> /dev/null 2> /dev/null
          fi
        else
-           woroot=$(echo ${filehere} | sed s@"${srchere}/"@""@g)
-           echo "${woroot} is exclusive to ${here} version..."
-       fi #if [ -s ${filethere} ]
-     done #for filehere in ${lookuptable}
+           woroot=$(echo ${fileour} | sed s@"${srcour}/"@""@g)
+           echo "${woroot} is exclusive to ${our} version..."
+       fi #if [ -s ${filetheir} ]
+     done #for fileour in ${lookuptable}
      #-------------------------------------------------------------------------------------#
 
 
@@ -91,18 +99,18 @@ do
      #-------------------------------------------------------------------------------------#
      #    Look for files that were changed or were removed in the remote test.             #
      #-------------------------------------------------------------------------------------#
-     lookuptable=$(find ${srcthere} -name "*${ext}")
-     for filethere in ${lookuptable}
+     lookuptable=$(find ${srctheir} -name "*${ext}")
+     for filetheir in ${lookuptable}
      do
-       file=$(basename ${filethere})
-       newpath=$(dirname ${filethere} | sed s@${there}@${here}@g)
-       filehere="${newpath}/${file}"
-       if [ ! -s ${filehere} ] 
+       file=$(basename ${filetheir})
+       newpath=$(dirname ${filetheir} | sed s@${their}@${our}@g)
+       fileour="${newpath}/${file}"
+       if [ ! -s ${fileour} ] 
        then
-           woroot=$(echo ${filethere} | sed s@"${srcthere}/"@""@g)
-           echo "${woroot} is exclusive to ${there} version..."
-       fi #if [ -s ${filethere} ]
-     done #for filehere in ${lookuptable}
+           woroot=$(echo ${filetheir} | sed s@"${srctheir}/"@""@g)
+           echo "${woroot} is exclusive to ${their} version..."
+       fi #if [ -s ${filetheir} ]
+     done #for fileour in ${lookuptable}
      #-------------------------------------------------------------------------------------#
    done #for ext in ${exts}
    #---------------------------------------------------------------------------------------#

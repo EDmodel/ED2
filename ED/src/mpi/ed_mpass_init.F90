@@ -656,7 +656,8 @@ subroutine ed_masterput_met_header(par_run)
                              , met_frq           & ! intent(in)
                              , met_interp        & ! intent(in)
                              , ed_met_driver_db  & ! intent(in)
-                             , no_ll             & ! intent(in)
+                             , met_ll_header     & ! intent(in)
+                             , met_land_mask     & ! intent(in)
                              , metname_len       & ! intent(in)
                              , metvars_len       ! ! intent(in)
 
@@ -707,7 +708,8 @@ subroutine ed_masterput_met_header(par_run)
    call MPI_Bcast(met_xmin,nformats,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_ymin,nformats,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nv,nformats,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(no_ll,nformats,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(met_ll_header,nformats,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(met_land_mask,nformats,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
 
    do f=1,nformats
       do v=1,max_met_vars
@@ -1852,33 +1854,49 @@ end subroutine ed_nodeget_nl
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_nodeget_met_header()
-!------------------------------------------------------------------------------------------!
 !    This subroutine sends the met driver information to the nodes, which can then read    !
 ! the hdf5 in parallel                                                                     !
 !------------------------------------------------------------------------------------------!
-   use ed_node_coms, only: master_num,mynum
-   use ed_max_dims, only: max_met_vars,str_len
-   use met_driver_coms, only: nformats, met_names, met_nlon,   &
-        met_nlat, met_dx, met_dy, met_xmin, met_ymin, met_nv,   &
-        met_vars, met_frq, met_interp, ed_met_driver_db, no_ll,  &
-        metname_len,metvars_len
+subroutine ed_nodeget_met_header()
+   use ed_node_coms   , only : master_num    & ! intent(in)
+                             , mynum         ! ! intent(in)
+   use ed_max_dims    , only : max_met_vars  & ! intent(in)
+                             , str_len       ! ! intent(in)
+   use met_driver_coms, only : metname_len   & ! intent(in)
+                             , metvars_len   & ! intent(in)
+                             , nformats      & ! intent(out)
+                             , met_names     & ! intent(out)
+                             , met_nlon      & ! intent(out)
+                             , met_nlat      & ! intent(out)
+                             , met_dx        & ! intent(out)
+                             , met_dy        & ! intent(out)
+                             , met_xmin      & ! intent(out)
+                             , met_ymin      & ! intent(out)
+                             , met_nv        & ! intent(out)
+                             , met_vars      & ! intent(out)
+                             , met_frq       & ! intent(out)
+                             , met_interp    & ! intent(out)
+                             , met_ll_header & ! intent(out)
+                             , met_land_mask ! ! intent(out)
 
    implicit none
 #if defined(RAMS_MPI)
    include 'mpif.h'
-#endif
-   integer             :: ierr, nsize,f,v
+   !---- Local variables. -----------------------------------------------------------------!
+   integer :: ierr
+   integer :: nsize
+   integer :: f
+   integer :: v
+   !---------------------------------------------------------------------------------------!
 
 
-
-#if defined(RAMS_MPI)
-!----- First I get the scalars ------------------------------------------------------------!
+   !----- Retrieve number of formats (used in allocation). --------------------------------!
    call MPI_Bcast (nformats,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
 
    nsize=nformats*max_met_vars
 
-!----- Allocate the vectors and matrices --------------------------------------------------!
+   !----- Allocate the vectors and matrices -----------------------------------------------!
    allocate(met_names(nformats))
    allocate(met_nlon(nformats))
    allocate(met_nlat(nformats))
@@ -1890,12 +1908,16 @@ subroutine ed_nodeget_met_header()
    allocate(met_vars(nformats, max_met_vars))
    allocate(met_frq(nformats, max_met_vars))
    allocate(met_interp(nformats, max_met_vars))
-   allocate(no_ll(nformats))
+   allocate(met_ll_header(nformats))
+   allocate(met_land_mask(nformats))
+   !---------------------------------------------------------------------------------------!
 
-!------------------------------------------------------------------------------------------!
-!   Here I need a MPI Barrier. I don't want the master sending information before the      !
-! variables are allocated in this node.                                                    !
-!------------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Add a barrier to prevent the master to send information before variables are      !
+   ! allocated in all nodes.                                                               !
+   !---------------------------------------------------------------------------------------!
    call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
    do f=1,nformats
@@ -1909,11 +1931,13 @@ subroutine ed_nodeget_met_header()
    call MPI_Bcast(met_xmin,nformats,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_ymin,nformats,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nv,nformats,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(no_ll, nformats, MPI_LOGICAL, master_num, MPI_COMM_WORLD, ierr)
+   call MPI_Bcast(met_ll_header, nformats, MPI_LOGICAL, master_num, MPI_COMM_WORLD, ierr)
+   call MPI_Bcast(met_land_mask, nformats, MPI_LOGICAL, master_num, MPI_COMM_WORLD, ierr)
 
    do f=1,nformats
       do v=1,max_met_vars
-         call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+         call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,master_num                 &
+                       ,MPI_COMM_WORLD,ierr)
       end do
    end do
 

@@ -407,38 +407,41 @@ end subroutine init_ed_misc_coms
 !------------------------------------------------------------------------------------------!
 subroutine init_met_params()
    use ed_misc_coms   , only : dtlsm           ! ! intent(in)
-   use met_driver_coms, only : rshort_min      & ! intent(out)
-      , rshort_max      & ! intent(out)
-      , rlong_min       & ! intent(out)
-      , rlong_max       & ! intent(out)
-      , dt_radinterp    & ! intent(out)
-      , atm_tmp_min     & ! intent(out)
-      , atm_tmp_max     & ! intent(out)
-      , atm_shv_min     & ! intent(out)
-      , atm_shv_max     & ! intent(out)
-      , atm_rhv_min     & ! intent(out)
-      , atm_rhv_max     & ! intent(out)
-      , atm_co2_min     & ! intent(out)
-      , atm_co2_max     & ! intent(out)
-      , prss_min        & ! intent(out)
-      , prss_max        & ! intent(out)
-      , pcpg_min        & ! intent(out)
-      , pcpg_max        & ! intent(out)
-      , vels_min        & ! intent(out)
-      , vels_max        & ! intent(out)
-      , geoht_min       & ! intent(out)
-      , geoht_max       & ! intent(out)
-      , print_radinterp & ! intent(out)
-      , vbdsf_file      & ! intent(out)
-      , vddsf_file      & ! intent(out)
-      , nbdsf_file      & ! intent(out)
-      , nddsf_file      ! ! intent(out)
+   use met_driver_coms, only : met_land_min    & ! intent(out)
+                             , rshort_min      & ! intent(out)
+                             , rshort_max      & ! intent(out)
+                             , rlong_min       & ! intent(out)
+                             , rlong_max       & ! intent(out)
+                             , dt_radinterp    & ! intent(out)
+                             , atm_tmp_min     & ! intent(out)
+                             , atm_tmp_max     & ! intent(out)
+                             , atm_shv_min     & ! intent(out)
+                             , atm_shv_max     & ! intent(out)
+                             , atm_rhv_min     & ! intent(out)
+                             , atm_rhv_max     & ! intent(out)
+                             , atm_co2_min     & ! intent(out)
+                             , atm_co2_max     & ! intent(out)
+                             , prss_min        & ! intent(out)
+                             , prss_max        & ! intent(out)
+                             , pcpg_min        & ! intent(out)
+                             , pcpg_max        & ! intent(out)
+                             , vels_min        & ! intent(out)
+                             , vels_max        & ! intent(out)
+                             , geoht_min       & ! intent(out)
+                             , geoht_max       & ! intent(out)
+                             , print_radinterp & ! intent(out)
+                             , vbdsf_file      & ! intent(out)
+                             , vddsf_file      & ! intent(out)
+                             , nbdsf_file      & ! intent(out)
+                             , nddsf_file      ! ! intent(out)
 
+   !----- Minimum land fraction for a met driver point to be considered land. -------------!
+   met_land_min = 0.5
 
-   !----- Minimum and maximum acceptable shortwave radiation [W/m�]. ----------------------!
+   !----- Minimum and maximum acceptable shortwave radiation [W/m2]. ----------------------!
    rshort_min  = 0.
    rshort_max  = 1500.
-   !----- Minimum and maximum acceptable longwave radiation [W/m�]. -----------------------!
+   !----- Minimum and maximum acceptable longwave radiation [W/m2]. -----------------------!
    rlong_min   = 40.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
@@ -446,14 +449,14 @@ subroutine init_met_params()
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32�C at 1000hPa.
-   !----- Minimum and maximum acceptable CO2 mixing ratio [�mol/mol]. ---------------------!
+   atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32degC at 1000hPa.
+   !----- Minimum and maximum acceptable CO2 mixing ratio [umol/mol]. ---------------------!
    atm_co2_min = 100.     !
    atm_co2_max = 1100.    !
    !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
    prss_min =  45000. ! It may crash if you run a simulation in Mt. Everest.
    prss_max = 110000. ! It may crash if you run a simulation under water.
-   !----- Minimum and maximum acceptable precipitation rates [kg/m�/s]. -------------------!
+   !----- Minimum and maximum acceptable precipitation rates [kg/m2/s]. -------------------!
    pcpg_min     = 0.0     ! No negative precipitation is allowed
    pcpg_max     = 0.1111  ! This is a precipitation rate of 400mm/hr.
    !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
@@ -1328,8 +1331,8 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !   Soil conductance terms, from:                                                       !
    !                                                                                       !
-   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifi� !
-   !     soumis � une excitation amtosph�rique naturelle. Comparaison: Mod�les-exp�rience. !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifie !
+   !     soumis a une excitation amtospherique naturelle. Comparaison: Modeles-experience. !
    !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
    !                                                                                       !
    ! retrieved from:                                                                       !
@@ -1676,7 +1679,7 @@ subroutine init_pft_photo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Vm0 is the maximum photosynthesis capacity in �mol/m2/s.  Notice that depending   !
+   !     Vm0 is the maximum photosynthesis capacity in umol/m2/s.  Notice that depending   !
    ! on the size structure (SAS or Big Leaf), there is an addition factor multiplied.      !
    !                                                                                       !
    !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
@@ -2307,7 +2310,7 @@ subroutine init_pft_resp_params()
 
    !---------------------------------------------------------------------------------------!
    !    This variable sets the contribution of roots to respiration at the reference       !
-   ! temperature of 15C.  Its units is �mol_CO2/kg_fine_roots/s.                           !
+   ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
    !---------------------------------------------------------------------------------------!
    select case (iphysiol)
    case (0,1)
@@ -4879,7 +4882,7 @@ subroutine init_physiology_params()
    !---------------------------------------------------------------------------------------!
    c34smin_lint_co2 = 0.5   * umol_2_mol ! Minimum carbon dioxide concentration [  mol/mol]
    c34smax_lint_co2 = 1200. * umol_2_mol ! Maximum carbon dioxide concentration [  mol/mol]
-   c34smax_gsw      = 1.e+2              ! Max. stomatal conductance (water)    [ mol/m�/s]
+   c34smax_gsw      = 1.e+2              ! Max. stomatal conductance (water)    [ mol/m2/s]
    !---------------------------------------------------------------------------------------!
 
 
@@ -5032,9 +5035,9 @@ subroutine init_physiology_params()
 
    !---------------------------------------------------------------------------------------!
    !     This is the minimum threshold for the photosynthetically active radiation, in     !
-   ! �mol/m�/s to consider non-night time conditions (day time or twilight).               !
+   ! umol/m2/s to consider non-night time conditions (day time or twilight).               !
    !---------------------------------------------------------------------------------------!
-   par_twilight_min = 0.5 * Watts_2_Ein ! Minimum non-nocturnal PAR.             [mol/m�/s]
+   par_twilight_min = 0.5 * Watts_2_Ein ! Minimum non-nocturnal PAR.             [mol/m2/s]
    !---------------------------------------------------------------------------------------!
 
 
@@ -6163,8 +6166,8 @@ subroutine init_dt_thermo_params()
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  6.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
-   rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ �mol/mol]
-   rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ �mol/mol]
+   rk4min_can_co2    =  3.0000d1  ! Minimum canopy    CO2 mixing ratio          [ umol/mol]
+   rk4max_can_co2    =  5.0000d4  ! Maximum canopy    CO2 mixing ratio          [ umol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
@@ -6179,10 +6182,10 @@ subroutine init_dt_thermo_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     Minimum water mass at the leaf surface.  This is given in kg/m�leaf rather than   !
-   ! kg/m�ground, so we scale it with LAI.                                                 !
+   !     Minimum water mass at the leaf surface.  This is given in kg/m2leaf rather than   !
+   ! kg/m2ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -rk4leaf_drywhc            ! Minimum leaf water mass     [kg/m�leaf]
+   rk4min_veg_lwater = -rk4leaf_drywhc            ! Minimum leaf water mass     [kg/m2leaf]
    !---------------------------------------------------------------------------------------!
 
 
