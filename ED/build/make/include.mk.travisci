@@ -41,7 +41,7 @@ USE_COLLECTIVE_MPIO=0
 
 
 #################################### COMPILER SETTINGS #####################################
-CMACH=SUNHPC
+CMACH=TRAVISCI
 F_COMP=mpif90
 C_COMP=mpicc
 LOADER=mpif90
