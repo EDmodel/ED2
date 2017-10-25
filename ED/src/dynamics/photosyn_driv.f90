@@ -793,7 +793,7 @@ module photosyn_driv
       !     Re-open the file at the last line, and include the current status.             !
       !------------------------------------------------------------------------------------!
       open (unit=57,file=trim(photo_fout),status='old',action='write',position='append')
-      write(unit=57,fmt=bfmt)  current_time%year          , current_time%month             &                                                              &
+      write(unit=57,fmt=bfmt)  current_time%year          , current_time%month             &
                              , current_time%date          , current_time%time              &
                              , cpatch%pft(ico)            , limit_flag                     &
                              , cpatch%hite(ico)           , cpatch%nplant(ico)             &
