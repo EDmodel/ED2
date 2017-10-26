@@ -70,12 +70,15 @@ contains
       use ed_misc_coms , only : iallom      & ! intent(in)
                               , ibigleaf    ! ! intent(in)
       use ed_state_vars, only : patchtype   ! ! structure
+      use consts_coms  , only : lnexp_max   & ! intent(in)
+                              , lnexp_min   ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       integer       , intent(in) :: ipft
       real          , intent(in) :: dbh
       !----- Local variables --------------------------------------------------------------!
       real                :: mdbh
+      real                :: lnexp
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -96,10 +99,12 @@ contains
                      dbh2h = exp (b1Ht(ipft) + b2Ht(ipft) * log(mdbh) )
                   case default
                      !----- Poorter et al. (2006) allometry. ------------------------------!
-                     dbh2h = hgt_ref(ipft) * (1. - exp(-b1Ht(ipft) * mdbh ** b2Ht(ipft)))
+                     lnexp = max(lnexp_min,min(lnexp_max,b1Ht(ipft) * mdbh ** b2Ht(ipft)))
+                     dbh2h = hgt_ref(ipft) * (1. - exp(-lnexp))
                end select
             else !----- Temperate PFT allometry. ------------------------------------------!
-               dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(b2Ht(ipft) * dbh))
+               lnexp = max(lnexp_min,min(lnexp_max,b2Ht(ipft) * dbh))
+               dbh2h = hgt_ref(ipft) + b1Ht(ipft) * (1.0 - exp(lnexp))
             end if
 
          case (1)
@@ -176,10 +181,10 @@ contains
       !------------------------------------------------------------------------------------!
       !    Decide which coefficients to use based on the critical bdead.                   !
       !------------------------------------------------------------------------------------!
-         if (bdead <= bdead_crit(ipft)) then
-            bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
-         else
-            bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
+      if (bdead <= bdead_crit(ipft)) then
+         bd2dbh = (bdead / b1Bs_small(ipft) * C2B)**(1.0/b2Bs_small(ipft))
+      else
+         bd2dbh = (bdead / b1Bs_large(ipft) * C2B)**(1.0/b2Bs_large(ipft))
       end if
       !------------------------------------------------------------------------------------!
 

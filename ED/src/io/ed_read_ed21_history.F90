@@ -42,7 +42,8 @@ subroutine read_ed21_history_file
    use grid_coms           , only : ngrids                  & ! intent(in)
                                   , nzg                     ! ! intent(in)
    use consts_coms         , only : pio4                    & ! intent(in)
-                                  , almost_zero             ! ! intent(in)
+                                  , almost_zero             & ! intent(in)
+                                  , tiny_num                ! ! intent(in)
    use hdf5_coms           , only : file_id                 & ! intent(in)
                                   , dset_id                 & ! intent(in)
                                   , dspace_id               & ! intent(in)
@@ -118,8 +119,6 @@ subroutine read_ed21_history_file
    real                                :: elim_nplant
    real                                :: elim_lai
    logical                             :: foundvar
-   !----- Local constants. ----------------------------------------------------------------!
-   real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
    real                  , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -759,36 +758,36 @@ subroutine read_ed21_history_file
                            ! that the cohorts will be eliminated.                          !
                            !---------------------------------------------------------------!
                            if (cpatch%balive(ico) > 0.            .and.                    &
-                               cpatch%balive(ico) < tiny_biomass) then
-                              cpatch%balive(ico) = tiny_biomass
+                               cpatch%balive(ico) < tiny_num) then
+                              cpatch%balive(ico) = tiny_num
                            end if
                            if (cpatch%bleaf(ico) > 0.                .and.                 &
-                               cpatch%bleaf(ico) < tiny_biomass)     then
-                              cpatch%bleaf(ico) = tiny_biomass
+                               cpatch%bleaf(ico) < tiny_num)     then
+                              cpatch%bleaf(ico) = tiny_num
                            end if
                            if (cpatch%broot(ico) > 0.                .and.                 &
-                               cpatch%broot(ico) < tiny_biomass)     then
-                              cpatch%broot(ico) = tiny_biomass
+                               cpatch%broot(ico) < tiny_num)     then
+                              cpatch%broot(ico) = tiny_num
                            end if
                            if (cpatch%bsapwooda(ico) > 0.            .and.                 &
-                               cpatch%bsapwooda(ico) < tiny_biomass) then
-                              cpatch%bsapwooda(ico) = tiny_biomass
+                               cpatch%bsapwooda(ico) < tiny_num) then
+                              cpatch%bsapwooda(ico) = tiny_num
                            end if
                            if (cpatch%bsapwoodb(ico) > 0.            .and.                 &
-                               cpatch%bsapwoodb(ico) < tiny_biomass) then
-                              cpatch%bsapwoodb(ico) = tiny_biomass
+                               cpatch%bsapwoodb(ico) < tiny_num) then
+                              cpatch%bsapwoodb(ico) = tiny_num
                            end if
                            if (cpatch%bbark(ico) > 0.                .and.                 &
-                               cpatch%bbark(ico) < tiny_biomass)     then
-                              cpatch%bbark(ico) = tiny_biomass
+                               cpatch%bbark(ico) < tiny_num)     then
+                              cpatch%bbark(ico) = tiny_num
                            end if
                            if (cpatch%bdead(ico) > 0.                .and.                 &
-                               cpatch%bdead(ico) < tiny_biomass)     then
-                              cpatch%bdead(ico) = tiny_biomass
+                               cpatch%bdead(ico) < tiny_num)     then
+                              cpatch%bdead(ico) = tiny_num
                            end if
                            if (cpatch%bstorage(ico) > 0.             .and.                 &
-                               cpatch%bstorage(ico) < tiny_biomass)  then
-                              cpatch%bstorage(ico) = tiny_biomass
+                               cpatch%bstorage(ico) < tiny_num)  then
+                              cpatch%bstorage(ico) = tiny_num
                            end if
                            !---------------------------------------------------------------!
 
@@ -821,23 +820,34 @@ subroutine read_ed21_history_file
                            !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                         end do cohortloop
-
                         !------------------------------------------------------------------!
-                        !    Eliminate any "unwanted" cohort (i.e., those which nplant was !
-                        ! set to zero so it would be removed).                             !
-                        !------------------------------------------------------------------!
-                        call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-
                      end if
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Initialise the other patch-level variables.  This must be done   !
+                     ! inside the loop because terminate cohorts requires soil carbon      !
+                     ! input variables to be initialised. This has to be outside the if    !
+                     ! block though, to ensure that empty patches are initialised too.     !
+                     !---------------------------------------------------------------------!
+                     call init_ed_patch_vars(csite,ipa,ipa,cpoly%lsl(isi))
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
+                     ! set to zero so it would be removed).                                !
+                     !---------------------------------------------------------------------!
+                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     !---------------------------------------------------------------------!
                   end do patchloop
+                  !------------------------------------------------------------------------!
                else
                   !----- This should never happen, but, just in case... -------------------!
                   call fatal_error('A site with no patches was found...'                   &
                                   ,'read_ed21_history_file','ed_read_ed21_history.F90')
                end if
-
-               !----- Initialise the other patch-level variables. -------------------------!
-               call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
             end if
             !------------------------------------------------------------------------------!
          end do siteloop
@@ -945,7 +955,8 @@ subroutine read_ed21_history_unstruct
    use grid_coms           , only : ngrids                  & ! intent(in)
                                   , nzg                     ! ! intent(in)
    use consts_coms         , only : pio4                    & ! intent(in)
-                                  , almost_zero             ! ! intent(in)
+                                  , almost_zero             & ! intent(in)
+                                  , tiny_num                ! ! intent(in)
    use hdf5_coms           , only : file_id                 & ! intent(in)
                                   , dset_id                 & ! intent(in)
                                   , dspace_id               & ! intent(in)
@@ -1071,8 +1082,6 @@ subroutine read_ed21_history_unstruct
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
    logical                                                      :: foundvar
-   !----- Local constants. ----------------------------------------------------------------!
-   real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
    real                                           , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -1834,13 +1843,13 @@ subroutine read_ed21_history_unstruct
                         memsize(1)  = int(cpatch%ncohorts,8)
                         memoffs(1)  = 0_8
 
-                        call hdf_getslab_r(cpatch%dbh             ,'DBH '                  &
+                        call hdf_getslab_r(cpatch%dbh   ,'DBH '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_r(cpatch%bdead           ,'BDEAD '                &
+                        call hdf_getslab_r(cpatch%bdead ,'BDEAD '                          &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_i(cpatch%pft             ,'PFT '                  &
+                        call hdf_getslab_i(cpatch%pft   ,'PFT '                            &
                                           ,dsetrank,iparallel,.true.,foundvar)
-                        call hdf_getslab_r(cpatch%nplant          ,'NPLANT '               &
+                        call hdf_getslab_r(cpatch%nplant,'NPLANT '                         &
                                           ,dsetrank,iparallel,.true.,foundvar)
 
                         !------------------------------------------------------------------!
@@ -1876,7 +1885,6 @@ subroutine read_ed21_history_unstruct
                               cpatch%bdead(ico) = dbh2bd(cpatch%dbh  (ico),ipft)
                            end if
                            !---------------------------------------------------------------!
-
 
 
                            !---------------------------------------------------------------!
@@ -2001,6 +2009,9 @@ subroutine read_ed21_history_unstruct
                                  cpatch%nplant(ico) = 0.
                               end select
                            end if
+                           !---------------------------------------------------------------!
+
+
 
                            !---------------------------------------------------------------!
                            !     Make sure that the biomass won't lead to FPE.  This       !
@@ -2010,36 +2021,36 @@ subroutine read_ed21_history_unstruct
                            ! that the cohorts will be eliminated.                          !
                            !---------------------------------------------------------------!
                            if (cpatch%balive(ico) > 0.            .and.                    &
-                               cpatch%balive(ico) < tiny_biomass) then
-                              cpatch%balive(ico) = tiny_biomass
+                               cpatch%balive(ico) < tiny_num) then
+                              cpatch%balive(ico) = tiny_num
                            end if
                            if (cpatch%bleaf(ico) > 0.            .and.                     &
-                               cpatch%bleaf(ico) < tiny_biomass) then
-                              cpatch%bleaf(ico) = tiny_biomass
+                               cpatch%bleaf(ico) < tiny_num) then
+                              cpatch%bleaf(ico) = tiny_num
                            end if
                            if (cpatch%broot(ico) > 0.            .and.                     &
-                               cpatch%broot(ico) < tiny_biomass) then
-                              cpatch%broot(ico) = tiny_biomass
+                               cpatch%broot(ico) < tiny_num) then
+                              cpatch%broot(ico) = tiny_num
                            end if
                            if (cpatch%bsapwooda(ico) > 0.        .and.                     &
-                               cpatch%bsapwooda(ico) < tiny_biomass) then
-                              cpatch%bsapwooda(ico) = tiny_biomass
+                               cpatch%bsapwooda(ico) < tiny_num) then
+                              cpatch%bsapwooda(ico) = tiny_num
                            end if
                            if (cpatch%bsapwoodb(ico) > 0.        .and.                     &
-                               cpatch%bsapwoodb(ico) < tiny_biomass) then
-                              cpatch%bsapwoodb(ico) = tiny_biomass
+                               cpatch%bsapwoodb(ico) < tiny_num) then
+                              cpatch%bsapwoodb(ico) = tiny_num
                            end if
                            if (cpatch%bbark(ico) > 0.            .and.                     &
-                               cpatch%bbark(ico) < tiny_biomass) then
-                              cpatch%bbark(ico) = tiny_biomass
+                               cpatch%bbark(ico) < tiny_num) then
+                              cpatch%bbark(ico) = tiny_num
                            end if
                            if (cpatch%bdead(ico) > 0.            .and.                     &
-                               cpatch%bdead(ico) < tiny_biomass) then
-                              cpatch%bdead(ico) = tiny_biomass
+                               cpatch%bdead(ico) < tiny_num) then
+                              cpatch%bdead(ico) = tiny_num
                            end if
                            if (cpatch%bstorage(ico) > 0.            .and.                  &
-                               cpatch%bstorage(ico) < tiny_biomass) then
-                              cpatch%bstorage(ico) = tiny_biomass
+                               cpatch%bstorage(ico) < tiny_num) then
+                              cpatch%bstorage(ico) = tiny_num
                            end if
                            !---------------------------------------------------------------!
 
@@ -2071,23 +2082,34 @@ subroutine read_ed21_history_unstruct
                            !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                         end do cohortloop
-
                         !------------------------------------------------------------------!
-                        !    Eliminate any "unwanted" cohort (i.e., those which nplant was !
-                        ! set to zero so it would be removed).                             !
-                        !------------------------------------------------------------------!
-                        call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-
                      end if
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Initialise the other patch-level variables.  This must be done   !
+                     ! inside the loop because terminate cohorts requires soil carbon      !
+                     ! input variables to be initialised. This has to be outside the if    !
+                     ! block though, to ensure that empty patches are initialised too.     !
+                     !---------------------------------------------------------------------!
+                     call init_ed_patch_vars(csite,ipa,ipa,cpoly%lsl(isi))
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
+                     ! set to zero so it would be removed).                                !
+                     !---------------------------------------------------------------------!
+                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     !---------------------------------------------------------------------!
                   end do patchloop
+                  !------------------------------------------------------------------------!
                else
                   !----- This should never happen, but, just in case... -------------------!
                   call fatal_error('A site with no patches was found...'                   &
                                   ,'read_ed21_history_file','ed_read_ed21_history.F90')
                end if
-
-               !----- Initialise the other patch-level variables. -------------------------!
-               call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
 
             end do siteloop2
 
@@ -2204,7 +2226,8 @@ subroutine read_ed21_polyclone
    use grid_coms           , only : ngrids                  & ! intent(in)
                                   , nzg                     ! ! intent(in)
    use consts_coms         , only : pio4                    & ! intent(in)
-                                  , almost_zero             ! ! intent(in)
+                                  , almost_zero             & ! intent(in)
+                                  , tiny_num                ! ! intent(in)
    use hdf5_coms           , only : file_id                 & ! intent(in)
                                   , dset_id                 & ! intent(in)
                                   , dspace_id               & ! intent(in)
@@ -2322,10 +2345,6 @@ subroutine read_ed21_polyclone
    real                       :: t0
    real                       :: k0
    integer                    :: sc
-
-
-   !----- Local constants. ----------------------------------------------------------------!
-   real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
    real                                           , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -2858,12 +2877,12 @@ subroutine read_ed21_polyclone
                   end if
 
 
-                  ! We also need to set all the default properties because they were bypassed
-                  ! in ed_init
+                  ! We also need to set all the default properties because they were 
+                  ! bypassedin ed_init
 
                   if (sipa_n(si_index) > 0) then
 
-                     !----- Fill 1D polygon (site unique) level variables. -------------------!
+                     !----- Fill 1D polygon (site unique) level variables. ----------------!
                      call allocate_sitetype(csite,sipa_n(si_index))
 
                      iparallel = 0
@@ -2881,49 +2900,49 @@ subroutine read_ed21_polyclone
                         csite%light_type(ipa) = 1
                      end do
 
-                     call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '                 &
+                     call hdf_getslab_i(csite%dist_type         ,'DIST_TYPE '              &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%age               ,'AGE '                       &
+                     call hdf_getslab_r(csite%age               ,'AGE '                    &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%area              ,'AREA '                      &
+                     call hdf_getslab_r(csite%area              ,'AREA '                   &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%sum_dgd           ,'SUM_DGD '                   &
+                     call hdf_getslab_r(csite%sum_dgd           ,'SUM_DGD '                &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                   &
+                     call hdf_getslab_r(csite%sum_chd           ,'SUM_CHD '                &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '               &
+                     call hdf_getslab_r(csite%fast_soil_C       ,'FAST_SOIL_C '            &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '               &
+                     call hdf_getslab_r(csite%slow_soil_C       ,'SLOW_SOIL_C '            &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '               &
+                     call hdf_getslab_r(csite%fast_soil_N       ,'FAST_SOIL_N '            &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '         &
+                     call hdf_getslab_r(csite%structural_soil_C ,'STRUCTURAL_SOIL_C '      &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '         &
+                     call hdf_getslab_r(csite%structural_soil_L ,'STRUCTURAL_SOIL_L '      &
                           ,dsetrank,iparallel,.true.,foundvar)
-                     call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
+                     call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '     &
                           ,dsetrank,iparallel,.true.,foundvar)
 
 
 
 
-                     !------------------------------------------------------------------------!
-                     !     Check whether the history file is new or old.  We determine this   !
-                     ! by searching for variable plantation.  In case this variable isn't     !
-                     ! present, then it must be the new history.   Otherwise we correct the   !
-                     ! indices for secondary forests.                                         !
-                     !------------------------------------------------------------------------!
+                     !---------------------------------------------------------------------!
+                     !     Check whether the history file is new or old.  We determine     !
+                     ! this by searching for variable plantation.  In case this variable   !
+                     ! isn't present, then it must be the new history.   Otherwise we      !
+                     ! correct the indices for secondary forests.                          !
+                     !---------------------------------------------------------------------!
                      allocate (plantation(csite%npatches))
                      plantation(:) = 0
-                     call hdf_getslab_i(plantation ,'PLANTATION '                             &
+                     call hdf_getslab_i(plantation ,'PLANTATION '                          &
                                        ,dsetrank,iparallel,.false.,foundvar)
                      if (foundvar) then
                         do ipa=1,csite%npatches
                            select case(csite%dist_type(ipa))
                            case (2)
-                              !---------------------------------------------------------------!
-                              !     Secondary forests are now divided in three categories.    !
-                              !---------------------------------------------------------------!
+                              !------------------------------------------------------------!
+                              !     Secondary forests are now divided in three categories. !
+                              !------------------------------------------------------------!
                               if (plantation(ipa) == 0 .and. ianth_disturb == 0) then
                                  csite%dist_type(ipa) = 5
                               else if (plantation(ipa) == 0 .and. ianth_disturb /= 0) then
@@ -2931,14 +2950,14 @@ subroutine read_ed21_polyclone
                               else
                                  csite%dist_type(ipa) = 2
                               end if
-                              !---------------------------------------------------------------!
+                              !------------------------------------------------------------!
                            end select
-                           !------------------------------------------------------------------!
+                           !---------------------------------------------------------------!
                         end do
-                        !---------------------------------------------------------------------!
+                        !------------------------------------------------------------------!
                      end if
                      deallocate(plantation)
-                     !------------------------------------------------------------------------!
+                     !---------------------------------------------------------------------!
 
 
                      !----- Load 2D soil water
@@ -3230,6 +3249,9 @@ subroutine read_ed21_polyclone
                                  cpatch%nplant(ico) = 0.
                               end select
                            end if
+                           !---------------------------------------------------------------!
+
+
 
                            !---------------------------------------------------------------!
                            !     Make sure that the biomass won't lead to FPE.  This       !
@@ -3239,36 +3261,36 @@ subroutine read_ed21_polyclone
                            ! that the cohorts will be eliminated.                          !
                            !---------------------------------------------------------------!
                            if (cpatch%balive(ico) > 0.            .and.                    &
-                               cpatch%balive(ico) < tiny_biomass) then
-                              cpatch%balive(ico) = tiny_biomass
+                               cpatch%balive(ico) < tiny_num) then
+                              cpatch%balive(ico) = tiny_num
                            end if
                            if (cpatch%bleaf(ico) > 0.            .and.                     &
-                               cpatch%bleaf(ico) < tiny_biomass) then
-                              cpatch%bleaf(ico) = tiny_biomass
+                               cpatch%bleaf(ico) < tiny_num) then
+                              cpatch%bleaf(ico) = tiny_num
                            end if
                            if (cpatch%broot(ico) > 0.            .and.                     &
-                               cpatch%broot(ico) < tiny_biomass) then
-                              cpatch%broot(ico) = tiny_biomass
+                               cpatch%broot(ico) < tiny_num) then
+                              cpatch%broot(ico) = tiny_num
                            end if
                            if (cpatch%bsapwooda(ico) > 0.        .and.                     &
-                               cpatch%bsapwooda(ico) < tiny_biomass) then
-                              cpatch%bsapwooda(ico) = tiny_biomass
+                               cpatch%bsapwooda(ico) < tiny_num) then
+                              cpatch%bsapwooda(ico) = tiny_num
                            end if
                            if (cpatch%bsapwoodb(ico) > 0.        .and.                     &
-                               cpatch%bsapwoodb(ico) < tiny_biomass) then
-                              cpatch%bsapwoodb(ico) = tiny_biomass
+                               cpatch%bsapwoodb(ico) < tiny_num) then
+                              cpatch%bsapwoodb(ico) = tiny_num
                            end if
                            if (cpatch%bbark(ico) > 0.            .and.                     &
-                               cpatch%bbark(ico) < tiny_biomass) then
-                              cpatch%bbark(ico) = tiny_biomass
+                               cpatch%bbark(ico) < tiny_num) then
+                              cpatch%bbark(ico) = tiny_num
                            end if
                            if (cpatch%bdead(ico) > 0.            .and.                     &
-                               cpatch%bdead(ico) < tiny_biomass) then
-                              cpatch%bdead(ico) = tiny_biomass
+                               cpatch%bdead(ico) < tiny_num) then
+                              cpatch%bdead(ico) = tiny_num
                            end if
                            if (cpatch%bstorage(ico) > 0.            .and.                  &
-                               cpatch%bstorage(ico) < tiny_biomass) then
-                              cpatch%bstorage(ico) = tiny_biomass
+                               cpatch%bstorage(ico) < tiny_num) then
+                              cpatch%bstorage(ico) = tiny_num
                            end if
                            !---------------------------------------------------------------!
 
@@ -3298,23 +3320,34 @@ subroutine read_ed21_polyclone
                            !----- Initialise the other cohort level variables. ------------!
                            call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                         end do cohortloop
-
                         !------------------------------------------------------------------!
-                        !    Eliminate any "unwanted" cohort (i.e., those which nplant was !
-                        ! set to zero so it would be removed).                             !
-                        !------------------------------------------------------------------!
-                        call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-
                      end if
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Initialise the other patch-level variables.  This must be done   !
+                     ! inside the loop because terminate cohorts requires soil carbon      !
+                     ! input variables to be initialised. This has to be outside the if    !
+                     ! block though, to ensure that empty patches are initialised too.     !
+                     !---------------------------------------------------------------------!
+                     call init_ed_patch_vars(csite,ipa,ipa,cpoly%lsl(isi))
+                     !---------------------------------------------------------------------!
+
+
+                     !---------------------------------------------------------------------!
+                     !    Eliminate any "unwanted" cohort (i.e., those which nplant was    !
+                     ! set to zero so it would be removed).                                !
+                     !---------------------------------------------------------------------!
+                     call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
+                     !---------------------------------------------------------------------!
                   end do patchloop
+                  !------------------------------------------------------------------------!
                else
                   !----- This should never happen, but, just in case... -------------------!
                   call fatal_error('A site with no patches was found...'                   &
                                   ,'read_ed21_history_file','ed_read_ed21_history.F90')
                end if
-
-               !----- Initialise the other patch-level variables. -------------------------!
-               call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
 
                deallocate(slz_match)
 

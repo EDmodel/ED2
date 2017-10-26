@@ -148,7 +148,6 @@ subroutine ed_init_atm()
             patchloop1: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-
                !---------------------------------------------------------------------------!
                !      This first call is just to have the vegetation height so we can      !
                ! compute the initial canopy pressure...  It must be called again to have   !

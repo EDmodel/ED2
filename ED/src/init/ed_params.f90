@@ -1686,7 +1686,8 @@ subroutine init_pft_photo_params()
    !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
    !        account for variation on both axes, all equations were developed using         !
    !        standardised major axis (SMA) models - R package smatr. Except for wood        !
-   !        density, all variables were log-transformed.                                   !
+   !        density, all variables were log-transformed.  This fit is only applied when    !
+   !        IALLOM = 4 for back-compability.                                               !
    !                                                                                       !
    !  References                                                                           !
    !                                                                                       !
@@ -1717,7 +1718,16 @@ subroutine init_pft_photo_params()
          !---------------------------------------------------------------------------------!
       elseif (is_tropical(ipft) .and. (.not. is_grass(ipft))) then
          !----- Tropical trees. -----------------------------------------------------------!
-         Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
+         select case (iallom)
+         case (4)
+            !----- GLOPNET fit. -----------------------------------------------------------!
+            Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
+            !------------------------------------------------------------------------------!
+         case default
+            !----- Linear fit that passes very close to the original #s. ------------------!
+            Vm0(ipft) = 36.59323 - 33.77556*rho(ipft)
+            !------------------------------------------------------------------------------!
+         end select
          !---------------------------------------------------------------------------------!
       else
          !---------------------------------------------------------------------------------!
@@ -2098,8 +2108,8 @@ subroutine init_pft_resp_params()
                              , is_conifer                & ! intent(in)
                              , is_liana                  & ! intent(in)
                              , rho                       & ! intent(in)
+                             , leaf_turnover_rate        & ! intent(inout)
                              , growth_resp_factor        & ! intent(out)
-                             , leaf_turnover_rate        & ! intent(out)
                              , root_turnover_rate        & ! intent(out)
                              , bark_turnover_rate        & ! intent(out)
                              , storage_turnover_rate     & ! intent(out)
@@ -2149,7 +2159,11 @@ subroutine init_pft_resp_params()
    !    MLO -- Tropical PFT numbers updated using trait data base.                         !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_liana(ipft)) then
+      if (leaf_turnover_rate(ipft) /= undef_real) then
+         !----- Old initialisation, do nothing. -------------------------------------------!
+         continue
+         !---------------------------------------------------------------------------------!
+      elseif (is_liana(ipft)) then
          !----- Lianas. -------------------------------------------------------------------!
          leaf_turnover_rate(ipft) = 1.27
          !---------------------------------------------------------------------------------!
@@ -2689,6 +2703,7 @@ subroutine init_pft_alloc_params()
                            , is_grass              & ! intent(in)
                            , rho                   & ! intent(out)
                            , SLA                   & ! intent(out)
+                           , leaf_turnover_rate    & ! intent(out)
                            , q                     & ! intent(out)
                            , qsw                   & ! intent(out)
                            , qbark                 & ! intent(out)
@@ -2740,11 +2755,13 @@ subroutine init_pft_alloc_params()
                            , dbh2bd                & ! function
                            , size2bl               ! ! function
    use consts_coms  , only : onethird              & ! intent(in)
+                           , onesixth              & ! intent(in)
                            , twothirds             & ! intent(in)
                            , huge_num              & ! intent(in)
                            , pi1                   ! ! intent(in)
    use ed_max_dims  , only : n_pft                 & ! intent(in)
-                           , str_len               ! ! intent(in)
+                           , str_len               & ! intent(in)
+                           , undef_real            ! ! intent(in)
    use ed_misc_coms , only : iallom                & ! intent(in)
                            , igrass                & ! intent(in)
                            , ibigleaf              ! ! intent(in)
@@ -2869,6 +2886,46 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Leaf turnover rate.  We only initialise it here for tropical trees when IALLOM is !
+   ! not 4, because the old method makes SLA a function of LTOR.  Otherwise, we assign     !
+   ! undefined and fill in init_pft_resp_params.                                           !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (4)
+      !----- Only lianas are initialised here. --------------------------------------------!
+      leaf_turnover_rate(:) = merge(1.27,undef_real,is_liana(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      do ipft=1,n_pft
+         if (.not. is_tropical(ipft)) then
+            !----- Non-tropical, initialise in init_pft_resp_params. ----------------------!
+            leaf_turnover_rate(ipft) = undef_real
+            !------------------------------------------------------------------------------!
+         elseif (is_conifer(ipft)) then
+            !----- Araucaria. -------------------------------------------------------------!
+            leaf_turnover_rate(ipft) = onesixth
+            !------------------------------------------------------------------------------!
+         elseif (is_liana(ipft)) then
+            !----- Liana. -----------------------------------------------------------------!
+            leaf_turnover_rate(ipft) = 1.27
+            !------------------------------------------------------------------------------!
+         else
+            !------------------------------------------------------------------------------!
+            !     Grasses and trees.  Logistic curve that passes very close to the         !
+            ! original numbers.                                                            !
+            !------------------------------------------------------------------------------!
+            leaf_turnover_rate(ipft) = 3.253662                                            &
+                                     / ( 1. + exp( -1.270624 + 4.002059 * rho(ipft) ) )
+            !------------------------------------------------------------------------------!
+         end if          
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Specific leaf area [m2 leaf / kg C].   For tropical PFTs, this is a turnover rate !
@@ -2887,7 +2944,8 @@ subroutine init_pft_alloc_params()
    !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
    !        account for variation on both axes, all equations were developed using         !
    !        standardised major axis (SMA) models - R package smatr. Except for wood        !
-   !        density, all variables were log-transformed.                                   !
+   !        density, all variables were log-transformed.  These changes are only applied   !
+   !        to IALLOM=4 for back-compability.                                              !
    !                                                                                       !
    !  References                                                                           !
    !                                                                                       !
@@ -2898,20 +2956,19 @@ subroutine init_pft_alloc_params()
    !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
    !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
    !---------------------------------------------------------------------------------------!
-   !SLA(i) = 10.0**(sla_inter + sla_slope * log10(12.0/leaf_turnover_rate(i))) * sla_scale
    do ipft=1,n_pft
       if (is_tropical(ipft)) then
-         if (is_grass(ipft)) then
+         if (leaf_turnover_rate(ipft) /= undef_real) then
+            !----- Old allometry. ---------------------------------------------------------!
+            SLA(ipft) = sla_scale                                                          &
+                      * 10.**(sla_inter + sla_slope * log10(12./leaf_turnover_rate(ipft)))
+            !------------------------------------------------------------------------------!
+         elseif (is_grass(ipft)) then
             !----- Tropical grasses. ------------------------------------------------------!
             SLA(ipft) = 30.
             !------------------------------------------------------------------------------!
          elseif (is_liana(ipft)) then
-            !------------------------------------------------------------------------------!
-            !     Lianas.  Leaf turnover rate is now defined after SLA, so it is no longer !
-            ! possible to use the original formulation.  I copied the result here because  !
-            ! the equation below would make SLA=26.97 for lianas and I didn't want to      !
-            ! change the results.                                                          !
-            !------------------------------------------------------------------------------!
+            !----- Lianas.  This shouldn't happen but just in case. -----------------------!
            SLA(ipft) = 17.87954
             !------------------------------------------------------------------------------!
          elseif (is_conifer(ipft)) then
@@ -3440,7 +3497,7 @@ subroutine init_pft_alloc_params()
    !     DBH-crown allometry.                                                              !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_tropical(ipft)) then
+      if (is_liana(ipft)) then
          !----- Lianas. -------------------------------------------------------------------!
          b1Ca(ipft) = exp(ncrown_area(1))
          b2Ca(ipft) = 1.26254364
@@ -4360,19 +4417,26 @@ subroutine init_pft_leaf_params()
    !              converted to water:oven-dry ratio (XWDR = XWC / (1 - XWC).  Their        !
    !              data suggest that water content depends on wood density but were         !
    !              indistinguishable between moist and dry forests.  Values for tropical    !
-   !              trees follow the fitted curve using SMA.                                 !
+   !              trees follow the fitted curve using SMA.  We only apply this in IALLOM   !
+   !              4 for back-compability.                                                  !
    !                                                                                       !
    ! Temperate -- Use values from FPL10.                                                   !
    !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-         wat_dry_ratio_wood(ipft) = exp(1.5018230 - 3.137476 * rho(ipft))
-         wat_dry_ratio_bark(ipft) = exp(1.9892840 - 3.174365 * rho(ipft))
-      else
-         wat_dry_ratio_wood(ipft) = 0.7
-         wat_dry_ratio_bark(ipft) = 0.7
-      end if
-   end do
+   select case (iallom)
+   case (4)
+      do ipft=1,n_pft
+         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+            wat_dry_ratio_wood(ipft) = 0.7
+            wat_dry_ratio_bark(ipft) = 0.7
+         else
+            wat_dry_ratio_wood(ipft) = exp(1.5018230 - 3.137476 * rho(ipft))
+            wat_dry_ratio_bark(ipft) = exp(1.9892840 - 3.174365 * rho(ipft))
+         end if
+      end do
+   case default
+      wat_dry_ratio_wood(:) = 0.7
+      wat_dry_ratio_bark(:) = 0.7
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -6376,7 +6440,8 @@ end subroutine overwrite_with_xml_config
 subroutine init_derived_params_after_xml()
    use decomp_coms          , only : f_labile                ! ! intent(in)
    use detailed_coms        , only : idetailed               ! ! intent(in)
-   use ed_misc_coms         , only : ibigleaf                ! ! intent(in)
+   use ed_misc_coms         , only : ibigleaf                & ! intent(in)
+                                   , iallom                  ! ! intent(in)
    use ed_max_dims          , only : n_pft                   & ! intent(in)
                                    , str_len                 & ! intent(in)
                                    , undef_real              ! ! intent(in)
@@ -6530,6 +6595,21 @@ subroutine init_derived_params_after_xml()
    print_zero_table = btest(idetailed,5)
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Find net specific heat for leaves, wood, and bark only once, as these numbers     !
+   ! should not change during the simulation.                                              !
+   !---------------------------------------------------------------------------------------!
+   cleaf(:) = (c_grn_leaf_dry (:) + wat_dry_ratio_leaf(:) * cliq)                          &
+            / (1. + wat_dry_ratio_leaf(:))
+   cwood(:) = (c_ngrn_wood_dry(:) + wat_dry_ratio_wood(:) * cliq)                          &
+            / (1. + wat_dry_ratio_wood(:)) + delta_c_wood(:)
+   cbark(:) = (c_ngrn_bark_dry(:) + wat_dry_ratio_bark(:) * cliq)                          &
+            / (1. + wat_dry_ratio_bark(:)) + delta_c_bark(:)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !     The minimum recruitment size and the recruit carbon to nitrogen ratio.  Both      !
    ! parameters actually depend on which PFT we are solving, since grasses always have     !
@@ -6619,50 +6699,101 @@ subroutine init_derived_params_after_xml()
 
 
 
+      !------------------------------------------------------------------------------------!
+      !     Minimum sizes are allometry-dependent.  IALLOM = 4 defines the sizes based on  !
+      ! heat capacity, because this variable considerably affects the model speed.  Other  !
+      ! allometry sets define the minimum sizes as before, for back-compability.           !
+      !------------------------------------------------------------------------------------!
+      select case (iallom)
+      case (4)
+         !---------------------------------------------------------------------------------!
+         !     New method, each PFT has a minimum resolvable density. The fraction ensures !
+         ! that plants start as resolvable.                                                !
+         !---------------------------------------------------------------------------------!
+         nplant_res_min     = 0.2 * minval(init_density)
+         !---------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !     The following variable is the minimum heat capacity of either the leaf, or the !
-      ! branches, or the combined pool that is solved by the biophysics.  Value is in      !
-      ! J/m2/K.  Because leaves are the pools that can determine the fate of the tree, and !
-      ! all PFTs have leaves (but not branches), we only consider the leaf heat capacity   !
-      ! only for the minimum value.                                                        !
-      !------------------------------------------------------------------------------------!
-      nplant_res_min     = 0.25 * init_density(ipft)
-      call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,bbark_min,nplant_res_min,ipft    &
-                        ,leaf_hcap_min,wood_hcap_min)
-      veg_hcap_min(ipft) = leaf_hcap_min
-      lai_min            = nplant_res_min * bleaf_min * sla(ipft)
-      !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     The following variable is the minimum heat capacity of either the leaf, or  !
+         ! the branches, or the combined pool that is solved by the biophysics.  Value is  !
+         ! in J/m2/K.  Because leaves are the pools that can determine the fate of the     !
+         ! tree, and all PFTs have leaves (but not branches), we only consider the leaf    !
+         ! heat capacity only for the minimum value.                                       !
+         !---------------------------------------------------------------------------------!
+         call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,bbark_min,nplant_res_min,ipft &
+                           ,leaf_hcap_min,wood_hcap_min)
+         veg_hcap_min(ipft) = leaf_hcap_min
+         lai_min            = nplant_res_min * bleaf_min * sla(ipft)
+         !---------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------!
-      !    The definition of the minimum recruitment size is the minimum amount of biomass !
-      ! in kgC/m² is available for new recruits.  It does not make much sense to throw in  !
-      ! new recruits that cannot be resolved (as they would be initialised and gone), so   !
-      ! we define the initial size to be greater than the minimum resolvable nplant.       !
-      !------------------------------------------------------------------------------------!
-      min_recruit_size(ipft) = 2.0 * nplant_res_min * one_plant_c(ipft)
-      !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !    The definition of the minimum recruitment size is the minimum amount of      !
+         ! biomass in kgC/m2 is available for new recruits.  It does not make much sense   !
+         ! to throw in new recruits that cannot be resolved (as they would be initialised  !
+         ! and terminated), so we define the initial size to be greater than the minimum   !
+         ! resolvable nplant.                                                              !
+         !---------------------------------------------------------------------------------!
+         min_recruit_size(ipft) = 2.0 * nplant_res_min * one_plant_c(ipft)
+         !---------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !    Minimum size (measured as biomass of living and structural tissues) allowed in  !
-      ! a cohort.  Cohorts with less biomass than this are going to be terminated.         !
+         !---------------------------------------------------------------------------------!
+         !    Minimum size (measured as biomass of living and structural tissues) allowed  !
+         ! in a cohort.  Cohorts with less biomass than this are going to be terminated.   !
+         !---------------------------------------------------------------------------------!
+         min_cohort_size(ipft)  = 0.8 * nplant_res_min * one_plant_c(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Seed_rain is the density of seedling that will be added from somewhere else. !
+         ! By default, this variable is initialised as a function of the cohort's minimum  !
+         ! size to ensure it allows for reintroduction.  In case this has been initialised !
+         ! through xml, then don't change the values.                                      !
+         !---------------------------------------------------------------------------------! 
+         if (seed_rain(ipft) == undef_real) seed_rain(ipft)  = nplant_res_min
+         !---------------------------------------------------------------------------------! 
+      case default
+         !----- Old method, nplant_res_min is a fraction of the smallest initial density. -!
+         nplant_res_min     = 0.1 * minval(init_density)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    The definition of the minimum recruitment size is the minimum amount of      !
+         ! biomass in kgC/m2 is available for new recruits.  For the time being we use the !
+         ! near-bare ground state value as the minimum recruitment size, but this may      !
+         ! change depending on how well it goes.                                           !
+         !---------------------------------------------------------------------------------!
+         min_recruit_size(ipft) = nplant_res_min * one_plant_c(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Minimum size (measured as biomass of living and structural tissues) allowed  !
+         ! in a cohort.  Cohorts with less biomass than this are going to be terminated.   !
+         !---------------------------------------------------------------------------------!
+         min_cohort_size(ipft)  = 0.1 * min_recruit_size(ipft)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     The following variable is the minimum heat capacity of either the leaf, or  !
+         ! the branches, or the combined pool that is solved by the biophysics.  Value is  !
+         ! in J/m2/K.  Because leaves are the pools that can determine the fate of the     !
+         ! tree, and all PFTs have leaves (but not branches), we only consider the leaf    !
+         ! heat capacity only for the minimum value.                                       !
+         !---------------------------------------------------------------------------------!
+         call calc_veg_hcap(bleaf_min,bdead_min,bsapwood_min,bbark_min,init_density(ipft)  &
+                           ,ipft,leaf_hcap_min,wood_hcap_min)
+         veg_hcap_min(ipft) = onesixth * leaf_hcap_min
+         lai_min            = onesixth * init_density(ipft) * bleaf_min * sla(ipft)
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------! 
-      min_cohort_size(ipft)  = 0.8 * nplant_res_min * one_plant_c(ipft)
-      !------------------------------------------------------------------------------------! 
-
-
-      !------------------------------------------------------------------------------------!
-      !    Seed_rain is the density of seedling that will be added from somewhere else.    !
-      ! By default, this variable is initialised as a function of the cohort's minimum     !
-      ! size to ensure it allows for reintroduction.  In case this has been initialised    !
-      ! through xml, then don't change the values.                                         !
-      !------------------------------------------------------------------------------------! 
-      if (seed_rain(ipft) == undef_real) seed_rain(ipft)  = nplant_res_min
-      !------------------------------------------------------------------------------------! 
-
 
 
       !------------------------------------------------------------------------------------! 
@@ -6717,19 +6848,6 @@ subroutine init_derived_params_after_xml()
    if (print_zero_table) then
       close (unit=61,status='keep')
    end if
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Find net specific heat for leaves, wood, and bark only once, as these numbers     !
-   ! should not change during the simulation.                                              !
-   !---------------------------------------------------------------------------------------!
-   cleaf(:) = (c_grn_leaf_dry (:) + wat_dry_ratio_leaf(:) * cliq)                          &
-            / (1. + wat_dry_ratio_leaf(:))
-   cwood(:) = (c_ngrn_wood_dry(:) + wat_dry_ratio_wood(:) * cliq)                          &
-            / (1. + wat_dry_ratio_wood(:)) + delta_c_wood(:)
-   cbark(:) = (c_ngrn_bark_dry(:) + wat_dry_ratio_bark(:) * cliq)                          &
-            / (1. + wat_dry_ratio_bark(:)) + delta_c_bark(:)
    !---------------------------------------------------------------------------------------!
 
 
