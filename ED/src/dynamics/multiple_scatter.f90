@@ -390,8 +390,9 @@ module multiple_scatter
    !                                                                                       !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,ncoh,pft,lai,wai,cai &
-                                 ,radprof_flip,par_beam_flip,par_diff_flip                 &
+   subroutine sw_multiple_scatter(grnd_alb_par4,grnd_alb_nir4,cosaoi4,nir_beam_norm        &
+                                 ,nir_diff_norm,par_beam_norm,par_diff_norm,ncoh,pft,lai   &
+                                 ,wai,cai,radprof_flip,par_beam_flip,par_diff_flip         &
                                  ,sw_abs_beam_flip,sw_abs_diff_flip,dw_parlo_beam          &
                                  ,dw_parlo_diff,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff  &
                                  ,uw_nirhi_diff,par_level_beam,par_level_diffd             &
@@ -412,10 +413,6 @@ module multiple_scatter
                                       , wood_scatter_vis        & ! intent(in)
                                       , wood_backscatter_nir    & ! intent(in)
                                       , wood_backscatter_vis    & ! intent(in)
-                                      , par_beam_norm           & ! intent(in)
-                                      , par_diff_norm           & ! intent(in)
-                                      , nir_beam_norm           & ! intent(in)
-                                      , nir_diff_norm           & ! intent(in)
                                       , cosz_min8               ! ! intent(in)
 
       implicit none
@@ -424,6 +421,10 @@ module multiple_scatter
       real(kind=4)                              , intent(in)    :: grnd_alb_par4
       real(kind=4)                              , intent(in)    :: grnd_alb_nir4
       real(kind=4)                              , intent(in)    :: cosaoi4
+      real(kind=8)                              , intent(in)    :: par_beam_norm
+      real(kind=8)                              , intent(in)    :: par_diff_norm
+      real(kind=8)                              , intent(in)    :: nir_beam_norm
+      real(kind=8)                              , intent(in)    :: nir_diff_norm
       integer                                   , intent(in)    :: ncoh
       integer     , dimension(ncoh)             , intent(in)    :: pft
       real(kind=8), dimension(ncoh)             , intent(in)    :: lai

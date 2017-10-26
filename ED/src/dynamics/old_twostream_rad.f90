@@ -8,8 +8,9 @@ module old_twostream_rad
    ! aren't randomly distributed).  The crown area will be also considered when the user   !
    ! wants it.                                                                             !
    !---------------------------------------------------------------------------------------!
-   subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,ncoh,pft,lai,wai          &
-                                ,canopy_area,radprof_flip,par_beam_flip,par_diff_flip      &
+   subroutine old_sw_two_stream (salbedo_par,salbedo_nir,scosaoi,nir_beam_norm             &
+                                ,nir_diff_norm,par_beam_norm,par_diff_norm,ncoh,pft,lai    &
+                                ,wai,canopy_area,radprof_flip,par_beam_flip,par_diff_flip  &
                                 ,sw_abs_beam_flip,sw_abs_diff_flip,dw_parlo_beam           &
                                 ,dw_parlo_diff,uw_parhi_diff,dw_nirlo_beam,dw_nirlo_diff   &
                                 ,uw_nirhi_diff,par_level_beam,par_level_diffd              &
@@ -31,10 +32,6 @@ module old_twostream_rad
                                       , phi1                    & ! intent(in)
                                       , phi2                    & ! intent(in)
                                       , mu_bar                  & ! intent(in)
-                                      , par_beam_norm           & ! intent(in)
-                                      , par_diff_norm           & ! intent(in)
-                                      , nir_beam_norm           & ! intent(in)
-                                      , nir_diff_norm           & ! intent(in)
                                       , cosz_min8               ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -46,6 +43,10 @@ module old_twostream_rad
       real                           , intent(in)    :: salbedo_par
       real                           , intent(in)    :: salbedo_nir
       real                           , intent(in)    :: scosaoi
+      real(kind=8)                   , intent(in)    :: par_beam_norm
+      real(kind=8)                   , intent(in)    :: par_diff_norm
+      real(kind=8)                   , intent(in)    :: nir_beam_norm
+      real(kind=8)                   , intent(in)    :: nir_diff_norm
       real, dimension(n_radprof,ncoh), intent(inout) :: radprof_flip
       real, dimension(ncoh)          , intent(out)   :: par_beam_flip
       real, dimension(ncoh)          , intent(out)   :: par_diff_flip

@@ -948,6 +948,11 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
                                                    ,"Stand clearing"
                                                    )#end c
                                        )#end list
+   flagvar[["icompile" ]]        = list( descr  = "Compilation type"
+                                       , numeric = FALSE
+                                       , values = c("openmp","serial")
+                                       , names  = c("OpenMP","Serial")
+                                       )#end list
    #---------------------------------------------------------------------------------------#
 
 
@@ -1215,8 +1220,8 @@ simul.description <<- function(ici,testpoi,iata=TRUE,max.char=66){
          nz     = c(   10)
       }else if (lenici == 11){
          nparms = 1
-         param  = c("revision")
-         na     = c(         9)
+         param  = c("icompile")
+         na     = c(         6)
          nz     = c(        11)
       }else if (lenici == 12){
          nparms = 2

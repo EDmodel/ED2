@@ -769,8 +769,12 @@ do
       if [ ${useperiod} == "t" ]
       then
          #------ One meteorological cycle.  Check the type of meteorological driver. ------#
-         if [ ${metdriver} != "Sheffield" ]
-         then
+         case ${metdriver} in
+         Sheffield|WFDEI*)
+            thisyeara=${metcyca}
+            thisyearz=${metcycz}
+            ;;
+         *)
             thisyeara=${metcyca}
             thisyearz=${metcycz}
             for i in ${shiftiata}
@@ -784,10 +788,8 @@ do
                   let thisyearz=${metcycz}+${deltayr}
                fi # end [ ${i} == ${iata} ]
             done #end for i in ${shiftiata}
-         else
-            thisyeara=${metcyca}
-            thisyearz=${metcycz}
-         fi # end [ ${metdriver} != "Sheffield" ]
+            ;;
+         esac #  ${metdriver} in
          #---------------------------------------------------------------------------------#
 
       elif [ ${useperiod} == "u" ]

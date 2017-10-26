@@ -115,16 +115,6 @@ module canopy_radiation_coms
    type(radscrtype)   , pointer,dimension(:)    :: radscr(:)
    !---------------------------------------------------------------------------------------!
 
-
-   !---------------------------------------------------------------------------------------!
-   !     These are the normalised variables that will be used in the two-stream model.     !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: par_beam_norm
-   real(kind=8) :: par_diff_norm
-   real(kind=8) :: nir_beam_norm
-   real(kind=8) :: nir_diff_norm
-   !---------------------------------------------------------------------------------------!
-
    !---------------------------------------------------------------------------------------!
    !     Factors that define the orientation and clumping of leaves.                       !
    ! CLUMPING FACTOR - factor indicating the degree of clumpiness of leaves.               !

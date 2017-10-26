@@ -29,12 +29,11 @@
 #    - night     - Night time (Sun below 6 degrees below the horizon                       #
 #    (N.B. When both day and night are false, we consider it twilight.                     #
 #------------------------------------------------------------------------------------------#
-ed.zen = function (lon,lat,when,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=1
-                  ,nmean=120,...){
+ed.zen <<- function (lon,lat,when,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=1
+                    ,nmean=120,...){
    #------ Constants. ---------------------------------------------------------------------#
    dcoeff   = c( 0.006918, -0.399912,  0.070257, -0.006758,  0.000907, -0.002697,  0.001480)
    #---------------------------------------------------------------------------------------#
-
 
    #------ Find the number of elements. ---------------------------------------------------#
    ntimes  = length(when)
@@ -90,6 +89,7 @@ ed.zen = function (lon,lat,when,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=
    }else{
       #----- Single time, use only the instantaneous value. -------------------------------#
       WHEN  = matrix(as.numeric(when),ncol=nmean,nrow=ntimes)
+      #------------------------------------------------------------------------------------#
    }#end if
    empty = as.numeric(WHEN) * NA
    #---------------------------------------------------------------------------------------#
@@ -150,8 +150,7 @@ ed.zen = function (lon,lat,when,ed21=TRUE,zeronight=FALSE,meanval=FALSE,imetavg=
       hgt [night] =  0.
       zen [night] = 90.
    }#end if
-
-   ans = list(cosz=cosz,zen=zen,hgt=hgt,declin=declin,day=day,night=night)
+   ans = data.frame(cosz=cosz,zen=zen,hgt=hgt,declin=declin,day=day,night=night)
    return(ans)
 }#end function ed.zen
 #==========================================================================================#

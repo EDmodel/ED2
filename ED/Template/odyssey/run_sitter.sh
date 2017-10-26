@@ -420,6 +420,16 @@ do
             scentype="sheffield"
             iscenario="sheffield"
             ;;
+         WFDEI_CRUP)
+            #----- WFDEI (CRU Precipitation). ---------------------------------------------#
+            scentype="WFDEI"
+            iscenario="WFDEI_SOUTHAM_CRUP"
+            ;;
+         WFDEI_GPCC)
+            #----- WFDEI (GPCC Precipitation). --------------------------------------------#
+            scentype="WFDEI"
+            iscenario="WFDEI_SOUTHAM_GPCC"
+            ;;
          *)
             #----- Tower data. ------------------------------------------------------------#
             scentype="wmo+eft"
@@ -508,6 +518,14 @@ do
          metcyc1=2000
          metcycf=2010
          ;;
+      WFDEI_CRUP)
+         metcyc1=1979
+         metcycf=2016
+         ;;
+      WFDEI_GPCC)
+         metcyc1=1979
+         metcycf=2013
+         ;;
       *)
          echo "Met driver: ${metdriver}"
          echo "Sorry, this met driver is not valid for regular runs"
@@ -521,7 +539,8 @@ do
       #     Correct years so it is not tower-based or Sheffield.                              #
       #---------------------------------------------------------------------------------------#
       if [ ${iscenario} != "default"   ] && [ ${iscenario} != "eft"       ] && 
-         [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ]
+         [ ${iscenario} != "shr"       ] && [ ${iscenario} != "sheffield" ] &&
+         [ ${iscenario} != "WFDEI"     ]
       then
          metcyc1=1972
          metcycf=2012

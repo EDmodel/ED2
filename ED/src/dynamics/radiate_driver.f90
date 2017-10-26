@@ -14,11 +14,7 @@ module radiate_driver
                                        , polygontype           & ! structure
                                        , sitetype              & ! structure
                                        , patchtype             ! ! structure
-      use canopy_radiation_coms , only : par_beam_norm         & ! intent(in)
-                                       , par_diff_norm         & ! intent(in)
-                                       , nir_beam_norm         & ! intent(in)
-                                       , nir_diff_norm         & ! intent(in)
-                                       , cosz_min              & ! intent(in)
+      use canopy_radiation_coms , only : cosz_min              & ! intent(in)
                                        , rshort_twilight_min   ! ! intent(in)
       use consts_coms           , only : pio180                ! ! intent(in)
       use grid_coms             , only : nzg                   & ! intent(in)
@@ -44,7 +40,11 @@ module radiate_driver
       real                        :: hrangl
       real                        :: sloperad
       real                        :: aspectrad
-      real                        :: sum_norm
+      real(kind=8)                :: sum_norm
+      real(kind=8)                :: nir_beam_norm
+      real(kind=8)                :: nir_diff_norm
+      real(kind=8)                :: par_beam_norm
+      real(kind=8)                :: par_diff_norm
       integer                     :: ibuff
       !------------------------------------------------------------------------------------!
 
@@ -206,7 +206,8 @@ module radiate_driver
                   !----- Get normalised radiative transfer information. -------------------!
                   call sfcrad_ed(cpoly%cosaoi(isi),csite,ipa,ibuff,nzg,nzs                 &
                                 ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi)              &
-                                ,cpoly%met(isi)%rlong,twilight)
+                                ,cpoly%met(isi)%rlong,twilight                             &
+                                ,nir_beam_norm,nir_diff_norm,par_beam_norm,par_diff_norm)
                   !------------------------------------------------------------------------!
 
 
@@ -244,7 +245,8 @@ module radiate_driver
    !     This subroutine will drive the distribution of radiation among crowns, snow       !
    ! layers, and soil.                                                                     !
    !---------------------------------------------------------------------------------------!
-   subroutine sfcrad_ed(cosaoi,csite,ipa,ibuff,mzg,mzs,ntext_soil,ncol_soil,rlong,twilight)
+   subroutine sfcrad_ed(cosaoi,csite,ipa,ibuff,mzg,mzs,ntext_soil,ncol_soil,rlong,twilight &
+                       ,nir_beam_norm,nir_diff_norm,par_beam_norm,par_diff_norm)
 
       use ed_state_vars        , only : sitetype             & ! structure
                                       , patchtype            ! ! structure
@@ -252,10 +254,6 @@ module radiate_driver
                                       , tai_lyr_max          ! ! intent(in)
       use canopy_radiation_coms, only : icanrad              & ! intent(in)
                                       , clumping_factor      & ! intent(in)
-                                      , par_beam_norm        & ! intent(in)
-                                      , par_diff_norm        & ! intent(in)
-                                      , nir_beam_norm        & ! intent(in)
-                                      , nir_diff_norm        & ! intent(in)
                                       , leaf_scatter_vis     & ! intent(in)
                                       , wood_scatter_vis     & ! intent(in)
                                       , leaf_scatter_nir     & ! intent(in)
@@ -292,6 +290,10 @@ module radiate_driver
       real                            , intent(in)  :: cosaoi
       logical                         , intent(in)  :: twilight
       integer                         , intent(in)  :: ibuff
+      real(kind=8)                    , intent(in)  :: nir_beam_norm
+      real(kind=8)                    , intent(in)  :: nir_diff_norm
+      real(kind=8)                    , intent(in)  :: par_beam_norm
+      real(kind=8)                    , intent(in)  :: par_diff_norm
       !----- Local variables. -------------------------------------------------------------!
       type(patchtype) , pointer                     :: cpatch
       integer                                       :: il
@@ -346,7 +348,7 @@ module radiate_driver
       real                                          :: wwood_tir
       real                                          :: bl_lai_each
       real                                          :: bl_wai_each
-     !----- External function. -----------------------------------------------------------!
+      !----- External function. -----------------------------------------------------------!
       real            , external                    :: sngloff
       !----- Local constants. -------------------------------------------------------------!
       real(kind=8)    , parameter                   :: tiny_offset = 1.d-20
@@ -856,6 +858,8 @@ module radiate_driver
                !    Two-stream model.                                                      !
                !---------------------------------------------------------------------------!
                call old_sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi           &
+                                  ,nir_beam_norm,nir_diff_norm                             &
+                                  ,par_beam_norm,par_diff_norm                             &
                                   ,cohort_count                                            &
                                   ,radscr(ibuff)%pft_array(1:cohort_count)                 &
                                   ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
@@ -886,6 +890,8 @@ module radiate_driver
                !---------------------------------------------------------------------------!
 
                call sw_multiple_scatter(albedo_ground_par,albedo_ground_nir,cosaoi         &
+                                  ,nir_beam_norm,nir_diff_norm                             &
+                                  ,par_beam_norm,par_diff_norm                             &
                                   ,cohort_count                                            &
                                   ,radscr(ibuff)%pft_array(1:cohort_count)                 &
                                   ,radscr(ibuff)%LAI_array(1:cohort_count)                 &
@@ -913,6 +919,8 @@ module radiate_driver
             case (2)
                !---------------------------------------------------------------------------!
                call sw_two_stream(albedo_ground_par,albedo_ground_nir,cosaoi               &
+                                 ,nir_beam_norm,nir_diff_norm                              &
+                                 ,par_beam_norm,par_diff_norm                              &
                                  ,cohort_count                                             &
                                  ,radscr(ibuff)%pft_array(1:cohort_count)                  &
                                  ,radscr(ibuff)%LAI_array(1:cohort_count)                  &

@@ -94,6 +94,7 @@ read.q.files <<- function(datum,ntimes,tresume=1,sasmonth=5){
       }else{
          cat0(" - File      : ",basename(h5file)    )
          cat0(" - File (bz2): ",basename(h5file.bz2))
+         cat0(" - File (gz) : ",basename(h5file.gz))
          stop(" Neither the expanded nor the compressed files were found!")
 
       }#end if
