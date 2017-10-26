@@ -1451,30 +1451,30 @@ end subroutine init_can_air_params
 !------------------------------------------------------------------------------------------!
 subroutine init_can_lyr_params()
    use canopy_layer_coms, only : tai_lyr_max                 & ! intent(out)
-      , ncanlyr                     & ! intent(out)
-      , ncanlyrp1                   & ! intent(out)
-      , ncanlyrt2                   & ! intent(out)
-      , zztop0                      & ! intent(out)
-      , zztop08                     & ! intent(out)
-      , zztop0i                     & ! intent(out)
-      , zztop0i8                    & ! intent(out)
-      , ehgt                        & ! intent(out)
-      , ehgt8                       & ! intent(out)
-      , ehgti                       & ! intent(out)
-      , ehgti8                      & ! intent(out)
-      , dzcan                       & ! intent(out)
-      , dzcan8                      & ! intent(out)
-      , zztop                       & ! intent(out)
-      , zzmid                       & ! intent(out)
-      , zzbot                       & ! intent(out)
-      , zztop8                      & ! intent(out)
-      , zzmid8                      & ! intent(out)
-      , zzbot8                      & ! intent(out)
-      , alloc_canopy_layer          ! ! subroutine
+                               , ncanlyr                     & ! intent(out)
+                               , ncanlyrp1                   & ! intent(out)
+                               , ncanlyrt2                   & ! intent(out)
+                               , zztop0                      & ! intent(out)
+                               , zztop08                     & ! intent(out)
+                               , zztop0i                     & ! intent(out)
+                               , zztop0i8                    & ! intent(out)
+                               , ehgt                        & ! intent(out)
+                               , ehgt8                       & ! intent(out)
+                               , ehgti                       & ! intent(out)
+                               , ehgti8                      & ! intent(out)
+                               , dzcan                       & ! intent(out)
+                               , dzcan8                      & ! intent(out)
+                               , zztop                       & ! intent(out)
+                               , zzmid                       & ! intent(out)
+                               , zzbot                       & ! intent(out)
+                               , zztop8                      & ! intent(out)
+                               , zzmid8                      & ! intent(out)
+                               , zzbot8                      & ! intent(out)
+                               , alloc_canopy_layer          ! ! subroutine
    use pft_coms         , only : hgt_min                     & ! intent(in)
-      , hgt_max                     ! ! intent(in)
+                               , hgt_max                     ! ! intent(in)
    use consts_coms      , only : onethird                    & ! intent(in)
-      , onethird8                   ! ! intent(in)
+                               , onethird8                   ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer    :: ilyr
@@ -4482,7 +4482,8 @@ end subroutine init_pft_leaf_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_repro_params()
 
-   use pft_coms      , only : hgt_max            & ! intent(in)
+   use pft_coms      , only : hgt_min            & ! intent(in)
+                            , hgt_max            & ! intent(in)
                             , is_tropical        & ! intent(in)
                             , is_conifer         & ! intent(in)
                             , is_liana           & ! intent(in)
@@ -4540,7 +4541,7 @@ subroutine init_pft_repro_params()
          !---------------------------------------------------------------------------------!
          !     Temperate grass.  Original method, no minimum mature height.                !
          !---------------------------------------------------------------------------------!
-         repro_min_h(ipft) = 0.0
+         repro_min_h(ipft) = hgt_min(ipft)
          !---------------------------------------------------------------------------------!
       else if (is_tropical(ipft)) then
          !---------------------------------------------------------------------------------!
@@ -6492,6 +6493,7 @@ subroutine init_derived_params_after_xml()
                                    , photosyn_pathway        & ! intent(in)
                                    , dark_respiration_factor & ! intent(in)
                                    , water_conductance       & ! intent(in)
+                                   , repro_min_h             & ! intent(inout)
                                    , seed_rain               & ! intent(inout)
                                    , Rd_low_temp             & ! intent(inout)
                                    , Rd_high_temp            & ! intent(inout)
@@ -6609,6 +6611,9 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
 
 
+   !------ Repro_min_h cannot be 0.  Make sure that height is at least hgt_min. -----------!
+   repro_min_h(:) = merge(repro_min_h(:),hgt_min(:),repro_min_h(:) >= hgt_min(:))
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     The minimum recruitment size and the recruit carbon to nitrogen ratio.  Both      !
@@ -6617,7 +6622,7 @@ subroutine init_derived_params_after_xml()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(35(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(36(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BROOT_MIN'               &
                                               ,'BSAPWOOD_MIN','   BBARK_MIN'               &
@@ -6633,8 +6638,8 @@ subroutine init_derived_params_after_xml()
                                               ,'MIN_REC_SIZE','MIN_COH_SIZE'               &
                                               ,' NEGL_NPLANT','         SLA'               &
                                               ,'VEG_HCAP_MIN','     LAI_MIN'               &
-                                              ,'     HGT_MAX','    DBH_CRIT'               &
-                                              ,' ONE_PLANT_C'
+                                              ,' REPRO_MIN_H','     HGT_MAX'               &
+                                              ,'    DBH_CRIT',' ONE_PLANT_C'
                                               
    end if
    !---------------------------------------------------------------------------------------!
@@ -6820,7 +6825,7 @@ subroutine init_derived_params_after_xml()
       !     Add PFT parameters to the reference table.                                     !
       !------------------------------------------------------------------------------------! 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,33(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,34(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,broot_min,bsapwood_min  &
                                                     ,bbark_min,balive_min,bdead_min        &
@@ -6834,7 +6839,8 @@ subroutine init_derived_params_after_xml()
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &
                                                     ,sla(ipft),veg_hcap_min(ipft)          &
-                                                    ,lai_min,hgt_max(ipft),dbh_crit(ipft)  &
+                                                    ,lai_min,repro_min_h(ipft)             &
+                                                    ,hgt_max(ipft),dbh_crit(ipft)          &
                                                     ,one_plant_c(ipft)
       end if
       !------------------------------------------------------------------------------------!
