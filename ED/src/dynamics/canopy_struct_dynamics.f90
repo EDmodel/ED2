@@ -2746,15 +2746,33 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
-      !      Use previous u* to estimate the ratio between roughness scales for momentum   !
-      ! (z0m) and roughness scale for enthalpy/vapour/CO2 (z0h), using the parametrisation !
-      ! from ZD98.                                                                         ! 
+      !    Find the ratio between momentum and heat roughness scales.                      !
       !------------------------------------------------------------------------------------!
-      kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( temp_can - t00 ) )
-      z0hoz0m  = exp( - min( zd98_emax, zd98_a * ( ustar * rough / kin_visc )**zd98_b ))
-      z0moz0h  = 1.0 / z0hoz0m
+      select case (isfclyrm)
+      case (4)
+         !---------------------------------------------------------------------------------!
+         !      Use previous u* to estimate the ratio between roughness scales for         !
+         ! momentum (z0m) and roughness scale for enthalpy/vapour/CO2 (z0h), using the     !
+         ! parametrisation from ZD98.                                                      ! 
+         !---------------------------------------------------------------------------------!
+         kin_visc = kin_visc0 * ( 1.0 + dkin_visc * ( temp_can - t00 ) )
+         z0hoz0m  = exp( - min( zd98_emax, zd98_a * ( ustar * rough / kin_visc )**zd98_b ))
+         z0moz0h  = 1.0 / z0hoz0m
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !      Assume the same roughness scheme.  Mind that this could be off by multiple !
+         ! orders of magnitude.                                                            ! 
+         !---------------------------------------------------------------------------------!
+         z0hoz0m  = 1.0
+         z0moz0h  = 1.0 / z0hoz0m
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
+
+
 
       !----- Find the variables common to both methods. -----------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
@@ -3127,14 +3145,30 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
-      !      Use previous u* to estimate the ratio between roughness scales for momentum   !
-      ! (z0m) and roughness scale for enthalpy/vapour/CO2 (z0h), using the parametrisation !
-      ! from ZD98.                                                                         !
+      !    Find the ratio between momentum and heat roughness scales.                      !
       !------------------------------------------------------------------------------------!
-      kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( temp_can - t008 ) )
-      z0hoz0m  = exp(- min( zd98_emax8, zd98_a8 * ( ustar * rough / kin_visc )**zd98_b8 ) )
-      z0moz0h  = 1.d0 / z0hoz0m
+      select case (isfclyrm)
+      case (4)
+         !---------------------------------------------------------------------------------!
+         !      Use previous u* to estimate the ratio between roughness scales for         !
+         ! momentum (z0m) and roughness scale for enthalpy/vapour/CO2 (z0h), using the     !
+         ! parametrisation from ZD98.                                                      ! 
+         !---------------------------------------------------------------------------------!
+         kin_visc = kin_visc08 * ( 1.d0 + dkin_visc8 * ( temp_can - t008 ) )
+         z0hoz0m  = exp(- min( zd98_emax8, zd98_a8 * (ustar*rough/kin_visc)**zd98_b8 ) )
+         z0moz0h  = 1.d0 / z0hoz0m
+         !---------------------------------------------------------------------------------!
+      case default
+         !---------------------------------------------------------------------------------!
+         !      Assume the same roughness scheme.  Mind that this could be off by multiple !
+         ! orders of magnitude.                                                            ! 
+         !---------------------------------------------------------------------------------!
+         z0hoz0m  = 1.d0
+         z0moz0h  = 1.d0 / z0hoz0m
+         !---------------------------------------------------------------------------------!
+      end select
       !------------------------------------------------------------------------------------!
 
 

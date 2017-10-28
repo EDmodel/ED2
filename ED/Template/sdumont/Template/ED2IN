@@ -373,7 +373,7 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! SFILIN --  The meaning and the size of this variable depends on the type of run, set  !
-   !            at variable NL%RUNTYPE.                                                    !
+   !            at variable RUNTYPE.                                                       !
    !                                                                                       !
    ! 1. INITIAL.  Then this is the path+prefix of the previous ecosystem state.  This has  !
    !              dimension of the number of grids so you can initialize each grid with a  !
@@ -1284,7 +1284,8 @@ $ED_NL
    ! 3.  Beljaars and Holtslag (1991) model. Similar to 2, but it uses an alternative      !
    !     method for the stable case that mixes more than the OD95.                         !
    ! 4.  CLM (2004).  Similar to 2 and 3, but they have special functions to deal with     !
-   !     very stable and very stable cases.                                                !
+   !     very stable and very stable cases.  It also accounts for different roughness      !
+   !     lengths between momentum and heat.                                                !
    !---------------------------------------------------------------------------------------!
    NL%ISFCLYRM        = mysfclyrm
    !---------------------------------------------------------------------------------------!

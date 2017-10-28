@@ -18,19 +18,21 @@ close all;
 
 test_name = 'r85ghubrapid';
 
-use_m34 = true;       % SOI Manaus km34
-use_ata = false;       % SOI Atacama
-use_s67 = true;       % SOI Santarem km 67
-use_har = true;       % SOI Harvard Forest
-use_pdg = false;       % SOI Pe de Gigante
-use_cax = true;       % SOI Caxiuana
-use_ton = true;       % SOI Tonzi (temperate)
-use_tnf = false;       % SOI Tapajos National Forest
-use_gyf = true;        % SOI Paracou
-use_pet = true;        % SOI Petrolina
-use_hip = true;       % SOI Petrolina (short high frequency)
-use_him = true;       % SOI Manaus (short high frequency)
-use_rjg = false;       % GRIDDED centered on Rio Jaru
+use_m34 = true;       % POI Manaus km34
+use_ata = true;       % POI Atacama
+use_s67 = true;       % POI Santarem km 67
+use_har = true;       % POI Harvard Forest
+use_pdg = true;       % POI Pe de Gigante
+use_cax = true;       % POI Caxiuana
+use_ton = true;       % POI Tonzi (temperate)
+use_tnf = true;       % POI Tapajos National Forest
+use_gyf = true;       % POI Paracou
+use_s83 = true;       % POI Santarem km 83 (logging)
+use_prg = true;       % POI Paragominas (thousands of patches)
+use_pet = true;       % POI Petrolina
+use_hip = true;       % POI Petrolina (short high frequency)
+use_him = true;       % POI Manaus (short high frequency)
+use_rjg = true;       % GRIDDED centered on Rio Jaru
 
 
 %==========================================================================
@@ -46,6 +48,8 @@ site_name  = {'Manaus km 34', ...
               'Tonzi',...
               'Tapajos National Forest',...
               'Paracou',...
+              'Santarem Km 83',...
+              'Paragominas',...
               'Petrolina'};
 
 siteid     = {'m34',...
@@ -57,6 +61,8 @@ siteid     = {'m34',...
               'ton',...
               'tnf',...
               'gyf',...
+              's83',...
+              'prg',...
               'pet'};
 
 hifr_name = {'Petrolina High Frequency','Manaus High Frequency'};
@@ -486,12 +492,12 @@ if nhifr>0
 end
 
 %==========================================================================
-% PART 1: Loop through SOIs
+% PART 1: Loop through POIs
 %==========================================================================
 
 if nsite>0
 
-display(sprintf('\nChecking SOI Fluxes, Succession and Profiles'));
+display(sprintf('\nChecking POI Fluxes, Succession and Profiles'));
 
 latex_ftab = zeros(9,nsite);
 latex_fname = {'$\\Delta ET$','$\\Delta SHF$','$\\Delta R_{net}$','$\\Delta R_{SWU}$','$\\Delta GPP$',... 
@@ -811,7 +817,7 @@ for is = 1:nsite
         
         
         %==================================================================
-        % End stage biomass SOI
+        % End stage biomass POI
         %==================================================================
         
         tsfile = strcat(test_s_dir,test_s_flist(end).name);

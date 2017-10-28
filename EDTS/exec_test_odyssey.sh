@@ -72,6 +72,8 @@ USE_CAX="y"     # Caxiuana POI
 USE_TNF="y"     # Tapajos National Forest POI
 USE_ATA="y"     # Atacama Desert POI
 USE_PET="y"     # Petrolina POI
+USE_S83="y"     # Santarem km 83 (logging) POI
+USE_PRG="y"     # Paragominas (ALS init) POI
 USE_HIP="y"     # Petrolina High Frequency Detailed Short POI
 USE_HIM="y"     # Manaus High Frequency Detailed Short POI
 USE_RJG="y"     # Gridded 12x12 simulation centred on Reserva Jaru
@@ -91,6 +93,8 @@ Q_CAX="general"     # Caxiuana POI
 Q_TNF="general"     # Tapajos National Forest POI
 Q_ATA="general"     # Atacama Desert POI
 Q_PET="general"     # Petrolina POI
+Q_S83="general"     # Santarem Km 83 (logging) POI
+Q_PRG="general"     # Paragominas (ALS init) POI
 Q_HIP="general"     # Petrolina High Frequency Detailed Short POI
 Q_HIM="general"     # Manaus High Frequency Detailed Short POI
 Q_RJG="general"     # Gridded 12x12 simulation centred on Reserva Jaru
@@ -118,7 +122,7 @@ GRID_LONG_TIME="312:00:00"
 #------------------------------------------------------------------------------------------#
 #   The amount of memory per cpu needed (POI and gridded runs).                            #
 #------------------------------------------------------------------------------------------#
-POI_MEMORY=8192
+POI_MEMORY=4096
 GRID_MEMORY=4096
 #------------------------------------------------------------------------------------------#
 
@@ -212,21 +216,21 @@ TESTTYPE=$(echo ${TESTTYPE} | tr '[:upper:]' '[:lower:]')
 
 #---- Define some runtime variables for POI. ----------------------------------------------#
 declare -a USE_SITE=( ${USE_M34} ${USE_S67} ${USE_HAR} ${USE_PDG} ${USE_TON} \
-                      ${USE_CAX} ${USE_TNF} ${USE_ATA} ${USE_PET} )
-declare -a SITEID=(m34 s67 har pdg ton cax tnf ata pet)
-declare -a SITEPFX=(M34 S67 HAR PDG TON CAX TNF ATA PET)
+                      ${USE_CAX} ${USE_TNF} ${USE_ATA} ${USE_PET} ${USE_S83} ${USE_PRG} )
+declare -a SITEID=(m34 s67 har pdg ton cax tnf ata pet s83 prg)
+declare -a SITEPFX=(M34 S67 HAR PDG TON CAX TNF ATA PET S83 PRG)
 declare -a SITEQ=( ${Q_M34} ${Q_S67} ${Q_HAR} ${Q_PDG} ${Q_TON} \
-                   ${Q_CAX} ${Q_TNF} ${Q_ATA} ${Q_PET})
+                   ${Q_CAX} ${Q_TNF} ${Q_ATA} ${Q_PET} ${Q_S83} ${Q_PRG})
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- POI debug time. --------------------------------------------------------------------#
-declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005)
-declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006)
-declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6   )
-declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL \
-                       INITIAL INITIAL INITIAL INITIAL )
+declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2000 2011)
+declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006 2001 2012)
+declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6       5    6)
+declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+                       INITIAL INITIAL INITIAL INITIAL INITIAL)
 #------------------------------------------------------------------------------------------#
 
 
@@ -265,11 +269,11 @@ rapid)
    echo " - Performing rapid tests (2 years for POI, 1 year for grid)"
 
    #----- POI tests will run for two years. -----------------------------------------------#
-   declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005)
-   declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007)
-   declare -a INITMDS=(5    0    6    0    6    0    5    0    6   )
-   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL \
-                       INITIAL INITIAL INITIAL INITIAL)
+   declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2000 2011)
+   declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007 2002 2013)
+   declare -a INITMDS=(   5    0    6    0    6    0    5    0    6    5    6)
+   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+                       INITIAL INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
 
 
@@ -297,13 +301,11 @@ long)
    echo " - Performing long tests (300 years for POI, 35 year for grid)"
 
    #----- POI tests will run for 300 years. -----------------------------------------------#
-   declare -a IYEARAS=(1500 1500 1500 1500 1500 1500 1500 1500 1500)
-   declare -a IYEARZS=(1800 1800 1800 1800 1800 1800 1800 1800 1800)
-   declare -a INITMDS=(0    0    0    0    0    0    0    0    0   )
-   declare -a RUNTYPS=( \
-       INITIAL INITIAL INITIAL \
-       INITIAL INITIAL INITIAL \
-       INITIAL INITIAL INITIAL)
+   declare -a IYEARAS=(1500 1500 1500 1500 1500 1500 1500 1500 1500 1500 1500)
+   declare -a IYEARZS=(1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800)
+   declare -a INITMDS=(   5    0    6    0    6    0    5    0    6    5    6)
+   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+                       INITIAL INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
 
 

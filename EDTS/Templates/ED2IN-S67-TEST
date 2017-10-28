@@ -64,6 +64,15 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! MONTH_YRSTEP -- Month in which the yearly time step (patch dynamics) should occur.    !
+   !---------------------------------------------------------------------------------------!
+   NL%MONTH_YRSTEP = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      The following variables are used in case the user wants to run a regional run.   !
    !                                                                                       !
    ! N_ED_REGION -- number of regions for which you want to run ED.  This can be set to    !
@@ -233,7 +242,6 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
-
    !---------------------------------------------------------------------------------------!
    ! ATTACH_METADATA -- Flag for attaching metadata to HDF datasets.  Attaching metadata   !
    !                    will aid new users in quickly identifying dataset descriptions but !
@@ -363,7 +371,7 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! SFILIN --  The meaning and the size of this variable depends on the type of run, set  !
-   NL%RUNTYPE = 'INITIAL'
+   !            at variable RUNTYPE.                                                       !
    !                                                                                       !
    ! 1. INITIAL.  Then this is the path+prefix of the previous ecosystem state.  This has  !
    !              dimension of the number of grids so you can initialize each grid with a  !
@@ -642,6 +650,19 @@ $ED_NL
 
 
    !---------------------------------------------------------------------------------------!
+   ! NSUB_EULER -- The number of sub-steps in case we are running forward Euler.  The      !
+   !               maximum time step will then be DTLSM / NSUB_EULER.  This is needed to   !
+   !               make sure we don't take too long steps with Euler, as we cannot         !
+   !               estimate errors using first-order schemes.  This number is ignored      !
+   !               except when INTEGRATION_SCHEME is 0.                                    !
+   !---------------------------------------------------------------------------------------!
+   NL%NSUB_EULER = 50
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! RK4_TOLERANCE -- This is the relative tolerance for Runge-Kutta or Heun's             !
    !                  integration.  Larger numbers will make runs go faster, at the        !
    !                  expense of being less accurate.  Currently the valid range is        !
@@ -787,10 +808,9 @@ $ED_NL
    !                     to the same polygon, even if they are in different sites.  They   !
    !                     can't go outside their original polygon, though.  This is the     !
    !                     same as option 1 if there is only one site per polygon.           !
-   !                 3.  Similar to 2, but recruits will only be formed if their phenology !
-   !                     status would be "leaves fully flushed".  This only matters for    !
-   !                     drought deciduous plants.  This option is for testing purposes    !
-   !                     only, think 50 times before using it...                           !
+   !                 3.  Similar to 2, but allocation to reproduction is size-dependent.   !
+   !                     The relationship is currently a simple linear scaling between     !
+   !                     minimum maturity height and maximum height.                       !
    !---------------------------------------------------------------------------------------!
    NL%REPRO_SCHEME    = 2
    !---------------------------------------------------------------------------------------!
@@ -831,6 +851,25 @@ $ED_NL
    !                     finite crown area to direct shortwave radiation.                  !
    !                 1.  Multiple-scattering model (Zhao and Qualls 2005,2006), with the   !
    !                     possibility to apply finite crown area to all radiation fluxes.   !
+   ! IHRZRAD      -- Specifies how horizontal canopy radiation is solved.                  !
+   !                 0.  Default ED-2.0: no horizontal patch shading.  All patches receive !
+   !                     the same amount of light at the top.                              !
+   !                 1.  A realized map of the plant community is built by randomly        !
+   !                     assigning gaps associated with gaps (number of gaps proportional  !
+   !                     to the patch area), and populating them with individuals,         !
+   !                     respecting the cohort distribution in each patch.  The crown      !
+   !                     closure index is calculated for the entire landscape and used     !
+   !                     to change the amount of direct light reaching the top of the      !
+   !                     canopy.  Patches are then split into 1-3 patches based on the     !
+   !                     light condition (so expect simulations to be slower).  This       !
+   !                     method is under development, suggestions on how to improve are    !
+   !                     welcome.                                                          !
+   !                 2.  Similar to option 1, except that height for trees with DBH >      !
+   !                     DBH_crit are rescaled to calculate CCI.                           !
+   !                 3.  Dummy horizontal canopy radiation.  This applies the same method  !
+   !                     as 1 and 2 to split patches, but it does not change radiation     !
+   !                     reaching the top of the canopy.  This is only useful to isolate   !
+   !                     the effect of heterogeneous illumination from the patch count.    !
    ! LTRANS_VIS   -- Leaf transmittance for tropical plants - Visible/PAR                  !
    ! LTRANS_NIR   -- Leaf transmittance for tropical plants - Near Infrared                !
    ! LREFLECT_VIS -- Leaf reflectance for tropical plants - Visible/PAR                    !
@@ -853,6 +892,7 @@ $ED_NL
    !                        1.  Homogeneously spread over the layer (i.e., no clumping)    !
    !---------------------------------------------------------------------------------------!
    NL%ICANRAD        =  2
+   NL%IHRZRAD        =  0
    NL%LTRANS_VIS     =  0.050
    NL%LTRANS_NIR     =  0.270
    NL%LREFLECT_VIS   =  0.100
@@ -861,6 +901,19 @@ $ED_NL
    NL%ORIENT_GRASS   = -0.100
    NL%CLUMP_TREE     =  0.800
    NL%CLUMP_GRASS    =  1.000
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! IGOUTPUT -- In case IHRZRAD is not zero, should the model write the patch table and   !
+   !             gap realisation files? (0 -- no; 1 -- yes).  Note these files are still   !
+   !             in text files so they may take considerable disk space.                   !
+   ! GFILOUT  -- Prefix for the output patch table/gap files.                              !
+   !---------------------------------------------------------------------------------------!
+   NL%IGOUTPUT = 0
+   NL%GFILOUT  = '/n/moorcroftfs5/mlongo/EDBRAMS/debug_ed/D002_Bark/tgyf_iphen-01/shade/dum'
    !---------------------------------------------------------------------------------------!
 
 
@@ -944,7 +997,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IDDMORT_SCHEME  = 0
    NL%DDMORT_CONST    = 0.8
-   NL%CBR_SCHEME      = 2
+   NL%CBR_SCHEME      = 0
    !---------------------------------------------------------------------------------------!
 
    NL%VMFACT_C3       = 1.00
@@ -1062,8 +1115,61 @@ $ED_NL
    !                   such as land clearing, abandonment, and logging.                    !
    !                   0.  no anthropogenic disturbance.                                   !
    !                   1.  use anthropogenic disturbance dataset.                          !
+   !                   2.  site-specific forest plantation or selective logging cycle.     !
+   !                                                                                       !
+   ! The following variables are used only when IANTH_DISTURB is 2.                        !
+   !                                                                                       !
+   ! SL_SCALE           -- This flag assumes whether the simulation scale is local or      !
+   !                       landscape.  This controls the recurrence of logging.            !
+   !                       0.  Local. The simulation represents one logging unit.  Apply   !
+   !                           logging only once every SL_NYRS                             !
+   !                       1.  Landscape.  The simulation represents a landscape. Logging  !
+   !                           occurs every year but it is restricted to patches with age  !
+   !                           greater than or equal to SL_NYRS                            !
+   ! SL_YR_FIRST        -- The first year to apply logging.  In case IANTH_DISTURB is 2 it !
+   !                       must be a simulation year (i.e. between IYEARA and IYEARZ).     !
+   ! SL_NYRS            -- This variable defines the logging cycle, in years (see variable !
+   !                       SL_SCALE above)                                                 !
+   ! SL_PFT             -- PFTs that can be harvested.                                     !
+   ! SL_PROB_HARVEST    -- Logging intensity (one value for each PFT provided in SL_PFT).  !
+   !                       Values should be between 0.0 and 1.0, with 0 meaning no         !
+   !                       removal, and 1 removal of all trees needed to meet demands.     !
+   ! SL_MINDBH_HARVEST  -- Minimum DBH for logging (one value for each PFT provided in     !
+   !                       SL_PFT).                                                        !
+   ! SL_BIOMASS_HARVEST -- Target biomass to be harvested in each cycle, in kgC/m2.  If    !
+   !                       zero, then all trees that meet the minimum DBH and minimum      !
+   !                       patch age will be logged.  In case you don't want logging to    !
+   !                       occur, don't set this value to zero! Instead, set IANTH_DISTURB !
+   !                       to zero.                                                        !
+   !                                                                                       !
+   ! The following variables are used when IANTH_DISTURB is 1 or 2.                        !
+   !                                                                                       !
+   ! SL_SKID_REL_AREA   -- area damaged by skid trails (relative to felled area).          !
+   ! SL_SKID_S_GTHARV    -- survivorship of trees with DBH > MINDBH in skid trails.        !
+   ! SL_SKID_S_LTHARV    -- survivorship of trees with DBH < MINDBH in skid trails.        !
+   ! SL_FELLING_S_LTHARV -- survivorship of trees with DBH < MINDBH in felling gaps.       !
+   !                                                                                       !
+   ! Cropland variables, used when IANTH_DISTURB is 1 or 2.                                !
+   !                                                                                       !
+   ! CL_FSEEDS_HARVEST   -- fraction of seeds that is harvested.                           !
+   ! CL_FSTORAGE_HARVEST -- fraction of non-structural carbon that is harvested.           !
+   ! CL_FLEAF_HARVEST    -- fraction of leaves that is harvested in croplands.             !
    !---------------------------------------------------------------------------------------!
    NL%IANTH_DISTURB   = 0
+   NL%SL_SCALE            = 0
+   NL%SL_YR_FIRST         = 1992
+   NL%SL_NYRS             = 50
+   NL%SL_PFT              = 2,3,4
+   NL%SL_PROB_HARVEST     = 1.0,1.0,1.0
+   NL%SL_MINDBH_HARVEST   = 50.,50.,50.
+   NL%SL_BIOMASS_HARVEST  = 0
+   NL%SL_SKID_REL_AREA    = 1
+   NL%SL_SKID_S_GTHARV    = 1
+   NL%SL_SKID_S_LTHARV    = 0.6
+   NL%SL_FELLING_S_LTHARV = 0.35
+   NL%CL_FSEEDS_HARVEST   = 0.75
+   NL%CL_FSTORAGE_HARVEST = 0.00
+   NL%CL_FLEAF_HARVEST    = 0.00
    !---------------------------------------------------------------------------------------!
 
 
@@ -1172,24 +1278,27 @@ $ED_NL
    !      The following variables control the plant functional types (PFTs) that will be   !
    ! used in this simulation.                                                              !
    !                                                                                       !
-   ! INCLUDE_THESE_PFT -- a list containing all the PFTs you want to include in this run   !
+   ! PASTURE_STOCK     -- which PFT should be used for pastures                            !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! AGRI_STOCK        -- which PFT should be used for agriculture                         !
-   !                      (used only when IANTH_DISTURB = 1)                               !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    ! PLANTATION_STOCK  -- which PFT should be used for plantation                          !
-   !                      (used only when IANTH_DISTURB = 1)                               !
+   !                      (used only when IANTH_DISTURB = 1 or 2)                          !
    !                                                                                       !
    ! PFT table                                                                             !
    !---------------------------------------------------------------------------------------!
    ! 1 - C4 grass                         |  9 - early temperate deciduous                 !
    ! 2 - early tropical                   | 10 - mid temperate deciduous                   !
    ! 3 - mid tropical                     | 11 - late temperate deciduous                  !
-   ! 4 - late tropical                    | 12:15 - agricultural PFTs                      !
-   ! 5 - temperate C3 grass               | 16 - Subtropical C3 grass                      !
-   ! 6 - northern pines                   |      (C4 grass with C3 photo).                 !
-   ! 7 - southern pines                   | 17 - "Araucaria" (non-optimised                !
-   ! 8 - late conifers                    |      Southern Pines).                          !
+   ! 4 - late tropical                    | 12 - early savannah (thick bark)               !
+   ! 5 - temperate C3 grass               | 13 - mid savannah (thick bark)                 !
+   ! 6 - northern pines                   | 14 - late savannah (thick bark)                !
+   ! 7 - southern pines                   | 15 - araucaria                                 !
+   ! 8 - late conifers                    | 16 - tropical C3 grass                         !
+   !                                      | 17 - liana                                     !
    !---------------------------------------------------------------------------------------!
    NL%INCLUDE_THESE_PFT = 1,2,3,4,16
+   NL%PASTURE_STOCK     = 1
    NL%AGRI_STOCK        = 1
    NL%PLANTATION_STOCK  = 3
    !---------------------------------------------------------------------------------------!
@@ -1211,6 +1320,17 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! The following variables control the size of sub-polygon structures in ED-2.           !
+   ! IFUSION        -- Control on patch/cohort fusion scheme                               !
+   !                   0.  Original ED-2.1 scheme.  This may be eventually removed,        !
+   !                       It's kept here for legacy.                                      !
+   !                   1.  New scheme, developed to address a few issues that become more  !
+   !                       evident when initialising ED with large (>1000) number of       !
+   !                       patches.  It uses absolute difference in light levels to avoid  !
+   !                       fusing patches with very different canopies, and also makes     !
+   !                       sure that remaining patches have area above MIN_PATCH_AREA and  !
+   !                       that a high percentage of the original landscape is retained.   !
+   !                       (the old scheme can throw away large numbers of small patches   !
+   !                       that could account for a significant fraction of the landscape) !
    ! MAXSITE        -- This is the strict maximum number of sites that each polygon can    !
    !                   contain.  Currently this is used only when the user wants to run    !
    !                   the same polygon with multiple soil types.  If there aren't that    !
@@ -1233,6 +1353,7 @@ $ED_NL
    ! MIN_PATCH_AREA -- This is the minimum fraction area of a given soil type that allows  !
    !                   a site to be created (ignored if IED_INIT_MODE is set to 3).        !
    !---------------------------------------------------------------------------------------!
+   NL%IFUSION        =     0
    NL%MAXSITE        =     1
    NL%MAXPATCH       =    20
    NL%MAXCOHORT      =    80
@@ -1257,8 +1378,11 @@ $ED_NL
    ! TREEFALL_DISTURBANCE_RATE -- Sign-dependent treefall disturbance rate:                !
    !                              > 0. usual disturbance rate, in 1/years;                 !
    !                              = 0. No treefall disturbance;                            !
-   !                              < 0. Treefall will be added as a mortality rate (it      !
-   !                                   will kill plants, but it won't create a new patch). !
+   !                              < 0. (Tropical PFTs only, others will use the absolute   !
+   !                                   value instead).  Test for a new slope for density   !
+   !                                   independent mortality based on Kraft et al. (2010)  !
+   !                                   and Paracou data.  Absolute value will be used as   !
+   !                                   the base line rate for late successional trees.     !
    ! TIME2CANOPY               -- Minimum patch age for treefall disturbance to happen.    !
    !                              If TREEFALL_DISTURBANCE_RATE = 0., this value will be    !
    !                              ignored.  If this value is different than zero, then     !
@@ -1446,6 +1570,13 @@ $ED_NL
    !               16 -- Daily error stats (which variable caused the time step to shrink) !
    !               32 -- Allometry parameters, and minimum and maximum sizes               !
    !                     (two files, only at the beginning)                                !
+   !               64 -- Detailed disturbance rate output.  Two types of detailed          !
+   !                     transitions will be written (single polygon runs only). 
+   !                     a. A text file that looks like the .lu files.  This is written 
+   !                        only once, at the beginning of the simulation.
+   !                     b. Detailed information about the transition matrix.  This is 
+   !                        written to the standard output (e.g. screen), every time the 
+   !                        patch dynamics is called.
    !                                                                                       !
    !               In case you don't want any detailed output (likely for most runs), set  !
    !               IDETAILED to zero.  In case you want to generate multiple outputs, add  !
@@ -1471,12 +1602,6 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   ! IOPTINPT -- Optimization configuration. (Currently not used)                          !
-   !---------------------------------------------------------------------------------------!
-   NL%IOPTINPT = ''
-   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    ! GROWTH_RESP_SCHEME -- This flag indicates how growth respiration fluxes are treated.  !
    !                                                                                       !

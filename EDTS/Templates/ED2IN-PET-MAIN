@@ -392,7 +392,7 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! SFILIN --  The meaning and the size of this variable depends on the type of run, set  !
-   NL%RUNTYPE = 'INITIAL'
+   !            at variable RUNTYPE.                                                       !
    !                                                                                       !
    ! 1. INITIAL.  Then this is the path+prefix of the previous ecosystem state.  This has  !
    !              dimension of the number of grids so you can initialize each grid with a  !
@@ -1569,11 +1569,6 @@ $ED_NL
 
 
 
-   !---------------------------------------------------------------------------------------!
-   ! IOPTINPT -- Optimization configuration. (Currently not used)                          !
-   !---------------------------------------------------------------------------------------!
-   NL%IOPTINPT = ''
-   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    ! GROWTH_RESP_SCHEME -- This flag indicates how growth respiration fluxes are treated.  !
    !                                                                                       !

@@ -384,7 +384,8 @@ subroutine read_ed21_history_file
 
             si_index = pysi_id(py_index) + isi - 1
 
-            if (islakesite(isi) == 0) then
+            select case (islakesite(isi))
+            case (0)
                is=is+1
 
                !----- Reset the HDF5 auxiliary variables before moving to the next level. -!
@@ -848,7 +849,7 @@ subroutine read_ed21_history_file
                   call fatal_error('A site with no patches was found...'                   &
                                   ,'read_ed21_history_file','ed_read_ed21_history.F90')
                end if
-            end if
+            end select
             !------------------------------------------------------------------------------!
          end do siteloop
          !---------------------------------------------------------------------------------!
@@ -1524,7 +1525,8 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             is = 0
             siteloop1: do isi=1,pysi_n(py_index)
-               if (islakesite(isi) == 0) then
+               select case (islakesite(isi))
+               case (0)
                   is = is + 1
 
                   !------------------------------------------------------------------------!
@@ -1604,7 +1606,7 @@ subroutine read_ed21_history_unstruct
                   tpoly_ntext_soil(nzg,is) = this_ntext(dset_nzg,is)
 
                   !------------------------------------------------------------------------!
-               end if
+               end select
                !---------------------------------------------------------------------------!
             end do siteloop1
             !------------------------------------------------------------------------------!
@@ -1625,7 +1627,8 @@ subroutine read_ed21_history_unstruct
                textdist_min = huge(1.)
                is_try       = 0
                do isi_try = 1, nsites_inp
-                  if (islakesite(isi_try) == 0) then
+                  select case (islakesite(isi_try))
+                  case (0)
                      is_try    = is_try + 1
 
                      nsoil_try = tpoly_ntext_soil(nzg,is_try)
@@ -1648,7 +1651,7 @@ subroutine read_ed21_history_unstruct
                         textdist_min = textdist_try
                      end if
                      !---------------------------------------------------------------------!
-                  end if
+                  end select
                end do
                !---------------------------------------------------------------------------!
 
@@ -1680,7 +1683,7 @@ subroutine read_ed21_history_unstruct
                memsize  = 1_8
 
                !----- Calculate the index of this site data in the HDF5 file. -------------!
-               si_index = pysi_id(py_index) + isi_best - 1
+               si_index = pysi_id(py_index) - 1 + isi_best
 
                if (sipa_n(si_index) > 0) then
 
@@ -2762,7 +2765,8 @@ subroutine read_ed21_polyclone
             is = 0
             sum_poly_area = 0.
             siteloop: do isi=1,pysi_n(py_index)
-               if (islakesite(isi) == 0) then
+               select case (islakesite(isi))
+               case (0)
                   is = is + 1
 
                   csite => cpoly%site(is)
@@ -3351,7 +3355,7 @@ subroutine read_ed21_polyclone
 
                deallocate(slz_match)
 
-            end if
+            end select
 
          end do siteloop
 

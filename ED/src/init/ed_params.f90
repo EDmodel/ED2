@@ -1724,8 +1724,16 @@ subroutine init_pft_photo_params()
             Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
             !------------------------------------------------------------------------------!
          case default
-            !----- Linear fit that passes very close to the original #s. ------------------!
-            Vm0(ipft) = 36.59323 - 33.77556*rho(ipft)
+            !----- Original numbers, each PFT must be initialised separately. -------------!
+            select case (ipft)
+            case (2,12)  ! Early-successional tropical tree
+               Vm0(ipft) = 18.75
+            case (3,13)  ! Mid-successional tropical tree
+               Vm0(ipft) = 12.50
+            case (4,14)  ! Late-successional tropical tree
+               Vm0(ipft) =  6.25
+            case default ! Just in case
+            end select
             !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
@@ -1734,38 +1742,22 @@ subroutine init_pft_photo_params()
          !    Temperate trees, each PFT must be initialised separately.                    !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (1)
-            !----- C3 grass. --------------------------------------------------------------!
+         case (1)     ! C4 grass. 
             Vm0(ipft) = 12.500000
-            !------------------------------------------------------------------------------!
-         case (5,16)
-            !----- C3 grass. --------------------------------------------------------------!
+         case (5,16)  ! C3 grass. 
             Vm0(ipft) = 18.300000
-            !------------------------------------------------------------------------------!
-         case (6,7)
-            !----- Pines (N/S). -----------------------------------------------------------!
+         case (6,7)   ! Pines (N/S). 
             Vm0(ipft) = 11.350000
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late conifers. ---------------------------------------------------------!
+         case (8)     ! Late conifers. 
             Vm0(ipft) = 4.540000
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early hardwood. --------------------------------------------------------!
+         case (9)     ! Early hardwood. 
             Vm0(ipft) = 20.387075
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (10)    ! Mid hardwood. 
             Vm0(ipft) = 17.454687
-            !------------------------------------------------------------------------------!
-         case (11)
-            !----- Late hardwood. ---------------------------------------------------------!
+         case (11)    ! Late hardwood.
             Vm0(ipft) = 6.981875
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Just in case. ----------------------------------------------------------!
+         case default !  Just in case. 
             Vm0(ipft) = 15.625
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -2226,34 +2218,20 @@ subroutine init_pft_resp_params()
       else
          !----- Optimised turnover rates. -------------------------------------------------!
          select case (ipft)
-         case (6)
-            !---- Northern pines. ---------------------------------------------------------!
-            root_turnover_rate(ipft)         = 3.927218 ! 0.333
-            !------------------------------------------------------------------------------!
-         case (7)
-            !---- Southern pines. ---------------------------------------------------------!
-            root_turnover_rate(ipft)         = 4.117847 ! 0.333
-            !------------------------------------------------------------------------------!
-         case (8)
-            !---- Late conifers. ----------------------------------------------------------!
-            root_turnover_rate(ipft)         = 3.800132 ! 0.333
-            !------------------------------------------------------------------------------!
-         case (9)
-            !---- Early hardwoods. --------------------------------------------------------!
-            root_turnover_rate(ipft)         = 5.772506
-            !------------------------------------------------------------------------------!
-         case (10)
-            !---- Mid hardwoods. ----------------------------------------------------------!
-            root_turnover_rate(ipft)         = 5.083700
-            !------------------------------------------------------------------------------!
-         case (11)
-            !---- Late hardwoods. ---------------------------------------------------------!
-            root_turnover_rate(ipft)         = 5.070992
-            !------------------------------------------------------------------------------!
-         case default
-            !---- Forgotten PFTs... -------------------------------------------------------!
+         case (6)     ! Northern pines. 
+            root_turnover_rate(ipft) = 3.927218 ! 0.333
+         case (7)     ! Southern pines. 
+            root_turnover_rate(ipft) = 4.117847 ! 0.333
+         case (8)     ! Late conifers. 
+            root_turnover_rate(ipft) = 3.800132 ! 0.333
+         case (9)     ! Early hardwoods. 
+            root_turnover_rate(ipft) = 5.772506
+         case (10)    ! Mid hardwoods. 
+            root_turnover_rate(ipft) = 5.083700
+         case (11)    ! Late hardwoods. 
+            root_turnover_rate(ipft) = 5.070992
+         case default ! Forgotten PFTs... 
             root_turnover_rate(ipft) = leaf_turnover_rate(ipft)
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -2498,37 +2476,20 @@ subroutine init_pft_mort_params()
          !     Use optimised values from Medvigy et al. (2009).                            !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (6)
-            !----- Northern pines. --------------------------------------------------------!
+         case (6)     ! Northern pines. 
             mort3(ipft) = 0.0033928
-            !------------------------------------------------------------------------------!
-         case (7)
-            !----- Southern pines. --------------------------------------------------------!
+         case (7)     ! Southern pines. 
             mort3(ipft) = 0.0043
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late-successional conifers ---------------------------------------------!
+         case (8)     ! Late-successional conifers.
             mort3(ipft) = 0.0023568
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early-successional hardwoods. ------------------------------------------!
+         case (9)     ! Early-successional hardwoods. 
             mort3(ipft) = 0.006144
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid-successional hardwoods. --------------------------------------------!
+         case (10)    ! Mid-successional hardwoods.
             mort3(ipft) = 0.003808
-            !------------------------------------------------------------------------------!
-         case (11)
-            !------------------------------------------------------------------------------!
-            !     Late-successional hardwoods (MLO: does it make sense that this is higher !
-            ! than mid-successional hardwoods?).                                           !
-            !------------------------------------------------------------------------------!
-            mort3(ipft) = 0.00428
-            !------------------------------------------------------------------------------!
-         case default
-            !----- This shouldn't happen. -------------------------------------------------!
+         case (11)    ! Late-successional hardwoods.
+            mort3(ipft) = 0.00428 ! Late-successional greater than than mid-successional?
+         case default ! Forgotten PFT
             mort3(ipft) = 0.005
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -2632,33 +2593,29 @@ subroutine init_pft_mort_params()
    !----- Trees taller than treefall_hite_threshold (liana survivorship: Putz 1983). ------!
    treefall_s_gtht(:) = merge(0.80,0.00,is_liana(:))
    !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         !----- Probably underestimated, unlikely that many grasses are crushed to death. -!
-         treefall_s_ltht(ipft) = 0.70
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !---------------------------------------------------------------------------------!
-         !    Testing a higher survivorship of small trees based on the measurements at    !
-         ! Paracou.  Took their average ratio between secondary and primary treefall       !
-         ! mortality.                                                                      !
-         !                                                                                 !
-         ! Ferry, B. et al.  Higher treefall rates on slopes and waterlogged soils result  !
-         !    in lower stand biomass and productivity in a tropical rain forest. J. Veg.   !
-         !    Sci., 98(1), 106-116, 2010. doi:10.1111/j.1365-2745.2009.01604.x             !
-         !                                                                                 !
-         !  Manfredo, does it make sense that short lianas have lower survivorship than    !
-         ! tall lianas?                                                                    !
-         !                                                                                 !
-         !---------------------------------------------------------------------------------!
-         treefall_s_ltht(ipft) = 0.30
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Original ED-1 parameter. --------------------------------------------------!
-         treefall_s_ltht(ipft) = 0.10
-         !---------------------------------------------------------------------------------!
-      end if
-   end do
+   select case (iallom)
+   case (4)
+      !------------------------------------------------------------------------------------!
+      !    Higher survivorship.  Tree survivorship is based on measurements at Paracou.    !
+      ! Estimate is the average ratio between secondary and primary tree fall mortality.   !
+      !                                                                                    !
+      ! Ferry, B. et al.  Higher treefall rates on slopes and waterlogged soils result     !
+      !    in lower stand biomass and productivity in a tropical rain forest. J. Veg.      !
+      !    Sci., 98(1), 106-116, 2010. doi:10.1111/j.1365-2745.2009.01604.x                !
+      !                                                                                    !
+      !    Grasses are assigned high survivorship as they are unlikely to be crushed to    !
+      ! death.                                                                             !
+      !------------------------------------------------------------------------------------!
+      treefall_s_ltht(:) = merge(0.80,0.30,is_grass(:) .or. is_liana(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !    Original parameters.  MLO: Is it reasonable that small lianas have lower        !
+      ! survivorship than tall lianas?.                                                    !
+      !------------------------------------------------------------------------------------!
+      treefall_s_ltht(:) = merge(0.25,0.10,is_grass(:))
+      !------------------------------------------------------------------------------------!
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -2707,7 +2664,6 @@ subroutine init_pft_alloc_params()
                            , q                     & ! intent(out)
                            , qsw                   & ! intent(out)
                            , qbark                 & ! intent(out)
-                           , qwai                  & ! intent(out)
                            , qrhob                 & ! intent(out)
                            , init_density          & ! intent(out)
                            , init_laimax           & ! intent(out)
@@ -2741,6 +2697,10 @@ subroutine init_pft_alloc_params()
                            , b2Bl_small            & ! intent(out)
                            , b1Bl_large            & ! intent(out)
                            , b2Bl_large            & ! intent(out)
+                           , b1WAI_small           & ! intent(out)
+                           , b2WAI_small           & ! intent(out)
+                           , b1WAI_large           & ! intent(out)
+                           , b2WAI_large           & ! intent(out)
                            , b1Xs                  & ! intent(out)
                            , b1Xb                  & ! intent(out)
                            , C2B                   & ! intent(out)
@@ -2862,22 +2822,14 @@ subroutine init_pft_alloc_params()
          !     Tropical broadleaf trees.  These must be defined individually.              !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (2,12)
-            !----- Early-successional. ----------------------------------------------------!
+         case (2,12)  ! Early-successional tropical.
             rho(ipft) = 0.53 ! 0.40
-            !------------------------------------------------------------------------------!
-         case (3,13)
-            !----- Mid-successional. ------------------------------------------------------!
+         case (3,13)  ! Mid-successional tropical.
             rho(ipft) = 0.71 ! 0.60
-            !------------------------------------------------------------------------------!
-         case (4,14)
-            !----- Late-successional. -----------------------------------------------------!
+         case (4,14)  ! Late-successional tropical.
             rho(ipft) = 0.90 ! 0.87
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Forgotten PFT, use global average. -------------------------------------!
+         case default ! Just in case some PFT was forgotten, use global average
             rho(ipft) = 0.608
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -2898,13 +2850,9 @@ subroutine init_pft_alloc_params()
       !------------------------------------------------------------------------------------!
    case default
       do ipft=1,n_pft
-         if (.not. is_tropical(ipft)) then
+         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
             !----- Non-tropical, initialise in init_pft_resp_params. ----------------------!
             leaf_turnover_rate(ipft) = undef_real
-            !------------------------------------------------------------------------------!
-         elseif (is_conifer(ipft)) then
-            !----- Araucaria. -------------------------------------------------------------!
-            leaf_turnover_rate(ipft) = onesixth
             !------------------------------------------------------------------------------!
          elseif (is_liana(ipft)) then
             !----- Liana. -----------------------------------------------------------------!
@@ -2912,13 +2860,18 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
          else
             !------------------------------------------------------------------------------!
-            !     Grasses and trees.  Logistic curve that passes very close to the         !
-            ! original numbers.                                                            !
+            !     Grasses and trees, we must assign case by case.                          !
             !------------------------------------------------------------------------------!
-            leaf_turnover_rate(ipft) = 3.253662                                            &
-                                     / ( 1. + exp( -1.270624 + 4.002059 * rho(ipft) ) )
+            select case (ipft)
+            case (2,12) ! Early-successional tropical
+               leaf_turnover_rate(ipft) = 1.0
+            case (3,13) ! Mid-successional tropical
+               leaf_turnover_rate(ipft) = 0.5
+            case (4,14) ! Late-successional tropical
+               leaf_turnover_rate(ipft) = onethird
+            end select
             !------------------------------------------------------------------------------!
-         end if          
+         end if
          !---------------------------------------------------------------------------------!
       end do
       !------------------------------------------------------------------------------------!
@@ -2965,7 +2918,7 @@ subroutine init_pft_alloc_params()
             !------------------------------------------------------------------------------!
          elseif (is_grass(ipft)) then
             !----- Tropical grasses. ------------------------------------------------------!
-            SLA(ipft) = 30.
+            SLA(ipft) = 22.7
             !------------------------------------------------------------------------------!
          elseif (is_liana(ipft)) then
             !----- Lianas.  This shouldn't happen but just in case. -----------------------!
@@ -2986,38 +2939,22 @@ subroutine init_pft_alloc_params()
          !    Temperate trees, each PFT must be initialised separately.                    !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)
-            !----- Temperate C3 grass. ----------------------------------------------------!
+         case (5)     ! Temperate C3 grass.
             SLA(ipft) = 22.0
-            !------------------------------------------------------------------------------!
-         case (6)
-            !----- Northern pines. --------------------------------------------------------!
+         case (6)     ! Northern pines. 
             SLA(ipft) = 6.0
-            !------------------------------------------------------------------------------!
-         case (7)
-            !----- Southern pines. --------------------------------------------------------!
+         case (7)     ! Southern pines.
             SLA(ipft) = 9.0
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late conifers. ---------------------------------------------------------!
+         case (8)     ! Late conifers. 
             SLA(ipft) = 10.0
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early hardwood. --------------------------------------------------------!
+         case (9)     ! Early hardwood.
             SLA(ipft) = 30.0
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (10)    ! Mid hardwood. 
             SLA(ipft) = 24.2
-            !------------------------------------------------------------------------------!
-         case (11)
-            !----- Late hardwood. ---------------------------------------------------------!
-            SLA(ipft) = 60.0 ! Does it make sense to be this high?
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Just in case. ----------------------------------------------------------!
+         case (11)    ! Late hardwood. 
+            SLA(ipft) = 60.0 ! Does it make sense to be much higher than Early- and Mid-?
+         case default ! Just in case. 
             SLA(ipft) = 15.0
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -3393,42 +3330,34 @@ subroutine init_pft_alloc_params()
          !    doi:10.1111/j.1365-2486.2006.01254.x.                                        !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)
-            !----- Temperate C3 grass. ----------------------------------------------------!
+         case (5)     ! Temperate C3 grass. 
             b1Ht   (ipft) =  0.4778
             b2Ht   (ipft) = -0.75
             hgt_ref(ipft) =  0.0
-            !------------------------------------------------------------------------------!
-         case (6,7)
-            !----- Northern and Southern Pines. -------------------------------------------!
+         case (6,7)   ! Northern and Southern Pines. 
             b1Ht   (ipft) = 27.14
             b2Ht   (ipft) = -0.03884
             hgt_ref(ipft) = 1.3
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late conifers. ---------------------------------------------------------!
+         case (8)     ! Late conifers. 
             b1Ht   (ipft) = 22.79
             b2Ht   (ipft) = -0.04445 
             hgt_ref(ipft) = 1.3
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early hardwood. --------------------------------------------------------!
+         case (9)     ! Early hardwood. 
             b1Ht   (ipft) = 22.6799
             b2Ht   (ipft) = -0.06534
             hgt_ref(ipft) = 1.3
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (10)    ! Mid hardwood. 
             b1Ht   (ipft) = 25.18
             b2Ht   (ipft) = -0.04964
             hgt_ref(ipft) = 1.3
-            !------------------------------------------------------------------------------!
-         case (11)
-            !----- Late hardwood. ---------------------------------------------------------!
+         case (11)    ! Late hardwood. 
             b1Ht   (ipft) = 23.3874
             b2Ht   (ipft) = -0.05404
             hgt_ref(ipft) = 1.3
-            !------------------------------------------------------------------------------!
+         case default ! Forgotten PFT.
+            b1Ht   (ipft) = 25.18
+            b2Ht   (ipft) = -0.04964
+            hgt_ref(ipft) = 1.3
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -3656,12 +3585,22 @@ subroutine init_pft_alloc_params()
    !                                                                                       !
    !   The coefficients and thresholds depend on the PFT and allometric equations.         !
    !                                                                                       !
-   !   MLO -- Manfredo, dbh_adult only matters when iallom is 3 or 4.  I deleted the       !
-   !          original number you set as it doesn't matter for iallom=2 and would not be   !
-   !          what you intended to be for iallom=3/4.                                      !
+   !   MLO -- Manfredo, dbh_adult is where the two functions would give the same  number   !
+   !          to avoid discontinuities.  Please check it.                                  !
    !---------------------------------------------------------------------------------------!
    do ipft=1,n_pft
-      if (is_tropical(ipft)) then
+      if (is_liana(ipft)) then
+          !----- Liana leaf Biomass (Putz, 1983) ------------------------------------------!
+          b1Bl_small (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
+          b2Bl_small (ipft) = nleaf(2)
+          b1Bl_large (ipft) = 0.0856
+          b2Bl_large (ipft) = 2.0
+          dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)          &
+                            ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
+          bleaf_adult(ipft) = b1Bl_large(ipft)                                             &
+                            / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+          !--------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft)) then
          select case(iallom)
          case (0,1)
             !------------------------------------------------------------------------------!
@@ -3741,36 +3680,24 @@ subroutine init_pft_alloc_params()
          ! is no distinction between small and large cohorts.                              !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)
-            !----- Temperate C3 grass. ----------------------------------------------------!
+         case (5)   ! Temperate C3 grass. 
             b1Bl_small(ipft) = 0.08
             b2Bl_small(ipft) = 1.0
-            !------------------------------------------------------------------------------!
-         case (6,7)
-            !----- Northern and Southern Pines. -------------------------------------------!
+         case (6,7) ! Northern and Southern Pines. 
             b1Bl_small(ipft) = 0.024
             b2Bl_small(ipft) = 1.899
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late conifers. ---------------------------------------------------------!
+         case (8)   ! Late conifers. 
             b1Bl_small(ipft) = 0.0454
             b2Bl_small(ipft) = 1.6829
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early hardwood. --------------------------------------------------------!
+         case (9)   ! Early hardwood. 
             b1Bl_small(ipft) = 0.0129
             b2Bl_small(ipft) = 1.7477
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (10) ! Mid hardwood. 
             b1Bl_small(ipft) = 0.048
             b2Bl_small(ipft) = 1.455
-            !------------------------------------------------------------------------------!
-         case (11)
-            !----- Late hardwood. ---------------------------------------------------------!
+         case (11) ! Late hardwood. 
             b1Bl_small(ipft) = 0.017
             b2Bl_small(ipft) = 1.731
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
 
@@ -3890,36 +3817,24 @@ subroutine init_pft_alloc_params()
          ! is no distinction between small and large cohorts.                              !
          !---------------------------------------------------------------------------------!
          select case (ipft)
-         case (5)
-            !----- Temperate C3 grass. ----------------------------------------------------!
+         case (5)   ! Temperate C3 grass. 
             b1Bs_small(ipft) = 1.0e-5
             b2Bs_small(ipft) = 1.0
-            !------------------------------------------------------------------------------!
-         case (6,7)
-            !----- Northern and Southern Pines. -------------------------------------------!
+         case (6,7) ! Northern and Southern Pines. 
             b1Bs_small(ipft) = 0.147
             b2Bs_small(ipft) = 2.238
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late conifers. ---------------------------------------------------------!
+         case (8)   ! Late conifers. 
             b1Bs_small(ipft) = 0.1617
             b2Bs_small(ipft) = 2.1536
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early hardwood. --------------------------------------------------------!
+         case (9)   ! Early hardwood. 
             b1Bs_small(ipft) = 0.02648
             b2Bs_small(ipft) = 2.95954
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (10)  ! Mid hardwood. 
             b1Bs_small(ipft) = 0.1617
             b2Bs_small(ipft) = 2.4572
-            !------------------------------------------------------------------------------!
-         case (11)
-            !----- Late hardwood. ---------------------------------------------------------!
+         case (11)  ! Late hardwood. 
             b1Bs_small(ipft) = 0.235
             b2Bs_small(ipft) = 2.2518
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
 
@@ -3993,12 +3908,7 @@ subroutine init_pft_alloc_params()
    end if
    !---------------------------------------------------------------------------------------!
 
-   !------------------------- Liana leaf Biomass (Putz, 1983) -----------------------------!
-   b1Bl_small(17) = b1Bl_small(2)
-   b2Bl_small(17) = b2Bl_small(2)
-   b1Bl_large(17) = 0.0856
-   b2Bl_large(17) = 2.0
-   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !     Fill in variables that are derived from bdead allometry.                          !
@@ -4020,19 +3930,73 @@ subroutine init_pft_alloc_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    Ratio between WAI and maximum LAI, based on Olivas et al. (2013).  Currently this  !
-   ! is applied to all PFTs.                                                               !
-   !                                                                                       !
-   ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan, J. J. O'Brien,  !
-   !    and H. Ordonez. Comparison of direct and indirect methods for assessing leaf area  !
-   !    index across a tropical rain forest landscape. Agric. For. Meteorol., 177:110-116, !
-   !    Aug 2013. doi:10.1016/j.agrformet.2013.04.010.                                     !
-   !                                                                                       !
+   !    WAI parameters, the choice depends on IALLOM.  Because iallom=3/4 are bound to     !
+   ! LAI, we must define parameters for small and large cohorts.                           !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3,4)
+      !------------------------------------------------------------------------------------!
+      !    WAI is defined as a fraction of (potential) LAI.   The ratio is set to 0.11     !
+      ! following the average ratio from Olivas et al. (2013).                             !
+      !                                                                                    !
+      ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,              !
+      !    J. J. O'Brien, and H. Ordonez. Comparison of direct and indirect methods for    !
+      !    assessing leaf area index across a tropical rain forest landscape.              !
+      !    Agric. For. Meteorol., 177:110-116, Aug 2013.                                   !
+      !    doi:10.1016/j.agrformet.2013.04.010.                                            !
+      !------------------------------------------------------------------------------------!
+      b1WAI_small(:) = merge(0.0,0.11*SLA(:)*b1Bl_small(:),is_grass(:))
+      b2WAI_small(:) = merge(1.0,            b2Bl_small(:),is_grass(:))
+      b1WAI_large(:) = merge(0.0,0.11*SLA(:)*b1Bl_large(:),is_grass(:))
+      b2WAI_large(:) = merge(1.0,            b2Bl_large(:),is_grass(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !    Use the equation by:                                                            !
+      !                                                                                    !
+      ! Hormann, G., S. Irrgan, H. Jochheim, M. Lukes, H. Meesenburg, J. Muller,           !
+      !    B. Scheler, J. Scherzer, G. Schuler, B. Schultze, B. Strohbach, F. Suckow,      !
+      !    M. Wegehenkel, and G. Wessolek.   Wasserhaushalt von waldokosystemen:           !
+      !    methodenleitfaden zur bestimmung der wasserhaushaltskomponenten auf level       !
+      !    II-flachen. Technical note, Bundesministerium fur Verbraucherschutz, Ernahrung  !
+      !    und Landwirtschaft (BMVEL), Bonn, Germany, 2003.                                !
+      !    URL http://www.wasklim.de/download/Methodenband.pdf.                            !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_grass(ipft) .and. (.not. is_tropical(ipft))) then
+            !------ Grasses don't have WAI. -----------------------------------------------!
+            b1WAI_small(ipft) = 0.0
+            b2WAI_small(ipft) = 1.0
+            !------------------------------------------------------------------------------!
+         elseif (is_conifer(ipft)) then
+            !------ Conifers. -------------------------------------------------------------!
+            b1WAI_small(ipft) = 0.0553 * 0.5
+            b2WAI_small(ipft) = 1.9769
+            !------------------------------------------------------------------------------!
+         else
+            !------ Tropical grasses and broadleaf trees. ---------------------------------!
+            b1WAI_small(ipft) = 0.0192 * 0.5
+            b2WAI_small(ipft) = 2.0947
+            !------------------------------------------------------------------------------!
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+      !----- Copy "large" parameters from "small" ones. -----------------------------------!
+      b1WAI_large(:) = b1WAI_small(:)
+      b2WAI_large(:) = b2WAI_small(:)
+      !------------------------------------------------------------------------------------!
+
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    brf_wd is the fraction of above-ground wood that is assumed to be in branches and  !
    ! twigs.  Here we must be careful to make sure that the fraction is 0 in case WAI is    !
    ! going to be zero (e.g. grasses).                                                      !
    !---------------------------------------------------------------------------------------!
-   qwai  (:) = merge(0.0,0.11,is_grass(:))
    brf_wd(:) = merge(0.0,0.16,is_grass(:))
    !---------------------------------------------------------------------------------------!
 
@@ -4090,7 +4054,12 @@ subroutine init_pft_alloc_params()
    !    Initial storage pool, relative to on-allometry living biomass, to be given to the  !
    ! PFTs when the model is run using INITIAL conditions.                                  !
    !---------------------------------------------------------------------------------------!
-   f_bstorage_init(:) = 0.50
+   select case (iallom)
+   case (4)
+      f_bstorage_init(:) = 0.50
+   case default
+      f_bstorage_init(:) = 0.00
+   end select
    !---------------------------------------------------------------------------------------!
 
 
@@ -4136,34 +4105,36 @@ subroutine init_pft_alloc_params()
 
    if (write_allom) then
       open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(468a)') ('-',n=1,468)
-      write(unit=18,fmt='(36(1x,a))') '         PFT','    Tropical','       Grass'         &
+      write(unit=18,fmt='(507a)') ('-',n=1,507)
+      write(unit=18,fmt='(39(1x,a))') '         PFT','    Tropical','       Grass'         &
                                      ,'         Rho','        b1Ht','        b2Ht'         &
                                      ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
                                      ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
                                      ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
-                                     ,'        b1Ca','        b2Ca','        b1Xs'         &
-                                     ,'        b1Xb','     Hgt_min','     Hgt_max'         &
-                                     ,'     Min_DBH','   DBH_Adult','    DBH_Crit'         &
-                                     ,' DBH_BigLeaf',' Bleaf_Adult','  Bdead_Crit'         &
-                                     ,'   Init_dens',' Init_LAImax','         SLA'         &
-                                     ,'F_Bstor_init','           q','         qsw'         &
-                                     ,'       qbark','        qwai','       qrhob'
+                                     ,'        b1Ca','        b2Ca',' b1WAI_small'         &
+                                     ,' b2WAI_small',' b1WAI_large',' b2WAI_large'         &
+                                     ,'        b1Xs','        b1Xb','     Hgt_min'         &
+                                     ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
+                                     ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
+                                     ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
+                                     ,'         SLA','F_Bstor_init','           q'         &
+                                     ,'         qsw','       qbark','       qrhob'
 
-      write(unit=18,fmt='(468a)') ('-',n=1,468)
+      write(unit=18,fmt='(507a)') ('-',n=1,507)
       do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),33(1x,es12.5))')                             &
+         write (unit=18,fmt='(8x,i5,2(12x,l1),36(1x,es12.5))')                             &
                         ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
                        ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
                        ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
                        ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
-                       ,b2Ca(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft),hgt_max(ipft)       &
-                       ,min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft),dbh_bigleaf(ipft)     &
-                       ,bleaf_adult(ipft),bdead_crit(ipft),init_density(ipft)              &
-                       ,init_laimax(ipft),sla(ipft),f_bstorage_init(ipft),q(ipft)          &
-                       ,qsw(ipft),qbark(ipft),qwai(ipft),qrhob(ipft)
+                       ,b2Ca(ipft),b1WAI_small(ipft),b2WAI_small(ipft),b1WAI_large(ipft)   &
+                       ,b2WAI_large(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft)              &
+                       ,hgt_max(ipft),min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft)         &
+                       ,dbh_bigleaf(ipft),bleaf_adult(ipft),bdead_crit(ipft)               &
+                       ,init_density(ipft),init_laimax(ipft),sla(ipft)                     &
+                       ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)
       end do
-      write(unit=18,fmt='(468a)') ('-',n=1,468)
+      write(unit=18,fmt='(507a)') ('-',n=1,507)
       close(unit=18,status='keep')
    end if
 
@@ -4213,30 +4184,18 @@ subroutine init_pft_nitro_params()
    do ipft=1,n_pft
       !------ Temperate trees. Use non-optimised Vm0 values. ------------------------------!
       select case (ipft)
-      case (6,7)
-         !----- Northern and Southern Pines. ----------------------------------------------!
+      case (6,7)   ! Northern and Southern Pines. 
          vm0_ref = 15.625
-         !---------------------------------------------------------------------------------!
-      case (8)
-         !----- Late conifers. ------------------------------------------------------------!
+      case (8)     ! Late conifers. 
          vm0_ref = 6.25
-         !---------------------------------------------------------------------------------!
-      case (9)
-         !----- Early hardwood. -----------------------------------------------------------!
+      case (9)     ! Early hardwood. 
          vm0_ref = 18.25
-         !---------------------------------------------------------------------------------!
-      case (10)
-         !----- Mid hardwood. -------------------------------------------------------------!
+      case (10)    ! Mid hardwood. 
          vm0_ref = 15.625
-         !---------------------------------------------------------------------------------!
-      case (11)
-         !----- Late hardwood. ------------------------------------------------------------!
+      case (11)    ! Late hardwood. 
          vm0_ref = 6.25
-         !---------------------------------------------------------------------------------!
-      case default
-         !----- Use actual Vm0 in case we missed some PFT. --------------------------------!
+      case default ! Use actual Vm0 in case we missed some PFT. 
          vm0_ref = Vm0(ipft)
-         !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
 
@@ -4666,30 +4625,18 @@ subroutine init_pft_repro_params()
       else
          !----- Temperate broadleaf trees. ------------------------------------------------!
          select case (ipft)
-         case (6:7)
-            !----- Pines. -----------------------------------------------------------------!
+         case (6:7)   ! Pines. 
             nonlocal_dispersal(ipft) = 0.766
-            !------------------------------------------------------------------------------!
-         case (8)
-            !----- Late conifers. ---------------------------------------------------------!
+         case (8)     ! Late conifers. 
             nonlocal_dispersal(ipft) = 0.001
-            !------------------------------------------------------------------------------!
-         case (9)
-            !----- Early hardwood. --------------------------------------------------------!
+         case (9)     ! Early hardwood. 
             nonlocal_dispersal(ipft) = 1.000
-            !------------------------------------------------------------------------------!
-         case (10)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (10)    ! Mid hardwood. 
             nonlocal_dispersal(ipft) = 0.325
-            !------------------------------------------------------------------------------!
-         case (11)
-            !----- Mid hardwood. ----------------------------------------------------------!
+         case (11)    ! Late hardwood. 
             nonlocal_dispersal(ipft) = 0.074
-            !------------------------------------------------------------------------------!
-         case default
-            !----- This shouldn't happen. -------------------------------------------------!
+         case default ! This shouldn't happen. 
             nonlocal_dispersal(ipft) = 1.000
-            !------------------------------------------------------------------------------!
          end select
          !---------------------------------------------------------------------------------!
       end if

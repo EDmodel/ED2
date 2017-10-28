@@ -206,18 +206,18 @@ contains
    ! single generic function that should be used by all plants.                            !
    !---------------------------------------------------------------------------------------!
    real function size2bl(dbh,hite,ipft)
-      use pft_coms     , only : dbh_adult     & ! intent(in), lookup table
-                              , dbh_crit      & ! intent(in), lookup table
-                              , C2B           & ! intent(in), lookup table
-                              , b1Bl_small    & ! intent(in), lookup table
-                              , b2Bl_small    & ! intent(in), lookup table
-                              , b1Bl_large    & ! intent(in), lookup table
-                              , b2Bl_large    & ! intent(in), lookup table
-                              , is_liana      & ! intent(in)
-                              , is_grass      & ! intent(in)
-                              ,liana_dbh_crit ! ! intent(in)
-      use ed_misc_coms , only : igrass        ! ! intent(in)
-      use ed_state_vars, only : patchtype     ! ! structure
+      use pft_coms     , only : dbh_adult      & ! intent(in)
+                              , dbh_crit       & ! intent(in)
+                              , C2B            & ! intent(in)
+                              , b1Bl_small     & ! intent(in)
+                              , b2Bl_small     & ! intent(in)
+                              , b1Bl_large     & ! intent(in)
+                              , b2Bl_large     & ! intent(in)
+                              , is_liana       & ! intent(in)
+                              , is_grass       & ! intent(in)
+                              , liana_dbh_crit ! ! intent(in)
+      use ed_misc_coms , only : igrass         ! ! intent(in)
+      use ed_state_vars, only : patchtype      ! ! structure
 
       !----- Arguments --------------------------------------------------------------------!
       real          , intent(in) :: dbh
@@ -245,10 +245,10 @@ contains
       !------------------------------------------------------------------------------------!
       !     Find leaf biomass depending on the tree size.                                  !
       !------------------------------------------------------------------------------------!
-         if (mdbh < dbh_adult(ipft)) then
-            size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
-         else
-            size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
+      if (mdbh < dbh_adult(ipft)) then
+         size2bl = b1Bl_small(ipft) / C2B * mdbh ** b2Bl_small(ipft)
+      else
+         size2bl = b1Bl_large(ipft) / C2B * mdbh ** b2Bl_large(ipft)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -699,8 +699,8 @@ contains
    !=======================================================================================!
    !     This subroutine estimates the tree area indices, namely leaf, branch(plus twigs), !
    ! and stem.  For the leaf area index (LAI), we use the specific leaf area (SLA), a      !
-   ! constant.  The wood area index WAI is found using the model proposed by J�rvel�      !
-   ! (2004) to find the specific projected area.                                           !
+   ! constant.  The wood area index WAI is found either from Hormann et al. (2003) or      !
+   ! based on the average WAI/LAI ratio from Olivas et al. (2013).                         !
    !                                                                                       !
    ! G. Hormann, S. Irrgan, H. Jochheim, M. Lukes, H. Meesenburg, J. Muller, B. Scheler,   !
    !    J. Scherzer, G. Schuler, B. Schultze, B. Strohbach, F. Suckow, M. Wegehenkel, and  !
@@ -716,11 +716,19 @@ contains
    !---------------------------------------------------------------------------------------!
    subroutine area_indices(cpatch, ico)
       use ed_state_vars, only : patchtype       ! ! Structure
-      use pft_coms     , only : dbh_crit        & ! intent(in)
+      use pft_coms     , only : dbh_adult       & ! intent(in)
+                              , dbh_crit        & ! intent(in)
+                              , is_liana        & ! intent(in)
+                              , is_grass        & ! intent(in)
                               , SLA             & ! intent(in)
-                              , qwai            ! ! intent(in)
+                              , b1WAI_small     & ! intent(in)
+                              , b2WAI_small     & ! intent(in)
+                              , b1WAI_large     & ! intent(in)
+                              , b2WAI_large     & ! intent(in)
+                              , liana_dbh_crit  ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
-      use ed_misc_coms , only : iallom          ! ! intent(in)
+      use ed_misc_coms , only : iallom          & ! intent(in)
+                              , igrass          ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target :: cpatch
@@ -728,6 +736,7 @@ contains
       !----- Local variables --------------------------------------------------------------!
       real                    :: bleaf_max
       real                    :: loccai
+      real                    :: mdbh
       integer                 :: ipft
       !------------------------------------------------------------------------------------!
 
@@ -761,10 +770,29 @@ contains
 
       case (1,2)
          !---------------------------------------------------------------------------------!
-         !     Assume WAI is a fixed fraction of potential LAI.                            !
+         !     Get the DBH, or potential DBH in case of grasses.                           !
          !---------------------------------------------------------------------------------!
-         bleaf_max       = size2bl(cpatch%dbh(ico),cpatch%hite(ico),ipft)
-         cpatch%wai(ico) = qwai(ipft) * cpatch%nplant(ico) * SLA(ipft) * bleaf_max
+         if (is_grass(ipft) .and. igrass == 1) then 
+            !---- Use height for new grasses. ---------------------------------------------!
+            mdbh   = min(cpatch%dbh(ico),h2dbh(cpatch%hite(ico),ipft))
+         elseif (is_liana(ipft)) then
+            mdbh   = min(cpatch%dbh(ico),liana_dbh_crit)
+         else
+            !---- Use dbh for trees. ------------------------------------------------------!
+            mdbh   = min(cpatch%dbh(ico),dbh_crit(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !-----Find WAI. ------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         if (mdbh < dbh_adult(ipft)) then
+            cpatch%wai(ico) = cpatch%nplant(ico)                                           &
+                            * b1WAI_small(ipft) * mdbh ** b2WAI_small(ipft)
+         else
+            cpatch%wai(ico) = cpatch%nplant(ico)                                           &
+                            * b1WAI_large(ipft) * mdbh ** b2WAI_large(ipft)
+         end if
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

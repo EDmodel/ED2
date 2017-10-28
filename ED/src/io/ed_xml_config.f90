@@ -235,6 +235,17 @@ recursive subroutine read_ed_xml_config(filename)
            restart_target_year = ival
            use_target_year = 1
         endif
+        call getConfigINT  ('outputMonth','ed_misc',i,ival,texist)
+        ! Output month no longer exists (conflict between branches)
+        ! Kept month_yrstep because it does what outputMonth did plus it changes
+        ! the month in which patch dynamics occurs.  In case it is set, issue a 
+        ! warning.
+        if (texist) then
+           call warning(" Found ""outputMonth"" was found in XML.  This will overwrite "// &
+                        " variable ""month_yrstep"" set in the namelist."                  &
+                       ,"read_ed_xml_config","ed_xml_config.f90")
+           month_yrstep = ival
+        end if
         call getConfigINT  ('burnin','ed_misc',i,ival,texist)
         if(texist) burnin = ival
 
@@ -599,8 +610,24 @@ recursive subroutine read_ed_xml_config(filename)
            if(texist) b2Ca(myPFT) = real(rval)
 
      ! branches
-	   call getConfigREAL  ('qwai','pft',i,rval,texist)
-           if(texist) qwai(myPFT) = real(rval)
+           call getConfigREAL  ('b1WAI','pft',i,rval,texist)
+           if (texist) then
+              b1WAI_small(myPFT) = real(rval)
+              b1WAI_large(myPFT) = real(rval)
+           end if
+           call getConfigREAL  ('b2WAI','pft',i,rval,texist)
+           if (texist) then
+              b2WAI_small(myPFT) = real(rval)
+              b2WAI_large(myPFT) = real(rval)
+           end if
+	   call getConfigREAL  ('b1WAI_small','pft',i,rval,texist)
+           if(texist) b1WAI_small(myPFT) = real(rval)
+	   call getConfigREAL  ('b2WAI_small','pft',i,rval,texist)
+           if(texist) b2WAI_small(myPFT) = real(rval)
+	   call getConfigREAL  ('b1WAI_large','pft',i,rval,texist)
+           if(texist) b1WAI_large(myPFT) = real(rval)
+	   call getConfigREAL  ('b2WAI_large','pft',i,rval,texist)
+           if(texist) b2WAI_large(myPFT) = real(rval)
 	   call getConfigREAL  ('brf_wd','pft',i,rval,texist)
            if(texist) brf_wd(myPFT) = real(rval)
 
@@ -1686,8 +1713,11 @@ subroutine write_ed_xml_config
         call putConfigREAL("b2Ca",      b2Ca(i))
 
      !! BRANCHES
-        call putConfigREAL("qwai",      qwai(i))
-        call putConfigREAL("brf_wd",    brf_wd(i))
+        call putConfigREAL("b1WAI_small", b1WAI_small(i))
+        call putConfigREAL("b1WAI_large", b1WAI_large(i))
+        call putConfigREAL("b2WAI_small", b2WAI_small(i))
+        call putConfigREAL("b2WAI_large", b2WAI_large(i))
+        call putConfigREAL("brf_wd"     , brf_wd     (i))
 
      !! BARK/SAPWOOD THICKNESS
         call putConfigREAL("qrhob",   qrhob(i))

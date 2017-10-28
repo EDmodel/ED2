@@ -272,8 +272,8 @@ for ip=1:npatch
  set(hp(ip1),'FaceColor',comat(ip,:));
  set(hp(ip2),'FontSize',fasz-1);
 end
-colorbar('YTick',[1 2 3 4 5 6],'YTickLabel',...
-	 {'Pasture','Plantation','Treefall','Burnt','Abandoned','Logged'},...
+colorbar('YTick',[1 2 3 4 5 6 7 8],'YTickLabel',...
+	 {'Pasture','Plantation','Treefall','Burnt','Abandoned','Felling','SkidRoadDeck','Cropland'},...
 	 'FontSize',fasz-1);%,'Location','East');
 
 
@@ -293,7 +293,7 @@ for k=1:length(zzbot)
     xloc=xloc+lai_vp(ipft,k)+1e-5;
   end
 end
-xlabel('LAI [m2/m3]','FontSize',fasz-1);
+xlabel('LAD [m2/m3]','FontSize',fasz-1);
 ylabel('Elevation [m]','FontSize',fasz-1);
 ylim([0 ymax]);
 xlim([0 max([0.25 1.1*max(sum(lai_vp,1)) ])]);

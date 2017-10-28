@@ -450,8 +450,6 @@ module pft_coms
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
    !----- Mass ratio between bark and leaves [kg_bark]/[kg_leaves]/[m]. -------------------!
    real   , dimension(n_pft)    :: qbark
-   !----- Area ratio between WAI and LAI [m2_wood/m2_leaf]. -------------------------------!
-   real   , dimension(n_pft)    :: qwai
    !----- Density ratio between bark and wood [(g cm-3)_bark/(g cm-3)_wood]. --------------!
    real   , dimension(n_pft)    :: qrhob
    !---------------------------------------------------------------------------------------!
@@ -489,6 +487,14 @@ module pft_coms
    real   , dimension(n_pft)    :: b1Ca
    !----- DBH-crown allometry slope.  All PFTs. -------------------------------------------!
    real   , dimension(n_pft)    :: b2Ca
+   !----- DBH-leaf allometry intercept for small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b1WAI_small
+   !----- DBH-leaf allometry slope for all small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b2WAI_small
+   !----- DBH-leaf allometry intercept for small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b1WAI_large
+   !----- DBH-leaf allometry slope for all small cohorts. All PFTs ------------------------!
+   real   , dimension(n_pft)    :: b2WAI_large
    !----- DBH-bark thickness slope.  All PFTs. --------------------------------------------!
    real   , dimension(n_pft)    :: b1Xb
    !----- DBH-sapwood thickness slope.  All PFTs. -----------------------------------------!

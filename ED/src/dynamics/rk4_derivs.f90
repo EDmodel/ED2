@@ -1240,10 +1240,10 @@ module rk4_derivs
          cflxgc = cflxgc + initp%root_resp(ico)                                            &
                          + initp%root_growth_resp(ico)                                     &
                          + initp%sapb_growth_resp(ico)                                     &
-                         + dble(1.0 - agf_bs(ipft)) * initp%sapb_growth_resp(ico)          &
+                         + dble(1.0 - agf_bs(ipft)) * initp%bark_growth_resp(ico)          &
                          + initp%root_storage_resp(ico)                                    &
                          + initp%sapb_storage_resp(ico)                                    &
-                         + dble(1.0 - agf_bs(ipft)) * initp%sapb_storage_resp(ico)
+                         + dble(1.0 - agf_bs(ipft)) * initp%bark_storage_resp(ico)
 
          !---------------------------------------------------------------------------------!
          !    Add the respiration terms according to their "source".                       !

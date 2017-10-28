@@ -362,7 +362,7 @@ $ED_NL
 
    !---------------------------------------------------------------------------------------!
    ! SFILIN --  The meaning and the size of this variable depends on the type of run, set  !
-   NL%RUNTYPE = 'INITIAL'
+   !            at variable RUNTYPE.                                                       !
    !                                                                                       !
    ! 1. INITIAL.  Then this is the path+prefix of the previous ecosystem state.  This has  !
    !              dimension of the number of grids so you can initialize each grid with a  !
@@ -536,8 +536,6 @@ $ED_NL
    !                      soil temperature and moisture.                                   !
    !  SOILDEPTH_DB     -- Dataset in case you want to read in soil depth information.      !
    !---------------------------------------------------------------------------------------!
-   NL%SOILSTATE_DB     = ''
-   NL%SOILDEPTH_DB     = ''
    NL%VEG_DATABASE     = 'edts_datasets/veg_oge/OGE2_'
    NL%SOIL_DATABASE    = 'edts_datasets/soils/Quesada+RADAM+IGBP/Quesada+RADAM+IGBP_'
    NL%LU_DATABASE      = 'edts_datasets/land_use/glu+sa2/blend-'
@@ -1473,11 +1471,6 @@ $ED_NL
 
 
 
-   !---------------------------------------------------------------------------------------!
-   ! IOPTINPT -- Optimization configuration. (Currently not used)                          !
-   !---------------------------------------------------------------------------------------!
-   NL%IOPTINPT = ''
-   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    ! GROWTH_RESP_SCHEME -- This flag indicates how growth respiration fluxes are treated.  !
    !                                                                                       !
