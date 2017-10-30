@@ -550,7 +550,7 @@ module forestry
       if (almost_one * hvmax_mature_primary > primary_harvest_target) then
          f_harvest                = primary_harvest_target / hvpot_mature_primary
          lambda_mature_primary    = log(1./(1.-f_harvest))
-      else if (almost_one * hvpot_mature_primary > hvmax_mature_primary) then
+      elseif (almost_one * hvpot_mature_primary > hvmax_mature_primary) then
          f_harvest                = hvmax_mature_primary / hvpot_mature_primary
          lambda_mature_primary    = log(1./(1.-f_harvest))
          harvest_deficit          = primary_harvest_target   - hvmax_mature_primary
@@ -576,7 +576,7 @@ module forestry
          f_harvest                = secondary_harvest_target / hvpot_mature_plantation
          lambda_mature_plantation = log(1./(1.-f_harvest))
          harvest_deficit          = 0.0
-      else if (almost_one * hvpot_mature_primary > hvmax_mature_plantation) then
+      elseif (almost_one * hvpot_mature_plantation > hvmax_mature_plantation) then
          f_harvest                = hvmax_mature_plantation / hvpot_mature_plantation
          lambda_mature_plantation = log(1./(1.-f_harvest))
          harvest_deficit          = secondary_harvest_target - hvmax_mature_plantation
@@ -597,7 +597,7 @@ module forestry
          f_harvest                = harvest_deficit / hvpot_mature_secondary
          lambda_mature_plantation = log(1./(1.-f_harvest))
          harvest_deficit          = 0.0
-      else if (almost_one * hvpot_mature_secondary > hvmax_mature_secondary) then
+      elseif (almost_one * hvpot_mature_secondary > hvmax_mature_secondary) then
          f_harvest               = hvmax_mature_secondary / hvpot_mature_secondary
          lambda_mature_secondary = log(1./(1.-f_harvest))
          harvest_deficit         = harvest_deficit - hvmax_mature_secondary

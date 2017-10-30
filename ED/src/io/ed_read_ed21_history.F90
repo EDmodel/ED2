@@ -928,7 +928,9 @@ subroutine read_ed21_history_unstruct
                                   , str_len                 & ! intent(in)
                                   , n_dist_types            & ! intent(in)
                                   , maxfiles                & ! intent(in)
-                                  , maxlist                 ! ! intent(in)
+                                  , maxlist                 & ! intent(in)
+                                  , undef_real              & ! intent(in)
+                                  , undef_integer           ! ! intent(in)
    use pft_coms            , only : q                       & ! intent(in)
                                   , qsw                     & ! intent(in)
                                   , qbark                   & ! intent(in)
@@ -957,7 +959,8 @@ subroutine read_ed21_history_unstruct
                                   , nzg                     ! ! intent(in)
    use consts_coms         , only : pio4                    & ! intent(in)
                                   , almost_zero             & ! intent(in)
-                                  , tiny_num                ! ! intent(in)
+                                  , tiny_num                & ! intent(in)
+                                  , huge_num                ! ! intent(in)
    use hdf5_coms           , only : file_id                 & ! intent(in)
                                   , dset_id                 & ! intent(in)
                                   , dspace_id               & ! intent(in)
@@ -1026,13 +1029,10 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: igr
    integer                                                      :: ipy
    integer                                                      :: isi
-   integer                                                      :: is
    integer                                                      :: ipa
    integer                                                      :: ico
    integer                                                      :: isi_best
-   integer                                                      :: is_best
    integer                                                      :: isi_try
-   integer                                                      :: is_try
    integer                                                      :: nsoil
    integer                                                      :: nsoil_try
    integer                                                      :: nsites_inp
@@ -1422,7 +1422,7 @@ subroutine read_ed21_history_unstruct
             ! current polygon.                                                             !
             !------------------------------------------------------------------------------!
             !----- Initialise distance and co-ordinates to non-sense numbers. -------------!
-            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense
+            dist_rscl(:) = huge_num ! Initialise to a large distance and non-sense
             if (rescale_glob) then
                neighbour: do k=1,nrescale
                   dist_rscl(k) = dist_gc(clon_rscl(k),cgrid%lon(ipy)                       &
@@ -1483,7 +1483,7 @@ subroutine read_ed21_history_unstruct
             !     Check whether the input data had lakes or not.                           !
             !------------------------------------------------------------------------------!
             allocate(islakesite(pysi_n(py_index)))
-            islakesite = 0
+            islakesite(:) = 0
             !----- Load the lakesite data--------------------------------------------------!
             dsetrank = 1_8
             globdims(1) = int(dset_nsites_global,8)
@@ -1504,7 +1504,7 @@ subroutine read_ed21_history_unstruct
             ! texture properties to the definite site, preserving the previously assigned  !
             ! area.                                                                        !
             !------------------------------------------------------------------------------!
-            nsites_inp = ndry_sites
+            nsites_inp = int(pysi_n(py_index))
             allocate (this_ntext        (dset_nzg,nsites_inp))
             allocate (tpoly_area        (         nsites_inp))
             allocate (tpoly_moist_f     (         nsites_inp))
@@ -1516,6 +1516,18 @@ subroutine read_ed21_history_unstruct
             allocate (tpoly_patch_count (         nsites_inp))
             allocate (tpoly_lsl         (         nsites_inp))
             allocate (tpoly_ntext_soil  (     nzg,nsites_inp))
+            this_ntext        (:,:) = undef_integer
+            tpoly_area        (  :) = undef_real
+            tpoly_moist_f     (  :) = undef_real
+            tpoly_moist_w     (  :) = undef_real
+            tpoly_elevation   (  :) = undef_real
+            tpoly_slope       (  :) = undef_real
+            tpoly_aspect      (  :) = undef_real
+            tpoly_TCI         (  :) = undef_real
+            tpoly_patch_count (  :) = undef_integer
+            tpoly_lsl         (  :) = undef_integer
+            tpoly_ntext_soil  (:,:) = undef_integer
+            
             !------------------------------------------------------------------------------!
 
 
@@ -1523,11 +1535,9 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             !     Loop over the sites, seeking only those that are land sites.             !
             !------------------------------------------------------------------------------!
-            is = 0
-            siteloop1: do isi=1,pysi_n(py_index)
+             siteloop1: do isi=1,pysi_n(py_index)
                select case (islakesite(isi))
                case (0)
-                  is = is + 1
 
                   !------------------------------------------------------------------------!
                   !      Reset the HDF5 auxiliary variables before moving to the next      !
@@ -1553,23 +1563,23 @@ subroutine read_ed21_history_unstruct
                   memsize (1) = int(1,8)
                   memoffs (1) = 0_8
 
-                  call hdf_getslab_r( tpoly_area       (is:is)     , 'AREA_SI '            &
+                  call hdf_getslab_r( tpoly_area       (isi:isi)   , 'AREA_SI '            &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_r( tpoly_moist_f    (is:is)     , 'MOIST_F '            &
+                  call hdf_getslab_r( tpoly_moist_f    (isi:isi)   , 'MOIST_F '            &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_r( tpoly_moist_W    (is:is)     , 'MOIST_W '            &
+                  call hdf_getslab_r( tpoly_moist_W    (isi:isi)   , 'MOIST_W '            &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_r( tpoly_elevation  (is:is)     , 'ELEVATION '          &
+                  call hdf_getslab_r( tpoly_elevation  (isi:isi)   , 'ELEVATION '          &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_r( tpoly_slope      (is:is)     , 'SLOPE '              &
+                  call hdf_getslab_r( tpoly_slope      (isi:isi)   , 'SLOPE '              &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_r( tpoly_aspect     (is:is)     , 'ASPECT '             &
+                  call hdf_getslab_r( tpoly_aspect     (isi:isi)   , 'ASPECT '             &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_r( tpoly_TCI        (is:is)     , 'TCI '                &
+                  call hdf_getslab_r( tpoly_TCI        (isi:isi)   , 'TCI '                &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_i( tpoly_patch_count(is:is)     , 'PATCH_COUNT '        &
+                  call hdf_getslab_i( tpoly_patch_count(isi:isi)   , 'PATCH_COUNT '        &
                                     , dsetrank, iparallel, .true.,foundvar)
-                  call hdf_getslab_i( tpoly_lsl        (is:is)     ,'LSL '                 &
+                  call hdf_getslab_i( tpoly_lsl        (isi:isi)   ,'LSL '                 &
                                     , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
 
@@ -1588,7 +1598,7 @@ subroutine read_ed21_history_unstruct
                   memdims(2)   = int(1,8)
                   memsize(2)   = int(1,8)
                   memoffs(2)   = 0_8
-                  call hdf_getslab_i( this_ntext     (:,is)     , 'NTEXT_SOIL '            &
+                  call hdf_getslab_i( this_ntext     (:,isi)    , 'NTEXT_SOIL '            &
                                     , dsetrank, iparallel, .true.,foundvar)
                   !------------------------------------------------------------------------!
 
@@ -1602,9 +1612,7 @@ subroutine read_ed21_history_unstruct
                   ! code...  For the time being, we assume here that there is only one     !
                   ! soil type, so all that we need is to save one layer for each site.     !
                   !------------------------------------------------------------------------!
-
-                  tpoly_ntext_soil(nzg,is) = this_ntext(dset_nzg,is)
-
+                  tpoly_ntext_soil(nzg,isi) = this_ntext(dset_nzg,isi)
                   !------------------------------------------------------------------------!
                end select
                !---------------------------------------------------------------------------!
@@ -1624,14 +1632,12 @@ subroutine read_ed21_history_unstruct
                !---------------------------------------------------------------------------!
                !     Loop over the sites, pick up the closest one.                         !
                !---------------------------------------------------------------------------!
-               textdist_min = huge(1.)
-               is_try       = 0
+               textdist_min = huge_num
+               isi_best     = undef_integer
                do isi_try = 1, nsites_inp
                   select case (islakesite(isi_try))
                   case (0)
-                     is_try    = is_try + 1
-
-                     nsoil_try = tpoly_ntext_soil(nzg,is_try)
+                     nsoil_try = tpoly_ntext_soil(nzg,isi_try)
 
                      !---------------------------------------------------------------------!
                      !     Find the "distance" between the two sites based on the sand and !
@@ -1647,7 +1653,6 @@ subroutine read_ed21_history_unstruct
                      !---------------------------------------------------------------------!
                      if (textdist_try < textdist_min) then
                         isi_best     = isi_try
-                        is_best      = is_try
                         textdist_min = textdist_try
                      end if
                      !---------------------------------------------------------------------!
@@ -1663,13 +1668,13 @@ subroutine read_ed21_history_unstruct
                ! be different and we want them to be based on the user settings rather     !
                ! than the old run setting.                                                 !
                !---------------------------------------------------------------------------!
-               cpoly%moist_f     (isi) = tpoly_moist_f     (is_best)
-               cpoly%moist_w     (isi) = tpoly_moist_w     (is_best)
-               cpoly%elevation   (isi) = tpoly_elevation   (is_best)
-               cpoly%slope       (isi) = tpoly_slope       (is_best)
-               cpoly%aspect      (isi) = tpoly_aspect      (is_best)
-               cpoly%TCI         (isi) = tpoly_TCI         (is_best)
-               cpoly%patch_count (isi) = tpoly_patch_count (is_best)
+               cpoly%moist_f     (isi) = tpoly_moist_f     (isi_best)
+               cpoly%moist_w     (isi) = tpoly_moist_w     (isi_best)
+               cpoly%elevation   (isi) = tpoly_elevation   (isi_best)
+               cpoly%slope       (isi) = tpoly_slope       (isi_best)
+               cpoly%aspect      (isi) = tpoly_aspect      (isi_best)
+               cpoly%TCI         (isi) = tpoly_TCI         (isi_best)
+               cpoly%patch_count (isi) = tpoly_patch_count (isi_best)
                !---------------------------------------------------------------------------!
 
 

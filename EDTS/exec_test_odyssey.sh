@@ -52,7 +52,8 @@ TESTTYPE="rapid"
 #------------------------------------------------------------------------------------------#
 #  DATAPATH -- Location with all data sets.                                                #
 #------------------------------------------------------------------------------------------#
-DATAPATH="/n/gstore/Labs/moorcroft_lab_protected/ed_mainline/test_suite/datasets"
+DATAPATH="/n/moorcroftfs5/mlongo/edts_datasets"
+DATAPATH="/n/regal/moorcroft_lab/mlongo/data/ts_datasets"
 #------------------------------------------------------------------------------------------#
 
 
@@ -76,6 +77,7 @@ USE_S83="y"     # Santarem km 83 (logging) POI
 USE_PRG="y"     # Paragominas (ALS init) POI
 USE_HIP="y"     # Petrolina High Frequency Detailed Short POI
 USE_HIM="y"     # Manaus High Frequency Detailed Short POI
+USE_HIH="y"     # Manaus High Frequency Detailed Short POI (Hybrid)
 USE_RJG="y"     # Gridded 12x12 simulation centred on Reserva Jaru
 #------------------------------------------------------------------------------------------#
 
@@ -84,20 +86,21 @@ USE_RJG="y"     # Gridded 12x12 simulation centred on Reserva Jaru
 #     The following flags are the queue names for each simulation.                         #
 #   Main, test, and dbug should all use the same queue.                                    #
 #------------------------------------------------------------------------------------------#
-Q_M34="general"     # Manaus K34 POI
-Q_S67="general"     # Santarem km 67 POI
-Q_HAR="general"     # Harvard Forest POI
-Q_PDG="general"     # Pe-de-Gigante POI
-Q_TON="general"     # Tonzi POI
-Q_CAX="general"     # Caxiuana POI
-Q_TNF="general"     # Tapajos National Forest POI
-Q_ATA="general"     # Atacama Desert POI
-Q_PET="general"     # Petrolina POI
-Q_S83="general"     # Santarem Km 83 (logging) POI
-Q_PRG="general"     # Paragominas (ALS init) POI
-Q_HIP="general"     # Petrolina High Frequency Detailed Short POI
-Q_HIM="general"     # Manaus High Frequency Detailed Short POI
-Q_RJG="general"     # Gridded 12x12 simulation centred on Reserva Jaru
+Q_M34="moorcroft_6100"     # Manaus K34 POI
+Q_S67="moorcroft_6100"     # Santarem km 67 POI
+Q_HAR="moorcroft_6100"     # Harvard Forest POI
+Q_PDG="moorcroft_6100"     # Pe-de-Gigante POI
+Q_TON="moorcroft_6100"     # Tonzi POI
+Q_CAX="moorcroft_6100"     # Caxiuana POI
+Q_TNF="moorcroft_6100"     # Tapajos National Forest POI
+Q_ATA="moorcroft_6100"     # Atacama Desert POI
+Q_PET="moorcroft_6100"     # Petrolina POI
+Q_S83="moorcroft_6100"     # Santarem Km 83 (logging) POI
+Q_PRG="moorcroft_6100"     # Paragominas (ALS init) POI
+Q_HIP="moorcroft_6100"     # Petrolina High Frequency Detailed Short POI
+Q_HIM="moorcroft_6100"     # Manaus High Frequency Detailed Short POI
+Q_HIH="moorcroft_6100"     # Manaus High Frequency Detailed Short POI (Hybrid)
+Q_RJG="moorcroft_6100"     # Gridded 12x12 simulation centred on Reserva Jaru
 #------------------------------------------------------------------------------------------#
 
 
@@ -111,9 +114,9 @@ NPROC=27
 #------------------------------------------------------------------------------------------#
 #     The following variables are the time required by each simulation, hh:mm:ss.          #
 #------------------------------------------------------------------------------------------#
-POI_FAST_TIME="168:00:00"
+POI_FAST_TIME="Infinite"
 POI_LONG_TIME="168:00:00"
-GRID_FAST_TIME="168:00:00"
+GRID_FAST_TIME="Infinite"
 GRID_LONG_TIME="312:00:00"
 #------------------------------------------------------------------------------------------#
 
@@ -122,8 +125,8 @@ GRID_LONG_TIME="312:00:00"
 #------------------------------------------------------------------------------------------#
 #   The amount of memory per cpu needed (POI and gridded runs).                            #
 #------------------------------------------------------------------------------------------#
-POI_MEMORY=4096
-GRID_MEMORY=4096
+POI_MEMORY=6000
+GRID_MEMORY=1845
 #------------------------------------------------------------------------------------------#
 
 
@@ -235,15 +238,15 @@ declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
 
 
 
-#----- High-frequency detailed runs (HI-PET and HI-M34). ----------------------------------#
-declare -a USE_HIFR=(${USE_HIP} ${USE_HIM})
-declare -a HIFRID=(hip him)
-declare -a HIFRPFX=(HIP HIM)
-declare -a HIFRQ=(${Q_HIP} ${Q_HIM})
-declare -a IDATEAH=(21 01)
-declare -a IDATEZH=(28 08)
-declare -a INITMDH=(6  5)
-declare -a RUNTYPH=(INITIAL INITIAL)
+#----- High-frequency detailed runs (HI-PET, HI-M34, and HI-M34/Hybrid). ------------------#
+declare -a USE_HIFR=(${USE_HIP} ${USE_HIM} ${USE_HIH})
+declare -a HIFRID=(hip him hih)
+declare -a HIFRPFX=(HIP HIM HIH)
+declare -a HIFRQ=(${Q_HIP} ${Q_HIM} ${Q_HIH})
+declare -a IDATEAH=(21 01 01)
+declare -a IDATEZH=(28 08 08)
+declare -a INITMDH=(6  5  5)
+declare -a RUNTYPH=(INITIAL INITIAL INITIAL)
 #------------------------------------------------------------------------------------------#
 
 
@@ -271,7 +274,7 @@ rapid)
    #----- POI tests will run for two years. -----------------------------------------------#
    declare -a IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2000 2011)
    declare -a IYEARZS=(1502 1502 2009 1502 2002 2002 2004 1502 2007 2002 2013)
-   declare -a INITMDS=(   5    0    6    0    6    0    5    0    6    5    6)
+   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    5    6   )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
@@ -303,7 +306,7 @@ long)
    #----- POI tests will run for 300 years. -----------------------------------------------#
    declare -a IYEARAS=(1500 1500 1500 1500 1500 1500 1500 1500 1500 1500 1500)
    declare -a IYEARZS=(1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800)
-   declare -a INITMDS=(   5    0    6    0    6    0    5    0    6    5    6)
+   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    5    6   )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#

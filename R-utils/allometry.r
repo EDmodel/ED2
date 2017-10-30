@@ -9,7 +9,7 @@ h2dbh <<- function(h,ipft){
    }#end if
 
    tropo = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn = pft$tropical[zpft] & iallom %in% c(2,3,4)
+   tropn = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe = ! pft$tropical[zpft]
 
    dbh = NA * h
@@ -44,7 +44,7 @@ dbh2h <<- function(ipft,dbh){
    dbhuse[large] = pft$dbh.crit[zpft[large]]
 
    tropo         = pft$tropical[zpft] & iallom %in% c(0,1)
-   tropn         = pft$tropical[zpft] & iallom %in% c(2,3,4)
+   tropn         = pft$tropical[zpft] & iallom %in% c(2,3)
    tempe         = ! pft$tropical[zpft]
 
    h         = NA * dbh
@@ -143,7 +143,7 @@ dbh2ca <<- function(dbh,ipft){
    #---------------------------------------------------------------------------------------#
    if (iallom %in% c(0,1,2)){
       crown = pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
-   }else if (iallom %in% c(3,4)){
+   }else if (iallom %in% c(3)){
       crown = ifelse( dbhuse >= pft$dbh.adult[ipft]
                     , pft$b1Ca[zpft] * dbhuse ^ pft$b2Ca[zpft]
                     , loclai

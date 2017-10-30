@@ -639,7 +639,7 @@ $ED_NL
    !                       3.  Hybrid Stepping (BDF2 implicit step for the canopy air and  !
    !                           leaf temp, forward Euler for else, under development).      !
    !---------------------------------------------------------------------------------------!
-   NL%INTEGRATION_SCHEME = 3
+   NL%INTEGRATION_SCHEME = 1
    !---------------------------------------------------------------------------------------!
 
 

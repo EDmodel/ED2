@@ -450,11 +450,12 @@ C2B    <<- 2.0
 # 2 - Same as 1, but using the height as in Poorter et al. (2006) for tropical PFTs, and   #
 #     finding a fit similar to Baker et al. (2004) that doesn't depend on height, using    #
 #     Saldarriaga et al. (1988) as a starting point.                                       #
+# 3 - New set of traits and parameters (mostly) based on literature and available data.    #
 #------------------------------------------------------------------------------------------#
 if ("iallom" %in% ls()){
    iallom <<- iallom
 }else{
-   iallom <<- 4
+   iallom <<- 3
 }#end if
 #------------------------------------------------------------------------------------------#
 
@@ -511,8 +512,6 @@ sapwood.factor     <<- 1.0 / (eta.c.f16 * asal.bar * 1000. / C2B)
 #------------------------------------------------------------------------------------------#
 #     These constants will help defining the allometric parameters for IALLOM 1 and 2.     #
 #------------------------------------------------------------------------------------------#
-odead.small = c( -1.11382700, 2.44048300,  2.18063200)
-odead.large = c(  0.13625460, 2.42173900,  6.94835320)
 ndead.small = c( -1.26395300, 2.43236100,  1.80180100)
 ndead.large = c( -0.83468050, 2.42557360,  2.68228050)
 nleaf       = c(  0.01925119, 0.97494935,  2.58585087)
@@ -539,7 +538,7 @@ if (iallom %in% c(0,1)){
    b1Ht.trop    = 0.37 * log(10)
    b2Ht.trop    = 0.64
    hgt.max.trop = 35.0
-}else if (iallom %in% c(2,3)){
+}else if (iallom %in% c(2)){
    #---------------------------------------------------------------------------------------#
    #     Use the allometry proposed by:                                                    #
    #                                                                                       #
@@ -552,12 +551,12 @@ if (iallom %in% c(0,1)){
    b2Ht.trop    = 0.694
    hgt.max.trop = 35.0
    #---------------------------------------------------------------------------------------#
-}else if (iallom %in% c(4)){
+}else if (iallom %in% c(3)){
    #---------------------------------------------------------------------------------------#
    #     Allometric equation based on the Sustainable Landscapes data.                     #
    #                                                                                       #
-   #    Longo, M. et al. 2016.  Carbon Debt and Recovery time of degraded forests in       #
-   #       the Amazon. Biogeosciences, in prep.                                            #
+   #    Longo, M. et al. Carbon Debt and Recovery time of degraded forests in              #
+   #       the Amazon., in prep.                                                           #
    #                                                                                       #
    #    Equation was derived from multiple forest inventories carried out at multiple      #
    # locations in the Brazilian Amazon, and fitted using a heteroscedastic least           #
@@ -583,7 +582,7 @@ if (iallom %in% c(0,1)){
 
 
 #------------------------------------------------------------------------------------------#
-#   Coefficients for DBH -> Bleaf allometry (iallom = 4).  Source:                         #
+#   Coefficients for DBH -> Bleaf allometry (iallom = 3).  Source:                         #
 #                                                                                          #
 #   Lescure, H. Puig, B. Riera, D. Leclerc, A. Beekman, and A. Beneteau. La phytomasse     #
 #      epigee d'une foret dense en Guyane Francaise.  Acta Ecol.-Oec. Gen., 4(3),          #
@@ -1651,7 +1650,7 @@ for (ipft in sequence(npft)){
       pft$leaf.turnover.rate[ipft] = exp(2.57332880-4.38819777*pft$rho[ipft])
       pft$root.turnover.rate[ipft] = pft$leaf.turnover.rate [ipft]
       pft$vm0               [ipft] = exp(4.63093593-3.27792920*pft$rho[ipft]) * umol.2.mol
-   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4)
+   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]))
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
@@ -1661,28 +1660,17 @@ for (ipft in sequence(npft)){
 #------------------------------------------------------------------------------------------#
 for (ipft in sequence(npft)){
    #---- Check PFT and allometry. ---------------------------------------------------------#
-   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% 4){
+   if (pft$tropical[ipft] && pft$conifer[ipft] && iallom %in% 3){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["aa"]
-   }else if (pft$tropical[ipft] && iallom %in% 4){
+   }else if (pft$tropical[ipft] && iallom %in% 3){
       pft$qsw[ipft] = pft$SLA[ipft] * pft$rho[ipft] / sapwood.factor["bl"]
    }else{
       pft$qsw[ipft] = pft$SLA[ipft] / sapwood.ratio.orig
-   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 4)
+   }#end if (pft$tropical[ipft] && is.finite(pft$rho[ipft]) && iallom %in% 3)
    #---------------------------------------------------------------------------------------#
 }#end for (ipft in sequence(npft))
 #------------------------------------------------------------------------------------------#
 
-#------------------------------------------------------------------------------------------#
-#      Change maximum height of tropical trees to 99% of the maximum height.               #
-#------------------------------------------------------------------------------------------#
-#if (iallom %in% c(4)){
-#   for (ipft in sequence(npft)){
-#       if (pft$tropical[ipft] && (! pft$grass[ipft])){
-#          pft$hgt.max[ipft] = 0.99 * hgt.ref.trop
-#       }#end if (pft$tropical[ipft] && (! pft$grass[ipft]))
-#    }#end for (ipft in sequence(npft))
-# }#end if
-#------------------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------------------#
 #     Set the bark:wood density ratio (qrhob), and the water:biomass ratio for leaves      #
@@ -1762,7 +1750,7 @@ pft$c.bark = ( (pft$c.bark.dry + pft$qwatdry.bark * cliq) / (1. + pft$qwatdry.ba
 
 #------------------------------------------------------------------------------------------#
 #     Set bark thickness and carbon allocation to bark.  This is currently done only for   #
-# tropical trees when IALLOM=4, because all biomass pools must be corrected to ensure that #
+# tropical trees when IALLOM=3, because all biomass pools must be corrected to ensure that #
 # total aboveground biomass is consistent with the allometric equations.  This may and     #
 # should be changed in the future.                                                         #
 #                                                                                          #
@@ -1788,7 +1776,7 @@ pft$c.bark = ( (pft$c.bark.dry + pft$qwatdry.bark * cliq) / (1. + pft$qwatdry.ba
 #------------------------------------------------------------------------------------------#
 pft$b1Xs[sequence(npft)] = 0.315769481
 for (ipft in sequence(npft)){
-   skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || (iallom != 4)
+   skip = pft$grass[ipft] || pft$liana[ipft] || (! pft$tropical[ipft]) || (iallom != 3)
    if (skip){
       #------------------------------------------------------------------------------------#
       #   Set all bark variables to zero. in case this is not a tropical tree and in case  #
@@ -1847,7 +1835,7 @@ for (ipft in sequence(npft)){
       if (iallom %in% c(0,1)){
          pft$dbh.min [ipft] = exp((log(pft$hgt.min[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
          pft$dbh.crit[ipft] = exp((log(pft$hgt.max[ipft])-pft$b1Ht[ipft])/pft$b2Ht[ipft])
-      }else if (iallom %in% c(2,3,4)){
+      }else if (iallom %in% c(2,3)){
          pft$dbh.min [ipft] = ( log(   pft$hgt.ref[ipft]
                                    / ( pft$hgt.ref[ipft] - pft$hgt.min[ipft]) )
                               / pft$b1Ht[ipft] ) ^ (1.0 / pft$b2Ht[ipft])
@@ -1903,10 +1891,10 @@ for (ipft in sequence(npft)){
       if (iallom %in% c(0,1)){
          pft$b1Ca[ipft] = exp(-1.853) * exp(pft$b1Ht[ipft]) ^ 1.888
          pft$b2Ca[ipft] = pft$b2Ht[ipft] * 1.888
-      }else if (iallom %in% c(2,3)){
+      }else if (iallom %in% c(2)){
          pft$b1Ca[ipft] = exp(ncrown.area[1])
          pft$b2Ca[ipft] = ncrown.area[2]
-      }else if (iallom %in% c(4)){
+      }else if (iallom %in% c(3)){
          #---------------------------------------------------------------------------------#
          #     Allometry using the Sustainable Landscapes data.                            #
          #---------------------------------------------------------------------------------#
@@ -1953,7 +1941,7 @@ for (ipft in sequence(npft)){
          pft$b2Bl.large [ipft] = pft$b2Bl.small[ipft]
          pft$bleaf.adult[ipft] = ( pft$b1Bl.large[ipft] / C2B
                                  * pft$dbh.adult [ipft] ^ pft$b2Bl.large[ipft] )
-      }else if(iallom %in% c(3,4)){
+      }else if(iallom %in% c(3)){
          #---------------------------------------------------------------------------------#
          #    Use Lescure et al. (1983) for large trees, assume minimum leaf biomass for   #
          # mid-successional to be 20gC/plant and interpolate biomass for saplings using a  #
@@ -1991,19 +1979,13 @@ for (ipft in sequence(npft)){
                                 + log(pft$rho[ipft]) * (d2d - d1d)) * (1.0/log(dcrit))
          pft$b2Bs.large[ipft] = C2B * b2d + aux
 
-      }else if (iallom %in% c(1)){
-         #---- Based on modified Chave et al. (2001) allometry. ---------------------------#
-         pft$b1Bs.small[ipft] = C2B * exp(odead.small[1]) * pft$rho[ipft] / odead.small[3]
-         pft$b2Bs.small[ipft] = odead.small[2]
-         pft$b1Bs.large[ipft] = C2B * exp(odead.large[1]) * pft$rho[ipft] / odead.large[3]
-         pft$b2Bs.large[ipft] = odead.large[2]
-      }else if (iallom %in% c(2,3)){
+      }else if (iallom %in% c(1,2)){
          #---- Based an alternative modification of Chave et al. (2001) allometry. --------#
          pft$b1Bs.small[ipft] = C2B * exp(ndead.small[1]) * pft$rho[ipft] / ndead.small[3]
          pft$b2Bs.small[ipft] = ndead.small[2]
          pft$b1Bs.large[ipft] = C2B * exp(ndead.large[1]) * pft$rho[ipft] / ndead.large[3]
          pft$b2Bs.large[ipft] = ndead.large[2]
-      }else if (iallom %in% c(4)){
+      }else if (iallom %in% c(3)){
          #---- Based on a re-fit of the Chave et al. (2014) allometry. --------------------#
          pft$b1Bs.small[ipft] = C2B * 0.1668894 * pft$rho[ipft]
          pft$b2Bs.small[ipft] = 2.4391522
@@ -2031,7 +2013,7 @@ for (ipft in sequence(npft)){
       # R2      = 0.673                                                                    #
       # RMSE    = 2.29                                                                     #
       #------------------------------------------------------------------------------------#
-      if (iallom %in% c(4) && (! pft$grass[ipft])){
+      if (iallom %in% c(3) && (! pft$grass[ipft])){
          pft$b1Cl[ipft] = 0.29754
          pft$b2Cl[ipft] = 1.0324
       }#end if

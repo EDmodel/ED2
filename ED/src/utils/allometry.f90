@@ -4,9 +4,9 @@
 !------------------------------------------------------------------------------------------!
 module allometry
 
-implicit none
+   implicit none
 
-contains
+   contains
    !=======================================================================================!
    !=======================================================================================!
    real function h2dbh(h,ipft)
@@ -403,9 +403,7 @@ contains
 
          !----- Find the nominal crown area. ----------------------------------------------!
          select case (iallom)
-         case (0,1,2)
-            dbh2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
-         case (3,4)
+         case (3)
             !------------------------------------------------------------------------------!
             !      Force crown area to be the local LAI for small trees, to avoid the      !
             ! "bouncing" effect (crown area of small trees decreasing with size.  This     !
@@ -417,6 +415,8 @@ contains
                 dbh2ca = loclai
             end if
             !------------------------------------------------------------------------------!
+         case default
+            dbh2ca = b1Ca(ipft) * mdbh ** b2Ca(ipft)
          end select
          !---------------------------------------------------------------------------------!
       end if
@@ -727,8 +727,7 @@ contains
                               , b2WAI_large     & ! intent(in)
                               , liana_dbh_crit  ! ! intent(in)
       use rk4_coms     , only : ibranch_thermo  ! ! intent(in)
-      use ed_misc_coms , only : iallom          & ! intent(in)
-                              , igrass          ! ! intent(in)
+      use ed_misc_coms , only : igrass          ! ! intent(in)
 
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target :: cpatch
@@ -785,7 +784,6 @@ contains
 
 
          !-----Find WAI. ------------------------------------------------------------------!
-         !---------------------------------------------------------------------------------!
          if (mdbh < dbh_adult(ipft)) then
             cpatch%wai(ico) = cpatch%nplant(ico)                                           &
                             * b1WAI_small(ipft) * mdbh ** b2WAI_small(ipft)

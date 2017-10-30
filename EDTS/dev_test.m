@@ -16,7 +16,7 @@ close all;
 %     User defined variables
 %==========================================================================
 
-test_name = 'r85ghubrapid';
+test_name = '1d07ca0-mlo-7fcdbe0-v1_rapid';
 
 use_m34 = true;       % POI Manaus km34
 use_ata = true;       % POI Atacama
@@ -26,20 +26,21 @@ use_pdg = true;       % POI Pe de Gigante
 use_cax = true;       % POI Caxiuana
 use_ton = true;       % POI Tonzi (temperate)
 use_tnf = true;       % POI Tapajos National Forest
-use_gyf = true;       % POI Paracou
-use_s83 = true;       % POI Santarem km 83 (logging)
-use_prg = true;       % POI Paragominas (thousands of patches)
+use_gyf = false;       % POI Paracou
+use_s83 = false;       % POI Santarem km 83 (logging)
+use_prg = false;       % POI Paragominas (thousands of patches)
 use_pet = true;       % POI Petrolina
 use_hip = true;       % POI Petrolina (short high frequency)
 use_him = true;       % POI Manaus (short high frequency)
-use_rjg = true;       % GRIDDED centered on Rio Jaru
+use_hih = true;       % POI Manaus (short high frequency) Hybrid
+use_rjg = true;       % GRIDDED centered on Rebio Jaru
 
 
 %==========================================================================
 
 
 
-site_name  = {'Manaus km 34', ...
+site_name  = {'Manaus km 34',...
               'Atacama Desert',...
               'Santarem km 67',...
               'Harvard Forest',...
@@ -65,8 +66,8 @@ siteid     = {'m34',...
               'prg',...
               'pet'};
 
-hifr_name = {'Petrolina High Frequency','Manaus High Frequency'};
-hifrid    = {'hip','him'};
+hifr_name = {'Petrolina HF (RK4)','Manaus HF (RK4)','Manaus HF (Hybrid)'};
+hifrid    = {'hip','him','hih'};
 
 
 gridid     = {'rjg'};
@@ -79,8 +80,6 @@ addpath(strcat(pwd,'/dt_scripts/exportfig'));
 %==========================================================================
 
 %set(0,'DefaultAxesFontName','Courier 10 Pitch');
-global fasz;
-fasz = 10;
 visible = 'off';
 addpath('dt_scripts');
 testglobals;
@@ -125,9 +124,10 @@ display(sprintf('\nThe following sites will be assessed:\n'));
 
 use_site = [use_m34,use_ata,use_s67,...
             use_har,use_pdg,use_cax,...
-            use_ton,use_tnf,use_gyf,use_pet];
+            use_ton,use_tnf,use_gyf,...
+            use_s83,use_prg,use_pet];
         
-use_hifr = [use_hip,use_him];
+use_hifr = [use_hip,use_him,use_hih];
 
 use_grid = [use_rjg];
 
@@ -909,69 +909,13 @@ for is = 1:nsite
                 tmp = hdf5read(csfile,'/AGB_PY');
                 agb_c(it,:) = sum(tmp,2);
                 
-                paco_id     = hdf5read(tsfile,'/PACO_ID');
-                sipa_id     = hdf5read(tsfile,'/SIPA_ID');
-                pysi_id     = hdf5read(tsfile,'/PYSI_ID');
-                paco_n      = hdf5read(tsfile,'/PACO_N');
-                sipa_n      = hdf5read(tsfile,'/SIPA_N');
-                pysi_n      = hdf5read(tsfile,'/PYSI_N');
-                area_si     = hdf5read(tsfile,'/AREA_SI');
-                area_pa     = hdf5read(tsfile,'/AREA');
-                if(sum(paco_n)>0)
-                    pft_co      = hdf5read(tsfile,'/PFT');
-                    lai_co      = hdf5read(tsfile,'/LAI_CO');
-                end
+                tmp = hdf5read(tsfile,'/LAI_PY');
+                lai_t(it,:) = sum(tmp,2);
                 
-                isi_a = pysi_id(1);
-                isi_z = isi_a+pysi_n(1)-1;
-                for isi=isi_a:isi_z
-                    ipa_a = sipa_id(isi);
-                    ipa_z = ipa_a+sipa_n(isi)-1;
-                    for ipa=ipa_a:ipa_z
-                        
-                        if(paco_n(ipa)>0)
-                            ico_a = paco_id(ipa);
-                            ico_z = ico_a+paco_n(ipa)-1;
-                            afrac = area_pa(ipa)*area_si(isi);
-                            for ico=ico_a:ico_z
-                                ipft = pft_co(ico);
-                                lai_t(it,ipft)=lai_t(it,ipft)+lai_co(ico)*afrac;
-                            end
-                        end
-                    end
-                end
-                
-                paco_id     = hdf5read(csfile,'/PACO_ID');
-                sipa_id     = hdf5read(csfile,'/SIPA_ID');
-                pysi_id     = hdf5read(csfile,'/PYSI_ID');
-                paco_n      = hdf5read(csfile,'/PACO_N');
-                sipa_n      = hdf5read(csfile,'/SIPA_N');
-                pysi_n      = hdf5read(csfile,'/PYSI_N');
-                area_si     = hdf5read(csfile,'/AREA_SI');
-                area_pa     = hdf5read(csfile,'/AREA');
-                if(sum(paco_n)>0)
-                    pft_co      = hdf5read(csfile,'/PFT');
-                    lai_co      = hdf5read(csfile,'/LAI_CO');
-                end
-                isi_a = pysi_id(1);
-                isi_z = isi_a+pysi_n(1)-1;
-                for isi=isi_a:isi_z
-                    ipa_a = sipa_id(isi);
-                    ipa_z = ipa_a+sipa_n(isi)-1;
-                    for ipa=ipa_a:ipa_z
-                        if(paco_n(ipa)>0)
-                            ico_a = paco_id(ipa);
-                            ico_z = ico_a+paco_n(ipa)-1;
-                            afrac = area_pa(ipa)*area_si(isi);
-                            for ico=ico_a:ico_z
-                                ipft = pft_co(ico);
-                                lai_c(it,ipft)=lai_c(it,ipft)+lai_co(ico)*afrac;
-                            end
-                        end
-                    end
-                end
+                tmp = hdf5read(csfile,'/LAI_PY');
+                lai_c(it,:) = sum(tmp,2);
             end
-            
+
             pftsucc_img{is} = sprintf('%sagb_lai_pft_%s.eps',outdir,siteid{is});
             titlestr = sprintf('%s\n',site_name{is});
             
@@ -1195,31 +1139,13 @@ latex_gtab = zeros(2,ngrid);
             
             lat_gt    = double(hdf5read(tsfile,'/LATITUDE'));
             lon_gt    = double(hdf5read(tsfile,'/LONGITUDE'));
-            pysiid_gt = hdf5read(tsfile,'/PYSI_ID');
-            pysin_gt  = hdf5read(tsfile,'/PYSI_N');
-            sipaid_gt = hdf5read(tsfile,'/SIPA_ID');
-            sipan_gt  = hdf5read(tsfile,'/SIPA_N');
-            pacoid_gt = hdf5read(tsfile,'/PACO_ID');
-            pacon_gt  = hdf5read(tsfile,'/PACO_N');
-            pft_gt    = double(hdf5read(tsfile,'/PFT'));
-            areapa_gt = double(hdf5read(tsfile,'/AREA'));
-            areasi_gt = double(hdf5read(tsfile,'/AREA_SI'));
-            laico_gt  = double(hdf5read(tsfile,'/LAI_CO'));
+            lairaw_gt = double(hdf5read(tsfile,'/MMEAN_LAI_PY')); %m2/m2
             agbraw_gt = double(hdf5read(tsfile,'/AGB_PY')); %kg/m2 -> kgC/m2
             npoly_gt = length(lat_gt);
-            
+
             lat_gc    = double(hdf5read(csfile,'/LATITUDE'));
             lon_gc    = double(hdf5read(csfile,'/LONGITUDE'));
-            pysiid_gc = hdf5read(csfile,'/PYSI_ID');
-            pysin_gc  = hdf5read(csfile,'/PYSI_N');
-            sipaid_gc = hdf5read(csfile,'/SIPA_ID');
-            sipan_gc  = hdf5read(csfile,'/SIPA_N');
-            pacoid_gc = hdf5read(csfile,'/PACO_ID');
-            pacon_gc  = hdf5read(csfile,'/PACO_N');
-            pft_gc    = double(hdf5read(csfile,'/PFT'));
-            areapa_gc = double(hdf5read(csfile,'/AREA'));
-            areasi_gc = double(hdf5read(csfile,'/AREA_SI'));
-            laico_gc = double(hdf5read(csfile,'/LAI_CO'));
+            lairaw_gc = double(hdf5read(csfile,'/MMEAN_LAI_PY')); %m2/m2
             agbraw_gc = double(hdf5read(csfile,'/AGB_PY'));  %kg/m2 -> kgC/m2
             npoly_gc = length(lat_gc);
             
@@ -1227,7 +1153,7 @@ latex_gtab = zeros(2,ngrid);
                 display('YOU SCREWED UP_ THE DATA');
                 return;
             end
-            
+
             [npft,ndbh,npoly] = size(agbraw_gt);
             
             lai_gt = zeros(npoly,npft);
@@ -1236,43 +1162,11 @@ latex_gtab = zeros(2,ngrid);
             agb_gc = zeros(npoly,npft);
             
             for ipy=1:npoly
-                isi_b = pysiid_gt(ipy);
-                isi_e = isi_b + pysin_gt(ipy)-1;
-                
-                for isi=isi_b:isi_e
-                    ipa_b = sipaid_gt(isi);
-                    ipa_e = ipa_b + sipan_gt(isi)-1;
-                    
-                    for ipa=ipa_b:ipa_e
-                        ico_b = pacoid_gt(ipa);
-                        ico_e = ico_b + pacon_gt(ipa)-1;
-                        for ico=ico_b:ico_e
-                            ipft = pft_gt(ico);
-                            lai_gt(ipy,ipft) = lai_gt(ipy,ipft)+...
-                                laico_gt(ico)*areapa_gt(ipa)*areasi_gt(isi);
-                        end
-                    end
-                end
-                
-                isi_b = pysiid_gc(ipy);
-                isi_e = isi_b + pysin_gc(ipy)-1;
-                for isi=isi_b:isi_e
-                    ipa_b = sipaid_gc(isi);
-                    ipa_e = ipa_b + sipan_gc(isi)-1;
-                    for ipa=ipa_b:ipa_e
-                        ico_b = pacoid_gc(ipa);
-                        ico_e = ico_b + pacon_gc(ipa)-1;
-                        for ico=ico_b:ico_e
-                            ipft = pft_gc(ico);
-                            lai_gc(ipy,ipft) = lai_gc(ipy,ipft)+...
-                                laico_gc(ico)*areapa_gc(ipa)*areasi_gc(isi);
-                        end
-                    end
-                end
-                
                 for ipft=1:npft
                     agb_gt(ipy,ipft) = sum(agbraw_gt(ipft,:,ipy));
                     agb_gc(ipy,ipft) = sum(agbraw_gc(ipft,:,ipy));
+                    lai_gt(ipy,ipft) = sum(lairaw_gt(ipft,:,ipy));
+                    lai_gc(ipy,ipft) = sum(lairaw_gc(ipft,:,ipy));
                 end
                 
             end
@@ -1286,11 +1180,13 @@ latex_gtab = zeros(2,ngrid);
                 end
             end
             
+            agbmap_pref{ig} = sprintf('%sagbmap_%s',outdir,gridid{ig});
+            laimap_pref{ig} = sprintf('%slaimap_%s',outdir,gridid{ig});
             agbmap_img{ig} = sprintf('%sagbmap_%s.eps',outdir,gridid{ig});
             laimap_img{ig} = sprintf('%slaimap_%s.eps',outdir,gridid{ig});
             
-            plot_agbmaps(usepft,agb_gt,agb_gc,lon_gc,lat_gc,npoly,agbmap_img{ig},visible,grid_name{ig});
-            plot_laimaps(usepft,lai_gt,lai_gc,lon_gc,lat_gc,npoly,laimap_img{ig},visible,grid_name{ig});
+            plot_agbmaps(usepft,agb_gt,agb_gc,lon_gc,lat_gc,npoly,agbmap_pref{ig},visible,grid_name{ig});
+            plot_laimaps(usepft,lai_gt,lai_gc,lon_gc,lat_gc,npoly,laimap_pref{ig},visible,grid_name{ig});
             
             latex_gtab(1,ig) = mean(sum(agb_gt,2)-sum(agb_gc,2));
             latex_gtab(2,ig) = mean(sum(lai_gt,2)-sum(lai_gc,2));

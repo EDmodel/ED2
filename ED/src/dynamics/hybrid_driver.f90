@@ -635,7 +635,7 @@ module hybrid_driver
                if (gapstep) then
                   hnext = hgoal
                else
-                  fgrow = min(5.d0,1.d0+sqrt(2.d0),max(safety*errmax**pgrow,1.d0))
+                  fgrow = min(5.d0,1.d0+sqrt(2.d0),safety*errmax**pgrow)
                   hnext = max(2.d0*hmin, min(dble(dtlsm), fgrow * hgoal))
                end if
                !------------------------------------------------------------------------------!

@@ -696,12 +696,10 @@ $ED_NL
    !           0.  Original ED-2.1                                                         !
    !           1.  Baker et al. (2004), equation 2, keeping the same balive:bdead ratio    !
    !           2.  Baker et al. (2004), equation 2, keeping the same balive as in ED-2.1   !
-   !           3.  Same as 2, but using a DBH-> Root depth equation based on               !
-   !               Kenzo et al. (2009) for a secondary forest in Malaysia.  Roots will     !
-   !               be shallow, though...                                                   !
-   !           4.  Same as 2, but with an experimental root depth that makes canopy trees  !
-   !               to have root depths of 5m and grasses/seedlings at 0.5 to have root     !
-   !               depth of 0.5 m.                                                         !
+   !           3. Updated allometric and trait-based parameters for tropical PFTs.  When   !
+   !              available, parameters came from regional data sets and regional studies, !
+   !              or from local studies when regional ones were not found. Check           !
+   !              ed_params.f90 for details and references.                                !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 0
    !---------------------------------------------------------------------------------------!

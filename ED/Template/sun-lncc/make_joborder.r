@@ -224,7 +224,7 @@ default = list( run           = "unnamed"
               , ivegtdyn      = 1
               , igndvap       = 0
               , iphen         = -1
-              , iallom        = 4
+              , iallom        = 3
               , ibigleaf      = 0
               , integ.scheme  = 1
               , nsub.euler    = 50

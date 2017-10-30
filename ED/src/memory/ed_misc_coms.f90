@@ -240,10 +240,11 @@ Module ed_misc_coms
                      !      keep original ED-2.1 Bl/Bd ratio
                      ! 2 -- DBH -> AGB Tree allometry based on Baker et al. (2004)
                      !      keep original ED-2.1 Bl
-                     ! 3 -- Same as 2, root profile as in Kenzo et al. (2008)
-                     ! 4 -- Same as 2, root profile defined in a simple equation that
-                     !      puts roots at 0.5 m when the height is 0.15m, and 5.0 m when
-                     !      the height is 35.0m.
+                     ! 3 -- Updated allometric and trait-based parameters for tropical
+                     !      PFTs.  When available, parameters came from regional data
+                     !      sets and regional studies, or from local studies when regional
+                     !      ones were not found. Check ed_params.f90 for details and 
+                     !      references.
    !---------------------------------------------------------------------------------------!
 
 

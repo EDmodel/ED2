@@ -2,8 +2,9 @@ function plot_succession(dns,agb_t,agb_c,lai_t,lai_c,...
     titlestr,pftsucc_img,visible)
 
 global fasz;
-global pftname;
+global pftshort;
 global pftcolor;
+global npft;
 
 fasz_l = fasz+1;
 
@@ -17,7 +18,6 @@ dx = 0.3; dy = 0.35;
 
 % Determine which pfts are part of the game
 
-npft = size(agb_t,2);
 clear upft;
 ip=0;
 for ipft=1:npft
@@ -62,7 +62,7 @@ ph=plot(dns,agb_t(:,upft),'LineWidth',1.5);
 for ip=1:numel(upft)
   set(ph(ip),'Color',pftcolor(upft(ip),:));
 end
-lhan=legend(ax2,pftname{upft},'Location','East');
+lhan=legend(ax2,pftshort{upft},'Location','East');
 set(lhan,'Position',[bx+2*dx+3*mx 0.35 0.1 0.3],'FontSize',fasz_l)
 datetick;
 grid on;

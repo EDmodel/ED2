@@ -707,6 +707,10 @@ $ED_NL
    !               b. Balive is retuned, using a few leaf biomass allometric equations for !
    !                  a few genuses in Costa Rica.  References:                            !
    !                  Cole and Ewel (2006), and Calvo Alvarado et al. (2008).              !
+   !           3. Updated allometric and trait-based parameters for tropical PFTs.  When   !
+   !              available, parameters came from regional data sets and regional studies, !
+   !              or from local studies when regional ones were not found. Check           !
+   !              ed_params.f90 for details and references.                                !
    !---------------------------------------------------------------------------------------!
    NL%IALLOM          = 2
    !---------------------------------------------------------------------------------------!

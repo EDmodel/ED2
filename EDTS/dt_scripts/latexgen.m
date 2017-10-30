@@ -36,8 +36,9 @@ system(cmdstr);
 fid = fopen(report_texname,'a');
 
 % Title
-textinsrt = sprintf('EDM 2.2 automated verification of commit: %s',test_name);
-textinsrt = sprintf('title[%s]{%s}',test_name,textinsrt);
+test_nametex=strrep(test_name,'_','$\_$')
+textinsrt = sprintf('EDM 2.2 automated verification of commit: %s',test_nametex);
+textinsrt = sprintf('title[%s]{%s}',test_nametex,textinsrt);
 fprintf(fid,'\\%s\n',textinsrt);
 
 
