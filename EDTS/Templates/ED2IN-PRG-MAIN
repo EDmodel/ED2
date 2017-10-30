@@ -543,7 +543,7 @@ $ED_NL
    NL%LU_DATABASE       = 'edts_datasets/land_use/glu+sa2/blend-'
    NL%PLANTATION_FILE   = ''
    NL%THSUMS_DATABASE  = 'edts_datasets/ed_inputs/'
-   NL%ED_MET_DRIVER_DB = 'edts_datasets/met/mod_ds314/SHEF_NCEP_DRIVER_DS314'
+   NL%ED_MET_DRIVER_DB = 'edts_datasets/met/wfdei/paragominas/WFDEI_PARAGOMINAS_GPCC_HEADER'
    NL%SOILSTATE_DB     = ''
    NL%SOILDEPTH_DB     = ''
    !---------------------------------------------------------------------------------------!
@@ -1434,10 +1434,10 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IMETTYPE    = 1
    NL%ISHUFFLE    = 0
-   NL%METCYC1     = 1970
-   NL%METCYCF     = 2005
-   NL%IMETAVG     = 2
-   NL%IMETRAD     = 2
+   NL%METCYC1     = 1979
+   NL%METCYCF     = 2013
+   NL%IMETAVG     = 1
+   NL%IMETRAD     = 0
    NL%INITIAL_CO2 = 400.
    !---------------------------------------------------------------------------------------!
 

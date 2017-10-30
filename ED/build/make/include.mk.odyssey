@@ -86,12 +86,12 @@ ifeq ($(KIND_COMP),A)
    F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces        \
-            -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback  -static
+           -openmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -openmp  -static
    LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
                -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
                -assume byterecl -warn unused -warn uncalled -warn usage -gen-interfaces    \
-               
+               -openmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
@@ -99,40 +99,40 @@ ifeq ($(KIND_COMP),B)
    F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
            -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces       \
-            -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback  -static
+           -openmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -openmp -static
    LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
                -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
                -assume byterecl -warn unused -warn uncalled -warn usage -warn interfaces   \
-               
+               -openmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
    USE_INTERF=1
    F_OPTS= -FR -O0 -recursive  -check all -g -debug extended -debug-parameters used        \
            -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone                 \
-           -assume byterecl  -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback  -static
+           -assume byterecl -openmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -openmp -static
    LOADER_OPTS=-FR -O0 -recursive  -check all -g -debug extended -debug-parameters used    \
                -fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check -implicitnone             \
-                -assume byterecl
+               -assume byterecl -openmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
    F_OPTS= -FR -O0 -recursive -check all-fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check  \
-           -implicitnone -assume byterecl  -static
-   C_OPTS= -O0 -DLITTLE  -g -traceback  -static
+           -implicitnone -assume byterecl -openmp -static
+   C_OPTS= -O0 -DLITTLE  -g -traceback -openmp -static
    LOADER_OPTS=-FR -O0 -recursive -check all-fpe0 -no-ftz -traceback -ftrapuv -fp-stack-check  \
-               -implicitnone  -assume byterecl
+               -implicitnone -assume byterecl -openmp
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl  -static
-   C_OPTS= -O3 -DLITTLE -traceback  -static
-   F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl  -static
-   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl  
+   F_OPTS= -FR -O3 -recursive -traceback -assume byterecl -openmp -static
+   C_OPTS= -O3 -DLITTLE -traceback -openmp -static
+   F_LOWO_OPTS=-FR -O2 -recursive -traceback -assume byterecl -openmp -static
+   LOADER_OPTS=-FR -O3 -recursive -traceback -assume byterecl -openmp
    #---------------------------------------------------------------------------------------#
 endif
 #------------------------------------------------------------------------------------------#
