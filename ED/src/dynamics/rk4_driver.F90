@@ -19,8 +19,7 @@ module rk4_driver
                                         , integration_buff           ! ! intent(out)
       use ed_state_vars          , only : edtype                     & ! structure
                                         , polygontype                & ! structure
-                                        , sitetype                   & ! structure
-                                        , patchtype                  ! ! structure
+                                        , sitetype                   ! ! structure
       use met_driver_coms        , only : met_driv_state             ! ! structure
       use grid_coms              , only : nzg                        & ! intent(in)
                                         , nzs                        ! ! intent(in)
@@ -45,7 +44,6 @@ module rk4_driver
       !----- Local variables --------------------------------------------------------------!
       type(polygontype)         , pointer     :: cpoly
       type(sitetype)            , pointer     :: csite
-      type(patchtype)           , pointer     :: cpatch
       type(met_driv_state)      , pointer     :: cmet
 
       type(rk4patchtype)       , pointer      :: initp
@@ -81,12 +79,23 @@ module rk4_driver
       real                                    :: old_can_prss
       real                                    :: patch_vels
       integer                                 :: ibuff
+      integer                                 :: nthreads
+      integer                                 :: npa_thread
+      integer                                 :: ita
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: test_energy_sanity = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find out the number of threads.                                                 !
+      !------------------------------------------------------------------------------------!
+      nthreads = 1
+      !$ nthreads = omp_get_max_threads()
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -96,6 +105,12 @@ module rk4_driver
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
             cmet  => cpoly%met(isi)
+
+
+            !----- Find the number of patches per thread. ---------------------------------!
+            npa_thread = ceiling(real(csite%npatches) / real(nthreads))
+            !------------------------------------------------------------------------------!
+
 
             !------------------------------------------------------------------------------!
             !     Update the monthly rainfall.                                             !
@@ -120,23 +135,18 @@ module rk4_driver
                                    ,cgrid%lat(ipy),cgrid%cosz(ipy))
             !------------------------------------------------------------------------------!
 
-            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(      &
-            !$OMP initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,    &
-            !$OMP ak4,ak5,ak6,ak7,cpatch,patch_vels,        &
-            !$OMP old_can_co2,old_can_rhos,old_can_temp,    &
-            !$OMP old_can_prss,old_can_enthalpy,            &
-            !$OMP old_can_shv,ecurr_netrad,                 &
-            !$OMP wcurr_loss2atm,ecurr_loss2atm,            &
-            !$OMP co2curr_loss2atm,                         &
-            !$OMP wcurr_loss2drainage,ecurr_loss2drainage,  &
-            !$OMP wcurr_loss2runoff,ecurr_loss2runoff,nsteps )
-
-            patchloop: do ipa = 1,csite%npatches
-               cpatch => csite%patch(ipa)
-
-               ibuff = 1
-               !$ ibuff = OMP_get_thread_num()+1
-
+            !------------------------------------------------------------------------------!
+            !  MLO - Changed the parallel do loop to account for cases in which the number !
+            !        of threads is less than the number of patches.                        !
+            !------------------------------------------------------------------------------!
+            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                     &
+            !$OMP  ipa,ita,initp,yscal,y,dydx,yerr,ytemp,ak2,ak3,ak4,ak5,ak6,ak7           &
+            !$OMP ,patch_vels,old_can_co2,old_can_rhos,old_can_temp,old_can_prss           &
+            !$OMP ,old_can_enthalpy,old_can_shv,ecurr_netrad,wcurr_loss2atm,ecurr_loss2atm &
+            !$OMP ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage                &
+            !$OMP ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps )
+            threadloop: do ibuff=1,nthreads
+               !------ Update pointers. ---------------------------------------------------!
                initp => integration_buff(ibuff)%initp
                yscal => integration_buff(ibuff)%yscal
                y     => integration_buff(ibuff)%y
@@ -149,139 +159,165 @@ module rk4_driver
                ak5   => integration_buff(ibuff)%ak5
                ak6   => integration_buff(ibuff)%ak6
                ak7   => integration_buff(ibuff)%ak7
-
-
-
-               !----- Reset all buffers to zero, as a safety measure. ---------------------!
-               call zero_rk4_patch(initp)
-               call zero_rk4_patch(yscal)
-               call zero_rk4_patch(y)
-               call zero_rk4_patch(dydx)
-               call zero_rk4_patch(yerr)
-               call zero_rk4_patch(ytemp)
-               call zero_rk4_patch(ak2)
-               call zero_rk4_patch(ak3)
-               call zero_rk4_patch(ak4)
-               call zero_rk4_patch(ak5)
-               call zero_rk4_patch(ak6)
-               call zero_rk4_patch(ak7)
-               call zero_rk4_cohort(initp)
-               call zero_rk4_cohort(yscal)
-               call zero_rk4_cohort(y)
-               call zero_rk4_cohort(dydx)
-               call zero_rk4_cohort(yerr)
-               call zero_rk4_cohort(ytemp)
-               call zero_rk4_cohort(ak2)
-               call zero_rk4_cohort(ak3)
-               call zero_rk4_cohort(ak4)
-               call zero_rk4_cohort(ak5)
-               call zero_rk4_cohort(ak6)
-               call zero_rk4_cohort(ak7)
-
-               !----- Get velocity for aerodynamic resistance. ----------------------------!
-               if (csite%can_theta(ipa) < cmet%atm_theta) then
-                  patch_vels = cmet%vels_stab
-               else
-                  patch_vels = cmet%vels_unstab
-               end if
-               !---------------------------------------------------------------------------!
-
-               !---------------------------------------------------------------------------!
-               !    Update roughness and canopy depth.                                     !
-               !---------------------------------------------------------------------------!
-               call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                        &
-                                             ,cpoly%ntext_soil(:,isi))
-               call update_patch_derived_props(csite,ipa)
-               !---------------------------------------------------------------------------!
-
-
-               !----- Save the previous thermodynamic state. ------------------------------!
-               old_can_shv      = csite%can_shv  (ipa)
-               old_can_co2      = csite%can_co2  (ipa)
-               old_can_rhos     = csite%can_rhos (ipa)
-               old_can_temp     = csite%can_temp (ipa)
-               old_can_prss     = csite%can_prss (ipa)
-               old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa),.true.)
-               !---------------------------------------------------------------------------!
-
-               !----- Compute current storage terms. --------------------------------------!
-               call update_budget(csite,cpoly%lsl(isi),ipa)
                !---------------------------------------------------------------------------!
 
 
 
                !---------------------------------------------------------------------------!
-               !      Test whether temperature and energy are reasonable.                  !
+               !     Loop through tasks.  We don't assign contiguous blocks of patches to  !
+               ! each thread because patches are sorted by age and older patches have more !
+               ! cohorts and are likely to be slower.                                      !
                !---------------------------------------------------------------------------!
-               if (test_energy_sanity) then
-                  call sanity_check_veg_energy(csite,ipa)
-               end if
-               !---------------------------------------------------------------------------!
+               taskloop: do ita=1,npa_thread
+                  !------------------------------------------------------------------------!
+                  !     Find out which patch to solve.  In case the number of patches      !
+                  ! is not a perfect multiple of number of threads, some patch numbers     !
+                  ! will exceed csite%npatches in the last iteration, in which we can      !
+                  ! terminate the loop.                                                    !
+                  !------------------------------------------------------------------------!
+                  ipa = ibuff + (ita - 1) * nthreads
+                  if (ipa > csite%npatches) exit taskloop
+                  !------------------------------------------------------------------------!
 
-               !---------------------------------------------------------------------------!
-               !     Set up the integration patch.                                         !
-               !---------------------------------------------------------------------------!
-               call copy_patch_init(csite,ipa,initp,patch_vels)
-               !---------------------------------------------------------------------------!
+                  !----- Reset all buffers to zero, as a safety measure. ------------------!
+                  call zero_rk4_patch(initp)
+                  call zero_rk4_patch(yscal)
+                  call zero_rk4_patch(y)
+                  call zero_rk4_patch(dydx)
+                  call zero_rk4_patch(yerr)
+                  call zero_rk4_patch(ytemp)
+                  call zero_rk4_patch(ak2)
+                  call zero_rk4_patch(ak3)
+                  call zero_rk4_patch(ak4)
+                  call zero_rk4_patch(ak5)
+                  call zero_rk4_patch(ak6)
+                  call zero_rk4_patch(ak7)
+                  call zero_rk4_cohort(initp)
+                  call zero_rk4_cohort(yscal)
+                  call zero_rk4_cohort(y)
+                  call zero_rk4_cohort(dydx)
+                  call zero_rk4_cohort(yerr)
+                  call zero_rk4_cohort(ytemp)
+                  call zero_rk4_cohort(ak2)
+                  call zero_rk4_cohort(ak3)
+                  call zero_rk4_cohort(ak4)
+                  call zero_rk4_cohort(ak5)
+                  call zero_rk4_cohort(ak6)
+                  call zero_rk4_cohort(ak7)
+                  !------------------------------------------------------------------------!
+
+                  !----- Get velocity for aerodynamic resistance. -------------------------!
+                  if (csite%can_theta(ipa) < cmet%atm_theta) then
+                     patch_vels = cmet%vels_stab
+                  else
+                     patch_vels = cmet%vels_unstab
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !    Update roughness and canopy depth.                                  !
+                  !------------------------------------------------------------------------!
+                  call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                     &
+                                                ,cpoly%ntext_soil(:,isi))
+                  call update_patch_derived_props(csite,ipa)
+                  !------------------------------------------------------------------------!
 
 
-               !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%ntext_soil(:,isi)       &
-                                         ,cpoly%leaf_aging_factor(:,isi)                   &
-                                         ,cpoly%green_leaf_factor(:,isi))
-               !---------------------------------------------------------------------------!
+                  !----- Save the previous thermodynamic state. ---------------------------!
+                  old_can_shv      = csite%can_shv  (ipa)
+                  old_can_co2      = csite%can_co2  (ipa)
+                  old_can_rhos     = csite%can_rhos (ipa)
+                  old_can_temp     = csite%can_temp (ipa)
+                  old_can_prss     = csite%can_prss (ipa)
+                  old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa),csite%can_shv(ipa)    &
+                                                ,.true.)
+                  !------------------------------------------------------------------------!
+
+                  !----- Compute current storage terms. -----------------------------------!
+                  call update_budget(csite,cpoly%lsl(isi),ipa)
+                  !------------------------------------------------------------------------!
 
 
-               !----- Compute root and heterotrophic respiration. -------------------------!
-               call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
-               !---------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !      Test whether temperature and energy are reasonable.               !
+                  !------------------------------------------------------------------------!
+                  if (test_energy_sanity) then
+                     call sanity_check_veg_energy(csite,ipa)
+                  end if
+                  !------------------------------------------------------------------------!
+
+                  !------------------------------------------------------------------------!
+                  !     Set up the integration patch.                                      !
+                  !------------------------------------------------------------------------!
+                  call copy_patch_init(csite,ipa,initp,patch_vels)
+                  !------------------------------------------------------------------------!
 
 
-               !---------------------------------------------------------------------------!
-               !     Set up the integration patch.                                         !
-               !---------------------------------------------------------------------------!
-               call copy_patch_init_carbon(csite,ipa,initp)
-               !---------------------------------------------------------------------------!
+                  !----- Get photosynthesis, stomatal conductance, and transpiration. -----!
+                  call canopy_photosynthesis(csite,cmet,nzg,ipa,cpoly%ntext_soil(:,isi)    &
+                                            ,cpoly%leaf_aging_factor(:,isi)                &
+                                            ,cpoly%green_leaf_factor(:,isi))
+                  !------------------------------------------------------------------------!
 
 
-               !---------------------------------------------------------------------------!
-               !    This is the driver for the integration process...                      !
-               !---------------------------------------------------------------------------!
-               call integrate_patch_rk4(csite,initp,ipa,isi                                &
-                                       ,cpoly%nighttime(isi),wcurr_loss2atm                &
-                                       ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm       &
-                                       ,wcurr_loss2drainage,ecurr_loss2drainage            &
-                                       ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
-               !---------------------------------------------------------------------------!
+                  !----- Compute root and heterotrophic respiration. ----------------------!
+                  call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
+                  !------------------------------------------------------------------------!
 
 
-               !----- Add the number of steps into the step counter. ----------------------!
-               !----- workload accumulation is order-independent, so this can stay shared
-               cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
-               !---------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
+                  !     Set up the integration patch.                                      !
+                  !------------------------------------------------------------------------!
+                  call copy_patch_init_carbon(csite,ipa,initp)
+                  !------------------------------------------------------------------------!
 
 
-               !---------------------------------------------------------------------------!
-               !    Update the minimum monthly temperature, based on canopy temperature.   !
-               !---------------------------------------------------------------------------!
-               if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
-                  cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
-               end if
-               !---------------------------------------------------------------------------!
+                  !------------------------------------------------------------------------!
+                  !    This is the driver for the integration process...                   !
+                  !------------------------------------------------------------------------!
+                  call integrate_patch_rk4(csite,initp,ipa,isi                             &
+                                          ,cpoly%nighttime(isi),wcurr_loss2atm             &
+                                          ,ecurr_netrad,ecurr_loss2atm,co2curr_loss2atm    &
+                                          ,wcurr_loss2drainage,ecurr_loss2drainage         &
+                                          ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
+                  !------------------------------------------------------------------------!
 
 
+                  !------------------------------------------------------------------------!
+                  !     Add the number of steps into the step counter. Workload            !
+                  ! accumulation is order-independent, so this can stay shared.            !
+                  !------------------------------------------------------------------------!
+                  cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !   Update the minimum monthly temperature, based on canopy temperature. !
+                  !------------------------------------------------------------------------!
+                  if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
+                     cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
+                  end if
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Compute the residuals.                                             !
+                  !------------------------------------------------------------------------!
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa        &
+                                     ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm           &
+                                     ,co2curr_loss2atm,wcurr_loss2drainage                 &
+                                     ,ecurr_loss2drainage,wcurr_loss2runoff                &
+                                     ,ecurr_loss2runoff,cpoly%area(isi)                    &
+                                     ,cgrid%cbudget_nep(ipy),old_can_enthalpy              &
+                                     ,old_can_shv,old_can_co2,old_can_rhos,old_can_prss)
+                  !------------------------------------------------------------------------!
+
+               end do taskloop
                !---------------------------------------------------------------------------!
-               !     Compute the residuals.                                                !
-               !---------------------------------------------------------------------------!
-               call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa           &
-                                  ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm              &
-                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
-                                  ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
-                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_enthalpy &
-                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_prss)
-               !---------------------------------------------------------------------------!
-            end do patchloop
+            end do threadloop
             !$OMP END PARALLEL DO
+            !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
          end do siteloop

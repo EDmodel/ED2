@@ -16,7 +16,7 @@ close all;
 %     User defined variables
 %==========================================================================
 
-test_name = '1d07ca0-mlo-7fcdbe0-v1_rapid';
+test_name = '1d07ca0-mlo-ae1e92c-v1_rapid';
 
 use_m34 = true;       % POI Manaus km34
 use_ata = true;       % POI Atacama
@@ -26,9 +26,9 @@ use_pdg = true;       % POI Pe de Gigante
 use_cax = true;       % POI Caxiuana
 use_ton = true;       % POI Tonzi (temperate)
 use_tnf = true;       % POI Tapajos National Forest
-use_gyf = false;       % POI Paracou
-use_s83 = false;       % POI Santarem km 83 (logging)
-use_prg = false;       % POI Paragominas (thousands of patches)
+use_gyf = true;       % POI Paracou
+use_s83 = true;       % POI Santarem km 83 (logging)
+use_prg = true;       % POI Paragominas (thousands of patches)
 use_pet = true;       % POI Petrolina
 use_hip = true;       % POI Petrolina (short high frequency)
 use_him = true;       % POI Manaus (short high frequency)
@@ -76,6 +76,7 @@ grid_name  = {'12x12 Offline Grid - Rebio Jaru'};
 addpath(strcat(pwd,'/dt_scripts'));
 addpath(strcat(pwd,'/dt_scripts/cbfreeze'));
 addpath(strcat(pwd,'/dt_scripts/exportfig'));
+
 
 %==========================================================================
 
@@ -916,11 +917,12 @@ for is = 1:nsite
                 lai_c(it,:) = sum(tmp,2);
             end
 
-            pftsucc_img{is} = sprintf('%sagb_lai_pft_%s.eps',outdir,siteid{is});
+            pftsucc_pref{is} = sprintf('%sagb_lai_pft_%s',outdir,siteid{is});
+            pftsucc_img{is} = sprintf('%s.eps',pftsucc_pref{is});
             titlestr = sprintf('%s\n',site_name{is});
             
             plot_succession(dns,agb_t,agb_c,lai_t,lai_c,titlestr, ...
-                pftsucc_img{is},visible)
+                pftsucc_pref{is},visible)
             
             pftsucc_plt(is)=1;
         else

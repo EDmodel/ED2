@@ -41,7 +41,7 @@ module hybrid_driver
                                       , copy_patch_init_carbon     & ! subroutine
                                       , sanity_check_veg_energy    ! ! subroutine
 
-   !$  use omp_lib
+     !$  use omp_lib
 
      implicit none
      !----- Arguments ---------------------------------------------------------------------!
@@ -87,11 +87,21 @@ module hybrid_driver
      real                                   :: wtime0
      real(kind=8)                           :: hbeg
      integer                                :: ibuff
+     integer                                :: nthreads
+     integer                                :: npa_thread
+     integer                                :: ita
      !----- Local constants. -----------------------------------------------!
      logical                  , parameter   :: test_energy_sanity = .false.
      !----- External functions. --------------------------------------------!
      real, external                         :: walltime
      !----------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Find out the number of threads.                                                 !
+      !------------------------------------------------------------------------------------!
+      nthreads = 1
+      !$ nthreads = omp_get_max_threads()
+      !------------------------------------------------------------------------------------!
 
      polyloop: do ipy = 1,cgrid%npolygons
         cpoly => cgrid%polygon(ipy)
@@ -101,6 +111,10 @@ module hybrid_driver
         siteloop: do isi = 1,cpoly%nsites
            csite => cpoly%site(isi)
            cmet  => cpoly%met(isi)
+
+           !----- Find the number of patches per thread. ---------------------------------!
+           npa_thread = ceiling(real(csite%npatches) / real(nthreads))
+           !------------------------------------------------------------------------------!
 
            !---------------------------------------------------------------------!
            !     Update the monthly rainfall.                                    !
@@ -125,8 +139,13 @@ module hybrid_driver
 
 
 
+
+           !------------------------------------------------------------------------------!
+           !  MLO - Changed the parallel do loop to account for cases in which the number !
+           !        of threads is less than the number of patches.                        !
+           !------------------------------------------------------------------------------!
            !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE( &
-           !$OMP initp,ytemp,dinitp,yprev,hbeg,nsteps,ibuff,&
+           !$OMP ita,ipa,initp,ytemp,dinitp,yprev,hbeg,nsteps,&
            !$OMP patch_vels,old_can_shv,                    &
            !$OMP old_can_co2,old_can_rhos,old_can_temp,     &
            !$OMP old_can_prss,old_can_enthalpy,             &
@@ -134,180 +153,193 @@ module hybrid_driver
            !$OMP co2curr_loss2atm,wcurr_loss2drainage,      &
            !$OMP ecurr_loss2drainage,wcurr_loss2runoff,     &
            !$OMP ecurr_loss2runoff,cpatch)
-
-           patchloop: do ipa = 1,csite%npatches
-              cpatch => csite%patch(ipa)
-
-              ibuff = 1
-              !$ ibuff = OMP_get_thread_num()+1
-
+           threadloop: do ibuff=1,nthreads
               initp => integration_buff(ibuff)%initp
               ytemp => integration_buff(ibuff)%ytemp
               dinitp => integration_buff(ibuff)%dinitp
               yprev  => integration_buff(ibuff)%yprev
 
-              !----- Reset all buffers to zero, as a safety measure. ------------!
-              call zero_rk4_patch(initp)
-              call zero_rk4_patch(ytemp)
-              call zero_rk4_patch(dinitp)
-              call zero_bdf2_patch(yprev)
-
-              call zero_rk4_cohort(initp)
-              call zero_rk4_cohort(ytemp)
-              call zero_rk4_cohort(dinitp)
-
-              !----- Get velocity for aerodynamic resistance. -------------------!
-              if (csite%can_theta(ipa) < cmet%atm_theta) then
-                 patch_vels = cmet%vels_stab
-                 cmet%vels  = cmet%vels_stab
-              else
-                 patch_vels = cmet%vels_unstab
-                 cmet%vels  = cmet%vels_unstab
-              end if
-
-              !------------------------------------------------------------------!
-
-              !------------------------------------------------------------------!
-              !    Update roughness and canopy depth.                            !
-              !------------------------------------------------------------------!
-              call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,&
-                   cpoly%ntext_soil(:,isi))
-              call update_patch_derived_props(csite,ipa)
-              !------------------------------------------------------------------!
-
-              !----- Save the previous thermodynamic state. ---------------------!
-              old_can_shv      = csite%can_shv(ipa)
-              old_can_co2      = csite%can_co2(ipa)
-              old_can_rhos     = csite%can_rhos(ipa)
-              old_can_temp     = csite%can_temp(ipa)
-              old_can_prss     = csite%can_prss (ipa)
-              old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
-                                            ,csite%can_shv(ipa),.true.)
-              !------------------------------------------------------------------!
 
 
-              !----- Compute current storage terms. -----------------------------!
-              call update_budget(csite,cpoly%lsl(isi),ipa)
-              !------------------------------------------------------------------!
+              !---------------------------------------------------------------------------!
+              !     Loop through tasks.  We don't assign contiguous blocks of patches to  !
+              ! each thread because patches are sorted by age and older patches have more !
+              ! cohorts and are likely to be slower.                                      !
+              !---------------------------------------------------------------------------!
+              taskloop: do ita=1,npa_thread
+                 !------------------------------------------------------------------------!
+                 !     Find out which patch to solve.  In case the number of patches      !
+                 ! is not a perfect multiple of number of threads, some patch numbers     !
+                 ! will exceed csite%npatches in the last iteration, in which we can      !
+                 ! terminate the loop.                                                    !
+                 !------------------------------------------------------------------------!
+                 ipa = ibuff + (ita - 1) * nthreads
+                 if (ipa > csite%npatches) exit taskloop
+                 !------------------------------------------------------------------------!
+
+                 !----- Reset all buffers to zero, as a safety measure. ------------!
+                 call zero_rk4_patch(initp)
+                 call zero_rk4_patch(ytemp)
+                 call zero_rk4_patch(dinitp)
+                 call zero_bdf2_patch(yprev)
+                 call zero_rk4_cohort(initp)
+                 call zero_rk4_cohort(ytemp)
+                 call zero_rk4_cohort(dinitp)
+
+                 !----- Get velocity for aerodynamic resistance. -------------------!
+                 if (csite%can_theta(ipa) < cmet%atm_theta) then
+                    patch_vels = cmet%vels_stab
+                    cmet%vels  = cmet%vels_stab
+                 else
+                    patch_vels = cmet%vels_unstab
+                    cmet%vels  = cmet%vels_unstab
+                 end if
+
+                 !------------------------------------------------------------------!
+
+                 !------------------------------------------------------------------!
+                 !    Update roughness and canopy depth.                            !
+                 !------------------------------------------------------------------!
+                 call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,&
+                      cpoly%ntext_soil(:,isi))
+                 call update_patch_derived_props(csite,ipa)
+                 !------------------------------------------------------------------!
+
+                 !----- Save the previous thermodynamic state. ---------------------!
+                 old_can_shv      = csite%can_shv(ipa)
+                 old_can_co2      = csite%can_co2(ipa)
+                 old_can_rhos     = csite%can_rhos(ipa)
+                 old_can_temp     = csite%can_temp(ipa)
+                 old_can_prss     = csite%can_prss (ipa)
+                 old_can_enthalpy = tq2enthalpy(csite%can_temp(ipa)                 &
+                                               ,csite%can_shv(ipa),.true.)
+                 !------------------------------------------------------------------!
 
 
-
-              !------------------------------------------------------------------!
-              !      Test whether temperature and energy are reasonable.         !
-              !------------------------------------------------------------------!
-              if (test_energy_sanity) then
-                 call sanity_check_veg_energy(csite,ipa)
-              end if
-              !------------------------------------------------------------------!
-
-
-
-              !------------------------------------------------------------------!
-              !     Set up the integration patch.                                !
-              !------------------------------------------------------------------!
-              call copy_patch_init(csite,ipa,initp,patch_vels)
-
-              !------------------------------------------------------------------!
-              !     Set up the buffer for the previous step's leaf temperature   !
-              !------------------------------------------------------------------!
-              call copy_bdf2_prev(csite,ipa,yprev)
-
-              !----- Get photosynthesis, stomatal conductance,
-              !                                    and transpiration. -----------!
-              call canopy_photosynthesis(csite,cmet,nzg,ipa,                     &
-                   cpoly%ntext_soil(:,isi),cpoly%leaf_aging_factor(:,isi),       &
-                   cpoly%green_leaf_factor(:,isi))
-
-               !----- Compute root and heterotrophic respiration. ----------------!
-              call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
-
-              !------------------------------------------------------------------!
-              ! Set up the remaining, carbon-dependent variables to the buffer.  !
-              !------------------------------------------------------------------!
-              call copy_patch_init_carbon(csite,ipa,initp)
-
-              !------------------------------------------------------------------!
-              !  Perform the forward and backward step.  It is possible this will!
-              !  be done over a series of sub-steps.  1)derivs,2)forward,3)back  !
-              !  4) check stability and error 5) repeat as shorter or continue   !
-              !------------------------------------------------------------------!
-   !            call integrate_patch_hybrid(csite,                                 &
-   !                 integration_buff(ibuff)%yprev,integration_buff(ibuff)%initp,                &
-   !                 integration_buff(ibuff)%dinitp,integration_buff(ibuff)%ytemp,               &
-   !                 ipa,wcurr_loss2atm,                                           &
-   !                 ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,          &
-   !                 ecurr_loss2drainage,wcurr_loss2runoff,                        &
-   !                 ecurr_loss2runoff,ecurr_netrad,nsteps)
+                 !----- Compute current storage terms. -----------------------------!
+                 call update_budget(csite,cpoly%lsl(isi),ipa)
+                 !------------------------------------------------------------------!
 
 
 
-
-               !--------------------------------------------------------------------------!
-               ! Initial step size.  Experience has shown that giving this too large a    !
-               ! value causes the integrator to fail (e.g., soil layers become            !
-               ! supersaturated).                                                         !
-               !--------------------------------------------------------------------------!
-               hbeg = dble(csite%htry(ipa))
-
-               !--------------------------------------------------------------------------!
-               ! Zero the canopy-atmosphere flux values.  These values are updated        !
-               ! every dtlsm, so they must be zeroed at each call.                        !
-               !--------------------------------------------------------------------------!
-               initp%upwp = 0.d0
-               initp%tpwp = 0.d0
-               initp%qpwp = 0.d0
-               initp%cpwp = 0.d0
-               initp%wpwp = 0.d0
-
-               !----- Go into the ODE integrator using Euler. ----------------------------!
-
-               call hybrid_integ(hbeg,csite,yprev,initp,dinitp,                         &
-                    ytemp,ipa,isi,nsteps)
-
-               !--------------------------------------------------------------------------!
-               !  Normalize canopy-atmosphere flux values.  These values are updated ever !
-               ! dtlsm, so they must be normalized every time.                            !
-               !--------------------------------------------------------------------------!
-               initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
-               initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
-               initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
-               initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
-               initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
-
-               !--------------------------------------------------------------------------!
-               ! Move the state variables from the integrated patch to the model patch.   !
-               !--------------------------------------------------------------------------!
-               call initp2modelp(tend-tbeg,initp,csite,ipa,cpoly%nighttime(isi)           &
-                                ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm               &
-                                ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
-                                ,wcurr_loss2runoff,ecurr_loss2runoff)
+                 !------------------------------------------------------------------!
+                 !      Test whether temperature and energy are reasonable.         !
+                 !------------------------------------------------------------------!
+                 if (test_energy_sanity) then
+                    call sanity_check_veg_energy(csite,ipa)
+                 end if
+                 !------------------------------------------------------------------!
 
 
-               !----- Add the number of steps into the step counter. -------------!
-               cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
 
-               !------------------------------------------------------------------!
-               !    Update the minimum monthly temperature,                       !
-               !    based on canopy temperature.                                  !
-               !------------------------------------------------------------------!
-               if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
-                  cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
-               end if
+                 !------------------------------------------------------------------!
+                 !     Set up the integration patch.                                !
+                 !------------------------------------------------------------------!
+                 call copy_patch_init(csite,ipa,initp,patch_vels)
 
-               !------------------------------------------------------------------!
-               !     Compute the residuals.                                       !
-               !------------------------------------------------------------------!
+                 !------------------------------------------------------------------!
+                 !     Set up the buffer for the previous step's leaf temperature   !
+                 !------------------------------------------------------------------!
+                 call copy_bdf2_prev(csite,ipa,yprev)
 
-               call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa       &
-                    ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
-                    ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
-                    ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
-                    ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
-                    ,old_can_co2,old_can_rhos,old_can_prss)
+                 !----- Get photosynthesis, stomatal conductance,
+                 !                                    and transpiration. -----------!
+                 call canopy_photosynthesis(csite,cmet,nzg,ipa,                     &
+                      cpoly%ntext_soil(:,isi),cpoly%leaf_aging_factor(:,isi),       &
+                      cpoly%green_leaf_factor(:,isi))
 
-            end do patchloop
+                  !----- Compute root and heterotrophic respiration. ----------------!
+                 call soil_respiration_driver(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
 
+                 !------------------------------------------------------------------!
+                 ! Set up the remaining, carbon-dependent variables to the buffer.  !
+                 !------------------------------------------------------------------!
+                 call copy_patch_init_carbon(csite,ipa,initp)
+
+                 !------------------------------------------------------------------!
+                 !  Perform the forward and backward step.  It is possible this will!
+                 !  be done over a series of sub-steps.  1)derivs,2)forward,3)back  !
+                 !  4) check stability and error 5) repeat as shorter or continue   !
+                 !------------------------------------------------------------------!
+   !               call integrate_patch_hybrid(csite,                                 &
+   !                    integration_buff(ibuff)%yprev,integration_buff(ibuff)%initp,             &
+   !                    integration_buff(ibuff)%dinitp,integration_buff(ibuff)%ytemp,            &
+   !                    ipa,wcurr_loss2atm,                                           &
+   !                    ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage,          &
+   !                    ecurr_loss2drainage,wcurr_loss2runoff,                        &
+   !                    ecurr_loss2runoff,ecurr_netrad,nsteps)
+
+
+
+
+                  !--------------------------------------------------------------------------!
+                  ! Initial step size.  Experience has shown that giving this too large a    !
+                  ! value causes the integrator to fail (e.g., soil layers become            !
+                  ! supersaturated).                                                         !
+                  !--------------------------------------------------------------------------!
+                  hbeg = dble(csite%htry(ipa))
+
+                  !--------------------------------------------------------------------------!
+                  ! Zero the canopy-atmosphere flux values.  These values are updated        !
+                  ! every dtlsm, so they must be zeroed at each call.                        !
+                  !--------------------------------------------------------------------------!
+                  initp%upwp = 0.d0
+                  initp%tpwp = 0.d0
+                  initp%qpwp = 0.d0
+                  initp%cpwp = 0.d0
+                  initp%wpwp = 0.d0
+
+                  !----- Go into the ODE integrator using Euler. ----------------------------!
+
+                  call hybrid_integ(hbeg,csite,yprev,initp,dinitp,                         &
+                       ytemp,ipa,isi,nsteps)
+
+                  !--------------------------------------------------------------------------!
+                  !  Normalize canopy-atmosphere flux values.  These values are updated ever !
+                  ! dtlsm, so they must be normalized every time.                            !
+                  !--------------------------------------------------------------------------!
+                  initp%upwp = initp%can_rhos * initp%upwp * dtrk4i
+                  initp%tpwp = initp%can_rhos * initp%tpwp * dtrk4i
+                  initp%qpwp = initp%can_rhos * initp%qpwp * dtrk4i
+                  initp%cpwp = initp%can_rhos * initp%cpwp * dtrk4i
+                  initp%wpwp = initp%can_rhos * initp%wpwp * dtrk4i
+
+                  !--------------------------------------------------------------------------!
+                  ! Move the state variables from the integrated patch to the model patch.   !
+                  !--------------------------------------------------------------------------!
+                  call initp2modelp(tend-tbeg,initp,csite,ipa,cpoly%nighttime(isi)           &
+                                   ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm               &
+                                   ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
+                                   ,wcurr_loss2runoff,ecurr_loss2runoff)
+
+
+                  !----- Add the number of steps into the step counter. -------------!
+                  cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
+
+                  !------------------------------------------------------------------!
+                  !    Update the minimum monthly temperature,                       !
+                  !    based on canopy temperature.                                  !
+                  !------------------------------------------------------------------!
+                  if (cpoly%site(isi)%can_temp(ipa) < cpoly%min_monthly_temp(isi)) then
+                     cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
+                  end if
+
+                  !------------------------------------------------------------------!
+                  !     Compute the residuals.                                       !
+                  !------------------------------------------------------------------!
+
+                  call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa       &
+                       ,wcurr_loss2atm,ecurr_netrad,ecurr_loss2atm                 &
+                       ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage   &
+                       ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)        &
+                       ,cgrid%cbudget_nep(ipy),old_can_enthalpy,old_can_shv        &
+                       ,old_can_co2,old_can_rhos,old_can_prss)
+               end do taskloop
+               !---------------------------------------------------------------------------!
+            end do threadloop
             !$OMP END PARALLEL DO
+            !------------------------------------------------------------------------------!
+
 
 
             !-------------------------------------------------------------------!

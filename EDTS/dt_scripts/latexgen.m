@@ -130,6 +130,7 @@ fprintf(fid,'\\section{Test Summary}\n');
 fprintf(fid,'\\normalsize\n');
 fprintf(fid,'\\subsection{Debug Completion Test}\n');
 verifications = sprintf('\n');
+verifications = [verifications,sprintf('\\begin{scriptsize}\n')];
 verifications = [verifications,sprintf('The following simulations resulted in completion or failure: \\\\[0.5cm] \n\n')];
 
 verifications = [verifications,sprintf('RUN~ \\quad DBUG \\quad TEST \\quad  MAIN \\\\ \n\n')];
@@ -192,6 +193,7 @@ for ig=1:ngrid
 
 
 end
+verifications = [verifications,sprintf('\\end{scriptsize}\n')];
 
 
 fprintf(fid,'\\frame{\n%s\n}\n',verifications);
@@ -372,10 +374,10 @@ if ngrid>0
             fprintf(fid,'\\frame{\n AT LEAST ONE SIMULATION DID NOT COMPLETE \\\\ COMPARATIVE ANALYSIS IMPOSSIBLE\n}\n');
         else
             % AGB Maps
-            fprintf(fid,'\\frame{\\includegraphics[width=0.99\\textwidth]{%s}}\n',agbmap_img{ig});
+            fprintf(fid,'\\frame{\\includegraphics[height=0.92\\textheight]{%s}}\n',agbmap_img{ig});
             
             % LAI Maps
-            fprintf(fid,'\\frame{\\includegraphics[width=0.99\\textwidth]{%s}}\n',laimap_img{ig});
+            fprintf(fid,'\\frame{\\includegraphics[width=0.92\\textheight]{%s}}\n',laimap_img{ig});
             
         end
     end

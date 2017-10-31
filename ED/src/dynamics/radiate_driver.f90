@@ -46,6 +46,18 @@ module radiate_driver
       real(kind=8)                :: par_beam_norm
       real(kind=8)                :: par_diff_norm
       integer                     :: ibuff
+      integer                     :: nthreads
+      integer                     :: npa_thread
+      integer                     :: ita
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Find out the number of threads.                                                 !
+      !------------------------------------------------------------------------------------!
+      nthreads = 1
+      !$ nthreads = omp_get_max_threads()
       !------------------------------------------------------------------------------------!
 
 
@@ -56,7 +68,7 @@ module radiate_driver
 
          polyloop: do ipy = 1,cgrid%npolygons
 
-            !----- Find the solar zenith angle [cosz] --------------------------------------!
+            !----- Find the solar zenith angle [cosz] -------------------------------------!
             cgrid%cosz(ipy) = ed_zen(cgrid%lon(ipy),cgrid%lat(ipy),current_time)
             !------------------------------------------------------------------------------!
 
@@ -65,6 +77,11 @@ module radiate_driver
             siteloop: do isi = 1,cpoly%nsites
 
                csite => cpoly%site(isi)
+
+
+               !----- Find the number of patches per thread. ------------------------------!
+               npa_thread = ceiling(real(csite%npatches) / real(nthreads))
+               !---------------------------------------------------------------------------!
 
                !---------------------------------------------------------------------------!
                !     Update angle of incidence.                                            !
@@ -113,110 +130,127 @@ module radiate_driver
                !    MLO. Changed this part of the code so it also works with the hori-     !
                ! zontal shading.  Essentially I took the loop through patches out of       !
                ! sfcrad_ed and scale_ed_radiation, so each patch could use different       !
-               ! normalisation factors.                                                    !
+               ! normalisation factors.  Also, I changed the parallel do loop to account   !
+               ! for cases in which the number of threads is less than the number of       !
+               ! patches.                                                                  !
                !---------------------------------------------------------------------------!
                !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(                                  &
-               !$OMP  ibuff,par_beam_norm,par_diff_norm,nir_beam_norm,nir_diff_norm        &
+               !$OMP  ipa,ita,par_beam_norm,par_diff_norm,nir_beam_norm,nir_diff_norm      &
                !$OMP ,rshort_tot,sum_norm)
-               patchloop: do ipa=1,csite%npatches
-
-                  ibuff = 1
-                  !$ ibuff = OMP_get_thread_num()+1
-
+               threadloop: do ibuff=1,nthreads
                   !------------------------------------------------------------------------!
-                  !     Copy radiation components to the local variables; they will be     !
-                  ! normalised in the 'if' block that follows this block.  In case IHRZRAD !
-                  ! is 1 or 2, the correction term 'fbeam' changes the amount of incoming  !
-                  ! radiation to account for lateral shading or lateral illumination.      !
-                  ! Otherwise, fbeam is always 1.                                          !
+                  !     Loop through tasks.  We don't assign contiguous blocks of patches  !
+                  ! to each thread because patches are sorted by age and older patches     !
+                  ! have more cohorts and are likely to be slower.                         !
                   !------------------------------------------------------------------------!
-                  par_beam_norm = dble(cpoly%met(isi)%par_beam*csite%fbeam(ipa))
-                  par_diff_norm = dble(cpoly%met(isi)%par_diffuse              )
-                  nir_beam_norm = dble(cpoly%met(isi)%nir_beam*csite%fbeam(ipa))
-                  nir_diff_norm = dble(cpoly%met(isi)%nir_diffuse              )
-                  rshort_tot    = cpoly%met(isi)%par_beam * csite%fbeam(ipa)               &
-                                + cpoly%met(isi)%par_diffuse                               &
-                                + cpoly%met(isi)%nir_beam * csite%fbeam(ipa)               &
-                                + cpoly%met(isi)%nir_diffuse
-                  !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !      In case the angle of incidence is too high (i.e., its cosine is   !
-                  ! too close to zero), eliminate all direct radiation.   This is differ-  !
-                  ! ent from the cosine of the zenith angle because mountains can hide the !
-                  ! sun even when it is still above the horizon.                           !
-                  !------------------------------------------------------------------------!
-                  if (daytime) then
+                  taskloop: do ita=1,npa_thread
                      !---------------------------------------------------------------------!
-                     !    Daytime.  Normalise the four components by total radiation.  In  !
-                     ! case IHRZRAD = 0 or 4, incoming radiation is simply the site level. !
-                     ! Otherwise, incoming direct radiation may be scaled to account for   !
-                     ! lateral shading or additional lateral illumination based on crown   !
-                     ! closure.  In both cases the canopy radiation model uses normalised  !
-                     ! profiles to find the vertical structure.                            !
+                     !     Find out which patch to solve.  In case the number of patches   !
+                     ! is not a perfect multiple of number of threads, some patch numbers  !
+                     ! will exceed csite%npatches in the last iteration, in which we can   !
+                     ! terminate the loop.                                                 !
                      !---------------------------------------------------------------------!
-                     par_beam_norm = max( 1.d-5, par_beam_norm / dble(rshort_tot) )
-                     par_diff_norm = max( 1.d-5, par_diff_norm / dble(rshort_tot) )
-                     nir_beam_norm = max( 1.d-5, nir_beam_norm / dble(rshort_tot) )
-                     nir_diff_norm = max( 1.d-5, nir_diff_norm / dble(rshort_tot) )
+                     ipa = ibuff + (ita - 1) * nthreads
+                     if (ipa > csite%npatches) exit taskloop
                      !---------------------------------------------------------------------!
-                  elseif (twilight) then
+
                      !---------------------------------------------------------------------!
-                     !     Twilight, if for some reason there is any direct radiation,     !
-                     ! copy it to diffuse light.                                           !
+                     !     Copy radiation components to the local variables; they will be  !
+                     ! normalised in the 'if' block that follows this block.  In case      !
+                     ! IHRZRAD is 1 or 2, the correction term 'fbeam' changes the amount   !
+                     ! of incoming radiation to account for lateral shading or lateral     !
+                     ! illumination.  Otherwise, fbeam is always 1.                        !
                      !---------------------------------------------------------------------!
-                     par_diff_norm = max( 1.d-5                                            &
-                                        , (par_beam_norm+par_diff_norm) / dble(rshort_tot))
-                     nir_diff_norm = max( 1.d-5                                            &
-                                        , (nir_beam_norm+nir_diff_norm) / dble(rshort_tot))
-                     par_beam_norm = 1.d-5
-                     nir_beam_norm = 1.d-5
+                     par_beam_norm = dble(cpoly%met(isi)%par_beam*csite%fbeam(ipa))
+                     par_diff_norm = dble(cpoly%met(isi)%par_diffuse              )
+                     nir_beam_norm = dble(cpoly%met(isi)%nir_beam*csite%fbeam(ipa))
+                     nir_diff_norm = dble(cpoly%met(isi)%nir_diffuse              )
+                     rshort_tot    = cpoly%met(isi)%par_beam * csite%fbeam(ipa)            &
+                                   + cpoly%met(isi)%par_diffuse                            &
+                                   + cpoly%met(isi)%nir_beam * csite%fbeam(ipa)            &
+                                   + cpoly%met(isi)%nir_diffuse
                      !---------------------------------------------------------------------!
-                  else 
+
+
+
                      !---------------------------------------------------------------------!
-                     !     Night-time, nothing will happen, fill split equally to the 4    !
-                     ! components.                                                         !
+                     !      In case the angle of incidence is too high (i.e., its cosine   !
+                     ! is too close to zero), eliminate all direct radiation.   This is    !
+                     ! different from the cosine of the zenith angle because mountains can !
+                     ! hide the sun even when it is still above the horizon.               !
                      !---------------------------------------------------------------------!
-                     rshort_tot    = 0.0
-                     par_beam_norm = 2.5d-1
-                     par_diff_norm = 2.5d-1
-                     nir_beam_norm = 2.5d-1
-                     nir_diff_norm = 2.5d-1
-                  end if
+                     if (daytime) then
+                        !------------------------------------------------------------------!
+                        !    Daytime.  Normalise the four components by total radiation.   !
+                        ! In case IHRZRAD = 0 or 4, incoming radiation is simply the site  !
+                        ! level.  Otherwise, incoming direct radiation may be scaled to    !
+                        ! account for lateral shading or additional lateral illumination   !
+                        ! based on crown closure.  In both cases the canopy radiation      !
+                        ! model uses normalised profiles to find the vertical structure.   !
+                        !------------------------------------------------------------------!
+                        par_beam_norm = max( 1.d-5, par_beam_norm / dble(rshort_tot) )
+                        par_diff_norm = max( 1.d-5, par_diff_norm / dble(rshort_tot) )
+                        nir_beam_norm = max( 1.d-5, nir_beam_norm / dble(rshort_tot) )
+                        nir_diff_norm = max( 1.d-5, nir_diff_norm / dble(rshort_tot) )
+                        !------------------------------------------------------------------!
+                     elseif (twilight) then
+                        !------------------------------------------------------------------!
+                        !     Twilight, if for some reason there is any direct radiation,  !
+                        ! copy it to diffuse light.                                        !
+                        !------------------------------------------------------------------!
+                        par_diff_norm = max(1.d-5                                          &
+                                           ,(par_beam_norm+par_diff_norm)/dble(rshort_tot))
+                        nir_diff_norm = max(1.d-5                                          &
+                                           ,(nir_beam_norm+nir_diff_norm)/dble(rshort_tot))
+                        par_beam_norm = 1.d-5
+                        nir_beam_norm = 1.d-5
+                        !------------------------------------------------------------------!
+                     else 
+                        !------------------------------------------------------------------!
+                        !     Night-time, nothing will happen, fill split equally to the 4 !
+                        ! components.                                                      !
+                        !------------------------------------------------------------------!
+                        rshort_tot    = 0.0
+                        par_beam_norm = 2.5d-1
+                        par_diff_norm = 2.5d-1
+                        nir_beam_norm = 2.5d-1
+                        nir_diff_norm = 2.5d-1
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !     Because we must tweak the radiation so none of the terms are    !
+                     ! zero, we must correct the normalised radiation variables so they    !
+                     ! add up to one.                                                      !
+                     !---------------------------------------------------------------------!
+                     sum_norm      = par_beam_norm + par_diff_norm                         &
+                                   + nir_beam_norm + nir_diff_norm
+                     par_beam_norm = par_beam_norm / sum_norm
+                     par_diff_norm = par_diff_norm / sum_norm
+                     nir_beam_norm = nir_beam_norm / sum_norm
+                     nir_diff_norm = nir_diff_norm / sum_norm
+                     !---------------------------------------------------------------------!
+
+
+                     !----- Get normalised radiative transfer information. ----------------!
+                     call sfcrad_ed(cpoly%cosaoi(isi),csite,ipa,ibuff,nzg,nzs              &
+                                   ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi)           &
+                                   ,cpoly%met(isi)%rlong,twilight                          &
+                                   ,nir_beam_norm,nir_diff_norm                            &
+                                   ,par_beam_norm,par_diff_norm)
+                     !---------------------------------------------------------------------!
+
+
+
+                     !----- Scale radiation back to the actual values. --------------------!
+                     call scale_ed_radiation(rshort_tot,cpoly%met(isi)%rlong               &
+                                            ,cpoly%nighttime(isi),csite,ipa)
+                     !---------------------------------------------------------------------!
+                  end do taskloop
                   !------------------------------------------------------------------------!
-
-
-
-                  !------------------------------------------------------------------------!
-                  !     Because we must tweak the radiation so none of the terms are zero, !
-                  ! we must correct the normalised radiation variables so they add up to   !
-                  ! one.                                                                   !
-                  !------------------------------------------------------------------------!
-                  sum_norm      = par_beam_norm + par_diff_norm                            &
-                                + nir_beam_norm + nir_diff_norm
-                  par_beam_norm = par_beam_norm / sum_norm
-                  par_diff_norm = par_diff_norm / sum_norm
-                  nir_beam_norm = nir_beam_norm / sum_norm
-                  nir_diff_norm = nir_diff_norm / sum_norm
-                  !------------------------------------------------------------------------!
-
-
-                  !----- Get normalised radiative transfer information. -------------------!
-                  call sfcrad_ed(cpoly%cosaoi(isi),csite,ipa,ibuff,nzg,nzs                 &
-                                ,cpoly%ntext_soil(:,isi),cpoly%ncol_soil(isi)              &
-                                ,cpoly%met(isi)%rlong,twilight                             &
-                                ,nir_beam_norm,nir_diff_norm,par_beam_norm,par_diff_norm)
-                  !------------------------------------------------------------------------!
-
-
-
-                  !----- Scale radiation back to the actual values. -----------------------!
-                  call scale_ed_radiation(rshort_tot,cpoly%met(isi)%rlong                  &
-                                         ,cpoly%nighttime(isi),csite,ipa)
-                  !------------------------------------------------------------------------!
-               end do patchloop
+               end do threadloop
                !$OMP END PARALLEL DO
                !---------------------------------------------------------------------------!
             end do siteloop

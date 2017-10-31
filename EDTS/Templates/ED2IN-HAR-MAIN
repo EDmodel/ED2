@@ -773,10 +773,6 @@ $ED_NL
    !                 1.  Original reproduction scheme.  Seeds are exchanged between        !
    !                     patches belonging to the same site, but they can't go outside     !
    !                     their original site.                                              !
-   !                 2.  Similar to 1, but seeds are exchanged between patches belonging   !
-   !                     to the same polygon, even if they are in different sites.  They   !
-   !                     can't go outside their original polygon, though.  This is the     !
-   !                     same as option 1 if there is only one site per polygon.           !
    !---------------------------------------------------------------------------------------!
    NL%REPRO_SCHEME    = 2
    !---------------------------------------------------------------------------------------!

@@ -1009,7 +1009,6 @@ module structural_growth
       use pft_coms      , only : phenology    & ! intent(in)
                                , repro_min_h  & ! intent(in)
                                , r_fract      & ! intent(in)
-                               , r_slope      & ! intent(in)
                                , st_fract     & ! intent(in)
                                , dbh_crit     & ! intent(in)
                                , hgt_max      & ! intent(in)
@@ -1087,7 +1086,7 @@ module structural_growth
             !------------------------------------------------------------------------------!
             if (is_grass(ipft) .and. igrass == 1) then
                !----- New grasses. --------------------------------------------------------!
-               if ( hite >= (1.0-r_tol_trunc) * hgt_max(ipft)) then 
+               if ( hite >= ( (1.0-r_tol_trunc) * hgt_max(ipft)) ) then 
                   !------------------------------------------------------------------------!
                   !   Grasses have reached the maximum height, stop growing in size and    !
                   ! send everything to reproduction.                                       !
@@ -1111,8 +1110,9 @@ module structural_growth
                !    Lianas: we must check height relative to the rest of the local plant   !
                ! community.                                                                !
                !---------------------------------------------------------------------------!
-               if (hite > maxh) then
-                  f_bseeds = merge(0.0, r_fract(ipft), hite <= repro_min_h(ipft))
+               if (hite >= ( (1.0-r_tol_trunc) *  maxh)) then
+                  f_bseeds = merge(0.0, r_fract(ipft)                                      &
+                                  ,hite < ( (1.0-r_tol_trunc) * repro_min_h(ipft)) )
                   f_bdead  = 0.0
                else
                   bd_target = dbh2bd(h2dbh(maxh,ipft),ipft)
@@ -1145,7 +1145,7 @@ module structural_growth
                !---------------------------------------------------------------------------!
             else
                !----- Medium-sized tree, use prescribed reproduction rate. ----------------!
-               f_bseeds = r_fract(ipft) + r_slope(ipft) * log( hite / repro_min_h(ipft))
+               f_bseeds = r_fract(ipft)
                f_bdead  = 1.0 - st_fract(ipft) - f_bseeds 
                !---------------------------------------------------------------------------!
             end if

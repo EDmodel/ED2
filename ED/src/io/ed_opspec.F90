@@ -1736,9 +1736,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (repro_scheme < 0 .or. repro_scheme > 3) then
+   if (repro_scheme < 0 .or. repro_scheme > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid REPRO_SCHEME, it must be between  0 and 3. Yours is set to'   &
+                    'Invalid REPRO_SCHEME, it must be between  0 and 2. Yours is set to'   &
                     ,repro_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

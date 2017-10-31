@@ -4381,7 +4381,6 @@ subroutine init_pft_repro_params()
                             , is_grass           & ! intent(in)
                             , seed_rain          & ! intent(out)
                             , r_fract            & ! intent(out)
-                            , r_slope            & ! intent(out)
                             , st_fract           & ! intent(out)
                             , nonlocal_dispersal & ! intent(out)
                             , repro_min_h        ! ! intent(out)
@@ -4392,7 +4391,6 @@ subroutine init_pft_repro_params()
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer                 :: ipft
-   real(kind=4)            :: r_maximum
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -4410,109 +4408,48 @@ subroutine init_pft_repro_params()
    !---------------------------------------------------------------------------------------!
 
 
+
    !---------------------------------------------------------------------------------------!
-   !    Minimum height for a PFT to be considered mature for reproduction.  For tropical   !
-   ! trees we set to the average value from                                                !
+   !      Reproduction parameters.                                                         ! 
+   !                                                                                       ! 
+   ! repro_min_h - Minimum height for a PFT to be considered mature for reproduction.      ! 
+   ! r_fract     - Fraction of carbon balance (bstorage) that is allocated to reproduction ! 
+   !               given that the plant height is greater than repro_min_h.                ! 
+   !                                                                                       ! 
+   !    For trees, we take repro_min_h as the average value reported in W05 (mind that the ! 
+   ! study is for tropical trees.  The grass strategy depends on iallom.  The original     ! 
+   ! scheme assumes that they always allocate 30% to growth, whereas when IALLOM=3 the     ! 
+   ! plants will allocate 100% to reproduction once they reach the maximum height, but     ! 
+   ! nothing when they are shorter (W15's "big bang").  The fraction allocated to          ! 
+   ! reproduction for tropical trees was updated to match F10's number.                    ! 
+   !                                                                                       ! 
+   ! References:                                                                           !
    !                                                                                       !
    !  Wright, S. J., M. A. Jaramillo, J. Pavon, R. Condit, S. P. Hubbell, and              !
    !     R. B. Foster. Reproductive size thresholds in tropical trees: variation among     !
    !     individuals, species and forests. J. Trop. Ecol., 21(3):307-315, May 2005.        !
-   !     doi:10.1017/S0266467405002294. (W05)                                              !
+   !     doi:10.1017/S0266467405002294. (W05).                                             !
    !                                                                                       !
-   ! Tropical grasses are assumed to reproduce at maximum height only, whereas temperate   !
-   ! grasses are assumed to reproduce from minimum height.  Temperate trees are currently  !
-   ! assumed to reproduce at the same height as tropical trees (it should be probably      !
-   ! revised).                                                                             !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses, mature @ maximum
-         repro_min_h(ipft) = hgt_max(ipft)
-      else if (is_grass(ipft)) then ! Temperate grasses, no minimum mature height
-         repro_min_h(ipft) = hgt_min(ipft)
-      else ! Trees and lianas, value from W05
-         repro_min_h(ipft) = 18.0
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Reproduction parameters.  Here we define two r_fract is the minimum reproduction !
-   ! fraction once the PFT is mature, and r_slope is a simple regression line with the     !
-   ! log of the height, to reach maturity.  In case r_slope is zero then r_fract is        !
-   ! constant ("partial big-bang", following Wenk and Falster 2015).  Otherwise, for the   !
-   ! time being we use a linear function of log-height (which is simpler than most         !
-   ! functional forms proposed by Wenk and Falster, but requires only one additional       !
-   ! parameter).                                                                           !
+   ! Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox, C. Huntingford,   !
+   !    P. Meir, and F. Ian Woodward. Assessing uncertainties in a second-generation       !
+   !    dynamic vegetation model caused by ecological scale limitations. New Phytol.,      !
+   !    187(3):666--681, Aug 2010. doi:10.1111/j.1469-8137.2010.03340.x.  (F10)            !
    !                                                                                       !
-   ! Wenk, E. H., and D. S. Falster. Quantifying and understanding reproductive allocation !
-   !    schedules in plants. Ecol. Evol., 5(23):5521--5538, Nov 2015.                      !
-   !    doi:10.1002/ece3.1802.                                                             !
+   !  Wenk, E. H., and D. S. Falster. Quantifying and understanding reproductive           !
+   !    allocation schedules in plants. Ecol. Evol., 5(23):5521--5538, Nov 2015.           !
+   !    doi:10.1002/ece3.1802. (W15)                                                       !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   select case (repro_scheme)
+   select case (iallom)
    case (3)
-      !------------------------------------------------------------------------------------!
-      !     Assume minimum reproduction to be the original ED-2 values, an maximum to be   !
-      ! 0.9 for trees.  For grasses, we continue to use the big-bang approach.             !
-      !------------------------------------------------------------------------------------!
-      do ipft=1,n_pft
-         !---------------------------------------------------------------------------------!
-         !     Check habitat and life form.                                                !
-         !---------------------------------------------------------------------------------!
-         if (is_tropical(ipft) .and. is_grass(ipft)) then
-            !----- Tropical grasses, "big-bang". ------------------------------------------!
-            r_fract(ipft) = 1.0
-            r_slope(ipft) = 0.0
-            !------------------------------------------------------------------------------!
-         else if (is_grass(ipft)) then
-            !----- Temperate grasses, eventually allocate everything to reproduction. -----!
-            r_fract(ipft) = 0.3
-            r_maximum     = 1.0 - st_fract(ipft)
-            r_slope(ipft) = (r_maximum - r_fract(ipft))                                    &
-                          / log(hgt_max(ipft)/repro_min_h(ipft))
-            !------------------------------------------------------------------------------!
-         else
-            !----- Trees, increase allocation to reproduction but don't halt growth. ------!
-            r_fract(ipft) = 0.3
-            r_maximum     = 1.0 - st_fract(ipft) - r_fract(ipft) ! 0.6
-            r_slope(ipft) = (r_maximum - r_fract(ipft))                                    &
-                          / log(hgt_max(ipft)/repro_min_h(ipft))
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
+      !----- New parameters. --------------------------------------------------------------!
+      repro_min_h(:) = merge(hgt_max(:),                           18.0,is_grass(:))
+      r_fract    (:) = merge(       1.0,merge(0.37,0.30,is_tropical(:)),is_grass(:))
       !------------------------------------------------------------------------------------!
    case default
-      !------------------------------------------------------------------------------------!
-      !      Reproduction fraction when PFT is mature.   Assume slope to be always zero.   !
-      !------------------------------------------------------------------------------------!
-      do ipft=1,n_pft
-         if (is_tropical(ipft) .and. is_grass(ipft)) then
-            !----- Tropical grass, invest 100% in reproduction once it's mature. ----------!
-            r_fract(ipft) = 1.00
-            r_slope(ipft) = 0.00
-            !------------------------------------------------------------------------------!
-         else if (is_tropical(ipft)) then
-            !------------------------------------------------------------------------------!
-            !    Tropical trees, use values from                                           !
-            !                                                                              !
-            ! Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox,          !
-            !    C. Huntingford, P. Meir, and F. Ian Woodward. Assessing uncertainties in  !
-            !    a second-generation dynamic vegetation model caused by ecological scale   !
-            !    limitations. New Phytol., 187(3):666--681, Aug 2010.                      !
-            !    doi:10.1111/j.1469-8137.2010.03340.x.                                     !
-            !                                                                              !
-            !------------------------------------------------------------------------------!
-            r_fract(ipft) = 0.37
-            r_slope(ipft) = 0.00
-            !------------------------------------------------------------------------------!
-         else
-            !----- Temperate plant. Use original ED-1 numbers. ----------------------------!
-            r_fract(ipft) = 0.30
-            r_slope(ipft) = 0.00
-            !------------------------------------------------------------------------------!
-         end if
-      end do
+      !----- Original parameters. ---------------------------------------------------------!
+      repro_min_h(:) = merge(hgt_min(:),18.0,is_grass(:))
+      r_fract    (:) = 0.30
       !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!

@@ -53,7 +53,7 @@ TESTTYPE="rapid"
 #  DATAPATH -- Location with all data sets.                                                #
 #------------------------------------------------------------------------------------------#
 DATAPATH="/n/moorcroftfs5/mlongo/edts_datasets"
-DATAPATH="/n/regal/moorcroft_lab/mlongo/data/ts_datasets"
+DATAPATH="/n/regal/moorcroft_lab/mlongo/data/edts_datasets"
 #------------------------------------------------------------------------------------------#
 
 
@@ -117,9 +117,9 @@ NPROC=27
 #     The following variables are the time required by each simulation, hh:mm:ss.          #
 #------------------------------------------------------------------------------------------#
 POI_FAST_TIME="Infinite"
-POI_LONG_TIME="168:00:00"
+POI_LONG_TIME="Infinite"
 GRID_FAST_TIME="Infinite"
-GRID_LONG_TIME="312:00:00"
+GRID_LONG_TIME="Infinite"
 #------------------------------------------------------------------------------------------#
 
 
@@ -127,7 +127,7 @@ GRID_LONG_TIME="312:00:00"
 #------------------------------------------------------------------------------------------#
 #   The amount of memory per cpu needed (POI and gridded runs).                            #
 #------------------------------------------------------------------------------------------#
-POI_MEMORY=5500
+POI_MEMORY=1845
 GRID_MEMORY=1845
 #------------------------------------------------------------------------------------------#
 
@@ -136,7 +136,7 @@ GRID_MEMORY=1845
 #------------------------------------------------------------------------------------------#
 #   The amount of memory per cpu needed (POI and gridded runs).                            #
 #------------------------------------------------------------------------------------------#
-POI_CPTASK=6
+POI_CPTASK=12
 GRID_CPTASK=1
 #------------------------------------------------------------------------------------------#
 
@@ -145,7 +145,7 @@ GRID_CPTASK=1
 #  TEST_DESCRIPTION -- A short but comprehensive explanation of the tests.  Explain what   #
 #                      the commits had involved.                                           #
 #------------------------------------------------------------------------------------------#
-TEST_DESCRIPTION="1. Changed minimum height for reproduction based on BCI measurements (tropical trees only).  2. Changes in minimum reproduction size, so seed_rain works.  3. Changed compilation instructions so it can compile most files with -O3 but uses -O2 for files that would otherwise take days to compile with ifort 13.  4.  New dist_type categories, which now distinguishes tree fall, logging, fires, abandonment and forest plantations.  5.  Changed forestry.f90, this file computes the disturbance rates but lets disturbance.f90 to apply them do cpoly%disturbance_rates is now correctly updated.   6.  Several minor bug fixes."
+TEST_DESCRIPTION="1. Changed minimum height for reproduction based on BCI measurements (tropical trees only).  2. Changes in minimum reproduction size, so seed_rain works.  3. Changed compilation instructions so it can compile most files with -O3 but uses -O2 for files that would otherwise take days to compile with ifort 13.  4.  New dist_type categories, which now distinguishes tree fall, logging, fires, abandonment and forest plantations.  5.  Changed forestry.f90, this file computes the disturbance rates but lets disturbance.f90 to apply them do cpoly%disturbance_rates is now correctly updated.  6.   Several minor bug fixes."
 #------------------------------------------------------------------------------------------#
 
 
@@ -707,7 +707,7 @@ do
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
-      joberr=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
+      joberr=${HERE}/${VERSION}/dbug_${SITEID[i]}.err
       jobname=${VERSION}_${SITEID[i]}_dbug
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
       jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
@@ -827,7 +827,7 @@ do
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/main_${HIFRID[i]}.out
-      joberr=${HERE}/${VERSION}/main_${HIFRID[i]}.out
+      joberr=${HERE}/${VERSION}/main_${HIFRID[i]}.err
       jobname=${VERSION}_${HIFRID[i]}_main
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
       jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
@@ -845,7 +845,7 @@ do
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/test_${HIFRID[i]}.out
-      joberr=${HERE}/${VERSION}/test_${HIFRID[i]}.out
+      joberr=${HERE}/${VERSION}/test_${HIFRID[i]}.err
       jobname=${VERSION}_${HIFRID[i]}_test
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
       jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
@@ -863,7 +863,7 @@ do
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
-      joberr=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
+      joberr=${HERE}/${VERSION}/dbug_${HIFRID[i]}.err
       jobname=${VERSION}_${HIFRID[i]}_dbug
       jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
       jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
@@ -978,7 +978,7 @@ do
       #    Prepare job (MAIN)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/main_${GRIDID[i]}.out
-      joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.out
+      joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_main
       jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=${GRID_CPTASK}"
       jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
@@ -996,7 +996,7 @@ do
       #    Prepare job (TEST)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/test_${GRIDID[i]}.out
-      joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.out
+      joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_test
       jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=${GRID_CPTASK}"
       jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
@@ -1014,7 +1014,7 @@ do
       #    Prepare job (DBUG)
       #------------------------------------------------------------------------------------#
       jobout=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
-      joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
+      joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_dbug
       jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=${GRID_CPTASK}"
       jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"

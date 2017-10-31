@@ -486,10 +486,10 @@ module rk4_coms
 
 
    !----- This is the actual integration buffer structure. --------------------------------!
-
    type(integration_vars), dimension(:), pointer :: integration_buff(:)
    type(rk4sitetype)                             :: rk4site
    type(rk4auxtype),dimension(:), pointer        :: rk4aux(:)
+   !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
    !=======================================================================================!
