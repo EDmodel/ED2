@@ -1415,7 +1415,7 @@ $ED_NL
    !---------------------------------------------------------------------------------------!
    NL%IFUSION        =     1
    NL%MAXSITE        =     1
-   NL%MAXPATCH       =    25
+   NL%MAXPATCH       =    24
    NL%MAXCOHORT      =    50
    NL%MIN_SITE_AREA  = 0.001
    NL%MIN_PATCH_AREA = 0.001

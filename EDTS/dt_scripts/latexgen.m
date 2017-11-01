@@ -377,7 +377,7 @@ if ngrid>0
             fprintf(fid,'\\frame{\\includegraphics[height=0.92\\textheight]{%s}}\n',agbmap_img{ig});
             
             % LAI Maps
-            fprintf(fid,'\\frame{\\includegraphics[width=0.92\\textheight]{%s}}\n',laimap_img{ig});
+            fprintf(fid,'\\frame{\\includegraphics[height=0.92\\textheight]{%s}}\n',laimap_img{ig});
             
         end
     end

@@ -40,7 +40,9 @@ DBUG_EXE_PATH="${EXE_PATH}/ed_2.1-dbug"
 
 #------------------------------------------------------------------------------------------#
 # TESTTYPE -- Which tests are you going to run?  Options are:                              #
-#             "rapid" -- 2-3 years of simulation                                           #
+#             "rapid"  -- 2-3 years of simulation                                          #
+#             "medium" -- ~ 75 years of simulation.   The long tests will take a long      #
+#                         time, beware.                                                    #
 #             "long"  -- ~ 300 years of simulation.   The long tests will take a really    #
 #                        really long time, beware.                                         #
 #------------------------------------------------------------------------------------------#
@@ -76,6 +78,7 @@ USE_PET="y"     # Petrolina POI
 USE_GYF="y"     # Paracou POI
 USE_S83="y"     # Santarem km 83 (logging) POI
 USE_PRG="y"     # Paragominas (ALS init) POI
+USE_TL2="y"     # Toolik (boreal) POI
 USE_HIP="y"     # Petrolina High Frequency Detailed Short POI
 USE_HIM="y"     # Manaus High Frequency Detailed Short POI
 USE_HIH="y"     # Manaus High Frequency Detailed Short POI (Hybrid)
@@ -87,18 +90,19 @@ USE_RJG="y"     # Gridded 12x12 simulation centred on Reserva Jaru
 #     The following flags are the queue names for each simulation.                         #
 #   Main, test, and dbug should all use the same queue.                                    #
 #------------------------------------------------------------------------------------------#
-Q_M34="moorcroft_6100"     # Manaus K34 POI
+Q_M34="moorcroft_amd"      # Manaus K34 POI
 Q_S67="moorcroft_6100"     # Santarem km 67 POI
-Q_HAR="moorcroft_6100"     # Harvard Forest POI
+Q_HAR="moorcroft_amd"      # Harvard Forest POI
 Q_PDG="moorcroft_6100"     # Pe-de-Gigante POI
 Q_TON="moorcroft_6100"     # Tonzi POI
 Q_CAX="moorcroft_6100"     # Caxiuana POI
-Q_TNF="moorcroft_6100"     # Tapajos National Forest POI
+Q_TNF="moorcroft_amd"      # Tapajos National Forest POI
 Q_ATA="moorcroft_6100"     # Atacama Desert POI
 Q_PET="moorcroft_6100"     # Petrolina POI
 Q_GYF="moorcroft_6100"     # Paracou POI
-Q_S83="moorcroft_6100"     # Santarem Km 83 (logging) POI
-Q_PRG="moorcroft_6100"     # Paragominas (ALS init) POI
+Q_S83="moorcroft_amd"      # Santarem Km 83 (logging) POI
+Q_PRG="moorcroft_amd"      # Paragominas (ALS init) POI
+Q_TL2="moorcroft_amd"      # Toolik (boreal) POI
 Q_HIP="moorcroft_6100"     # Petrolina High Frequency Detailed Short POI
 Q_HIM="moorcroft_6100"     # Manaus High Frequency Detailed Short POI
 Q_HIH="moorcroft_6100"     # Manaus High Frequency Detailed Short POI (Hybrid)
@@ -107,37 +111,62 @@ Q_RJG="moorcroft_6100"     # Gridded 12x12 simulation centred on Reserva Jaru
 
 
 #------------------------------------------------------------------------------------------#
-# NPROC -- How many cores do you want to use for the gridded simulations?                  #
+#     The following flags are the memory per cpu for each simulation.  Check the queue     #
+# memory and number of CPUs to define these variables.  Also remember that simulation PRG  #
+# requires at least 5550 Mb of memory because of the large initialisation.                 #
 #------------------------------------------------------------------------------------------#
-NPROC=27
+MEM_M34="1845"     # Manaus K34 POI
+MEM_S67="1845"     # Santarem km 67 POI
+MEM_HAR="1845"     # Harvard Forest POI
+MEM_PDG="1845"     # Pe-de-Gigante POI
+MEM_TON="1845"     # Tonzi POI
+MEM_CAX="1845"     # Caxiuana POI
+MEM_TNF="1845"     # Tapajos National Forest POI
+MEM_ATA="1845"     # Atacama Desert POI
+MEM_PET="1845"     # Petrolina POI
+MEM_GYF="1845"     # Paracou POI
+MEM_S83="1845"     # Santarem Km 83 (logging) POI
+MEM_PRG="5500"     # Paragominas (ALS init) POI
+MEM_TL2="1845"     # Toolik (Boreal) POI
+MEM_HIP="1845"     # Petrolina High Frequency Detailed Short POI
+MEM_HIM="1845"     # Manaus High Frequency Detailed Short POI
+MEM_HIH="1845"     # Manaus High Frequency Detailed Short POI (Hybrid)
+MEM_RJG="1845"     # Gridded 12x12 simulation centred on Reserva Jaru
+#------------------------------------------------------------------------------------------#
+
+
+#------------------------------------------------------------------------------------------#
+#     How many cores for runs.  For POI and High-frequency, this sets the number of        #
+# threads for each run (using by some parallel do loops).  This will only work if the code #
+# is compiled with -openmp (ifort) or -fopenmp (gfortran), otherwise it will be ignored by #
+# the code, although it will request the resources.  For gridded runs, this is the number  #
+# of processors to split the domain. This requires the code to be compiled with mpif90 and #
+# option PAR_DEFS=-DRAMS_MPI set in the include.mk file.                                   #
+#                                                                                          #
+# High-frequency runs by default require 1 CPU, as they have only one patch.               #
+#------------------------------------------------------------------------------------------#
+CPU_M34="20"  # Manaus K34 POI (MAXPATCH=20; RAPID_INIT_MODE=5)
+CPU_S67="3"   # Santarem km 67 POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_HAR="30"  # Harvard Forest POI (MAXPATCH=20; RAPID_INIT_MODE=6)
+CPU_PDG="3"   # Pe-de-Gigante POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_TON="3"   # Tonzi POI (MAXPATCH=8; RAPID_INIT_MODE=5)
+CPU_CAX="3"   # Caxiuana POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_TNF="20"  # Tapajos National Forest POI (MAXPATCH=20; RAPID_INIT_MODE=5)
+CPU_ATA="3"   # Atacama Desert POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_PET="3"   # Petrolina POI (MAXPATCH=20; RAPID_INIT_MODE=6)
+CPU_GYF="3"   # Paracou POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_S83="20"  # Santarem Km 83 (logging) POI (MAXPATCH=20; RAPID_INIT_MODE=5)
+CPU_PRG="24"  # Paragominas (ALS init) POI (MAXPATCH=24; RAPID_INIT_MODE=6)
+CPU_TL2="3"   # Toolik (Boreal) POI (MAXPATCH=20; RAPID_INIT_MODE=0)
+CPU_RJG="27"  # Gridded 12x12 simulation centred on Reserva Jaru (NPTS=144)
 #------------------------------------------------------------------------------------------#
 
 
 #------------------------------------------------------------------------------------------#
 #     The following variables are the time required by each simulation, hh:mm:ss.          #
 #------------------------------------------------------------------------------------------#
-POI_FAST_TIME="Infinite"
-POI_LONG_TIME="Infinite"
-GRID_FAST_TIME="Infinite"
-GRID_LONG_TIME="Infinite"
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#   The amount of memory per cpu needed (POI and gridded runs).                            #
-#------------------------------------------------------------------------------------------#
-POI_MEMORY=1845
-GRID_MEMORY=1845
-#------------------------------------------------------------------------------------------#
-
-
-
-#------------------------------------------------------------------------------------------#
-#   The amount of memory per cpu needed (POI and gridded runs).                            #
-#------------------------------------------------------------------------------------------#
-POI_CPTASK=12
-GRID_CPTASK=1
+POI_TIME="Infinite"
+GRID_TIME="Infinite"
 #------------------------------------------------------------------------------------------#
 
 
@@ -230,21 +259,29 @@ TESTTYPE=$(echo ${TESTTYPE} | tr '[:upper:]' '[:lower:]')
 
 #---- Define some runtime variables for POI. ----------------------------------------------#
 declare -a USE_SITE=( ${USE_M34} ${USE_S67} ${USE_HAR} ${USE_PDG} ${USE_TON} ${USE_CAX} \
-                      ${USE_TNF} ${USE_ATA} ${USE_PET} ${USE_GYF} ${USE_S83} ${USE_PRG} )
-declare -a SITEID=(m34 s67 har pdg ton cax tnf ata pet gyf s83 prg)
-declare -a SITEPFX=(M34 S67 HAR PDG TON CAX TNF ATA PET GYF S83 PRG)
+                      ${USE_TNF} ${USE_ATA} ${USE_PET} ${USE_GYF} ${USE_S83} ${USE_TL2} \
+                      ${USE_PRG} )
+declare -a SITEID=(m34 s67 har pdg ton cax tnf ata pet gyf s83 prg tl2)
+declare -a SITEPFX=(M34 S67 HAR PDG TON CAX TNF ATA PET GYF S83 PRG TL2)
 declare -a SITEQ=( ${Q_M34} ${Q_S67} ${Q_HAR} ${Q_PDG} ${Q_TON} ${Q_CAX} \
-                   ${Q_TNF} ${Q_ATA} ${Q_PET} ${Q_GYF} ${Q_S83} ${Q_PRG} )
+                   ${Q_TNF} ${Q_ATA} ${Q_PET} ${Q_GYF} ${Q_S83} ${Q_PRG} \
+                   ${Q_TL2} )
+declare -a SITEMEM=( ${MEM_M34} ${MEM_S67} ${MEM_HAR} ${MEM_PDG} ${MEM_TON} ${MEM_CAX} \
+                     ${MEM_TNF} ${MEM_ATA} ${MEM_PET} ${MEM_GYF} ${MEM_S83} ${MEM_PRG} \
+                     ${MEM_TL2} )
+declare -a SITECPU=( ${CPU_M34} ${CPU_S67} ${CPU_HAR} ${CPU_PDG} ${CPU_TON} ${CPU_CAX} \
+                     ${CPU_TNF} ${CPU_ATA} ${CPU_PET} ${CPU_GYF} ${CPU_S83} ${CPU_PRG} \
+                     ${CPU_TL2} )
 #------------------------------------------------------------------------------------------#
 
 
 
 #----- POI debug time. --------------------------------------------------------------------#
-declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011)
-declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006 2008 2001 2012)
-declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6   )
+declare -a D_IYEARAS=(1500 1500 2007 1500 2000 2000 2002 1500 2005 2007 2000 2011 2009)
+declare -a D_IYEARZS=(1501 1501 2008 1501 2001 2001 2002 1501 2006 2008 2001 2012 2010)
+declare -a D_INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6    0   )
 declare -a D_RUNTYPS=( INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
-                       INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
+                       INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
 #------------------------------------------------------------------------------------------#
 
 
@@ -254,6 +291,8 @@ declare -a USE_HIFR=(${USE_HIP} ${USE_HIM} ${USE_HIH})
 declare -a HIFRID=(hip him hih)
 declare -a HIFRPFX=(HIP HIM HIH)
 declare -a HIFRQ=(${Q_HIP} ${Q_HIM} ${Q_HIH})
+declare -a HIFRMEM=(${MEM_HIP} ${MEM_HIM} ${MEM_HIH})
+declare -a HIFRCPU=(1 1 1)
 declare -a IDATEAH=(21 01 01)
 declare -a IDATEZH=(28 08 08)
 declare -a INITMDH=(6  5  5)
@@ -262,11 +301,12 @@ declare -a RUNTYPH=(INITIAL INITIAL INITIAL)
 
 
 #----- Gridded runs. ----------------------------------------------------------------------#
-declare -a USE_GRID=($USE_RJG)
+declare -a USE_GRID=(${USE_RJG})
 declare -a GRIDID=(rjg)
 declare -a GRIDPFX=(RJG)
-declare -a GRIDQ=($Q_RJG)
-declare -a GRIDPROC=($NPROC)
+declare -a GRIDQ=(${Q_RJG})
+declare -a GRIDMEM=(${MEM_RJG})
+declare -a GRIDCPU=(${CPU_RJG})
 declare -a D_IYEARAG=(2008)
 declare -a D_IYEARZG=(2008)
 declare -a D_INITMDG=(5)
@@ -303,10 +343,32 @@ rapid)
    #----- Monthly output for state files. -------------------------------------------------#
    UNITSTATE=2
    #---------------------------------------------------------------------------------------#
+   ;;
 
-   #----- Select fast time requests. ------------------------------------------------------#
-   POI_TIME=${POI_FAST_TIME}
-   GRID_TIME=${GRID_FAST_TIME}
+medium)
+
+   echo " - Performing intermediate tests (75 years for POI, 12 years for grid)"
+
+   #----- POI tests will run for two years. -----------------------------------------------#
+   declare -a IYEARAS=(1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975 1975)
+   declare -a IYEARZS=(2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050 2050)
+   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6   )
+   declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
+                       INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL )
+   #---------------------------------------------------------------------------------------#
+
+
+
+   #----- Gridded tests will run for only 1 year. -----------------------------------------#
+   declare -a IYEARAG=(1998)
+   declare -a IYEARZG=(2010)
+   declare -a INITMDG=(5)
+   declare -a RUNTYPG=(INITIAL)
+   #---------------------------------------------------------------------------------------#
+
+
+   #----- Monthly output for state files. -------------------------------------------------#
+   UNITSTATE=3
    #---------------------------------------------------------------------------------------#
    ;;
 
@@ -317,7 +379,7 @@ long)
    #----- POI tests will run for 300 years. -----------------------------------------------#
    declare -a IYEARAS=(1500 1500 1500 1500 1500 1500 1500 1500 1500 1500 1500 1500)
    declare -a IYEARZS=(1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800 1800)
-   declare -a INITMDS=(5    0    6    0    5    0    5    0    6    0    5    6   )
+   declare -a INITMDS=(0    0    0    0    0    0    0    0    0    0    0    0   )
    declare -a RUNTYPS=(INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL \
                        INITIAL INITIAL INITIAL INITIAL INITIAL INITIAL)
    #---------------------------------------------------------------------------------------#
@@ -334,12 +396,6 @@ long)
 
    #----- Yearly output for state files. --------------------------------------------------#
    UNITSTATE=3
-   #---------------------------------------------------------------------------------------#
-
-
-   #----- Select fast time requests. ------------------------------------------------------#
-   POI_TIME=${POI_LONG_TIME}
-   GRID_TIME=${GRID_LONG_TIME}
    #---------------------------------------------------------------------------------------#
    ;;
 *)
@@ -673,11 +729,11 @@ do
       jobout=${HERE}/${VERSION}/main_${SITEID[i]}.out
       joberr=${HERE}/${VERSION}/main_${SITEID[i]}.err
       jobname=${VERSION}_${SITEID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
       jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${POI_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
+      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -691,11 +747,11 @@ do
       jobout=${HERE}/${VERSION}/test_${SITEID[i]}.out
       joberr=${HERE}/${VERSION}/test_${SITEID[i]}.err
       jobname=${VERSION}_${SITEID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
       jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${POI_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
+      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -709,11 +765,11 @@ do
       jobout=${HERE}/${VERSION}/dbug_${SITEID[i]}.out
       joberr=${HERE}/${VERSION}/dbug_${SITEID[i]}.err
       jobname=${VERSION}_${SITEID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${SITEMEM[i]} --cpus-per-task=${SITECPU[i]}"
       jobopts="${jobopts} -p ${SITEQ[i]} -n 1"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${POI_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${SITECPU[i]}"
+      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -829,11 +885,11 @@ do
       jobout=${HERE}/${VERSION}/main_${HIFRID[i]}.out
       joberr=${HERE}/${VERSION}/main_${HIFRID[i]}.err
       jobname=${VERSION}_${HIFRID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
       jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${POI_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
+      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_MAIN_EXE} -f ${FILEMAIN}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -847,11 +903,11 @@ do
       jobout=${HERE}/${VERSION}/test_${HIFRID[i]}.out
       joberr=${HERE}/${VERSION}/test_${HIFRID[i]}.err
       jobname=${VERSION}_${HIFRID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
       jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${POI_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
+      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_TEST_EXE} -f ${FILETEST}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -865,11 +921,11 @@ do
       jobout=${HERE}/${VERSION}/dbug_${HIFRID[i]}.out
       joberr=${HERE}/${VERSION}/dbug_${HIFRID[i]}.err
       jobname=${VERSION}_${HIFRID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${POI_MEMORY} --cpus-per-task=${POI_CPTASK}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${HIFRMEM[i]} --cpus-per-task=${HIFRCPU[i]}"
       jobopts="${jobopts} -p ${HIFRQ[i]} -n 1"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${POI_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${HIFRCPU[i]}"
+      jobwrap="${jobwrap}; mpirun -np 1 ${LNK_DBUG_EXE} -f ${FILEDBUG}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -980,11 +1036,11 @@ do
       jobout=${HERE}/${VERSION}/main_${GRIDID[i]}.out
       joberr=${HERE}/${VERSION}/main_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_main
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=${GRID_CPTASK}"
-      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=1"
+      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${GRID_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np ${GRIDPROC[i]} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
+      jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_MAIN_EXE} -f ${FILEMAIN}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -998,11 +1054,11 @@ do
       jobout=${HERE}/${VERSION}/test_${GRIDID[i]}.out
       joberr=${HERE}/${VERSION}/test_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_test
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=${GRID_CPTASK}"
-      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=1"
+      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${GRID_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np ${GRIDPROC[i]} ${LNK_TEST_EXE} -f ${FILETEST}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
+      jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_TEST_EXE} -f ${FILETEST}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"
@@ -1016,11 +1072,11 @@ do
       jobout=${HERE}/${VERSION}/dbug_${GRIDID[i]}.out
       joberr=${HERE}/${VERSION}/dbug_${GRIDID[i]}.err
       jobname=${VERSION}_${GRIDID[i]}_dbug
-      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=${GRID_CPTASK}"
-      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDPROC[i]}"
+      jobopts="-t ${POI_TIME} --mem-per-cpu=${GRID_MEMORY} --cpus-per-task=1"
+      jobopts="${jobopts} -p ${GRIDQ[i]} -n ${GRIDCPU[i]}"
       jobwrap=". ${HOME}/.bashrc; cd ${HERE}/${VERSION}"
-      jobwrap="${jobwrap}; export OMP_NUM_THREADS=${GRID_CPTASK}"
-      jobwrap="${jobwrap}; srun mpirun -np ${GRIDPROC[i]} ${LNK_DBUG_EXE} -f ${FILEDBUG}"
+      jobwrap="${jobwrap}; export OMP_NUM_THREADS=1"
+      jobwrap="${jobwrap}; mpirun -np ${GRIDCPU[i]} ${LNK_DBUG_EXE} -f ${FILEDBUG}"
       jobwrap="\"(${jobwrap})\""
       jobcomm="sbatch -o ${jobout} -e ${joberr} -J ${jobname}"
       jobcomm="${jobcomm} ${jobopts} --wrap=${jobwrap}"

@@ -45,7 +45,7 @@ xvec = datevec(xticks);
 xticklabs = num2str(xvec(:,1));
 xticklabs(end,:) = '    ';
 
-ymax = max([tot_agb_t;tot_agb_c]);
+ymax = 1.04 .* max([tot_agb_t;tot_agb_c]);
 
 ax1 = axes;
 set(ax1,'Position',[bx by+dy+my dx dy],'FontSize',fasz_l);
@@ -90,7 +90,7 @@ set(gca,'YTickLabel',{});
 title('MainLine','FontSize',fasz_l);
 
 
-ymax = max([tot_lai_t;tot_lai_c]);
+ymax = 1.04 .* max([tot_lai_t;tot_lai_c]);
 
 ax3 = axes;
 set(ax3,'Position',[bx by dx dy],'FontSize',fasz_l);

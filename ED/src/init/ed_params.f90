@@ -280,1687 +280,6 @@ end subroutine load_ed_ecosystem_params
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine assigns values for some variables that are in ed_misc_coms, which    !
-! wouldn't fit in any of the other categories.                                             !
-!------------------------------------------------------------------------------------------!
-subroutine init_ed_misc_coms
-   use ed_max_dims  , only : n_pft                & ! intent(in)
-                           , n_dbh                & ! intent(in)
-                           , n_age                ! ! intent(in)
-   use consts_coms  , only : erad                 & ! intent(in)
-                           , pio180               ! ! intent(in)
-   use ed_misc_coms , only : burnin               & ! intent(out)
-                           , restart_target_year  & ! intent(out)
-                           , use_target_year      & ! intent(out)
-                           , maxage               & ! intent(out)
-                           , dagei                & ! intent(out)
-                           , maxdbh               & ! intent(out)
-                           , ddbhi                & ! intent(out)
-                           , vary_elev            & ! intent(out)
-                           , vary_hyd             & ! intent(out)
-                           , vary_rad             & ! intent(out)
-                           , max_thsums_dist      & ! intent(out)
-                           , max_poihist_dist     & ! intent(out)
-                           , max_poi99_dist       & ! intent(out)
-                           , suppress_h5_warnings ! ! intent(out)
-   implicit none
-
-
-   !----- Flags that allow components of subgrid heterogeneity to be turned on/off --------!
-   vary_elev = 1
-   vary_rad  = 1
-   vary_hyd  = 1
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Number of years to ignore demography when starting a run. -----------------------!
-   burnin = 0
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Year to read when parsing pss/css with multiple years. --------------------------!
-   restart_target_year = 2000
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Flag specifying whether to search for a target year in pss/css. -----------------!
-   use_target_year = 0
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Maximum age [yr] to split into classes. -----------------------------------------!
-   maxage = 200.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Maximum DBH [cm] to be split into classes. --------------------------------------!
-   maxdbh = 100.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The inverse of bin classes will depend on max??? and n_???, leaving one class for !
-   ! when the number exceeds the maximum.                                                  !
-   !---------------------------------------------------------------------------------------!
-   dagei = real(n_age-1) / maxage
-   ddbhi = real(n_dbh-1) / maxdbh
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Maximum distance to the current polygon that we still consider the file grid point !
-   ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
-   !---------------------------------------------------------------------------------------!
-   max_thsums_dist    = 1.25 * erad * pio180
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Alternative method for mixing 1 grid and POI's.  Only use the grid if their is   !
-   ! NOT an POI  within a user specified resolution.  Remember, this assumes there is only !
-   ! 1 gridded file, and it is the first file when ied_init_mode is set to 99  (Developer  !
-   ! use only).                                                                            !
-   !---------------------------------------------------------------------------------------!
-   max_poi99_dist     = 5.0 * erad * pio180
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      This variable is used for the history start initialisation.  This sets the       !
-   ! maximum acceptable distance between the expected polygon and the polygon found in the !
-   ! history file.  Units: m.                                                              !
-   !---------------------------------------------------------------------------------------!
-   max_poihist_dist   = 250.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      If you don't want to read a million warnings about certain initialization        !
-   ! variables not being available in the history input file, set this to .true. .  It's   !
-   ! better for new users to see what is missing though.                                   !
-   !---------------------------------------------------------------------------------------!
-   suppress_h5_warnings = .true.
-   !---------------------------------------------------------------------------------------!
-
-
-   return
-end subroutine init_ed_misc_coms
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine defines the minimum and maximum acceptable values in the meteoro-    !
-! logical forcing.                                                                         !
-!------------------------------------------------------------------------------------------!
-subroutine init_met_params()
-   use ed_misc_coms   , only : dtlsm           ! ! intent(in)
-   use met_driver_coms, only : met_land_min    & ! intent(out)
-                             , rshort_min      & ! intent(out)
-                             , rshort_max      & ! intent(out)
-                             , rlong_min       & ! intent(out)
-                             , rlong_max       & ! intent(out)
-                             , dt_radinterp    & ! intent(out)
-                             , atm_tmp_min     & ! intent(out)
-                             , atm_tmp_max     & ! intent(out)
-                             , atm_shv_min     & ! intent(out)
-                             , atm_shv_max     & ! intent(out)
-                             , atm_rhv_min     & ! intent(out)
-                             , atm_rhv_max     & ! intent(out)
-                             , atm_co2_min     & ! intent(out)
-                             , atm_co2_max     & ! intent(out)
-                             , prss_min        & ! intent(out)
-                             , prss_max        & ! intent(out)
-                             , pcpg_min        & ! intent(out)
-                             , pcpg_max        & ! intent(out)
-                             , vels_min        & ! intent(out)
-                             , vels_max        & ! intent(out)
-                             , geoht_min       & ! intent(out)
-                             , geoht_max       & ! intent(out)
-                             , print_radinterp & ! intent(out)
-                             , vbdsf_file      & ! intent(out)
-                             , vddsf_file      & ! intent(out)
-                             , nbdsf_file      & ! intent(out)
-                             , nddsf_file      ! ! intent(out)
-
-   !----- Minimum land fraction for a met driver point to be considered land. -------------!
-   met_land_min = 0.5
-
-   !----- Minimum and maximum acceptable shortwave radiation [W/m2]. ----------------------!
-   rshort_min  = 0.
-   rshort_max  = 1500.
-   !----- Minimum and maximum acceptable longwave radiation [W/m2]. -----------------------!
-   rlong_min   = 40.
-   rlong_max   = 600.
-   !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
-   atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
-   atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
-   !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
-   atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32degC at 1000hPa.
-   !----- Minimum and maximum acceptable CO2 mixing ratio [umol/mol]. ---------------------!
-   atm_co2_min = 100.     !
-   atm_co2_max = 1100.    !
-   !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
-   prss_min =  45000. ! It may crash if you run a simulation in Mt. Everest.
-   prss_max = 110000. ! It may crash if you run a simulation under water.
-   !----- Minimum and maximum acceptable precipitation rates [kg/m2/s]. -------------------!
-   pcpg_min     = 0.0     ! No negative precipitation is allowed
-   pcpg_max     = 0.1111  ! This is a precipitation rate of 400mm/hr.
-   !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
-   vels_min     =  0.0    ! No negative wind is acceptable.
-   vels_max     = 85.0    ! Maximum sustained winds recorded during Typhoon Tip (1970).
-   !----- Minimum and maximum reference heights [m]. --------------------------------------!
-   geoht_min    =   1.0   ! This should be above-canopy measurement, but 1.0 is okay for
-                          !     grasslands...
-   geoht_max    = 350.0   ! This should be not that much above the canopy, but tall towers
-                          !     do exist...
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Minimum and maximum acceptable relative humidity (fraction).  This is not going   !
-   ! cause the simulation to crash, instead it will just impose these numbers to the       !
-   ! meteorological forcing.                                                               !
-   !---------------------------------------------------------------------------------------!
-   atm_rhv_min = 5.e-3 ! 0.5%
-   atm_rhv_max = 1.0   ! 100.0%.  Although canopy air space can experience super-
-                       !    saturation, we don't allow the air above to be super-saturated.
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Time step used to perform the daytime average of the secant of the zenith angle.  !
-   !---------------------------------------------------------------------------------------!
-   dt_radinterp = dtlsm    ! Value in seconds.
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !   These variables control the detailed interpolation output (for debugging only).     !
-   !---------------------------------------------------------------------------------------!
-   print_radinterp = .false.
-   vbdsf_file      = 'visible_beam.txt'
-   vddsf_file      = 'visible_diff.txt'
-   nbdsf_file      = 'near_infrared_beam.txt'
-   nddsf_file      = 'near_infrared_diff.txt'
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine init_met_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine defines defaults for lapse rates.                                    !
-!------------------------------------------------------------------------------------------!
-subroutine init_lapse_params()
-
-   use met_driver_coms, only : lapse             & ! intent(out)
-      , atm_tmp_intercept & ! intent(out)
-      , atm_tmp_slope     & ! intent(out)
-      , prec_intercept    & ! intent(out)
-      , prec_slope        & ! intent(out)
-      , humid_scenario    ! ! intent(out)
-
-   lapse%geoht        = 0.0
-   lapse%atm_ustar    = 0.0
-   lapse%vels         = 0.0
-   lapse%atm_tmp      = 0.0
-   lapse%atm_theta    = 0.0
-   lapse%atm_theiv    = 0.0
-   lapse%atm_vpdef    = 0.0
-   lapse%atm_shv      = 0.0
-   lapse%prss         = 0.0
-   lapse%pcpg         = 0.0
-   lapse%atm_co2      = 0.0
-   lapse%rlong        = 0.0
-   lapse%nir_beam     = 0.0
-   lapse%nir_diffuse  = 0.0
-   lapse%par_beam     = 0.0
-   lapse%par_diffuse  = 0.0
-   lapse%pptnorm      = 0.0
-
-   atm_tmp_intercept = 0.0
-   atm_tmp_slope     = 1.0
-   prec_intercept    = 0.0
-   prec_slope        = 1.0
-   humid_scenario    = 0
-
-   return
-end subroutine init_lapse_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine will assign some radiation related parameters.                        !
-!------------------------------------------------------------------------------------------!
-subroutine init_can_rad_params()
-
-   use canopy_radiation_coms , only : ltrans_vis                  & ! intent(in)
-                                    , ltrans_nir                  & ! intent(in)
-                                    , lreflect_vis                & ! intent(in)
-                                    , lreflect_nir                & ! intent(in)
-                                    , orient_tree                 & ! intent(in)
-                                    , orient_grass                & ! intent(in)
-                                    , clump_tree                  & ! intent(in)
-                                    , clump_grass                 & ! intent(in)
-                                    , leaf_reflect_nir            & ! intent(out)
-                                    , leaf_trans_nir              & ! intent(out)
-                                    , leaf_reflect_vis            & ! intent(out)
-                                    , leaf_trans_vis              & ! intent(out)
-                                    , leaf_emiss_tir              & ! intent(out)
-                                    , clumping_factor             & ! intent(out)
-                                    , orient_factor               & ! intent(out)
-                                    , wood_reflect_nir            & ! intent(out)
-                                    , wood_trans_nir              & ! intent(out)
-                                    , wood_reflect_vis            & ! intent(out)
-                                    , wood_trans_vis              & ! intent(out)
-                                    , wood_emiss_tir              & ! intent(out)
-                                    , fvis_beam_def               & ! intent(out)
-                                    , fvis_diff_def               & ! intent(out)
-                                    , fnir_beam_def               & ! intent(out)
-                                    , fnir_diff_def               & ! intent(out)
-                                    , snow_albedo_vis             & ! intent(out)
-                                    , snow_albedo_nir             & ! intent(out)
-                                    , snow_emiss_tir              & ! intent(out)
-                                    , rshort_twilight_min         & ! intent(out)
-                                    , cosz_min                    & ! intent(out)
-                                    , cosz_min8                   ! ! intent(out)
-   use pft_coms              , only : is_grass                    & ! intent(in)
-                                    , is_tropical                 & ! intent(in)
-                                    , is_conifer                  ! ! intent(in)
-   use consts_coms           , only : pio180                      & ! intent(in)
-                                    , twothirds8                  ! ! intent(in)
-   use ed_max_dims           , only : n_pft                       ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer :: ipft
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      The following parameters are used to split the shortwave radiation into visible  !
-   ! and near-infrared radiation.                                                          !
-   !---------------------------------------------------------------------------------------!
-   fvis_beam_def = 0.43
-   fnir_beam_def = 1.0 - fvis_beam_def
-   fvis_diff_def = 0.52
-   fnir_diff_def = 1.0 - fvis_diff_def
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Clumping factor.  This factor indicates the degree of clumpiness of leaves.       !a
-   !  0 -- black hole                                                                      !
-   !  1 -- homogeneous, no clumping.                                                       !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_conifer(ipft)) then
-         !---- Conifers (subtropical and temperate). --------------------------------------!
-         clumping_factor(ipft) = 7.350d-1
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft) .and. is_grass(ipft)) then
-         !---- Tropical grasses. ----------------------------------------------------------!
-         clumping_factor(ipft) = dble(clump_grass)
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !---- Lianas and tropical trees. -------------------------------------------------!
-         clumping_factor(ipft) = dble(clump_tree)
-         !---------------------------------------------------------------------------------!
-      else
-         !---- Temperate broadleaf (trees pr grasses). ------------------------------------!
-         clumping_factor(ipft) = 8.400d-1
-         !---------------------------------------------------------------------------------!
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Orientation factor.  The numbers come from CLM, and the original value from      !
-   ! ED-2.1 used to 0.  This works in the following way:                                   !
-   !  0 -- leaves are randomly oriented                                                    !
-   !  1 -- all leaves are perfectly horizontal                                             !
-   ! -1 -- all leaves are perfectly vertical.                                              !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (.not. is_tropical(ipft)) then
-         !---- Temperate PFTs (grasses and trees). ----------------------------------------!
-         orient_factor(ipft) = 0.d0
-         !---------------------------------------------------------------------------------!
-      elseif (is_conifer(ipft)) then
-         !---- Sub-tropical conifers, take CLM value for evergreen needleleaf. ------------!
-         orient_factor(ipft) = 1.0d-2
-         !---------------------------------------------------------------------------------!
-      elseif (is_grass(ipft)) then
-         !---- Tropical grasses. ----------------------------------------------------------!
-         orient_factor(ipft) = dble(orient_grass)
-         !---------------------------------------------------------------------------------!
-      else
-         !---- Lianas and tropical broadleaf trees. ---------------------------------------!
-         orient_factor(ipft) = dble(orient_tree)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Emissivity on Thermal infra-red (TIR).                                           !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         !----- Grasses (tropical and temperate). -----------------------------------------!
-         leaf_emiss_tir(ipft) = 9.60d-1
-         wood_emiss_tir(ipft) = 9.60d-1
-         !---------------------------------------------------------------------------------!
-      elseif (is_conifer(ipft)) then
-         !----- Conifers (sub-tropical and temperate). ------------------------------------!
-         leaf_emiss_tir(ipft) = 9.70d-1
-         wood_emiss_tir(ipft) = 9.00d-1
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Lianas and broadleaf trees (tropical and temperate). ----------------------!
-         leaf_emiss_tir(ipft) = 9.50d-1
-         wood_emiss_tir(ipft) = 9.00d-1
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Leaf reflectance.                                                                !
-   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
-   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
-   ! they seem similar at a first glance, at least closer than the original values, which  !
-   ! looked like the visible ignoring the green band.                                      !
-   !                                                                                       !
-   ! Tropical / Subtropical values for visible came from:                                  !
-   ! - Poorter, L., S. F. Oberbauer, D. B. Clark, 1995: Leaf optical properties along a    !
-   !      vertical gradient in a tropical rainforest in Costa Rica. American J. of Botany, !
-   !      82, 1257-1263.                                                                   !
-   ! Tropical values for NIR were estimated from:                                          !
-   ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
-   !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .and. is_conifer(ipft)) then
-         !----- Subtropical conifers. -----------------------------------------------------!
-         leaf_reflect_vis(ipft) = 9.00d-2            ! Visible (PAR)
-         leaf_reflect_nir(ipft) = 5.77d-1            ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !----- Tropical plants (trees, grasses, lianas). ---------------------------------!
-         leaf_reflect_vis(ipft) = dble(lreflect_vis) ! Visible (PAR)
-         leaf_reflect_nir(ipft) = dble(lreflect_nir) ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate plants (trees and grasses). -------------------------------------!
-         leaf_reflect_vis(ipft) = 1.10d-1            ! Visible (PAR)
-         leaf_reflect_nir(ipft) = 5.77d-1            ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Wood reflectance, using values based on:                                         !
-   !                                                                                       !
-   ! Asner, G., 1998: Biophysical and biochemical sources of variability in canopy         !
-   !     reflectance. Remote Sensing of Environment, 64, 234-253.                          !
-   !                                                                                       !
-   ! Commented values are from CLM, but they were quite high.                              !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         !----- Grasses (tropical and temperate). -----------------------------------------!
-         wood_reflect_vis(ipft) = 1.60d-1  ! 3.10d-1 ! Visible (PAR)
-         wood_reflect_nir(ipft) = 2.50d-1  ! 5.30d-1 ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Lianas and trees (tropical and temperate, broadleaf and needleleaf). ------!
-         wood_reflect_vis(ipft) = 1.10d-1  ! 1.60d-1 ! Visible (PAR)
-         wood_reflect_nir(ipft) = 2.50d-1  ! 3.90d-1 ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Leaf transmittance.                                                              !
-   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
-   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
-   ! they seem similar at a first glance, at least closer than the original values, which  !
-   ! looked like the visible ignoring the green band.                                      !
-   !                                                                                       !
-   ! Tropical / Subtropical values for visible came from:                                  !
-   ! - Poorter, L., S. F. Oberbauer, D. B. Clark, 1995: Leaf optical properties along a    !
-   !      vertical gradient in a tropical rainforest in Costa Rica. American J. of Botany, !
-   !      82, 1257-1263.                                                                   !
-   ! Tropical values for NIR were estimated from:                                          !
-   ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
-   !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .and. is_conifer(ipft)) then
-         !----- Subtropical conifers. -----------------------------------------------------!
-         leaf_trans_vis(ipft) = 5.00d-2            ! Visible (PAR)
-         leaf_trans_nir(ipft) = 2.48d-1            ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !----- Tropical plants (trees, lianas, and grasses). -----------------------------!
-         leaf_trans_vis(ipft) = dble(ltrans_vis)   ! Visible (PAR)
-         leaf_trans_nir(ipft) = dble(ltrans_nir)   ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate plants (trees and grasses). -------------------------------------!
-         leaf_trans_vis(ipft) = 1.60d-1            ! Visible (PAR)
-         leaf_trans_nir(ipft) = 2.48d-1            ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Wood transmittance, using the parameters from CLM.                               !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         !----- Grasses (tropical and temperate). -----------------------------------------!
-         wood_trans_vis(ipft) = 2.80d-2 ! Visible (PAR)
-         wood_trans_nir(ipft) = 2.48d-1 ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Trees (tropical and temperate, broadleaf and needleleaf). -----------------!
-         wood_trans_vis(ipft) = 1.00d-3 ! Visible (PAR)
-         wood_trans_nir(ipft) = 1.00d-3 ! Near infrared (NIR)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Optical properties for snow.  Values are a first guess, and a more thorough snow  !
-   ! model that takes snow age and snow melt into account (like in CLM-4 or ECHAM-5) are   !
-   ! very welcome.                                                                         !
-   !                                                                                       !
-   !  References for current snow values:                                                  !
-   !  Roesch, A., et al., 2002: Comparison of spectral surface albedos and their           !
-   !      impact on the general circulation model simulated surface climate.  J.           !
-   !      Geophys. Res.-Atmosph., 107(D14), 4221, 10.1029/2001JD000809.                    !
-   !      Average between minimum and maximum snow albedo on land, af = 0. and af=1.       !
-   !                                                                                       !
-   !  Oleson, K.W., et al., 2010: Technical description of version 4.0 of the              !
-   !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.                 !
-   !                                                                                       !
-   !---------------------------------------------------------------------------------------!
-   snow_albedo_vis = 0.518
-   snow_albedo_nir = 0.435
-   snow_emiss_tir  = 0.970
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     These variables are the thresholds for things that should be computed during the  !
-   ! day time hours only.                                                                  !
-   !---------------------------------------------------------------------------------------!
-   rshort_twilight_min = 0.5
-   cosz_min            = cos(89.*pio180) !cos(89.5*pio180)
-   cosz_min8           = dble(cosz_min)
-   !---------------------------------------------------------------------------------------!
-
-
-   return
-end subroutine init_can_rad_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine will assign some parameters used by the horizontal shading scheme.    !
-!------------------------------------------------------------------------------------------!
-subroutine init_hrzshade_params()
-
-   use canopy_radiation_coms , only : cci_radius                  & ! intent(out)
-                                    , cci_pixres                  & ! intent(out)
-                                    , cci_gapsize                 & ! intent(out)
-                                    , cci_gapmin                  & ! intent(out)
-                                    , cci_nretn                   & ! intent(out)
-                                    , cci_hmax                    & ! intent(out)
-                                    , at0                         & ! intent(out)
-                                    , at1                         & ! intent(out)
-                                    , at08                        & ! intent(out)
-                                    , at18                        ! ! intent(out)
-   implicit none
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The following variables control the method that allow light redistribution based  !
-   ! on patch neighbourhood                                                                !
-   !---------------------------------------------------------------------------------------!
-   cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
-   cci_pixres   =  1.0 ! Pixel resolution for TCH and CCI                          [     m]
-   cci_gapsize  = 14.0 ! Gap size                                                  [     m]
-   cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
-   cci_nretn    = 30.0 ! "Return density" to generate the TCH map                  [  1/m2]
-   cci_hmax     = 70.0 ! Maximum height allowed in the CCI scheme                  [     m]
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Coefficients that control CCI vs. light-correction curve.                         !
-   !---------------------------------------------------------------------------------------!
-   at0       =  3.012569
-   at1       = -0.0044086
-   at08      = dble(at0)
-   at18      = dble(at1)
-   !---------------------------------------------------------------------------------------!
-
-
-   return
-end subroutine init_hrzshade_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine will assign some canopy air related parameters.                       !
-!------------------------------------------------------------------------------------------!
-subroutine init_can_air_params()
-   use consts_coms    , only : onethird              & ! intent(in)
-                             , twothirds             & ! intent(in)
-                             , onesixth              & ! intent(in)
-                             , vonk                  ! ! intent(in)
-   use pft_coms       , only : hgt_min               ! ! intent(in)
-   use canopy_air_coms, only : psim                  & ! function
-                             , psih                  & ! function
-                             , ugbmin                & ! intent(in)
-                             , ubmin                 & ! intent(in)
-                             , ustmin                & ! intent(in)
-                             , gamm                  & ! intent(in)
-                             , gamh                  & ! intent(in)
-                             , tprandtl              & ! intent(in)
-                             , vh2vr                 & ! intent(out)
-                             , vh2dh                 & ! intent(out)
-                             , ribmax                & ! intent(out)
-                             , leaf_drywhc           & ! intent(out)
-                             , leaf_maxwhc           & ! intent(out)
-                             , gbhmos_min            & ! intent(out)
-                             , gbhmos_min8           & ! intent(out)
-                             , veg_height_min        & ! intent(out)
-                             , veg_height_min8       & ! intent(out)
-                             , minimum_canopy_depth  & ! intent(out)
-                             , minimum_canopy_depth8 & ! intent(out)
-                             , exar                  & ! intent(out)
-                             , covr                  & ! intent(out)
-                             , exar8                 & ! intent(out)
-                             , ez                    & ! intent(out)
-                             , ustmin8               & ! intent(out)
-                             , ugbmin8               & ! intent(out)
-                             , ubmin8                & ! intent(out)
-                             , ez8                   & ! intent(out)
-                             , vh2vr8                & ! intent(out)
-                             , vh2dh8                & ! intent(out)
-                             , cdrag0                & ! intent(out)
-                             , cdrag1                & ! intent(out)
-                             , cdrag2                & ! intent(out)
-                             , cdrag3                & ! intent(out)
-                             , pm0                   & ! intent(out)
-                             , c1_m97                & ! intent(out)
-                             , c2_m97                & ! intent(out)
-                             , c3_m97                & ! intent(out)
-                             , kvwake                & ! intent(out)
-                             , alpha_m97             & ! intent(out)
-                             , alpha_mw99            & ! intent(out)
-                             , gamma_mw99            & ! intent(out)
-                             , nu_mw99               & ! intent(out)
-                             , infunc                & ! intent(out)
-                             , cs_dense0             & ! intent(out)
-                             , gamma_clm4            & ! intent(out)
-                             , cdrag08               & ! intent(out)
-                             , cdrag18               & ! intent(out)
-                             , cdrag28               & ! intent(out)
-                             , cdrag38               & ! intent(out)
-                             , pm08                  & ! intent(out)
-                             , c1_m978               & ! intent(out)
-                             , c2_m978               & ! intent(out)
-                             , c3_m978               & ! intent(out)
-                             , kvwake8               & ! intent(out)
-                             , alpha_m97_8           & ! intent(out)
-                             , alpha_mw99_8          & ! intent(out)
-                             , gamma_mw99_8          & ! intent(out)
-                             , nu_mw99_8             & ! intent(out)
-                             , infunc_8              & ! intent(out)
-                             , cs_dense08            & ! intent(out)
-                             , gamma_clm48           & ! intent(out)
-                             , bl79                  & ! intent(out)
-                             , csm                   & ! intent(out)
-                             , csh                   & ! intent(out)
-                             , dl79                  & ! intent(out)
-                             , beta_s                & ! intent(out)
-                             , abh91                 & ! intent(out)
-                             , bbh91                 & ! intent(out)
-                             , cbh91                 & ! intent(out)
-                             , dbh91                 & ! intent(out)
-                             , ebh91                 & ! intent(out)
-                             , fbh91                 & ! intent(out)
-                             , cod                   & ! intent(out)
-                             , bcod                  & ! intent(out)
-                             , fm1                   & ! intent(out)
-                             , ate                   & ! intent(out)
-                             , atetf                 & ! intent(out)
-                             , beta_vs               & ! intent(out)
-                             , chim                  & ! intent(out)
-                             , chih                  & ! intent(out)
-                             , zetac_um              & ! intent(out)
-                             , zetac_uh              & ! intent(out)
-                             , zetac_sm              & ! intent(out)
-                             , zetac_sh              & ! intent(out)
-                             , zetac_umi             & ! intent(out)
-                             , zetac_uhi             & ! intent(out)
-                             , zetac_smi             & ! intent(out)
-                             , zetac_shi             & ! intent(out)
-                             , zetac_umi16           & ! intent(out)
-                             , zetac_uhi13           & ! intent(out)
-                             , psimc_um              & ! intent(out)
-                             , psihc_uh              & ! intent(out)
-                             , zd98_a                & ! intent(out)
-                             , zd98_b                & ! intent(out)
-                             , zd98_emax             & ! intent(out)
-                             , bl798                 & ! intent(out)
-                             , csm8                  & ! intent(out)
-                             , csh8                  & ! intent(out)
-                             , dl798                 & ! intent(out)
-                             , beta_s8               & ! intent(out)
-                             , gamm8                 & ! intent(out)
-                             , gamh8                 & ! intent(out)
-                             , ribmax8               & ! intent(out)
-                             , tprandtl8             & ! intent(out)
-                             , abh918                & ! intent(out)
-                             , bbh918                & ! intent(out)
-                             , cbh918                & ! intent(out)
-                             , dbh918                & ! intent(out)
-                             , ebh918                & ! intent(out)
-                             , fbh918                & ! intent(out)
-                             , cod8                  & ! intent(out)
-                             , bcod8                 & ! intent(out)
-                             , fm18                  & ! intent(out)
-                             , ate8                  & ! intent(out)
-                             , atetf8                & ! intent(out)
-                             , beta_vs8              & ! intent(out)
-                             , chim8                 & ! intent(out)
-                             , chih8                 & ! intent(out)
-                             , zetac_um8             & ! intent(out)
-                             , zetac_uh8             & ! intent(out)
-                             , zetac_sm8             & ! intent(out)
-                             , zetac_sh8             & ! intent(out)
-                             , zetac_umi8            & ! intent(out)
-                             , zetac_uhi8            & ! intent(out)
-                             , zetac_smi8            & ! intent(out)
-                             , zetac_shi8            & ! intent(out)
-                             , zetac_umi168          & ! intent(out)
-                             , zetac_uhi138          & ! intent(out)
-                             , psimc_um8             & ! intent(out)
-                             , psihc_uh8             & ! intent(out)
-                             , zd98_a8               & ! intent(out)
-                             , zd98_b8               & ! intent(out)
-                             , zd98_emax8            & ! intent(out)
-                             , aflat_turb            & ! intent(out)
-                             , aflat_lami            & ! intent(out)
-                             , bflat_turb            & ! intent(out)
-                             , bflat_lami            & ! intent(out)
-                             , nflat_turb            & ! intent(out)
-                             , nflat_lami            & ! intent(out)
-                             , mflat_turb            & ! intent(out)
-                             , mflat_lami            & ! intent(out)
-                             , ocyli_turb            & ! intent(out)
-                             , ocyli_lami            & ! intent(out)
-                             , acyli_turb            & ! intent(out)
-                             , acyli_lami            & ! intent(out)
-                             , bcyli_turb            & ! intent(out)
-                             , bcyli_lami            & ! intent(out)
-                             , ncyli_turb            & ! intent(out)
-                             , ncyli_lami            & ! intent(out)
-                             , mcyli_turb            & ! intent(out)
-                             , mcyli_lami            & ! intent(out)
-                             , aflat_turb8           & ! intent(out)
-                             , aflat_lami8           & ! intent(out)
-                             , bflat_turb8           & ! intent(out)
-                             , bflat_lami8           & ! intent(out)
-                             , nflat_turb8           & ! intent(out)
-                             , nflat_lami8           & ! intent(out)
-                             , mflat_turb8           & ! intent(out)
-                             , mflat_lami8           & ! intent(out)
-                             , ocyli_turb8           & ! intent(out)
-                             , ocyli_lami8           & ! intent(out)
-                             , acyli_turb8           & ! intent(out)
-                             , acyli_lami8           & ! intent(out)
-                             , bcyli_turb8           & ! intent(out)
-                             , bcyli_lami8           & ! intent(out)
-                             , ncyli_turb8           & ! intent(out)
-                             , ncyli_lami8           & ! intent(out)
-                             , mcyli_turb8           & ! intent(out)
-                             , mcyli_lami8           & ! intent(out)
-                             , ggsoil0               & ! intent(out)
-                             , kksoil                & ! intent(out)
-                             , ggsoil08              & ! intent(out)
-                             , kksoil8               ! ! intent(out)
-   implicit none
-   !----- External functions. -------------------------------------------------------------!
-   real   , external :: cbrt
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Minimum leaf water content to be considered.  Values smaller than this will be     !
-   ! flushed to zero.  This value is in kg/[m2 tree], so it will be scaled by (LAI+WAI)    !
-   ! where needed be.                                                                      !
-   !---------------------------------------------------------------------------------------!
-   leaf_drywhc = 5.e-4 * leaf_maxwhc
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !      Variables to define the vegetation aerodynamic conductance.  They are currently  !
-   ! not PFT dependent.                                                                    !
-   !---------------------------------------------------------------------------------------!
-   gbhmos_min  = 1.e-9
-   gbhmos_min8 = dble(gbhmos_min)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
-   !                        height is used to calculate drag coefficients and patch        !
-   !                        roughness.                                                     !
-   ! minimum_canopy_depth - This is the minimum canopy depth allowed [m].  Canopy depth    !
-   !                        is used to calculate the heat and moisture storage capacity in !
-   !                        the canopy air space.                                          !
-   !---------------------------------------------------------------------------------------!
-   veg_height_min        = minval(hgt_min)
-   minimum_canopy_depth  = 5.0  ! alternative: minval(hgt_min)
-
-   !----- This is the dimensionless exponential wind atenuation factor. -------------------!
-   exar  = 2.5
-
-   !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
-   covr = 2.16
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Parameters for surface layer models.                                             !
-   !---------------------------------------------------------------------------------------!
-   !----- Vegetation roughness:vegetation height ratio. -----------------------------------!
-   vh2vr    = 0.13
-   !----- Displacement height:vegetation height ratio. ------------------------------------!
-   vh2dh    = 0.63
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !----- Louis (1979) model. -------------------------------------------------------------!
-   bl79        = 5.0    ! b prime parameter
-   csm         = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
-   csh         = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
-   dl79        = 5.0    ! ???
-   !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   beta_s       = 5.0          ! Beta
-   !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
-   abh91       = -1.00         ! -a from equation  (28) and (32)
-   bbh91       = -twothirds    ! -b from equation  (28) and (32)
-   cbh91       =  5.0          !  c from equations (28) and (32)
-   dbh91       =  0.35         !  d from equations (28) and (32)
-   ebh91       = -twothirds    ! - factor multiplying a*zeta in equation (32)
-   fbh91       =  1.50         ! exponent in equation (32)
-   cod         = cbh91/dbh91   ! c/d
-   bcod        = bbh91 * cod   ! b*c/d
-   fm1         = fbh91 - 1.0   ! f-1
-   ate         = abh91 * ebh91 ! a * e
-   atetf       = ate   * fbh91 ! a * e * f
-   !----- Similar to CLM (2004), but with different phi_m for very unstable case. ---------!
-   zetac_um    = -1.5
-   zetac_uh    = -0.5
-   zetac_sm    =  1.0
-   zetac_sh    =  zetac_sm
-   !----- Define chim and chih so the functions are continuous. ---------------------------!
-   chim        = (-zetac_um) ** onesixth / sqrt(sqrt(1.0 - gamm * zetac_um))
-   chih        = cbrt(-zetac_uh) / sqrt(1.0 - gamh * zetac_uh)
-   beta_vs     = 1.0 - (1.0 - beta_s) * zetac_sm
-   !----- Define derived values to speed up the code a little. ----------------------------!
-   zetac_umi   = 1.0 / zetac_um
-   zetac_uhi   = 1.0 / zetac_uh
-   zetac_smi   = 1.0 / zetac_sm
-   zetac_shi   = 1.0 / zetac_sh
-   zetac_umi16 = 1.0 / (- zetac_um) ** onesixth
-   zetac_uhi13 = 1.0 / cbrt(-zetac_uh)
-
-   !---------------------------------------------------------------------------------------!
-   !     Initialise these values with dummies, it will be updated after we define the      !
-   ! functions.                                                                            !
-   !---------------------------------------------------------------------------------------!
-   psimc_um  = 0.
-   psimc_um  = psim(zetac_um,.false.)
-   psihc_uh  = 0.
-   psihc_uh  = psih(zetac_uh,.false.)
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Parameters for the z0m:z0h ratio, following Zeng and Dickinson (1998). ----------!
-   zd98_a    = 0.13 * tprandtl
-   zd98_b    = 0.45
-   zd98_emax = 10.
-   !---------------------------------------------------------------------------------------!
-
-
-   
-   !----- Legacy variable, we can probably remove it. -------------------------------------!
-   ez  = 0.172
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Parameters for the aerodynamic resistance between the leaf (flat surface) and    !
-   ! wood (kind of cylinder surface), and the canopy air space.  These are the A, B, n,    !
-   ! and m parameters that define the Nusselt number for forced and free convection, at    !
-   ! equations 10.7 and 10.9.  The parameters are found at the appendix A, table A.5(a)    !
-   ! and A.5(b).                                                                           !
-   !                                                                                       !
-   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
-   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
-   !                                                                                       !
-   ! The coefficient B for flat plates under turbulent flow was changed to 0.19 so the     !
-   !     transition from laminar to turbulent regime will happen at Gr ~ 100,000, the      !
-   !     number suggested by M08.                                                          !
-   !---------------------------------------------------------------------------------------!
-   aflat_lami = 0.600    ! A (forced convection), laminar   flow
-   nflat_lami = 0.500    ! n (forced convection), laminar   flow
-   aflat_turb = 0.032    ! A (forced convection), turbulent flow
-   nflat_turb = 0.800    ! n (forced convection), turbulent flow
-   bflat_lami = 0.500    ! B (free   convection), laminar   flow
-   mflat_lami = 0.250    ! m (free   convection), laminar   flow
-   bflat_turb = 0.190    ! B (free   convection), turbulent flow
-   mflat_turb = onethird ! m (free   convection), turbulent flow
-   ocyli_lami = 0.320    ! intercept (forced convection), laminar   flow
-   acyli_lami = 0.510    ! A (forced convection), laminar   flow
-   ncyli_lami = 0.520    ! n (forced convection), laminar   flow
-   ocyli_turb = 0.000    ! intercept (forced convection), turbulent flow
-   acyli_turb = 0.240    ! A (forced convection), turbulent flow
-   ncyli_turb = 0.600    ! n (forced convection), turbulent flow
-   bcyli_lami = 0.480    ! B (free   convection), laminar   flow
-   mcyli_lami = 0.250    ! m (free   convection), laminar   flow
-   bcyli_turb = 0.090    ! B (free   convection), turbulent flow
-   mcyli_turb = onethird ! m (free   convection), turbulent flow
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Define the variables that are going to be used by Massman (1997) and Massman and  !
-   ! Weil (1999).  Full reference:                                                         !
-   !                                                                                       !
-   ! Massman, W. J., 1997: An analytical one-dimensional model of momentum transfer by     !
-   !    vegetation of arbitrary structure.  Boundary-Layer Meteorol., 83, 407-421.         !
-   !                                                                                       !
-   ! Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order clos-  !
-   !    ure model turbulence statistics and the Lagrangian time scale within and above     !
-   !    plant canopies of arbitrary structure.  Boundary-Layer Meteorol., 91, 81-107.      !
-   !                                                                                       !
-   ! Wohlfahrt, G., and A. Cernusca, 2002: Momentum transfer by a mountain meadow canopy:  !
-   !    a simulation analysis based on Massman's (1997) model.  Boundary-Layer Meteorol.,  !
-   !    103, 391-407.
-   !---------------------------------------------------------------------------------------!
-   !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
-   cdrag0    = 0.2
-   !----- Values from re-fit of the data used by WC02. ------------------------------------!
-   cdrag1    = 0.086
-   cdrag2    = 1.192
-   cdrag3    = 0.480
-   !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
-   pm0       = 1.0
-   !----- Surface drag parameters (Massman 1997). -----------------------------------------!
-   c1_m97    = 0.320
-   c2_m97    = 0.264
-   c3_m97    = 15.1
-   !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
-   kvwake    = 0.001
-   !---------------------------------------------------------------------------------------!
-   !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
-   ! as suggested by Massman (1997) and Massman and Weil (1999).                           !
-   !---------------------------------------------------------------------------------------!
-   alpha_m97  = 5.00
-   alpha_mw99 = 0.03
-   !---------------------------------------------------------------------------------------!
-   !      Parameter to represent the roughness sublayer effect.  According to Massman,     !
-   ! assuming this to be zero means that the sublayer effects will be ignored.  Otherwise  !
-   ! Raupach (1994) tried values up to 0.316.                                              !
-   !---------------------------------------------------------------------------------------!
-   infunc    = 0.193
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Parameters for CLM, at equation 5.103 of CLM-4 techical note.                     !
-   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
-   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
-   !---------------------------------------------------------------------------------------!
-   cs_dense0  = 0.004
-   gamma_clm4 = 0.5
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
-   !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
-   !---------------------------------------------------------------------------------------!
-   gamma_mw99 = (/2.4, 1.9, 1.25/)
-   nu_mw99    = (/0.3024,3.4414,36.1476/)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   Soil conductance terms, from:                                                       !
-   !                                                                                       !
-   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifie !
-   !     soumis a une excitation amtospherique naturelle. Comparaison: Modeles-experience. !
-   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
-   !                                                                                       !
-   ! retrieved from:                                                                       !
-   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
-   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
-   !     (MN91)                                                                            !
-   !                                                                                       !
-   !     Please notice that the values are inverted because we compute conductance, not    !
-   ! resistance.                                                                           !
-   !---------------------------------------------------------------------------------------!
-   ggsoil0 = 1. / 38113.
-   kksoil  = 13.515
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Set the double precision variables. ---------------------------------------------!
-   veg_height_min8       = dble(veg_height_min      )
-   minimum_canopy_depth8 = dble(minimum_canopy_depth)
-   exar8                 = dble(exar                )
-   ubmin8                = dble(ubmin               )
-   ugbmin8               = dble(ugbmin              )
-   ustmin8               = dble(ustmin              )
-   ez8                   = dble(ez                  )
-   vh2vr8                = dble(vh2vr               )
-   vh2dh8                = dble(vh2dh               )
-   bl798                 = dble(bl79                )
-   csm8                  = dble(csm                 )
-   csh8                  = dble(csh                 )
-   dl798                 = dble(dl79                )
-   beta_s8               = dble(beta_s              )
-   gamm8                 = dble(gamm                )
-   gamh8                 = dble(gamh                )
-   ribmax8               = dble(ribmax              )
-   tprandtl8             = dble(tprandtl            )
-   abh918                = dble(abh91               )
-   bbh918                = dble(bbh91               )
-   cbh918                = dble(cbh91               )
-   dbh918                = dble(dbh91               )
-   ebh918                = dble(ebh91               )
-   fbh918                = dble(fbh91               )
-   cod8                  = dble(cod                 )
-   bcod8                 = dble(bcod                )
-   fm18                  = dble(fm1                 )
-   ate8                  = dble(ate                 )
-   atetf8                = dble(atetf               )
-   aflat_lami8           = dble(aflat_lami          )
-   nflat_lami8           = dble(nflat_lami          )
-   aflat_turb8           = dble(aflat_turb          )
-   nflat_turb8           = dble(nflat_turb          )
-   bflat_lami8           = dble(bflat_lami          )
-   mflat_lami8           = dble(mflat_lami          )
-   bflat_turb8           = dble(bflat_turb          )
-   mflat_turb8           = dble(mflat_turb          )
-   ocyli_lami8           = dble(ocyli_lami          )
-   acyli_lami8           = dble(acyli_lami          )
-   ncyli_lami8           = dble(ncyli_lami          )
-   ocyli_turb8           = dble(ocyli_turb          )
-   acyli_turb8           = dble(acyli_turb          )
-   ncyli_turb8           = dble(ncyli_turb          )
-   bcyli_lami8           = dble(bcyli_lami          )
-   mcyli_lami8           = dble(mcyli_lami          )
-   bcyli_turb8           = dble(bcyli_turb          )
-   mcyli_turb8           = dble(mcyli_turb          )
-   cdrag08               = dble(cdrag0              )
-   cdrag18               = dble(cdrag1              )
-   cdrag28               = dble(cdrag2              )
-   cdrag38               = dble(cdrag3              )
-   pm08                  = dble(pm0                 )
-   c1_m978               = dble(c1_m97              )
-   c2_m978               = dble(c2_m97              )
-   c3_m978               = dble(c3_m97              )
-   kvwake8               = dble(kvwake              )
-   alpha_m97_8           = dble(alpha_m97           )
-   alpha_mw99_8          = dble(alpha_mw99          )
-   gamma_mw99_8          = dble(gamma_mw99          )
-   nu_mw99_8             = dble(nu_mw99             )
-   infunc_8              = dble(infunc              )
-   cs_dense08            = dble(cs_dense0           )
-   ggsoil08              = dble(ggsoil0             )
-   kksoil8               = dble(kksoil              )
-   zetac_um8             = dble(zetac_um            )
-   zetac_uh8             = dble(zetac_uh            )
-   zetac_sm8             = dble(zetac_sm            )
-   zetac_sh8             = dble(zetac_sh            )
-   chim8                 = dble(chim                )
-   chih8                 = dble(chih                )
-   beta_vs8              = dble(beta_vs             )
-   zetac_umi8            = dble(zetac_umi           )
-   zetac_uhi8            = dble(zetac_uhi           )
-   zetac_smi8            = dble(zetac_smi           )
-   zetac_shi8            = dble(zetac_shi           )
-   zetac_umi168          = dble(zetac_umi16         )
-   zetac_uhi138          = dble(zetac_uhi13         )
-   psimc_um8             = dble(psimc_um            )
-   psimc_um8             = dble(psimc_um            )
-   psihc_uh8             = dble(psihc_uh            )
-   psihc_uh8             = dble(psihc_uh            )
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine init_can_air_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This sub-routine initialises some of the canopy layer variables.  These are used     !
-! by sub-routines that need to calculate the canopy properties by layers rather than by    !
-! cohorts (or when both must be considered).                                               !
-!------------------------------------------------------------------------------------------!
-subroutine init_can_lyr_params()
-   use canopy_layer_coms, only : tai_lyr_max                 & ! intent(out)
-                               , ncanlyr                     & ! intent(out)
-                               , ncanlyrp1                   & ! intent(out)
-                               , ncanlyrt2                   & ! intent(out)
-                               , zztop0                      & ! intent(out)
-                               , zztop08                     & ! intent(out)
-                               , zztop0i                     & ! intent(out)
-                               , zztop0i8                    & ! intent(out)
-                               , ehgt                        & ! intent(out)
-                               , ehgt8                       & ! intent(out)
-                               , ehgti                       & ! intent(out)
-                               , ehgti8                      & ! intent(out)
-                               , dzcan                       & ! intent(out)
-                               , dzcan8                      & ! intent(out)
-                               , zztop                       & ! intent(out)
-                               , zzmid                       & ! intent(out)
-                               , zzbot                       & ! intent(out)
-                               , zztop8                      & ! intent(out)
-                               , zzmid8                      & ! intent(out)
-                               , zzbot8                      & ! intent(out)
-                               , alloc_canopy_layer          ! ! subroutine
-   use pft_coms         , only : hgt_min                     & ! intent(in)
-                               , hgt_max                     ! ! intent(in)
-   use consts_coms      , only : onethird                    & ! intent(in)
-                               , onethird8                   ! ! intent(in)
-   implicit none
-   !----- Local variables. ----------------------------------------------------------------!
-   integer    :: ilyr
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Set the maximum tai that each layer is allowed to have.                          !
-   !---------------------------------------------------------------------------------------!
-   tai_lyr_max = 1.0
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find the layer thickness and the number of layers needed. -----------------------!
-   ncanlyr   = 100
-   ncanlyrp1 = ncanlyr + 1
-   ncanlyrt2 = ncanlyr * 2
-   zztop0    = onethird  * minval(hgt_min)
-   zztop08   = onethird8 * dble(minval(hgt_min))
-   zztop0i   = 1.   / zztop0
-   zztop0i8  = 1.d0 / zztop08
-   ehgt      = log(maxval(hgt_max)/zztop0)        / log(real(ncanlyr))
-   ehgt8     = log(dble(maxval(hgt_max))/zztop08) / log(dble(ncanlyr))
-   ehgti     = 1./ ehgt
-   ehgti8    = 1.d0 / ehgt8
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Allocate the variables. ---------------------------------------------------------!
-   call alloc_canopy_layer()
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Define the layer heights. -------------------------------------------------------!
-   do ilyr =1,ncanlyr
-      zztop (ilyr) = zztop0 * real(ilyr  ) ** ehgt
-      zzbot (ilyr) = zztop0 * real(ilyr-1) ** ehgt
-      dzcan (ilyr) = zztop(ilyr) - zzbot(ilyr)
-      zzmid (ilyr) = 0.5 * (zzbot(ilyr) + zztop(ilyr))
-      zztop8(ilyr) = zztop0  * dble(ilyr  ) ** ehgt8
-      zzbot8(ilyr) = zztop08 * dble(ilyr-1) ** ehgt8
-      dzcan8(ilyr) = zztop8(ilyr) - zzbot8(ilyr)
-      zzmid8(ilyr) = 5.d-1 * (zzbot8(ilyr) + zztop8(ilyr))
-   end do
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine init_can_lyr_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine init_pft_photo_params()
-   use ed_max_dims    , only : n_pft                   & ! intent(in)
-                             , undef_real              ! ! intent(in)
-   use ed_misc_coms   , only : ibigleaf                & ! intent(in)
-                             , iallom                  ! ! intent(in)
-   use pft_coms       , only : is_tropical             & ! intent(in)
-                             , is_conifer              & ! intent(in)
-                             , is_liana                & ! intent(in)
-                             , is_grass                & ! intent(in)
-                             , SLA                     & ! intent(in)
-                             , C2B                     & ! intent(in)
-                             , rho                     & ! intent(in)
-                             , D0                      & ! intent(out)
-                             , Vm_low_temp             & ! intent(out)
-                             , Vm_high_temp            & ! intent(out)
-                             , Vm_decay_e              & ! intent(out)
-                             , Vm0                     & ! intent(out)
-                             , Vm_hor                  & ! intent(out)
-                             , Vm_q10                  & ! intent(out)
-                             , Rd_low_temp             & ! intent(out)
-                             , Rd_high_temp            & ! intent(out)
-                             , Rd_decay_e              & ! intent(out)
-                             , Rd0                     & ! intent(out)
-                             , Rd_hor                  & ! intent(out)
-                             , Rd_q10                  & ! intent(out)
-                             , stomatal_slope          & ! intent(out)
-                             , leaf_width              & ! intent(out)
-                             , cuticular_cond          & ! intent(out)
-                             , quantum_efficiency      & ! intent(out)
-                             , photosyn_pathway        & ! intent(out)
-                             , dark_respiration_factor & ! intent(out)
-                             , water_conductance       ! ! intent(out)
-   use consts_coms    , only : t00                     & ! intent(in)
-                             , twothirds               & ! intent(in)
-                             , umol_2_mol              & ! intent(in)
-                             , yr_sec                  ! ! intent(in)
-   use physiology_coms, only : iphysiol                & ! intent(in)
-                             , vmfact_c3               & ! intent(in)
-                             , vmfact_c4               & ! intent(in)
-                             , mphoto_trc3             & ! intent(in)
-                             , mphoto_tec3             & ! intent(in)
-                             , mphoto_c4               & ! intent(in)
-                             , bphoto_blc3             & ! intent(in)
-                             , bphoto_nlc3             & ! intent(in)
-                             , bphoto_c4               & ! intent(in)
-                             , gamma_c3                & ! intent(in)
-                             , gamma_c4                & ! intent(in)
-                             , d0_grass                & ! intent(in)
-                             , d0_tree                 & ! intent(in)
-                             , alpha_c3                & ! intent(in)
-                             , alpha_c4                & ! intent(in)
-                             , kw_grass                & ! intent(in)
-                             , kw_tree                 & ! intent(in)
-                             , lwidth_grass            & ! intent(in)
-                             , lwidth_bltree           & ! intent(in)
-                             , lwidth_nltree           & ! intent(in)
-                             , q10_c3                  & ! intent(in)
-                             , q10_c4                  ! ! intent(in)
-   implicit none
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4)            :: ssfact
-   real(kind=4)            :: vmexpo_pft
-   real(kind=4)            :: gamma_pft
-   real(kind=4)            :: a_pft
-   real(kind=4)            :: b_pft
-   integer                 :: ipft
-   !----- Local parameters, based on Atkin et al. (2015), Table S3 (Rdark,m). -------------!
-   real(kind=4), parameter :: a_c3grss = -1.962            ! 5d, C3H
-   real(kind=4), parameter :: b_c3grss =  1.247            ! 5d, C3H
-   real(kind=4), parameter :: a_c4grss =  0.30103000-1.962 ! Make it twice C3H
-   real(kind=4), parameter :: b_c4grss =  1.247            ! Make it twice C3H
-   real(kind=4), parameter :: a_bltrop = -1.533            ! 5f, TWQ >= 25 degC
-   real(kind=4), parameter :: b_bltrop =  1.022            ! 5f, TWQ >= 25 degC
-   real(kind=4), parameter :: a_bltemp = -0.862            ! 5f, 15 degC <= TWQ < 25 degC
-   real(kind=4), parameter :: b_bltemp =  0.753            ! 5f, 15 degC <= TWQ < 25 degC
-   real(kind=4), parameter :: a_needle = -0.366            ! 5d, NlT
-   real(kind=4), parameter :: b_needle =  0.494            ! 5d, NlT
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Photosynthetic pathway (3 is C3; 4 is C4). --------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         select case(ipft)
-         case (1)
-            !----- C4 grass. --------------------------------------------------------------!
-            photosyn_pathway(ipft) = 4
-            !------------------------------------------------------------------------------!
-         case default
-            !----- C3 grass (temperate or tropical). --------------------------------------!
-            photosyn_pathway(ipft) = 3
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Tree, C3 photosynthesis. --------------------------------------------------!
-         photosyn_pathway(ipft) = 3
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Critical VPD, for stomata closure due to dry air. -------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         D0(ipft) = d0_grass
-      else
-         D0(ipft) = d0_tree
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Temperature thresholds for photosynthetic capacity.                               !
-   !---------------------------------------------------------------------------------------!
-   Vm_low_temp (:) = merge(4.7137,8.0,is_conifer(:) .or. (.not. is_tropical(:)))
-   Vm_high_temp(:) = 45.0
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Vm_decay_e is the correction term for high and low temperatures when running the   !
-   ! original ED-2.1 correction as in Moorcroft et al. (2001).                             !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-         Vm_decay_e(ipft) =  0.4 ! Conifer of Temperate
-      else
-         Vm_decay_e(ipft) =  0.8 ! Tropical broadleaf
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Vm0 is the maximum photosynthesis capacity in umol/m2/s.  Notice that depending   !
-   ! on the size structure (SAS or Big Leaf), there is an addition factor multiplied.      !
-   !                                                                                       !
-   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
-   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
-   !        account for variation on both axes, all equations were developed using         !
-   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
-   !        density, all variables were log-transformed.  This fit is only applied when    !
-   !        IALLOM = 3 for back-compability.                                               !
-   !                                                                                       !
-   !  References                                                                           !
-   !                                                                                       !
-   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
-   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
-   !                                                                                       !
-   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
-   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
-   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
-   !---------------------------------------------------------------------------------------!
-   !----- Find the additional factor to multiply Vm0. -------------------------------------!
-   select case (ibigleaf)
-      case (0)
-         !----- SAS, use only the modification from the namelist. ----------------------------!
-         ssfact = 1.0
-      case (1)
-         ssfact = 3.0
-   end select
-   !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_liana(ipft)) then ! Lianas
-         Vm0(ipft) = 9.0970000
-      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Araucarias
-         Vm0(ipft) = 10.
-      elseif (is_tropical(ipft) .and. (.not. is_grass(ipft))) then ! Tropical trees
-         select case (iallom)
-         case (3)
-            !----- GLOPNET fit. -----------------------------------------------------------!
-            Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
-            !------------------------------------------------------------------------------!
-         case default
-            !----- Original numbers, each PFT must be initialised separately. -------------!
-            select case (ipft)
-            case (2,12)  ! Early-successional tropical tree
-               Vm0(ipft) = 18.75
-            case (3,13)  ! Mid-successional tropical tree
-               Vm0(ipft) = 12.50
-            case (4,14)  ! Late-successional tropical tree
-               Vm0(ipft) =  6.25
-            case default ! Just in case
-            end select
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !    Temperate trees, each PFT must be initialised separately.                    !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (1)     ! C4 grass. 
-            Vm0(ipft) = 12.500000
-         case (5,16)  ! C3 grass. 
-            Vm0(ipft) = 18.300000
-         case (6,7)   ! Pines (N/S). 
-            Vm0(ipft) = 11.350000
-         case (8)     ! Late conifers. 
-            Vm0(ipft) = 4.540000
-         case (9)     ! Early hardwood. 
-            Vm0(ipft) = 20.387075
-         case (10)    ! Mid hardwood. 
-            Vm0(ipft) = 17.454687
-         case (11)    ! Late hardwood.
-            Vm0(ipft) = 6.981875
-         case default !  Just in case. 
-            Vm0(ipft) = 15.625
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Correct Vm0 based on input settings or if this is a big-leaf simulation.          !
-   !---------------------------------------------------------------------------------------!
-   do ipft = 1, n_pft
-      select case (photosyn_pathway(ipft))
-      case (3)
-         Vm0(ipft) = Vm0(ipft) * ssfact * vmfact_c3
-      case (4)
-         Vm0(ipft) = Vm0(ipft) * ssfact * vmfact_c4
-      end select
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
-   ! constant.  Vm_q10 is the base for the Collatz approach.                               !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      vm_hor(ipft)    = 3000.
-      !----- Distinguish between C3 and C4 photosynthesis as in Collatz et al 91/92. ------!
-      select case (photosyn_pathway(ipft))
-      case (3)
-         vm_q10(ipft) = q10_c3
-      case (4)
-         vm_q10(ipft) = q10_c4
-      end select
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !       Initialise Rd terms with undefined values.  In case they are not provided in    !
-   ! XML, we assign default, gamma-based values in init_derived_params_after_xml.          !
-   !---------------------------------------------------------------------------------------!
-   Rd_low_temp (:) = undef_real
-   Rd_high_temp(:) = undef_real
-   Rd_decay_e  (:) = undef_real
-   Rd_hor      (:) = undef_real
-   Rd_q10      (:) = undef_real
-   Rd0         (:) = undef_real
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Respiration terms.  Here we must check whether this will run Foley-based or        !
-   ! Collatz-based photosynthesis, because the respiration/Vm ratio is constant in the     !
-   ! former but not necessarily in the latter.                                             !
-   !                                                                                       !
-   !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
-   !  In case gamma is set to zero, we use the ratio derived from Atkin et al. (2015).     !
-   !                                                                                       !
-   ! Atkin, O. K., et al. (2015). Global variability in leaf respiration in relation to    !
-   !    climate, plant functional types and leaf traits. New Phytol., 206(2), 614-636,     !
-   !    10.1111/nph.13253.                                                                 !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      !----- Set Rd parameters for this PFT. ----------------------------------------------!
-      if (is_grass(ipft) .and. (photosyn_pathway(ipft) == 3)) then
-         a_pft     = a_c3grss
-         b_pft     = b_c3grss
-         gamma_pft = gamma_c3
-      elseif (is_grass(ipft)) then
-         a_pft     = a_c4grss
-         b_pft     = b_c4grss
-         gamma_pft = gamma_c4
-      elseif (is_conifer(ipft)) then
-         a_pft     = a_needle
-         b_pft     = b_needle
-         gamma_pft = gamma_c3
-      elseif (is_tropical(ipft)) then
-         a_pft     = a_bltrop
-         b_pft     = b_bltrop
-         gamma_pft = gamma_c3
-      else
-         a_pft     = a_bltemp
-         b_pft     = b_bltemp
-         gamma_pft = gamma_c3
-      end if
-      !------------------------------------------------------------------------------------!
-
-      !------------------------------------------------------------------------------------!
-      !     Decide whether to use Atkin's definition of Rd:Vm ratio or the original one.   !
-      !------------------------------------------------------------------------------------!
-      if (gamma_pft == 0.) then
-         !---------------------------------------------------------------------------------!
-         !     The ratio depends on the method: Collatz may have different q10 factors,    !
-         ! and in ED the reference temperature is 15 degC, not 25 degC.  The q10 numbers   !
-         ! make sure that the comparison is carried out at 25 degC, but the reference is   !
-         ! defined at 15 degC.                                                             !
-         !---------------------------------------------------------------------------------!
-         select case (iphysiol)
-         case (0,1)
-            vmexpo_pft = SLA(ipft) * Vm0(ipft) / C2B
-         case (2,3)
-            vmexpo_pft = SLA(ipft) * vm_q10(ipft) * Vm0(ipft) / C2B
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !      Define dark_respiration_factor (Rd:Vm ratio) from Atkin et al. (2015).     !
-         !---------------------------------------------------------------------------------!
-         dark_respiration_factor(ipft) = 10.0**a_pft * vmexpo_pft ** (b_pft-1.)
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !      gamma_pft is the dark_respiration_factor (Rd:Vm ratio).                    !
-         !---------------------------------------------------------------------------------!
-         dark_respiration_factor(ipft) = gamma_pft
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft) .and. photosyn_pathway(ipft) == 4) then
-         stomatal_slope(ipft) = mphoto_c4
-      else if (is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-         stomatal_slope(ipft) = mphoto_tec3
-      else
-         stomatal_slope(ipft) = mphoto_trc3
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Define the residual stomatal conductance (aka the b term, given in umol/m2/s). --!
-   do ipft=1,n_pft
-      if (is_grass(ipft) .and. photosyn_pathway(ipft) == 4) then
-         cuticular_cond(ipft) = bphoto_c4
-      else if (is_conifer(ipft)) then
-         cuticular_cond(ipft) = bphoto_nlc3
-      else
-         cuticular_cond(ipft) = bphoto_blc3
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !------ Set quantum yield fraction. ----------------------------------------------------!
-   do ipft=1,n_pft
-      select case(photosyn_pathway(ipft))
-      case (3)
-         quantum_efficiency(ipft) = alpha_c3
-      case (4)
-         quantum_efficiency(ipft) = alpha_c4
-      end select
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001), and the      !
-   ! namelist, give the number in m2/yr/kg_C_root.  Here we must convert it to             !
-   !  m2/s/kg_C_root.                                                                      !
-   !---------------------------------------------------------------------------------------!
-   water_conductance(:) = merge(kw_grass,kw_tree,is_grass(:)) / yr_sec
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then
-         leaf_width(ipft) = lwidth_grass
-      elseif (is_conifer(ipft)) then
-         leaf_width(ipft) = lwidth_nltree
-      else
-         leaf_width(ipft) = lwidth_bltree
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine init_pft_photo_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 subroutine init_decomp_params()
    use soil_coms   , only : slz                         ! ! intent(in)
    use grid_coms   , only : nzg                         ! ! intent(in)
@@ -2084,2422 +403,188 @@ end subroutine init_decomp_params
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine init_pft_resp_params()
-   use ed_max_dims    , only : n_pft                     & ! intent(in)
-                             , undef_real                ! ! intent(in)
-   use physiology_coms, only : iphysiol                  & ! intent(in)
-                             , rrffact                   & ! intent(in)
-                             , growthresp                ! ! intent(in)
-   use pft_coms       , only : is_tropical               & ! intent(in)
-                             , is_grass                  & ! intent(in)
-                             , is_conifer                & ! intent(in)
-                             , is_liana                  & ! intent(in)
-                             , rho                       & ! intent(in)
-                             , leaf_turnover_rate        & ! intent(inout)
-                             , growth_resp_factor        & ! intent(out)
-                             , root_turnover_rate        & ! intent(out)
-                             , bark_turnover_rate        & ! intent(out)
-                             , storage_turnover_rate     & ! intent(out)
-                             , root_respiration_factor   & ! intent(out)
-                             , rrf_low_temp              & ! intent(inout)
-                             , rrf_high_temp             & ! intent(inout)
-                             , rrf_decay_e               & ! intent(inout)
-                             , rrf_hor                   & ! intent(inout)
-                             , rrf_q10                   ! ! intent(inout)
-   use decomp_coms    , only : f_labile                  ! ! intent(out)
-   use consts_coms    , only : onesixth                  & ! intent(in)
-                             , onethird                  & ! intent(in)
-                             , t00                       ! ! intent(in)
-   implicit none
-   !------ Local variables. ---------------------------------------------------------------!
-   integer                 :: ipft
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     GPP:Growth respiration ratio.                                                     !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_conifer(ipft)) then
-         !----- Conifers (sub-tropical and temperate). ------------------------------------!
-         growth_resp_factor(ipft) = 0.4503
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !----- Tropical broadleaf plants (trees, lianas, and grasses). -------------------!
-         growth_resp_factor(ipft) = growthresp
-         !---------------------------------------------------------------------------------!
-      elseif (is_grass(ipft)) then
-         !----- Temperate grasses. --------------------------------------------------------!
-         growth_resp_factor(ipft) = onethird
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate hardwood --------------------------------------------------------!
-         growth_resp_factor(ipft) = 0.0
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    MLO -- Tropical PFT numbers updated using trait data base.                         !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (leaf_turnover_rate(ipft) /= undef_real) then
-         !----- Old initialisation, do nothing. -------------------------------------------!
-         continue
-         !---------------------------------------------------------------------------------!
-      elseif (is_liana(ipft)) then
-         !----- Lianas. -------------------------------------------------------------------!
-         leaf_turnover_rate(ipft) = 1.27
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then
-         !----- Sub-tropical conifers (araucarias). ---------------------------------------!
-         leaf_turnover_rate(ipft) = onesixth
-         !---------------------------------------------------------------------------------!
-      elseif (is_conifer(ipft)) then
-         !----- Temperate conifers. -------------------------------------------------------!
-         leaf_turnover_rate(ipft) = onethird
-         !---------------------------------------------------------------------------------!
-      elseif (is_grass(ipft)) then
-         !----- Grasses (tropical and temperate). -----------------------------------------!
-         leaf_turnover_rate(ipft) = 2.0
-         !---------------------------------------------------------------------------------!
-      elseif (.not. is_tropical(ipft)) then
-         !----- Hardwood trees.  Turnover is determined by phenology only. ----------------!
-         leaf_turnover_rate(ipft) = 0.0
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !  MLO - Updated tropical parameters based on empirical models relating leaf      !
-         !        traits from GLOPNET (W04) with wood density from (C09).  Because the     !
-         !        idea is to account for variation on both axes, all equations were        !
-         !        developed using standardised major axis (SMA) models - R package smatr.  !
-         !        Except for wood density, all variables were log-transformed.             !
-         !                                                                                 !
-         !  References                                                                     !
-         !                                                                                 !
-         !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics   !
-         !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403      !
-         !     (W04).                                                                      !
-         !                                                                                 !
-         !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.  !
-         !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,    !
-         !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                       !
-         !---------------------------------------------------------------------------------!
-         leaf_turnover_rate(ipft) = exp(2.57332880-4.38819777*rho(ipft))
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Root turnover rate. Currently values are the same as leaf turnover rate, except   !
-   ! for temperate trees whose values come from Medvigy et al. (2009) optimization.        !
-   !                                                                                       !
-   ! Medvigy, D. M., S. C. Wofsy, J. W. Munger, D. Y. Hollinger, and P. R. Moorcroft.      !
-   !    Mechanistic scaling of ecosystem function and dynamics in space and time:          !
-   !    Ecosystem demography model version 2. J. Geophys. Res.-Biogeosci., 114(G1):G01002, !
-   !    Jan 2009. doi:10.1029/2008JG000812.                                                !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .or. is_grass(ipft)) then
-         !----- Copy leaf turnover rate. --------------------------------------------------!
-         root_turnover_rate(ipft) = leaf_turnover_rate(ipft)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Optimised turnover rates. -------------------------------------------------!
-         select case (ipft)
-         case (6)     ! Northern pines. 
-            root_turnover_rate(ipft) = 3.927218 ! 0.333
-         case (7)     ! Southern pines. 
-            root_turnover_rate(ipft) = 4.117847 ! 0.333
-         case (8)     ! Late conifers. 
-            root_turnover_rate(ipft) = 3.800132 ! 0.333
-         case (9)     ! Early hardwoods. 
-            root_turnover_rate(ipft) = 5.772506
-         case (10)    ! Mid hardwoods. 
-            root_turnover_rate(ipft) = 5.083700
-         case (11)    ! Late hardwoods. 
-            root_turnover_rate(ipft) = 5.070992
-         case default ! Forgotten PFTs... 
-            root_turnover_rate(ipft) = leaf_turnover_rate(ipft)
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Bark turnover rate.   A first-guess estimate is the ratio between bark increment   !
-   ! and bark thickness.  Increment rates came from CD17.  Derived values were of the      !
-   ! order of 0.40/yr, and for the time being we use this number for all PFTs.  Actual     !
-   ! data on bark turnover could be helpful.                                               !
-   !                                                                                       !
-   ! Charles-Dominique, T., G. F. Midgley, and W. J. Bond. Fire frequency filters species  !
-   !    by bark traits in a savanna-forest mosaic. J. Veg. Sci., 28(4):728-735, Jul 2017.  !
-   !    doi:10.1111/jvs.12528.                                                             !
-   !---------------------------------------------------------------------------------------!
-   bark_turnover_rate(:) = 0.40
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Storage turnover rate. ----------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .and. is_grass(ipft)) then
-         !----- Tropical grasses. ---------------------------------------------------------!
-         storage_turnover_rate(ipft) = onethird
-         !---------------------------------------------------------------------------------!
-      else if (is_tropical(ipft)) then
-         !----- Lianas and Tropical trees (broadleaf and needleleaf). ---------------------!
-         storage_turnover_rate(ipft) = onesixth
-         !---------------------------------------------------------------------------------!
-      else if (is_grass(ipft) .or. is_conifer(ipft)) then
-         !----- Temperate trees that are not hardwood. ------------------------------------!
-         storage_turnover_rate(ipft) = 0.0
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate hardwood trees. -------------------------------------------------!
-         storage_turnover_rate(ipft) = 0.6243
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Labile fraction of leaves, fine roots and sapwood.                                !
-   ! MLO - Should sapwood have the same labile fraction as leaves and fine roots?          !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_conifer(ipft)) then
-         !----- Conifers (sub-tropical and temperate). ------------------------------------!
-         f_labile(ipft) = 0.79
-         !---------------------------------------------------------------------------------!
-      else if (is_tropical(ipft) .or. is_grass(ipft)) then
-         !----- Lianas, tropical broadleaf trees or grasses (tropical and temperate). -----!
-         f_labile(ipft) = 1.0
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate hardwood trees. -------------------------------------------------!
-         f_labile(ipft) = 0.79
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    This variable sets the contribution of roots to respiration at the reference       !
-   ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
-   !---------------------------------------------------------------------------------------!
-   select case (iphysiol)
-   case (0,1)
-      !----- Arrhenius function. ----------------------------------------------------------!
-      root_respiration_factor(:) = 0.528 * rrffact
-      !------------------------------------------------------------------------------------!
-   case (2,3)
-      !----- Arrhenius function. ----------------------------------------------------------!
-      root_respiration_factor(:) = 0.280 * rrffact
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Initialise root respiration terms with undefined, and attribute default values    !
-   ! only in case they are not defined through XML (check init_derived_params_after_xml).  !
-   !---------------------------------------------------------------------------------------!
-   rrf_low_temp(:)  = undef_real
-   rrf_high_temp(:) = undef_real
-   rrf_decay_e(:)   = undef_real
-   rrf_hor(:)       = undef_real
-   rrf_q10(:)       = undef_real
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine init_pft_resp_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine assigns some PFT-dependent parameters that control mortality rates.  !
+!     This subroutine assigns the fusion and splitting parameters.                         !
 !------------------------------------------------------------------------------------------!
-subroutine init_pft_mort_params()
-   use ed_max_dims , only : n_pft                      ! ! intent(in)
-   use pft_coms    , only : is_grass                   & ! intent(in)
-                          , is_tropical                & ! intent(in)
-                          , is_conifer                 & ! intent(in)
-                          , is_liana                   & ! intent(in)
-                          , mort0                      & ! intent(out)
-                          , mort1                      & ! intent(out)
-                          , mort2                      & ! intent(out)
-                          , mort3                      & ! intent(out)
-                          , cbr_severe_stress          & ! intent(out)
-                          , rho                        & ! intent(out)
-                          , seedling_mortality         & ! intent(out)
-                          , treefall_s_gtht            & ! intent(out)
-                          , treefall_s_ltht            & ! intent(out)
-                          , fire_s_gtht                & ! intent(out)
-                          , fire_s_ltht                & ! intent(out)
-                          , felling_s_ltharv           & ! intent(out)
-                          , felling_s_gtharv           & ! intent(out)
-                          , skid_s_ltharv              & ! intent(out)
-                          , skid_s_gtharv              & ! intent(out)
-                          , plant_min_temp             & ! intent(out)
-                          , frost_mort                 ! ! intent(out)
-   use consts_coms , only : t00                        & ! intent(in)
-                          , lnexp_max                  & ! intent(in)
-                          , onethird                   & ! intent(in)
-                          , twothirds                  ! ! intent(in)
-   use ed_misc_coms, only : ibigleaf                   & ! intent(in)
-                          , iallom                     ! ! intent(in)
-   use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
-                          , time2canopy                & ! intent(in)
-                          , sl_skid_s_gtharv           & ! intent(in)
-                          , sl_skid_s_ltharv           & ! intent(in)
-                          , sl_felling_s_ltharv        ! ! intent(in)
+subroutine init_ff_coms
+   use fusion_fission_coms, only : ifusion                   & ! intent(in)
+                                 , ff_nhgt                   & ! intent(out)
+                                 , niter_patfus              & ! intent(out)
+                                 , fusetol                   & ! intent(out), old_fusion
+                                 , fusetol_h                 & ! intent(out), old_fusion
+                                 , lai_fuse_tol              & ! intent(out), old_fusion
+                                 , coh_tolerance_max         & ! intent(out), old_fusion
+                                 , dark_cumlai_min           & ! intent(out), old_fusion
+                                 , dark_cumlai_max           & ! intent(out), old_fusion
+                                 , dark_cumlai_mult          & ! intent(out), old_fusion
+                                 , sunny_cumlai_min          & ! intent(out), old_fusion
+                                 , sunny_cumlai_max          & ! intent(out), old_fusion
+                                 , sunny_cumlai_mult         & ! intent(out), old_fusion
+                                 , light_toler_min           & ! intent(out), old_fusion
+                                 , light_toler_max           & ! intent(out), old_fusion
+                                 , light_toler_mult          & ! intent(out), old_fusion
+                                 , fuse_relax                & ! intent(out), old_fusion
+                                 , lai_tol                   & ! intent(out)
+                                 , pat_light_ext             & ! intent(out)
+                                 , pat_light_tol_min         & ! intent(out)
+                                 , pat_light_tol_max         & ! intent(out)
+                                 , pat_light_tol_mult        & ! intent(out)
+                                 , pat_light_mxd_fac         & ! intent(out)
+                                 , pat_diff_age_tol          & ! intent(out)
+                                 , pat_min_area_remain       & ! intent(out)
+                                 , niter_cohfus              & ! intent(out)
+                                 , coh_size_tol_min          & ! intent(out)
+                                 , coh_size_tol_max          & ! intent(out)
+                                 , coh_size_tol_mult         & ! intent(out)
+                                 , corr_patch                & ! intent(out)
+                                 , corr_cohort               & ! intent(out)
+                                 , print_fuse_details        & ! intent(out)
+                                 , fuse_prefix               ! ! intent(out)
+   use consts_coms        , only : onethird                  & ! intent(out)
+                                 , twothirds                 & ! intent(in)
+                                 , onesixth                  ! ! intent(in)
+   use ed_max_dims        , only : n_dist_types              ! ! intent(in)
    implicit none
-
    !----- Local variables. ----------------------------------------------------------------!
-   real     :: aquad
-   real     :: bquad
-   real     :: cquad
-   real     :: discr
-   real     :: lambda_ref
-   real     :: lambda_eff
-   real     :: leff_neg
-   real     :: leff_pos
-   real     :: m3_slope
-   integer  :: ipft
+   real              :: exp_cohfus
+   real              :: exp_patfus
    !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Frost mortality is assumed the same for all PFTs (hardiness will be given by     !
-   ! plant_min_temp.                                                                       !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      frost_mort(ipft) = 3.0
-      if (is_tropical(ipft) .and. (.not. is_conifer(ipft))) then
-         !----- Tropical trees, grasses, and lianas. --------------------------------------!
-         plant_min_temp(ipft) = t00 + 2.5
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !    Sub-tropical and temperate plants.  PFT-specific values.                     !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (5,6,9)
-            plant_min_temp(ipft) = t00 - 80.0
-         case (7)
-            plant_min_temp(ipft) = t00 - 10.0
-         case (8)
-            plant_min_temp(ipft) = t00 - 60.0
-         case (10,11)
-            plant_min_temp(ipft) = t00 - 20.0
-         case default
-            plant_min_temp(ipft) = t00 - 15.0
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
 
    !---------------------------------------------------------------------------------------!
-   !     The following variables control the density-dependent mortality rates.            !
-   !  DD = mort1 / (1 + exp(mort0 + mort2 * CB))                                           !
+   !    Parameters that control number of iterations.  More iterations mean slower         !
+   ! increase in tolerance, which normally allows more fusion to occur at relatively       !
+   ! stricter tolerance, although it may increase computational burden.                    !
    !                                                                                       !
-   ! New parameters are not based on literature, but tuning.                               !
+   ! niter_patfus       -- number of patch fusion iterations                               !
+   ! exp_patfus         -- exponential factor, used to determine the incremental           !
+   !                       multiplication factor.                                          !
+   ! niter_cohfus       -- number of cohort fusion iterations                              !
+   ! exp_cohfus         -- exponential factor, used to determine the incremental           !
+   !                       multiplication factor.                                          !
    !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      mort0(:) = merge(-0.25,  0.0,is_tropical(:))
-      mort1(:) = merge( 5.0 ,  1.0,is_tropical(:))
-      mort2(:) = merge(20.0 , 20.0,is_tropical(:))
-   case default
-      mort0(:) = merge(-0.35,  0.0,is_tropical(:))
-      mort1(:) = merge(  2.0,  1.0,is_tropical(:))
-      mort2(:) = merge( 15.0, 20.0,is_tropical(:))
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Variable mort3 controls the density-independent mortality rate due to ageing.     !
-   ! This value is a constant in units of [fraction/year].
-   ! With lianas the idea is to give it the normal mort3 mortality that is basically rho   !
-   ! dependent. Then in the next phase I will try to add a limit to the maximum liana load !
-   ! that a tree can born. When the number of lianas hosted by a given tree exceeds the    !
-   ! avreage values given in O. Phillips (2005) I will kill the lianas(...and the trees?..)!
-   ! That will increase mortality as a consequence. I should later check if the resulting  !
-   ! mortality is in line with what stated in the aforementioned article (lianas have +-6% !
-   ! turnover rate, 3 times that of trees...)                                              !
-   !---------------------------------------------------------------------------------------!
-   if (treefall_disturbance_rate >= 0.) then
-      m3_slope                  = 0.15
-   else
-      treefall_disturbance_rate = abs(treefall_disturbance_rate)
-      m3_slope                  = 0.075 ! 0.02939297
-   end if
-   do ipft=1,n_pft
-      if (is_liana(ipft)) then
-         !----- Lianas, taken from O. Phillips (2005). ------------------------------------!
-         mort3(ipft) = 0.06311576
-         !---------------------------------------------------------------------------------!
-      elseif (is_grass(ipft)) then
-         !----- Grasses, use default from temperate grasses instead of ED-1 approach. -----!
-         mort3(ipft) = 0.066
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then
-         !----- Araucaria, assume the same as southern pines. -----------------------------!
-         mort3(ipft) = 0.0043
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !----- Tropical trees, use ED-1.0 approach. --------------------------------------!
-         mort3(ipft) = m3_slope * (1. - rho(ipft) / rho(4))
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !     Use optimised values from Medvigy et al. (2009).                            !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (6)     ! Northern pines. 
-            mort3(ipft) = 0.0033928
-         case (7)     ! Southern pines. 
-            mort3(ipft) = 0.0043
-         case (8)     ! Late-successional conifers.
-            mort3(ipft) = 0.0023568
-         case (9)     ! Early-successional hardwoods. 
-            mort3(ipft) = 0.006144
-         case (10)    ! Mid-successional hardwoods.
-            mort3(ipft) = 0.003808
-         case (11)    ! Late-successional hardwoods.
-            mort3(ipft) = 0.00428 ! Late-successional greater than than mid-successional?
-         case default ! Forgotten PFT
-            mort3(ipft) = 0.005
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
+   niter_cohfus      = 100
+   exp_cohfus        = 1. / (niter_cohfus - 1.0) 
+   niter_patfus       = 100
+   exp_patfus         = 1. / (niter_patfus-1.0) 
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !      This is the default mortality for when the maximum carbon balance is negative.   !
-   !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
-   !  mortality.                                                                           !
+   !     Old patch fusion variables (slated to be deleted in the near future).             !
    !---------------------------------------------------------------------------------------!
-   cbr_severe_stress(:) = log(epsilon(1.0)) / mort2(:)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Here we check whether we need to re-calculate the treefall disturbance rate so it !
-   ! is consistent with the time to reach the canopy.                                      !
-   !---------------------------------------------------------------------------------------!
-   if (treefall_disturbance_rate == 0.) then
-      !------ No disturbance rate, set time to reach canopy to infinity. ------------------!
-      time2canopy = huge(1.)
-      lambda_ref  = 0.
-      lambda_eff  = 0.
-
-   else
-      lambda_ref = treefall_disturbance_rate
-
-      if (time2canopy > 0.) then
-         !---------------------------------------------------------------------------------!
-         !     We are not going to knock down trees as soon as the patch is created;       !
-         ! instead, we will wait until the patch age is older than time2canopy.  We want,  !
-         ! however, to make the mean patch age to be 1/treefall_disturbance_rate.  The     !
-         ! equation below can be retrieved by integrating the steady-state probability     !
-         ! distribution function.  The equation is quadratic and the discriminant will     !
-         ! never be zero and the treefall_disturbance_rate will be always positive because !
-         ! the values of time2canopy and treefall_disturbance_rate have already been       !
-         ! tested in ed_opspec.F90.                                                        !
-         !---------------------------------------------------------------------------------!
-         aquad    = time2canopy * time2canopy * lambda_ref  - 2. * time2canopy
-         bquad    = 2. * time2canopy * lambda_ref - 2.
-         cquad    = 2. * lambda_ref
-         !------ Find the discriminant. ---------------------------------------------------!
-         discr    = bquad * bquad - 4. * aquad * cquad
-         leff_neg = - 0.5 * (bquad - sqrt(discr)) / aquad
-         leff_pos = - 0.5 * (bquad + sqrt(discr)) / aquad
-         !---------------------------------------------------------------------------------!
-         !      Use the maximum value, but don't let the value to be too large otherwise   !
-         ! the negative exponential will cause underflow.                                  !
-         !---------------------------------------------------------------------------------!
-         lambda_eff = min(lnexp_max,max(leff_neg,leff_pos))
-      else
-         lambda_eff = lambda_ref
-      end if
-
-   end if
+   dark_cumlai_min    = 5.5      ! Minimum cumulative LAI to be ignored (under storey)
+   dark_cumlai_max    = 8.0      ! Maximum cumulative LAI to be ignored (under storey)
+   sunny_cumlai_min   = 0.1      ! Minimum cumulative LAI to be ignored (top canopy)
+   sunny_cumlai_max   = 0.3      ! Maximum cumulative LAI to be ignored (top canopy)
+   light_toler_min    = 0.01     ! Minimum cumulative LAI to be ignored (under storey)
+   light_toler_max    = onethird ! Maximum cumulative LAI to be ignored (under storey)
+   !----- Multiplication factors. ---------------------------------------------------------!
+   sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
+   dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
+   light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
    !---------------------------------------------------------------------------------------!
 
 
-
-
    !---------------------------------------------------------------------------------------!
-   !    Print out the summary.                                                             !
+   !     Old cohort fusion variables (slated to be deleted in the near future).            !
    !---------------------------------------------------------------------------------------!
-   write (unit=*,fmt='(a)')           '----------------------------------------'
-   write (unit=*,fmt='(a)')           '  Treefall disturbance parameters:'
-   write (unit=*,fmt='(a,1x,es12.5)') '  - LAMBDA_REF  =',lambda_ref
-   write (unit=*,fmt='(a,1x,es12.5)') '  - LAMBDA_EFF  =',lambda_eff
-   write (unit=*,fmt='(a,1x,es12.5)') '  - TIME2CANOPY =',time2canopy
-   write (unit=*,fmt='(a)')           '----------------------------------------'
+   fusetol           =  0.4    ! Cohort fusion tolerance on DBH (dimensionless) 
+   fusetol_h         =  0.5    ! Cohort fusion tolerance on height (m) !
+   lai_fuse_tol      =  0.8    ! Cohort fusion tolerance on LAI (m2 leaf/m2 ground)
+   coh_tolerance_max = 10.0    ! Cohort maximum tolerance factor 
+   fuse_relax        = .false. ! Flag to allow a less strict fusion test
    !---------------------------------------------------------------------------------------!
 
 
-
+   !---------------------------------------------------------------------------------------!
+   !      Maximum LAI that a cohort is allowed to have.  This cap ensures that self-thin-  !
+   ! ning mechanisms work in the model.  This parameter is used in fuse_cohorts and        !
+   ! split_cohorts.                                                                        !
+   !---------------------------------------------------------------------------------------!
+   lai_tol            = 1.0
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     Seedling mortality must be redefined for big leaf runs: this is necessary because !
-   ! big leaf plants don't grow in diameter, but in "population".                          !
+   !      Number of height classes (classes will be initialised in                         !
+   ! init_derived_params_after_xml.                                                        !
    !---------------------------------------------------------------------------------------!
-   select case (ibigleaf)
-   case (0)
-      seedling_mortality(:) = 0.95
+   select case (ifusion)
    case (1)
-      select case (iallom)
-      case (0,1)
-         seedling_mortality(:) = merge(0.9500,onethird,is_grass(:))
-      case default
-         seedling_mortality(:) = merge(0.9500,0.4000  ,is_grass(:))
-      end select
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Treefall survivorship fraction.                                                  !
-   !---------------------------------------------------------------------------------------!
-   !----- Trees taller than treefall_hite_threshold (liana survivorship: Putz 1983). ------!
-   treefall_s_gtht(:) = merge(0.80,0.00,is_liana(:))
-   !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
-   select case (iallom)
-   case (3)
-      !------------------------------------------------------------------------------------!
-      !    Higher survivorship.  Tree survivorship is based on measurements at Paracou.    !
-      ! Estimate is the average ratio between secondary and primary tree fall mortality.   !
-      !                                                                                    !
-      ! Ferry, B. et al.  Higher treefall rates on slopes and waterlogged soils result     !
-      !    in lower stand biomass and productivity in a tropical rain forest. J. Veg.      !
-      !    Sci., 98(1), 106-116, 2010. doi:10.1111/j.1365-2745.2009.01604.x                !
-      !                                                                                    !
-      !    Grasses are assigned high survivorship as they are unlikely to be crushed to    !
-      ! death.                                                                             !
-      !------------------------------------------------------------------------------------!
-      treefall_s_ltht(:) = merge(0.80,0.30,is_grass(:) .or. is_liana(:))
-      !------------------------------------------------------------------------------------!
+      ff_nhgt = 19
    case default
-      !------------------------------------------------------------------------------------!
-      !    Original parameters.  MLO: Is it reasonable that small lianas have lower        !
-      ! survivorship than tall lianas?.                                                    !
-      !------------------------------------------------------------------------------------!
-      treefall_s_ltht(:) = merge(0.25,0.10,is_grass(:))
-      !------------------------------------------------------------------------------------!
+      ff_nhgt = 8
    end select
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     Patch fusion layers were relocated to init_derived_params_after_xml, so the       !
+   ! default numbers are based on the height of the tallest possible PFT.                  !
+   !                                                                                       !
+   ! pat_light_ext      -- extinction coefficient for light level.  Typically this should  !
+   !                       be 0.5.                                                         !
+   ! pat_light_tol_min  -- Minimum tolerance for average profile                           !
+   ! pat_light_tol_max  -- Maximum tolerance for average profile                           !
+   ! pat_light_tol_mult -- Factor that increments tolerance (derived from previous vari-   !
+   !                       ables).                                                         !
+   ! pat_light_mxd_fac  -- Maximum deviation from average tolerance (e.g. 1.25 means that  !
+   !                       the maximum difference in light levels can be 25% greater than  !
+   !                       tolerance for average maximum.                                  !
+   !---------------------------------------------------------------------------------------!
+   pat_light_ext      = 0.5
+   pat_light_tol_min  = twothirds * 0.01
+   pat_light_tol_max  = 0.10
+   pat_light_tol_mult = (pat_light_tol_max/pat_light_tol_min)**exp_patfus
+   pat_light_mxd_fac  = 1.50
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !      Felling survivorship fraction, and survivorship to collateral damage due to      !
-   ! logging.                                                                              !
+   !     Cohort fusion variables.                                                          !
+   !                                                                                       !
+   ! coh_size_tol_min  -- Minimum tolerance for relative difference in size.               !
+   ! coh_size_tol_max  -- Maximum tolerance for relative difference in size.               !
+   ! coh_size_tol_mult -- Factor that increments tolerance (derived from previous vari-    !
+   !                       ables).                                                         !
    !---------------------------------------------------------------------------------------!
-   felling_s_gtharv(:) = merge(0.70,0.00               ,is_grass(:))
-   felling_s_ltharv(:) = merge(0.70,sl_felling_s_ltharv,is_grass(:))
-   skid_s_gtharv   (:) = merge(1.00,sl_skid_s_gtharv   ,is_grass(:))
-   skid_s_ltharv   (:) = merge(1.00,sl_skid_s_ltharv   ,is_grass(:))
+   coh_size_tol_min  = twothirds * 0.01
+   coh_size_tol_max  = twothirds * 0.10
+   coh_size_tol_mult = (coh_size_tol_max/coh_size_tol_min)**exp_cohfus
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Maximum age difference allowed for two patches being considered same age [yr]. --!
+   pat_diff_age_tol   = 0.999 / 12.
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !      Fire survivorship fraction.  These variables will be replaced by bark thickness  !                                                    !
+   !      Minimum area to remain resolved.  This condition is normally met, except when    !
+   ! initialising the simulation with massive amount of data (like airborne lidar data).   !
    !---------------------------------------------------------------------------------------!
-   fire_s_gtht(:) = 0.0
-   fire_s_ltht(:) = 0.0
+   pat_min_area_remain = 0.90
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Coefficient of correlation assumed between two patches and cohorts that are      !
+   ! about to be fused.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   corr_patch  = 1.0
+   corr_cohort = 1.0
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- The following flag switches detailed debugging on. ------------------------------!
+   print_fuse_details = .false.
+   fuse_prefix        = 'patch_fusion_'
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine init_pft_mort_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine init_pft_alloc_params()
-
-   use pft_coms     , only : is_tropical           & ! intent(in)
-                           , is_savannah           & ! intent(in)
-                           , is_conifer            & ! intent(in)
-                           , is_liana              & ! intent(in)
-                           , is_grass              & ! intent(in)
-                           , rho                   & ! intent(out)
-                           , SLA                   & ! intent(out)
-                           , leaf_turnover_rate    & ! intent(out)
-                           , q                     & ! intent(out)
-                           , qsw                   & ! intent(out)
-                           , qbark                 & ! intent(out)
-                           , qrhob                 & ! intent(out)
-                           , init_density          & ! intent(out)
-                           , init_laimax           & ! intent(out)
-                           , agf_bs                & ! intent(out)
-                           , brf_wd                & ! intent(out)
-                           , hgt_min               & ! intent(out)
-                           , hgt_ref               & ! intent(out)
-                           , hgt_max               & ! intent(out)
-                           , min_dbh               & ! intent(out)
-                           , dbh_crit              & ! intent(out)
-                           , dbh_bigleaf           & ! intent(out)
-                           , dbh_adult             & ! intent(out)
-                           , min_bdead             & ! intent(out)
-                           , bdead_crit            & ! intent(out)
-                           , bleaf_adult           & ! intent(out)
-                           , b1Ht                  & ! intent(out)
-                           , b2Ht                  & ! intent(out)
-                           , b1Bs_small            & ! intent(out)
-                           , b2Bs_small            & ! intent(out)
-                           , b1Bs_large            & ! intent(out)
-                           , b2Bs_large            & ! intent(out)
-                           , b1Ca                  & ! intent(out)
-                           , b2Ca                  & ! intent(out)
-                           , b1Cl                  & ! intent(out)
-                           , b2Cl                  & ! intent(out)
-                           , b1Rd                  & ! intent(out)
-                           , b2Rd                  & ! intent(out)
-                           , b1Vol                 & ! intent(out)
-                           , b2Vol                 & ! intent(out)
-                           , b1Bl_small            & ! intent(out)
-                           , b2Bl_small            & ! intent(out)
-                           , b1Bl_large            & ! intent(out)
-                           , b2Bl_large            & ! intent(out)
-                           , b1WAI_small           & ! intent(out)
-                           , b2WAI_small           & ! intent(out)
-                           , b1WAI_large           & ! intent(out)
-                           , b2WAI_large           & ! intent(out)
-                           , b1Xs                  & ! intent(out)
-                           , b1Xb                  & ! intent(out)
-                           , C2B                   & ! intent(out)
-                           , sla_scale             & ! intent(out)
-                           , sla_inter             & ! intent(out)
-                           , sla_slope             & ! intent(out)
-                           , sapwood_ratio         & ! intent(out)
-                           , f_bstorage_init       & ! intent(out)
-                           , h_edge                & ! intent(out)
-                           , liana_dbh_crit        ! ! intent(out)
-   use allometry    , only : h2dbh                 & ! function
-                           , dbh2bd                & ! function
-                           , size2bl               ! ! function
-   use consts_coms  , only : onethird              & ! intent(in)
-                           , onesixth              & ! intent(in)
-                           , twothirds             & ! intent(in)
-                           , huge_num              & ! intent(in)
-                           , pi1                   ! ! intent(in)
-   use ed_max_dims  , only : n_pft                 & ! intent(in)
-                           , str_len               & ! intent(in)
-                           , undef_real            ! ! intent(in)
-   use ed_misc_coms , only : iallom                & ! intent(in)
-                           , igrass                & ! intent(in)
-                           , ibigleaf              ! ! intent(in)
-   use detailed_coms, only : idetailed             ! ! intent(in)
-   implicit none
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                   :: ipft
-   integer                   :: n
-   logical                   :: write_allom
-   real   , dimension(n_pft) :: abas
-   real                      :: aux
-   real                      :: init_density_grass
-   real                      :: init_bleaf
-   real                      :: bleaf_sapling
-   real                      :: eta_f16
-   real                      :: eta_c_f16
-   real                      :: asal_bar
-   !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
-   real                  , parameter :: a1          =  -1.981
-   real                  , parameter :: b1          =   1.047
-   real                  , parameter :: dcrit       = 100.0
-   !----- Constants used by bdead only (tropical PFTs) ------------------------------------!
-   real                  , parameter :: c1d         =   0.572
-   real                  , parameter :: d1d         =   0.931
-   real                  , parameter :: a2d         =  -1.086
-   real                  , parameter :: b2d         =   0.876
-   real                  , parameter :: c2d         =   0.604
-   real                  , parameter :: d2d         =   0.871
-   !----- Constants used by bleaf only (tropical PFTs) ------------------------------------!
-   real                  , parameter :: c1l         =  -0.584
-   real                  , parameter :: d1l         =   0.550
-   real                  , parameter :: a2l         =  -4.111
-   real                  , parameter :: b2l         =   0.605
-   real                  , parameter :: c2l         =   0.848
-   real                  , parameter :: d2l         =   0.438
-   !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
-   !---------------------------------------------------------------------------------------!
-   !     MLO.   These are the new parameters obtained by adjusting a curve that is similar !
-   !            to the modified Chave's equation to include wood density effect on the     !
-   !            DBH->AGB allometry as described by:                                        !
-   !                                                                                       !
-   !            Baker, T. R., and co-authors, 2004: Variation in wood density determines   !
-   !               spatial patterns in Amazonian forest biomass.  Glob. Change Biol., 10,  !
-   !               545-562.                                                                !
-   !                                                                                       !
-   !     The "a" parameters were obtaining by splitting balive and bdead at the same ratio !
-   ! as the original ED-2.1 allometry, and optimising a function of the form               !
-   ! B? = (rho / a3) * exp [a1 + a2 * ln(DBH)]                                             !
-   !     The "z" parameters were obtaining by using the original balive and computing      !
-   ! bdead as the difference between the total biomass and the original balive.            !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(3)    , parameter :: ndead_small = (/-1.2639530, 2.4323610, 1.8018010 /)
-   real, dimension(3)    , parameter :: ndead_large = (/-0.8346805, 2.4255736, 2.6822805 /)
-   real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
-   real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
-   !----- Other constants. ----------------------------------------------------------------!
-   character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Check whether to print the allometry table or not. ------------------------------!
-   write_allom = btest(idetailed,5)
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
-   C2B    = 2.0
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     Wood density.                                                                     !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_grass(ipft)) then ! Grasses. Dummy value for some WAI estimates.
-         rho(ipft) = 0.20
-      elseif (is_liana(ipft)) then ! BCI traits
-         rho(ipft) = 0.46
-      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
-         rho(ipft) = 0.54
-      elseif (.not. is_tropical(ipft)) then ! Mid-latitude PFTs, currently not used
-         rho(ipft) = 0.00
-      else
-         !----- Tropical broadleaf trees.  These must be defined individually. ------------!
-         select case (ipft)
-         case (2,12)  ! Early-successional tropical.
-            rho(ipft) = 0.53 ! 0.40
-         case (3,13)  ! Mid-successional tropical.
-            rho(ipft) = 0.71 ! 0.60
-         case (4,14)  ! Late-successional tropical.
-            rho(ipft) = 0.90 ! 0.87
-         case default ! Just in case some PFT was forgotten, use global average
-            rho(ipft) = 0.608
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Leaf turnover rate.  We only initialise it here for tropical trees when IALLOM is !
-   ! not 4, because the old method makes SLA a function of LTOR.  Otherwise, we assign     !
-   ! undefined and fill in init_pft_resp_params.                                           !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3) ! Only lianas are initialised here.
-      leaf_turnover_rate(:) = merge(1.27,undef_real,is_liana(:))
-   case default
-      do ipft=1,n_pft
-         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-            !----- Grasses and Non-tropical, initialise in init_pft_resp_params. ----------!
-            leaf_turnover_rate(ipft) = undef_real
-            !------------------------------------------------------------------------------!
-         elseif (is_liana(ipft)) then
-            leaf_turnover_rate(ipft) = 1.27
-         else
-            !------------------------------------------------------------------------------!
-            !     Grasses and trees, we must assign case by case.                          !
-            !------------------------------------------------------------------------------!
-            select case (ipft)
-            case (2,12) ! Early-successional tropical
-               leaf_turnover_rate(ipft) = 1.0
-            case (3,13) ! Mid-successional tropical
-               leaf_turnover_rate(ipft) = 0.5
-            case (4,14) ! Late-successional tropical
-               leaf_turnover_rate(ipft) = onethird
-            end select
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Specific leaf area [m2 leaf / kg C].   For tropical PFTs, this is a turnover rate !
-   ! defined by the slope, intercept and scale.                                            !
-   !---------------------------------------------------------------------------------------!
-   !----- New parameters. -----------------------------------------------------------------!
-   sla_scale =  0.1 * C2B!C2B=2
-   sla_inter =  2.4
-   sla_slope = -0.46
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !  KIM - new tropical parameters.                                                       !
-   !                                                                                       !
-   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
-   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
-   !        account for variation on both axes, all equations were developed using         !
-   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
-   !        density, all variables were log-transformed.  These changes are only applied   !
-   !        to IALLOM=3 for back-compability.                                              !
-   !                                                                                       !
-   !  References                                                                           !
-   !                                                                                       !
-   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
-   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
-   !                                                                                       !
-   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
-   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
-   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft)) then
-         if (leaf_turnover_rate(ipft) /= undef_real) then ! Kim's allometry
-            SLA(ipft) = sla_scale                                                          &
-                      * 10.**(sla_inter + sla_slope * log10(12./leaf_turnover_rate(ipft)))
-         elseif (is_grass(ipft)) then ! Tropical grasses
-            SLA(ipft) = 22.7
-         elseif (is_liana(ipft)) then ! Just in case, but lianas are init. in Kim's block
-            SLA(ipft) = 17.87954
-         elseif (is_conifer(ipft)) then ! Sub-tropical conifers 
-            SLA(ipft) = 10.
-         else ! Tropical trees
-            SLA(ipft) = exp(4.44824590-2.50747710*rho(ipft))
-         end if
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !    Temperate trees, each PFT must be initialised separately.                    !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (5)     ! Temperate C3 grass.
-            SLA(ipft) = 22.0
-         case (6)     ! Northern pines. 
-            SLA(ipft) = 6.0
-         case (7)     ! Southern pines.
-            SLA(ipft) = 9.0
-         case (8)     ! Late conifers. 
-            SLA(ipft) = 10.0
-         case (9)     ! Early hardwood.
-            SLA(ipft) = 30.0
-         case (10)    ! Mid hardwood. 
-            SLA(ipft) = 24.2
-         case (11)    ! Late hardwood. 
-            SLA(ipft) = 60.0 ! Does it make sense to be much higher than Early- and Mid-?
-         case default ! Just in case. 
-            SLA(ipft) = 15.0
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !----- Fraction of structural stem that is assumed to be above ground. -----------------!
-   agf_bs(:) = 0.7
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Ratio between fine roots and leaves [kg_fine_roots/kg_leaves] -------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .or. is_grass(ipft)) then ! Grasses and tropical plants
-         q(ipft) = 1.0
-      elseif (is_conifer(ipft)) then ! Mid-latitude conifers
-         q(ipft) = 0.3463
-      else ! Temperate Hardwoods
-         q(ipft) = 1.1274
-      end if
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   KIM: ED1/ED2 codes and Moorcroft et al. had the incorrect ratio.                    !
-   !   MLO: The ratio is corrected only for tropical PFTs using iallom=3.  To extend this  !
-   !        fix to other PFTs, one must refit parameters for other tissues (e.g. bdead),   !
-   !        so the total AGB is consistent with the original allometric equation for AGB.  !
-   !                                                                                       !
-   !        For the PFTs that were updated, we combine the pipe model with the data from   !
-   !        CA08 and shape parameter from F16 to derive the ratio.                         !
-   !                                                                                       !
-   ! References:                                                                           !
-   !                                                                                       !
-   ! Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring. Allometric relationships     !
-   !    predicting foliar biomass and leaf area:sapwood area ratio from tree height in     !
-   !    five Costa Rican rain forest species. Tree Physiol., 28 (11):1601-1608, Sep 2008.  !
-   !    doi:10.1093/treephys/28.11.1601. (CA08)                                            !
-   !                                                                                       !
-   ! Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.  plant:  !
-   !    A package for modelling forest trait ecology and evolution.  Methods Ecol. Evol.,  !
-   !    7(2):136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                         !
-   !                                                                                       !
-   ! McDowell, N., H. Barnard, B. Bond, T. Hinckley, R. Hubbard, H. Ishii, B. Kostner,     !
-   !    F. Magnani, J. Marshall, F. Meinzer, N. Phillips, M. Ryan, and D. Whitehead. The   !
-   !    relationship between tree height and leaf area: sapwood area ratio. Oecologia,     !
-   !    132(1):12-20, Jun 2002. doi:10.1007/s00442-002-0904-x. (MD02)                      !
-   !                                                                                       !
-   ! Rosell, J. A., S. Gleason, R. Mendez-Alonzo, Y. Chang, and M. Westoby. Bark           !
-   !    functional ecology: evidence for tradeoffs, functional coordination, and environ-  !
-   !    ment producing bark diversity. New Phytol., 201(2): 486-497, Jan 2014.             !
-   !    doi:10.1111/nph.12541. (R14)                                                       !
-   !                                                                                       !
-   ! Yokozawa M., and T. Hara. Foliage profile, size structure and stem diameter-plant     !
-   !    height relationship in crowded plant populations. Ann. Bot.-London, 76(3):271-285, !
-   !    Sep 1995.                                                                          !
-   !    doi:10.1006/anbo.1995.1096. (YH95)                                                 !
-   !                                                                                       !
-   !      Leaf-to-sapwood area ratio (Al:As, or As/Al) for conifers was estimated from the !
-   ! average of all conifers listed in Table 1 of MD02, weighted by number of individuals. !
-   ! Broadleaf is currently tropical-only, and was obtained from the average of all points !
-   ! from Fig. 1 of CA08 (obtained from extracting data from the figure itself).           !
-   !                                                                                       !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      do ipft=1,n_pft
-         if (is_liana(ipft)) then
-            !------------------------------------------------------------------------------!
-            !      Lianas.  For the time being I did not change to preserve total biomass. !
-            ! Mind that this number may be off by one or two orders of magnitude.          !
-            !------------------------------------------------------------------------------!
-            sapwood_ratio(ipft) = 3900.0
-            !------------------------------------------------------------------------------!
-         elseif (is_tropical(ipft)) then
-            !------------------------------------------------------------------------------!
-            !     Define the shape parameter eta.  Eta describes the vertical distribution !
-            ! of leaf area within the crown.  According to F16 and the original reference  !
-            ! (YH95), eta=1 is typical of conifers, whereas eta=12 is closer to the        !
-            ! profiles observed in angiosperms.  Araucarias somewhat intermediate, so we   !
-            ! set eta=5.                                                                   !
-            !                                                                              !
-            !     asal_bar is the leaf-to-sapwood area ratio (Al:As, or As/Al) for         !
-            ! conifers was estimated from the average of all conifers listed in Table 1 of !
-            ! MD02, weighted by number of individuals.  Broadleaf is currently tropical-   !
-            ! only, and was obtained from the average of all points from Fig. 1 of CA08    !
-            ! (obtained from extracting data from the figure itself)                       !
-            !------------------------------------------------------------------------------!
-            if (is_conifer(ipft)) then ! Sub-tropical needleleaf
-               eta_f16  = 5.0
-               asal_bar = 3.709184e-05
-            else ! Broadleaf plant (trees/grasses).
-               eta_f16  = 12.0
-               asal_bar = 7.400139e-05
-            end if
-            !------------------------------------------------------------------------------!
-
-
-            !------ Eta_c_f16 is calculated following F16. --------------------------------!
-            eta_c_f16 = 1.0 - 2.0 / (1.0+eta_f16) + 1.0 / (1 + 2.0 * eta_f16)
-            !------------------------------------------------------------------------------!
-
-
-            !------ Sapwood ratio. --------------------------------------------------------!
-            sapwood_ratio(ipft) = 1.0 / ( eta_c_f16 * asal_bar * rho(ipft) * 1000. / C2B )
-            !------------------------------------------------------------------------------!
-
-         else
-            !------------------------------------------------------------------------------!
-            !      Default ED-1 ratio.  Mind that this number may be off by one or two     !
-            ! orders of magnitude.                                                         !
-            !------------------------------------------------------------------------------!
-            sapwood_ratio(ipft) = 3900.0
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-
-   case default
-      !------------------------------------------------------------------------------------!
-      !      Default ED-1 ratio.  Mind that this number may be off by one or two orders of !
-      ! magnitude...                                                                       !
-      !------------------------------------------------------------------------------------!
-      sapwood_ratio(:) = 3900.0
-      !------------------------------------------------------------------------------------!
-
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    SLA-dependent ratio between sapwood and leaves [kg_sapwood/kg_leaves]              !
-   !---------------------------------------------------------------------------------------!
-   qsw(:)    = SLA(:) / sapwood_ratio(:)
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !   qrhob is the ratio between bark density and wood density.  For tropical broadleaf   !
-   ! trees, we use fitted curves using SMA on the data available in P14 (Tab. S1).  For    !
-   ! other PFTs, we use the average ratio based on R14, which is similar to the average    !
-   ! of all data points of P14, but it has more types of ecosystems.                       !
-   !                                                                                       !
-   ! Poorter, L., A. McNeil, V.-H. Hurtado, H. H. T. Prins, and F. E. Putz. Bark traits    !
-   !    and life-history strategies of tropical dry- and moist forest trees.               !
-   !    Funct. Ecol., 28(1):232-242, Feb 2014. doi:10.1111/1365-2435.12158 (P14)           !
-   !                                                                                       !
-   ! Rosell, J. A., S. Gleason, R. Mendez-Alonzo, Y. Chang, and M. Westoby. Bark           !
-   !    functional ecology: evidence for tradeoffs, functional coordination, and environ-  !
-   !    ment producing bark diversity. New Phytol., 201(2): 486-497, Jan 2014.             !
-   !    doi:10.1111/nph.12541. (R14)                                                       !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      !----- Check PFT. -------------------------------------------------------------------!
-      if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-         qrhob(ipft) = 0.49 / 0.61
-      else
-         qrhob(ipft) = exp(0.6966550 - 1.602123 * rho(ipft))
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Set bark thickness and carbon allocation to bark.  This is currently done only    !
-   ! for tropical trees when IALLOM=3, because all biomass pools must be corrected to      !
-   ! ensure that total aboveground biomass is consistent with the allometric equations.    !
-   ! This may and should be changed in the future.                                         !
-   !                                                                                       !
-   ! References:                                                                           !
-   !                                                                                       !
-   ! Meinzer, F. C., G. Goldstein, and J. L. Andrade. Regulation of water flux through     !
-   !    tropical forest canopy trees: Do universal rules apply? Tree Physiol.,             !
-   !    21(1):19-26, Jan 2001. doi:10.1093/treephys/21.1.19. (M01)                         !
-   !                                                                                       !
-   ! de Mattos, P. P., A. T. dos Santos, H. Rivera, Y. M. M. de Oliveira, M. A. D. Rosot,  !
-   !    and M. C. Garrastazu. Growth of Araucaria angustifolia in the Embrapa/Epagri       !
-   !    forest reserve, Cacador, SC, Brazil. Pesq. Flor. Bras., 55(2):107-114, Jul 2007.   !
-   !    URL http://pfb.cnpf.embrapa.br/pfb/index.php/pfb/ article/view/124. In Portuguese. !
-   !    (M07)                                                                              !
-   !                                                                                       !
-   ! Lawes, M. J. , J. J. Midgley, and P. J. Clarke. Costs and benefits of relative bark   !
-   !    thickness in relation to fire damage: a savanna/forest contrast. J. Ecol.,         !
-   !    101(2):517-524, Dec 2013. doi:10.1111/1365-2745.12035. (L13)                       !
-   !                                                                                       !
-   ! Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.          !
-   !    plant: A package for modelling forest trait ecology and evolution.  Methods Ecol.  !
-   !    Evol., 7(2):136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                  !
-   !                                                                                       !
-   ! b1Xs - slope of the dbh to sapwood thickness curve.  Currently this is used only to   !
-   !        define biomass allocation to bark consistent with bark thickness.              !
-   !                                                                                       !
-   ! b1Xb - slope of the dbh to bark thickness curve.                                      !
-   ! qbark - ratio between leaf biomass and bark biomass per unit height.                  !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      !------ New allometry, use estimate based on M01. -----------------------------------!
-      b1Xs(:) = 0.315769481
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Define bark thickness parameter based on life form.                            !
-      !------------------------------------------------------------------------------------!
-      do ipft=1,n_pft
-         if (.not. is_tropical(ipft)) then ! Non-tropical trees (bark is not set)
-            b1Xb(ipft) = 0.0
-         elseif (is_grass(ipft)) then ! Grasses (bark is not set)
-            b1Xb(ipft) = 0.0
-         elseif (is_liana(ipft)) then ! Lianas (bark is not set)
-            b1Xb(ipft) = 0.0
-         elseif (is_conifer (ipft)) then ! Araucarias, use slope from M07, Table 1
-            b1Xb(ipft) = 0.03936468
-         elseif (is_savannah(ipft)) then ! Avg. Slope of savannah trees (L13)
-            b1Xb(ipft) = 0.128
-         else ! Avg. Slope of forest trees (L13)
-            b1Xb(ipft) = 0.019
-         end if
-      end do
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !     Define the area ratio between sapwood and bark, assuming that sapwood and bark !
-      ! are concentric rings.                                                              !
-      !------------------------------------------------------------------------------------!
-      abas(:)  = b1Xb(:) * (1.0 - b1Xb(:)) / ( b1Xs(:) * (1. + b1Xs(:) - 2. * b1Xb(:)) )
-      qbark(:) = qrhob(:) * abas(:) * qsw(:)
-      !------------------------------------------------------------------------------------!
-
-   case default
-      !------ Old allometry, exclude bark. ------------------------------------------------!
-      b1Xs (:) = 0.315769481
-      b1Xb (:) = 0.0
-      abas (:) = 0.0
-      qbark(:) = 0.0
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
-   !---------------------------------------------------------------------------------------!
-   select case (igrass)
-   case (1)
-      init_density_grass = 1.
-   case default
-      init_density_grass = 0.1
-   end select
-   init_density(:) = merge(init_density_grass,0.1,is_grass(:))
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   DBH/height allometry parameters.                                                    !
-   !                                                                                       !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
-   !                                                                                       !
-   !   b1Ht, b2Ht, and hgt_ref are parameters that have different meaning for tropical and !
-   ! temperate PFTs, and the meaning for tropical PFTs depends on IALLOM.                  !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_liana(ipft)) then
-         !---- Liana allometry: 10cm lianas are 35m tall ----------------------------------!
-         hgt_ref(ipft) = 61.7
-         b1Ht   (ipft) = 0.1136442
-         b2Ht   (ipft) = 0.8675
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !---------------------------------------------------------------------------------!
-         !    Tropical trees have different parameters and functional forms depending on   !
-         ! the allometry.                                                                  !
-         !---------------------------------------------------------------------------------!
-         select case (iallom)
-         case (0:1)
-            !----- Regular log-log fit, b1 is the intercept and b2 is the slope. ----------!
-            b1Ht   (ipft) = 0.37 * log(10.0)
-            b2Ht   (ipft) = 0.64
-            !----- hgt_ref is not used. ---------------------------------------------------!
-            hgt_ref(ipft) = 0.0
-            !------------------------------------------------------------------------------!
-         case (2)
-            !------------------------------------------------------------------------------!
-            ! Weibull function --- H = Hinf * (1-exp(-b1*DBH^b2)) --- proposed by:         !
-            !                                                                              !
-            ! Poorter, L., L. Bongers, and F. Bongers. Architecture of 54 moist-forest     !
-            !    tree species: traits, trade-offs, and functional groups. Ecology,         !
-            !    87(5):1289-1301, May 2006.                                                !
-            !    doi:10.1890/0012- 9658(2006)87[1289:AOMTST]2.0.CO;2.                      !
-            !------------------------------------------------------------------------------!
-            !----- b1Ht is their "a" and b2Ht is their "b". -------------------------------!
-            b1Ht   (ipft) = 0.0352
-            b2Ht   (ipft) = 0.694
-            !----- hgt_ref is their "Hmax". -----------------------------------------------!
-            hgt_ref(ipft) = 61.7
-            !------------------------------------------------------------------------------!
-        case (3)
-            !------------------------------------------------------------------------------!
-            !     Allometric equation based on the Sustainable Landscapes data.            !
-            !                                                                              !
-            !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests !
-            !       in the Amazon, in prep.                                                !
-            !                                                                              !
-            !    Equation was derived from multiple forest inventories carried out at      !
-            ! multiple locations in the Brazilian Amazon, and fitted using a hetero-       !
-            ! scedastic least squares approach.  This equation is very similar to          !
-            ! Feldpausch et al (2012) equation for South America.                          !
-            !                                                                              !
-            ! Total number of trees: 15624                                                 !
-            ! hgt_ref = 47.2    (95% CI: [  44.8;   48.8])                                 !
-            ! b1Ht    = 0.0440  (95% CI: [0.0427; 0.0454])                                 !
-            ! b2Ht    = 0.802   (95% CI: [ 0.788;  0.822])                                 !
-            ! R2      = 0.677                                                              !
-            ! RMSE    = 5.4                                                                !
-            !------------------------------------------------------------------------------!
-            !----- b1Ht is their "a1" and b2Ht is their "a2". -----------------------------!
-            b1Ht   (ipft) = 0.044037
-            b2Ht   (ipft) = 0.80248
-            !----- hgt_ref is their "H-Infinity". -----------------------------------------!
-            hgt_ref(ipft) = 47.173
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !     Temperate PFTs, each one has a different model fitting.  Reference:         !
-         !                                                                                 !
-         ! Albani, M., D. Medvigy, G. C. Hurtt, and P. R. Moorcroft. The contributions of  !
-         !    land-use change, CO2 fertilization, and climate variability to the eastern   !
-         !    US carbon sink. Glob. Change Biol., 12(12):2370-2390, Dec 2006.              !
-         !    doi:10.1111/j.1365-2486.2006.01254.x.                                        !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (5)     ! Temperate C3 grass. 
-            b1Ht   (ipft) =  0.4778
-            b2Ht   (ipft) = -0.75
-            hgt_ref(ipft) =  0.0
-         case (6,7)   ! Northern and Southern Pines. 
-            b1Ht   (ipft) = 27.14
-            b2Ht   (ipft) = -0.03884
-            hgt_ref(ipft) = 1.3
-         case (8)     ! Late conifers. 
-            b1Ht   (ipft) = 22.79
-            b2Ht   (ipft) = -0.04445 
-            hgt_ref(ipft) = 1.3
-         case (9)     ! Early hardwood. 
-            b1Ht   (ipft) = 22.6799
-            b2Ht   (ipft) = -0.06534
-            hgt_ref(ipft) = 1.3
-         case (10)    ! Mid hardwood. 
-            b1Ht   (ipft) = 25.18
-            b2Ht   (ipft) = -0.04964
-            hgt_ref(ipft) = 1.3
-         case (11)    ! Late hardwood. 
-            b1Ht   (ipft) = 23.3874
-            b2Ht   (ipft) = -0.05404
-            hgt_ref(ipft) = 1.3
-         case default ! Forgotten PFT.
-            b1Ht   (ipft) = 25.18
-            b2Ht   (ipft) = -0.04964
-            hgt_ref(ipft) = 1.3
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Minimum and maximum height allowed for each cohort.                                !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .and. is_grass(ipft)) then
-         !----- Limit grasses to a maximum of 1.5m. ---------------------------------------!
-         hgt_min(ipft) = 0.50
-         hgt_max(ipft) = 1.50
-         !---------------------------------------------------------------------------------!
-      else if (is_tropical(ipft)) then
-         !---------------------------------------------------------------------------------!
-         !     Tropical trees.  In principle maximum height could be simply hgt_ref as it  !
-         ! is the upper bound of the Weibull function.  In reality, we impose this limit   !
-         ! that is used to define dbh_crit, which halts increment in leaf biomass, crown   !
-         ! area, etc, which otherwise would reach unrealistic values due to excessive      !
-         ! extrapolation.                                                                  !
-         !---------------------------------------------------------------------------------!
-         hgt_min(ipft) = 0.5
-         select case (iallom)
-         case (3)
-            hgt_max(ipft) = 42.0
-         case default
-            hgt_max(ipft) = 35.0
-         end select
-         !---------------------------------------------------------------------------------!
-      else if (is_grass   (ipft)) then
-         !----- Temperate C3 grasses. -----------------------------------------------------!
-         hgt_min(ipft) = 0.15
-         hgt_max(ipft) = 0.95 * b1Ht(ipft)
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate trees. ----------------------------------------------------------!
-         hgt_min(ipft) = hgt_ref(ipft) + 0.20
-         hgt_max(ipft) = 0.999 * b1Ht(ipft)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
-   !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
-      dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     DBH-crown allometry.                                                              !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_liana(ipft)) then
-         !----- Lianas. -------------------------------------------------------------------!
-         b1Ca(ipft) = exp(ncrown_area(1))
-         b2Ca(ipft) = 1.26254364
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         !----- Tropical PFT.  Decide parameters based on iallom. -------------------------!
-         select case (iallom)
-         case (0,1)
-            !------------------------------------------------------------------------------!
-            !    Coefficients from Poorter et al. (2006), after being transformed so the   !
-            ! allometry is a function of DBH.                                              !
-            !                                                                              !
-            ! Poorter, L., L. Bongers, and F. Bongers. Architecture of 54 moist-forest     !
-            !    tree species: traits, trade-offs, and functional groups. Ecology,         !
-            !    87(5):1289-1301, May 2006.                                                !
-            !    doi:10.1890/0012- 9658(2006)87[1289:AOMTST]2.0.CO;2.                      !
-            !------------------------------------------------------------------------------!
-            b1Ca(ipft) = exp(-1.853) * exp(b1Ht(ipft)) ** 1.888
-            b2Ca(ipft) = b2Ht(ipft) * 1.888
-            !------------------------------------------------------------------------------!
-         case (2)
-            !------------------------------------------------------------------------------!
-            !    Coefficients also based on Poorter et al. (2006), but using refitted      !
-            ! coefficients to use DBH as the predictive variable.                          !
-            !------------------------------------------------------------------------------!
-            b1Ca(ipft) = exp(ncrown_area(1))
-            b2Ca(ipft) = ncrown_area(2)
-            !------------------------------------------------------------------------------!
-         case (3)
-            !------------------------------------------------------------------------------!
-            !     Allometry using the Sustainable Landscapes data.                         !
-            !------------------------------------------------------------------------------!
-            !                                                                              !
-            !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests !
-            !       in the Amazon, in prep.                                                !
-            !                                                                              !
-            !    Equation was derived from forest inventory measurements carried out at    !
-            ! multiple locations in the Brazilian Amazon, and fitted using a hetero-       !
-            ! scedastic least squares approach.                                            !
-            !                                                                              !
-            ! Total number of trees: 17066                                                 !
-            ! b1Ca = 0.582 (95% CI: [0.543;0.628])                                         !
-            ! b2Ca = 1.224 (95% CI: [1.201;1.245])                                         !
-            ! R2   = 0.501                                                                 !
-            ! RMSE = 29.89                                                                 !
-            !------------------------------------------------------------------------------!
-            b1Ca(ipft) = 0.582
-            b2Ca(ipft) = 1.224
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !     Temperate PFT, use Dietze and Clark (2008).                                 !
-         !---------------------------------------------------------------------------------!
-         b1Ca(ipft) = 2.490154
-         b2Ca(ipft) = 0.8068806
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     These are used to compute the crown length, which will then be used to find the   !
-   ! height of the bottom of the crown.  This allometry is based on:                       !
-   !                                                                                       !
-   ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
-   !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
-   !                                                                                       !
-   !    For iallom = 3, we use the allometric equation based on the Sustainable Landscapes !
-   ! data set.                                                                             !
-   !                                                                                       !
-   !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests in the   !
-   !       Amazon, in prep.                                                                !
-   !                                                                                       !
-   !    Equation was derived from forest inventory measurements carried out at multiple    !
-   ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
-   ! squares approach.                                                                     !
-   !                                                                                       !
-   ! Total number of trees: 16064                                                          !
-   ! b1Cl    = 0.298 (95% CI: [0.288;0.306])                                               !
-   ! b2Cl    = 1.032 (95% CI: [1.022;1.044])                                               !
-   ! R2      = 0.673                                                                       !
-   ! RMSE    = 2.29                                                                        !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      !----- Check life form. -------------------------------------------------------------!
-      if (is_grass(ipft)) then
-         b1Cl(ipft) = 0.99
-         b2Cl(ipft) = 1.00
-      elseif (is_tropical(ipft)) then
-         !----- Tropical PFTs: check allometry settings. ----------------------------------!
-         select case (iallom)
-         case (3)
-            b1Cl(ipft) = 0.29754
-            b2Cl(ipft) = 1.0324
-         case default
-            b1Cl(ipft) = 0.3106775
-            b2Cl(ipft) = 1.098
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !     Temperate PFTs: right now we are using the same allometry as the old        !
-         ! tropical (Poorter et al. 2006).  We probably need to switch these coefficients  !
-         ! by appropriate reference.                                                       !
-         !---------------------------------------------------------------------------------!
-         b1Cl(ipft) = 0.3106775
-         b2Cl(ipft) = 1.098
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
-   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
-   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
-   ! guess is about 1/3 of the critical DBH for trees.                                     !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (0,1)
-      !----- Critical DBH for all PFTs. ---------------------------------------------------!
-      dbh_bigleaf(:) = dbh_crit(:)
-      !------------------------------------------------------------------------------------!
-   case default
-      do ipft=1,n_pft
-         if (is_grass(ipft)) then
-            !----- Grasses: critical DBH. -------------------------------------------------!
-            dbh_bigleaf(ipft) = dbh_crit(ipft)
-            !------------------------------------------------------------------------------!
-         else
-            !----- Trees: 1/3 of the critical DBH. ----------------------------------------!
-            dbh_bigleaf(ipft) = dbh_crit(ipft) * onethird
-            !------------------------------------------------------------------------------!
-         end if
-         !---------------------------------------------------------------------------------!
-      end do
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Parameters for DBH -> Bleaf allometry.                                            !
-   !                                                                                       !
-   !           { b1Bl_small * dbh^b2Bl_small.             , if dbh < dbh_adult             !
-   !   Bleaf = {                                                                           !
-   !           { b1Bl_large * min(dbh_crit,dbh)^b2Bl_large, if dbh > dbh_adult             !
-   !                                                                                       !
-   !   The coefficients and thresholds depend on the PFT and allometric equations.         !
-   !                                                                                       !
-   !   MLO -- Manfredo, dbh_adult is where the two functions would give the same  number   !
-   !          to avoid discontinuities.  Please check it.                                  !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_liana(ipft)) then
-          !----- Liana leaf Biomass (Putz, 1983) ------------------------------------------!
-          b1Bl_small (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
-          b2Bl_small (ipft) = nleaf(2)
-          b1Bl_large (ipft) = 0.0856
-          b2Bl_large (ipft) = 2.0
-          dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)          &
-                            ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
-          bleaf_adult(ipft) = b1Bl_large(ipft)                                             &
-                            / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
-          !--------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         select case(iallom)
-         case (0,1)
-            !------------------------------------------------------------------------------!
-            !      ED-2.0 allometry, based on:                                             !
-            !                                                                              !
-            !   Saldarriaga, J. G., D. C. West, M. L. Tharp, and C. Uhl.  Long-term        !
-            !      chronosequence of forest succession in the upper Rio Negro of Colombia  !
-            !      and Venezuela.  J. Ecol., 76, 4, 938-958, 1988.                         !
-            !------------------------------------------------------------------------------!
-            b1Bl_small (ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
-            aux               = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))   &
-                                * (d2l - d1l) ) * (1.0/log(dcrit))
-            b2Bl_small (ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
-            b1Bl_large (ipft) = b1Bl_small(ipft)
-            b2Bl_large (ipft) = b2Bl_small(ipft)
-            dbh_adult  (ipft) = 10.0
-            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
-            !------------------------------------------------------------------------------!
-         case (2)
-            !------------------------------------------------------------------------------!
-            !     ED-2.1 allometry, based on:                                              !
-            !                                                                              !
-            !   Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring.  Tree Physiol.,   !
-            !      28, 11, 1601-1608, 2008.                                                !
-            !                                                                              !
-            !   Cole, T. G., J. J. Ewel.  Allometric equations for four valuable tropical  !
-            !      tree species.  Forest Ecol. Manag., 229, 1--3, 351-360, 2006.           !
-            !------------------------------------------------------------------------------!
-            b1Bl_small (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
-            b2Bl_small (ipft) = nleaf(2)
-            b1Bl_large (ipft) = b1Bl_small(ipft)
-            b2Bl_large (ipft) = b2Bl_small(ipft)
-            dbh_adult  (ipft) = dbh_crit(ipft)
-            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
-            !------------------------------------------------------------------------------!
-         case (3)
-            !------------------------------------------------------------------------------!
-            !     ED-2.2 allometry.  For large trees, it is based on:                      !
-            !                                                                              !
-            !   Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and             !
-            !      A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane          !
-            !      Francaise.  Acta Oecol. - Oec. Gen., 4, 3, 237-251, 1983.               !
-            !                                                                              !
-            !   Further modified to scale the leaf biomass by SLA.  For smaller trees, the !
-            !      biomass is a log-linear interpolation from 20gC/plant at minimum size   !
-            !      (scaled by SLA relative to mid-successional) and Lescure's allometry at !
-            !      minimum adult size.                                                     !
-            !------------------------------------------------------------------------------!
-            b1Bl_large (ipft) = 0.00873 * SLA(3) / SLA(ipft)
-            b2Bl_large (ipft) = 2.1360
-            !------------------------------------------------------------------------------!
-
-
-            !------------------------------------------------------------------------------!
-            !     DBH_Adult is by definition the minimum size that local LAI can become    !
-            ! greater than 1.                                                              !
-            !------------------------------------------------------------------------------!
-            dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)        &
-                              ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
-            bleaf_adult(ipft) = b1Bl_large(ipft)                                           &
-                              / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
-            !------------------------------------------------------------------------------!
-
-
-            !----- Small-sized bleaf is a log-linear interpolation. -----------------------!
-            bleaf_sapling     = 0.02 * C2B * SLA(3) / SLA(ipft)
-            b2Bl_small (ipft) = log( bleaf_adult(ipft) / bleaf_sapling )                   &
-                              / log( dbh_adult  (ipft) / min_dbh(ipft) )
-            b1Bl_small (ipft) = bleaf_adult(ipft) * C2B                                    &
-                              / dbh_adult(ipft) ** b2Bl_small(ipft)
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !      Temperate PFTs.  Each class has specific optimised parameters, and there   !
-         ! is no distinction between small and large cohorts.                              !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (5)   ! Temperate C3 grass. 
-            b1Bl_small(ipft) = 0.08
-            b2Bl_small(ipft) = 1.0
-         case (6,7) ! Northern and Southern Pines. 
-            b1Bl_small(ipft) = 0.024
-            b2Bl_small(ipft) = 1.899
-         case (8)   ! Late conifers. 
-            b1Bl_small(ipft) = 0.0454
-            b2Bl_small(ipft) = 1.6829
-         case (9)   ! Early hardwood. 
-            b1Bl_small(ipft) = 0.0129
-            b2Bl_small(ipft) = 1.7477
-         case (10) ! Mid hardwood. 
-            b1Bl_small(ipft) = 0.048
-            b2Bl_small(ipft) = 1.455
-         case (11) ! Late hardwood. 
-            b1Bl_small(ipft) = 0.017
-            b2Bl_small(ipft) = 1.731
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !    Duplicate coefficients and set dummy adult dbh.                              !
-         !---------------------------------------------------------------------------------!
-         b1Bl_large (ipft) = b1Bl_small(ipft)
-         b2Bl_large (ipft) = b2Bl_small(ipft)
-         dbh_adult  (ipft) = 5.0
-         bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Parameters for DBH -> Bdead allometry.                                            !
-   !                                                                                       !
-   !           { b1Bs_small * DBH^b2Bs_small.             , if dbh < dbh_adult             !
-   !   Bdead = {                                                                           !
-   !           { b1Bs_large * dbh)^b2Bl_large, if dbh > dbh_adult                          !
-   !                                                                                       !
-   !   The coefficients and thresholds depend on the PFT and allometric equations.         !
-   !---------------------------------------------------------------------------------------!
-   !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
-   do ipft=1,n_pft
-      if (is_liana(ipft)) then
-         !---------------------------------------------------------------------------------!
-         ! Liana allometry                                                                 !
-         !                                                                                 !
-         !    This is an experimental value for dead biomass. The Schnitzer article        !
-         ! provide an allometric equation to relate AGB to DBH. Since here we are dealing  !
-         ! with DB instead of AGB I also subtracted the leaf biomass from AGB. Bl dbh      !
-         ! allometry is the same used in size2bl from Putz. I have dropped the intercept   !
-         ! though. This is because  otherwise one would have DB != when plant has DBH = 0. !
-         ! At this point one would have                                                    !
-         ! dbh2bd = (exp(-1.484 + 2.657 * log(dbh)) - 0.0856 * dbh * dbh) / C2B            !
-         ! Moreover since Schnitzer gives AGB we have to divide by agf_bs so that          !
-         ! when we calculate the above ground fraction multiplying by agf_bs we get the    !
-         ! correct AGB. I fitted this equation dbh2bd with a form dbh2bd = a*(dbh)**b      !
-         ! because otherwise the formula is not invertible (we need bd2dbh). Fit converges !
-         ! nicely with                                                                     !
-         ! a= 0.13745 and b=2.69373 .                                                      !
-         !                                                                                 !
-         ! MLO -- qsw is not zero for lianas, so you may be overestimating total AGB in    !
-         !        ED-2, because bdead = agb - bleaf - bsapwooda - agf_bs * bbark.          !
-         !---------------------------------------------------------------------------------!
-         b1Bs_small(ipft) = 0.2749
-         b1Bs_large(ipft) = b1Bs_small(ipft)
-         b2Bs_small(ipft) = 2.69373
-         b2Bs_large(ipft) = b2Bs_small(ipft)
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft)) then
-         select case (iallom)
-         case (0)
-            !---- ED-2.1 allometry. -------------------------------------------------------!
-            b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
-            b1Bs_large(ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
-
-            aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft))    &
-                               * (d2d - d1d)) * (1.0/log(dcrit))
-            b2Bs_small(ipft) = C2B * b2d + c2d * b2Ht(ipft) + aux
-
-            aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)             &
-                               + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
-            b2Bs_large(ipft) = C2B * b2d + aux
-            !------------------------------------------------------------------------------!
-
-         case (1,2)
-            !------------------------------------------------------------------------------!
-            !     Based on modified Chave et al. (2001) allometry.                         !
-            !                                                                              !
-            ! Chave, J., B. Riera, M.-A. Dubois. Estimation of biomass in a neotropical    !
-            !    forest of French Guiana: spatial and temporal variability.                !
-            !    J. Trop. Ecol., 17(1):79-96, Jan 2001. doi:10.1017/S0266467401001055.     !
-            !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
-            b2Bs_small(ipft) = ndead_small(2)
-            b1Bs_large(ipft) = C2B * exp(ndead_large(1)) * rho(ipft) / ndead_large(3)
-            b2Bs_large(ipft) = ndead_large(2)
-            !------------------------------------------------------------------------------!
-         case (3)
-            !------------------------------------------------------------------------------!
-            !     Parameters based on a model re-fit from Chave et al. (2014).             !
-            !  Biomass was estimated from rho*D^2*h using the height allometry from SL     !
-            !  bdead was found by subtracting leaves and above-ground sapwood, and scaled  !
-            !  to include below ground biomass.  The result was fit using a DBH-dependent  !
-            !  only model.                                                                 !
-            !                                                                              !
-            ! Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to !
-            !    estimate the aboveground biomass of tropical trees. Glob. Change Biol.,   !
-            !    20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.                        !
-            !------------------------------------------------------------------------------!
-            b1Bs_small(ipft) = C2B * 0.1668894 * rho(ipft)
-            b2Bs_small(ipft) = 2.4391522
-            b2Bs_large(ipft) = 2.1378625
-            b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
-                             * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !      Temperate PFTs.  Each class has specific optimised parameters, and there   !
-         ! is no distinction between small and large cohorts.                              !
-         !---------------------------------------------------------------------------------!
-         select case (ipft)
-         case (5)   ! Temperate C3 grass. 
-            b1Bs_small(ipft) = 1.0e-5
-            b2Bs_small(ipft) = 1.0
-         case (6,7) ! Northern and Southern Pines. 
-            b1Bs_small(ipft) = 0.147
-            b2Bs_small(ipft) = 2.238
-         case (8)   ! Late conifers. 
-            b1Bs_small(ipft) = 0.1617
-            b2Bs_small(ipft) = 2.1536
-         case (9)   ! Early hardwood. 
-            b1Bs_small(ipft) = 0.02648
-            b2Bs_small(ipft) = 2.95954
-         case (10)  ! Mid hardwood. 
-            b1Bs_small(ipft) = 0.1617
-            b2Bs_small(ipft) = 2.4572
-         case (11)  ! Late hardwood. 
-            b1Bs_small(ipft) = 0.235
-            b2Bs_small(ipft) = 2.2518
-         end select
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !    Duplicate coefficients.                                                      !
-         !---------------------------------------------------------------------------------!
-         b1Bs_large (ipft) = b1Bs_small(ipft)
-         b2Bs_large (ipft) = b2Bs_small(ipft)
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     In case we run big leaf model with IALLOM set to 0 or 1, we must change some of   !
-   ! the allometric parameters.                                                            !
-   !---------------------------------------------------------------------------------------!
-   if (ibigleaf == 1 .and. (iallom == 0 .or. iallom == 1)) then
-      b1Bl_small( 1) = 0.04538826
-      b1Bl_small( 2) = 0.07322115
-      b1Bl_small( 3) = 0.07583497
-      b1Bl_small( 4) = 0.08915847
-      b1Bl_small(12) = b1Bl_small(2)
-      b1Bl_small(13) = b1Bl_small(3)
-      b1Bl_small(14) = b1Bl_small(4)
-      b1Bl_small(15) = 0.07322115
-      b1Bl_small(16) = 0.04538826
-      b1Bl_small(17) = 0.07322115
-      
-      b2Bl_small( 1) = 1.316338
-      b2Bl_small( 2) = 1.509083
-      b2Bl_small( 3) = 1.646576
-      b2Bl_small( 4) = 1.663773
-      b2Bl_small(12) = b2Bl_small(2)
-      b2Bl_small(13) = b2Bl_small(3)
-      b2Bl_small(14) = b2Bl_small(4)
-      b2Bl_small(15) = 1.509083
-      b2Bl_small(16) = 1.316338
-      b2Bl_small(17) = 1.509083
-      
-      b1Bs_small( 1) = 0.05291854
-      b1Bs_small( 2) = 0.15940854
-      b1Bs_small( 3) = 0.21445616
-      b1Bs_small( 4) = 0.26890751
-      b1Bs_small(12) = b1Bs_small(2)
-      b1Bs_small(13) = b1Bs_small(3)
-      b1Bs_small(14) = b1Bs_small(4)
-      b1Bs_small(15) = 0.15940854
-      b1Bs_small(16) = 0.05291854
-      b1Bs_small(17) = 0.15940854
-      
-      b2Bs_small( 1) = 3.706955
-      b2Bs_small( 2) = 2.342587
-      b2Bs_small( 3) = 2.370640
-      b2Bs_small( 4) = 2.254336
-      b2Bs_small(12) = b2Bs_small(2)
-      b2Bs_small(13) = b2Bs_small(3)
-      b2Bs_small(14) = b2Bs_small(4)
-      b2Bs_small(15) = 2.342587
-      b2Bs_small(16) = 3.706955
-      b2Bs_small(17) = 2.342587
-      
-      b1Bl_large(:)  = b1Bl_small(:)
-      b2Bl_large(:)  = b2Bl_small(:)
-      b1Bs_large(:)  = b1Bs_small(:)
-      b2Bs_large(:)  = b2Bs_small(:)
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Fill in variables that are derived from bdead allometry.                          !
-   !---------------------------------------------------------------------------------------!
-   do ipft = 1, n_pft
-      !------------------------------------------------------------------------------------!
-      ! -- MIN_BDEAD is the minimum structural biomass possible.  This is used in the      !
-      !    initialisation only, to prevent cohorts to be less than the minimum size due to !
-      !    change in allometry.                                                            !
-      ! -- BDEAD_CRIT corresponds to BDEAD when DBH is exactly at DBH_CRIT.  This is       !
-      !    used to determine which b1Bs/b2Bs pair to use.                                  !
-      !------------------------------------------------------------------------------------!
-      min_bdead (ipft) = dbh2bd(min_dbh (ipft),ipft)
-      bdead_crit(ipft) = dbh2bd(dbh_crit(ipft),ipft)
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    WAI parameters, the choice depends on IALLOM.  Because iallom=3/4 are bound to     !
-   ! LAI, we must define parameters for small and large cohorts.                           !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      !------------------------------------------------------------------------------------!
-      !    WAI is defined as a fraction of (potential) LAI.   The ratio is set to 0.11     !
-      ! following the average ratio from Olivas et al. (2013).                             !
-      !                                                                                    !
-      ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,              !
-      !    J. J. O'Brien, and H. Ordonez. Comparison of direct and indirect methods for    !
-      !    assessing leaf area index across a tropical rain forest landscape.              !
-      !    Agric. For. Meteorol., 177:110-116, Aug 2013.                                   !
-      !    doi:10.1016/j.agrformet.2013.04.010.                                            !
-      !------------------------------------------------------------------------------------!
-      b1WAI_small(:) = merge(0.0,0.11*SLA(:)*b1Bl_small(:),is_grass(:))
-      b2WAI_small(:) = merge(1.0,            b2Bl_small(:),is_grass(:))
-      b1WAI_large(:) = merge(0.0,0.11*SLA(:)*b1Bl_large(:),is_grass(:))
-      b2WAI_large(:) = merge(1.0,            b2Bl_large(:),is_grass(:))
-      !------------------------------------------------------------------------------------!
-   case default
-      !------------------------------------------------------------------------------------!
-      !    Use the equation by:                                                            !
-      !                                                                                    !
-      ! Hormann, G., S. Irrgan, H. Jochheim, M. Lukes, H. Meesenburg, J. Muller,           !
-      !    B. Scheler, J. Scherzer, G. Schuler, B. Schultze, B. Strohbach, F. Suckow,      !
-      !    M. Wegehenkel, and G. Wessolek.   Wasserhaushalt von waldokosystemen:           !
-      !    methodenleitfaden zur bestimmung der wasserhaushaltskomponenten auf level       !
-      !    II-flachen. Technical note, Bundesministerium fur Verbraucherschutz, Ernahrung  !
-      !    und Landwirtschaft (BMVEL), Bonn, Germany, 2003.                                !
-      !    URL http://www.wasklim.de/download/Methodenband.pdf.                            !
-      !------------------------------------------------------------------------------------!
-      do ipft=1,n_pft
-         if (is_grass(ipft) .and. (.not. is_tropical(ipft))) then
-            !------ Grasses don't have WAI. -----------------------------------------------!
-            b1WAI_small(ipft) = 0.0
-            b2WAI_small(ipft) = 1.0
-            !------------------------------------------------------------------------------!
-         elseif (is_conifer(ipft)) then
-            !------ Conifers. -------------------------------------------------------------!
-            b1WAI_small(ipft) = 0.0553 * 0.5
-            b2WAI_small(ipft) = 1.9769
-            !------------------------------------------------------------------------------!
-         else
-            !------ Tropical grasses and broadleaf trees. ---------------------------------!
-            b1WAI_small(ipft) = 0.0192 * 0.5
-            b2WAI_small(ipft) = 2.0947
-            !------------------------------------------------------------------------------!
-         end if
-      end do
-      !------------------------------------------------------------------------------------!
-
-      !----- Copy "large" parameters from "small" ones. -----------------------------------!
-      b1WAI_large(:) = b1WAI_small(:)
-      b2WAI_large(:) = b2WAI_small(:)
-      !------------------------------------------------------------------------------------!
-
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    brf_wd is the fraction of above-ground wood that is assumed to be in branches and  !
-   ! twigs.  Here we must be careful to make sure that the fraction is 0 in case WAI is    !
-   ! going to be zero (e.g. grasses).                                                      !
-   !---------------------------------------------------------------------------------------!
-   brf_wd(:) = merge(0.0,0.16,is_grass(:))
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Commercial volume of trees (stem/bole volume, in m3).  The current equation is a  !
-   ! re-fit from Nogueira et al. (2008) so a single set of parameters can be used.  Their  !
-   ! equation is for tropical trees only, so temperate and boreal forests may need a       !
-   ! different set of parameters.  Grasses are assumed to have no commercial volume.       !
-   !                                                                                       !
-   ! Nogueira, E. M., et al. Estimates of forest biomass in the Brazilian Amazon: new      !
-   !    allometric equations and adjustments to biomass from wood-volume inventories.      !
-   !    Forest Ecol. Manag., 256(11), 1853-1867, Nov. 2008,                                !
-   !    doi:10.1016/j.foreco.2008.07.022.                                                  !
-   !---------------------------------------------------------------------------------------!
-   b1Vol(:) = merge(0.0,3.528e-5,is_grass(:))
-   b2Vol(:) = merge(1.0,0.976   ,is_grass(:))
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     DBH-Root depth allometry.  Check which allometry to use.  The original volume     !
-   ! equation in ED-2.1 didn't have any references (at least I never found it), so the     !
-   ! rooting depth equation now incorporates the original "volume".  The current volume    !
-   ! allometry is based on tropical trees, and it estimates the commercial volume (stem    !
-   ! volume).                                                                              !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (0)
-      !------------------------------------------------------------------------------------!
-      !      Grasses are assumed to have constant rooting depth.  Tree rooting depth is a  !
-      ! function of dbh and height.                                                        !
-      !------------------------------------------------------------------------------------!
-      b1Rd(:) = merge(-0.700,- exp(0.545*log(10.)) * 0.65 * pi1 * 0.11 * 0.11,is_grass(:))
-      b2Rd(:) = merge( 0.000,0.277                                           ,is_grass(:))
-      !------------------------------------------------------------------------------------!
-   case default
-      !------------------------------------------------------------------------------------!
-      !     This is just a test, not based on any paper.  This is simply a fit that would  !
-      ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
-      !------------------------------------------------------------------------------------!
-      b1Rd(:)  = -1.1140580
-      b2Rd(:)  =  0.4223014
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Initial storage pool, relative to on-allometry living biomass, to be given to the  !
-   ! PFTs when the model is run using INITIAL conditions.                                  !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      f_bstorage_init(:) = 0.50
-   case default
-      f_bstorage_init(:) = 0.00
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
-   !---------------------------------------------------------------------------------------!
-   select case (ibigleaf)
-   case (0)
-      !----- Size and age structure. ------------------------------------------------------!
-      select case (iallom)
-      case (0,1)
-         init_density(:) = merge(1.0,0.1,is_grass(:))
-      case default
-         init_density(:) = 0.1
-      end select
-      !------------------------------------------------------------------------------------!
-
-      !----- Define a non-sense number. ---------------------------------------------------!
-      init_laimax(:)   = huge_num
-      !------------------------------------------------------------------------------------!
-
-   case(1)
-      !----- Big leaf. 1st we set the maximum initial LAI for each PFT. -------------------!
-      init_laimax(:)   = 0.1
-      do ipft=1,n_pft
-         init_bleaf = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
-         init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
-      end do
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Liana-specific parameters, move here so they are properly initialised.            !
-   ! MLO - Manfredo, is there a reason two define two dbh_crit for lianas? Couldn't this   !
-   !       number simply replace dbh_crit for lianas?                                      !
-   !---------------------------------------------------------------------------------------!
-   h_edge = 0.5          !< maximum height advantage for lianas
-   liana_dbh_crit = 26.0 !< liana specific critical dbh
-   !---------------------------------------------------------------------------------------!
-
-   if (write_allom) then
-      open (unit=18,file=trim(allom_file),status='replace',action='write')
-      write(unit=18,fmt='(507a)') ('-',n=1,507)
-      write(unit=18,fmt='(39(1x,a))') '         PFT','    Tropical','       Grass'         &
-                                     ,'         Rho','        b1Ht','        b2Ht'         &
-                                     ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
-                                     ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
-                                     ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
-                                     ,'        b1Ca','        b2Ca',' b1WAI_small'         &
-                                     ,' b2WAI_small',' b1WAI_large',' b2WAI_large'         &
-                                     ,'        b1Xs','        b1Xb','     Hgt_min'         &
-                                     ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
-                                     ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
-                                     ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
-                                     ,'         SLA','F_Bstor_init','           q'         &
-                                     ,'         qsw','       qbark','       qrhob'
-
-      write(unit=18,fmt='(507a)') ('-',n=1,507)
-      do ipft=1,n_pft
-         write (unit=18,fmt='(8x,i5,2(12x,l1),36(1x,es12.5))')                             &
-                        ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
-                       ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
-                       ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
-                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
-                       ,b2Ca(ipft),b1WAI_small(ipft),b2WAI_small(ipft),b1WAI_large(ipft)   &
-                       ,b2WAI_large(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft)              &
-                       ,hgt_max(ipft),min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft)         &
-                       ,dbh_bigleaf(ipft),bleaf_adult(ipft),bdead_crit(ipft)               &
-                       ,init_density(ipft),init_laimax(ipft),sla(ipft)                     &
-                       ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)
-      end do
-      write(unit=18,fmt='(507a)') ('-',n=1,507)
-      close(unit=18,status='keep')
-   end if
-
-   return
-end subroutine init_pft_alloc_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine init_pft_nitro_params()
-   use pft_coms   , only: Vm0                  & ! intent(in)
-                        , SLA                  & ! intent(in)
-                        , is_tropical          & ! intent(in)
-                        , is_savannah          & ! intent(in)
-                        , is_conifer           & ! intent(in)
-                        , is_grass             & ! intent(in)
-                        , c2n_leaf             & ! intent(out)
-                        , c2n_slow             & ! intent(out)
-                        , c2n_structural       & ! intent(out)
-                        , c2n_storage          & ! intent(out)
-                        , c2n_stem             & ! intent(out)
-                        , l2n_stem             & ! intent(out)
-                        , plant_N_supply_scale ! ! intent(out)
-   use ed_max_dims, only : n_pft               ! ! intent(in)
-   implicit none
-   !----- Local variables. ----------------------------------------------------------------!
-   integer :: ipft
-   real    :: vm0_ref
-   !---------------------------------------------------------------------------------------!
-
-
-   c2n_slow       = 10.0  ! Carbon to Nitrogen ratio, slow pool.
-   c2n_structural = 150.0 ! Carbon to Nitrogen ratio, structural pool.
-   c2n_storage    = 150.0 ! Carbon to Nitrogen ratio, storage pool.
-   c2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
-   l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
-
-   plant_N_supply_scale = 0.5 
-
-
-   do ipft=1,n_pft
-      !------ Temperate trees. Use non-optimised Vm0 values. ------------------------------!
-      select case (ipft)
-      case (6,7)   ! Northern and Southern Pines. 
-         vm0_ref = 15.625
-      case (8)     ! Late conifers. 
-         vm0_ref = 6.25
-      case (9)     ! Early hardwood. 
-         vm0_ref = 18.25
-      case (10)    ! Mid hardwood. 
-         vm0_ref = 15.625
-      case (11)    ! Late hardwood. 
-         vm0_ref = 6.25
-      case default ! Use actual Vm0 in case we missed some PFT. 
-         vm0_ref = Vm0(ipft)
-      end select
-      !------------------------------------------------------------------------------------!
-
-
-      !----- Ratio. -----------------------------------------------------------------------!
-      c2n_leaf(ipft) = 1000.0 / ( (0.11289 + 0.12947 *   vm0_ref) * SLA(ipft) )
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   return
-end subroutine init_pft_nitro_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!   This subroutine sets up some PFT and leaf dependent properties.                        !
-!------------------------------------------------------------------------------------------!
-subroutine init_pft_leaf_params()
-   use phenology_coms , only : iphen_scheme         ! ! intent(in)
-   use ed_misc_coms   , only : igrass               & ! intent(in)
-                             , iallom               ! ! intent(in)
-   use pft_coms       , only : phenology            & ! intent(out)
-                             , is_grass             & ! intent(in)
-                             , is_conifer           & ! intent(in)
-                             , is_tropical          & ! intent(in)
-                             , is_grass             & ! intent(in)
-                             , rho                  & ! intent(in)
-                             , c_grn_leaf_dry       & ! intent(out)
-                             , c_ngrn_wood_dry      & ! intent(out)
-                             , c_ngrn_bark_dry      & ! intent(out)
-                             , wat_dry_ratio_leaf   & ! intent(out)
-                             , wat_dry_ratio_wood   & ! intent(out)
-                             , wat_dry_ratio_bark   & ! intent(out)
-                             , delta_c_wood         & ! intent(out)
-                             , delta_c_bark         ! ! intent(out)
-   use ed_max_dims    , only : n_pft                ! ! intent(in)
-   use consts_coms    , only : t00                  ! ! intent(out)
-   implicit none
-
-   !----- Local variables. ----------------------------------------------------------------!
-   integer            :: ipft
-   !---------------------------------------------------------------------------------------!
-   !      Local parameters used to define specific heat of wood and bark, following the    !
-   ! tref   -- Reference temperature (Kelvin) for specific heat properties.                !
-   ! wdr_fs -- Water:Dry ratio at fiber saturation.  This is the maximum moisture that     !
-   !           affects specific heat due to water-wood bond according to FPL10.  We        !
-   !           currently assume 0.30, the suggested value.                                 !
-   !                                                                                       !
-   ! Reference:                                                                            !
-   !                                                                                       !
-   ! Forest Products Laboratory. Wood handbook - wood as an engineering material. General  !
-   !    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.   !
-   !    doi:10.2737/FPL-GTR-190 (FPL10)                                                    !
-   !---------------------------------------------------------------------------------------!
-   real   , parameter :: tref = t00 + 15.
-   real   , parameter :: wdr_fs = 0.30
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Tree phenology is the same for both cases, but in the new grass allometry they    !
-   ! must be evergreens.                                                                   !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_conifer(ipft)) then  ! Conifers. Currently they are always evergreen
-         phenology(ipft) = 0
-      elseif (is_grass(ipft) .and. igrass == 1) then ! New grasses must be evergreen
-         phenology(ipft) = 0
-      elseif (.not. (is_tropical(ipft) .or. is_grass(ipft)) ) then ! Cold deciduous
-         phenology(ipft) = 2
-      else
-         !----- Lianas, Tropical broadleaf trees, and old-scheme (aka bonsai) grasses. ----!
-         select case (iphen_scheme)
-         case (-1) ! Assume that they are all evergreen
-            phenology(ipft) = 0
-         case (0,1) ! Old drought-deciduous scheme 
-            phenology(ipft) = 1
-         case (2)   ! New drought-deciduous scheme
-            phenology(ipft) = 4
-         case (3)
-            !------------------------------------------------------------------------------!
-            !     Light phenology scheme.                                                  !
-            !                                                                              !
-            ! Kim, Y., R. G. Knox, M. Longo, D. Medvigy, L. R. Hutyra, E. H. Pyle,         !
-            !    S. C. Wofsy, R. L. Bras, and P. R. Moorcroft. Seasonal carbon dynamics    !
-            !    and water fluxes in an Amazon rainforest. Glob. Change Biol.,             !
-            !    18(4):1322-1334, Apr 2012. doi:10.1111/j.1365-2486.2011.02629.x.          !
-            !------------------------------------------------------------------------------!
-            phenology(ipft) = 3
-            !------------------------------------------------------------------------------!
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !      Specific heat, water:dry mass ratio, and specific heat correction for water-wood !
-   ! bonding, based on FPL10 and a previous version cited by G07.                          !
-   !                                                                                       !
-   ! References:                                                                           !
-   !                                                                                       !
-   ! Forest Products Laboratory. Wood handbook - wood as an engineering material. General  !
-   !    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.   !
-   !    doi:10.2737/FPL-GTR-190 (FPL10)                                                    !
-   !                                                                                       !
-   ! Gu, L., T. Meyers, S. G. Pallardy, P. J. Hanson, B. Yang, M. Heuer, K. P. Hosman,     !
-   !    Q. Liu, J. S. Riggs, D. Sluss, and S. D. Wullschleger. Influences of biomass heat  !
-   !    and biochemical energy storages on the land surface fluxes and radiative temper-   !
-   !    ature. J. Geophys. Res., 112(D2):D02107, Jan 2007. doi:10.1029/2006JD007425 (G07)  !
-   !                                                                                       !
-   ! Jones, H. G. Plants and Microclimate: A quantitative approach to environmental plant 
-   !    physiology. Cambridge Univ. Press, Cambridge, UK, 3rd edition, Jan 2014. 
-   !    doi:10.1017/CBO9780511845727 (J14)
-   !
-   ! Kursar, T. A., B. M. J. Engelbrecht, A. Burke, M. T. Tyree, B. EI Omari,              !
-   !    and J. P. Giraldo. Tolerance to low leaf water status of tropical tree seedlings   !
-   !    is related to drought performance and distribution. Funct. Ecol., 23(1):93-102,    !
-   !    Feb 2009. doi:10.1111/j.1365-2435.2008.01483.x (K09)                               !
-   !                                                                                       !
-   ! Poorter, L., A. McNeil, V.-H. Hurtado, H. H. T. Prins, and F. E. Putz. Bark traits    !
-   !    and life-history strategies of tropical dry- and moist forest trees.               !
-   !    Funct. Ecol., 28(1):232-242, Feb 2014. doi:10.1111/1365-2435.12158 (P14)           !
-   !                                                                                       !
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   ! Specific heat of dry materials (J kg-1 K-1).                                          !
-   !---------------------------------------------------------------------------------------!
-   !----- Leaves, value from G07. ---------------------------------------------------------!
-   c_grn_leaf_dry(:) = 3218.0
-   !----- Wood and bark, values from FPL10. -----------------------------------------------!
-   c_ngrn_wood_dry(:) = 103.1 + 3.867 * tref
-   c_ngrn_bark_dry(:) = 103.1 + 3.867 * tref
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   ! Leaf Water:oven-dry mass ratio.                                                       !
-   !                                                                                       !
-   ! Tropical  -- Average well-watered values of wd from K09.                              !
-   ! Temperate -- check with MCD.  Original value was 1.5, from G07 but it has been        !
-   !              replaced by 2.5.  Perhaps to account for the C:B ratio, but if this is   !
-   !              the case, it is accounting for it twice.                                 !
-   !---------------------------------------------------------------------------------------!
-   wat_dry_ratio_leaf (:) = merge(1.85,2.50,is_tropical(:))
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   ! Wood and bark water:oven-dry mass ratio.                                              !
-   !                                                                                       !
-   ! Tropical  -- Numbers were obtained from P14 (Table S1).  P14's WWC and BWC were       !
-   !              converted to water:oven-dry ratio (XWDR = XWC / (1 - XWC).  Their        !
-   !              data suggest that water content depends on wood density but were         !
-   !              indistinguishable between moist and dry forests.  Values for tropical    !
-   !              trees follow the fitted curve using SMA.  We only apply this in IALLOM   !
-   !              4 for back-compability.                                                  !
-   !                                                                                       !
-   ! Temperate -- Use values from FPL10.                                                   !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      do ipft=1,n_pft
-         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
-            wat_dry_ratio_wood(ipft) = 0.7
-            wat_dry_ratio_bark(ipft) = 0.7
-         else
-            wat_dry_ratio_wood(ipft) = exp(1.5018230 - 3.137476 * rho(ipft))
-            wat_dry_ratio_bark(ipft) = exp(1.9892840 - 3.174365 * rho(ipft))
-         end if
-      end do
-   case default
-      wat_dry_ratio_wood(:) = 0.7
-      wat_dry_ratio_bark(:) = 0.7
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    The oven-dry wood heat capacity and the specific heat correction for water-wood    !
-   ! bonding come both from FPL10, previous version cited by G07.  Following FPL10, the    !
-   ! maximum moisture to affect the water-wood bonding is the fiber saturation, above      !
-   ! which additional water is considered free water.                                      !
-   !---------------------------------------------------------------------------------------!
-   where (wat_dry_ratio_wood(:) > wdr_fs)
-      delta_c_wood(:) = 1.e5 * wdr_fs                                                      &
-                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wdr_fs )
-   elsewhere
-      delta_c_wood(:) = 1.e5 * wat_dry_ratio_wood(:)                                       &
-                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wat_dry_ratio_wood(:) )
-   end where
-   where (wat_dry_ratio_bark(:) > wdr_fs)
-      delta_c_bark(:) = 1.e5 * wdr_fs                                                      &
-                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wdr_fs )
-   elsewhere
-      delta_c_bark(:) = 1.e5 * wat_dry_ratio_bark(:)                                       &
-                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wat_dry_ratio_bark(:) )
-   end where
-   !---------------------------------------------------------------------------------------!
-
-   !=======================================================================================!
-   !=======================================================================================!
-
-   return
-end subroutine init_pft_leaf_params
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine sets some reproduction-related parameters.                            !
-!------------------------------------------------------------------------------------------!
-subroutine init_pft_repro_params()
-
-   use pft_coms      , only : hgt_min            & ! intent(in)
-                            , hgt_max            & ! intent(in)
-                            , is_tropical        & ! intent(in)
-                            , is_conifer         & ! intent(in)
-                            , is_liana           & ! intent(in)
-                            , is_grass           & ! intent(in)
-                            , seed_rain          & ! intent(out)
-                            , r_fract            & ! intent(out)
-                            , st_fract           & ! intent(out)
-                            , nonlocal_dispersal & ! intent(out)
-                            , repro_min_h        ! ! intent(out)
-   use phenology_coms, only : repro_scheme       ! ! intent(in)
-   use ed_max_dims   , only : n_pft              & ! intent(in)
-                            , undef_real         ! ! intent(in)
-   use ed_misc_coms  , only : iallom             ! ! intent(in)
-   implicit none
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                 :: ipft
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !      Allocation to storage (amount that is save in each month, not going to           !
-   ! reproduction or growth).  Currently only tropical trees with IALLOM=3 allocate 10% to !
-   ! storage as a reserve for hard times.  This number is based on tuning, not on          !
-   ! literature, though.                                                                   !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      st_fract(:) = merge(0.0,0.1,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)))
-   case default
-      st_fract(:) = 0.0
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Reproduction parameters.                                                         ! 
-   !                                                                                       ! 
-   ! repro_min_h - Minimum height for a PFT to be considered mature for reproduction.      ! 
-   ! r_fract     - Fraction of carbon balance (bstorage) that is allocated to reproduction ! 
-   !               given that the plant height is greater than repro_min_h.                ! 
-   !                                                                                       ! 
-   !    For trees, we take repro_min_h as the average value reported in W05 (mind that the ! 
-   ! study is for tropical trees.  The grass strategy depends on iallom.  The original     ! 
-   ! scheme assumes that they always allocate 30% to growth, whereas when IALLOM=3 the     ! 
-   ! plants will allocate 100% to reproduction once they reach the maximum height, but     ! 
-   ! nothing when they are shorter (W15's "big bang").  The fraction allocated to          ! 
-   ! reproduction for tropical trees was updated to match F10's number.                    ! 
-   !                                                                                       ! 
-   ! References:                                                                           !
-   !                                                                                       !
-   !  Wright, S. J., M. A. Jaramillo, J. Pavon, R. Condit, S. P. Hubbell, and              !
-   !     R. B. Foster. Reproductive size thresholds in tropical trees: variation among     !
-   !     individuals, species and forests. J. Trop. Ecol., 21(3):307-315, May 2005.        !
-   !     doi:10.1017/S0266467405002294. (W05).                                             !
-   !                                                                                       !
-   ! Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox, C. Huntingford,   !
-   !    P. Meir, and F. Ian Woodward. Assessing uncertainties in a second-generation       !
-   !    dynamic vegetation model caused by ecological scale limitations. New Phytol.,      !
-   !    187(3):666--681, Aug 2010. doi:10.1111/j.1469-8137.2010.03340.x.  (F10)            !
-   !                                                                                       !
-   !  Wenk, E. H., and D. S. Falster. Quantifying and understanding reproductive           !
-   !    allocation schedules in plants. Ecol. Evol., 5(23):5521--5538, Nov 2015.           !
-   !    doi:10.1002/ece3.1802. (W15)                                                       !
-   !                                                                                       !
-   !---------------------------------------------------------------------------------------!
-   select case (iallom)
-   case (3)
-      !----- New parameters. --------------------------------------------------------------!
-      repro_min_h(:) = merge(hgt_max(:),                           18.0,is_grass(:))
-      r_fract    (:) = merge(       1.0,merge(0.37,0.30,is_tropical(:)),is_grass(:))
-      !------------------------------------------------------------------------------------!
-   case default
-      !----- Original parameters. ---------------------------------------------------------!
-      repro_min_h(:) = merge(hgt_min(:),18.0,is_grass(:))
-      r_fract    (:) = 0.30
-      !------------------------------------------------------------------------------------!
-   end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Fraction of seeds randomly dispersed.                                             !
-   !---------------------------------------------------------------------------------------!
-   do ipft=1,n_pft
-      if (is_tropical(ipft) .and. is_conifer(ipft)) then
-         !----- Sub-tropical needleleaf: assume the same values as pines. -----------------!
-         nonlocal_dispersal(ipft) = 0.766
-         !---------------------------------------------------------------------------------!
-      elseif (is_tropical(ipft) .or. is_grass(ipft)) then
-         !----- Tropical trees or grasses. Assume 100% random dispersal. ------------------!
-         nonlocal_dispersal(ipft) = 1.00
-         !---------------------------------------------------------------------------------!
-      else
-         !----- Temperate broadleaf trees. ------------------------------------------------!
-         select case (ipft)
-         case (6:7)   ! Pines. 
-            nonlocal_dispersal(ipft) = 0.766
-         case (8)     ! Late conifers. 
-            nonlocal_dispersal(ipft) = 0.001
-         case (9)     ! Early hardwood. 
-            nonlocal_dispersal(ipft) = 1.000
-         case (10)    ! Mid hardwood. 
-            nonlocal_dispersal(ipft) = 0.325
-         case (11)    ! Late hardwood. 
-            nonlocal_dispersal(ipft) = 0.074
-         case default ! This shouldn't happen. 
-            nonlocal_dispersal(ipft) = 1.000
-         end select
-         !---------------------------------------------------------------------------------!
-      end if
-      !------------------------------------------------------------------------------------!
-   end do
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Seed rain: temporarily set this parameter to undefined.  In case it is not        !
-   ! initialised by XML, it will be initialised in init_derived_params_after_xml.          !
-   !---------------------------------------------------------------------------------------!
-   seed_rain(:) = undef_real
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine init_pft_repro_params
+end subroutine init_ff_coms
 !==========================================================================================!
 !==========================================================================================!
 
@@ -4959,6 +1044,162 @@ subroutine init_physiology_params()
 
    return
 end subroutine init_physiology_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine defines the minimum and maximum acceptable values in the meteoro-    !
+! logical forcing.                                                                         !
+!------------------------------------------------------------------------------------------!
+subroutine init_met_params()
+   use ed_misc_coms   , only : dtlsm           ! ! intent(in)
+   use met_driver_coms, only : met_land_min    & ! intent(out)
+                             , rshort_min      & ! intent(out)
+                             , rshort_max      & ! intent(out)
+                             , rlong_min       & ! intent(out)
+                             , rlong_max       & ! intent(out)
+                             , dt_radinterp    & ! intent(out)
+                             , atm_tmp_min     & ! intent(out)
+                             , atm_tmp_max     & ! intent(out)
+                             , atm_shv_min     & ! intent(out)
+                             , atm_shv_max     & ! intent(out)
+                             , atm_rhv_min     & ! intent(out)
+                             , atm_rhv_max     & ! intent(out)
+                             , atm_co2_min     & ! intent(out)
+                             , atm_co2_max     & ! intent(out)
+                             , prss_min        & ! intent(out)
+                             , prss_max        & ! intent(out)
+                             , pcpg_min        & ! intent(out)
+                             , pcpg_max        & ! intent(out)
+                             , vels_min        & ! intent(out)
+                             , vels_max        & ! intent(out)
+                             , geoht_min       & ! intent(out)
+                             , geoht_max       & ! intent(out)
+                             , print_radinterp & ! intent(out)
+                             , vbdsf_file      & ! intent(out)
+                             , vddsf_file      & ! intent(out)
+                             , nbdsf_file      & ! intent(out)
+                             , nddsf_file      ! ! intent(out)
+
+   !----- Minimum land fraction for a met driver point to be considered land. -------------!
+   met_land_min = 0.5
+
+   !----- Minimum and maximum acceptable shortwave radiation [W/m2]. ----------------------!
+   rshort_min  = 0.
+   rshort_max  = 1500.
+   !----- Minimum and maximum acceptable longwave radiation [W/m2]. -----------------------!
+   rlong_min   = 40.
+   rlong_max   = 600.
+   !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
+   atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
+   atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
+   !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
+   atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
+   atm_shv_max = 3.2e-2   ! That corresponds to a dew point of 32degC at 1000hPa.
+   !----- Minimum and maximum acceptable CO2 mixing ratio [umol/mol]. ---------------------!
+   atm_co2_min = 100.     !
+   atm_co2_max = 1100.    !
+   !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
+   prss_min =  45000. ! It may crash if you run a simulation in Mt. Everest.
+   prss_max = 110000. ! It may crash if you run a simulation under water.
+   !----- Minimum and maximum acceptable precipitation rates [kg/m2/s]. -------------------!
+   pcpg_min     = 0.0     ! No negative precipitation is allowed
+   pcpg_max     = 0.1111  ! This is a precipitation rate of 400mm/hr.
+   !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
+   vels_min     =  0.0    ! No negative wind is acceptable.
+   vels_max     = 85.0    ! Maximum sustained winds recorded during Typhoon Tip (1970).
+   !----- Minimum and maximum reference heights [m]. --------------------------------------!
+   geoht_min    =   1.0   ! This should be above-canopy measurement, but 1.0 is okay for
+                          !     grasslands...
+   geoht_max    = 350.0   ! This should be not that much above the canopy, but tall towers
+                          !     do exist...
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Minimum and maximum acceptable relative humidity (fraction).  This is not going   !
+   ! cause the simulation to crash, instead it will just impose these numbers to the       !
+   ! meteorological forcing.                                                               !
+   !---------------------------------------------------------------------------------------!
+   atm_rhv_min = 5.e-3 ! 0.5%
+   atm_rhv_max = 1.0   ! 100.0%.  Although canopy air space can experience super-
+                       !    saturation, we don't allow the air above to be super-saturated.
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Time step used to perform the daytime average of the secant of the zenith angle.  !
+   !---------------------------------------------------------------------------------------!
+   dt_radinterp = dtlsm    ! Value in seconds.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !   These variables control the detailed interpolation output (for debugging only).     !
+   !---------------------------------------------------------------------------------------!
+   print_radinterp = .false.
+   vbdsf_file      = 'visible_beam.txt'
+   vddsf_file      = 'visible_diff.txt'
+   nbdsf_file      = 'near_infrared_beam.txt'
+   nddsf_file      = 'near_infrared_diff.txt'
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_met_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine defines defaults for lapse rates.                                    !
+!------------------------------------------------------------------------------------------!
+subroutine init_lapse_params()
+
+   use met_driver_coms, only : lapse             & ! intent(out)
+      , atm_tmp_intercept & ! intent(out)
+      , atm_tmp_slope     & ! intent(out)
+      , prec_intercept    & ! intent(out)
+      , prec_slope        & ! intent(out)
+      , humid_scenario    ! ! intent(out)
+
+   lapse%geoht        = 0.0
+   lapse%atm_ustar    = 0.0
+   lapse%vels         = 0.0
+   lapse%atm_tmp      = 0.0
+   lapse%atm_theta    = 0.0
+   lapse%atm_theiv    = 0.0
+   lapse%atm_vpdef    = 0.0
+   lapse%atm_shv      = 0.0
+   lapse%prss         = 0.0
+   lapse%pcpg         = 0.0
+   lapse%atm_co2      = 0.0
+   lapse%rlong        = 0.0
+   lapse%nir_beam     = 0.0
+   lapse%nir_diffuse  = 0.0
+   lapse%par_beam     = 0.0
+   lapse%par_diffuse  = 0.0
+   lapse%pptnorm      = 0.0
+
+   atm_tmp_intercept = 0.0
+   atm_tmp_slope     = 1.0
+   prec_intercept    = 0.0
+   prec_slope        = 1.0
+   humid_scenario    = 0
+
+   return
+end subroutine init_lapse_params
 !==========================================================================================!
 !==========================================================================================!
 
@@ -5672,188 +1913,3707 @@ end subroutine init_phen_coms
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine assigns the fusion and splitting parameters.                         !
+!     This subroutine assigns values for some variables that are in ed_misc_coms, which    !
+! wouldn't fit in any of the other categories.                                             !
 !------------------------------------------------------------------------------------------!
-subroutine init_ff_coms
-   use fusion_fission_coms, only : ifusion                   & ! intent(in)
-                                 , ff_nhgt                   & ! intent(out)
-                                 , niter_patfus              & ! intent(out)
-                                 , fusetol                   & ! intent(out), old_fusion
-                                 , fusetol_h                 & ! intent(out), old_fusion
-                                 , lai_fuse_tol              & ! intent(out), old_fusion
-                                 , coh_tolerance_max         & ! intent(out), old_fusion
-                                 , dark_cumlai_min           & ! intent(out), old_fusion
-                                 , dark_cumlai_max           & ! intent(out), old_fusion
-                                 , dark_cumlai_mult          & ! intent(out), old_fusion
-                                 , sunny_cumlai_min          & ! intent(out), old_fusion
-                                 , sunny_cumlai_max          & ! intent(out), old_fusion
-                                 , sunny_cumlai_mult         & ! intent(out), old_fusion
-                                 , light_toler_min           & ! intent(out), old_fusion
-                                 , light_toler_max           & ! intent(out), old_fusion
-                                 , light_toler_mult          & ! intent(out), old_fusion
-                                 , fuse_relax                & ! intent(out), old_fusion
-                                 , lai_tol                   & ! intent(out)
-                                 , pat_light_ext             & ! intent(out)
-                                 , pat_light_tol_min         & ! intent(out)
-                                 , pat_light_tol_max         & ! intent(out)
-                                 , pat_light_tol_mult        & ! intent(out)
-                                 , pat_light_mxd_fac         & ! intent(out)
-                                 , pat_diff_age_tol          & ! intent(out)
-                                 , pat_min_area_remain       & ! intent(out)
-                                 , niter_cohfus              & ! intent(out)
-                                 , coh_size_tol_min          & ! intent(out)
-                                 , coh_size_tol_max          & ! intent(out)
-                                 , coh_size_tol_mult         & ! intent(out)
-                                 , corr_patch                & ! intent(out)
-                                 , corr_cohort               & ! intent(out)
-                                 , print_fuse_details        & ! intent(out)
-                                 , fuse_prefix               ! ! intent(out)
-   use consts_coms        , only : onethird                  & ! intent(out)
-                                 , twothirds                 & ! intent(in)
-                                 , onesixth                  ! ! intent(in)
-   use ed_max_dims        , only : n_dist_types              ! ! intent(in)
+subroutine init_ed_misc_coms
+   use ed_max_dims  , only : n_pft                & ! intent(in)
+                           , n_dbh                & ! intent(in)
+                           , n_age                ! ! intent(in)
+   use consts_coms  , only : erad                 & ! intent(in)
+                           , pio180               ! ! intent(in)
+   use ed_misc_coms , only : burnin               & ! intent(out)
+                           , restart_target_year  & ! intent(out)
+                           , use_target_year      & ! intent(out)
+                           , maxage               & ! intent(out)
+                           , dagei                & ! intent(out)
+                           , maxdbh               & ! intent(out)
+                           , ddbhi                & ! intent(out)
+                           , vary_elev            & ! intent(out)
+                           , vary_hyd             & ! intent(out)
+                           , vary_rad             & ! intent(out)
+                           , max_thsums_dist      & ! intent(out)
+                           , max_poihist_dist     & ! intent(out)
+                           , max_poi99_dist       & ! intent(out)
+                           , suppress_h5_warnings ! ! intent(out)
+   implicit none
+
+
+   !----- Flags that allow components of subgrid heterogeneity to be turned on/off --------!
+   vary_elev = 1
+   vary_rad  = 1
+   vary_hyd  = 1
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Number of years to ignore demography when starting a run. -----------------------!
+   burnin = 0
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Year to read when parsing pss/css with multiple years. --------------------------!
+   restart_target_year = 2000
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Flag specifying whether to search for a target year in pss/css. -----------------!
+   use_target_year = 0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Maximum age [yr] to split into classes. -----------------------------------------!
+   maxage = 200.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Maximum DBH [cm] to be split into classes. --------------------------------------!
+   maxdbh = 100.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The inverse of bin classes will depend on max??? and n_???, leaving one class for !
+   ! when the number exceeds the maximum.                                                  !
+   !---------------------------------------------------------------------------------------!
+   dagei = real(n_age-1) / maxage
+   ddbhi = real(n_dbh-1) / maxdbh
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Maximum distance to the current polygon that we still consider the file grid point !
+   ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
+   !---------------------------------------------------------------------------------------!
+   max_thsums_dist    = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Alternative method for mixing 1 grid and POI's.  Only use the grid if their is   !
+   ! NOT an POI  within a user specified resolution.  Remember, this assumes there is only !
+   ! 1 gridded file, and it is the first file when ied_init_mode is set to 99  (Developer  !
+   ! use only).                                                                            !
+   !---------------------------------------------------------------------------------------!
+   max_poi99_dist     = 5.0 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      This variable is used for the history start initialisation.  This sets the       !
+   ! maximum acceptable distance between the expected polygon and the polygon found in the !
+   ! history file.  Units: m.                                                              !
+   !---------------------------------------------------------------------------------------!
+   max_poihist_dist   = 250.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      If you don't want to read a million warnings about certain initialization        !
+   ! variables not being available in the history input file, set this to .true. .  It's   !
+   ! better for new users to see what is missing though.                                   !
+   !---------------------------------------------------------------------------------------!
+   suppress_h5_warnings = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine init_ed_misc_coms
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will assign some parameters used by the horizontal shading scheme.    !
+!------------------------------------------------------------------------------------------!
+subroutine init_hrzshade_params()
+
+   use canopy_radiation_coms , only : cci_radius                  & ! intent(out)
+                                    , cci_pixres                  & ! intent(out)
+                                    , cci_gapsize                 & ! intent(out)
+                                    , cci_gapmin                  & ! intent(out)
+                                    , cci_nretn                   & ! intent(out)
+                                    , cci_hmax                    & ! intent(out)
+                                    , at0                         & ! intent(out)
+                                    , at1                         & ! intent(out)
+                                    , at08                        & ! intent(out)
+                                    , at18                        ! ! intent(out)
+   implicit none
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the method that allow light redistribution based  !
+   ! on patch neighbourhood                                                                !
+   !---------------------------------------------------------------------------------------!
+   cci_radius   = 10.0 ! Maximum radius to calculate CCI                           [     m]
+   cci_pixres   =  1.0 ! Pixel resolution for TCH and CCI                          [     m]
+   cci_gapsize  = 14.0 ! Gap size                                                  [     m]
+   cci_gapmin   = 30.0 ! # of gaps associated with the smallest area               [   ---]
+   cci_nretn    = 30.0 ! "Return density" to generate the TCH map                  [  1/m2]
+   cci_hmax     = 70.0 ! Maximum height allowed in the CCI scheme                  [     m]
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Coefficients that control CCI vs. light-correction curve.                         !
+   !---------------------------------------------------------------------------------------!
+   at0       =  3.012569
+   at1       = -0.0044086
+   at08      = dble(at0)
+   at18      = dble(at1)
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine init_hrzshade_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine init_pft_alloc_params()
+
+   use pft_coms     , only : is_tropical           & ! intent(in)
+                           , is_savannah           & ! intent(in)
+                           , is_conifer            & ! intent(in)
+                           , is_liana              & ! intent(in)
+                           , is_grass              & ! intent(in)
+                           , rho                   & ! intent(out)
+                           , SLA                   & ! intent(out)
+                           , leaf_turnover_rate    & ! intent(out)
+                           , q                     & ! intent(out)
+                           , qsw                   & ! intent(out)
+                           , qbark                 & ! intent(out)
+                           , qrhob                 & ! intent(out)
+                           , init_density          & ! intent(out)
+                           , init_laimax           & ! intent(out)
+                           , agf_bs                & ! intent(out)
+                           , brf_wd                & ! intent(out)
+                           , hgt_min               & ! intent(out)
+                           , hgt_ref               & ! intent(out)
+                           , hgt_max               & ! intent(out)
+                           , min_dbh               & ! intent(out)
+                           , dbh_crit              & ! intent(out)
+                           , dbh_bigleaf           & ! intent(out)
+                           , dbh_adult             & ! intent(out)
+                           , min_bdead             & ! intent(out)
+                           , bdead_crit            & ! intent(out)
+                           , bleaf_adult           & ! intent(out)
+                           , b1Ht                  & ! intent(out)
+                           , b2Ht                  & ! intent(out)
+                           , b1Bs_small            & ! intent(out)
+                           , b2Bs_small            & ! intent(out)
+                           , b1Bs_large            & ! intent(out)
+                           , b2Bs_large            & ! intent(out)
+                           , b1Ca                  & ! intent(out)
+                           , b2Ca                  & ! intent(out)
+                           , b1Cl                  & ! intent(out)
+                           , b2Cl                  & ! intent(out)
+                           , b1Rd                  & ! intent(out)
+                           , b2Rd                  & ! intent(out)
+                           , b1Vol                 & ! intent(out)
+                           , b2Vol                 & ! intent(out)
+                           , b1Bl_small            & ! intent(out)
+                           , b2Bl_small            & ! intent(out)
+                           , b1Bl_large            & ! intent(out)
+                           , b2Bl_large            & ! intent(out)
+                           , b1WAI_small           & ! intent(out)
+                           , b2WAI_small           & ! intent(out)
+                           , b1WAI_large           & ! intent(out)
+                           , b2WAI_large           & ! intent(out)
+                           , b1Xs                  & ! intent(out)
+                           , b1Xb                  & ! intent(out)
+                           , C2B                   & ! intent(out)
+                           , sla_scale             & ! intent(out)
+                           , sla_inter             & ! intent(out)
+                           , sla_slope             & ! intent(out)
+                           , sapwood_ratio         & ! intent(out)
+                           , f_bstorage_init       & ! intent(out)
+                           , h_edge                & ! intent(out)
+                           , liana_dbh_crit        ! ! intent(out)
+   use allometry    , only : h2dbh                 & ! function
+                           , dbh2bd                & ! function
+                           , size2bl               ! ! function
+   use consts_coms  , only : onethird              & ! intent(in)
+                           , onesixth              & ! intent(in)
+                           , twothirds             & ! intent(in)
+                           , huge_num              & ! intent(in)
+                           , pi1                   ! ! intent(in)
+   use ed_max_dims  , only : n_pft                 & ! intent(in)
+                           , str_len               & ! intent(in)
+                           , undef_real            ! ! intent(in)
+   use ed_misc_coms , only : iallom                & ! intent(in)
+                           , igrass                & ! intent(in)
+                           , ibigleaf              ! ! intent(in)
+   use detailed_coms, only : idetailed             ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   real              :: exp_cohfus
-   real              :: exp_patfus
+   integer                   :: ipft
+   integer                   :: n
+   logical                   :: write_allom
+   real   , dimension(n_pft) :: abas
+   real                      :: aux
+   real                      :: init_density_grass
+   real                      :: init_bleaf
+   real                      :: bleaf_sapling
+   real                      :: eta_f16
+   real                      :: eta_c_f16
+   real                      :: asal_bar
+   !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
+   real                  , parameter :: a1          =  -1.981
+   real                  , parameter :: b1          =   1.047
+   real                  , parameter :: dcrit       = 100.0
+   !----- Constants used by bdead only (tropical PFTs) ------------------------------------!
+   real                  , parameter :: c1d         =   0.572
+   real                  , parameter :: d1d         =   0.931
+   real                  , parameter :: a2d         =  -1.086
+   real                  , parameter :: b2d         =   0.876
+   real                  , parameter :: c2d         =   0.604
+   real                  , parameter :: d2d         =   0.871
+   !----- Constants used by bleaf only (tropical PFTs) ------------------------------------!
+   real                  , parameter :: c1l         =  -0.584
+   real                  , parameter :: d1l         =   0.550
+   real                  , parameter :: a2l         =  -4.111
+   real                  , parameter :: b2l         =   0.605
+   real                  , parameter :: c2l         =   0.848
+   real                  , parameter :: d2l         =   0.438
+   !----- Constants shared by both bdead and bleaf (tropical PFTs) ------------------------!
    !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Parameters that control number of iterations.  More iterations mean slower         !
-   ! increase in tolerance, which normally allows more fusion to occur at relatively       !
-   ! stricter tolerance, although it may increase computational burden.                    !
+   !     MLO.   These are the new parameters obtained by adjusting a curve that is similar !
+   !            to the modified Chave's equation to include wood density effect on the     !
+   !            DBH->AGB allometry as described by:                                        !
    !                                                                                       !
-   ! niter_patfus       -- number of patch fusion iterations                               !
-   ! exp_patfus         -- exponential factor, used to determine the incremental           !
-   !                       multiplication factor.                                          !
-   ! niter_cohfus       -- number of cohort fusion iterations                              !
-   ! exp_cohfus         -- exponential factor, used to determine the incremental           !
-   !                       multiplication factor.                                          !
+   !            Baker, T. R., and co-authors, 2004: Variation in wood density determines   !
+   !               spatial patterns in Amazonian forest biomass.  Glob. Change Biol., 10,  !
+   !               545-562.                                                                !
+   !                                                                                       !
+   !     The "a" parameters were obtaining by splitting balive and bdead at the same ratio !
+   ! as the original ED-2.1 allometry, and optimising a function of the form               !
+   ! B? = (rho / a3) * exp [a1 + a2 * ln(DBH)]                                             !
+   !     The "z" parameters were obtaining by using the original balive and computing      !
+   ! bdead as the difference between the total biomass and the original balive.            !
    !---------------------------------------------------------------------------------------!
-   niter_cohfus      = 100
-   exp_cohfus        = 1. / (niter_cohfus - 1.0) 
-   niter_patfus       = 100
-   exp_patfus         = 1. / (niter_patfus-1.0) 
+   real, dimension(3)    , parameter :: ndead_small = (/-1.2639530, 2.4323610, 1.8018010 /)
+   real, dimension(3)    , parameter :: ndead_large = (/-0.8346805, 2.4255736, 2.6822805 /)
+   real, dimension(3)    , parameter :: nleaf       = (/ 0.0192512, 0.9749494, 2.5858509 /)
+   real, dimension(2)    , parameter :: ncrown_area = (/ 0.1184295, 1.0521197            /)
+   !----- Other constants. ----------------------------------------------------------------!
+   character(len=str_len), parameter :: allom_file  = 'allom_param.txt'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Check whether to print the allometry table or not. ------------------------------!
+   write_allom = btest(idetailed,5)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Carbon-to-biomass ratio of plant tissues. ---------------------------------------!
+   C2B    = 2.0
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Wood density.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then ! Grasses. Dummy value for some WAI estimates.
+         rho(ipft) = 0.20
+      elseif (is_liana(ipft)) then ! BCI traits
+         rho(ipft) = 0.46
+      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
+         rho(ipft) = 0.54
+      elseif (.not. is_tropical(ipft)) then ! Mid-latitude PFTs, currently not used
+         rho(ipft) = 0.00
+      else
+         !----- Tropical broadleaf trees.  These must be defined individually. ------------!
+         select case (ipft)
+         case (2,12)  ! Early-successional tropical.
+            rho(ipft) = 0.53 ! 0.40
+         case (3,13)  ! Mid-successional tropical.
+            rho(ipft) = 0.71 ! 0.60
+         case (4,14)  ! Late-successional tropical.
+            rho(ipft) = 0.90 ! 0.87
+         case default ! Just in case some PFT was forgotten, use global average
+            rho(ipft) = 0.608
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     Old patch fusion variables (slated to be deleted in the near future).             !
+   !     Leaf turnover rate.  We only initialise it here for tropical trees when IALLOM is !
+   ! not 4, because the old method makes SLA a function of LTOR.  Otherwise, we assign     !
+   ! undefined and fill in init_pft_resp_params.                                           !
    !---------------------------------------------------------------------------------------!
-   dark_cumlai_min    = 5.5      ! Minimum cumulative LAI to be ignored (under storey)
-   dark_cumlai_max    = 8.0      ! Maximum cumulative LAI to be ignored (under storey)
-   sunny_cumlai_min   = 0.1      ! Minimum cumulative LAI to be ignored (top canopy)
-   sunny_cumlai_max   = 0.3      ! Maximum cumulative LAI to be ignored (top canopy)
-   light_toler_min    = 0.01     ! Minimum cumulative LAI to be ignored (under storey)
-   light_toler_max    = onethird ! Maximum cumulative LAI to be ignored (under storey)
-   !----- Multiplication factors. ---------------------------------------------------------!
-   sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
-   dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
-   light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Old cohort fusion variables (slated to be deleted in the near future).            !
-   !---------------------------------------------------------------------------------------!
-   fusetol           =  0.4    ! Cohort fusion tolerance on DBH (dimensionless) 
-   fusetol_h         =  0.5    ! Cohort fusion tolerance on height (m) !
-   lai_fuse_tol      =  0.8    ! Cohort fusion tolerance on LAI (m2 leaf/m2 ground)
-   coh_tolerance_max = 10.0    ! Cohort maximum tolerance factor 
-   fuse_relax        = .false. ! Flag to allow a less strict fusion test
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Maximum LAI that a cohort is allowed to have.  This cap ensures that self-thin-  !
-   ! ning mechanisms work in the model.  This parameter is used in fuse_cohorts and        !
-   ! split_cohorts.                                                                        !
-   !---------------------------------------------------------------------------------------!
-   lai_tol            = 1.0
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Number of height classes (classes will be initialised in                         !
-   ! init_derived_params_after_xml.                                                        !
-   !---------------------------------------------------------------------------------------!
-   select case (ifusion)
-   case (1)
-      ff_nhgt = 19
+   select case (iallom)
+   case (3) ! Only lianas are initialised here.
+      leaf_turnover_rate(:) = merge(1.27,undef_real,is_liana(:))
    case default
-      ff_nhgt = 8
+      do ipft=1,n_pft
+         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+            !----- Grasses and Non-tropical, initialise in init_pft_resp_params. ----------!
+            leaf_turnover_rate(ipft) = undef_real
+            !------------------------------------------------------------------------------!
+         elseif (is_liana(ipft)) then
+            leaf_turnover_rate(ipft) = 1.27
+         else
+            !------------------------------------------------------------------------------!
+            !     Grasses and trees, we must assign case by case.                          !
+            !------------------------------------------------------------------------------!
+            select case (ipft)
+            case (2,12) ! Early-successional tropical
+               leaf_turnover_rate(ipft) = 1.0
+            case (3,13) ! Mid-successional tropical
+               leaf_turnover_rate(ipft) = 0.5
+            case (4,14) ! Late-successional tropical
+               leaf_turnover_rate(ipft) = onethird
+            end select
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
    end select
    !---------------------------------------------------------------------------------------!
 
+
+
    !---------------------------------------------------------------------------------------!
-   !     Patch fusion layers were relocated to init_derived_params_after_xml, so the       !
-   ! default numbers are based on the height of the tallest possible PFT.                  !
+   !     Specific leaf area [m2 leaf / kg C].   For tropical PFTs, this is a turnover rate !
+   ! defined by the slope, intercept and scale.                                            !
+   !---------------------------------------------------------------------------------------!
+   !----- New parameters. -----------------------------------------------------------------!
+   sla_scale =  0.1 * C2B!C2B=2
+   sla_inter =  2.4
+   sla_slope = -0.46
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !  KIM - new tropical parameters.                                                       !
    !                                                                                       !
-   ! pat_light_ext      -- extinction coefficient for light level.  Typically this should  !
-   !                       be 0.5.                                                         !
-   ! pat_light_tol_min  -- Minimum tolerance for average profile                           !
-   ! pat_light_tol_max  -- Maximum tolerance for average profile                           !
-   ! pat_light_tol_mult -- Factor that increments tolerance (derived from previous vari-   !
-   !                       ables).                                                         !
-   ! pat_light_mxd_fac  -- Maximum deviation from average tolerance (e.g. 1.25 means that  !
-   !                       the maximum difference in light levels can be 25% greater than  !
-   !                       tolerance for average maximum.                                  !
-   !---------------------------------------------------------------------------------------!
-   pat_light_ext      = 0.5
-   pat_light_tol_min  = twothirds * 0.01
-   pat_light_tol_max  = 0.10
-   pat_light_tol_mult = (pat_light_tol_max/pat_light_tol_min)**exp_patfus
-   pat_light_mxd_fac  = 1.50
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Cohort fusion variables.                                                          !
+   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
+   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
+   !        account for variation on both axes, all equations were developed using         !
+   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
+   !        density, all variables were log-transformed.  These changes are only applied   !
+   !        to IALLOM=3 for back-compability.                                              !
    !                                                                                       !
-   ! coh_size_tol_min  -- Minimum tolerance for relative difference in size.               !
-   ! coh_size_tol_max  -- Maximum tolerance for relative difference in size.               !
-   ! coh_size_tol_mult -- Factor that increments tolerance (derived from previous vari-    !
-   !                       ables).                                                         !
+   !  References                                                                           !
+   !                                                                                       !
+   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
+   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
+   !                                                                                       !
+   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
+   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
+   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
    !---------------------------------------------------------------------------------------!
-   coh_size_tol_min  = twothirds * 0.01
-   coh_size_tol_max  = twothirds * 0.10
-   coh_size_tol_mult = (coh_size_tol_max/coh_size_tol_min)**exp_cohfus
+   do ipft=1,n_pft
+      if (is_tropical(ipft)) then
+         if (leaf_turnover_rate(ipft) /= undef_real) then ! Kim's allometry
+            SLA(ipft) = sla_scale                                                          &
+                      * 10.**(sla_inter + sla_slope * log10(12./leaf_turnover_rate(ipft)))
+         elseif (is_grass(ipft)) then ! Tropical grasses
+            SLA(ipft) = 22.7
+         elseif (is_liana(ipft)) then ! Just in case, but lianas are init. in Kim's block
+            SLA(ipft) = 17.87954
+         elseif (is_conifer(ipft)) then ! Sub-tropical conifers 
+            SLA(ipft) = 10.
+         else ! Tropical trees
+            SLA(ipft) = exp(4.44824590-2.50747710*rho(ipft))
+         end if
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Temperate trees, each PFT must be initialised separately.                    !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (5)     ! Temperate C3 grass.
+            SLA(ipft) = 22.0
+         case (6)     ! Northern pines. 
+            SLA(ipft) = 6.0
+         case (7)     ! Southern pines.
+            SLA(ipft) = 9.0
+         case (8)     ! Late conifers. 
+            SLA(ipft) = 10.0
+         case (9)     ! Early hardwood.
+            SLA(ipft) = 30.0
+         case (10)    ! Mid hardwood. 
+            SLA(ipft) = 24.2
+         case (11)    ! Late hardwood. 
+            SLA(ipft) = 60.0 ! Does it make sense to be much higher than Early- and Mid-?
+         case default ! Just in case. 
+            SLA(ipft) = 15.0
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
 
 
 
-   !----- Maximum age difference allowed for two patches being considered same age [yr]. --!
-   pat_diff_age_tol   = 0.999 / 12.
+
+   !----- Fraction of structural stem that is assumed to be above ground. -----------------!
+   agf_bs(:) = 0.7
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Ratio between fine roots and leaves [kg_fine_roots/kg_leaves] -------------------!
+   q(:) = merge(1.0,merge(0.3463,1.1274,is_conifer(:)),is_tropical(:) .or. is_grass(:))
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !      Minimum area to remain resolved.  This condition is normally met, except when    !
-   ! initialising the simulation with massive amount of data (like airborne lidar data).   !
+   !   KIM: ED1/ED2 codes and Moorcroft et al. had the incorrect ratio.                    !
+   !   MLO: The ratio is corrected only for tropical PFTs using iallom=3.  To extend this  !
+   !        fix to other PFTs, one must refit parameters for other tissues (e.g. bdead),   !
+   !        so the total AGB is consistent with the original allometric equation for AGB.  !
+   !                                                                                       !
+   !        For the PFTs that were updated, we combine the pipe model with the data from   !
+   !        CA08 and shape parameter from F16 to derive the ratio.                         !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring. Allometric relationships     !
+   !    predicting foliar biomass and leaf area:sapwood area ratio from tree height in     !
+   !    five Costa Rican rain forest species. Tree Physiol., 28 (11):1601-1608, Sep 2008.  !
+   !    doi:10.1093/treephys/28.11.1601. (CA08)                                            !
+   !                                                                                       !
+   ! Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.  plant:  !
+   !    A package for modelling forest trait ecology and evolution.  Methods Ecol. Evol.,  !
+   !    7(2):136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                         !
+   !                                                                                       !
+   ! McDowell, N., H. Barnard, B. Bond, T. Hinckley, R. Hubbard, H. Ishii, B. Kostner,     !
+   !    F. Magnani, J. Marshall, F. Meinzer, N. Phillips, M. Ryan, and D. Whitehead. The   !
+   !    relationship between tree height and leaf area: sapwood area ratio. Oecologia,     !
+   !    132(1):12-20, Jun 2002. doi:10.1007/s00442-002-0904-x. (MD02)                      !
+   !                                                                                       !
+   ! Rosell, J. A., S. Gleason, R. Mendez-Alonzo, Y. Chang, and M. Westoby. Bark           !
+   !    functional ecology: evidence for tradeoffs, functional coordination, and environ-  !
+   !    ment producing bark diversity. New Phytol., 201(2): 486-497, Jan 2014.             !
+   !    doi:10.1111/nph.12541. (R14)                                                       !
+   !                                                                                       !
+   ! Yokozawa M., and T. Hara. Foliage profile, size structure and stem diameter-plant     !
+   !    height relationship in crowded plant populations. Ann. Bot.-London, 76(3):271-285, !
+   !    Sep 1995.                                                                          !
+   !    doi:10.1006/anbo.1995.1096. (YH95)                                                 !
+   !                                                                                       !
+   !      Leaf-to-sapwood area ratio (Al:As, or As/Al) for conifers was estimated from the !
+   ! average of all conifers listed in Table 1 of MD02, weighted by number of individuals. !
+   ! Broadleaf is currently tropical-only, and was obtained from the average of all points !
+   ! from Fig. 1 of CA08 (obtained from extracting data from the figure itself).           !
+   !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   pat_min_area_remain = 0.90
+   select case (iallom)
+   case (3)
+      do ipft=1,n_pft
+         if (is_liana(ipft)) then
+            !------------------------------------------------------------------------------!
+            !      Lianas.  For the time being I did not change to preserve total biomass. !
+            ! Mind that this number may be off by one or two orders of magnitude.          !
+            !------------------------------------------------------------------------------!
+            sapwood_ratio(ipft) = 3900.0
+            !------------------------------------------------------------------------------!
+         elseif (is_tropical(ipft)) then
+            !------------------------------------------------------------------------------!
+            !     Define the shape parameter eta.  Eta describes the vertical distribution !
+            ! of leaf area within the crown.  According to F16 and the original reference  !
+            ! (YH95), eta=1 is typical of conifers, whereas eta=12 is closer to the        !
+            ! profiles observed in angiosperms.  Araucarias somewhat intermediate, so we   !
+            ! set eta=5.                                                                   !
+            !                                                                              !
+            !     asal_bar is the leaf-to-sapwood area ratio (Al:As, or As/Al) for         !
+            ! conifers was estimated from the average of all conifers listed in Table 1 of !
+            ! MD02, weighted by number of individuals.  Broadleaf is currently tropical-   !
+            ! only, and was obtained from the average of all points from Fig. 1 of CA08    !
+            ! (obtained from extracting data from the figure itself)                       !
+            !------------------------------------------------------------------------------!
+            if (is_conifer(ipft)) then ! Sub-tropical needleleaf
+               eta_f16  = 5.0
+               asal_bar = 3.709184e-05
+            else ! Broadleaf plant (trees/grasses).
+               eta_f16  = 12.0
+               asal_bar = 7.400139e-05
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------ Eta_c_f16 is calculated following F16. --------------------------------!
+            eta_c_f16 = 1.0 - 2.0 / (1.0+eta_f16) + 1.0 / (1 + 2.0 * eta_f16)
+            !------------------------------------------------------------------------------!
+
+
+            !------ Sapwood ratio. --------------------------------------------------------!
+            sapwood_ratio(ipft) = 1.0 / ( eta_c_f16 * asal_bar * rho(ipft) * 1000. / C2B )
+            !------------------------------------------------------------------------------!
+
+         else
+            !------------------------------------------------------------------------------!
+            !      Default ED-1 ratio.  Mind that this number may be off by one or two     !
+            ! orders of magnitude.                                                         !
+            !------------------------------------------------------------------------------!
+            sapwood_ratio(ipft) = 3900.0
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+
+   case default
+      !------------------------------------------------------------------------------------!
+      !      Default ED-1 ratio.  Mind that this number may be off by one or two orders of !
+      ! magnitude...                                                                       !
+      !------------------------------------------------------------------------------------!
+      sapwood_ratio(:) = 3900.0
+      !------------------------------------------------------------------------------------!
+
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    SLA-dependent ratio between sapwood and leaves [kg_sapwood/kg_leaves]              !
+   !---------------------------------------------------------------------------------------!
+   qsw(:)    = SLA(:) / sapwood_ratio(:)
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !      Coefficient of correlation assumed between two patches and cohorts that are      !
-   ! about to be fused.                                                                    !
+   !   qrhob is the ratio between bark density and wood density.  For tropical broadleaf   !
+   ! trees, we use fitted curves using SMA on the data available in P14 (Tab. S1).  For    !
+   ! other PFTs, we use the average ratio based on R14, which is similar to the average    !
+   ! of all data points of P14, but it has more types of ecosystems.                       !
+   !                                                                                       !
+   ! Poorter, L., A. McNeil, V.-H. Hurtado, H. H. T. Prins, and F. E. Putz. Bark traits    !
+   !    and life-history strategies of tropical dry- and moist forest trees.               !
+   !    Funct. Ecol., 28(1):232-242, Feb 2014. doi:10.1111/1365-2435.12158 (P14)           !
+   !                                                                                       !
+   ! Rosell, J. A., S. Gleason, R. Mendez-Alonzo, Y. Chang, and M. Westoby. Bark           !
+   !    functional ecology: evidence for tradeoffs, functional coordination, and environ-  !
+   !    ment producing bark diversity. New Phytol., 201(2): 486-497, Jan 2014.             !
+   !    doi:10.1111/nph.12541. (R14)                                                       !
    !---------------------------------------------------------------------------------------!
-   corr_patch  = 1.0
-   corr_cohort = 1.0
+   qrhob(:) = merge( 0.49 / 0.61                                                           &
+                   , exp(0.6966550 - 1.602123 * rho(:))                                    &
+                   , is_grass(:) .or. is_conifer(:) .or. (.not. is_tropical(:)) )
    !---------------------------------------------------------------------------------------!
 
 
-   !----- The following flag switches detailed debugging on. ------------------------------!
-   print_fuse_details = .false.
-   fuse_prefix        = 'patch_fusion_'
+
+   !---------------------------------------------------------------------------------------!
+   !     Set bark thickness and carbon allocation to bark.  This is currently done only    !
+   ! for tropical trees when IALLOM=3, because all biomass pools must be corrected to      !
+   ! ensure that total aboveground biomass is consistent with the allometric equations.    !
+   ! This may and should be changed in the future.                                         !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Meinzer, F. C., G. Goldstein, and J. L. Andrade. Regulation of water flux through     !
+   !    tropical forest canopy trees: Do universal rules apply? Tree Physiol.,             !
+   !    21(1):19-26, Jan 2001. doi:10.1093/treephys/21.1.19. (M01)                         !
+   !                                                                                       !
+   ! de Mattos, P. P., A. T. dos Santos, H. Rivera, Y. M. M. de Oliveira, M. A. D. Rosot,  !
+   !    and M. C. Garrastazu. Growth of Araucaria angustifolia in the Embrapa/Epagri       !
+   !    forest reserve, Cacador, SC, Brazil. Pesq. Flor. Bras., 55(2):107-114, Jul 2007.   !
+   !    URL http://pfb.cnpf.embrapa.br/pfb/index.php/pfb/ article/view/124. In Portuguese. !
+   !    (M07)                                                                              !
+   !                                                                                       !
+   ! Lawes, M. J. , J. J. Midgley, and P. J. Clarke. Costs and benefits of relative bark   !
+   !    thickness in relation to fire damage: a savanna/forest contrast. J. Ecol.,         !
+   !    101(2):517-524, Dec 2013. doi:10.1111/1365-2745.12035. (L13)                       !
+   !                                                                                       !
+   ! Falster, D. S., R. G. FitzJohn, A. Brannstrom, U. Dieckmann, and M. Westoby.          !
+   !    plant: A package for modelling forest trait ecology and evolution.  Methods Ecol.  !
+   !    Evol., 7(2):136-146, Feb 2016. doi:10.1111/2041-210X.12525. (F16)                  !
+   !                                                                                       !
+   ! b1Xs - slope of the dbh to sapwood thickness curve.  Currently this is used only to   !
+   !        define biomass allocation to bark consistent with bark thickness.              !
+   !                                                                                       !
+   ! b1Xb - slope of the dbh to bark thickness curve.                                      !
+   ! qbark - ratio between leaf biomass and bark biomass per unit height.                  !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      !------ New allometry, use estimate based on M01. -----------------------------------!
+      b1Xs(:) = 0.315769481
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Define bark thickness parameter based on life form.                            !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (.not. is_tropical(ipft)) then ! Non-tropical trees (bark is not set)
+            b1Xb(ipft) = 0.0
+         elseif (is_grass(ipft)) then ! Grasses (bark is not set)
+            b1Xb(ipft) = 0.0
+         elseif (is_liana(ipft)) then ! Lianas (bark is not set)
+            b1Xb(ipft) = 0.0
+         elseif (is_conifer (ipft)) then ! Araucarias, use slope from M07, Table 1
+            b1Xb(ipft) = 0.03936468
+         elseif (is_savannah(ipft)) then ! Avg. Slope of savannah trees (L13)
+            b1Xb(ipft) = 0.128
+         else ! Avg. Slope of forest trees (L13)
+            b1Xb(ipft) = 0.019
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Define the area ratio between sapwood and bark, assuming that sapwood and bark !
+      ! are concentric rings.                                                              !
+      !------------------------------------------------------------------------------------!
+      abas(:)  = b1Xb(:) * (1.0 - b1Xb(:)) / ( b1Xs(:) * (1. + b1Xs(:) - 2. * b1Xb(:)) )
+      qbark(:) = qrhob(:) * abas(:) * qsw(:)
+      !------------------------------------------------------------------------------------!
+
+   case default
+      !------ Old allometry, exclude bark. ------------------------------------------------!
+      b1Xs (:) = 0.315769481
+      b1Xb (:) = 0.0
+      abas (:) = 0.0
+      qbark(:) = 0.0
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
+   !---------------------------------------------------------------------------------------!
+   select case (igrass)
+   case (1)
+      init_density_grass = 1.
+   case default
+      init_density_grass = 0.1
+   end select
+   init_density(:) = merge(init_density_grass,0.1,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !   DBH/height allometry parameters.                                                    !
+   !                                                                                       !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!    !
+   !                                                                                       !
+   !   b1Ht, b2Ht, and hgt_ref are parameters that have different meaning for tropical and !
+   ! temperate PFTs, and the meaning for tropical PFTs depends on IALLOM.                  !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then
+         !---- Liana allometry: 10cm lianas are 35m tall ----------------------------------!
+         hgt_ref(ipft) = 61.7
+         b1Ht   (ipft) = 0.1136442
+         b2Ht   (ipft) = 0.8675
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !    Tropical trees have different parameters and functional forms depending on   !
+         ! the allometry.                                                                  !
+         !---------------------------------------------------------------------------------!
+         select case (iallom)
+         case (0:1)
+            !----- Regular log-log fit, b1 is the intercept and b2 is the slope. ----------!
+            b1Ht   (ipft) = 0.37 * log(10.0)
+            b2Ht   (ipft) = 0.64
+            !----- hgt_ref is not used. ---------------------------------------------------!
+            hgt_ref(ipft) = 0.0
+            !------------------------------------------------------------------------------!
+         case (2)
+            !------------------------------------------------------------------------------!
+            ! Weibull function --- H = Hinf * (1-exp(-b1*DBH^b2)) --- proposed by:         !
+            !                                                                              !
+            ! Poorter, L., L. Bongers, and F. Bongers. Architecture of 54 moist-forest     !
+            !    tree species: traits, trade-offs, and functional groups. Ecology,         !
+            !    87(5):1289-1301, May 2006.                                                !
+            !    doi:10.1890/0012- 9658(2006)87[1289:AOMTST]2.0.CO;2.                      !
+            !------------------------------------------------------------------------------!
+            !----- b1Ht is their "a" and b2Ht is their "b". -------------------------------!
+            b1Ht   (ipft) = 0.0352
+            b2Ht   (ipft) = 0.694
+            !----- hgt_ref is their "Hmax". -----------------------------------------------!
+            hgt_ref(ipft) = 61.7
+            !------------------------------------------------------------------------------!
+        case (3)
+            !------------------------------------------------------------------------------!
+            !     Allometric equation based on the Sustainable Landscapes data.            !
+            !                                                                              !
+            !    Longo, M. et al. Carbon Debt and Recovery time of degraded forests        !
+            !       in the Amazon, in prep.                                                !
+            !                                                                              !
+            !    Equation was derived from multiple forest inventories carried out at      !
+            ! multiple locations in the Brazilian Amazon, and fitted using a hetero-       !
+            ! scedastic least squares approach.  This equation is very similar to          !
+            ! Feldpausch et al (2012) equation for South America.                          !
+            !                                                                              !
+            ! Total number of trees: 15624                                                 !
+            ! hgt_ref = 47.2    (95% CI: [  44.8;   48.8])                                 !
+            ! b1Ht    = 0.0440  (95% CI: [0.0427; 0.0454])                                 !
+            ! b2Ht    = 0.802   (95% CI: [ 0.788;  0.822])                                 !
+            ! R2      = 0.677                                                              !
+            ! RMSE    = 5.4                                                                !
+            !------------------------------------------------------------------------------!
+            !----- b1Ht is their "a1" and b2Ht is their "a2". -----------------------------!
+            b1Ht   (ipft) = 0.044037
+            b2Ht   (ipft) = 0.80248
+            !----- hgt_ref is their "H-Infinity". -----------------------------------------!
+            hgt_ref(ipft) = 47.173
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Temperate PFTs, each one has a different model fitting.  Reference:         !
+         !                                                                                 !
+         ! Albani, M., D. Medvigy, G. C. Hurtt, and P. R. Moorcroft. The contributions of  !
+         !    land-use change, CO2 fertilization, and climate variability to the eastern   !
+         !    US carbon sink. Glob. Change Biol., 12(12):2370-2390, Dec 2006.              !
+         !    doi:10.1111/j.1365-2486.2006.01254.x.                                        !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (5)     ! Temperate C3 grass. 
+            b1Ht   (ipft) =  0.4778
+            b2Ht   (ipft) = -0.75
+            hgt_ref(ipft) =  0.0
+         case (6,7)   ! Northern and Southern Pines. 
+            b1Ht   (ipft) = 27.14
+            b2Ht   (ipft) = -0.03884
+            hgt_ref(ipft) = 1.3
+         case (8)     ! Late conifers. 
+            b1Ht   (ipft) = 22.79
+            b2Ht   (ipft) = -0.04445 
+            hgt_ref(ipft) = 1.3
+         case (9)     ! Early hardwood. 
+            b1Ht   (ipft) = 22.6799
+            b2Ht   (ipft) = -0.06534
+            hgt_ref(ipft) = 1.3
+         case (10)    ! Mid hardwood. 
+            b1Ht   (ipft) = 25.18
+            b2Ht   (ipft) = -0.04964
+            hgt_ref(ipft) = 1.3
+         case (11)    ! Late hardwood. 
+            b1Ht   (ipft) = 23.3874
+            b2Ht   (ipft) = -0.05404
+            hgt_ref(ipft) = 1.3
+         case default ! Forgotten PFT.
+            b1Ht   (ipft) = 25.18
+            b2Ht   (ipft) = -0.04964
+            hgt_ref(ipft) = 1.3
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Minimum and maximum height allowed for each cohort.                                !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses
+         hgt_min(ipft) = 0.50
+         hgt_max(ipft) = 1.50
+      else if (is_tropical(ipft)) then
+         !---------------------------------------------------------------------------------!
+         !     Tropical trees.  In principle maximum height could be simply hgt_ref as it  !
+         ! is the upper bound of the Weibull function.  In reality, we impose this limit   !
+         ! that is used to define dbh_crit, which halts increment in leaf biomass, crown   !
+         ! area, etc, which otherwise would reach unrealistic values due to excessive      !
+         ! extrapolation.                                                                  !
+         !---------------------------------------------------------------------------------!
+         hgt_min(ipft) = 0.5
+         select case (iallom)
+         case (3)
+            hgt_max(ipft) = 42.0
+         case default
+            hgt_max(ipft) = 35.0
+         end select
+         !---------------------------------------------------------------------------------!
+      else if (is_grass   (ipft)) then ! Temperate grasses
+         hgt_min(ipft) = 0.15
+         hgt_max(ipft) = 0.95 * b1Ht(ipft)
+      else ! Temperate trees.
+         hgt_min(ipft) = hgt_ref(ipft) + 0.20
+         hgt_max(ipft) = 0.999 * b1Ht(ipft)
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !   MIN_DBH     -- minimum DBH allowed for the PFT.                                     !
+   !   DBH_CRIT    -- minimum DBH that brings the PFT to its tallest possible height.      !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      min_dbh    (ipft) = h2dbh(hgt_min(ipft),ipft)
+      dbh_crit   (ipft) = h2dbh(hgt_max(ipft),ipft)
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-crown allometry.                                                              !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then
+         !----- Lianas. -------------------------------------------------------------------!
+         b1Ca(ipft) = exp(ncrown_area(1))
+         b2Ca(ipft) = 1.26254364
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft)) then
+         !----- Tropical PFT.  Decide parameters based on iallom. -------------------------!
+         select case (iallom)
+         case (0,1)
+            !------------------------------------------------------------------------------!
+            !    Coefficients from Poorter et al. (2006), after being transformed so the   !
+            ! allometry is a function of DBH.                                              !
+            !                                                                              !
+            ! Poorter, L., L. Bongers, and F. Bongers. Architecture of 54 moist-forest     !
+            !    tree species: traits, trade-offs, and functional groups. Ecology,         !
+            !    87(5):1289-1301, May 2006.                                                !
+            !    doi:10.1890/0012- 9658(2006)87[1289:AOMTST]2.0.CO;2.                      !
+            !------------------------------------------------------------------------------!
+            b1Ca(ipft) = exp(-1.853) * exp(b1Ht(ipft)) ** 1.888
+            b2Ca(ipft) = b2Ht(ipft) * 1.888
+            !------------------------------------------------------------------------------!
+         case (2)
+            !------------------------------------------------------------------------------!
+            !    Coefficients also based on Poorter et al. (2006), but using refitted      !
+            ! coefficients to use DBH as the predictive variable.                          !
+            !------------------------------------------------------------------------------!
+            b1Ca(ipft) = exp(ncrown_area(1))
+            b2Ca(ipft) = ncrown_area(2)
+            !------------------------------------------------------------------------------!
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     Allometry using the Sustainable Landscapes data.                         !
+            !------------------------------------------------------------------------------!
+            !                                                                              !
+            !    Longo, M. et al. Carbon Debt and Recovery time of degraded forests        !
+            !       in the Amazon, in prep.                                                !
+            !                                                                              !
+            !    Equation was derived from forest inventory measurements carried out at    !
+            ! multiple locations in the Brazilian Amazon, and fitted using a hetero-       !
+            ! scedastic least squares approach.                                            !
+            !                                                                              !
+            ! Total number of trees: 17066                                                 !
+            ! b1Ca = 0.582 (95% CI: [0.543;0.628])                                         !
+            ! b2Ca = 1.224 (95% CI: [1.201;1.245])                                         !
+            ! R2   = 0.501                                                                 !
+            ! RMSE = 29.89                                                                 !
+            !------------------------------------------------------------------------------!
+            b1Ca(ipft) = 0.582
+            b2Ca(ipft) = 1.224
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Temperate PFT, use Dietze and Clark (2008).                                 !
+         !---------------------------------------------------------------------------------!
+         b1Ca(ipft) = 2.490154
+         b2Ca(ipft) = 0.8068806
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These are used to compute the crown length, which will then be used to find the   !
+   ! height of the bottom of the crown.  This allometry is based on:                       !
+   !                                                                                       !
+   ! Poorter L., L. Bongers, F. Bongers, 2006: Architecture of 54 moist-forest tree        !
+   !     species: traits, trade-offs, and functional groups. Ecology, 87, 1289-1301.       !
+   !                                                                                       !
+   !    For iallom = 3, we use the allometric equation based on the Sustainable Landscapes !
+   ! data set.                                                                             !
+   !                                                                                       !
+   !    Longo, M. et al. 2017.  Carbon Debt and Recovery time of degraded forests in the   !
+   !       Amazon, in prep.                                                                !
+   !                                                                                       !
+   !    Equation was derived from forest inventory measurements carried out at multiple    !
+   ! locations in the Brazilian Amazon, and fitted using a heteroscedastic least           !
+   ! squares approach.                                                                     !
+   !                                                                                       !
+   ! Total number of trees: 16064                                                          !
+   ! b1Cl    = 0.298 (95% CI: [0.288;0.306])                                               !
+   ! b2Cl    = 1.032 (95% CI: [1.022;1.044])                                               !
+   ! R2      = 0.673                                                                       !
+   ! RMSE    = 2.29                                                                        !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      !----- Check life form. -------------------------------------------------------------!
+      if (is_grass(ipft)) then
+         b1Cl(ipft) = 0.99
+         b2Cl(ipft) = 1.00
+      elseif (is_tropical(ipft)) then
+         !----- Tropical PFTs: check allometry settings. ----------------------------------!
+         select case (iallom)
+         case (3)
+            b1Cl(ipft) = 0.29754
+            b2Cl(ipft) = 1.0324
+         case default
+            b1Cl(ipft) = 0.3106775
+            b2Cl(ipft) = 1.098
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !     Temperate PFTs: right now we are using the same allometry as the old        !
+         ! tropical (Poorter et al. 2006).  We probably need to switch these coefficients  !
+         ! by appropriate reference.                                                       !
+         !---------------------------------------------------------------------------------!
+         b1Cl(ipft) = 0.3106775
+         b2Cl(ipft) = 1.098
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This is the typical DBH that all big leaf plants will have.  Because the big-leaf  !
+   ! ED doesn't really solve individuals, the typical DBH should be one that makes a good  !
+   ! ratio between LAI and biomass.  This is a tuning parameter and right now the initial  !
+   ! guess is about 1/3 of the critical DBH for trees.                                     !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (0,1)
+      !----- Critical DBH for all PFTs. ---------------------------------------------------!
+      dbh_bigleaf(:) = dbh_crit(:)
+      !------------------------------------------------------------------------------------!
+   case default
+      do ipft=1,n_pft
+         if (is_grass(ipft)) then
+            !----- Grasses: critical DBH. -------------------------------------------------!
+            dbh_bigleaf(ipft) = dbh_crit(ipft)
+            !------------------------------------------------------------------------------!
+         else
+            !----- Trees: 1/3 of the critical DBH. ----------------------------------------!
+            dbh_bigleaf(ipft) = dbh_crit(ipft) * onethird
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for DBH -> Bleaf allometry.                                            !
+   !                                                                                       !
+   !           { b1Bl_small * dbh^b2Bl_small.             , if dbh < dbh_adult             !
+   !   Bleaf = {                                                                           !
+   !           { b1Bl_large * min(dbh_crit,dbh)^b2Bl_large, if dbh > dbh_adult             !
+   !                                                                                       !
+   !   The coefficients and thresholds depend on the PFT and allometric equations.         !
+   !                                                                                       !
+   !   MLO -- Manfredo, dbh_adult is where the two functions would give the same  number   !
+   !          to avoid discontinuities.  Please check it.                                  !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then
+          !----- Liana leaf Biomass (Putz, 1983) ------------------------------------------!
+          b1Bl_small (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
+          b2Bl_small (ipft) = nleaf(2)
+          b1Bl_large (ipft) = 0.0856
+          b2Bl_large (ipft) = 2.0
+          dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)          &
+                            ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
+          bleaf_adult(ipft) = b1Bl_large(ipft)                                             &
+                            / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+          !--------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft)) then
+         select case(iallom)
+         case (0,1)
+            !------------------------------------------------------------------------------!
+            !      ED-2.0 allometry, based on:                                             !
+            !                                                                              !
+            !   Saldarriaga, J. G., D. C. West, M. L. Tharp, and C. Uhl.  Long-term        !
+            !      chronosequence of forest succession in the upper Rio Negro of Colombia  !
+            !      and Venezuela.  J. Ecol., 76, 4, 938-958, 1988.                         !
+            !------------------------------------------------------------------------------!
+            b1Bl_small (ipft) = exp(a1 + c1l * b1Ht(ipft) + d1l * log(rho(ipft)))
+            aux               = ( (a2l - a1) + b1Ht(ipft) * (c2l - c1l) + log(rho(ipft))   &
+                                * (d2l - d1l) ) * (1.0/log(dcrit))
+            b2Bl_small (ipft) = C2B * b2l + c2l * b2Ht(ipft) + aux
+            b1Bl_large (ipft) = b1Bl_small(ipft)
+            b2Bl_large (ipft) = b2Bl_small(ipft)
+            dbh_adult  (ipft) = 10.0
+            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
+         case (2)
+            !------------------------------------------------------------------------------!
+            !     ED-2.1 allometry, based on:                                              !
+            !                                                                              !
+            !   Calvo-Alvarado, J. C., N. G. McDowell, and R. H. Waring.  Tree Physiol.,   !
+            !      28, 11, 1601-1608, 2008.                                                !
+            !                                                                              !
+            !   Cole, T. G., J. J. Ewel.  Allometric equations for four valuable tropical  !
+            !      tree species.  Forest Ecol. Manag., 229, 1--3, 351-360, 2006.           !
+            !------------------------------------------------------------------------------!
+            b1Bl_small (ipft) = C2B * exp(nleaf(1)) * rho(ipft) / nleaf(3)
+            b2Bl_small (ipft) = nleaf(2)
+            b1Bl_large (ipft) = b1Bl_small(ipft)
+            b2Bl_large (ipft) = b2Bl_small(ipft)
+            dbh_adult  (ipft) = dbh_crit(ipft)
+            bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     ED-2.2 allometry.  For large trees, it is based on:                      !
+            !                                                                              !
+            !   Lescure, J.-P., H. Puig, B. Riera, D. Leclerc, A. Beekman, and             !
+            !      A. Beneteau.  La phytomasse epigee d'une foret dense en Guyane          !
+            !      Francaise.  Acta Oecol. - Oec. Gen., 4, 3, 237-251, 1983.               !
+            !                                                                              !
+            !   Further modified to scale the leaf biomass by SLA.  For smaller trees, the !
+            !      biomass is a log-linear interpolation from 20gC/plant at minimum size   !
+            !      (scaled by SLA relative to mid-successional) and Lescure's allometry at !
+            !      minimum adult size.                                                     !
+            !------------------------------------------------------------------------------!
+            b1Bl_large (ipft) = 0.00873 * SLA(3) / SLA(ipft)
+            b2Bl_large (ipft) = 2.1360
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     DBH_Adult is by definition the minimum size that local LAI can become    !
+            ! greater than 1.                                                              !
+            !------------------------------------------------------------------------------!
+            dbh_adult  (ipft) =  ( b1Bl_large(ipft) * SLA(ipft) / b1Ca(ipft) / C2B)        &
+                              ** (1. / ( b2Ca(ipft) - b2Bl_large(ipft) ) )
+            bleaf_adult(ipft) = b1Bl_large(ipft)                                           &
+                              / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Small-sized bleaf is a log-linear interpolation. -----------------------!
+            bleaf_sapling     = 0.02 * C2B * SLA(3) / SLA(ipft)
+            b2Bl_small (ipft) = log( bleaf_adult(ipft) / bleaf_sapling )                   &
+                              / log( dbh_adult  (ipft) / min_dbh(ipft) )
+            b1Bl_small (ipft) = bleaf_adult(ipft) * C2B                                    &
+                              / dbh_adult(ipft) ** b2Bl_small(ipft)
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !      Temperate PFTs.  Each class has specific optimised parameters, and there   !
+         ! is no distinction between small and large cohorts.                              !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (5)   ! Temperate C3 grass. 
+            b1Bl_small(ipft) = 0.08
+            b2Bl_small(ipft) = 1.0
+         case (6,7) ! Northern and Southern Pines. 
+            b1Bl_small(ipft) = 0.024
+            b2Bl_small(ipft) = 1.899
+         case (8)   ! Late conifers. 
+            b1Bl_small(ipft) = 0.0454
+            b2Bl_small(ipft) = 1.6829
+         case (9)   ! Early hardwood. 
+            b1Bl_small(ipft) = 0.0129
+            b2Bl_small(ipft) = 1.7477
+         case (10) ! Mid hardwood. 
+            b1Bl_small(ipft) = 0.048
+            b2Bl_small(ipft) = 1.455
+         case (11) ! Late hardwood. 
+            b1Bl_small(ipft) = 0.017
+            b2Bl_small(ipft) = 1.731
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Duplicate coefficients and set dummy adult dbh.                              !
+         !---------------------------------------------------------------------------------!
+         b1Bl_large (ipft) = b1Bl_small(ipft)
+         b2Bl_large (ipft) = b2Bl_small(ipft)
+         dbh_adult  (ipft) = 5.0
+         bleaf_adult(ipft) = b1Bl_large(ipft) / C2B * dbh_adult(ipft) ** b2Bl_large(ipft)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for DBH -> Bdead allometry.                                            !
+   !                                                                                       !
+   !           { b1Bs_small * DBH^b2Bs_small.             , if dbh < dbh_adult             !
+   !   Bdead = {                                                                           !
+   !           { b1Bs_large * dbh)^b2Bl_large, if dbh > dbh_adult                          !
+   !                                                                                       !
+   !   The coefficients and thresholds depend on the PFT and allometric equations.         !
+   !---------------------------------------------------------------------------------------!
+   !------- Fill in the tropical PFTs, which are functions of wood density. ---------------!
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then
+         !---------------------------------------------------------------------------------!
+         ! Liana allometry                                                                 !
+         !                                                                                 !
+         !    This is an experimental value for dead biomass. The Schnitzer article        !
+         ! provide an allometric equation to relate AGB to DBH. Since here we are dealing  !
+         ! with DB instead of AGB I also subtracted the leaf biomass from AGB. Bl dbh      !
+         ! allometry is the same used in size2bl from Putz. I have dropped the intercept   !
+         ! though. This is because  otherwise one would have DB != when plant has DBH = 0. !
+         ! At this point one would have                                                    !
+         ! dbh2bd = (exp(-1.484 + 2.657 * log(dbh)) - 0.0856 * dbh * dbh) / C2B            !
+         ! Moreover since Schnitzer gives AGB we have to divide by agf_bs so that          !
+         ! when we calculate the above ground fraction multiplying by agf_bs we get the    !
+         ! correct AGB. I fitted this equation dbh2bd with a form dbh2bd = a*(dbh)**b      !
+         ! because otherwise the formula is not invertible (we need bd2dbh). Fit converges !
+         ! nicely with                                                                     !
+         ! a= 0.13745 and b=2.69373 .                                                      !
+         !                                                                                 !
+         ! MLO -- qsw is not zero for lianas, so you may be overestimating total AGB in    !
+         !        ED-2, because bdead = agb - bleaf - bsapwooda - agf_bs * bbark.          !
+         !---------------------------------------------------------------------------------!
+         b1Bs_small(ipft) = 0.2749
+         b1Bs_large(ipft) = b1Bs_small(ipft)
+         b2Bs_small(ipft) = 2.69373
+         b2Bs_large(ipft) = b2Bs_small(ipft)
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft)) then
+         select case (iallom)
+         case (0)
+            !---- ED-2.1 allometry. -------------------------------------------------------!
+            b1Bs_small(ipft) = exp(a1 + c1d * b1Ht(ipft) + d1d * log(rho(ipft)))
+            b1Bs_large(ipft) = exp(a1 + c1d * log(hgt_max(ipft)) + d1d * log(rho(ipft)))
+
+            aux              = ( (a2d - a1) + b1Ht(ipft) * (c2d - c1d) + log(rho(ipft))    &
+                               * (d2d - d1d)) * (1.0/log(dcrit))
+            b2Bs_small(ipft) = C2B * b2d + c2d * b2Ht(ipft) + aux
+
+            aux              = ( (a2d - a1) + log(hgt_max(ipft)) * (c2d - c1d)             &
+                               + log(rho(ipft)) * (d2d - d1d)) * (1.0/log(dcrit))
+            b2Bs_large(ipft) = C2B * b2d + aux
+            !------------------------------------------------------------------------------!
+
+         case (1,2)
+            !------------------------------------------------------------------------------!
+            !     Based on modified Chave et al. (2001) allometry.                         !
+            !                                                                              !
+            ! Chave, J., B. Riera, M.-A. Dubois. Estimation of biomass in a neotropical    !
+            !    forest of French Guiana: spatial and temporal variability.                !
+            !    J. Trop. Ecol., 17(1):79-96, Jan 2001. doi:10.1017/S0266467401001055.     !
+            !------------------------------------------------------------------------------!
+            b1Bs_small(ipft) = C2B * exp(ndead_small(1)) * rho(ipft) / ndead_small(3)
+            b2Bs_small(ipft) = ndead_small(2)
+            b1Bs_large(ipft) = C2B * exp(ndead_large(1)) * rho(ipft) / ndead_large(3)
+            b2Bs_large(ipft) = ndead_large(2)
+            !------------------------------------------------------------------------------!
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     Parameters based on a model re-fit from Chave et al. (2014).             !
+            !  Biomass was estimated from rho*D^2*h using the height allometry from SL     !
+            !  bdead was found by subtracting leaves and above-ground sapwood, and scaled  !
+            !  to include below ground biomass.  The result was fit using a DBH-dependent  !
+            !  only model.                                                                 !
+            !                                                                              !
+            ! Chave, J.,M. Rejou-Mechain, A. Burquez, et al. Improved allometric models to !
+            !    estimate the aboveground biomass of tropical trees. Glob. Change Biol.,   !
+            !    20(10):3177-3190, Oct 2014. doi:10.1111/gcb.12629.                        !
+            !------------------------------------------------------------------------------!
+            b1Bs_small(ipft) = C2B * 0.1668894 * rho(ipft)
+            b2Bs_small(ipft) = 2.4391522
+            b2Bs_large(ipft) = 2.1378625
+            b1Bs_large(ipft) = b1Bs_small(ipft)                                            &
+                             * dbh_crit(ipft) ** (b2Bs_small(ipft)-b2Bs_large(ipft))
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !      Temperate PFTs.  Each class has specific optimised parameters, and there   !
+         ! is no distinction between small and large cohorts.                              !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (5)   ! Temperate C3 grass. 
+            b1Bs_small(ipft) = 1.0e-5
+            b2Bs_small(ipft) = 1.0
+         case (6,7) ! Northern and Southern Pines. 
+            b1Bs_small(ipft) = 0.147
+            b2Bs_small(ipft) = 2.238
+         case (8)   ! Late conifers. 
+            b1Bs_small(ipft) = 0.1617
+            b2Bs_small(ipft) = 2.1536
+         case (9)   ! Early hardwood. 
+            b1Bs_small(ipft) = 0.02648
+            b2Bs_small(ipft) = 2.95954
+         case (10)  ! Mid hardwood. 
+            b1Bs_small(ipft) = 0.1617
+            b2Bs_small(ipft) = 2.4572
+         case (11)  ! Late hardwood. 
+            b1Bs_small(ipft) = 0.235
+            b2Bs_small(ipft) = 2.2518
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !    Duplicate coefficients.                                                      !
+         !---------------------------------------------------------------------------------!
+         b1Bs_large (ipft) = b1Bs_small(ipft)
+         b2Bs_large (ipft) = b2Bs_small(ipft)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     In case we run big leaf model with IALLOM set to 0 or 1, we must change some of   !
+   ! the allometric parameters.                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (ibigleaf == 1 .and. (iallom == 0 .or. iallom == 1)) then
+      b1Bl_small( 1) = 0.04538826
+      b1Bl_small( 2) = 0.07322115
+      b1Bl_small( 3) = 0.07583497
+      b1Bl_small( 4) = 0.08915847
+      b1Bl_small(12) = b1Bl_small(2)
+      b1Bl_small(13) = b1Bl_small(3)
+      b1Bl_small(14) = b1Bl_small(4)
+      b1Bl_small(15) = 0.07322115
+      b1Bl_small(16) = 0.04538826
+      b1Bl_small(17) = 0.07322115
+      
+      b2Bl_small( 1) = 1.316338
+      b2Bl_small( 2) = 1.509083
+      b2Bl_small( 3) = 1.646576
+      b2Bl_small( 4) = 1.663773
+      b2Bl_small(12) = b2Bl_small(2)
+      b2Bl_small(13) = b2Bl_small(3)
+      b2Bl_small(14) = b2Bl_small(4)
+      b2Bl_small(15) = 1.509083
+      b2Bl_small(16) = 1.316338
+      b2Bl_small(17) = 1.509083
+      
+      b1Bs_small( 1) = 0.05291854
+      b1Bs_small( 2) = 0.15940854
+      b1Bs_small( 3) = 0.21445616
+      b1Bs_small( 4) = 0.26890751
+      b1Bs_small(12) = b1Bs_small(2)
+      b1Bs_small(13) = b1Bs_small(3)
+      b1Bs_small(14) = b1Bs_small(4)
+      b1Bs_small(15) = 0.15940854
+      b1Bs_small(16) = 0.05291854
+      b1Bs_small(17) = 0.15940854
+      
+      b2Bs_small( 1) = 3.706955
+      b2Bs_small( 2) = 2.342587
+      b2Bs_small( 3) = 2.370640
+      b2Bs_small( 4) = 2.254336
+      b2Bs_small(12) = b2Bs_small(2)
+      b2Bs_small(13) = b2Bs_small(3)
+      b2Bs_small(14) = b2Bs_small(4)
+      b2Bs_small(15) = 2.342587
+      b2Bs_small(16) = 3.706955
+      b2Bs_small(17) = 2.342587
+      
+      b1Bl_large(:)  = b1Bl_small(:)
+      b2Bl_large(:)  = b2Bl_small(:)
+      b1Bs_large(:)  = b1Bs_small(:)
+      b2Bs_large(:)  = b2Bs_small(:)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fill in variables that are derived from bdead allometry.                          !
+   !---------------------------------------------------------------------------------------!
+   do ipft = 1, n_pft
+      !------------------------------------------------------------------------------------!
+      ! -- MIN_BDEAD is the minimum structural biomass possible.  This is used in the      !
+      !    initialisation only, to prevent cohorts to be less than the minimum size due to !
+      !    change in allometry.                                                            !
+      ! -- BDEAD_CRIT corresponds to BDEAD when DBH is exactly at DBH_CRIT.  This is       !
+      !    used to determine which b1Bs/b2Bs pair to use.                                  !
+      !------------------------------------------------------------------------------------!
+      min_bdead (ipft) = dbh2bd(min_dbh (ipft),ipft)
+      bdead_crit(ipft) = dbh2bd(dbh_crit(ipft),ipft)
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    WAI parameters, the choice depends on IALLOM.  Because iallom=3/4 are bound to     !
+   ! LAI, we must define parameters for small and large cohorts.                           !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !    WAI is defined as a fraction of (potential) LAI.   The ratio is set to 0.11     !
+      ! following the average ratio from Olivas et al. (2013).                             !
+      !                                                                                    !
+      ! Olivas, P. C., S. F. Oberbauer, D. B. Clark, D. A. Clark, M. G. Ryan,              !
+      !    J. J. O'Brien, and H. Ordonez. Comparison of direct and indirect methods for    !
+      !    assessing leaf area index across a tropical rain forest landscape.              !
+      !    Agric. For. Meteorol., 177:110-116, Aug 2013.                                   !
+      !    doi:10.1016/j.agrformet.2013.04.010.                                            !
+      !------------------------------------------------------------------------------------!
+      b1WAI_small(:) = merge(0.0,0.11*SLA(:)*b1Bl_small(:),is_grass(:))
+      b2WAI_small(:) = merge(1.0,            b2Bl_small(:),is_grass(:))
+      b1WAI_large(:) = merge(0.0,0.11*SLA(:)*b1Bl_large(:),is_grass(:))
+      b2WAI_large(:) = merge(1.0,            b2Bl_large(:),is_grass(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !    Use the equation by:                                                            !
+      !                                                                                    !
+      ! Hormann, G., S. Irrgan, H. Jochheim, M. Lukes, H. Meesenburg, J. Muller,           !
+      !    B. Scheler, J. Scherzer, G. Schuler, B. Schultze, B. Strohbach, F. Suckow,      !
+      !    M. Wegehenkel, and G. Wessolek.   Wasserhaushalt von waldokosystemen:           !
+      !    methodenleitfaden zur bestimmung der wasserhaushaltskomponenten auf level       !
+      !    II-flachen. Technical note, Bundesministerium fur Verbraucherschutz, Ernahrung  !
+      !    und Landwirtschaft (BMVEL), Bonn, Germany, 2003.                                !
+      !    URL http://www.wasklim.de/download/Methodenband.pdf.                            !
+      !------------------------------------------------------------------------------------!
+      do ipft=1,n_pft
+         if (is_grass(ipft) .and. (.not. is_tropical(ipft))) then
+            !------ Grasses don't have WAI. -----------------------------------------------!
+            b1WAI_small(ipft) = 0.0
+            b2WAI_small(ipft) = 1.0
+            !------------------------------------------------------------------------------!
+         elseif (is_conifer(ipft)) then
+            !------ Conifers. -------------------------------------------------------------!
+            b1WAI_small(ipft) = 0.0553 * 0.5
+            b2WAI_small(ipft) = 1.9769
+            !------------------------------------------------------------------------------!
+         else
+            !------ Tropical grasses and broadleaf trees. ---------------------------------!
+            b1WAI_small(ipft) = 0.0192 * 0.5
+            b2WAI_small(ipft) = 2.0947
+            !------------------------------------------------------------------------------!
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+      !----- Copy "large" parameters from "small" ones. -----------------------------------!
+      b1WAI_large(:) = b1WAI_small(:)
+      b2WAI_large(:) = b2WAI_small(:)
+      !------------------------------------------------------------------------------------!
+
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    brf_wd is the fraction of above-ground wood that is assumed to be in branches and  !
+   ! twigs.  Here we must be careful to make sure that the fraction is 0 in case WAI is    !
+   ! going to be zero (e.g. grasses).                                                      !
+   !---------------------------------------------------------------------------------------!
+   brf_wd(:) = merge(0.0,0.16,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Commercial volume of trees (stem/bole volume, in m3).  The current equation is a  !
+   ! re-fit from Nogueira et al. (2008) so a single set of parameters can be used.  Their  !
+   ! equation is for tropical trees only, so temperate and boreal forests may need a       !
+   ! different set of parameters.  Grasses are assumed to have no commercial volume.       !
+   !                                                                                       !
+   ! Nogueira, E. M., et al. Estimates of forest biomass in the Brazilian Amazon: new      !
+   !    allometric equations and adjustments to biomass from wood-volume inventories.      !
+   !    Forest Ecol. Manag., 256(11), 1853-1867, Nov. 2008,                                !
+   !    doi:10.1016/j.foreco.2008.07.022.                                                  !
+   !---------------------------------------------------------------------------------------!
+   b1Vol(:) = merge(0.0,3.528e-5,is_grass(:))
+   b2Vol(:) = merge(1.0,0.976   ,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     DBH-Root depth allometry.  Check which allometry to use.  The original volume     !
+   ! equation in ED-2.1 didn't have any references (at least I never found it), so the     !
+   ! rooting depth equation now incorporates the original "volume".  The current volume    !
+   ! allometry is based on tropical trees, and it estimates the commercial volume (stem    !
+   ! volume).                                                                              !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (0)
+      !------------------------------------------------------------------------------------!
+      !      Grasses are assumed to have constant rooting depth.  Tree rooting depth is a  !
+      ! function of dbh and height.                                                        !
+      !------------------------------------------------------------------------------------!
+      b1Rd(:) = merge(-0.700,- exp(0.545*log(10.)) * 0.65 * pi1 * 0.11 * 0.11,is_grass(:))
+      b2Rd(:) = merge( 0.000,0.277                                           ,is_grass(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !     This is just a test, not based on any paper.  This is simply a fit that would  !
+      ! put the roots 0.5m deep for plants 0.15m-tall and 5 m for plants 35-m tall.        !
+      !------------------------------------------------------------------------------------!
+      b1Rd(:)  = -1.1140580
+      b2Rd(:)  =  0.4223014
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initial storage pool, relative to on-allometry living biomass, to be given to the  !
+   ! PFTs when the model is run using INITIAL conditions.                                  !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      f_bstorage_init(:) = 0.50
+   case default
+      f_bstorage_init(:) = 0.00
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Initial density of plants, for near-bare-ground simulations [# of individuals/m2]  !
+   !---------------------------------------------------------------------------------------!
+   select case (ibigleaf)
+   case (0)
+      !----- Size and age structure. ------------------------------------------------------!
+      select case (iallom)
+      case (0,1)
+         init_density(:) = merge(1.0,0.1,is_grass(:))
+      case default
+         init_density(:) = 0.1
+      end select
+      !------------------------------------------------------------------------------------!
+
+      !----- Define a non-sense number. ---------------------------------------------------!
+      init_laimax(:)   = huge_num
+      !------------------------------------------------------------------------------------!
+
+   case(1)
+      !----- Big leaf. 1st we set the maximum initial LAI for each PFT. -------------------!
+      init_laimax(:)   = 0.1
+      do ipft=1,n_pft
+         init_bleaf = size2bl(dbh_bigleaf(ipft),hgt_max(ipft),ipft)
+         init_density(ipft) = init_laimax(ipft) / (init_bleaf * SLA(ipft))
+      end do
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Liana-specific parameters, move here so they are properly initialised.            !
+   ! MLO - Manfredo, is there a reason two define two dbh_crit for lianas? Couldn't this   !
+   !       number simply replace dbh_crit for lianas?                                      !
+   !---------------------------------------------------------------------------------------!
+   h_edge = 0.5          !< maximum height advantage for lianas
+   liana_dbh_crit = 26.0 !< liana specific critical dbh
+   !---------------------------------------------------------------------------------------!
+
+   if (write_allom) then
+      open (unit=18,file=trim(allom_file),status='replace',action='write')
+      write(unit=18,fmt='(507a)') ('-',n=1,507)
+      write(unit=18,fmt='(39(1x,a))') '         PFT','    Tropical','       Grass'         &
+                                     ,'         Rho','        b1Ht','        b2Ht'         &
+                                     ,'     Hgt_ref','  b1Bl_small','  b2Bl_small'         &
+                                     ,'  b1Bl_large','  b2Bl_large','  b1Bs_Small'         &
+                                     ,'  b2Bs_Small','  b1Bs_Large','  b1Bs_Large'         &
+                                     ,'        b1Ca','        b2Ca',' b1WAI_small'         &
+                                     ,' b2WAI_small',' b1WAI_large',' b2WAI_large'         &
+                                     ,'        b1Xs','        b1Xb','     Hgt_min'         &
+                                     ,'     Hgt_max','     Min_DBH','   DBH_Adult'         &
+                                     ,'    DBH_Crit',' DBH_BigLeaf',' Bleaf_Adult'         &
+                                     ,'  Bdead_Crit','   Init_dens',' Init_LAImax'         &
+                                     ,'         SLA','F_Bstor_init','           q'         &
+                                     ,'         qsw','       qbark','       qrhob'
+
+      write(unit=18,fmt='(507a)') ('-',n=1,507)
+      do ipft=1,n_pft
+         write (unit=18,fmt='(8x,i5,2(12x,l1),36(1x,es12.5))')                             &
+                        ipft,is_tropical(ipft),is_grass(ipft),rho(ipft),b1Ht(ipft)         &
+                       ,b2Ht(ipft),hgt_ref(ipft),b1Bl_small(ipft),b2Bl_small(ipft)         &
+                       ,b1Bl_large(ipft),b2Bl_large(ipft),b1Bs_small(ipft)                 &
+                       ,b2Bs_small(ipft),b1Bs_large(ipft),b2Bs_large(ipft),b1Ca(ipft)      &
+                       ,b2Ca(ipft),b1WAI_small(ipft),b2WAI_small(ipft),b1WAI_large(ipft)   &
+                       ,b2WAI_large(ipft),b1Xs(ipft),b1Xb(ipft),hgt_min(ipft)              &
+                       ,hgt_max(ipft),min_dbh(ipft),dbh_adult(ipft),dbh_crit(ipft)         &
+                       ,dbh_bigleaf(ipft),bleaf_adult(ipft),bdead_crit(ipft)               &
+                       ,init_density(ipft),init_laimax(ipft),sla(ipft)                     &
+                       ,f_bstorage_init(ipft),q(ipft),qsw(ipft),qbark(ipft),qrhob(ipft)
+      end do
+      write(unit=18,fmt='(507a)') ('-',n=1,507)
+      close(unit=18,status='keep')
+   end if
+
+   return
+end subroutine init_pft_alloc_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine init_pft_photo_params()
+   use ed_max_dims    , only : n_pft                   & ! intent(in)
+                             , undef_real              ! ! intent(in)
+   use ed_misc_coms   , only : ibigleaf                & ! intent(in)
+                             , iallom                  ! ! intent(in)
+   use pft_coms       , only : is_tropical             & ! intent(in)
+                             , is_conifer              & ! intent(in)
+                             , is_liana                & ! intent(in)
+                             , is_grass                & ! intent(in)
+                             , SLA                     & ! intent(in)
+                             , C2B                     & ! intent(in)
+                             , rho                     & ! intent(in)
+                             , D0                      & ! intent(out)
+                             , Vm_low_temp             & ! intent(out)
+                             , Vm_high_temp            & ! intent(out)
+                             , Vm_decay_e              & ! intent(out)
+                             , Vm0                     & ! intent(out)
+                             , Vm_hor                  & ! intent(out)
+                             , Vm_q10                  & ! intent(out)
+                             , Rd_low_temp             & ! intent(out)
+                             , Rd_high_temp            & ! intent(out)
+                             , Rd_decay_e              & ! intent(out)
+                             , Rd0                     & ! intent(out)
+                             , Rd_hor                  & ! intent(out)
+                             , Rd_q10                  & ! intent(out)
+                             , stomatal_slope          & ! intent(out)
+                             , leaf_width              & ! intent(out)
+                             , cuticular_cond          & ! intent(out)
+                             , quantum_efficiency      & ! intent(out)
+                             , photosyn_pathway        & ! intent(out)
+                             , dark_respiration_factor & ! intent(out)
+                             , water_conductance       ! ! intent(out)
+   use consts_coms    , only : t00                     & ! intent(in)
+                             , twothirds               & ! intent(in)
+                             , umol_2_mol              & ! intent(in)
+                             , yr_sec                  ! ! intent(in)
+   use physiology_coms, only : iphysiol                & ! intent(in)
+                             , vmfact_c3               & ! intent(in)
+                             , vmfact_c4               & ! intent(in)
+                             , mphoto_trc3             & ! intent(in)
+                             , mphoto_tec3             & ! intent(in)
+                             , mphoto_c4               & ! intent(in)
+                             , bphoto_blc3             & ! intent(in)
+                             , bphoto_nlc3             & ! intent(in)
+                             , bphoto_c4               & ! intent(in)
+                             , gamma_c3                & ! intent(in)
+                             , gamma_c4                & ! intent(in)
+                             , d0_grass                & ! intent(in)
+                             , d0_tree                 & ! intent(in)
+                             , alpha_c3                & ! intent(in)
+                             , alpha_c4                & ! intent(in)
+                             , kw_grass                & ! intent(in)
+                             , kw_tree                 & ! intent(in)
+                             , lwidth_grass            & ! intent(in)
+                             , lwidth_bltree           & ! intent(in)
+                             , lwidth_nltree           & ! intent(in)
+                             , q10_c3                  & ! intent(in)
+                             , q10_c4                  ! ! intent(in)
+   implicit none
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4)            :: ssfact
+   real(kind=4)            :: vmexpo_pft
+   real(kind=4)            :: gamma_pft
+   real(kind=4)            :: a_pft
+   real(kind=4)            :: b_pft
+   integer                 :: ipft
+   !----- Local parameters, based on Atkin et al. (2015), Table S3 (Rdark,m). -------------!
+   real(kind=4), parameter :: a_c3grss = -1.962            ! 5d, C3H
+   real(kind=4), parameter :: b_c3grss =  1.247            ! 5d, C3H
+   real(kind=4), parameter :: a_c4grss =  0.30103000-1.962 ! Make it twice C3H
+   real(kind=4), parameter :: b_c4grss =  1.247            ! Make it twice C3H
+   real(kind=4), parameter :: a_bltrop = -1.533            ! 5f, TWQ >= 25 degC
+   real(kind=4), parameter :: b_bltrop =  1.022            ! 5f, TWQ >= 25 degC
+   real(kind=4), parameter :: a_bltemp = -0.862            ! 5f, 15 degC <= TWQ < 25 degC
+   real(kind=4), parameter :: b_bltemp =  0.753            ! 5f, 15 degC <= TWQ < 25 degC
+   real(kind=4), parameter :: a_needle = -0.366            ! 5d, NlT
+   real(kind=4), parameter :: b_needle =  0.494            ! 5d, NlT
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Photosynthetic pathway (3 is C3; 4 is C4). --------------------------------------!
+   do ipft=1,n_pft
+      if (is_grass(ipft)) then
+         select case(ipft)
+         case (1) ! C4 grass
+            photosyn_pathway(ipft) = 4
+         case default ! C3 grasses
+            photosyn_pathway(ipft) = 3
+         end select
+      else ! Trees, C3 photosynthesis
+         photosyn_pathway(ipft) = 3
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Critical VPD, for stomata closure due to dry air. -------------------------------!
+   D0(:) = merge(d0_grass,d0_tree,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Temperature thresholds for photosynthetic capacity.                               !
+   !---------------------------------------------------------------------------------------!
+   Vm_low_temp (:) = merge(4.7137,8.0,is_conifer(:) .or. (.not. is_tropical(:)))
+   Vm_high_temp(:) = 45.0
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Vm_decay_e is the correction term for high and low temperatures when running the   !
+   ! original ED-2.1 correction as in Moorcroft et al. (2001).                             !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      Vm_decay_e(:) = merge(0.4,0.8,is_conifer(:) .or. (.not. is_tropical(:)))
+   case default
+      Vm_decay_e(:) = 0.4
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Vm0 is the maximum photosynthesis capacity in umol/m2/s.  Notice that depending   !
+   ! on the size structure (SAS or Big Leaf), there is an addition factor multiplied.      !
+   !                                                                                       !
+   !  MLO - Updated tropical parameters based on empirical models relating leaf traits     !
+   !        from GLOPNET (W04) with wood density from (C09).  Because the idea is to       !
+   !        account for variation on both axes, all equations were developed using         !
+   !        standardised major axis (SMA) models - R package smatr. Except for wood        !
+   !        density, all variables were log-transformed.  This fit is only applied when    !
+   !        IALLOM = 3 for back-compability.                                               !
+   !                                                                                       !
+   !  References                                                                           !
+   !                                                                                       !
+   !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics         !
+   !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403 (W04).     !
+   !                                                                                       !
+   !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.        !
+   !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,          !
+   !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                             !
+   !---------------------------------------------------------------------------------------!
+   !----- Find the additional factor to multiply Vm0. -------------------------------------!
+   select case (ibigleaf)
+      case (0) ! SAS, use only the modification from the namelist. 
+         ssfact = 1.0
+      case (1)
+         ssfact = 3.0
+   end select
+   !---- Define Vm0 for all PFTs. ---------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then ! Lianas
+         Vm0(ipft) = 9.0970000
+      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Araucarias
+         Vm0(ipft) = 10.
+      elseif (is_tropical(ipft) .and. (.not. is_grass(ipft))) then ! Tropical trees
+         select case (iallom)
+         case (3) ! GLOPNET fit
+            Vm0(ipft) = exp(4.63093593-3.27792920*rho(ipft))
+         case default    ! Original numbers, each PFT must be initialised separately.
+            select case (ipft)
+            case (2,12)  ! Early-successional tropical tree
+               Vm0(ipft) = 18.75
+            case (3,13)  ! Mid-successional tropical tree
+               Vm0(ipft) = 12.50
+            case (4,14)  ! Late-successional tropical tree
+               Vm0(ipft) =  6.25
+            case default ! Just in case
+            end select
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !    Temperate trees, each PFT must be initialised separately.                    !
+         !---------------------------------------------------------------------------------!
+         select case (ipft)
+         case (1)     ! C4 grass. 
+            Vm0(ipft) = 12.500000
+         case (5,16)  ! C3 grass. 
+            Vm0(ipft) = 18.300000
+         case (6,7)   ! Pines (N/S). 
+            Vm0(ipft) = 11.350000
+         case (8)     ! Late conifers. 
+            Vm0(ipft) = 4.540000
+         case (9)     ! Early hardwood. 
+            Vm0(ipft) = 20.387075
+         case (10)    ! Mid hardwood. 
+            Vm0(ipft) = 17.454687
+         case (11)    ! Late hardwood.
+            Vm0(ipft) = 6.981875
+         case default !  Just in case. 
+            Vm0(ipft) = 15.625
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Correct Vm0 based on input settings or if this is a big-leaf simulation.          !
+   !---------------------------------------------------------------------------------------!
+   Vm0(:) = Vm0(:) * ssfact * merge(vmfact_c4,vmfact_c3,photosyn_pathway(:) == 4)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Vm_hor is the Arrhenius "activation energy" divided by the universal gas         !
+   ! constant.  Vm_q10 is the base for the Collatz approach.                               !
+   !---------------------------------------------------------------------------------------!
+   vm_hor(:) = 3000.
+   vm_q10(:) = merge(q10_c4,q10_c3,photosyn_pathway(:) == 4)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Initialise Rd terms with undefined values.  In case they are not provided in    !
+   ! XML, we assign default, gamma-based values in init_derived_params_after_xml.          !
+   !---------------------------------------------------------------------------------------!
+   Rd_low_temp (:) = undef_real
+   Rd_high_temp(:) = undef_real
+   Rd_decay_e  (:) = undef_real
+   Rd_hor      (:) = undef_real
+   Rd_q10      (:) = undef_real
+   Rd0         (:) = undef_real
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Respiration terms.  Here we must check whether this will run Foley-based or        !
+   ! Collatz-based photosynthesis, because the respiration/Vm ratio is constant in the     !
+   ! former but not necessarily in the latter.                                             !
+   !                                                                                       !
+   !    Dark_respiration_factor is the lower-case gamma in Moorcroft et al. (2001).        !
+   !  In case gamma is set to zero, we use the ratio derived from Atkin et al. (2015).     !
+   !                                                                                       !
+   ! Atkin, O. K., et al. (2015). Global variability in leaf respiration in relation to    !
+   !    climate, plant functional types and leaf traits. New Phytol., 206(2), 614-636,     !
+   !    10.1111/nph.13253.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      !----- Set Rd parameters for this PFT. ----------------------------------------------!
+      if (is_grass(ipft) .and. (photosyn_pathway(ipft) == 3)) then
+         a_pft     = a_c3grss
+         b_pft     = b_c3grss
+         gamma_pft = gamma_c3
+      elseif (is_grass(ipft)) then
+         a_pft     = a_c4grss
+         b_pft     = b_c4grss
+         gamma_pft = gamma_c4
+      elseif (is_conifer(ipft)) then
+         a_pft     = a_needle
+         b_pft     = b_needle
+         gamma_pft = gamma_c3
+      elseif (is_tropical(ipft)) then
+         a_pft     = a_bltrop
+         b_pft     = b_bltrop
+         gamma_pft = gamma_c3
+      else
+         a_pft     = a_bltemp
+         b_pft     = b_bltemp
+         gamma_pft = gamma_c3
+      end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to use Atkin's definition of Rd:Vm ratio or the original one.   !
+      !------------------------------------------------------------------------------------!
+      if (gamma_pft == 0.) then
+         !---------------------------------------------------------------------------------!
+         !     The ratio depends on the method: Collatz may have different q10 factors,    !
+         ! and in ED the reference temperature is 15 degC, not 25 degC.  The q10 numbers   !
+         ! make sure that the comparison is carried out at 25 degC, but the reference is   !
+         ! defined at 15 degC.                                                             !
+         !---------------------------------------------------------------------------------!
+         select case (iphysiol)
+         case (0,1)
+            vmexpo_pft = SLA(ipft) * Vm0(ipft) / C2B
+         case (2,3)
+            vmexpo_pft = SLA(ipft) * vm_q10(ipft) * Vm0(ipft) / C2B
+         end select
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !      Define dark_respiration_factor (Rd:Vm ratio) from Atkin et al. (2015).     !
+         !---------------------------------------------------------------------------------!
+         dark_respiration_factor(ipft) = 10.0**a_pft * vmexpo_pft ** (b_pft-1.)
+         !---------------------------------------------------------------------------------!
+      else
+         !---------------------------------------------------------------------------------!
+         !      gamma_pft is the dark_respiration_factor (Rd:Vm ratio).                    !
+         !---------------------------------------------------------------------------------!
+         dark_respiration_factor(ipft) = gamma_pft
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define the stomatal slope (aka the M factor). -----------------------------------!
+   stomatal_slope(:) = merge( mphoto_trc3, mphoto_tec3                                     &
+                            , (is_tropical(:) .or. is_grass(:)) .and. (.not. is_conifer(:)))
+   stomatal_slope(:) = merge( mphoto_c4,stomatal_slope(:),photosyn_pathway(:) == 4)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define the residual stomatal conductance (aka the b term, given in umol/m2/s). --!
+   cuticular_cond(:) = merge( bphoto_c4                                                    &
+                            , merge(bphoto_nlc3,bphoto_blc3,is_conifer(:))                 &
+                            , photosyn_pathway(:) == 4 )
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ Set quantum yield fraction. ----------------------------------------------------!
+   quantum_efficiency(:) = merge(alpha_c4,alpha_c3,photosyn_pathway(:) == 4)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001), and the      !
+   ! namelist, give the number in m2/yr/kg_C_root.  Here we must convert it to             !
+   !  m2/s/kg_C_root.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   water_conductance(:) = merge(kw_grass,kw_tree,is_grass(:)) / yr_sec
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
+   leaf_width(:) = merge( lwidth_grass                                                     &
+                        , merge(lwidth_nltree,lwidth_bltree,is_conifer(:))                 &
+                        , is_grass(:) )
    !---------------------------------------------------------------------------------------!
 
    return
-end subroutine init_ff_coms
+end subroutine init_pft_photo_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine init_pft_resp_params()
+   use ed_max_dims    , only : n_pft                     & ! intent(in)
+                             , undef_real                ! ! intent(in)
+   use physiology_coms, only : iphysiol                  & ! intent(in)
+                             , rrffact                   & ! intent(in)
+                             , growthresp                ! ! intent(in)
+   use pft_coms       , only : is_tropical               & ! intent(in)
+                             , is_grass                  & ! intent(in)
+                             , is_conifer                & ! intent(in)
+                             , is_liana                  & ! intent(in)
+                             , rho                       & ! intent(in)
+                             , leaf_turnover_rate        & ! intent(inout)
+                             , growth_resp_factor        & ! intent(out)
+                             , root_turnover_rate        & ! intent(out)
+                             , bark_turnover_rate        & ! intent(out)
+                             , storage_turnover_rate     & ! intent(out)
+                             , root_respiration_factor   & ! intent(out)
+                             , rrf_low_temp              & ! intent(inout)
+                             , rrf_high_temp             & ! intent(inout)
+                             , rrf_decay_e               & ! intent(inout)
+                             , rrf_hor                   & ! intent(inout)
+                             , rrf_q10                   ! ! intent(inout)
+   use decomp_coms    , only : f_labile                  ! ! intent(out)
+   use consts_coms    , only : onesixth                  & ! intent(in)
+                             , onethird                  & ! intent(in)
+                             , t00                       ! ! intent(in)
+   implicit none
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                 :: ipft
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     GPP:Growth respiration ratio.                                                     !
+   !---------------------------------------------------------------------------------------!
+   growth_resp_factor(:) = merge(0.4503    ,merge(onethird,0.0,is_grass(:)),is_conifer (:))
+   growth_resp_factor(:) = merge(growthresp,          growth_resp_factor(:),is_tropical(:))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    MLO -- Tropical PFT numbers updated using trait data base in case iallom=3.  The   !
+   !           old allometry uses LTOR to define SLA, so we check whether the variable     !
+   !           has been already initialised.                                               !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (leaf_turnover_rate(ipft) /= undef_real) then ! Old initialisation, do nothing
+         continue
+      elseif (is_liana(ipft)) then ! Lianas
+         leaf_turnover_rate(ipft) = 1.27
+      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Sub-tropical conifers
+         leaf_turnover_rate(ipft) = onesixth
+      elseif (is_conifer(ipft)) then ! Temperate conifers
+         leaf_turnover_rate(ipft) = onethird
+      elseif (is_grass(ipft)) then ! Grasses (tropical and temperate)
+         leaf_turnover_rate(ipft) = 2.0
+      elseif (.not. is_tropical(ipft)) then ! Hardwoods. Phenology drives turnover.
+         leaf_turnover_rate(ipft) = 0.0
+      else
+         !---------------------------------------------------------------------------------!
+         !  MLO - Updated tropical parameters based on empirical models relating leaf      !
+         !        traits from GLOPNET (W04) with wood density from (C09).  Because the     !
+         !        idea is to account for variation on both axes, all equations were        !
+         !        developed using standardised major axis (SMA) models - R package smatr.  !
+         !        Except for wood density, all variables were log-transformed.             !
+         !                                                                                 !
+         !  References                                                                     !
+         !                                                                                 !
+         !  Wright, I. J., P. B. Reich, M. Westoby, et al., The worldwide leaf economics   !
+         !     spectrum. Nature, 428(6985):821-827, Apr 2004. doi:10.1038/nature02403      !
+         !     (W04).                                                                      !
+         !                                                                                 !
+         !  Chave, J., D. Coomes, S. Jansen, S. L. Lewis, N. G. Swenson, and A. E. Zanne.  !
+         !     Towards a worldwide wood economics spectrum. Ecol. Lett., 12(4):351-366,    !
+         !     Apr 2009. doi:10.1111/j.1461-0248.2009.01285.x (C09).                       !
+         !---------------------------------------------------------------------------------!
+         leaf_turnover_rate(ipft) = exp(2.57332880-4.38819777*rho(ipft))
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Root turnover rate. Currently values are the same as leaf turnover rate, except   !
+   ! for temperate trees whose values come from Medvigy et al. (2009) optimization.        !
+   !                                                                                       !
+   ! Medvigy, D. M., S. C. Wofsy, J. W. Munger, D. Y. Hollinger, and P. R. Moorcroft.      !
+   !    Mechanistic scaling of ecosystem function and dynamics in space and time:          !
+   !    Ecosystem demography model version 2. J. Geophys. Res.-Biogeosci., 114(G1):G01002, !
+   !    Jan 2009. doi:10.1029/2008JG000812.                                                !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      !------------------------------------------------------------------------------------!
+      !      Temperate trees have optimised turnover rates.  Fill each PFT separately.     !
+      !------------------------------------------------------------------------------------!
+      select case (ipft)
+      case (6)     ! Northern pines. 
+         root_turnover_rate(ipft) = 3.927218 ! 0.333
+      case (7)     ! Southern pines. 
+         root_turnover_rate(ipft) = 4.117847 ! 0.333
+      case (8)     ! Late conifers. 
+         root_turnover_rate(ipft) = 3.800132 ! 0.333
+      case (9)     ! Early hardwoods. 
+         root_turnover_rate(ipft) = 5.772506
+      case (10)    ! Mid hardwoods. 
+         root_turnover_rate(ipft) = 5.083700
+      case (11)    ! Late hardwoods. 
+         root_turnover_rate(ipft) = 5.070992
+      case default ! Grasses, tropical trees, and lianas
+         root_turnover_rate(ipft) = leaf_turnover_rate(ipft)
+      end select
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Bark turnover rate.   A first-guess estimate is the ratio between bark increment   !
+   ! and bark thickness.  Increment rates came from CD17.  Derived values were of the      !
+   ! order of 0.40/yr, and for the time being we use this number for all PFTs.  Actual     !
+   ! data on bark turnover could be helpful.                                               !
+   !                                                                                       !
+   ! Charles-Dominique, T., G. F. Midgley, and W. J. Bond. Fire frequency filters species  !
+   !    by bark traits in a savanna-forest mosaic. J. Veg. Sci., 28(4):728-735, Jul 2017.  !
+   !    doi:10.1111/jvs.12528.                                                             !
+   !---------------------------------------------------------------------------------------!
+   bark_turnover_rate(:) = 0.40
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Storage turnover rate. ----------------------------------------------------------!
+   storage_turnover_rate(:) = merge( merge(onethird,onesixth,is_grass(:))                  &
+                                   , merge(0.0,0.6243,is_grass(:) .or. is_conifer(:))      &
+                                   , is_tropical(:) )
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Labile fraction of leaves, fine roots and sapwood.                                !
+   ! MLO - Should sapwood have the same labile fraction as leaves and fine roots?          !
+   !---------------------------------------------------------------------------------------!
+   f_labile(:) = merge(0.79,merge(1.00,0.79,is_tropical(:) .or. is_grass(:)),is_conifer(:))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This variable sets the contribution of roots to respiration at the reference       !
+   ! temperature of 15C.  Its units is umol_CO2/kg_fine_roots/s.                           !
+   !---------------------------------------------------------------------------------------!
+   select case (iphysiol)
+   case (0,1)
+      !----- Arrhenius function. ----------------------------------------------------------!
+      root_respiration_factor(:) = 0.528 * rrffact
+      !------------------------------------------------------------------------------------!
+   case (2,3)
+      !----- Arrhenius function. ----------------------------------------------------------!
+      root_respiration_factor(:) = 0.280 * rrffact
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise root respiration terms with undefined, and attribute default values    !
+   ! only in case they are not defined through XML (check init_derived_params_after_xml).  !
+   !---------------------------------------------------------------------------------------!
+   rrf_low_temp(:)  = undef_real
+   rrf_high_temp(:) = undef_real
+   rrf_decay_e(:)   = undef_real
+   rrf_hor(:)       = undef_real
+   rrf_q10(:)       = undef_real
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_pft_resp_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine assigns some PFT-dependent parameters that control mortality rates.  !
+!------------------------------------------------------------------------------------------!
+subroutine init_pft_mort_params()
+   use ed_max_dims , only : n_pft                      ! ! intent(in)
+   use pft_coms    , only : is_grass                   & ! intent(in)
+                          , is_tropical                & ! intent(in)
+                          , is_conifer                 & ! intent(in)
+                          , is_liana                   & ! intent(in)
+                          , mort0                      & ! intent(out)
+                          , mort1                      & ! intent(out)
+                          , mort2                      & ! intent(out)
+                          , mort3                      & ! intent(out)
+                          , cbr_severe_stress          & ! intent(out)
+                          , rho                        & ! intent(out)
+                          , seedling_mortality         & ! intent(out)
+                          , treefall_s_gtht            & ! intent(out)
+                          , treefall_s_ltht            & ! intent(out)
+                          , fire_s_gtht                & ! intent(out)
+                          , fire_s_ltht                & ! intent(out)
+                          , felling_s_ltharv           & ! intent(out)
+                          , felling_s_gtharv           & ! intent(out)
+                          , skid_s_ltharv              & ! intent(out)
+                          , skid_s_gtharv              & ! intent(out)
+                          , plant_min_temp             & ! intent(out)
+                          , frost_mort                 ! ! intent(out)
+   use consts_coms , only : t00                        & ! intent(in)
+                          , lnexp_max                  & ! intent(in)
+                          , onethird                   & ! intent(in)
+                          , twothirds                  ! ! intent(in)
+   use ed_misc_coms, only : ibigleaf                   & ! intent(in)
+                          , iallom                     ! ! intent(in)
+   use disturb_coms, only : treefall_disturbance_rate  & ! intent(inout)
+                          , time2canopy                & ! intent(in)
+                          , sl_skid_s_gtharv           & ! intent(in)
+                          , sl_skid_s_ltharv           & ! intent(in)
+                          , sl_felling_s_ltharv        ! ! intent(in)
+   implicit none
+
+   !----- Local variables. ----------------------------------------------------------------!
+   real     :: aquad
+   real     :: bquad
+   real     :: cquad
+   real     :: discr
+   real     :: lambda_ref
+   real     :: lambda_eff
+   real     :: leff_neg
+   real     :: leff_pos
+   real     :: m3_slope
+   integer  :: ipft
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Frost mortality is assumed the same for all PFTs (hardiness will be given by     !
+   ! plant_min_temp.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   frost_mort(:) = 3.0
+   do ipft=1,n_pft
+      if (is_tropical(ipft) .and. (.not. is_conifer(ipft))) then
+         !----- Tropical trees, grasses, and lianas. --------------------------------------!
+         plant_min_temp(ipft) = t00 + 2.5
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Sub-tropical and temperate plants.  PFT-specific values. ------------------!
+         select case (ipft)
+         case (5,6,9)
+            plant_min_temp(ipft) = t00 - 80.0
+         case (7)
+            plant_min_temp(ipft) = t00 - 10.0
+         case (8)
+            plant_min_temp(ipft) = t00 - 60.0
+         case (10,11)
+            plant_min_temp(ipft) = t00 - 20.0
+         case default
+            plant_min_temp(ipft) = t00 - 15.0
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control the density-dependent mortality rates.            !
+   !  DD = mort1 / (1 + exp(mort0 + mort2 * CB))                                           !
+   !                                                                                       !
+   ! New parameters are not based on literature, but tuning.                               !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      mort0(:) = merge(-0.25,  0.0,is_tropical(:))
+      mort1(:) = merge(  5.0,  1.0,is_tropical(:))
+      mort2(:) = merge( 20.0, 20.0,is_tropical(:))
+   case default
+      mort0(:) = merge(-0.35,  0.0,is_tropical(:))
+      mort1(:) = merge(  2.0,  1.0,is_tropical(:))
+      mort2(:) = merge( 15.0, 20.0,is_tropical(:))
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Variable mort3 controls the density-independent mortality rate due to ageing.     !
+   ! This value is a constant in units of [fraction/year].
+   ! With lianas the idea is to give it the normal mort3 mortality that is basically rho   !
+   ! dependent. Then in the next phase I will try to add a limit to the maximum liana load !
+   ! that a tree can born. When the number of lianas hosted by a given tree exceeds the    !
+   ! avreage values given in O. Phillips (2005) I will kill the lianas(...and the trees?..)!
+   ! That will increase mortality as a consequence. I should later check if the resulting  !
+   ! mortality is in line with what stated in the aforementioned article (lianas have +-6% !
+   ! turnover rate, 3 times that of trees...)                                              !
+   !---------------------------------------------------------------------------------------!
+   if (treefall_disturbance_rate >= 0.) then
+      m3_slope                  = 0.15
+   else
+      treefall_disturbance_rate = abs(treefall_disturbance_rate)
+      m3_slope                  = 0.075 
+   end if
+   do ipft=1,n_pft
+      if (is_liana(ipft)) then ! Lianas, taken from O. Phillips (2005). 
+         mort3(ipft) = 0.06311576
+      elseif (is_tropical(ipft) .and. is_conifer(ipft)) then ! Araucaria. Same as S pines.
+         mort3(ipft) = 0.0043
+      elseif (is_tropical(ipft)) then ! Tropical grasses and trees, use ED-1 approach.
+         mort3(ipft) = m3_slope * (1. - rho(ipft) / rho(4))
+      else
+         !----- Temperate trees, use optimised values from Medvigy et al. (2009). ---------!
+         select case (ipft)
+         case (5)     ! Temperate C3 grasses.
+            mort3(ipft) = 0.066
+         case (6)     ! Northern pines. 
+            mort3(ipft) = 0.0033928
+         case (7)     ! Southern pines. 
+            mort3(ipft) = 0.0043
+         case (8)     ! Late-successional conifers.
+            mort3(ipft) = 0.0023568
+         case (9)     ! Early-successional hardwoods. 
+            mort3(ipft) = 0.006144
+         case (10)    ! Mid-successional hardwoods.
+            mort3(ipft) = 0.003808
+         case (11)    ! Late-successional hardwoods.
+            mort3(ipft) = 0.00428 ! Late-successional greater than than mid-successional?
+         case default ! Forgotten PFT
+            mort3(ipft) = 0.005
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      This is the default mortality for when the maximum carbon balance is negative.   !
+   !  Default in ED-1.0 and ED-2.0 was to assume zero, an alternative is to assume maximum !
+   !  mortality.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   cbr_severe_stress(:) = log(epsilon(1.0)) / mort2(:)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we check whether we need to re-calculate the treefall disturbance rate so it !
+   ! is consistent with the time to reach the canopy.                                      !
+   !---------------------------------------------------------------------------------------!
+   if (treefall_disturbance_rate == 0.) then
+      !------ No disturbance rate, set time to reach canopy to infinity. ------------------!
+      time2canopy = huge(1.)
+      lambda_ref  = 0.
+      lambda_eff  = 0.
+
+   else
+      lambda_ref = treefall_disturbance_rate
+
+      if (time2canopy > 0.) then
+         !---------------------------------------------------------------------------------!
+         !     We are not going to knock down trees as soon as the patch is created;       !
+         ! instead, we will wait until the patch age is older than time2canopy.  We want,  !
+         ! however, to make the mean patch age to be 1/treefall_disturbance_rate.  The     !
+         ! equation below can be retrieved by integrating the steady-state probability     !
+         ! distribution function.  The equation is quadratic and the discriminant will     !
+         ! never be zero and the treefall_disturbance_rate will be always positive because !
+         ! the values of time2canopy and treefall_disturbance_rate have already been       !
+         ! tested in ed_opspec.F90.                                                        !
+         !---------------------------------------------------------------------------------!
+         aquad    = time2canopy * time2canopy * lambda_ref  - 2. * time2canopy
+         bquad    = 2. * time2canopy * lambda_ref - 2.
+         cquad    = 2. * lambda_ref
+         !------ Find the discriminant. ---------------------------------------------------!
+         discr    = bquad * bquad - 4. * aquad * cquad
+         leff_neg = - 0.5 * (bquad - sqrt(discr)) / aquad
+         leff_pos = - 0.5 * (bquad + sqrt(discr)) / aquad
+         !---------------------------------------------------------------------------------!
+         !      Use the maximum value, but don't let the value to be too large otherwise   !
+         ! the negative exponential will cause underflow.                                  !
+         !---------------------------------------------------------------------------------!
+         lambda_eff = min(lnexp_max,max(leff_neg,leff_pos))
+      else
+         lambda_eff = lambda_ref
+      end if
+
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Print out the summary.                                                             !
+   !---------------------------------------------------------------------------------------!
+   write (unit=*,fmt='(a)')           '----------------------------------------'
+   write (unit=*,fmt='(a)')           '  Treefall disturbance parameters:'
+   write (unit=*,fmt='(a,1x,es12.5)') '  - LAMBDA_REF  =',lambda_ref
+   write (unit=*,fmt='(a,1x,es12.5)') '  - LAMBDA_EFF  =',lambda_eff
+   write (unit=*,fmt='(a,1x,es12.5)') '  - TIME2CANOPY =',time2canopy
+   write (unit=*,fmt='(a)')           '----------------------------------------'
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Seedling mortality must be redefined for big leaf runs: this is necessary because !
+   ! big leaf plants don't grow in diameter, but in "population".                          !
+   !---------------------------------------------------------------------------------------!
+   select case (ibigleaf)
+   case (0)
+      seedling_mortality(:) = 0.95
+   case (1)
+      select case (iallom)
+      case (0,1)
+         seedling_mortality(:) = merge(0.9500,onethird,is_grass(:))
+      case default
+         seedling_mortality(:) = merge(0.9500,0.4000  ,is_grass(:))
+      end select
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Treefall survivorship fraction.                                                  !
+   !---------------------------------------------------------------------------------------!
+   !----- Trees taller than treefall_hite_threshold (liana survivorship: Putz 1983). ------!
+   treefall_s_gtht(:) = merge(0.80,0.00,is_liana(:))
+   !----- Trees shorter than treefall_hite_threshold. -------------------------------------!
+   select case (iallom)
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !    Higher survivorship.  Tree survivorship is based on measurements at Paracou.    !
+      ! Estimate is the average ratio between secondary and primary tree fall mortality.   !
+      !                                                                                    !
+      ! Ferry, B. et al.  Higher treefall rates on slopes and waterlogged soils result     !
+      !    in lower stand biomass and productivity in a tropical rain forest. J. Veg.      !
+      !    Sci., 98(1), 106-116, 2010. doi:10.1111/j.1365-2745.2009.01604.x                !
+      !                                                                                    !
+      !    Grasses are assigned high survivorship as they are unlikely to be crushed to    !
+      ! death.                                                                             !
+      !------------------------------------------------------------------------------------!
+      treefall_s_ltht(:) = merge(0.80,0.30,is_grass(:) .or. is_liana(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      !------------------------------------------------------------------------------------!
+      !    Original parameters.  MLO: Is it reasonable that small lianas have lower        !
+      ! survivorship than tall lianas?.                                                    !
+      !------------------------------------------------------------------------------------!
+      treefall_s_ltht(:) = merge(0.25,0.10,is_grass(:))
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Felling survivorship fraction, and survivorship to collateral damage due to      !
+   ! logging.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   felling_s_gtharv(:) = merge(0.70,0.00               ,is_grass(:))
+   felling_s_ltharv(:) = merge(0.70,sl_felling_s_ltharv,is_grass(:))
+   skid_s_gtharv   (:) = merge(1.00,sl_skid_s_gtharv   ,is_grass(:))
+   skid_s_ltharv   (:) = merge(1.00,sl_skid_s_ltharv   ,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Fire survivorship fraction.  These variables will be replaced by bark thickness  !                                                    !
+   !---------------------------------------------------------------------------------------!
+   fire_s_gtht(:) = 0.0
+   fire_s_ltht(:) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_pft_mort_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine init_pft_nitro_params()
+   use pft_coms   , only: Vm0                  & ! intent(in)
+                        , SLA                  & ! intent(in)
+                        , is_tropical          & ! intent(in)
+                        , is_savannah          & ! intent(in)
+                        , is_conifer           & ! intent(in)
+                        , is_grass             & ! intent(in)
+                        , c2n_leaf             & ! intent(out)
+                        , c2n_slow             & ! intent(out)
+                        , c2n_structural       & ! intent(out)
+                        , c2n_storage          & ! intent(out)
+                        , c2n_stem             & ! intent(out)
+                        , l2n_stem             & ! intent(out)
+                        , plant_N_supply_scale ! ! intent(out)
+   use ed_max_dims, only : n_pft               ! ! intent(in)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   integer :: ipft
+   real    :: vm0_ref
+   !---------------------------------------------------------------------------------------!
+
+
+   c2n_slow       = 10.0  ! Carbon to Nitrogen ratio, slow pool.
+   c2n_structural = 150.0 ! Carbon to Nitrogen ratio, structural pool.
+   c2n_storage    = 150.0 ! Carbon to Nitrogen ratio, storage pool.
+   c2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
+   l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
+
+   plant_N_supply_scale = 0.5 
+
+
+   do ipft=1,n_pft
+      !------ Temperate trees. Use non-optimised Vm0 values. ------------------------------!
+      select case (ipft)
+      case (6,7)   ! Northern and Southern Pines. 
+         vm0_ref = 15.625
+      case (8)     ! Late conifers. 
+         vm0_ref = 6.25
+      case (9)     ! Early hardwood. 
+         vm0_ref = 18.25
+      case (10)    ! Mid hardwood. 
+         vm0_ref = 15.625
+      case (11)    ! Late hardwood. 
+         vm0_ref = 6.25
+      case default ! Use actual Vm0 in case we missed some PFT. 
+         vm0_ref = Vm0(ipft)
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Ratio. -----------------------------------------------------------------------!
+      c2n_leaf(ipft) = 1000.0 / ( (0.11289 + 0.12947 *   vm0_ref) * SLA(ipft) )
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine init_pft_nitro_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!   This subroutine sets up some PFT and leaf dependent properties.                        !
+!------------------------------------------------------------------------------------------!
+subroutine init_pft_leaf_params()
+   use phenology_coms , only : iphen_scheme         ! ! intent(in)
+   use ed_misc_coms   , only : igrass               & ! intent(in)
+                             , iallom               ! ! intent(in)
+   use pft_coms       , only : phenology            & ! intent(out)
+                             , is_grass             & ! intent(in)
+                             , is_conifer           & ! intent(in)
+                             , is_tropical          & ! intent(in)
+                             , is_grass             & ! intent(in)
+                             , rho                  & ! intent(in)
+                             , c_grn_leaf_dry       & ! intent(out)
+                             , c_ngrn_wood_dry      & ! intent(out)
+                             , c_ngrn_bark_dry      & ! intent(out)
+                             , wat_dry_ratio_leaf   & ! intent(out)
+                             , wat_dry_ratio_wood   & ! intent(out)
+                             , wat_dry_ratio_bark   & ! intent(out)
+                             , delta_c_wood         & ! intent(out)
+                             , delta_c_bark         ! ! intent(out)
+   use ed_max_dims    , only : n_pft                ! ! intent(in)
+   use consts_coms    , only : t00                  ! ! intent(out)
+   implicit none
+
+   !----- Local variables. ----------------------------------------------------------------!
+   integer            :: ipft
+   !---------------------------------------------------------------------------------------!
+   !      Local parameters used to define specific heat of wood and bark, following the    !
+   ! tref   -- Reference temperature (Kelvin) for specific heat properties.                !
+   ! wdr_fs -- Water:Dry ratio at fiber saturation.  This is the maximum moisture that     !
+   !           affects specific heat due to water-wood bond according to FPL10.  We        !
+   !           currently assume 0.30, the suggested value.                                 !
+   !                                                                                       !
+   ! Reference:                                                                            !
+   !                                                                                       !
+   ! Forest Products Laboratory. Wood handbook - wood as an engineering material. General  !
+   !    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.   !
+   !    doi:10.2737/FPL-GTR-190 (FPL10)                                                    !
+   !---------------------------------------------------------------------------------------!
+   real   , parameter :: tref = t00 + 15.
+   real   , parameter :: wdr_fs = 0.30
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Tree phenology is the same for both cases, but in the new grass allometry they    !
+   ! must be evergreens.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_conifer(ipft)) then  ! Conifers. Currently they are always evergreen
+         phenology(ipft) = 0
+      elseif (is_grass(ipft) .and. igrass == 1) then ! New grasses must be evergreen
+         phenology(ipft) = 0
+      elseif (.not. (is_tropical(ipft) .or. is_grass(ipft)) ) then ! Cold deciduous
+         phenology(ipft) = 2
+      else
+         !----- Lianas, Tropical broadleaf trees, and old-scheme (aka bonsai) grasses. ----!
+         select case (iphen_scheme)
+         case (-1) ! Assume that they are all evergreen
+            phenology(ipft) = 0
+         case (0,1) ! Old drought-deciduous scheme 
+            phenology(ipft) = 1
+         case (2)   ! New drought-deciduous scheme
+            phenology(ipft) = 4
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     Light phenology scheme.                                                  !
+            !                                                                              !
+            ! Kim, Y., R. G. Knox, M. Longo, D. Medvigy, L. R. Hutyra, E. H. Pyle,         !
+            !    S. C. Wofsy, R. L. Bras, and P. R. Moorcroft. Seasonal carbon dynamics    !
+            !    and water fluxes in an Amazon rainforest. Glob. Change Biol.,             !
+            !    18(4):1322-1334, Apr 2012. doi:10.1111/j.1365-2486.2011.02629.x.          !
+            !------------------------------------------------------------------------------!
+            phenology(ipft) = 3
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      Specific heat, water:dry mass ratio, and specific heat correction for water-wood !
+   ! bonding, based on FPL10 and a previous version cited by G07.                          !
+   !                                                                                       !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! Forest Products Laboratory. Wood handbook - wood as an engineering material. General  !
+   !    Technical Report FPL-GTR-190, U.S. Department of Agriculture, Madison, WI, 2010.   !
+   !    doi:10.2737/FPL-GTR-190 (FPL10)                                                    !
+   !                                                                                       !
+   ! Gu, L., T. Meyers, S. G. Pallardy, P. J. Hanson, B. Yang, M. Heuer, K. P. Hosman,     !
+   !    Q. Liu, J. S. Riggs, D. Sluss, and S. D. Wullschleger. Influences of biomass heat  !
+   !    and biochemical energy storages on the land surface fluxes and radiative temper-   !
+   !    ature. J. Geophys. Res., 112(D2):D02107, Jan 2007. doi:10.1029/2006JD007425 (G07)  !
+   !                                                                                       !
+   ! Jones, H. G. Plants and Microclimate: A quantitative approach to environmental plant 
+   !    physiology. Cambridge Univ. Press, Cambridge, UK, 3rd edition, Jan 2014. 
+   !    doi:10.1017/CBO9780511845727 (J14)
+   !
+   ! Kursar, T. A., B. M. J. Engelbrecht, A. Burke, M. T. Tyree, B. EI Omari,              !
+   !    and J. P. Giraldo. Tolerance to low leaf water status of tropical tree seedlings   !
+   !    is related to drought performance and distribution. Funct. Ecol., 23(1):93-102,    !
+   !    Feb 2009. doi:10.1111/j.1365-2435.2008.01483.x (K09)                               !
+   !                                                                                       !
+   ! Poorter, L., A. McNeil, V.-H. Hurtado, H. H. T. Prins, and F. E. Putz. Bark traits    !
+   !    and life-history strategies of tropical dry- and moist forest trees.               !
+   !    Funct. Ecol., 28(1):232-242, Feb 2014. doi:10.1111/1365-2435.12158 (P14)           !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   ! Specific heat of dry materials (J kg-1 K-1).                                          !
+   !---------------------------------------------------------------------------------------!
+   !----- Leaves, value from G07. ---------------------------------------------------------!
+   c_grn_leaf_dry(:) = 3218.0
+   !----- Wood and bark, values from FPL10. -----------------------------------------------!
+   c_ngrn_wood_dry(:) = 103.1 + 3.867 * tref
+   c_ngrn_bark_dry(:) = 103.1 + 3.867 * tref
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Leaf Water:oven-dry mass ratio.                                                       !
+   !                                                                                       !
+   ! Tropical  -- Average well-watered values of wd from K09.                              !
+   ! Temperate -- check with MCD.  Original value was 1.5, from G07 but it has been        !
+   !              replaced by 2.5.  Perhaps to account for the C:B ratio, but if this is   !
+   !              the case, it is accounting for it twice.                                 !
+   !---------------------------------------------------------------------------------------!
+   wat_dry_ratio_leaf (:) = merge(1.85,2.50,is_tropical(:))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Wood and bark water:oven-dry mass ratio.                                              !
+   !                                                                                       !
+   ! Tropical  -- Numbers were obtained from P14 (Table S1).  P14's WWC and BWC were       !
+   !              converted to water:oven-dry ratio (XWDR = XWC / (1 - XWC).  Their        !
+   !              data suggest that water content depends on wood density but were         !
+   !              indistinguishable between moist and dry forests.  Values for tropical    !
+   !              trees follow the fitted curve using SMA.  We only apply this in IALLOM   !
+   !              4 for back-compability.                                                  !
+   !                                                                                       !
+   ! Temperate -- Use values from FPL10.                                                   !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      do ipft=1,n_pft
+         if (is_grass(ipft) .or. is_conifer(ipft) .or. (.not. is_tropical(ipft))) then
+            wat_dry_ratio_wood(ipft) = 0.7
+            wat_dry_ratio_bark(ipft) = 0.7
+         else
+            wat_dry_ratio_wood(ipft) = exp(1.5018230 - 3.137476 * rho(ipft))
+            wat_dry_ratio_bark(ipft) = exp(1.9892840 - 3.174365 * rho(ipft))
+         end if
+      end do
+   case default
+      wat_dry_ratio_wood(:) = 0.7
+      wat_dry_ratio_bark(:) = 0.7
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    The oven-dry wood heat capacity and the specific heat correction for water-wood    !
+   ! bonding come both from FPL10, previous version cited by G07.  Following FPL10, the    !
+   ! maximum moisture to affect the water-wood bonding is the fiber saturation, above      !
+   ! which additional water is considered free water.                                      !
+   !---------------------------------------------------------------------------------------!
+   where (wat_dry_ratio_wood(:) > wdr_fs)
+      delta_c_wood(:) = 1.e5 * wdr_fs                                                      &
+                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wdr_fs )
+   elsewhere
+      delta_c_wood(:) = 1.e5 * wat_dry_ratio_wood(:)                                       &
+                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wat_dry_ratio_wood(:) )
+   end where
+   where (wat_dry_ratio_bark(:) > wdr_fs)
+      delta_c_bark(:) = 1.e5 * wdr_fs                                                      &
+                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wdr_fs )
+   elsewhere
+      delta_c_bark(:) = 1.e5 * wat_dry_ratio_bark(:)                                       &
+                      * ( - 0.06191 + 2.36e-4 * tref - 1.33e-2 * wat_dry_ratio_bark(:) )
+   end where
+   !---------------------------------------------------------------------------------------!
+
+   !=======================================================================================!
+   !=======================================================================================!
+
+   return
+end subroutine init_pft_leaf_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine sets some reproduction-related parameters.                            !
+!------------------------------------------------------------------------------------------!
+subroutine init_pft_repro_params()
+
+   use pft_coms      , only : hgt_min            & ! intent(in)
+                            , hgt_max            & ! intent(in)
+                            , is_tropical        & ! intent(in)
+                            , is_conifer         & ! intent(in)
+                            , is_liana           & ! intent(in)
+                            , is_grass           & ! intent(in)
+                            , seed_rain          & ! intent(out)
+                            , r_fract            & ! intent(out)
+                            , st_fract           & ! intent(out)
+                            , nonlocal_dispersal & ! intent(out)
+                            , repro_min_h        ! ! intent(out)
+   use phenology_coms, only : repro_scheme       ! ! intent(in)
+   use ed_max_dims   , only : n_pft              & ! intent(in)
+                            , undef_real         ! ! intent(in)
+   use ed_misc_coms  , only : iallom             ! ! intent(in)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                 :: ipft
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Allocation to storage (amount that is save in each month, not going to           !
+   ! reproduction or growth).  Currently only tropical trees with IALLOM=3 allocate 10% to !
+   ! storage as a reserve for hard times.  This number is based on tuning, not on          !
+   ! literature, though.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      st_fract(:) = merge(0.0,0.1,is_grass(:) .or. is_liana(:) .or. (.not. is_tropical(:)))
+   case default
+      st_fract(:) = 0.0
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Reproduction parameters.                                                         ! 
+   !                                                                                       ! 
+   ! repro_min_h - Minimum height for a PFT to be considered mature for reproduction.      ! 
+   ! r_fract     - Fraction of carbon balance (bstorage) that is allocated to reproduction ! 
+   !               given that the plant height is greater than repro_min_h.                ! 
+   !                                                                                       ! 
+   !    For trees, we take repro_min_h as the average value reported in W05 (mind that the ! 
+   ! study is for tropical trees.  The grass strategy depends on iallom.  The original     ! 
+   ! scheme assumes that they always allocate 30% to growth, whereas when IALLOM=3 the     ! 
+   ! plants will allocate 100% to reproduction once they reach the maximum height, but     ! 
+   ! nothing when they are shorter (W15's "big bang").  The fraction allocated to          ! 
+   ! reproduction for tropical trees was updated to match F10's number.                    ! 
+   !                                                                                       ! 
+   ! References:                                                                           !
+   !                                                                                       !
+   !  Wright, S. J., M. A. Jaramillo, J. Pavon, R. Condit, S. P. Hubbell, and              !
+   !     R. B. Foster. Reproductive size thresholds in tropical trees: variation among     !
+   !     individuals, species and forests. J. Trop. Ecol., 21(3):307-315, May 2005.        !
+   !     doi:10.1017/S0266467405002294. (W05).                                             !
+   !                                                                                       !
+   ! Fisher, R., N. McDowell, D. Purves, P. Moorcroft, S. Sitch, P. Cox, C. Huntingford,   !
+   !    P. Meir, and F. Ian Woodward. Assessing uncertainties in a second-generation       !
+   !    dynamic vegetation model caused by ecological scale limitations. New Phytol.,      !
+   !    187(3):666--681, Aug 2010. doi:10.1111/j.1469-8137.2010.03340.x.  (F10)            !
+   !                                                                                       !
+   !  Wenk, E. H., and D. S. Falster. Quantifying and understanding reproductive           !
+   !    allocation schedules in plants. Ecol. Evol., 5(23):5521--5538, Nov 2015.           !
+   !    doi:10.1002/ece3.1802. (W15)                                                       !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   select case (iallom)
+   case (3)
+      !----- New parameters. --------------------------------------------------------------!
+      repro_min_h(:) = merge(hgt_max(:),                           18.0,is_grass(:))
+      r_fract    (:) = merge(       1.0,merge(0.37,0.30,is_tropical(:)),is_grass(:))
+      !------------------------------------------------------------------------------------!
+   case default
+      !----- Original parameters. ---------------------------------------------------------!
+      repro_min_h(:) = merge(hgt_min(:),18.0,is_grass(:))
+      r_fract    (:) = 0.30
+      !------------------------------------------------------------------------------------!
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Fraction of seeds randomly dispersed.                                             !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_tropical(ipft) .and. is_conifer(ipft)) then
+         !----- Sub-tropical needleleaf: assume the same values as pines. -----------------!
+         nonlocal_dispersal(ipft) = 0.766
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft) .or. is_grass(ipft)) then
+         !----- Tropical trees or grasses. Assume 100% random dispersal. ------------------!
+         nonlocal_dispersal(ipft) = 1.00
+         !---------------------------------------------------------------------------------!
+      else
+         !----- Temperate broadleaf trees. ------------------------------------------------!
+         select case (ipft)
+         case (6:7)   ! Pines. 
+            nonlocal_dispersal(ipft) = 0.766
+         case (8)     ! Late conifers. 
+            nonlocal_dispersal(ipft) = 0.001
+         case (9)     ! Early hardwood. 
+            nonlocal_dispersal(ipft) = 1.000
+         case (10)    ! Mid hardwood. 
+            nonlocal_dispersal(ipft) = 0.325
+         case (11)    ! Late hardwood. 
+            nonlocal_dispersal(ipft) = 0.074
+         case default ! This shouldn't happen. 
+            nonlocal_dispersal(ipft) = 1.000
+         end select
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Seed rain: temporarily set this parameter to undefined.  In case it is not        !
+   ! initialised by XML, it will be initialised in init_derived_params_after_xml.          !
+   !---------------------------------------------------------------------------------------!
+   seed_rain(:) = undef_real
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_pft_repro_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will assign some canopy air related parameters.                       !
+!------------------------------------------------------------------------------------------!
+subroutine init_can_air_params()
+   use consts_coms    , only : onethird              & ! intent(in)
+                             , twothirds             & ! intent(in)
+                             , onesixth              & ! intent(in)
+                             , vonk                  ! ! intent(in)
+   use pft_coms       , only : hgt_min               ! ! intent(in)
+   use canopy_air_coms, only : psim                  & ! function
+                             , psih                  & ! function
+                             , ugbmin                & ! intent(in)
+                             , ubmin                 & ! intent(in)
+                             , ustmin                & ! intent(in)
+                             , gamm                  & ! intent(in)
+                             , gamh                  & ! intent(in)
+                             , tprandtl              & ! intent(in)
+                             , vh2vr                 & ! intent(out)
+                             , vh2dh                 & ! intent(out)
+                             , ribmax                & ! intent(out)
+                             , leaf_drywhc           & ! intent(out)
+                             , leaf_maxwhc           & ! intent(out)
+                             , gbhmos_min            & ! intent(out)
+                             , gbhmos_min8           & ! intent(out)
+                             , veg_height_min        & ! intent(out)
+                             , veg_height_min8       & ! intent(out)
+                             , minimum_canopy_depth  & ! intent(out)
+                             , minimum_canopy_depth8 & ! intent(out)
+                             , exar                  & ! intent(out)
+                             , covr                  & ! intent(out)
+                             , exar8                 & ! intent(out)
+                             , ez                    & ! intent(out)
+                             , ustmin8               & ! intent(out)
+                             , ugbmin8               & ! intent(out)
+                             , ubmin8                & ! intent(out)
+                             , ez8                   & ! intent(out)
+                             , vh2vr8                & ! intent(out)
+                             , vh2dh8                & ! intent(out)
+                             , cdrag0                & ! intent(out)
+                             , cdrag1                & ! intent(out)
+                             , cdrag2                & ! intent(out)
+                             , cdrag3                & ! intent(out)
+                             , pm0                   & ! intent(out)
+                             , c1_m97                & ! intent(out)
+                             , c2_m97                & ! intent(out)
+                             , c3_m97                & ! intent(out)
+                             , kvwake                & ! intent(out)
+                             , alpha_m97             & ! intent(out)
+                             , alpha_mw99            & ! intent(out)
+                             , gamma_mw99            & ! intent(out)
+                             , nu_mw99               & ! intent(out)
+                             , infunc                & ! intent(out)
+                             , cs_dense0             & ! intent(out)
+                             , gamma_clm4            & ! intent(out)
+                             , cdrag08               & ! intent(out)
+                             , cdrag18               & ! intent(out)
+                             , cdrag28               & ! intent(out)
+                             , cdrag38               & ! intent(out)
+                             , pm08                  & ! intent(out)
+                             , c1_m978               & ! intent(out)
+                             , c2_m978               & ! intent(out)
+                             , c3_m978               & ! intent(out)
+                             , kvwake8               & ! intent(out)
+                             , alpha_m97_8           & ! intent(out)
+                             , alpha_mw99_8          & ! intent(out)
+                             , gamma_mw99_8          & ! intent(out)
+                             , nu_mw99_8             & ! intent(out)
+                             , infunc_8              & ! intent(out)
+                             , cs_dense08            & ! intent(out)
+                             , gamma_clm48           & ! intent(out)
+                             , bl79                  & ! intent(out)
+                             , csm                   & ! intent(out)
+                             , csh                   & ! intent(out)
+                             , dl79                  & ! intent(out)
+                             , beta_s                & ! intent(out)
+                             , abh91                 & ! intent(out)
+                             , bbh91                 & ! intent(out)
+                             , cbh91                 & ! intent(out)
+                             , dbh91                 & ! intent(out)
+                             , ebh91                 & ! intent(out)
+                             , fbh91                 & ! intent(out)
+                             , cod                   & ! intent(out)
+                             , bcod                  & ! intent(out)
+                             , fm1                   & ! intent(out)
+                             , ate                   & ! intent(out)
+                             , atetf                 & ! intent(out)
+                             , beta_vs               & ! intent(out)
+                             , chim                  & ! intent(out)
+                             , chih                  & ! intent(out)
+                             , zetac_um              & ! intent(out)
+                             , zetac_uh              & ! intent(out)
+                             , zetac_sm              & ! intent(out)
+                             , zetac_sh              & ! intent(out)
+                             , zetac_umi             & ! intent(out)
+                             , zetac_uhi             & ! intent(out)
+                             , zetac_smi             & ! intent(out)
+                             , zetac_shi             & ! intent(out)
+                             , zetac_umi16           & ! intent(out)
+                             , zetac_uhi13           & ! intent(out)
+                             , psimc_um              & ! intent(out)
+                             , psihc_uh              & ! intent(out)
+                             , zd98_a                & ! intent(out)
+                             , zd98_b                & ! intent(out)
+                             , zd98_emax             & ! intent(out)
+                             , bl798                 & ! intent(out)
+                             , csm8                  & ! intent(out)
+                             , csh8                  & ! intent(out)
+                             , dl798                 & ! intent(out)
+                             , beta_s8               & ! intent(out)
+                             , gamm8                 & ! intent(out)
+                             , gamh8                 & ! intent(out)
+                             , ribmax8               & ! intent(out)
+                             , tprandtl8             & ! intent(out)
+                             , abh918                & ! intent(out)
+                             , bbh918                & ! intent(out)
+                             , cbh918                & ! intent(out)
+                             , dbh918                & ! intent(out)
+                             , ebh918                & ! intent(out)
+                             , fbh918                & ! intent(out)
+                             , cod8                  & ! intent(out)
+                             , bcod8                 & ! intent(out)
+                             , fm18                  & ! intent(out)
+                             , ate8                  & ! intent(out)
+                             , atetf8                & ! intent(out)
+                             , beta_vs8              & ! intent(out)
+                             , chim8                 & ! intent(out)
+                             , chih8                 & ! intent(out)
+                             , zetac_um8             & ! intent(out)
+                             , zetac_uh8             & ! intent(out)
+                             , zetac_sm8             & ! intent(out)
+                             , zetac_sh8             & ! intent(out)
+                             , zetac_umi8            & ! intent(out)
+                             , zetac_uhi8            & ! intent(out)
+                             , zetac_smi8            & ! intent(out)
+                             , zetac_shi8            & ! intent(out)
+                             , zetac_umi168          & ! intent(out)
+                             , zetac_uhi138          & ! intent(out)
+                             , psimc_um8             & ! intent(out)
+                             , psihc_uh8             & ! intent(out)
+                             , zd98_a8               & ! intent(out)
+                             , zd98_b8               & ! intent(out)
+                             , zd98_emax8            & ! intent(out)
+                             , aflat_turb            & ! intent(out)
+                             , aflat_lami            & ! intent(out)
+                             , bflat_turb            & ! intent(out)
+                             , bflat_lami            & ! intent(out)
+                             , nflat_turb            & ! intent(out)
+                             , nflat_lami            & ! intent(out)
+                             , mflat_turb            & ! intent(out)
+                             , mflat_lami            & ! intent(out)
+                             , ocyli_turb            & ! intent(out)
+                             , ocyli_lami            & ! intent(out)
+                             , acyli_turb            & ! intent(out)
+                             , acyli_lami            & ! intent(out)
+                             , bcyli_turb            & ! intent(out)
+                             , bcyli_lami            & ! intent(out)
+                             , ncyli_turb            & ! intent(out)
+                             , ncyli_lami            & ! intent(out)
+                             , mcyli_turb            & ! intent(out)
+                             , mcyli_lami            & ! intent(out)
+                             , aflat_turb8           & ! intent(out)
+                             , aflat_lami8           & ! intent(out)
+                             , bflat_turb8           & ! intent(out)
+                             , bflat_lami8           & ! intent(out)
+                             , nflat_turb8           & ! intent(out)
+                             , nflat_lami8           & ! intent(out)
+                             , mflat_turb8           & ! intent(out)
+                             , mflat_lami8           & ! intent(out)
+                             , ocyli_turb8           & ! intent(out)
+                             , ocyli_lami8           & ! intent(out)
+                             , acyli_turb8           & ! intent(out)
+                             , acyli_lami8           & ! intent(out)
+                             , bcyli_turb8           & ! intent(out)
+                             , bcyli_lami8           & ! intent(out)
+                             , ncyli_turb8           & ! intent(out)
+                             , ncyli_lami8           & ! intent(out)
+                             , mcyli_turb8           & ! intent(out)
+                             , mcyli_lami8           & ! intent(out)
+                             , ggsoil0               & ! intent(out)
+                             , kksoil                & ! intent(out)
+                             , ggsoil08              & ! intent(out)
+                             , kksoil8               ! ! intent(out)
+   implicit none
+   !----- External functions. -------------------------------------------------------------!
+   real   , external :: cbrt
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Minimum leaf water content to be considered.  Values smaller than this will be     !
+   ! flushed to zero.  This value is in kg/[m2 tree], so it will be scaled by (LAI+WAI)    !
+   ! where needed be.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   leaf_drywhc = 5.e-4 * leaf_maxwhc
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Variables to define the vegetation aerodynamic conductance.  They are currently  !
+   ! not PFT dependent.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   gbhmos_min  = 1.e-9
+   gbhmos_min8 = dble(gbhmos_min)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
+   !                        height is used to calculate drag coefficients and patch        !
+   !                        roughness.                                                     !
+   ! minimum_canopy_depth - This is the minimum canopy depth allowed [m].  Canopy depth    !
+   !                        is used to calculate the heat and moisture storage capacity in !
+   !                        the canopy air space.                                          !
+   !---------------------------------------------------------------------------------------!
+   veg_height_min        = minval(hgt_min)
+   minimum_canopy_depth  = 5.0  ! alternative: minval(hgt_min)
+
+   !----- This is the dimensionless exponential wind atenuation factor. -------------------!
+   exar  = 2.5
+
+   !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
+   covr = 2.16
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters for surface layer models.                                             !
+   !---------------------------------------------------------------------------------------!
+   !----- Vegetation roughness:vegetation height ratio. -----------------------------------!
+   vh2vr    = 0.13
+   !----- Displacement height:vegetation height ratio. ------------------------------------!
+   vh2dh    = 0.63
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Louis (1979) model. -------------------------------------------------------------!
+   bl79        = 5.0    ! b prime parameter
+   csm         = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
+   csh         = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
+   dl79        = 5.0    ! ???
+   !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
+   beta_s       = 5.0          ! Beta
+   !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
+   abh91       = -1.00         ! -a from equation  (28) and (32)
+   bbh91       = -twothirds    ! -b from equation  (28) and (32)
+   cbh91       =  5.0          !  c from equations (28) and (32)
+   dbh91       =  0.35         !  d from equations (28) and (32)
+   ebh91       = -twothirds    ! - factor multiplying a*zeta in equation (32)
+   fbh91       =  1.50         ! exponent in equation (32)
+   cod         = cbh91/dbh91   ! c/d
+   bcod        = bbh91 * cod   ! b*c/d
+   fm1         = fbh91 - 1.0   ! f-1
+   ate         = abh91 * ebh91 ! a * e
+   atetf       = ate   * fbh91 ! a * e * f
+   !----- Similar to CLM (2004), but with different phi_m for very unstable case. ---------!
+   zetac_um    = -1.5
+   zetac_uh    = -0.5
+   zetac_sm    =  1.0
+   zetac_sh    =  zetac_sm
+   !----- Define chim and chih so the functions are continuous. ---------------------------!
+   chim        = (-zetac_um) ** onesixth / sqrt(sqrt(1.0 - gamm * zetac_um))
+   chih        = cbrt(-zetac_uh) / sqrt(1.0 - gamh * zetac_uh)
+   beta_vs     = 1.0 - (1.0 - beta_s) * zetac_sm
+   !----- Define derived values to speed up the code a little. ----------------------------!
+   zetac_umi   = 1.0 / zetac_um
+   zetac_uhi   = 1.0 / zetac_uh
+   zetac_smi   = 1.0 / zetac_sm
+   zetac_shi   = 1.0 / zetac_sh
+   zetac_umi16 = 1.0 / (- zetac_um) ** onesixth
+   zetac_uhi13 = 1.0 / cbrt(-zetac_uh)
+
+   !---------------------------------------------------------------------------------------!
+   !     Initialise these values with dummies, it will be updated after we define the      !
+   ! functions.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   psimc_um  = 0.
+   psimc_um  = psim(zetac_um,.false.)
+   psihc_uh  = 0.
+   psihc_uh  = psih(zetac_uh,.false.)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Parameters for the z0m:z0h ratio, following Zeng and Dickinson (1998). ----------!
+   zd98_a    = 0.13 * tprandtl
+   zd98_b    = 0.45
+   zd98_emax = 10.
+   !---------------------------------------------------------------------------------------!
+
+
+   
+   !----- Legacy variable, we can probably remove it. -------------------------------------!
+   ez  = 0.172
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters for the aerodynamic resistance between the leaf (flat surface) and    !
+   ! wood (kind of cylinder surface), and the canopy air space.  These are the A, B, n,    !
+   ! and m parameters that define the Nusselt number for forced and free convection, at    !
+   ! equations 10.7 and 10.9.  The parameters are found at the appendix A, table A.5(a)    !
+   ! and A.5(b).                                                                           !
+   !                                                                                       !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !                                                                                       !
+   ! The coefficient B for flat plates under turbulent flow was changed to 0.19 so the     !
+   !     transition from laminar to turbulent regime will happen at Gr ~ 100,000, the      !
+   !     number suggested by M08.                                                          !
+   !---------------------------------------------------------------------------------------!
+   aflat_lami = 0.600    ! A (forced convection), laminar   flow
+   nflat_lami = 0.500    ! n (forced convection), laminar   flow
+   aflat_turb = 0.032    ! A (forced convection), turbulent flow
+   nflat_turb = 0.800    ! n (forced convection), turbulent flow
+   bflat_lami = 0.500    ! B (free   convection), laminar   flow
+   mflat_lami = 0.250    ! m (free   convection), laminar   flow
+   bflat_turb = 0.190    ! B (free   convection), turbulent flow
+   mflat_turb = onethird ! m (free   convection), turbulent flow
+   ocyli_lami = 0.320    ! intercept (forced convection), laminar   flow
+   acyli_lami = 0.510    ! A (forced convection), laminar   flow
+   ncyli_lami = 0.520    ! n (forced convection), laminar   flow
+   ocyli_turb = 0.000    ! intercept (forced convection), turbulent flow
+   acyli_turb = 0.240    ! A (forced convection), turbulent flow
+   ncyli_turb = 0.600    ! n (forced convection), turbulent flow
+   bcyli_lami = 0.480    ! B (free   convection), laminar   flow
+   mcyli_lami = 0.250    ! m (free   convection), laminar   flow
+   bcyli_turb = 0.090    ! B (free   convection), turbulent flow
+   mcyli_turb = onethird ! m (free   convection), turbulent flow
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Define the variables that are going to be used by Massman (1997) and Massman and  !
+   ! Weil (1999).  Full reference:                                                         !
+   !                                                                                       !
+   ! Massman, W. J., 1997: An analytical one-dimensional model of momentum transfer by     !
+   !    vegetation of arbitrary structure.  Boundary-Layer Meteorol., 83, 407-421.         !
+   !                                                                                       !
+   ! Massman, W. J., and J. C. Weil, 1999: An analytical one-dimension second-order clos-  !
+   !    ure model turbulence statistics and the Lagrangian time scale within and above     !
+   !    plant canopies of arbitrary structure.  Boundary-Layer Meteorol., 91, 81-107.      !
+   !                                                                                       !
+   ! Wohlfahrt, G., and A. Cernusca, 2002: Momentum transfer by a mountain meadow canopy:  !
+   !    a simulation analysis based on Massman's (1997) model.  Boundary-Layer Meteorol.,  !
+   !    103, 391-407.
+   !---------------------------------------------------------------------------------------!
+   !----- Fluid drag coefficient for turbulent flow in leaves. ----------------------------!
+   cdrag0    = 0.2
+   !----- Values from re-fit of the data used by WC02. ------------------------------------!
+   cdrag1    = 0.086
+   cdrag2    = 1.192
+   cdrag3    = 0.480
+   !----- Sheltering factor of fluid drag on canopies. ------------------------------------!
+   pm0       = 1.0
+   !----- Surface drag parameters (Massman 1997). -----------------------------------------!
+   c1_m97    = 0.320
+   c2_m97    = 0.264
+   c3_m97    = 15.1
+   !----- Eddy diffusivity due to Von Karman Wakes in gravity flows. ----------------------!
+   kvwake    = 0.001
+   !---------------------------------------------------------------------------------------!
+   !     Alpha factors to produce the profile of sheltering factor and within canopy drag, !
+   ! as suggested by Massman (1997) and Massman and Weil (1999).                           !
+   !---------------------------------------------------------------------------------------!
+   alpha_m97  = 5.00
+   alpha_mw99 = 0.03
+   !---------------------------------------------------------------------------------------!
+   !      Parameter to represent the roughness sublayer effect.  According to Massman,     !
+   ! assuming this to be zero means that the sublayer effects will be ignored.  Otherwise  !
+   ! Raupach (1994) tried values up to 0.316.                                              !
+   !---------------------------------------------------------------------------------------!
+   infunc    = 0.193
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for CLM, at equation 5.103 of CLM-4 techical note.                     !
+   !     Oleson, K. W., et al.; Technical description of version 4.0 of the community land !
+   !        model (CLM) NCAR Technical Note NCAR/TN-478+STR, Boulder, CO, April 2010.      !
+   !---------------------------------------------------------------------------------------!
+   cs_dense0  = 0.004
+   gamma_clm4 = 0.5
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !  Gamma and nu are the parameters that close equation 10 in Massman and Weil (1999).   !
+   !  VERY IMPORTANT: If you mess with gamma, you must recompute nu!                       !
+   !---------------------------------------------------------------------------------------!
+   gamma_mw99 = (/2.4, 1.9, 1.25/)
+   nu_mw99    = (/0.3024,3.4414,36.1476/)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !   Soil conductance terms, from:                                                       !
+   !                                                                                       !
+   ! Passerat de Silans, A., 1986: Transferts de masse et de chaleur dans un sol stratifie !
+   !     soumis a une excitation amtospherique naturelle. Comparaison: Modeles-experience. !
+   !     Thesis, Institut National Polytechnique de Grenoble. (P86)                        !
+   !                                                                                       !
+   ! retrieved from:                                                                       !
+   ! Mahfouf, J. F., J. Noilhan, 1991: Comparative study of various formulations of        !
+   !     evaporation from bare soil using in situ data. J. Appl. Meteorol., 30, 1354-1365. !
+   !     (MN91)                                                                            !
+   !                                                                                       !
+   !     Please notice that the values are inverted because we compute conductance, not    !
+   ! resistance.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   ggsoil0 = 1. / 38113.
+   kksoil  = 13.515
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Set the double precision variables. ---------------------------------------------!
+   veg_height_min8       = dble(veg_height_min      )
+   minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   exar8                 = dble(exar                )
+   ubmin8                = dble(ubmin               )
+   ugbmin8               = dble(ugbmin              )
+   ustmin8               = dble(ustmin              )
+   ez8                   = dble(ez                  )
+   vh2vr8                = dble(vh2vr               )
+   vh2dh8                = dble(vh2dh               )
+   bl798                 = dble(bl79                )
+   csm8                  = dble(csm                 )
+   csh8                  = dble(csh                 )
+   dl798                 = dble(dl79                )
+   beta_s8               = dble(beta_s              )
+   gamm8                 = dble(gamm                )
+   gamh8                 = dble(gamh                )
+   ribmax8               = dble(ribmax              )
+   tprandtl8             = dble(tprandtl            )
+   abh918                = dble(abh91               )
+   bbh918                = dble(bbh91               )
+   cbh918                = dble(cbh91               )
+   dbh918                = dble(dbh91               )
+   ebh918                = dble(ebh91               )
+   fbh918                = dble(fbh91               )
+   cod8                  = dble(cod                 )
+   bcod8                 = dble(bcod                )
+   fm18                  = dble(fm1                 )
+   ate8                  = dble(ate                 )
+   atetf8                = dble(atetf               )
+   aflat_lami8           = dble(aflat_lami          )
+   nflat_lami8           = dble(nflat_lami          )
+   aflat_turb8           = dble(aflat_turb          )
+   nflat_turb8           = dble(nflat_turb          )
+   bflat_lami8           = dble(bflat_lami          )
+   mflat_lami8           = dble(mflat_lami          )
+   bflat_turb8           = dble(bflat_turb          )
+   mflat_turb8           = dble(mflat_turb          )
+   ocyli_lami8           = dble(ocyli_lami          )
+   acyli_lami8           = dble(acyli_lami          )
+   ncyli_lami8           = dble(ncyli_lami          )
+   ocyli_turb8           = dble(ocyli_turb          )
+   acyli_turb8           = dble(acyli_turb          )
+   ncyli_turb8           = dble(ncyli_turb          )
+   bcyli_lami8           = dble(bcyli_lami          )
+   mcyli_lami8           = dble(mcyli_lami          )
+   bcyli_turb8           = dble(bcyli_turb          )
+   mcyli_turb8           = dble(mcyli_turb          )
+   cdrag08               = dble(cdrag0              )
+   cdrag18               = dble(cdrag1              )
+   cdrag28               = dble(cdrag2              )
+   cdrag38               = dble(cdrag3              )
+   pm08                  = dble(pm0                 )
+   c1_m978               = dble(c1_m97              )
+   c2_m978               = dble(c2_m97              )
+   c3_m978               = dble(c3_m97              )
+   kvwake8               = dble(kvwake              )
+   alpha_m97_8           = dble(alpha_m97           )
+   alpha_mw99_8          = dble(alpha_mw99          )
+   gamma_mw99_8          = dble(gamma_mw99          )
+   nu_mw99_8             = dble(nu_mw99             )
+   infunc_8              = dble(infunc              )
+   cs_dense08            = dble(cs_dense0           )
+   ggsoil08              = dble(ggsoil0             )
+   kksoil8               = dble(kksoil              )
+   zetac_um8             = dble(zetac_um            )
+   zetac_uh8             = dble(zetac_uh            )
+   zetac_sm8             = dble(zetac_sm            )
+   zetac_sh8             = dble(zetac_sh            )
+   chim8                 = dble(chim                )
+   chih8                 = dble(chih                )
+   beta_vs8              = dble(beta_vs             )
+   zetac_umi8            = dble(zetac_umi           )
+   zetac_uhi8            = dble(zetac_uhi           )
+   zetac_smi8            = dble(zetac_smi           )
+   zetac_shi8            = dble(zetac_shi           )
+   zetac_umi168          = dble(zetac_umi16         )
+   zetac_uhi138          = dble(zetac_uhi13         )
+   psimc_um8             = dble(psimc_um            )
+   psimc_um8             = dble(psimc_um            )
+   psihc_uh8             = dble(psihc_uh            )
+   psihc_uh8             = dble(psihc_uh            )
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_can_air_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine will assign some radiation related parameters.                        !
+!------------------------------------------------------------------------------------------!
+subroutine init_can_rad_params()
+
+   use canopy_radiation_coms , only : ltrans_vis                  & ! intent(in)
+                                    , ltrans_nir                  & ! intent(in)
+                                    , lreflect_vis                & ! intent(in)
+                                    , lreflect_nir                & ! intent(in)
+                                    , orient_tree                 & ! intent(in)
+                                    , orient_grass                & ! intent(in)
+                                    , clump_tree                  & ! intent(in)
+                                    , clump_grass                 & ! intent(in)
+                                    , leaf_reflect_nir            & ! intent(out)
+                                    , leaf_trans_nir              & ! intent(out)
+                                    , leaf_reflect_vis            & ! intent(out)
+                                    , leaf_trans_vis              & ! intent(out)
+                                    , leaf_emiss_tir              & ! intent(out)
+                                    , clumping_factor             & ! intent(out)
+                                    , orient_factor               & ! intent(out)
+                                    , wood_reflect_nir            & ! intent(out)
+                                    , wood_trans_nir              & ! intent(out)
+                                    , wood_reflect_vis            & ! intent(out)
+                                    , wood_trans_vis              & ! intent(out)
+                                    , wood_emiss_tir              & ! intent(out)
+                                    , fvis_beam_def               & ! intent(out)
+                                    , fvis_diff_def               & ! intent(out)
+                                    , fnir_beam_def               & ! intent(out)
+                                    , fnir_diff_def               & ! intent(out)
+                                    , snow_albedo_vis             & ! intent(out)
+                                    , snow_albedo_nir             & ! intent(out)
+                                    , snow_emiss_tir              & ! intent(out)
+                                    , rshort_twilight_min         & ! intent(out)
+                                    , cosz_min                    & ! intent(out)
+                                    , cosz_min8                   ! ! intent(out)
+   use pft_coms              , only : is_grass                    & ! intent(in)
+                                    , is_tropical                 & ! intent(in)
+                                    , is_conifer                  ! ! intent(in)
+   use consts_coms           , only : pio180                      & ! intent(in)
+                                    , twothirds8                  ! ! intent(in)
+   use ed_max_dims           , only : n_pft                       ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer :: ipft
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The following parameters are used to split the shortwave radiation into visible  !
+   ! and near-infrared radiation.                                                          !
+   !---------------------------------------------------------------------------------------!
+   fvis_beam_def = 0.43
+   fnir_beam_def = 1.0 - fvis_beam_def
+   fvis_diff_def = 0.52
+   fnir_diff_def = 1.0 - fvis_diff_def
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Clumping factor.  This factor indicates the degree of clumpiness of leaves.       !a
+   !  0 -- black hole                                                                      !
+   !  1 -- homogeneous, no clumping.                                                       !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (is_conifer(ipft)) then ! Conifers (subtropical and temperate). 
+         clumping_factor(ipft) = 7.350d-1
+         !---------------------------------------------------------------------------------!
+      elseif (is_tropical(ipft) .and. is_grass(ipft)) then ! Tropical grasses. 
+         clumping_factor(ipft) = dble(clump_grass)
+      elseif (is_tropical(ipft)) then ! Lianas and tropical trees. 
+         clumping_factor(ipft) = dble(clump_tree)
+      else ! Temperate broadleaf (trees pr grasses). 
+         clumping_factor(ipft) = 8.400d-1
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Orientation factor.  The numbers come from CLM, and the original value from      !
+   ! ED-2.1 used to 0.  This works in the following way:                                   !
+   !  0 -- leaves are randomly oriented                                                    !
+   !  1 -- all leaves are perfectly horizontal                                             !
+   ! -1 -- all leaves are perfectly vertical.                                              !
+   !---------------------------------------------------------------------------------------!
+   do ipft=1,n_pft
+      if (.not. is_tropical(ipft)) then ! Temperate PFTs (grasses and trees). 
+         orient_factor(ipft) = 0.d0
+      elseif (is_conifer(ipft)) then ! Araucaria, (CLM value for evergreen needleleaf).
+         orient_factor(ipft) = 1.0d-2
+      elseif (is_grass(ipft)) then ! Tropical grasses. 
+         orient_factor(ipft) = dble(orient_grass)
+      else ! Lianas and tropical broadleaf trees. 
+         orient_factor(ipft) = dble(orient_tree)
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Emissivity on Thermal infra-red (TIR).                                           !
+   !---------------------------------------------------------------------------------------!
+   leaf_emiss_tir(:) = merge(9.60d-1,merge(9.70d-1,9.50d-1,is_conifer(:)),is_grass(:))
+   wood_emiss_tir(:) = merge(9.60d-1,9.00d-1,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Leaf reflectance.                                                                !
+   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
+   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
+   ! they seem similar at a first glance, at least closer than the original values, which  !
+   ! looked like the visible ignoring the green band.                                      !
+   !                                                                                       !
+   ! Tropical / Subtropical values for visible came from:                                  !
+   ! - Poorter, L., S. F. Oberbauer, D. B. Clark, 1995: Leaf optical properties along a    !
+   !      vertical gradient in a tropical rainforest in Costa Rica. American J. of Botany, !
+   !      82, 1257-1263.                                                                   !
+   ! Tropical values for NIR were estimated from:                                          !
+   ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
+   !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
+   !---------------------------------------------------------------------------------------!
+   leaf_reflect_vis(:) = merge( merge(9.00d-2,dble(lreflect_vis),is_conifer(:))            &
+                              , 1.10d-1                                                    &
+                              , is_tropical(:) )
+   leaf_reflect_nir(:) = merge( dble(lreflect_nir)                                         &
+                              , 5.77d-1                                                    &
+                              , is_tropical(:) .and. (.not. is_conifer(:)) )
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Wood reflectance, using values based on:                                         !
+   !                                                                                       !
+   ! Asner, G., 1998: Biophysical and biochemical sources of variability in canopy         !
+   !     reflectance. Remote Sensing of Environment, 64, 234-253.                          !
+   !                                                                                       !
+   ! Commented values are from CLM, but they were quite high.                              !
+   !---------------------------------------------------------------------------------------!
+   wood_reflect_vis(:) = merge(1.60d-1,1.10d-1,is_grass(:))
+   wood_reflect_nir(:) = 2.50d-1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Leaf transmittance.                                                              !
+   !      Values for temperate PFTs were left as they were.  Tropical and sub-tropical     !
+   ! PFTs use the parameters from CLM.  I checked the values against some published and    !
+   ! they seem similar at a first glance, at least closer than the original values, which  !
+   ! looked like the visible ignoring the green band.                                      !
+   !                                                                                       !
+   ! Tropical / Subtropical values for visible came from:                                  !
+   ! - Poorter, L., S. F. Oberbauer, D. B. Clark, 1995: Leaf optical properties along a    !
+   !      vertical gradient in a tropical rainforest in Costa Rica. American J. of Botany, !
+   !      82, 1257-1263.                                                                   !
+   ! Tropical values for NIR were estimated from:                                          !
+   ! - Roberts, D. A., B. W. Nelson, J. B. Adams, F. Palmer, 1998: Spectral changes with   !
+   !      leaf aging in Amazon caatinga. Trees, 12, 315-325.                               !
+   !---------------------------------------------------------------------------------------!
+   leaf_trans_vis(:) = merge( merge(5.00d-2,dble(ltrans_vis),is_conifer(:))                &
+                            , 1.60d-1                                                      &
+                            , is_tropical(:) )
+   leaf_trans_nir(:) = merge( dble(ltrans_nir)                                             &
+                            , 2.48d-1                                                      &
+                            , is_tropical(:) .and. (.not. is_conifer(:)) )
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Wood transmittance, using the parameters from CLM.                               !
+   !---------------------------------------------------------------------------------------!
+   wood_trans_vis(:) = merge(2.80d-2,1.00d-3,is_grass(:))
+   wood_trans_nir(:) = merge(2.48d-1,1.00d-3,is_grass(:))
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Optical properties for snow.  Values are a first guess, and a more thorough snow  !
+   ! model that takes snow age and snow melt into account (like in CLM-4 or ECHAM-5) are   !
+   ! very welcome.                                                                         !
+   !                                                                                       !
+   !  References for current snow values:                                                  !
+   !  Roesch, A., et al., 2002: Comparison of spectral surface albedos and their           !
+   !      impact on the general circulation model simulated surface climate.  J.           !
+   !      Geophys. Res.-Atmosph., 107(D14), 4221, 10.1029/2001JD000809.                    !
+   !      Average between minimum and maximum snow albedo on land, af = 0. and af=1.       !
+   !                                                                                       !
+   !  Oleson, K.W., et al., 2010: Technical description of version 4.0 of the              !
+   !      Community Land Model (CLM). NCAR Technical Note NCAR/TN-478+STR.                 !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
+   snow_albedo_vis = 0.518
+   snow_albedo_nir = 0.435
+   snow_emiss_tir  = 0.970
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are the thresholds for things that should be computed during the  !
+   ! day time hours only.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   rshort_twilight_min = 0.5
+   cosz_min            = cos(89.*pio180) !cos(89.5*pio180)
+   cosz_min8           = dble(cosz_min)
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end subroutine init_can_rad_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine initialises some of the canopy layer variables.  These are used     !
+! by sub-routines that need to calculate the canopy properties by layers rather than by    !
+! cohorts (or when both must be considered).                                               !
+!------------------------------------------------------------------------------------------!
+subroutine init_can_lyr_params()
+   use canopy_layer_coms, only : tai_lyr_max                 & ! intent(out)
+                               , ncanlyr                     & ! intent(out)
+                               , ncanlyrp1                   & ! intent(out)
+                               , ncanlyrt2                   & ! intent(out)
+                               , zztop0                      & ! intent(out)
+                               , zztop08                     & ! intent(out)
+                               , zztop0i                     & ! intent(out)
+                               , zztop0i8                    & ! intent(out)
+                               , ehgt                        & ! intent(out)
+                               , ehgt8                       & ! intent(out)
+                               , ehgti                       & ! intent(out)
+                               , ehgti8                      & ! intent(out)
+                               , dzcan                       & ! intent(out)
+                               , dzcan8                      & ! intent(out)
+                               , zztop                       & ! intent(out)
+                               , zzmid                       & ! intent(out)
+                               , zzbot                       & ! intent(out)
+                               , zztop8                      & ! intent(out)
+                               , zzmid8                      & ! intent(out)
+                               , zzbot8                      & ! intent(out)
+                               , alloc_canopy_layer          ! ! subroutine
+   use pft_coms         , only : hgt_min                     & ! intent(in)
+                               , hgt_max                     ! ! intent(in)
+   use consts_coms      , only : onethird                    & ! intent(in)
+                               , onethird8                   ! ! intent(in)
+   implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   integer    :: ilyr
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Set the maximum tai that each layer is allowed to have.                          !
+   !---------------------------------------------------------------------------------------!
+   tai_lyr_max = 1.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the layer thickness and the number of layers needed. -----------------------!
+   ncanlyr   = 100
+   ncanlyrp1 = ncanlyr + 1
+   ncanlyrt2 = ncanlyr * 2
+   zztop0    = onethird  * minval(hgt_min)
+   zztop08   = onethird8 * dble(minval(hgt_min))
+   zztop0i   = 1.   / zztop0
+   zztop0i8  = 1.d0 / zztop08
+   ehgt      = log(maxval(hgt_max)/zztop0)        / log(real(ncanlyr))
+   ehgt8     = log(dble(maxval(hgt_max))/zztop08) / log(dble(ncanlyr))
+   ehgti     = 1./ ehgt
+   ehgti8    = 1.d0 / ehgt8
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Allocate the variables. ---------------------------------------------------------!
+   call alloc_canopy_layer()
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define the layer heights. -------------------------------------------------------!
+   do ilyr =1,ncanlyr
+      zztop (ilyr) = zztop0 * real(ilyr  ) ** ehgt
+      zzbot (ilyr) = zztop0 * real(ilyr-1) ** ehgt
+      dzcan (ilyr) = zztop(ilyr) - zzbot(ilyr)
+      zzmid (ilyr) = 0.5 * (zzbot(ilyr) + zztop(ilyr))
+      zztop8(ilyr) = zztop0  * dble(ilyr  ) ** ehgt8
+      zzbot8(ilyr) = zztop08 * dble(ilyr-1) ** ehgt8
+      dzcan8(ilyr) = zztop8(ilyr) - zzbot8(ilyr)
+      zzmid8(ilyr) = 5.d-1 * (zzbot8(ilyr) + zztop8(ilyr))
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_can_lyr_params
 !==========================================================================================!
 !==========================================================================================!
 
